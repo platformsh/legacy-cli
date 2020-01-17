@@ -10,6 +10,7 @@ class Listener
     private $file;
     private $localUrl;
     private $response;
+    private $codeChallenge;
 
     public function __construct() {
         $required = [
@@ -17,6 +18,7 @@ class Listener
             'CLI_OAUTH_AUTH_URL',
             'CLI_OAUTH_CLIENT_ID',
             'CLI_OAUTH_FILE',
+            'CLI_OAUTH_CODE_CHALLENGE',
         ];
         if ($missing = array_diff($required, array_keys($_ENV))) {
             throw new \RuntimeException('Invalid environment, missing: ' . implode(', ', $missing));
@@ -25,6 +27,7 @@ class Listener
         $this->authUrl = $_ENV['CLI_OAUTH_AUTH_URL'];
         $this->clientId = $_ENV['CLI_OAUTH_CLIENT_ID'];
         $this->file = $_ENV['CLI_OAUTH_FILE'];
+        $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
         $this->localUrl = $localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
     }
@@ -39,6 +42,8 @@ class Listener
             'state' => $this->state,
             'client_id' => $this->clientId,
             'response_type' => 'code',
+            'code_challenge' => $this->codeChallenge,
+            'code_challenge_method' => 'S256',
         ], null, '&', PHP_QUERY_RFC3986);
     }
 
@@ -51,6 +56,10 @@ class Listener
         if (isset($_GET['state'], $_GET['code'])) {
             if ($_GET['state'] !== $this->state) {
                 $this->reportError('Invalid state parameter');
+                return;
+            }
+            if (isset($_GET['code_challenge']) && $_GET['code_challenge'] !== $this->codeChallenge) {
+                $this->reportError('Invalid returned code_challenge parameter');
                 return;
             }
             if (!file_put_contents($this->file, $_GET['code'], LOCK_EX)) {

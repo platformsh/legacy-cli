@@ -88,9 +88,6 @@ class EventSubscriber implements EventSubscriberInterface
                     $error
                 ));
                 $event->stopPropagation();
-            } else {
-                $event->setError(new HttpException(null, $error));
-                $event->stopPropagation();
             }
         }
 

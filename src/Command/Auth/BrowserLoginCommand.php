@@ -8,6 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
+use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Session\SessionInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -129,9 +130,11 @@ class BrowserLoginCommand extends CommandBase
             '-t',
             $listenerDir
         ]);
+        $codeVerifier = $this->generateCodeVerifier();
         $process->setEnv([
             'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
-            'CLI_OAUTH_STATE' => $this->getRandomState(),
+            'CLI_OAUTH_STATE' => $this->generateCodeVerifier(), // the state can just be any random string
+            'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
             'CLI_OAUTH_FILE' => $codeFile,
@@ -201,7 +204,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
-        $token = $this->getAccessToken($code, $localUrl);
+        $token = $this->getAccessToken($code, $codeVerifier, $localUrl);
 
         // Finalize login: call logOut() on the old connector, clear the cache
         // and save the new credentials.
@@ -268,35 +271,69 @@ class BrowserLoginCommand extends CommandBase
      * Exchange the authorization code for an access token.
      *
      * @param string $authCode
+     * @param string $codeVerifier
      * @param string $redirectUri
      *
      * @return array
      */
-    private function getAccessToken($authCode, $redirectUri)
+    private function getAccessToken($authCode, $codeVerifier, $redirectUri)
     {
-        return (new Client())->post(
-            $this->config()->get('api.oauth2_token_url'),
-            [
-                'body' => [
-                    'grant_type' => 'authorization_code',
-                    'code' => $authCode,
-                    'client_id' => $this->config()->get('api.oauth2_client_id'),
-                    'redirect_uri' => $redirectUri,
-                ],
-                'auth' => false,
-                'verify' => !$this->config()->get('api.skip_ssl'),
-            ]
-        )->json();
+        $client = new Client();
+        $request = $client->createRequest('post', $this->config()->get('api.oauth2_token_url'), [
+            'body' => [
+                'grant_type' => 'authorization_code',
+                'code' => $authCode,
+                'client_id' => $this->config()->get('api.oauth2_client_id'),
+                'redirect_uri' => $redirectUri,
+                'code_verifier' => $codeVerifier,
+            ],
+            'auth' => false,
+            'verify' => !$this->config()->get('api.skip_ssl'),
+        ]);
+
+        try {
+            $response = $client->send($request);
+
+            return $response->json();
+        } catch (BadResponseException $e) {
+            throw ApiResponseException::create($request, $e->getResponse(), $e);
+        }
     }
 
     /**
-     * Get a random state to use with the OAuth2 code request.
+     * Get a PKCE code verifier to use with the OAuth2 code request.
      *
      * @return string
      */
-    private function getRandomState()
+    private function generateCodeVerifier()
     {
         // This uses paragonie/random_compat as a polyfill for PHP < 7.0.
-        return bin2hex(random_bytes(128));
+        return $this->base64UrlEncode(random_bytes(32));
+    }
+
+    /**
+     * Base64URL-encodes a string according to the PKCE spec.
+     *
+     * @see https://tools.ietf.org/html/rfc7636
+     *
+     * @param string $data
+     *
+     * @return string
+     */
+    private function base64UrlEncode($data)
+    {
+        return str_replace(['+', '/'], ['-', '_'], rtrim(base64_encode($data), '='));
+    }
+
+    /**
+     * Generates a PKCE code challenge using the S256 transformation on a verifier.
+     *
+     * @param string $verifier
+     *
+     * @return string
+     */
+    private function convertVerifierToChallenge($verifier)
+    {
+        return $this->base64UrlEncode(hash('sha256', $verifier, true));
     }
 }
