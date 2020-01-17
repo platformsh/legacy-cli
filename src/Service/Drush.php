@@ -67,7 +67,7 @@ class Drush
 
     public function getHomeDir()
     {
-        return $this->homeDir ?: Filesystem::getHomeDirectory();
+        return $this->homeDir ?: $this->config->getHomeDirectory();
     }
 
     /**

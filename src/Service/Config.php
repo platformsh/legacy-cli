@@ -101,6 +101,32 @@ class Config
     }
 
     /**
+     * @return string The absolute path to the user's home directory
+     */
+    public function getHomeDirectory()
+    {
+        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
+        $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
+        foreach ($envVars as $envVar) {
+            $value = getenv($envVar);
+            if (array_key_exists($envVar, $this->env)) {
+                $value = $this->env[$envVar];
+            }
+            if (is_string($value) && $value !== '') {
+                if (!is_dir($value)) {
+                    throw new \RuntimeException(
+                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
+                    );
+                }
+
+                return realpath($value) ?: $value;
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Could not determine home directory. Set the %s environment variable.', $prefix . 'HOME'));
+    }
+
+    /**
      * Get the directory where the CLI is normally installed and configured.
      *
      * @param bool $absolute Whether to return an absolute path. If false,
@@ -112,7 +138,7 @@ class Config
     {
         $path = $this->get('application.user_config_dir');
 
-        return $absolute ? $this->fs()->getHomeDirectory() . '/' . $path : $path;
+        return $absolute ? $this->getHomeDirectory() . '/' . $path : $path;
     }
 
     /**

@@ -117,26 +117,6 @@ class Filesystem
     }
 
     /**
-     * @return string The absolute path to the user's home directory
-     */
-    public static function getHomeDirectory()
-    {
-        foreach (['HOME', 'USERPROFILE'] as $envVar) {
-            if ($value = getenv($envVar)) {
-                if (!is_dir($value)) {
-                    throw new \RuntimeException(
-                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
-                    );
-                }
-
-                return $value;
-            }
-        }
-
-        throw new \RuntimeException('Could not determine home directory');
-    }
-
-    /**
      * @param string $dir
      * @param int $mode
      */
