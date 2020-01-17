@@ -10,6 +10,7 @@ use Symfony\Component\Console\Question\Question;
 class PasswordLoginCommand extends CommandBase
 {
     protected $stability = 'deprecated';
+    protected $hiddenInList = true;
 
     protected function configure()
     {

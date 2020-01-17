@@ -18,6 +18,19 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(123, $config->getWithDefault('nonexistent', 123));
     }
 
+    public function testGetHomeDirectory()
+    {
+        $homeDir = (new Config(['HOME' => '.']))->getHomeDirectory();
+        $this->assertNotEmpty($homeDir, 'Home directory returned');
+        $this->assertNotEquals('.', $homeDir, 'Home directory not relative');
+
+        $homeDir = (new Config(['PLATFORMSH_CLI_HOME' => __DIR__ . '/data', 'HOME' => __DIR__]))->getHomeDirectory();
+        $this->assertEquals(__DIR__ . '/data', $homeDir, 'Home directory overridden');
+
+        $homeDir = (new Config(['PLATFORMSH_CLI_HOME' => '', 'HOME' => __DIR__]))->getHomeDirectory();
+        $this->assertEquals(__DIR__, $homeDir, 'Empty value treated as nonexistent');
+    }
+
     /**
      * Test that selected environment variables can override initial config.
      */

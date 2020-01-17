@@ -91,7 +91,6 @@ auth
   auth:browser-login (login)                Log in to Platform.sh via a browser
   auth:info                                 Display your account information
   auth:logout (logout)                      Log out of Platform.sh
-  auth:password-login                       Log in to Platform.sh using a username and password
 backup
   backup:create (backup)                    Make a backup of an environment
   backup:list (backups)                     List available backups of an environment
@@ -214,13 +213,14 @@ There are currently three ways to authenticate:
   local server and a browser, allowing you to log in to Platform.sh via the
   normal login form, including via services like Bitbucket, GitHub and Google.
 
-2. `platform auth:password-login`: this allows you to log in with a username and
-  password, and a two-factor token if applicable.
-
-3. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
+2. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
   these allow non-interactive authentication. See
   [Customization](#customization) below for how to use an API token. Remember to
   use a separate machine account if you want to limit the token's access.
+
+3. `platform auth:password-login`: this allows you to log in with a username and
+  password, and a two-factor token if applicable. This is deprecated, and will
+  be removed from the API in future.
 
 ## Customization
 
@@ -268,6 +268,7 @@ Other customization is available via environment variables:
 
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging. _Warning_: this will print all request information in the terminal, including sensitive access tokens.
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
+* `PLATFORMSH_CLI_HOME`: override the home directory (inside which the .platformsh directory is stored)
 * `PLATFORMSH_CLI_NO_COLOR`: set to 1 to disable colors in output
 * `PLATFORMSH_CLI_NO_INTERACTION`: set to 1 to disable interaction (useful for scripting). _Warning_: this will bypass any confirmation questions.
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')

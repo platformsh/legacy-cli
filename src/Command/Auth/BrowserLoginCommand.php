@@ -21,7 +21,6 @@ class BrowserLoginCommand extends CommandBase
     {
         $service = $this->config()->get('service.name');
         $applicationName = $this->config()->get('application.name');
-        $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:browser-login');
         if ($this->config()->get('application.login_method') === 'browser') {
@@ -32,9 +31,7 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
 
-        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
-            . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
-            . $executable . ' auth:password-login</info>';
+        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.';
         if ($aHelp = $this->getApiTokenHelp()) {
             $help .= "\n\n" . $aHelp;
         }
@@ -170,9 +167,9 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold>Help:</>');
         $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
-        $executable = $this->config()->get('application.executable');
-        $this->stdErr->writeln(sprintf('  To log in within the terminal instead, quit and run: <info>%s auth:password-login</info>', $executable));
-        $this->stdErr->writeln(sprintf('  For more info, quit and run: <info>%s help login</info>', $executable));
+        if ($aHelp = $this->getApiTokenHelp()) {
+            $this->stdErr->writeln("\n" . preg_replace('/^/m', '  ', $aHelp));
+        }
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.

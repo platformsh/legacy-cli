@@ -24,7 +24,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
         );
         $this->addExample(
             'Add an integration with a GitLab repository',
-            '--type gitlab --repository mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
+            '--type gitlab --server-project mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
         );
     }
 

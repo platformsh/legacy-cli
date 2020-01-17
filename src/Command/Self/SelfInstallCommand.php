@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -129,7 +128,7 @@ EOT
 
         $configDirRelative = $this->config()->getUserConfigDir(false);
         $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
-        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg(Filesystem::getHomeDirectory()) . '}';
+        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config()->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',
             '"$HOME/"' . escapeshellarg($configDirRelative . '/bin')
@@ -297,7 +296,7 @@ EOT
         // Replace the home directory with ~, if not on Windows.
         if (DIRECTORY_SEPARATOR !== '\\') {
             $realpath = realpath($filename);
-            $homeDir = Filesystem::getHomeDirectory();
+            $homeDir = $this->config()->getHomeDirectory();
             if ($realpath && strpos($realpath, $homeDir) === 0) {
                 $arg = '~/' . ltrim(substr($realpath, strlen($homeDir)), '/');
             }
@@ -326,7 +325,7 @@ EOT
         if (getcwd() === dirname($filename)) {
             return basename($filename);
         }
-        $homeDir = Filesystem::getHomeDirectory();
+        $homeDir = $this->config()->getHomeDirectory();
         if (strpos($filename, $homeDir) === 0) {
             return str_replace($homeDir, '~', $filename);
         }
@@ -348,7 +347,7 @@ EOT
         $envPrefix = $this->config()->get('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT') !== false
             && getenv($envPrefix . 'APP_DIR') !== false
-            && getenv($envPrefix . 'APP_DIR') === Filesystem::getHomeDirectory()) {
+            && getenv($envPrefix . 'APP_DIR') === $this->config()->getHomeDirectory()) {
             return getenv($envPrefix . 'APP_DIR') . '/.environment';
         }
 
@@ -370,7 +369,7 @@ EOT
             array_unshift($candidates, '.zprofile');
         }
 
-        $homeDir = Filesystem::getHomeDirectory();
+        $homeDir = $this->config()->getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
                 $this->debug('Found existing config file: ' . $homeDir . DIRECTORY_SEPARATOR . $candidate);

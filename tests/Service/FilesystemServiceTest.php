@@ -34,16 +34,6 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test FilesystemHelper::getHomeDirectory().
-     */
-    public function testGetHomeDirectory()
-    {
-        $homeDir = $this->fs->getHomeDirectory();
-        $this->assertNotEmpty($homeDir, 'Home directory returned');
-        $this->assertNotEmpty(realpath($homeDir), 'Home directory exists');
-    }
-
-    /**
      * Test FilesystemHelper::remove() on directories.
      */
     public function testRemoveDir()
