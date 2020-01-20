@@ -47,9 +47,9 @@ class EnvironmentXdebugCommand extends CommandBase
                 "<error>A debugging key has not been found</error>\n" .
                 "\n" .
                 "To use Xdebug your project must have a <info>debugging key</info> set.\n" .
-                "Such key is set in the <info>.platform.app.yaml</info> file as in this example:\n" .
+                "Such key is set in the <info>" . $this->config()->get('service.app_config_file') . "</info> file as in this example:\n" .
                 "\n" .
-                "<info>...\n" .
+                "<info># ...\n" .
                 "runtime:\n" .
                 "    xdebug:\n" .
                 "        key: <options=underscore>secret_key</>"
