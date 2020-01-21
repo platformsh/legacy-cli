@@ -69,7 +69,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $process = new Process($commandCleanup);
         $process->run();
 
-        $output->writeln("Starting the tunnel for Xdebug.");
+        $output->writeln("Opening a local tunnel for Xdebug.");
 
         // Set up the tunnel
         $port = $input->getOption('port');
@@ -77,7 +77,8 @@ class EnvironmentXdebugCommand extends CommandBase
         $sshOptions = [];
         $sshOptions['ExitOnForwardFailure'] = 'yes';
 
-        $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':127.0.0.1:' . $port);
+        $listenAddress = '127.0.0.1:' . $port;
+        $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
         $commandTunnel .= ' ' . escapeshellarg($sshUrl);
         $this->debug("Tunnel command: " . $commandTunnel);
         $process = new Process($commandTunnel);
@@ -94,9 +95,10 @@ class EnvironmentXdebugCommand extends CommandBase
 
         $output->writeln(
             sprintf(
-                "\nThe Xdebug tunnel is set up. To break it, close this command by pressing <info>CTRL+C</info>.\n " .
-                "\n" .
-                "To debug, you must either set a cookie like '<info>XDEBUG_SESSION=%s</info>' or append '<info>XDEBUG_SESSION_START=%s</info>' as a query string when visiting your project.",
+                "\nXdebug tunnel opened at <info>'" . $listenAddress . "'</info>. " .
+                "\n\nTo start debugging, set a cookie like '<info>XDEBUG_SESSION=%s</info>' or append '<info>XDEBUG_SESSION_START=%s</info>' in the URL query string when visiting your project." .
+                "\n\nTo close the tunnel, quit this command by pressing <info>CTRL+C</info>." .
+                "\nTo change the local port, re-run this command with the <info>--port</info> option.",
                 $key, $key
             )
         );
