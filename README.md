@@ -4,12 +4,13 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ## Requirements
 
-* Operating system: Linux, OS X, Windows Vista, Windows 7, Windows 8 Pro, or Windows 10 (Windows 8 Standard does not work due to an issue with symlink permissions)
+* Operating system: Linux, OS X, or Windows 10
 * PHP 5.5.9 or higher, with cURL support
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
   * On Windows: [Windows Subsystem for Linux](https://msdn.microsoft.com/en-gb/commandline/wsl/about) (recommended), or another Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
+    The built-in Command Prompt may also work for most purposes.
 * For building locally, your project's dependencies, e.g.
   * [Composer](https://getcomposer.org/) (for many PHP projects)
   * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
@@ -17,17 +18,9 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ## Installation
 
-### Installing on OS X or Linux
-
-This is the recommended installation method. Simply use this command:
+Simply use this command:
 
     curl -sS https://platform.sh/cli/installer | php
-    
-### Installing on Windows (Git bash)
-```bash
-curl https://platform.sh/cli/installer -o cli-installer.php
-php cli-installer.php
-```
 
 ### Installing manually
 
@@ -35,7 +28,7 @@ php cli-installer.php
   [latest release](https://github.com/platformsh/platformsh-cli/releases/latest).
 
 2. Rename the file to `platform`, ensure it is executable, and move it into a
-  directory in your PATH (use `echo $PATH` to see your options).
+  directory in your PATH.
 
 3. Enable autocompletion and shell aliases:
 
