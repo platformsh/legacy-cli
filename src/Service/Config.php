@@ -138,7 +138,7 @@ class Config
     {
         $path = $this->get('application.user_config_dir');
 
-        return $absolute ? $this->getHomeDirectory() . '/' . $path : $path;
+        return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
     }
 
     /**
@@ -159,7 +159,7 @@ class Config
         // If the config directory is not writable (e.g. if we are on a
         // Platform.sh environment), use a temporary directory instead.
         if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
-            return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
+            return sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->get('application.tmp_sub_dir');
         }
 
         return $configDir;
@@ -170,7 +170,7 @@ class Config
      */
     public function getSessionDir()
     {
-        return $this->getWritableUserDir() . '/.session';
+        return $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
     }
 
     /**

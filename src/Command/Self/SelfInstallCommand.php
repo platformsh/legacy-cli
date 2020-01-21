@@ -137,7 +137,7 @@ EOT
         }
 
         $configDirRelative = $this->config()->getUserConfigDir(false);
-        $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
+        $rcDestination = $configDirRelative . DIRECTORY_SEPARATOR . 'shell-config.rc';
         $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config()->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',

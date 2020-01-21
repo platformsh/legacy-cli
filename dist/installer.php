@@ -253,12 +253,12 @@ class Installer {
 
         if ($homeDir = $this->getHomeDirectory()) {
             $pharPath = $this->performTask('Moving the Phar to your home directory', function () use ($pharPath, $homeDir) {
-                $binDir = $homeDir . '/' . $this->configDir . '/bin';
+                $binDir = $homeDir . DIRECTORY_SEPARATOR . $this->configDir . DIRECTORY_SEPARATOR . 'bin';
                 if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
                     return TaskResult::failure('Failed to create directory: ' . $binDir);
                 }
 
-                $destination = $binDir . '/' . $this->executable;
+                $destination = $binDir . DIRECTORY_SEPARATOR . $this->executable;
                 if (!rename($pharPath, $destination)) {
                     return TaskResult::failure('Failed to move the Phar to: ' . $destination);
                 }
