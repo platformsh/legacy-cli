@@ -124,6 +124,39 @@ EOT
             $shellConfigFile = $this->findShellConfigFile($shellType);
         }
 
+        // Windows command prompt (non-Bash) behavior.
+        if ($shellConfigFile === false && OsUtil::isWindows()) {
+            $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
+            if ($this->inPath($binDir)) {
+                $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, false));
+
+                return 0;
+            }
+
+            // Attempt to add to the PATH automatically using "setx".
+            $path = getenv('Path', true);
+            $pathParts = $path !== false ? array_unique(array_filter(explode(';', $path))) : [];
+            if ($path !== false && !empty($pathParts)) {
+                $newPath = implode(';', $pathParts) . ';' . $binDir;
+                /** @var \Platformsh\Cli\Service\Shell $shell */
+                $shell = $this->getService('shell');
+                $setPathCommand = 'setx PATH ' . OsUtil::escapeShellArg($newPath);
+                if ($shell->execute($setPathCommand, null, false, true, [], 10) !== false) {
+                    $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, true));
+
+                    return 0;
+                }
+            }
+
+            $this->stdErr->writeln(sprintf(
+                'To set up the CLI, add this directory to your Path environment variable:'
+            ));
+            $this->stdErr->writeln(sprintf('<info>%s</info>', $binDir));
+            $this->stdErr->writeln('Then open a new terminal to continue.');
+
+            return 1;
+        }
+
         $currentShellConfig = '';
 
         if ($shellConfigFile !== false) {
@@ -258,15 +291,20 @@ EOT
     /**
      * @param string $shellConfigFile
      * @param string $binDir
+     * @param bool|null $inPath
+     * @param bool $newTerminal
      *
      * @return string[]
      */
-    private function getRunAdvice($shellConfigFile, $binDir)
+    private function getRunAdvice($shellConfigFile, $binDir, $inPath = null, $newTerminal = false)
     {
         $advice = [
-            sprintf('To use the %s, run:', $this->config()->get('application.name'))
+            sprintf('To use the %s,%s run:', $this->config()->get('application.name'), $newTerminal ? ' open a new terminal, and' : '')
         ];
-        if (!$this->inPath($binDir)) {
+        if ($inPath === null) {
+            $inPath = $this->inPath($binDir);
+        }
+        if (!$inPath) {
             $sourceAdvice = sprintf('    <info>source %s</info>', $this->formatSourceArg($shellConfigFile));
             $sourceAdvice .= ' # (make sure your shell does this by default)';
             $advice[] = $sourceAdvice;
@@ -279,6 +317,8 @@ EOT
     /**
      * Check if a directory is in the PATH.
      *
+     * @param string $dir
+     *
      * @return bool
      */
     private function inPath($dir)
@@ -289,7 +329,7 @@ EOT
             return false;
         }
 
-        return in_array($realpath, explode(':', $PATH));
+        return in_array($realpath, explode(OsUtil::isWindows() ? ';' : ':', $PATH));
     }
 
     /**
