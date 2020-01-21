@@ -31,17 +31,17 @@ EOT
         $configDir = $this->config()->getUserConfigDir();
 
         $this->stdErr->write('Copying resource files...');
-        $rcFiles = [
+        $requiredFiles = [
             'shell-config.rc',
             'shell-config-bash.rc',
         ];
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         try {
-            foreach ($rcFiles as $rcFile) {
-                if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
-                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
+            foreach ($requiredFiles as $requiredFile) {
+                if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $requiredFile)) === false) {
+                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $requiredFile));
                 }
-                $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
+                $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
             }
         } catch (\Exception $e) {
             $this->stdErr->writeln('');
@@ -52,6 +52,16 @@ EOT
         }
         $this->stdErr->writeln(' <info>done</info>');
         $this->stdErr->writeln('');
+
+        if (OsUtil::isWindows()) {
+            $this->stdErr->write('Creating .bat executable...');
+            $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
+            $binTarget = $this->config()->get('application.executable');
+            $batDestination = $binDir . DIRECTORY_SEPARATOR . $this->config()->get('application.executable') . '.bat';
+            $fs->dumpFile($batDestination, $this->generateBatContents($binTarget));
+            $this->stdErr->writeln(' <info>done</info>');
+            $this->stdErr->writeln('');
+        }
 
         $shellType = $input->getOption('shell-type');
         if ($shellType === null && getenv('SHELL') !== false) {
@@ -410,5 +420,20 @@ EOT
         $wrapped = wordwrap($str, $width - $indent, PHP_EOL);
 
         return $spaces . preg_replace('/\r\n|\r|\n/', '$0' . $spaces, $wrapped);
+    }
+
+    /**
+     * Generates a .bat file for Windows compatibility.
+     *
+     * @param string $binTarget
+     *
+     * @return string
+     */
+    private function generateBatContents($binTarget)
+    {
+        return "@ECHO OFF\r\n".
+            "setlocal DISABLEDELAYEDEXPANSION\r\n".
+            "SET BIN_TARGET=%~dp0/" . trim(OsUtil::escapeShellArg($binTarget), '"\'') . "\r\n".
+            "php \"%BIN_TARGET%\" %*\r\n";
     }
 }
