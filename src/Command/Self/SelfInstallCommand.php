@@ -89,7 +89,9 @@ EOT
             // autocompletion probably isn't needed at all, as we are in the
             // context of some kind of automated build. So ignore the error.
             if (!$this->isTerminal(STDOUT)) {
-                $this->stdErr->writeln(' <info>skipped</info>');
+                $this->stdErr->writeln(' <info>skipped</info> (not a terminal)');
+            } elseif ($shellType === null) {
+                $this->stdErr->writeln(' <info>skipped</info> (unsupported shell)');
             }
             // Otherwise, print the error and continue. The user probably
             // wants to know what went wrong, but autocompletion is still not
