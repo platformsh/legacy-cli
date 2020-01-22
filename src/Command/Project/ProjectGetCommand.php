@@ -118,7 +118,7 @@ class ProjectGetCommand extends CommandBase
                 $this->config()->get('service.name')
             ));
 
-            $this->suggestSshRemedies();
+            $this->suggestSshRemedies($gitUrl);
 
             return 1;
         }
@@ -300,8 +300,10 @@ class ProjectGetCommand extends CommandBase
 
     /**
      * Suggest SSH key commands for the user, if the Git connection fails.
+     *
+     * @param string $gitUrl
      */
-    protected function suggestSshRemedies()
+    protected function suggestSshRemedies($gitUrl)
     {
         $sshKeys = [];
         try {
@@ -310,18 +312,27 @@ class ProjectGetCommand extends CommandBase
             // Ignore exceptions.
         }
 
-        if (!empty($sshKeys)) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('Please check your SSH credentials');
-            $this->stdErr->writeln(sprintf(
-                'You can list your keys with: <comment>%s ssh-keys</comment>',
-                $this->config()->get('application.executable')
-            ));
-        } else {
+        $this->stdErr->writeln('');
+
+        if (empty($sshKeys)) {
             $this->stdErr->writeln(sprintf(
                 'You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
                 $this->config()->get('application.executable')
             ));
+            return;
+        }
+
+        $this->stdErr->writeln('Please check your SSH credentials');
+        $this->stdErr->writeln(sprintf(
+            'You can list your keys by running: <comment>%s ssh-keys</comment>',
+            $this->config()->get('application.executable')
+        ));
+
+        if (strpos($gitUrl, ':') !== false) {
+            list($gitSshUrl,) = explode(':', $gitUrl, 2);
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('You can test your connection to the Git server by running:');
+            $this->stdErr->writeln('<comment>ssh -v %s</comment>', escapeshellarg($gitSshUrl));
         }
     }
 }
