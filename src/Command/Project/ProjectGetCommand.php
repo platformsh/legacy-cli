@@ -332,7 +332,7 @@ class ProjectGetCommand extends CommandBase
             list($gitSshUrl,) = explode(':', $gitUrl, 2);
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You can test your connection to the Git server by running:');
-            $this->stdErr->writeln('<comment>ssh -v %s</comment>', escapeshellarg($gitSshUrl));
+            $this->stdErr->writeln(sprintf('<comment>ssh -v %s</comment>', escapeshellarg($gitSshUrl)));
         }
     }
 }
