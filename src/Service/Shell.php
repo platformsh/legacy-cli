@@ -76,6 +76,7 @@ class Shell
      * @param bool         $quiet
      * @param array        $env
      * @param int|null     $timeout
+     * @param mixed|null   $input
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
@@ -84,9 +85,9 @@ class Shell
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
      */
-    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
+    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
     {
-        $process = new Process($args, null, null, null, $timeout);
+        $process = new Process($args, null, null, $input, $timeout);
 
         // Avoid adding 'exec' to every command. It is not needed in this
         // context as we do not need to send signals to the process. Also it

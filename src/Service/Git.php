@@ -193,7 +193,10 @@ class Git
         if ($ref !== null) {
             $args[] = $ref;
         }
-        $result = $this->execute($args, false, true);
+
+        // Supply STDIN to give a chance to the host key verification prompt
+        // in Windows.
+        $result = $this->shellHelper->execute($args, null, true, false, [], 60, STDIN);
 
         return !is_bool($result) && strlen($result) > 0;
     }
