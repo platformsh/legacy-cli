@@ -3,10 +3,8 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
-use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
@@ -43,11 +41,11 @@ class EnvironmentXdebugCommand extends CommandBase
         $key = isset($config['runtime']['xdebug']['key']) ? $config['runtime']['xdebug']['key'] : '';
 
         if (!$key) {
-            $output->getErrorOutput()->writeln(
+            $this->stdErr->write(
                 "<error>A debugging key has not been found</error>\n" .
                 "\n" .
                 "To use Xdebug your project must have a <info>debugging key</info> set.\n" .
-                "Such key is set in the <info>" . $this->config()->get('service.app_config_file') . "</info> file as in this example:\n" .
+                "Set this in the <info>" . $this->config()->get('service.app_config_file') . "</info> file as in this example:\n" .
                 "\n" .
                 "<info># ...\n" .
                 "runtime:\n" .
