@@ -32,8 +32,8 @@ class LoginRequiredException extends HttpException
     private function getApiTokenHelp()
     {
         if ($this->config->has('service.api_token_help_url')) {
-            return "To authenticate non-interactively using an API token, see:\n    <comment>"
-                . $this->config->get('service.api_token_help_url') . '</comment>';
+            return 'To authenticate non-interactively using an API token, see:'
+                . "\n    " . $this->config->get('service.api_token_help_url');
         }
 
         return null;
