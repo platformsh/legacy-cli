@@ -41,23 +41,23 @@ class EnvironmentXdebugCommand extends CommandBase
         $key = isset($config['runtime']['xdebug']['key']) ? $config['runtime']['xdebug']['key'] : '';
 
         if (!$key) {
-            $this->stdErr->write(
-                "<error>A debugging key has not been found</error>\n" .
-                "\n" .
-                "To use Xdebug your project must have a <info>debugging key</info> set.\n" .
-                "Set this in the <info>" . $this->config()->get('service.app_config_file') . "</info> file as in this example:\n" .
-                "\n" .
-                "<info># ...\n" .
-                "runtime:\n" .
-                "    xdebug:\n" .
-                "        key: <options=underscore>secret_key</>"
+            $this->stdErr->writeln('<error>No debugging key found.</error>');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('To use Xdebug your project must have a <comment>debugging key</comment> set.');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
+            $this->stdErr->writeln(
+                "\n<comment># ...\n"
+                . "runtime:\n"
+                . "    xdebug:\n"
+                . "        key: <options=underscore>secret_key</>"
             );
 
             return 1;
         }
 
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        /** @var Ssh $ssh */
         $ssh = $this->getService('ssh');
 
         // The socket is removed to prevent 'file already exists' errors
@@ -67,7 +67,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $process = new Process($commandCleanup);
         $process->run();
 
-        $output->writeln("Opening a local tunnel for Xdebug.");
+        $this->stdErr->writeln("Opening a local tunnel for Xdebug.");
 
         // Set up the tunnel
         $port = $input->getOption('port');
@@ -91,15 +91,16 @@ class EnvironmentXdebugCommand extends CommandBase
             return $process->stop();
         }
 
-        $output->writeln(
-            sprintf(
-                "\nXdebug tunnel opened at <info>'" . $listenAddress . "'</info>. " .
-                "\n\nTo start debugging, set a cookie like '<info>XDEBUG_SESSION=%s</info>' or append '<info>XDEBUG_SESSION_START=%s</info>' in the URL query string when visiting your project." .
-                "\n\nTo close the tunnel, quit this command by pressing <info>CTRL+C</info>." .
-                "\nTo change the local port, re-run this command with the <info>--port</info> option.",
-                $key, $key
-            )
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln(sprintf('Xdebug tunnel opened at: <info>%s</info>', $listenAddress));
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln(
+            "To start debugging, set a cookie like '<info>XDEBUG_SESSION=$key</info>'"
+            . " or append '<info>XDEBUG_SESSION_START=$key</info>' in the URL query string when visiting your project."
         );
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln('To close the tunnel, quit this command by pressing <info>Ctrl+C</info>.');
+        $this->stdErr->writeln('To change the local port, re-run this command with the <info>--port</info> option.');
 
         return $process->wait();
     }
