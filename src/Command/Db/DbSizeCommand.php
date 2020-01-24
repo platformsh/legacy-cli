@@ -21,6 +21,9 @@ class DbSizeCommand extends CommandBase
     const YELLOW_WARNING_THRESHOLD = 80;//percentage
     const BYTE_TO_MEGABYTE = 1048576;
     const WASTED_SPACE_WARNING_THRESHOLD = 200;//percentage
+    const IB_LOG_FILE_SIZE = 104857600; //2*50MB
+    const IB_TMP_FILE_SIZE = 12582912; //12MB
+    const MIN_NR_OF_SYS_TABLES = 82;
 
     /**
      * {@inheritDoc}
@@ -30,6 +33,8 @@ class DbSizeCommand extends CommandBase
             ->setDescription('Estimate the disk usage of a database')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).')
+            ->addOption('disk-distribution', 'D', InputOption::VALUE_NONE, 'Show all relations and their usage distribution (InnoDb only).')
+            
             ->setHelp(
                 "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."
             );
@@ -56,6 +61,7 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('No database selected.');
             return 1;
         }
+
         if (!isset($database['service'])) {
             $this->stdErr->writeln('Unable to find database service information.');
             return 1;
@@ -72,7 +78,7 @@ class DbSizeCommand extends CommandBase
         $this->debug('Calculating estimated usage...');
         $allocatedDisk = $service->disk * self::BYTE_TO_MEGABYTE;
         $estimatedUsage = $this->getEstimatedUsage($host, $database);
-        $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
+        $percentageUsed = round($estimatedUsage['__TOTAL__'] * 100 / $allocatedDisk);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -82,16 +88,39 @@ class DbSizeCommand extends CommandBase
         $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
         $values = [
             'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
-            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
+            'used' => $showInBytes ? $estimatedUsage['__TOTAL__'] : Helper::formatMemory($estimatedUsage['__TOTAL__']),
             'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
         ];
-
         $this->stdErr->writeln('');
         $table->render([$values], $columns);
-
+        
         $this->showWarnings($percentageUsed);
+                
 
-        $this->showInaccessibleSchemas($service, $database);
+        if($input->getOption('disk-distribution') && count($relationships->getRelationships($host)) > 1) {
+            $db_table   = $this->getService('table');
+            $db_columns = ['db' => 'Database', 'used' => 'Estimated usage', 'percent' => 'Percentage'];
+            $db_values  = [];
+            
+            foreach($estimatedUsage as $db=>$size) {
+                if($db=='__TOTAL__') { 
+                    $db_values[] = new \Symfony\Component\Console\Helper\TableSeparator();
+                }
+                $db_values[] = [
+                    'db' => $db==$database['path'] ? sprintf('<options=bold>%s</>',$db) : $db,
+                    'used' => $showInBytes ? $size : Helper::formatMemory($size),
+                    'percent' => $db=='__TOTAL__' ? '' : $this->formatPercentage(round($size * 100 / $estimatedUsage['__TOTAL__']), $machineReadable, false),
+                ];
+            }
+
+            if(count($db_values)) {
+                $db_table->render($db_values, $db_columns);
+            } else {
+                $this->showInaccessibleSchemas($service, $database);//we don't need to do this for InnoDB mysql. We can access the data we need.
+            }
+        }
+                
+        
 
         if ($database['scheme'] !== 'pgsql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
             $this->checkInnoDbTablesInNeedOfOptimizing($host, $database);
@@ -269,8 +298,10 @@ class DbSizeCommand extends CommandBase
     {
         $query = 'SELECT'
             . ' ('
-            . 'SUM(data_length+index_length+data_free)'
-            . ' + (COUNT(*) * 300 * 1024)'
+            . 'SUM('
+            . ($excludeInnoDb ? 'IF(ENGINE <> "InnoDB",data_length+index_length+data_free,0)' : 'data_length+index_length+data_free')
+            . ')'
+            . ' + ((COUNT(*)+'.self::MIN_NR_OF_SYS_TABLES.') * 450 * 1024) + ' . (self::IB_LOG_FILE_SIZE + self::IB_TMP_FILE_SIZE)
             . ')'
             . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables'
@@ -288,8 +319,19 @@ class DbSizeCommand extends CommandBase
      */
     private function mysqlInnodbQuery(array $database)
     {
-        $query = 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
-
+        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $service    = $deployment->getService($database['service']);
+        $databases  = array_keys($service->configuration['endpoints'][$database['rel']]['privileges']);
+        
+        //convert database names to OR statements that the sys_tablespaces can use.
+        $strDbs     = implode(' OR ', array_map(
+                                        function($database) {
+                                            $database = addslashes($database);
+                                            return "`NAME` LIKE \"$database/%\"";
+                                        },$databases)
+        );   
+        
+        $query      = 'SELECT LEFT(`NAME`, LOCATE("/",`NAME`)-1), SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces GROUP BY LEFT(`NAME`, LOCATE("/",`NAME`)-1);';
         return $this->getMysqlCommand($database, $query);
     }
 
@@ -326,7 +368,7 @@ class DbSizeCommand extends CommandBase
      * @param HostInterface $host
      * @param array         $database
      *
-     * @return int Estimated usage in bytes.
+     * @return array ['__TOTAL__'=>0,...]
      */
     private function getEstimatedUsage(HostInterface $host, array $database) {
         if ($database['scheme'] === 'pgsql') {
@@ -358,12 +400,17 @@ class DbSizeCommand extends CommandBase
      */
     private function getMySqlUsage(HostInterface $host, array $database) {
         $this->debug('Getting MySQL usage...');
-        $allocatedSizeSupported = $host->runCommand($this->mysqlInnodbAllocatedSizeExists($database));
-        $innoDbSize = 0;
-        if ($allocatedSizeSupported) {
+        $isAllocatedSizeSupported= $host->runCommand($this->mysqlInnodbAllocatedSizeExists($database));        
+        $otherSizes              = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $isAllocatedSizeSupported));
+        $innoDbSizes            =[];
+            
+        if ($isAllocatedSizeSupported) {
             $this->debug('Checking InnoDB separately for more accurate results...');
             try {
-                $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
+                foreach(explode(PHP_EOL,$host->runCommand($this->mysqlInnodbQuery($database))) as $row) {
+                    list($dbName, $dbSize) = explode("\t", $row);
+                    $innoDbSizes[$dbName] = $dbSize;
+                } 
             } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
                 // Some configurations do not have PROCESS privilege(s) and thus have no access to the sys_tablespaces
                 // table. Ignore MySQL's 1227 Access Denied error, and revert to the legacy calculation.
@@ -376,9 +423,10 @@ class DbSizeCommand extends CommandBase
             }
         }
 
-        $otherSizes = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
+        $otherSizes = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $isAllocatedSizeSupported));
 
-        return (int) $otherSizes + (int) $innoDbSize;
+        
+        return $innoDbSizes + ['__OTHER__'=>$otherSizes, '__TOTAL__'=>array_sum($innoDbSizes)+$otherSizes];
     }
 
     /**
@@ -389,12 +437,14 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function formatPercentage($percentage, $machineReadable) {
+    private function formatPercentage($percentage, $machineReadable, $blnUseColour=true) {
         if ($machineReadable) {
             return round($percentage);
         }
 
-        if ($percentage > self::RED_WARNING_THRESHOLD) {
+        if(!$blnUseColour) {
+            $format = '~ %d%%';
+        } elseif ($percentage > self::RED_WARNING_THRESHOLD) {
             $format = '<options=bold;fg=red>~ %d%%</>';
         } elseif ($percentage > self::YELLOW_WARNING_THRESHOLD) {
             $format = '<options=bold;fg=yellow>~ %d%%</>';
