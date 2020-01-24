@@ -88,7 +88,12 @@ class Url implements InputConfiguringInterface
 
         // Open the URL.
         if ($open && ($browser = $this->getBrowser($browserOption))) {
-            $success = $this->shell->executeSimple($browser . ' ' . escapeshellarg($url)) === 0;
+            if (OsUtil::isWindows() && $browser === 'start') {
+                $command = $browser . ' "" ' . escapeshellarg($url);
+            } else {
+                $command = $browser . ' ' . escapeshellarg($url);
+            }
+            $success = $this->shell->executeSimple($command) === 0;
         }
 
         // Print the URL.
@@ -145,11 +150,13 @@ class Url implements InputConfiguringInterface
      */
     private function getDefaultBrowser()
     {
-        $browsers = ['xdg-open', 'gnome-open', 'start'];
-        if (OsUtil::isOsX()) {
-            $browsers = ['open'];
+        if (OsUtil::isWindows()) {
+            return 'start';
         }
-
+        if (OsUtil::isOsX()) {
+            return 'open';
+        }
+        $browsers = ['xdg-open', 'gnome-open'];
         foreach ($browsers as $browser) {
             if ($this->shell->commandExists($browser)) {
                 return $browser;

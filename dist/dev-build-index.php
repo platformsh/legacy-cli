@@ -40,8 +40,8 @@ if ($config->has('application.github_repo')) {
 $baseUrl = 'https://' . $_SERVER['HTTP_HOST'];
 $installScript = sprintf(
     'curl -sfS %s | php -- --dev --manifest %s',
-    escapeshellarg($baseUrl . '/installer'),
-    escapeshellarg($baseUrl . '/manifest.json'),
+    $baseUrl . '/installer',
+    $baseUrl . '/manifest.json',
 );
 
 ?>

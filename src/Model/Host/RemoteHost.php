@@ -41,13 +41,6 @@ class RemoteHost implements HostInterface
      */
     public function runCommand($command, $mustRun = true, $quiet = true)
     {
-        if (is_array($command)) {
-            $args = array_merge(['ssh'], $this->extraSshArgs, $this->sshService->getSshArgs());
-            $args[] = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $command));
-
-            return $this->shell->execute($args, null, $mustRun, $quiet);
-        }
-
         return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet);
     }
 
@@ -61,7 +54,7 @@ class RemoteHost implements HostInterface
     private function wrapCommandLine($commandLine)
     {
         return $this->sshService->getSshCommand()
-            . ($this->extraSshArgs ? ' ' . implode(' ', array_map('escapeshellarg', $this->extraSshArgs)) : '')
+            . ($this->extraSshArgs ? ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $this->extraSshArgs)) : '')
             . ' ' . escapeshellarg($this->sshUrl)
             . ' ' . escapeshellarg($commandLine);
     }

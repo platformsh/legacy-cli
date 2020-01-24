@@ -47,6 +47,18 @@ class LocalApplication
     }
 
     /**
+     * Returns the type of the app.
+     *
+     * @return string|null
+     */
+    public function getType()
+    {
+        $config = $this->getConfig();
+
+        return isset($config['type']) ? $config['type'] : null;
+    }
+
+    /**
      * Returns whether this application is the only one in the project.
      *
      * @return bool

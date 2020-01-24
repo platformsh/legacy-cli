@@ -31,17 +31,17 @@ EOT
         $configDir = $this->config()->getUserConfigDir();
 
         $this->stdErr->write('Copying resource files...');
-        $rcFiles = [
+        $requiredFiles = [
             'shell-config.rc',
             'shell-config-bash.rc',
         ];
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         try {
-            foreach ($rcFiles as $rcFile) {
-                if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
-                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
+            foreach ($requiredFiles as $requiredFile) {
+                if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $requiredFile)) === false) {
+                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $requiredFile));
                 }
-                $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
+                $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
             }
         } catch (\Exception $e) {
             $this->stdErr->writeln('');
@@ -52,6 +52,16 @@ EOT
         }
         $this->stdErr->writeln(' <info>done</info>');
         $this->stdErr->writeln('');
+
+        if (OsUtil::isWindows()) {
+            $this->stdErr->write('Creating .bat executable...');
+            $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
+            $binTarget = $this->config()->get('application.executable');
+            $batDestination = $binDir . DIRECTORY_SEPARATOR . $this->config()->get('application.executable') . '.bat';
+            $fs->dumpFile($batDestination, $this->generateBatContents($binTarget));
+            $this->stdErr->writeln(' <info>done</info>');
+            $this->stdErr->writeln('');
+        }
 
         $shellType = $input->getOption('shell-type');
         if ($shellType === null && getenv('SHELL') !== false) {
@@ -79,7 +89,9 @@ EOT
             // autocompletion probably isn't needed at all, as we are in the
             // context of some kind of automated build. So ignore the error.
             if (!$this->isTerminal(STDOUT)) {
-                $this->stdErr->writeln(' <info>skipped</info>');
+                $this->stdErr->writeln(' <info>skipped</info> (not a terminal)');
+            } elseif ($shellType === null) {
+                $this->stdErr->writeln(' <info>skipped</info> (unsupported shell)');
             }
             // Otherwise, print the error and continue. The user probably
             // wants to know what went wrong, but autocompletion is still not
@@ -112,6 +124,39 @@ EOT
             $shellConfigFile = $this->findShellConfigFile($shellType);
         }
 
+        // Windows command prompt (non-Bash) behavior.
+        if ($shellConfigFile === false && OsUtil::isWindows()) {
+            $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
+            if ($this->inPath($binDir)) {
+                $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, false));
+
+                return 0;
+            }
+
+            // Attempt to add to the PATH automatically using "setx".
+            $path = getenv('Path', true);
+            $pathParts = $path !== false ? array_unique(array_filter(explode(';', $path))) : [];
+            if ($path !== false && !empty($pathParts)) {
+                $newPath = implode(';', $pathParts) . ';' . $binDir;
+                /** @var \Platformsh\Cli\Service\Shell $shell */
+                $shell = $this->getService('shell');
+                $setPathCommand = 'setx PATH ' . OsUtil::escapeShellArg($newPath);
+                if ($shell->execute($setPathCommand, null, false, true, [], 10) !== false) {
+                    $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, true));
+
+                    return 0;
+                }
+            }
+
+            $this->stdErr->writeln(sprintf(
+                'To set up the CLI, add this directory to your Path environment variable:'
+            ));
+            $this->stdErr->writeln(sprintf('<info>%s</info>', $binDir));
+            $this->stdErr->writeln('Then open a new terminal to continue.');
+
+            return 1;
+        }
+
         $currentShellConfig = '';
 
         if ($shellConfigFile !== false) {
@@ -127,7 +172,7 @@ EOT
         }
 
         $configDirRelative = $this->config()->getUserConfigDir(false);
-        $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
+        $rcDestination = $configDirRelative . DIRECTORY_SEPARATOR . 'shell-config.rc';
         $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config()->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',
@@ -246,15 +291,20 @@ EOT
     /**
      * @param string $shellConfigFile
      * @param string $binDir
+     * @param bool|null $inPath
+     * @param bool $newTerminal
      *
      * @return string[]
      */
-    private function getRunAdvice($shellConfigFile, $binDir)
+    private function getRunAdvice($shellConfigFile, $binDir, $inPath = null, $newTerminal = false)
     {
         $advice = [
-            sprintf('To use the %s, run:', $this->config()->get('application.name'))
+            sprintf('To use the %s,%s run:', $this->config()->get('application.name'), $newTerminal ? ' open a new terminal, and' : '')
         ];
-        if (!$this->inPath($binDir)) {
+        if ($inPath === null) {
+            $inPath = $this->inPath($binDir);
+        }
+        if (!$inPath) {
             $sourceAdvice = sprintf('    <info>source %s</info>', $this->formatSourceArg($shellConfigFile));
             $sourceAdvice .= ' # (make sure your shell does this by default)';
             $advice[] = $sourceAdvice;
@@ -267,6 +317,8 @@ EOT
     /**
      * Check if a directory is in the PATH.
      *
+     * @param string $dir
+     *
      * @return bool
      */
     private function inPath($dir)
@@ -277,7 +329,7 @@ EOT
             return false;
         }
 
-        return in_array($realpath, explode(':', $PATH));
+        return in_array($realpath, explode(OsUtil::isWindows() ? ';' : ':', $PATH));
     }
 
     /**
@@ -410,5 +462,20 @@ EOT
         $wrapped = wordwrap($str, $width - $indent, PHP_EOL);
 
         return $spaces . preg_replace('/\r\n|\r|\n/', '$0' . $spaces, $wrapped);
+    }
+
+    /**
+     * Generates a .bat file for Windows compatibility.
+     *
+     * @param string $binTarget
+     *
+     * @return string
+     */
+    private function generateBatContents($binTarget)
+    {
+        return "@ECHO OFF\r\n".
+            "setlocal DISABLEDELAYEDEXPANSION\r\n".
+            "SET BIN_TARGET=%~dp0/" . trim(OsUtil::escapeShellArg($binTarget), '"\'') . "\r\n".
+            "php \"%BIN_TARGET%\" %*\r\n";
     }
 }

@@ -20,9 +20,9 @@ interface HostInterface
     public function getCacheKey();
 
     /**
-     * @param string|array $command
-     * @param bool         $mustRun
-     * @param bool         $quiet
+     * @param string $command
+     * @param bool   $mustRun
+     * @param bool   $quiet
      *
      * @return string|true
      *   The command's output, or true if it succeeds with no output, or false

@@ -138,7 +138,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
             'CLI_OAUTH_FILE' => $codeFile,
-        ]);
+        ] + $this->getParentEnv());
         $process->setTimeout(null);
         $this->stdErr->writeln('Starting local web server with command: <info>' . $process->getCommandLine() . '</info>', OutputInterface::VERBOSITY_VERY_VERBOSE);
         $process->start();
@@ -232,6 +232,23 @@ class BrowserLoginCommand extends CommandBase
         ));
 
         return 0;
+    }
+
+    /**
+     * Attempts to find parent environment variables for the local server.
+     *
+     * @return array
+     */
+    private function getParentEnv()
+    {
+        if (PHP_VERSION_ID >= 70100) {
+            return getenv();
+        }
+        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
+            return $_ENV;
+        }
+
+        return [];
     }
 
     /**
