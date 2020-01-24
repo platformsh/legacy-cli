@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "8de789f62a8870893a794d3aa2c1ee8ec126a2d8",
-        "sha256": "0e368c04582107efc02caa56fdaf7df918f51855ec78ba4b05cb433d4b0d5cd1",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.51.3/platform.phar",
-        "version": "3.51.3",
+        "sha1": "f230b9726c3b301da91af812bf96f495884d2f69",
+        "sha256": "b6bd5acd975466edcdd85a982b450143286914c8e02b78731b67d9b9a834eda1",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.52.0/platform.phar",
+        "version": "3.52.0",
         "php": {
             "min": "5.5.9"
         },
@@ -243,6 +243,11 @@
                 "notes": "New features:\n\n* Add PLATFORMSH_CLI_NO_INTERACTION environment variable, which can be used to\n  disable interactivity everywhere (warning: important confirmation questions\n  would be bypassed).\n* Add health.webhook integration type.\n\nOther changes:\n\n* Fix: avoid listing duplicate activities and avoid an infinite loop in\n  activity:list (activities) command.\n* Remove handling of activity \"log\" property.\n* Fix init command example GitHub URL.\n* Update the project git URL when adding/deleting an integration.",
                 "show from": "3.50.0",
                 "hide from": "3.51.0"
+            },
+            {
+                "notes": "New features:\n\n* Add an `environment:xdebug` (`xdebug`) command, which opens an SSH tunnel to\n  help debug PHP applications. The application must be configured with an\n  xdebug trigger key (help is available by running the command).\n\nImprovements to Windows installation\n\n* Generate a `platform.bat` file during installation (the `self:install`\n  command) so `platform` can be found in the Path.\n* Use \\ as the directory separator in user-facing installation paths.\n* Fix browser login: two bugs that prevented starting the local server, and\n  preventing opening the URL in the browser.\n* Improve installation help messages for setting up the Path environment\n  variable when using the Command Prompt.",
+                "show from": "3.51.0",
+                "hide from": "3.52.0"
             }
         ]
     }
