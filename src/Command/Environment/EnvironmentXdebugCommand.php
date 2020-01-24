@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,13 +21,47 @@ class EnvironmentXdebugCommand extends CommandBase
         $this
             ->setName('environment:xdebug')
             ->setAliases(['xdebug'])
-            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port for Xdebug to connect to.', 9000)
-            ->setDescription('Reverse tunnel Xdebug to the current host');
+            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000)
+            ->setDescription('Open a tunnel to Xdebug on the environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
-        $this->addExample('Connect the environment to Xdebug listening locally on port 9000.');
+        $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
+    }
+
+    public function isHidden()
+    {
+        // Hide this command in the list if the project is not PHP.
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot) {
+            return !$this->isPhp($projectRoot);
+        }
+
+        return parent::isHidden();
+    }
+
+    /**
+     * Checks if a project contains a PHP app.
+     *
+     * @param string $directory
+     *
+     * @return bool
+     */
+    private function isPhp($directory) {
+        static $isPhp;
+        if (!isset($isPhp)) {
+            $isPhp = false;
+            foreach (LocalApplication::getApplications($directory, $this->config()) as $app) {
+                $type = $app->getType();
+                if ($type === 'php' || strpos($type, 'php:') === 0) {
+                    $isPhp = true;
+                    break;
+                }
+            }
+        }
+
+        return $isPhp;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -60,7 +95,7 @@ class EnvironmentXdebugCommand extends CommandBase
         /** @var Ssh $ssh */
         $ssh = $this->getService('ssh');
 
-        // The socket is removed to prevent 'file already exists' errors
+        // The socket is removed to prevent 'file already exists' errors.
         $commandCleanup = $ssh->getSshCommand();
         $commandCleanup .= ' ' . escapeshellarg($sshUrl) . ' rm -f ' . escapeshellarg(self::SOCKET_PATH);
         $this->debug("Cleanup command: " . $commandCleanup);
