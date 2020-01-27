@@ -20,9 +20,12 @@ interface HostInterface
     public function getCacheKey();
 
     /**
+     * Runs a command on the host.
+     *
      * @param string $command
-     * @param bool   $mustRun
-     * @param bool   $quiet
+     * @param bool $mustRun
+     * @param bool $quiet
+     * @param string|null $input
      *
      * @return string|true
      *   The command's output, or true if it succeeds with no output, or false
@@ -31,7 +34,7 @@ interface HostInterface
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
      */
-    public function runCommand($command, $mustRun = true, $quiet = true);
+    public function runCommand($command, $mustRun = true, $quiet = true, $input = null);
 
     /**
      * Runs a command using the current STDIN, STDOUT and STDERR.
