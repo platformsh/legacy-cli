@@ -394,6 +394,7 @@
                 }
             ],
             "description": "Provides a simple API and specification that abstracts away the details of HTTP into a single PHP function.",
+            "abandoned": true,
             "time": "2018-07-31T13:22:33+00:00"
         },
         {
@@ -444,6 +445,7 @@
                 "Guzzle",
                 "stream"
             ],
+            "abandoned": true,
             "time": "2014-10-12T19:18:40+00:00"
         },
         {
@@ -663,16 +665,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "v0.31.0",
+            "version": "v0.31.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "880f5464894baff81d16ace340443601844a208c"
+                "reference": "073a925c8524169675495234d68b72d77f411a12"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/880f5464894baff81d16ace340443601844a208c",
-                "reference": "880f5464894baff81d16ace340443601844a208c",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/073a925c8524169675495234d68b72d77f411a12",
+                "reference": "073a925c8524169675495234d68b72d77f411a12",
                 "shasum": ""
             },
             "require": {
@@ -702,7 +704,7 @@
                 }
             ],
             "description": "Platform.sh API client",
-            "time": "2019-12-16T09:37:35+00:00"
+            "time": "2020-01-29T10:13:08+00:00"
         },
         {
             "name": "platformsh/console-form",
