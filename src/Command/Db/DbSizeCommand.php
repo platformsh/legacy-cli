@@ -131,7 +131,7 @@ class DbSizeCommand extends CommandBase
      * @return void
      */
     private function checkInnoDbTablesInNeedOfOptimizing($host, array $database) {
-        $tablesNeedingCleanup = $host->runCommand($this->mysqlTablesInNeedOfOptimizing($database));
+        $tablesNeedingCleanup = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlTablesInNeedOfOptimizing());
         $queries = [];
         if (is_string($tablesNeedingCleanup)) {
             $queries = $this->getCleanupQueries(explode("\n", $tablesNeedingCleanup));
@@ -156,9 +156,10 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln('');
 
         if ($this->getService('question_helper')->confirm('Do you want to run these queries now?', false)) {
+            $mysqlCommand = $this->getMysqlCommand($database);
             foreach ($queries as $query) {
                 $this->stdErr->write($query);
-                $host->runCommand($this->getMysqlCommand($database, $query));
+                $host->runCommand($mysqlCommand, true, true, $query);
                 $this->stdErr->writeln('<options=bold;fg=green> [OK]</>');
             }
         }
@@ -211,113 +212,103 @@ class DbSizeCommand extends CommandBase
     }
 
     /**
-     * Returns a command to query disk usage for a PostgreSQL database.
-     *
-     * @param array $database The database connection details.
+     * Returns a query to find disk usage for a PostgreSQL database.
      *
      * @return string
      */
-    private function psqlQuery(array $database)
+    private function psqlQuery()
     {
         //both these queries are wrong...
         //$query = 'SELECT SUM(pg_database_size(t1.datname)) as size FROM pg_database t1'; //does miss lots of data
         //$query = 'SELECT SUM(pg_total_relation_size(pg_class.oid)) AS size FROM pg_class LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)';
 
         //but running both, and taking the average, gets us closer to the correct value
-        $query = 'SELECT AVG(size) FROM (SELECT SUM(pg_database_size(t1.datname)) as size FROM pg_database t1 UNION SELECT SUM(pg_total_relation_size(pg_class.oid)) AS size FROM pg_class LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)) x;';//too much
+        return 'SELECT AVG(size) FROM (SELECT SUM(pg_database_size(t1.datname)) as size FROM pg_database t1 UNION SELECT SUM(pg_total_relation_size(pg_class.oid)) AS size FROM pg_class LEFT OUTER JOIN pg_namespace ON (pg_namespace.oid = pg_class.relnamespace)) x;';
+    }
 
+    /**
+     * Returns the psql CLI client command.
+     *
+     * @param array $database
+     *
+     * @return string
+     */
+    private function getPsqlCommand(array $database) {
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
         $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
 
         return sprintf(
-            'psql --echo-hidden -t --no-align %s -c %s',
-            $dbUrl,
-            OsUtil::escapePosixShellArg($query)
+            'psql --echo-hidden -t --no-align %s',
+            $dbUrl
         );
     }
 
     /**
-     * Returns the mysql CLI client command for an SQL query.
+     * Returns the mysql CLI client command.
      *
      * @param array  $database
-     * @param string $query
      *
      * @return string
      */
-    private function getMysqlCommand(array $database, $query) {
+    private function getMysqlCommand(array $database) {
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
         $connectionParams = $relationships->getDbCommandArgs('mysql', $database, '');
 
         return sprintf(
-            'mysql %s --no-auto-rehash --raw --skip-column-names --execute %s',
-            $connectionParams,
-            OsUtil::escapePosixShellArg($query)
+            'mysql %s --no-auto-rehash --raw --skip-column-names',
+            $connectionParams
         );
     }
 
     /**
      * Returns a command to query table size of non-InnoDB using tables for a MySQL database in MB
      *
-     * @param array $database The database connection details.
      * @param bool  $excludeInnoDb
      *
      * @return string
      */
-    private function mysqlNonInnodbQuery(array $database, $excludeInnoDb = true)
+    private function mysqlNonInnodbQuery($excludeInnoDb = true)
     {
-        $query = 'SELECT'
+        return 'SELECT'
             . ' ('
             . 'SUM(data_length+index_length+data_free)'
             . ' + (COUNT(*) * 300 * 1024)'
             . ')'
             . ' AS estimated_actual_disk_usage'
             . ' FROM information_schema.tables'
-            . ($excludeInnoDb ? ' WHERE ENGINE <> "InnoDB"' : '');
-
-        return $this->getMysqlCommand($database, $query);
+            . ($excludeInnoDb ? ' WHERE ENGINE <> "InnoDB"' : '')
+            . ';';
     }
 
     /**
      * Returns a MySQL query to find disk usage for all InnoDB tables.
      *
-     * @param array $database The database connection details.
-     *
      * @return string
      */
-    private function mysqlInnodbQuery(array $database)
+    private function mysqlInnodbQuery()
     {
-        $query = 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
-
-        return $this->getMysqlCommand($database, $query);
+        return 'SELECT SUM(ALLOCATED_SIZE) FROM information_schema.innodb_sys_tablespaces;';
     }
 
     /**
      * Returns a MySQL query to find if the InnoDB ALLOCATED_SIZE column exists.
      *
-     * @param array $database
-     *
      * @return string
      */
-    private function mysqlInnodbAllocatedSizeExists(array $database) {
-        $query = 'SELECT count(COLUMN_NAME) FROM information_schema.COLUMNS WHERE table_schema ="information_schema" AND table_name="innodb_sys_tablespaces" AND column_name LIKE "ALLOCATED_SIZE";';
-
-        return $this->getMysqlCommand($database, $query);
+    private function mysqlInnodbAllocatedSizeExists() {
+        return 'SELECT count(COLUMN_NAME) FROM information_schema.COLUMNS WHERE table_schema ="information_schema" AND table_name="innodb_sys_tablespaces" AND column_name LIKE "ALLOCATED_SIZE";';
     }
 
     /**
      * Returns a MySQL query to find InnoDB tables needing optimization.
      *
-     * @param array $database The database connection details.
-     *
      * @return string
      */
-    private function mysqlTablesInNeedOfOptimizing(array $database) {
+    private function mysqlTablesInNeedOfOptimizing() {
         /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/
-        $query = 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
-
-        return $this->getMysqlCommand($database, $query);
+        return 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
     }
 
     /**
@@ -345,7 +336,7 @@ class DbSizeCommand extends CommandBase
      * @return int Estimated usage in bytes
      */
     private function getPgSqlUsage(HostInterface $host, array $database) {
-        return (int) $host->runCommand($this->psqlQuery($database));
+        return (int) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
     }
 
     /**
@@ -358,12 +349,12 @@ class DbSizeCommand extends CommandBase
      */
     private function getMySqlUsage(HostInterface $host, array $database) {
         $this->debug('Getting MySQL usage...');
-        $allocatedSizeSupported = $host->runCommand($this->mysqlInnodbAllocatedSizeExists($database));
+        $allocatedSizeSupported = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbAllocatedSizeExists());
         $innoDbSize = 0;
         if ($allocatedSizeSupported) {
             $this->debug('Checking InnoDB separately for more accurate results...');
             try {
-                $innoDbSize = $host->runCommand($this->mysqlInnodbQuery($database));
+                $innoDbSize = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbQuery());
             } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
                 // Some configurations do not have PROCESS privilege(s) and thus have no access to the sys_tablespaces
                 // table. Ignore MySQL's 1227 Access Denied error, and revert to the legacy calculation.
@@ -376,7 +367,7 @@ class DbSizeCommand extends CommandBase
             }
         }
 
-        $otherSizes = $host->runCommand($this->mysqlNonInnodbQuery($database, (bool) $allocatedSizeSupported));
+        $otherSizes = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlNonInnodbQuery((bool) $allocatedSizeSupported));
 
         return (int) $otherSizes + (int) $innoDbSize;
     }

@@ -39,9 +39,9 @@ class RemoteHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function runCommand($command, $mustRun = true, $quiet = true)
+    public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
     {
-        return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet);
+        return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, [], 3600, $input);
     }
 
     /**
