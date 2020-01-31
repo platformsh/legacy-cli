@@ -21,7 +21,8 @@ class SessionStorage implements SessionStorageInterface
      * @param string $serverUrlPrefix
      *   A unique "server URL" that identifies this application. Note, it does
      *   not actually have to be a URL at this time, and a human-readable value
-     *   is more helpful to the user.
+     *   is more helpful to the user. In Windows this will be described as the
+     *   "Internet or network address".
      */
     public function __construct(Manager $manager, $serverUrlPrefix)
     {
@@ -35,7 +36,7 @@ class SessionStorage implements SessionStorageInterface
      * @return string
      */
     private function serverUrl(SessionInterface $session) {
-        return $this->serverUrlBase . ' / ' . $session->getId();
+        return $this->serverUrlBase . '/' . $session->getId();
     }
 
     /**

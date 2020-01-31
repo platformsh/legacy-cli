@@ -1,6 +1,7 @@
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
+  slug: 'platformsh-cli'
 
   # The version number is displayed in 'platform --version' and other places.
   #
