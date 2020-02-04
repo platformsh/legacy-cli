@@ -74,13 +74,20 @@ class Listener
 
         // Show the final result page.
         if (array_key_exists('done', $_GET)) {
-            $this->response->content = '<p><strong>Successfully logged in.</strong></p>'
+            $this->response->content = '<h1>Successfully logged in</h1>'
                 . '<p>You can return to the command line.</p>';
 
             return;
         }
 
-        // Redirect to login.
+        // Respond after an OAuth2 error.
+        if (isset($_GET['error'])) {
+            $message = isset($_GET['error_description']) ? $_GET['error_description'] : null;
+            $this->reportError($message, $_GET['error']);
+            return;
+        }
+
+        // In any other case: redirect to login.
         $url = $this->getOAuthUrl();
         $this->setRedirect($url);
         $this->response->content = '<p><a href="' . htmlspecialchars($url) .'">Log in</a>.</p>';
@@ -106,13 +113,20 @@ class Listener
     }
 
     /**
-     * @param string $message
+     * @param string      $message The error message.
+     * @param string|null $error   An OAuth2 error type.
      */
-    private function reportError($message)
+    private function reportError($message = null, $error = null)
     {
         $this->response->headers['Status'] = 401;
-        $this->response->content = '<p>An error occurred while trying to log in. Please try again.</p>'
-            . '<p>Error message: <code>' . htmlspecialchars($message) . '</code></p>';
+        $this->response->content = '<h1 class="error">Error</h1>';
+        if (isset($error)) {
+            $this->response->content .= '<p class="error"><code>' . htmlspecialchars($error) . '</code></p>';
+        }
+        if (isset($message)) {
+            $this->response->content .= '<p class="error">' . htmlspecialchars($message) . '</p>';
+        }
+        $this->response->content .= '<p class="error-try-again"><a href="' . htmlspecialchars($this->localUrl) . '">Try again</a></p>';
     }
 }
 
@@ -169,6 +183,16 @@ foreach ($response->headers as $name => $value) {
         img {
             display: block;
             margin: 10px auto;
+        }
+
+        .error {
+            color: darkred;
+        }
+        .error-hint {
+            font-style: oblique;
+        }
+        .error-try-again {
+            font-size: larger;
         }
     </style>
 </head>
