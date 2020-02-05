@@ -62,8 +62,8 @@ class Listener
                 $this->reportError('Invalid returned code_challenge parameter');
                 return;
             }
-            if (!file_put_contents($this->file, $_GET['code'], LOCK_EX)) {
-                $this->reportError('Failed to write authorization code to file');
+            if (!$this->sendToTerminal(['code' => $_GET['code']])) {
+                $this->reportError('Failed to send authorization code back to terminal');
                 return;
             }
             $this->setRedirect($this->localUrl . '/?done');
@@ -75,7 +75,7 @@ class Listener
         // Show the final result page.
         if (array_key_exists('done', $_GET)) {
             $this->response->content = '<h1>Successfully logged in</h1>'
-                . '<p>You can return to the command line.</p>';
+                . '<p>You can return to the command line</p>';
 
             return;
         }
@@ -113,6 +113,16 @@ class Listener
     }
 
     /**
+     * @param array $response
+     *
+     * @return bool
+     */
+    private function sendToTerminal(array $response)
+    {
+        return (bool) file_put_contents($this->file, json_encode($response), LOCK_EX);
+    }
+
+    /**
      * @param string      $message The error message.
      * @param string|null $error   An OAuth2 error type.
      */
@@ -126,7 +136,13 @@ class Listener
         if (isset($message)) {
             $this->response->content .= '<p class="error">' . htmlspecialchars($message) . '</p>';
         }
-        $this->response->content .= '<p class="error-try-again"><a href="' . htmlspecialchars($this->localUrl) . '">Try again</a></p>';
+        if ($message || $error) {
+            $response = ['error' => $error, 'error_description' => $message];
+            if (!$this->sendToTerminal($response)) {
+                $this->response->content .= '<p class="error">Additionally: failed to send error message back to terminal</p>';
+            }
+        }
+        $this->response->content .= '<p>Please try again</p>';
     }
 }
 
@@ -190,9 +206,6 @@ foreach ($response->headers as $name => $value) {
         }
         .error-hint {
             font-style: oblique;
-        }
-        .error-try-again {
-            font-size: larger;
         }
     </style>
 </head>

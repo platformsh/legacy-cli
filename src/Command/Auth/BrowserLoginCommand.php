@@ -113,13 +113,13 @@ class BrowserLoginCommand extends CommandBase
         $listenerDir = $this->config()->getWritableUserDir() . '/oauth-listener';
         $this->createDocumentRoot($listenerDir);
 
-        // Create the file where an authorization code will be saved (by the
-        // local server script).
-        $codeFile = $listenerDir . '/.code';
-        if (file_put_contents($codeFile, '', LOCK_EX) === false) {
-            throw new \RuntimeException('Failed to create temporary file: ' . $codeFile);
+        // Create the file where a response will be saved (by the local server
+        // script).
+        $responseFile = $listenerDir . '/.response';
+        if (file_put_contents($responseFile, '', LOCK_EX) === false) {
+            throw new \RuntimeException('Failed to create temporary file: ' . $responseFile);
         }
-        chmod($codeFile, 0600);
+        chmod($responseFile, 0600);
 
         // Start the local server.
         $process = new Process([
@@ -137,7 +137,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
-            'CLI_OAUTH_FILE' => $codeFile,
+            'CLI_OAUTH_FILE' => $responseFile,
         ] + $this->getParentEnv());
         $process->setTimeout(null);
         $this->stdErr->writeln('Starting local web server with command: <info>' . $process->getCommandLine() . '</info>', OutputInterface::VERBOSITY_VERY_VERBOSE);
@@ -176,31 +176,51 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.
-        $code = null;
-        while ($process->isRunning() && empty($code)) {
+        /** @var array|null $response */
+        $response = null;
+        while ($process->isRunning()) {
             usleep(300000);
-            if (!file_exists($codeFile)) {
-                $this->stdErr->writeln('File not found: <error>' . $codeFile . '</error>');
+            if (!file_exists($responseFile)) {
+                $this->stdErr->writeln('File not found: <error>' . $responseFile . '</error>');
                 $this->stdErr->writeln('');
                 break;
             }
-            $code = file_get_contents($codeFile);
-            if ($code === false) {
-                $this->stdErr->writeln('Failed to read file: <error>' . $codeFile . '</error>');
+            $responseRaw = file_get_contents($responseFile);
+            if ($responseRaw === false) {
+                $this->stdErr->writeln('Failed to read file: <error>' . $responseFile . '</error>');
                 $this->stdErr->writeln('');
+                break;
+            }
+            if ($responseRaw !== '') {
+                $response = json_decode($responseRaw, true);
                 break;
             }
         }
+
+        // Allow a little time for the final page to be displayed in the
+        // browser.
+        usleep(100000);
 
         // Clean up.
         $process->stop();
         (new Filesystem())->remove([$listenerDir]);
 
-        if (empty($code)) {
-            $this->stdErr->writeln('Failed to get an authorization code. Please try again.');
+        if (empty($response) || empty($response['code'])) {
+            $this->stdErr->writeln('Failed to get an authorization code.');
+            $this->stdErr->writeln('');
+            if (!empty($response['error']) && !empty($response['error_description'])) {
+                $this->stdErr->writeln(sprintf('%s (<error>%s</error>)', $response['error_description'], $response['error']));
+                $this->stdErr->writeln('');
+            } elseif (!empty($response['error_description'])) {
+                $this->stdErr->writeln($response['error_description']);
+                $this->stdErr->writeln('');
+            }
+            $this->stdErr->writeln('Please try again.');
 
             return 1;
         }
+
+        $code = $response['code'];
 
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
