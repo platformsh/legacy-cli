@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Yaml\Exception\ParseException;
 
 class EnvironmentXdebugCommand extends CommandBase
 {
@@ -35,7 +36,11 @@ class EnvironmentXdebugCommand extends CommandBase
         // Hide this command in the list if the project is not PHP.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
-            return !$this->isPhp($projectRoot);
+            try {
+                return !$this->isPhp($projectRoot);
+            } catch (ParseException $e) {
+                // Ignore configuration parsing errors.
+            }
         }
 
         return parent::isHidden();
