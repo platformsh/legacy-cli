@@ -123,9 +123,9 @@ EOF
 
                 if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
                     $this->stdErr->writeln(sprintf(
-                        'A tunnel is already open on port %s for the relationship: <info>%s</info>',
-                        $openTunnelInfo['localPort'],
-                        $relationshipString
+                        'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
+                        $relationshipString,
+                        $this->getTunnelUrl($openTunnelInfo, $service)
                     ));
                     continue;
                 }
@@ -165,15 +165,17 @@ EOF
                 $this->saveTunnelInfo();
 
                 $this->stdErr->writeln(sprintf(
-                    'SSH tunnel opened on port <info>%s</info> to relationship: <info>%s</info>',
-                    $tunnel['localPort'],
-                    $relationshipString
+                    'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
+                    $relationshipString,
+                    $this->getTunnelUrl($tunnel, $service)
                 ));
+
                 $processIds[] = $pid;
             }
         }
 
         if (count($processIds)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln("Logs are written to: $logFile");
         }
 

@@ -53,7 +53,7 @@ class EnvironmentRelationshipsTest extends \PHPUnit_Framework_TestCase
 
     public function testGetRelationshipUrl() {
         $this->assertEquals(
-            'mysql://main:123@database.internal:3306/main?is_master=1',
+            'mysql://main:123@database.internal:3306/main',
             rtrim($this->runCommand([
                 '--property' => 'database.0.url',
             ]), "\n")

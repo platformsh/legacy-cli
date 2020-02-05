@@ -288,6 +288,7 @@ class Relationships implements InputConfiguringInterface
         unset($parts['username'], $parts['password']);
         // The 'query' is expected to be a string.
         if (is_array($parts['query'])) {
+            unset($parts['query']['is_master']);
             $parts['query'] = (new Query($parts['query']))->__toString();
         }
 
