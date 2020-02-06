@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "6c9e65d81e6b987db69e37f2d6fc11efffa9a98f",
-        "sha256": "4ad04e3f30ae8953e2630ea832b7b26476503110ffa1cc0e90f1269f26e78e47",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.43.1/platform.phar",
-        "version": "3.43.1",
+        "sha1": "c7b03ff56dbd10b70a137baa86af7900ccfe5a22",
+        "sha256": "4d74907c3c2a988aa71754a80bde358a890032568b820b8e5d544ced617884f3",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.52.1/platform.phar",
+        "version": "3.52.1",
         "php": {
             "min": "5.5.9"
         },
@@ -203,6 +203,51 @@
                 "notes": "* Allow some commands to read from local environment variables when available:\n    * `route:list` (routes) and `route:get` can read from PLATFORM_ROUTES\n    * `relationship:list` (relationships) can read from PLATFORM_RELATIONSHIPS\n    * New `decode` command, to decode a base64- and JSON-encoded string such as\n      PLATFORM_VARIABLES, PLATFORM_APPLICATION, etc.\n* Add --id and --primary options to route:get command, to select a route.\n* Add `url` property to all relationships in `relationships` command (e.g. to\n  extract a DSN for a database).\n* Multiple changes to the `db:size` command (by @matthiaz):\n    * Improve accuracy of size estimates by altering psql commands and querying\n      for InnoDB-specific information.\n    * Add --bytes (-B) option to display sizes in bytes.\n    * Check if InnoDB tables can be optimized, and run optimizations\n      automatically with the `--cleanup` option.",
                 "show from": "3.42.0",
                 "hide from": "3.43.0"
+            },
+            {
+                "notes": "New features:\n\n* Allow the `app:config` command to read from PLATFORM_APPLICATION in the\n  local environment.\n* Improvements to the `environment:url` (`url`) command:\n    * Read URLs from PLATFORM_ROUTES in the local environment.\n    * Always prefer the primary route URL when sorting URLs.\n    * Add a --primary option, to print or open only the primary route URL.\n    * Just print URLs (without interaction) when there is no display/browser\n      available.\n\nOther changes:\n\n* Prefer the primary route as the site URL (for Drush aliases, etc.).\n* Use embedded user account information if available in the access API (small\n  performance improvement).\n* Fix \"Failed to decode\" in the `relationships` command when there are no\n  relationships.\n* Adapt `welcome` command for offline-on-container uses. If you install the CLI\n  into your own Platform.sh project, running `platform` on its own now gives\n  you a list of useful commands that work \"offline\" without needing to\n  configure an API token.\n* Do not require login for the `self:stats` command.\n* Improve app/worker choice message.\n* Clearer error for no config (`.platform.app.yaml`) file.\n* Match user email addresses case-insensitively. This fixes all user commands\n  that need an email address (user:add, user:get, user:update and user:delete).",
+                "show from": "3.43.0",
+                "hide from": "3.44.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --all (-a) option to mount:download command. This lets you download files\n  from all of an application's mounts.\n* Enable gzip encoding in all API requests, if the zlib PHP extension is\n  available. This should result in a performance improvement, particularly for\n  slow connections or API responses containing a lot of data (e.g. the\n  activity:list or environment:list commands).\n\nOther changes:\n\n* In mount:upload, convert OS X filename characters using rsync's `--iconv`.\n* Small bug fix for commit and repo commands: do not fetch an empty commit\n  hash (after stripping commit parents notation).\n* Installer: fix check for git on Windows.",
+                "show from": "3.44.0",
+                "hide from": "3.45.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --charset option to the db:dump command.\n  Specifying the character set is recommended for any database dump.\n  If your application database is in MySQL's utf8mb4, for example, use:\n      platform db:dump --charset utf8mb4\n* Add --branch option to the 'push' command.\n  This allows a new environment to be created as an active branch from a\n  specified parent - thus inheriting settings from that parent - rather than\n  setting the parent later.\n* Add bitbucket_server integration support.\n\nOther changes:\n\n* Installer:\n  - Add --shell-type option to specify 'bash' or 'zsh' to the installer, for\n    example:\n        curl -sfS https://platform.sh/cli/installer | php -- --shell-type bash\n  - Add --manifest option to use a test or development manifest file.\n  - Require the curl, openssl and pcre PHP extensions (and stop requiring\n    mbstring).\n  - The --dev option will now allow any version string.\n* Rename \"Capacity\" to \"% Used\" in mount:size command.\n  Also makes column machine names consistent with the db:size command.",
+                "show from": "3.45.0",
+                "hide from": "3.46.0"
+            },
+            {
+                "notes": "* Allow service commands to work 'locally' on the container\n  \n    It's now possible to use the following commands on the Platform.sh container\n    without needing to have an API token or log in to the API:\n\n    * db:dump\n    * db:sql (sql)\n    * service:redis-cli (redis)\n    * service:mongo:dump (mongodump)\n    * service:mongo:export (mongoexport)\n    * service:mongo:restore (mongorestore)\n    * service:mongo:shell (mongo)\n  \n    N.B.: When running locally the db:dump and db:sql commands have less schema\n    information, so you may need to specify the --schema option.\n    \n    Commands that could already run on the container are:\n\n    * help, list\n    * app:config\n    * decode\n    * environment:url (url)\n    * relationship:list (relationships)\n    * route:get\n    * route:list (routes)\n\n* Alias --primary to -1 in route:get and environment:url (url) commands.\n  \n* Use primary route URL from deployments API in Drush aliases, when possible.\n  \n* Allow multiple command arguments in drush and ssh commands.",
+                "show from": "3.46.0",
+                "hide from": "3.47.0"
+            },
+            {
+                "notes": "* Rename 'snapshot' commands to 'backup', to match the API and Management Console.\n* Implement streaming activity logs.\n  - Add --timestamps (-t) option to the activity:log command.\n  - Report the real start time in the activity progress bar.\n* Significantly reduce default cache lifetimes (due to API performance improvements).",
+                "show from": "3.47.0",
+                "hide from": "3.48.0"
+            },
+            {
+                "notes": "New features:\n\n* Allow the mount:list and mount:size commands to run locally on the container.\n\nOther changes:\n\n* Allow the SHA hash to wrap in the commit:list (commits) table.\n* Improve help for old, deprecated variable commands.\n* Refine description of --yes and --no options.\n* Deprecate 3 unused options in the commit:get command.\n* Fix --schema help in the db:sql command.\n* Make activity success/failure messages consistent.\n* Fix URL formatting in tunnel:single command output.\n* Fix property not found error in decode command with an empty object.\n* Display simple table (no messages) in integration:list if the --format is tsv or csv.\n* Changes to the environment:push (push) command:\n  - Improve deprecation message for the --branch option.\n  - Fix swapped question text for new/existing environments.\n  - Wait for remaining activities.\n* Changes relating to waiting for multiple activities:\n  - Fix activities being lost when reporting status after waiting.\n  - Switch to the activity log stream for failed activities after waiting.\n  - Increase timeout for initially fetching the log stream.",
+                "show from": "3.48.0",
+                "hide from": "3.49.0"
+            },
+            {
+                "notes": "New features:\n\n* Add an environment:scp (scp) command to transfer individual files.\n* Provide project choice in 'project:set-remote' command.\n* Add api:curl command to use the API directly.\n* Suggest to set the project as the remote, when 'get' command is used in an\n  existing repository.\n* Add --set-remote and --no-set-remote options to project:create (create)\n  command, which set the new project as the remote if called from an existing\n  repository.\n* Provide interactive choice in variable:get (vget) command.\n* Add 'Enabled' (is_enabled) column in variable:list (var) command.\n* Add 'Machine name' (machine_name) column (not default) in environment:list\n  (env) command.\n\nBug fixes:\n\n* Revert change that made Drush alias paths relative: they are now absolute\n  again, as the relative paths did not work with the Drush sql-sync or rsync\n  commands (#873).\n* Update API client to standardize project git URLs.\n* Do not require Git to find a git root.\n* Fix 'get' command detecting a project conflict in a separate directory.\n* Do not URL-encode the repository in Bitbucket API requests.\n* Add Docker setup for local development.\n* Refresh environments in the welcome command ('platform' on its own).",
+                "show from": "3.49.0",
+                "hide from": "3.50.0"
+            },
+            {
+                "notes": "New features:\n\n* Add PLATFORMSH_CLI_NO_INTERACTION environment variable, which can be used to\n  disable interactivity everywhere (warning: important confirmation questions\n  would be bypassed).\n* Add health.webhook integration type.\n\nOther changes:\n\n* Fix: avoid listing duplicate activities and avoid an infinite loop in\n  activity:list (activities) command.\n* Remove handling of activity \"log\" property.\n* Fix init command example GitHub URL.\n* Update the project git URL when adding/deleting an integration.",
+                "show from": "3.50.0",
+                "hide from": "3.51.0"
+            },
+            {
+                "notes": "New features:\n\n* Add an `environment:xdebug` (`xdebug`) command, which opens an SSH tunnel to\n  help debug PHP applications. The application must be configured with an\n  xdebug trigger key (help is available by running the command).\n\nImprovements to Windows installation\n\n* Generate a `platform.bat` file during installation (the `self:install`\n  command) so `platform` can be found in the Path.\n* Use \\ as the directory separator in user-facing installation paths.\n* Fix browser login: two bugs that prevented starting the local server, and\n  preventing opening the URL in the browser.\n* Improve installation help messages for setting up the Path environment\n  variable when using the Command Prompt.",
+                "show from": "3.51.0",
+                "hide from": "3.52.0"
             }
         ]
     }
