@@ -70,6 +70,9 @@ class VariableCreateCommand extends VariableCommandBase
             return 1;
         }
 
+        // Accept 'value' from stdin.
+        $this->readValueFromStdin($input);
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 

@@ -42,6 +42,9 @@ class VariableUpdateCommand extends VariableCommandBase
             return 1;
         }
 
+        // Accept 'value' from stdin.
+        $this->readValueFromStdin($input);
+
         $values = [];
         $fields = $this->form->getFields();
         foreach ($variable->getProperties() as $property => $value) {
