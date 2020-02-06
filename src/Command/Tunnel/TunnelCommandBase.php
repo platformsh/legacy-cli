@@ -157,7 +157,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
-            return new StreamOutput($logResource);
+            return new StreamOutput($logResource, OutputInterface::VERBOSITY_VERBOSE);
         }
 
         return false;

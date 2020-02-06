@@ -121,7 +121,7 @@ class TunnelSingleCommand extends TunnelCommandBase
 
         $processManager = new ProcessManager();
         $process = $this->createTunnelProcess($sshUrl, $remoteHost, $remotePort, $localPort, $sshArgs);
-        $pid = $processManager->startProcess($process, $pidFile, $this->stdErr);
+        $pid = $processManager->startProcess($process, $pidFile, $output);
 
         // Wait a very small time to capture any immediate errors.
         usleep(100000);
@@ -140,7 +140,10 @@ class TunnelSingleCommand extends TunnelCommandBase
         $this->tunnelInfo[] = $tunnel;
         $this->saveTunnelInfo();
 
-        $this->stdErr->writeln('');
+        if ($output->isVerbose()) {
+            // Just an extra line for separation from the process manager's log.
+            $this->stdErr->writeln('');
+        }
 
         $this->stdErr->writeln(sprintf(
             'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
