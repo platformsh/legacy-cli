@@ -59,17 +59,6 @@ EOF
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
 
-        if ($environment->id === 'master') {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $confirmText = 'Are you sure you want to open SSH tunnel(s) to the'
-                . ' <comment>master</comment> (production) environment?';
-            if (!$questionHelper->confirm($confirmText, false)) {
-                return 1;
-            }
-            $this->stdErr->writeln('');
-        }
-
         $container = $this->selectRemoteContainer($input, false);
         $appName = $container->getName();
         $sshUrl = $container->getSshUrl();
@@ -81,6 +70,17 @@ EOF
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
+        }
+
+        if ($environment->id === 'master') {
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $confirmText = 'Are you sure you want to open SSH tunnel(s) to the'
+                . ' <comment>master</comment> (production) environment?';
+            if (!$questionHelper->confirm($confirmText, false)) {
+                return 1;
+            }
+            $this->stdErr->writeln('');
         }
 
         $logFile = $this->config()->getWritableUserDir() . '/tunnels.log';
