@@ -1,0 +1,89 @@
+#!/bin/sh
+#
+# The hook should exit with non-zero status 
+# after issuing an appropriate message if it wants to stop the commit.
+#
+
+C_NO='\033[0m' # No Color
+C_RED='\033[0;31m'
+C_BRIGHT_RED='\033[1;31m'
+C_GREEN='\033[0;32m'
+C_BRIGHT_GREEN='\033[1;32m'
+C_BLUE='\033[0;34m'
+C_BRIGHT_BLUE='\033[1;34m'
+C_GRAY='\033[0;37m'
+C_WHITE='\033[1;37m'
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+if test $(git config -l | grep hooks.psh_allow_container_rename | wc -l) != 0
+then
+    psh_allow_container_rename=$(git config --bool hooks.psh_allow_container_rename)
+else
+    psh_allow_container_rename="false"
+fi
+
+# Redirect output to stderr.
+exec 1>&2
+
+cmd_to_test="git diff --cached --diff-filter=M -z $against --color --word-diff=plain"
+
+# Prevent changing the name of containers to avoid dataloss
+if [ "$psh_allow_container_rename" != "true" ] &&
+	test $($cmd_to_test | grep 'name' | wc -c) != 0
+then
+  relevant_changes=$($cmd_to_test | grep 'name')
+
+  echo "**************************************************"
+  echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
+  echo "**************************************************"
+  echo ""
+  echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
+  echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
+  echo ""
+  echo "-----------------------------"
+  echo "|      Relevant change      |"
+  echo "-----------------------------"
+  echo ""
+  echo "$relevant_changes"
+  echo ""
+  echo "-----------------------------"
+  echo ""
+  echo "If you know what you are doing you can permanently disable this check using:"
+  echo ""
+  echo "  ${C_GRAY}git config hooks.psh_allow_container_rename true${C_NO}"
+  echo ""
+
+
+  exec < /dev/tty
+
+  #allow the user to commit anyway
+  while true; do
+    read -p "Proceed anyway? (y/n) " yn
+    if [ "$yn" = "" ]; then
+      yn='n'
+    fi
+    echo ""
+    case $yn in
+        [Yy] ) exit 0;;
+        [Nn] ) echo "Commit cancelled."; exit 1;;
+        * ) echo "Please answer y for yes or n for no.";;
+    esac
+  done	
+fi
+
+
+
+
+
+
+
+
+
+exec git diff-index --check --cached $against --

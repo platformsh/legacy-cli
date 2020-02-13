@@ -198,6 +198,10 @@ class ProjectGetCommand extends CommandBase
             $projectRootRelative
         ));
 
+        if ($this->getOption('init-hooks')) {
+            $git->createPreCommitHook($projectRoot);
+        }
+
         // Return early if there is no code in the repository.
         if (!glob($projectRoot . '/*', GLOB_NOSORT)) {
             return 0;

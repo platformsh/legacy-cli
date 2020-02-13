@@ -431,6 +431,13 @@ class Git
         return (bool) $this->execute($args, false, $mustRun, false);
     }
 
+    public function createPreCommitHook() {
+        $root = $this->getRoot();
+        if(file_exists($root.'/hooks/pre-commit')) {
+            throw new \RuntimeException('pre-commit already exists');
+        }
+
+    }
     /**
      * Find the root directory of a Git repository.
      *
