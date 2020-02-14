@@ -36,6 +36,14 @@ print_permanently_disable_notice() {
   echo ""
 }
 
+print_ok() {
+  echo " [${C_BRIGHT_GREEN}OK${C_NO}]"
+}
+
+print_fail() {
+  echo " [${C_BRIGHT_RED}FAILED${C_NO}]"
+}
+
 confirm_or_exit(){
   exec < /dev/tty
 
@@ -64,13 +72,15 @@ get_config() {
   fi
 }
 
-if git rev-parse --verify HEAD >/dev/null 2>&1
-then
-	against=HEAD
-else
-	# Initial commit: diff against an empty tree object
-	against=$(git hash-object -t tree /dev/null)
-fi
+get_git_head() {
+  if git rev-parse --verify HEAD >/dev/null 2>&1
+  then
+    echo "HEAD"
+  else
+    git hash-object -t tree /dev/null
+  fi
+}
+
 
 
 
@@ -80,18 +90,21 @@ fi
 # Redirect output to stderr.
 exec 1>&2
 
+
+against=$(get_git_head)
 cmd_to_test="git diff --diff-filter=M -z $against --word-diff=plain"
 
 
 
 
 
-echo "Checking name change of containers..."
+echo -n "Checking name change of containers..."
 hook_config_name="psh_allow_container_rename"
 config_value=$(get_config $hook_config_name)
 if [ "$config_value" != "true" ] &&
 	test $($cmd_to_test --no-color | grep -E 'name\:|\[.+\:.+\}$' | wc -c) != 0
 then
+  print_fail
   relevant_changes="$($cmd_to_test --color | grep 'name:')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
   echo "**************************************************"
   echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
@@ -104,7 +117,7 @@ then
 
   confirm_or_exit
 else
-  echo "OK"
+  print_ok
 fi
 
 
@@ -112,12 +125,13 @@ fi
 
 
 
-echo "Checking service type changes..."
+echo -n "Checking service type changes..."
 hook_config_name="psh_allow_service_type_change";
 config_value=$(get_config $hook_config_name)
 if [ "$config_value" != "true" ] &&
 	test $($cmd_to_test | grep 'type:' | wc -c) != 0
 then
+  print_fail
   relevant_changes=$($cmd_to_test | grep 'type:')
 
   echo "**************************************************"
@@ -137,7 +151,7 @@ then
 
   confirm_or_exit
 else
-  echo "OK"
+  print_ok
 fi
 
 
