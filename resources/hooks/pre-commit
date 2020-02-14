@@ -13,54 +13,30 @@ C_BLUE='\033[0;34m'
 C_BRIGHT_BLUE='\033[1;34m'
 C_GRAY='\033[0;37m'
 C_WHITE='\033[1;37m'
+C_BOLD='\033[0;1;4m'
 
-if git rev-parse --verify HEAD >/dev/null 2>&1
-then
-	against=HEAD
-else
-	# Initial commit: diff against an empty tree object
-	against=$(git hash-object -t tree /dev/null)
-fi
-
-if test $(git config -l | grep hooks.psh_allow_container_rename | wc -l) != 0
-then
-    psh_allow_container_rename=$(git config --bool hooks.psh_allow_container_rename)
-else
-    psh_allow_container_rename="false"
-fi
-
-# Redirect output to stderr.
-exec 1>&2
-
-cmd_to_test="git diff --cached --diff-filter=M -z $against --color --word-diff=plain"
-
-# Prevent changing the name of containers to avoid dataloss
-if [ "$psh_allow_container_rename" != "true" ] &&
-	test $($cmd_to_test | grep 'name' | wc -c) != 0
-then
-  relevant_changes=$($cmd_to_test | grep 'name')
-
-  echo "**************************************************"
-  echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
-  echo "**************************************************"
-  echo ""
-  echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
-  echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
+print_changes() {
+  relevant_changes=$1
   echo ""
   echo "-----------------------------"
-  echo "|      Relevant change      |"
+  echo "|      Relevant change(s)      |"
   echo "-----------------------------"
   echo ""
   echo "$relevant_changes"
   echo ""
   echo "-----------------------------"
   echo ""
+}
+
+print_permanently_disable_notice() {
+  hook_config_name=$1
   echo "If you know what you are doing you can permanently disable this check using:"
   echo ""
-  echo "  ${C_GRAY}git config hooks.psh_allow_container_rename true${C_NO}"
+  echo "  ${C_GRAY}git config hooks.$hook_config_name true${C_NO}"
   echo ""
+}
 
-
+confirm_or_exit(){
   exec < /dev/tty
 
   #allow the user to commit anyway
@@ -76,9 +52,93 @@ then
         * ) echo "Please answer y for yes or n for no.";;
     esac
   done	
+}
+
+get_config() {
+  hook_config_name=$1
+  if test $(git config -l | grep hooks.$hook_config_name | wc -l) != 0
+  then
+      git config --bool hooks.$hook_config_name | cat
+  else
+      echo "false"
+  fi
+}
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
 fi
 
 
+
+
+
+
+# Redirect output to stderr.
+exec 1>&2
+
+cmd_to_test="git diff --diff-filter=M -z $against --word-diff=plain"
+
+
+
+
+
+echo "Checking name change of containers..."
+hook_config_name="psh_allow_container_rename"
+config_value=$(get_config $hook_config_name)
+if [ "$config_value" != "true" ] &&
+	test $($cmd_to_test --no-color | grep -E 'name\:|\[.+\:.+\}$' | wc -c) != 0
+then
+  relevant_changes="$($cmd_to_test --color | grep 'name:')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
+  echo "**************************************************"
+  echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
+  echo "**************************************************"
+  echo ""
+  echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
+  echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
+  print_changes "$relevant_changes"
+  print_permanently_disable_notice $hook_config_name
+
+  confirm_or_exit
+else
+  echo "OK"
+fi
+
+
+
+
+
+
+echo "Checking service type changes..."
+hook_config_name="psh_allow_service_type_change";
+config_value=$(get_config $hook_config_name)
+if [ "$config_value" != "true" ] &&
+	test $($cmd_to_test | grep 'type:' | wc -c) != 0
+then
+  relevant_changes=$($cmd_to_test | grep 'type:')
+
+  echo "**************************************************"
+  echo "* ${C_BRIGHT_RED}Warning${C_NO}: Change of service type detected! *"
+  echo "**************************************************"
+  echo ""
+  echo "Persistent services can ${C_BOLD}not${C_NO} be upgraded (e.g. MySQL v10.3 -> MySQL v10.2). Only non-persistent containers like chrome-headless, redis, memcached can be downgraded."
+  echo ""
+  echo "Please verify your changes before proceeding:"
+  echo "- ${C_BOLD}Downgrading${C_NO} to an older version will break your service and has the potential to cause dataloss."
+  echo "- ${C_BOLD}Upgrading${C_NO} to a newer version should work flawlessly(*). But please do verify that this is working correctly for your application by branching your production/master environment first."
+  echo "${C_BOLD}Downgrading again later is not possible!${C_NO}"
+  echo ""
+  echo "${C_GRAY}* There are limitations regarding which service supports big version jumps while keeping the data (e.g.: Elasticsearch 1.7 -> 6.5). These are upstream limitations not specific to platform.sh. Check the documentation relevant to your service.${C_NO}"
+  print_changes "$relevant_changes"
+  print_permanently_disable_notice $hook_config_name
+
+  confirm_or_exit
+else
+  echo "OK"
+fi
 
 
 
