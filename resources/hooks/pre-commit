@@ -105,14 +105,14 @@ if [ "$config_value" != "true" ] &&
 	test $($cmd_to_test --no-color | grep -E 'name\:|\[.+\:.+\}$' | wc -c) != 0
 then
   print_fail
-  relevant_changes="$($cmd_to_test --color | grep 'name:')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
+  
   echo "**************************************************"
   echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
   echo "**************************************************"
   echo ""
   echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
   echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
-  print_changes "$relevant_changes"
+  print_changes "$($cmd_to_test --color | grep 'name:')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
   print_permanently_disable_notice $hook_config_name
 
   confirm_or_exit
@@ -132,7 +132,6 @@ if [ "$config_value" != "true" ] &&
 	test $($cmd_to_test | grep 'type:' | wc -c) != 0
 then
   print_fail
-  relevant_changes=$($cmd_to_test | grep 'type:')
 
   echo "**************************************************"
   echo "* ${C_BRIGHT_RED}Warning${C_NO}: Change of service type detected! *"
@@ -146,7 +145,7 @@ then
   echo "${C_BOLD}Downgrading again later is not possible!${C_NO}"
   echo ""
   echo "${C_GRAY}* There are limitations regarding which service supports big version jumps while keeping the data (e.g.: Elasticsearch 1.7 -> 6.5). These are upstream limitations not specific to platform.sh. Check the documentation relevant to your service.${C_NO}"
-  print_changes "$relevant_changes"
+  print_changes "$($cmd_to_test | grep 'type:')"
   print_permanently_disable_notice $hook_config_name
 
   confirm_or_exit
