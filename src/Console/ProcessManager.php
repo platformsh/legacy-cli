@@ -119,12 +119,11 @@ class ProcessManager
     public function startProcess(Process $process, $pidFile, OutputInterface $log)
     {
         $this->processes[$pidFile] = $process;
+        $errLog = $log instanceof ConsoleOutputInterface ? $log->getErrorOutput() : $log;
 
         try {
-            $process->start(function ($type, $buffer) use ($log) {
-                $output = $log instanceof ConsoleOutputInterface && $type === Process::ERR
-                    ? $log->getErrorOutput()
-                    : $log;
+            $process->start(function ($type, $buffer) use ($log, $errLog) {
+                $output = $type === Process::ERR ? $errLog : $log;
                 $output->write($buffer);
             });
         } catch (\Exception $e) {
@@ -137,7 +136,7 @@ class ProcessManager
             throw new \RuntimeException('Failed to write PID file: ' . $pidFile);
         }
 
-        $log->writeln(sprintf('Process started: %s', $process->getCommandLine()));
+        $errLog->writeln(sprintf('Process started: %s', $process->getCommandLine()), OutputInterface::VERBOSITY_VERBOSE);
 
         return $pid;
     }

@@ -20,7 +20,7 @@ abstract class TunnelCommandBase extends CommandBase
      *
      * @param array $tunnel
      *
-     * @return bool|array
+     * @return false|array
      */
     protected function isTunnelOpen(array $tunnel)
     {
@@ -157,7 +157,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
-            return new StreamOutput($logResource);
+            return new StreamOutput($logResource, OutputInterface::VERBOSITY_VERBOSE);
         }
 
         return false;
@@ -177,6 +177,24 @@ abstract class TunnelCommandBase extends CommandBase
             $tunnel['relationship'],
             $tunnel['serviceKey'],
         ]);
+    }
+
+    /**
+     * @param array $tunnel
+     * @param array $service
+     *
+     * @return string
+     */
+    protected function getTunnelUrl(array $tunnel, array $service)
+    {
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+        $localService = array_merge($service, array_intersect_key([
+            'host' => self::LOCAL_IP,
+            'port' => $tunnel['localPort'],
+        ], $service));
+
+        return $relationshipsService->buildUrl($localService);
     }
 
     /**
