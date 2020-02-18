@@ -104,7 +104,7 @@ echo -n "Checking name change of containers..."
 hook_config_name="psh_allow_container_rename"
 config_value=$(get_config $hook_config_name)
 if [ "$config_value" != "true" ] &&
-	test $($cmd_to_test --no-color | grep -E 'name\:|\[.+\:.+\}$' | grep '\[' | wc -c) != 0
+	test $($cmd_to_test --no-color | grep -E 'name\:$' | grep '\[' | wc -c) != 0 #|\[.+\:.+\}
 then
   print_fail
   
@@ -114,7 +114,8 @@ then
   echo ""
   echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
   echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
-  print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
+  #print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
+  print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')')"
   print_permanently_disable_notice $hook_config_name
 
   confirm_or_exit
