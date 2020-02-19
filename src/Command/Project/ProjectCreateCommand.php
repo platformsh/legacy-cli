@@ -198,6 +198,8 @@ EOF
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
 
         $project = $this->api()->getProject($subscription->project_id);
+        $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+
         if ($setRemote && $gitRoot !== false && $project !== false) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
