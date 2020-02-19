@@ -265,4 +265,18 @@ abstract class VariableCommandBase extends CommandBase
             'env:' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
     }
+
+    /**
+     * Reads the variable value from stdin.
+     */
+    protected function readValueFromStdin(InputInterface $input)
+    {
+        if ($input->getOption('value') === null) {
+            $contents = stream_get_contents(STDIN);
+            if ($contents !== false && $contents !== '') {
+                $input->setOption('value', $contents);
+                $this->debug('Read variable value from stdin');
+            }
+        }
+    }
 }
