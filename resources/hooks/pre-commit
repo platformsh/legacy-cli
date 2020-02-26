@@ -82,7 +82,9 @@ get_git_head() {
   fi
 }
 
-
+get_build_hook() {
+  $APPLICATION_EXECUTABLE app:config --local --property hooks.build
+}
 
 
 
@@ -203,6 +205,38 @@ fi
 
 
 
+
+
+#check common words that shouldn't be found inside the .yaml file (e.g npm run serve)
+echo -n "Checking build hook for known faulty commands..."
+
+hook_config_name="psh_disable_build_hook_check";
+config_value=$(get_config $hook_config_name)
+cmd_to_test="get_build_hook | grep -E '(npm run serve)|(.+&$)'"
+
+if [ "$config_value" != "true" ]  &&
+  test $(eval $cmd_to_test | wc -c) != 0
+then
+  print_fail
+
+  echo "**************************************************"
+  echo "* ${C_BRIGHT_RED}Warning${C_NO}: Possible faulty build hook command detected! *"
+  echo "**************************************************"
+  echo ""
+  echo "If a command in the build hook does not finish, the build is unable to finish and it will have to be killed manually."
+  echo ""
+  echo "It looks like your build hook contains a command that is known to cause this issue."
+  echo "Please verify that this is indeed correct."
+  echo ""
+  
+  print_changes "$(eval ${cmd_to_test})" "  Command(s)  "
+  print_permanently_disable_notice $hook_config_name
+
+  confirm_or_exit
+  
+else  
+  print_ok
+fi
 
 
 

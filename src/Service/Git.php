@@ -438,7 +438,7 @@ class Git
         return file_exists($dest_file);
     }
 
-    public function createHook($hookName, $projectRoot) {
+    public function createHook($hookName, $projectRoot, $application_executable) {
         $source_file="resources/hooks/$hookName";
         $gitRoot = $projectRoot . '/.git';        
         $dest_file="$gitRoot/hooks/$hookName";
@@ -446,8 +446,14 @@ class Git
         if(!file_exists($source_file)) {
             throw new \RuntimeException('Hook does not exist');
         }
-
-        if(copy($source_file,$dest_file)) {
+        
+        if(file_put_contents($dest_file, 
+            str_replace(
+                '$APPLICATION_EXECUTABLE', 
+                $application_executable,
+                file_get_contents($source_file)
+            )
+        )) {
             chmod($dest_file,0755);
         }
     }
