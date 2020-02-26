@@ -129,17 +129,16 @@ fi
 
 
 
-echo -n "Checking name change of service containers..."
-hook_config_name="psh_allow_service_container_rename"
-config_value=$(get_config $hook_config_name)
-
-if [ "$config_value" != "true" ] &&
-  test $(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml') != "0" #check if we have changes to services.yaml file
+if test $(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml') != "0" #check if we have changes to services.yaml file
 then
+  echo -n "Checking name change of service containers..."
+  hook_config_name="psh_allow_service_container_rename"
+  config_value=$(get_config $hook_config_name)
   services_yaml=$(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml')
   
   #check only the changes in that services.yaml file
-  if test $($cmd_to_test --no-color $services_yaml | grep -E '^\[.+:\-]' | grep '\[' | wc -c) != 0
+  if [ "$config_value" != "true" ] &&    
+    test $($cmd_to_test --no-color $services_yaml | grep -E '^\[.+:\-]' | grep '\[' | wc -c) != 0
   then
     print_fail
     
@@ -159,42 +158,51 @@ then
   else
     print_ok
   fi
-else
-  print_ok
-fi
+
+
+
+  echo -n "Checking service type changes..."
+  hook_config_name="psh_allow_service_type_change";
+  config_value=$(get_config $hook_config_name)
+  if [ "$config_value" != "true" ] &&
+    test $($cmd_to_test --no-color $services_yaml | grep 'type\:' | grep '\[' | wc -c) != 0
+  then
+    print_fail
+
+    echo "**************************************************"
+    echo "* ${C_BRIGHT_RED}Warning${C_NO}: Change of service type detected! *"
+    echo "**************************************************"
+    echo ""
+    echo "Persistent services can ${C_BOLD}not${C_NO} be downgraded (e.g. MySQL v10.3 -> MySQL v10.2). Only non-persistent containers like chrome-headless, redis, memcached can be downgraded."
+    echo ""
+    echo "Please verify your changes before proceeding:"
+    echo "- ${C_BOLD}Downgrading${C_NO} to an older version will break your service and has the potential to cause dataloss."
+    echo "- ${C_BOLD}Upgrading${C_NO} to a newer version should work flawlessly(*). But please do verify that this is working correctly for your application by branching your production/master environment first."
+    echo "${C_BOLD}Downgrading again later is not possible!${C_NO}"
+    echo ""
+    echo "${C_GRAY}* There are limitations regarding which service supports big version jumps while keeping the data (e.g.: Elasticsearch 1.7 -> 6.5). These are upstream limitations not specific to platform.sh. Check the documentation relevant to your service.${C_NO}"
+    echo ""
+    echo "For your convenience, here are the links to documentation of the most common services:"
+    echo "- MySQL https://docs.platform.sh/configuration/services/mysql.html#supported-versions"
+    echo "- PostgreSQL https://docs.platform.sh/configuration/services/postgresql.html#upgrading"
+    echo "- MongoDB https://docs.platform.sh/configuration/services/mongodb.html#supported-versions"
+    print_changes "$($cmd_to_test $services_yaml | grep 'type\:' | grep '\[')"
+    print_permanently_disable_notice $hook_config_name
+
+    confirm_or_exit
+  else
+    print_ok
+  fi
+
+
+fi #end of services.yaml specific changes
 
 
 
 
 
 
-echo -n "Checking service type changes..."
-hook_config_name="psh_allow_service_type_change";
-config_value=$(get_config $hook_config_name)
-if [ "$config_value" != "true" ] &&
-	test $($cmd_to_test | grep 'type\:' | grep '\[' | wc -c) != 0
-then
-  print_fail
 
-  echo "**************************************************"
-  echo "* ${C_BRIGHT_RED}Warning${C_NO}: Change of service type detected! *"
-  echo "**************************************************"
-  echo ""
-  echo "Persistent services can ${C_BOLD}not${C_NO} be upgraded (e.g. MySQL v10.3 -> MySQL v10.2). Only non-persistent containers like chrome-headless, redis, memcached can be downgraded."
-  echo ""
-  echo "Please verify your changes before proceeding:"
-  echo "- ${C_BOLD}Downgrading${C_NO} to an older version will break your service and has the potential to cause dataloss."
-  echo "- ${C_BOLD}Upgrading${C_NO} to a newer version should work flawlessly(*). But please do verify that this is working correctly for your application by branching your production/master environment first."
-  echo "${C_BOLD}Downgrading again later is not possible!${C_NO}"
-  echo ""
-  echo "${C_GRAY}* There are limitations regarding which service supports big version jumps while keeping the data (e.g.: Elasticsearch 1.7 -> 6.5). These are upstream limitations not specific to platform.sh. Check the documentation relevant to your service.${C_NO}"
-  print_changes "$($cmd_to_test | grep 'type\:' | grep '\[')"
-  print_permanently_disable_notice $hook_config_name
-
-  confirm_or_exit
-else
-  print_ok
-fi
 
 
 
