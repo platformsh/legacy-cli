@@ -20,7 +20,7 @@ print_changes() {
   display=${2:-"Relevant_change(s)"}
   echo ""
   echo "-----------------------------"
-  echo "|      $display      |"
+  echo "|      $display    |"
   echo "-----------------------------"
   echo ""
   echo "$relevant_changes"
@@ -97,7 +97,7 @@ exec 1>&2
 
 against=$(get_git_head)
 cmd_to_test="git diff --diff-filter=M -z $against --word-diff=plain"
-
+files_changed=$(git diff --diff-filter=M -z $against --name-only | xargs --null)
 
 
 
@@ -121,6 +121,44 @@ then
   print_permanently_disable_notice $hook_config_name
 
   confirm_or_exit
+else
+  print_ok
+fi
+
+
+
+
+
+echo -n "Checking name change of service containers..."
+hook_config_name="psh_allow_service_container_rename"
+config_value=$(get_config $hook_config_name)
+
+if [ "$config_value" != "true" ] &&
+  test $(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml') != "0" #check if we have changes to services.yaml file
+then
+  services_yaml=$(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml')
+  
+  #check only the changes in that services.yaml file
+  if test $($cmd_to_test --no-color $services_yaml | grep -E '^\[.+:\-]' | grep '\[' | wc -c) != 0
+  then
+    print_fail
+    
+    echo "**************************************************"
+    echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a service container detected! *"
+    echo "**************************************************"
+    echo ""
+    echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
+    echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
+    echo ""
+    echo "Please check your services.yaml file"
+
+    print_changes "$($cmd_to_test --no-color $services_yaml | grep -E '^\[.+:\-]' | grep '\[')"
+    print_permanently_disable_notice $hook_config_name
+
+    confirm_or_exit
+  else
+    print_ok
+  fi
 else
   print_ok
 fi
