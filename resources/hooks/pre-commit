@@ -83,54 +83,171 @@ get_git_head() {
 }
 
 get_build_hook() {
-  $APPLICATION_EXECUTABLE app:config --local --property hooks.build
+  $APPLICATION_EXECUTABLE app:config --local --property hooks.build 2> /dev/null
 }
 
+get_plan_storage_size() {
+  $APPLICATION_EXECUTABLE subscription:info storage 2> /dev/null
+}
+
+check_container_name_change() {
+  echo -n "Checking name change of containers..."
+  hook_config_name="psh_allow_container_rename"
+  config_value=$(get_config $hook_config_name)
+  if [ "$config_value" != "true" ] &&
+    test $($cmd_to_test --no-color | grep -E 'name\:$' | grep '\[' | wc -c) != 0 #|\[.+\:.+\}
+  then
+    print_fail
+    
+    echo "**************************************************"
+    echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
+    echo "**************************************************"
+    echo ""
+    echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
+    echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
+    #print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
+    print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')')"
+    print_permanently_disable_notice $hook_config_name
+
+    confirm_or_exit
+  else
+    print_ok
+  fi
+}
+#end container name change
+
+check_large_files() {
+
+  echo -n "Checking large files..."
+
+  hook_config_name="psh_allow_large_files";
+  config_value=$(get_config $hook_config_name)
+
+  #get all files that were modified/added, 
+  #get their size on disk with `stat` 
+  #get all sizes that are 1MB (999999=6chars, 1000000=7chars) or higher
+  cmd_to_test="git diff --diff-filter=MA --name-only -z $against"
+  cmd_stat="xargs -0 sh -c 'for arg do echo -n \"\$arg|\";stat -c \"%s\" \"\$arg\";done' _"
+  cmd_grep="grep -E '^.+\\|[0-9]{7,}+\$'"
+  cmd="${cmd_to_test} | ${cmd_stat} | ${cmd_grep}"
+
+  if [ "$config_value" != "true" ]  &&
+    test $(eval $cmd | wc -c) != 0
+  then
+    print_fail
+
+    echo "**************************************************"
+    echo "* ${C_BRIGHT_RED}Warning${C_NO}: Large file commit detected! *"
+    echo "**************************************************"
+    echo ""
+    echo "It looks like you are attempting to commit a file larger than ~1MB."
+    echo "This will slow down builds/clones, and other operations we would rather not slow down."
+    echo ""
+    echo "The maximum total size of your git environment is 4GB."
+    echo "Therefore we strongly recommend against commit large files."
+    echo ""
+    echo "Please verify that you want to commit the following:"
+    
+    print_changes "$(eval $cmd)" "Filename / MB  "
+    print_permanently_disable_notice $hook_config_name
+
+    confirm_or_exit
+    
+  else  
+    print_ok
+  fi
+}
+#end large file commit
 
 
+check_on_yaml_changes() {
+  #check common words that shouldn't be found inside the .yaml file (e.g npm run serve)
+  echo -n "Checking build hook for known faulty commands..."
 
-
-
-# Redirect output to stderr.
-exec 1>&2
-
-
-against=$(get_git_head)
-cmd_to_test="git diff --diff-filter=M -z $against --word-diff=plain"
-files_changed=$(git diff --diff-filter=M -z $against --name-only | xargs --null)
-
-
-
-
-echo -n "Checking name change of containers..."
-hook_config_name="psh_allow_container_rename"
-config_value=$(get_config $hook_config_name)
-if [ "$config_value" != "true" ] &&
-	test $($cmd_to_test --no-color | grep -E 'name\:$' | grep '\[' | wc -c) != 0 #|\[.+\:.+\}
-then
-  print_fail
+  hook_config_name="psh_disable_build_hook_check";
+  config_value=$(get_config $hook_config_name)
+  cmd_to_test="get_build_hook | grep -E '(npm run serve)|(.+&$)'"
+  #yaml_files=$(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '.yaml')
   
-  echo "**************************************************"
-  echo "* ${C_BRIGHT_RED}Error${C_NO}: Attempt to rename a container detected! *"
-  echo "**************************************************"
-  echo ""
-  echo "Changing the name of your application after it has been deployed will destroy all storage volumes and result in the loss of all persistent data. This is typically a Very Bad Thing to do. It could be useful under certain circumstances in the early stages of development but you almost certainly don't want to change it on a live project."
-  echo "For more information see: https://docs.platform.sh/configuration/app/name.html"
-  #print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')\n $($cmd_to_test | grep -E '\[.+\:.+\}$')"
-  print_changes "$($cmd_to_test --color | grep 'name:' | grep '\[')')"
-  print_permanently_disable_notice $hook_config_name
+  if [ "$config_value" != "true" ]  &&
+    test $(eval $cmd_to_test | wc -c) != 0
+  then
+    print_fail
 
-  confirm_or_exit
-else
-  print_ok
-fi
+    echo "**************************************************"
+    echo "* ${C_BRIGHT_RED}Warning${C_NO}: Possible faulty build hook command detected! *"
+    echo "**************************************************"
+    echo ""
+    echo "If a command in the build hook does not finish, the build is unable to finish and it will have to be killed manually."
+    echo ""
+    echo "It looks like your build hook contains a command that is known to cause this issue."
+    echo "Please verify that this is indeed correct."
+    echo ""
+    
+    print_changes "$(eval ${cmd_to_test})" "  Command(s)  "
+    print_permanently_disable_notice $hook_config_name
+
+    confirm_or_exit
+    
+  else  
+    print_ok
+  fi
+
+  #check if disksize is higher than you are allowed on your plan (this is not perfect, so it won't catch all issues, but it will catch the obvious mistakes)
+  echo -n "Checking plan size hook for known faulty commands..."
+
+  hook_config_name="psh_disable_plan_size_check";
+  config_value=$(get_config $hook_config_name)
+
+  plan_size="$(get_plan_storage_size)"
+  sum_cmd="find . -name '*.yaml' -exec grep -h 'disk:' {} \; | awk -F: '{sum+=\$2} END {print sum}'"
+  summed_disk_size="$(eval ${sum_cmd})"
+
+  if [ "$config_value" != "true" ]  &&
+    [ "$plan_size" -lt "$summed_disk_size" ]  
+  then
+    print_fail
+
+    echo "***************************************************************"
+    echo "* ${C_BRIGHT_RED}Warning${C_NO}: Disk size seems higher than what your plan allows! *"
+    echo "***************************************************************"
+    echo ""
+    echo "We did a check on your yaml files and it looks like you are asking for more disk than your plan allows."
+    echo ""
+    echo "Summed disk size ${C_BOLD}$summed_disk_size${C_NO} MB is greater than the current plan limit ${C_BOLD}$plan_size${C_NO} MB"
+    echo ""
+    echo "Please check the ${C_BOLD}disk:${C_NO} properties in your .yaml files."
+    echo "Alternatively, ask the owner of your project to increase the storage of your plan."
+    echo ""
+    echo "For more information see: https://docs.platform.sh/configuration/app/storage.html#disk"
+    echo ""
+    echo "The push might fail with the same error should you continue."
+    
+    
+    print_permanently_disable_notice $hook_config_name
+
+    confirm_or_exit
+    
+  else  
+    print_ok
+  fi
+
+
+
+  if test $(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml' | wc -l) != "0" #check if we have changes to services.yaml file
+  then
+    check_on_service_yaml_changes
+  fi
+}
+#end check_on_yaml_changes
 
 
 
 
 
-if test $(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '/services.yaml') != "0" #check if we have changes to services.yaml file
-then
+
+
+check_on_service_yaml_changes() {
   echo -n "Checking name change of service containers..."
   hook_config_name="psh_allow_service_container_rename"
   config_value=$(get_config $hook_config_name)
@@ -193,11 +310,8 @@ then
   else
     print_ok
   fi
-
-
-fi #end of services.yaml specific changes
-
-
+}
+#end check_on_service_yaml_changes
 
 
 
@@ -209,80 +323,38 @@ fi #end of services.yaml specific changes
 
 
 
-echo -n "Checking large files..."
 
-hook_config_name="psh_allow_large_files";
-config_value=$(get_config $hook_config_name)
 
-#get all files that were modified/added, 
-#get their size on disk with `stat` 
-#get all sizes that are 1MB (999999=6chars, 1000000=7chars) or higher
-cmd_to_test="git diff --diff-filter=MA --name-only -z $against"
-cmd_stat="xargs -0 sh -c 'for arg do echo -n \"\$arg|\";stat -c \"%s\" \"\$arg\";done' _"
-cmd_grep="grep -E '^.+\\|[0-9]{7,}+\$'"
-cmd="${cmd_to_test} | ${cmd_stat} | ${cmd_grep}"
 
-if [ "$config_value" != "true" ]  &&
-  test $(eval $cmd | wc -c) != 0
+
+
+# Redirect output to stderr.
+exec 1>&2
+
+
+against=$(get_git_head)
+cmd_to_test="git diff --diff-filter=M -z $against --word-diff=plain"
+files_changed=$(git diff --diff-filter=M -z $against --name-only | xargs --null)
+
+
+
+
+
+check_container_name_change
+
+
+if test $(git diff -z --name-only $against | xargs -0 -IREPLACE echo REPLACE | grep '.yaml' | wc -l) != "0" #check if we have changes to any .yaml files
 then
-  print_fail
-
-  echo "**************************************************"
-  echo "* ${C_BRIGHT_RED}Warning${C_NO}: Large file commit detected! *"
-  echo "**************************************************"
-  echo ""
-  echo "It looks like you are attempting to commit a file larger than ~1MB."
-  echo "This will slow down builds/clones, and other operations we would rather not slow down."
-  echo ""
-  echo "The maximum total size of your git environment is 4GB."
-  echo "Therefore we strongly recommend against commit large files."
-  echo ""
-  echo "Please verify that you want to commit the following:"
-  
-  print_changes "$(eval $cmd)" "Filename / MB  "
-  print_permanently_disable_notice $hook_config_name
-
-  confirm_or_exit
-  
-else  
-  print_ok
+  check_on_yaml_changes
 fi
 
 
+check_large_files
 
 
 
 
-#check common words that shouldn't be found inside the .yaml file (e.g npm run serve)
-echo -n "Checking build hook for known faulty commands..."
 
-hook_config_name="psh_disable_build_hook_check";
-config_value=$(get_config $hook_config_name)
-cmd_to_test="get_build_hook | grep -E '(npm run serve)|(.+&$)'"
-
-if [ "$config_value" != "true" ]  &&
-  test $(eval $cmd_to_test | wc -c) != 0
-then
-  print_fail
-
-  echo "**************************************************"
-  echo "* ${C_BRIGHT_RED}Warning${C_NO}: Possible faulty build hook command detected! *"
-  echo "**************************************************"
-  echo ""
-  echo "If a command in the build hook does not finish, the build is unable to finish and it will have to be killed manually."
-  echo ""
-  echo "It looks like your build hook contains a command that is known to cause this issue."
-  echo "Please verify that this is indeed correct."
-  echo ""
-  
-  print_changes "$(eval ${cmd_to_test})" "  Command(s)  "
-  print_permanently_disable_notice $hook_config_name
-
-  confirm_or_exit
-  
-else  
-  print_ok
-fi
 
 
 
