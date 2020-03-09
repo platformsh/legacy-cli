@@ -21,6 +21,14 @@ class OsUtil
     }
 
     /**
+     * @return bool
+     */
+    public static function isLinux()
+    {
+        return stripos(PHP_OS, 'Linux') !== false;
+    }
+
+    /**
      * Escapes a shell argument for POSIX shells, even when run on Windows.
      *
      * PHP's escapeshellarg() function adapts its output depending on the

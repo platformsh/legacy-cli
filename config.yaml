@@ -1,6 +1,7 @@
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
+  slug: 'platformsh-cli'
 
   # The version number is displayed in 'platform --version' and other places.
   #
@@ -89,6 +90,9 @@ api:
   projects_ttl: 600
   environments_ttl: 120
   users_ttl: 600
+
+  # Disable the docker-credential-helpers credential storage.
+  disable_credential_helpers: false
 
   # Overridden by {application.env_prefix}API_URL env var.
   base_url: 'https://api.platform.sh/'

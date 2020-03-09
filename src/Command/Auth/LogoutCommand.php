@@ -39,18 +39,12 @@ class LogoutCommand extends CommandBase
         $this->stdErr->writeln('You are now logged out.');
 
         // Check for other sessions.
-        $sessionsDir = $this->config()->getSessionDir();
         if ($input->getOption('all')) {
-            $this->api()->deleteFromKeychain();
-            if (is_dir($sessionsDir)) {
-                /** @var \Platformsh\Cli\Service\Filesystem $fs */
-                $fs = $this->getService('fs');
-                $fs->remove($sessionsDir);
-                $this->stdErr->writeln('All session files have been deleted.');
-            }
-        } elseif (is_dir($sessionsDir) && glob($sessionsDir . '/sess-cli-*/*', GLOB_NOSORT)) {
+            $this->api()->deleteAllSessions();
+            $this->stdErr->writeln('All sessions have been deleted.');
+        } elseif ($this->api()->anySessionsExist()) {
             $this->stdErr->writeln(sprintf(
-                'Other session files exist. Delete them with: <comment>%s logout --all</comment>',
+                'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
                 $this->config()->get('application.executable')
             ));
         }

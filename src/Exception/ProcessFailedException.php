@@ -22,11 +22,11 @@ class ProcessFailedException extends RuntimeException
      *
      * @param \Symfony\Component\Process\Process $process
      *     The failed process.
-     * @param bool $includeErrorOutput
-     *     Whether to include the error output in the exception message. Set to
-     *     false if the error output would have already been displayed.
+     * @param bool $includeOutput
+     *     Whether to include the output in the exception message. Set to false
+     *     if the output would have already been displayed.
      */
-    public function __construct(Process $process, $includeErrorOutput)
+    public function __construct(Process $process, $includeOutput)
     {
         if ($process->isSuccessful()) {
             throw new \InvalidArgumentException('Expected a failed process, but the given process was successful.');
@@ -34,7 +34,8 @@ class ProcessFailedException extends RuntimeException
 
         $message = 'The command failed with the exit code: ' . $process->getExitCode();
         $message .= "\n\nFull command: " . $process->getCommandLine();
-        if ($includeErrorOutput) {
+        if ($includeOutput) {
+            $message .= "\n\nOutput:\n" . $process->getOutput();
             $message .= "\n\nError output:\n" . $process->getErrorOutput();
         }
 
