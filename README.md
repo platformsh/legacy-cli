@@ -227,6 +227,14 @@ api:
   # Run 'platform logout --all' if you change this value.
   token_file: null
 
+  # Whether to disable the docker-credential-helpers credential storage method.
+  # When enabled (default), and if supported, credentials are stored in:
+  #   - OS X: the default keychain
+  #   - Linux: the default collection in the Secret Service
+  #   - Windows: the Credential Manager under "Generic Credentials"
+  # When disabled or not supported, credentials are stored in a hidden file.
+  disable_credential_helpers: false
+
 application:
   # The method used for interactive login: 'browser' or 'password' (defaults to
   # 'browser'). Password login is deprecated and will be removed from the API

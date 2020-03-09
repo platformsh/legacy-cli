@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -60,6 +61,23 @@ EOT
             $batDestination = $binDir . DIRECTORY_SEPARATOR . $this->config()->get('application.executable') . '.bat';
             $fs->dumpFile($batDestination, $this->generateBatContents($binTarget));
             $this->stdErr->writeln(' <info>done</info>');
+            $this->stdErr->writeln('');
+        }
+
+        $manager = new Manager($this->config());
+        if ($manager->isSupported()) {
+            $this->stdErr->write('Installing credential helper...');
+            if ($manager->isInstalled()) {
+                $this->stdErr->writeln(' <info>done</info> (already installed)');
+            } else {
+                try {
+                    $manager->install();
+                    $this->stdErr->writeln(' <info>done</info>');
+                } catch (\Exception $e) {
+                    $this->stdErr->writeln(' <comment>failed</comment>');
+                    $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
+                }
+            }
             $this->stdErr->writeln('');
         }
 
