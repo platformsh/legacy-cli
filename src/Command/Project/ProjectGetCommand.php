@@ -202,10 +202,10 @@ class ProjectGetCommand extends CommandBase
         if (!$input->getOption('no-create-hooks')) {
             $this->debug('Creating hooks');
 
-            $helper = $this->getHelper('question');
-            $question = new ConfirmationQuestion('It looks like you already have a pre-commit hook, do you want to overwrite your existing pre-commit hook with ours?', false);
+            $questionHelper = $this->getService('question_helper');
+            $question = 'It looks like you already have a pre-commit hook, do you want to overwrite your existing pre-commit hook with ours?';
 
-            if(!$git->hasHook('pre-commit', $projectRoot) || $helper->ask($input, $output, $question)) {
+            if(!$git->hasHook('pre-commit', $projectRoot) || $questionHelper->confirm($question)) {
                 $git->createHook('pre-commit', $projectRoot, $this->config()->get('application.executable'));
             }            
         }

@@ -115,6 +115,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Certificate\CertificateListCommand();
         $commands[] = new Command\Commit\CommitGetCommand();
         $commands[] = new Command\Commit\CommitListCommand();
+        $commands[] = new Command\Commit\CommitValidateCommand();
         $commands[] = new Command\Db\DbSqlCommand();
         $commands[] = new Command\Db\DbDumpCommand();
         $commands[] = new Command\Db\DbSizeCommand();

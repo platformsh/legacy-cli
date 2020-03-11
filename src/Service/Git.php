@@ -286,6 +286,24 @@ class Git
     }
 
     /**
+     * diff local against the Git remote.
+     *
+     * @param string      $remote
+     * @param string|null $branch
+     * @param string|null $dir
+     * @param bool        $mustRun
+     *
+     * @return string
+     */
+    public function diff($remote, $additional_args = null, $dir = null, $mustRun = false)
+    {
+        $args = ['diff', $remote];
+        if($additional_args) {
+            $args = array_merge($args, $additional_args);
+        }
+        return $this->execute($args, $dir, $mustRun, false);
+    }
+    /**
      * Pull a ref from a repository.
      *
      * @param string $repository A remote repository name or URL.
