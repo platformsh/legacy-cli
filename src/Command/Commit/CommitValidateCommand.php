@@ -3,17 +3,11 @@
 namespace Platformsh\Cli\Command\Commit;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\GitDataApi;
-use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Cli\Local\LocalApplication;
-use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Model\AppConfig;
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CommitValidateCommand extends CommandBase
@@ -34,8 +28,7 @@ class CommitValidateCommand extends CommandBase
             ->setName('commit:validate')
             ->setAliases(['pre-commit-validate'])
             ->setDescription('This will validate the commit you are about to make (used by the pre-commit hook)')
-            ->addArgument('revision', InputArgument::OPTIONAL, 'The revision to ckeck against','HEAD')
-            
+            ->addArgument('revision', InputArgument::OPTIONAL, 'The revision to ckeck against','HEAD')            
         ;
     }
 
@@ -68,8 +61,7 @@ class CommitValidateCommand extends CommandBase
         $this->stdErr->writeLn("");
         $this->stdErr->writeLn("<comment>$message</comment>");
         $this->stdErr->writeLn("");
-        $this->stdErr->writeLn($line_of_dashes);
-        
+        $this->stdErr->writeLn($line_of_dashes);        
     }
 
     protected function printPermanentlyDisableNotice($hook_config_name){
@@ -276,13 +268,6 @@ class CommitValidateCommand extends CommandBase
         return true;
     }
 
-
-    
-
-
-
-
-
     protected function getModifiedFiles($revision) {
         return explode("\0", $this->git->diff($revision,["--diff-filter=M","-z","--name-only"]));
     }
@@ -297,7 +282,6 @@ class CommitValidateCommand extends CommandBase
                 return true;
             }
         }
-
         return false;
     }
 
@@ -319,7 +303,6 @@ class CommitValidateCommand extends CommandBase
             $sum+= isset($service['disk']) ? $service['disk'] : self::MIN_SERVICE_DISK_SIZE;
         }
 
-
         $appConfig = $this->getNormalizedAppConfig();
         if(isset($appConfig['disk'])) {
             $sum+=$appConfig['disk'];
@@ -339,7 +322,6 @@ class CommitValidateCommand extends CommandBase
             return $appConfig['hooks']['build'];
         }
         return "";
-        
     }
 
     protected function getSubscriptionPlanSize($project) {
@@ -352,9 +334,8 @@ class CommitValidateCommand extends CommandBase
         $subscription = $this->api()->getClient()
                              ->getSubscription($id);
         if ($subscription) {
-            return (int)$this->api()->getNestedProperty($subscription, $property);
+            return $this->api()->getNestedProperty($subscription, $property);
         }
-        
     }
 
     

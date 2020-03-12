@@ -20,7 +20,7 @@ then
   echo "CLI says OK, allow commit."
   exit 0
 else
-  echo "CLI failed, cancelling commit."
+  echo "Cancelling commit."
   exit 1
 fi
 exec <&-
