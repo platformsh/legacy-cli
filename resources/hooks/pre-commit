@@ -1,4 +1,9 @@
 #!/usr/bin/env sh
+
+if [ ! -f "$APPLICATION_EXECUTABLE" ]; then #check if the cli is installed
+    exit 0
+fi
+
 get_git_head() {
   if git rev-parse --verify HEAD >/dev/null 2>&1
   then
@@ -9,8 +14,6 @@ get_git_head() {
 }
 
 against=$(get_git_head)
-
-#@TODO: add check to see if CLI is actually installed... 
 
 exec < /dev/tty #redirect keyboard input so we can do interactivity in symfony
 $APPLICATION_EXECUTABLE commit:validate $against 1>/dev/null
@@ -23,4 +26,4 @@ else
   echo "Cancelling commit."
   exit 1
 fi
-exec <&-
+exec <&- #restore keyboard input
