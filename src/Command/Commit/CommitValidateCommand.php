@@ -146,7 +146,10 @@ class CommitValidateCommand extends CommandBase
         $hookConfigName="psh_disable_build_hook_check";
         $hookConfigValue=(bool)$this->getHookConfigValue($hookConfigName);
         if(!$hookConfigValue){
-            $arrFaultyCommands=['npm run serve'];
+            $arrFaultyCommands=[
+                'npm run serve',
+                './mercure'
+            ];
             $buildHookContents=$this->getBuildHookContents();
             
             foreach($arrFaultyCommands as $faultyCommand) {
