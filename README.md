@@ -253,6 +253,10 @@ application:
   # For a list of formats, see: http://php.net/manual/en/function.date.php
   date_format: c
 
+  # A directory (relative to the home directory) where the CLI can write
+  # user-specific files, for storing state, logs, credentials, etc.
+  writable_user_dir: '.platformsh'
+
 local:
   # Set this to true to avoid some Windows symlink issues.
   copy_on_windows: false

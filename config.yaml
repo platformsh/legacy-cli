@@ -14,11 +14,16 @@ application:
   installer_url: 'https://platform.sh/cli/installer'
   manifest_url: 'https://platform.sh/cli/manifest.json'
   user_config_dir: '.platformsh'
-  user_state_file: '.platformsh/state.json'
+  user_state_file: 'state.json'
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
   github_repo: 'platformsh/platformsh-cli'
   release_branch: 'master'
+
+  # A directory (relative to the home directory) where the CLI can write
+  # user-specific files, for storing state, logs, credentials, etc.
+  # This can be overridden in the user config file.
+  writable_user_dir: '.platformsh'
 
   # The default interactive login method: either 'browser' or 'password'.
   # This can be overridden in the user config file.

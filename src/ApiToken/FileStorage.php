@@ -80,7 +80,7 @@ class FileStorage implements StorageInterface {
      * @return string
      */
     private function getFilename() {
-        return $this->config->getUserConfigDir() . '/' . $this->config->getWithDefault('application.api_token_file', '.api-token');
+        return $this->config->getWritableUserDir() . '/' . $this->config->getWithDefault('application.api_token_file', '.api-token');
     }
 
     /**

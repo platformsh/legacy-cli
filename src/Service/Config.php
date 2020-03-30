@@ -154,7 +154,8 @@ class Config
      */
     public function getWritableUserDir()
     {
-        $configDir = $this->getUserConfigDir();
+        $path = $this->get('application.writable_user_dir');
+        $configDir = $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path;
 
         // If the config directory is not writable (e.g. if we are on a
         // Platform.sh environment), use a temporary directory instead.
@@ -274,6 +275,7 @@ class Config
             'experimental' => 'experimental',
             'updates' => 'updates',
             'application.login_method' => 'application.login_method',
+            'application.writable_user_dir' => 'application.writable_user_dir',
             'application.date_format' => 'application.date_format',
             'application.timezone' => 'application.timezone',
         ];
