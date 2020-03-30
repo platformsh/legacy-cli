@@ -207,16 +207,16 @@ There are currently three ways to authenticate:
 
 1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
   local server and a browser, allowing you to log in to Platform.sh via the
-  normal login form, including via services like Bitbucket, GitHub and Google.
+  normal login form, including via third-party providers like Bitbucket, GitHub
+  and Google.
 
 2. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
-  these allow non-interactive authentication. See
-  [Customization](#customization) below for how to use an API token. Remember to
-  use a separate machine account if you want to limit the token's access.
+  these allow non-interactive authentication. To use an API token, you can run
+  the `platform auth:api-token-login` command. Alternatively you can supply the
+  API token in an environment variable named `PLATFORMSH_CLI_TOKEN`.
 
-3. `platform auth:password-login`: this allows you to log in with a username and
-  password, and a two-factor token if applicable. This is deprecated, and will
-  be removed from the API in future.
+  *_Warning_*: An API token can act as the account that created it, with no
+  restrictions. Use a separate machine account to limit the token's access.
 
 ## Customization
 
@@ -225,11 +225,6 @@ These are the possible keys, and their default values:
 
 ```yaml
 api:
-  # A path (relative or absolute) to a file containing an API token.
-  # The file should be stored with minimal permissions.
-  # Run 'platform logout --all' if you change this value.
-  token_file: null
-
   # Whether to disable the docker-credential-helpers credential storage method.
   # When enabled (default), and if supported, credentials are stored in:
   #   - OS X: the default keychain
@@ -239,11 +234,6 @@ api:
   disable_credential_helpers: false
 
 application:
-  # The method used for interactive login: 'browser' or 'password' (defaults to
-  # 'browser'). Password login is deprecated and will be removed from the API
-  # in future.
-  login_method: browser
-
   # The default timezone for times displayed or interpreted by the CLI.
   # An empty (falsy) value here means the PHP or system timezone will be used.
   # For a list of timezones, see: http://php.net/manual/en/timezones.php
@@ -281,7 +271,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_NO_INTERACTION`: set to 1 to disable interaction (useful for scripting). _Warning_: this will bypass any confirmation questions.
 * `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
 * `PLATFORMSH_CLI_SHELL_CONFIG_FILE`: specify the shell configuration file that the installer should write to (as an absolute path). If not set, a file such as `~/.bashrc` will be chosen automatically. Set this to an empty string to disable writing to a shell config file.
-* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It may be better to use `config.yaml` as above, depending on your system. The environment variable is preferable on CI systems like Jenkins and GitLab.
+* `PLATFORMSH_CLI_TOKEN`: an API token. *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access. Additionally, storing a secret in an environment variable can be insecure. It may be better to use the `auth:api-token-login` command. The environment variable is preferable on CI systems like Jenkins and GitLab.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
