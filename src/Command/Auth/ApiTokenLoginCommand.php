@@ -103,6 +103,8 @@ class ApiTokenLoginCommand extends CommandBase
     }
 
     /**
+     * Saves the new tokens and safely logs out of the previous session.
+     *
      * @param string      $apiToken
      * @param AccessToken $accessToken
      */
@@ -110,11 +112,13 @@ class ApiTokenLoginCommand extends CommandBase
         /** @var \Platformsh\Cli\ApiToken\StorageInterface $storage */
         $storage = $this->getService('api_token_storage');
         $storage->storeToken($apiToken);
-        $this->api()->getClient(false, true)->getConnector()->saveToken($accessToken);
 
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
+        $this->api()->logout();
+
+        $this->api()
+            ->getClient(false, true)
+            ->getConnector()
+            ->saveToken($accessToken);
     }
 
     /**

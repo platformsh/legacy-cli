@@ -193,6 +193,22 @@ class Api
     }
 
     /**
+     * Logs out of the current session.
+     */
+    public function logout()
+    {
+        // Delete the stored API token, if any.
+        $this->apiTokenStorage->deleteToken();
+
+        // Log out in the connector (this clears the "session" and attempts
+        // to revoke stored tokens).
+        $this->getClient(false)->getConnector()->logOut();
+
+        // Clear the cache.
+        $this->cache->flushAll();
+    }
+
+    /**
      * Deletes all sessions.
      */
     public function deleteAllSessions()
