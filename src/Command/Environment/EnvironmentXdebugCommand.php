@@ -78,19 +78,19 @@ class EnvironmentXdebugCommand extends CommandBase
         $sshUrl = $container->getSshUrl();
 
         $config = $container->getConfig()->getNormalized();
-        $key = isset($config['runtime']['xdebug']['key']) ? $config['runtime']['xdebug']['key'] : '';
+        $ideKey = isset($config['runtime']['xdebug']['idekey']) ? $config['runtime']['xdebug']['idekey'] : '';
 
-        if (!$key) {
-            $this->stdErr->writeln('<error>No debugging key found.</error>');
+        if (!$ideKey) {
+            $this->stdErr->writeln('<error>No IDE key found.</error>');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('To use Xdebug your project must have a <comment>debugging key</comment> set.');
+            $this->stdErr->writeln('To use Xdebug your project must have an <comment>IDE key</comment> set.');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
             $this->stdErr->writeln(
                 "\n<comment># ...\n"
                 . "runtime:\n"
                 . "    xdebug:\n"
-                . "        key: <options=underscore>secret_key</>"
+                . "        idekey: <options=underscore>secret_key</>"
             );
 
             return 1;
@@ -135,8 +135,8 @@ class EnvironmentXdebugCommand extends CommandBase
         $this->stdErr->writeln(sprintf('Xdebug tunnel opened at: <info>%s</info>', $listenAddress));
         $this->stdErr->writeln('');
         $this->stdErr->writeln(
-            "To start debugging, set a cookie like '<info>XDEBUG_SESSION=$key</info>'"
-            . " or append '<info>XDEBUG_SESSION_START=$key</info>' in the URL query string when visiting your project."
+            "To start debugging, set a cookie like '<info>XDEBUG_SESSION=$ideKey</info>'"
+            . " or append '<info>XDEBUG_SESSION_START=$ideKey</info>' in the URL query string when visiting your project."
         );
         $this->stdErr->writeln('');
         $this->stdErr->writeln('To close the tunnel, quit this command by pressing <info>Ctrl+C</info>.');
