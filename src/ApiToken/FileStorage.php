@@ -80,7 +80,15 @@ class FileStorage implements StorageInterface {
      * @return string
      */
     private function getFilename() {
-        return $this->config->getWritableUserDir() . '/' . $this->config->getWithDefault('application.api_token_file', '.api-token');
+        $sessionSubDir = 'sess-cli-' . $this->config->getSessionId();
+        $sessionSubDir = preg_replace('/[^\w\-]+/', '-', $sessionSubDir);
+
+        return sprintf(
+            '%s/%s/%s',
+            $this->config->getSessionDir(),
+            $sessionSubDir,
+            'api-token'
+        );
     }
 
     /**

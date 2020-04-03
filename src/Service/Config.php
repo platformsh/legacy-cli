@@ -175,6 +175,14 @@ class Config
     }
 
     /**
+     * @return string
+     */
+    public function getSessionId()
+    {
+        return $this->get('api.session_id') ?: 'default';
+    }
+
+    /**
      * Override a config value.
      *
      * @param string $name

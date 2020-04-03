@@ -36,7 +36,13 @@ class SessionStorage implements SessionStorageInterface
      * @return string
      */
     private function serverUrl(SessionInterface $session) {
-        return $this->serverUrlBase . '/' . $session->getId();
+        // Remove the 'cli-' prefix from the session ID;
+        $sessionId = $session->getId();
+        if (strpos($sessionId, 'cli-') === 0) {
+            $sessionId = substr($sessionId, 4);
+        }
+
+        return $this->serverUrlBase . '/' . $sessionId;
     }
 
     /**

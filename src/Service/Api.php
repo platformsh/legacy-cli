@@ -90,7 +90,7 @@ class Api
 
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
-        $this->sessionId = $this->config->get('api.session_id') ?: 'default';
+        $this->sessionId = $this->config->getSessionId();
         if (strpos($this->sessionId, 'api-token') === 0) {
             throw new \InvalidArgumentException('Invalid session ID: ' . $this->sessionId);
         }
@@ -249,8 +249,16 @@ class Api
         $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->getUserAgent();
+
+        // Load an API token from storage, if there is one saved.
+        $storedToken = $this->apiTokenStorage->getToken();
+        if ($storedToken !== '') {
+            $this->apiToken = $storedToken;
+            $this->apiTokenType = 'exchange';
+        }
         $connectorOptions['api_token'] = $this->apiToken;
         $connectorOptions['api_token_type'] = $this->apiTokenType;
+
         $proxy = $this->getProxy();
         if ($proxy !== null) {
             $connectorOptions['proxy'] = $proxy;
@@ -315,13 +323,6 @@ class Api
             // @todo move this to the Session
             if (!$session->getData()) {
                 $session->load(true);
-            }
-
-            // Load an API token from storage, if there is one saved.
-            $this->apiToken = $this->apiTokenStorage->getToken();
-            if ($this->apiToken !== '') {
-                $this->apiTokenType = 'exchange';
-                $connector->setApiToken($this->apiToken, $this->apiTokenType);
             }
 
             self::$client = new PlatformClient($connector);

@@ -39,8 +39,8 @@ class BrowserLoginCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->api()->hasApiToken()) {
-            $this->stdErr->writeln('Cannot log in via the browser, because an API token is set.');
+        if ($this->api()->hasApiToken(false)) {
+            $this->stdErr->writeln('Cannot log in via the browser, because an API token is set via config.');
             return 1;
         }
         if (!$input->isInteractive()) {
@@ -220,17 +220,11 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('Login information received. Verifying...');
         $token = $this->getAccessToken($code, $codeVerifier, $localUrl);
 
-        // Finalize login: call logOut() on the old connector, clear the cache
-        // and save the new credentials.
-        $connector = $this->api()->getClient(false)->getConnector();
-        $session = $connector->getSession();
-        $connector->logOut();
-
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
+        // Finalize login: log out and save the new credentials.
+        $this->api()->logout();
 
         // Save the new tokens to the persistent session.
+        $session = $this->api()->getClient(false)->getConnector()->getSession();
         $this->saveAccessToken($token, $session);
 
         // Reset the API client so that it will use the new tokens.

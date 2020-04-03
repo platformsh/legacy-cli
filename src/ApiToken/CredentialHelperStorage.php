@@ -15,7 +15,11 @@ class CredentialHelperStorage implements StorageInterface {
     public function __construct(Config $config, Manager $manager)
     {
         $this->manager = $manager;
-        $this->serverUrl = $config->get('application.slug') . '/api-token';
+        $this->serverUrl = sprintf(
+            '%s/%s/api-token',
+            $config->get('application.slug'),
+            $config->get('api.session_id') ?: 'default'
+        );
     }
 
     /**

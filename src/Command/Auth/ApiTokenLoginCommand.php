@@ -109,11 +109,11 @@ class ApiTokenLoginCommand extends CommandBase
      * @param AccessToken $accessToken
      */
     private function saveTokens($apiToken, AccessToken $accessToken) {
+        $this->api()->logout();
+
         /** @var \Platformsh\Cli\ApiToken\StorageInterface $storage */
         $storage = $this->getService('api_token_storage');
         $storage->storeToken($apiToken);
-
-        $this->api()->logout();
 
         $this->api()
             ->getClient(false, true)
