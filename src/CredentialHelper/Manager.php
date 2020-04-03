@@ -92,7 +92,15 @@ class Manager {
      * @param string $serverUrl
      */
     public function erase($serverUrl) {
-        $this->exec('erase', $serverUrl);
+        try {
+            $this->exec('erase', $serverUrl);
+        } catch (ProcessFailedException $e) {
+            // Ignore an item not found error.
+            if (stripos($e->getProcess()->getOutput(), 'could not be found') !== false) {
+                return;
+            }
+            throw $e;
+        }
     }
 
     /**
