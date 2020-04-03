@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Mount;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Model\RemoteContainer\App;
+use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -33,6 +34,7 @@ class MountDownloadCommand extends CommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addRemoteContainerOptions();
+        Ssh::configureInput($this->getDefinition());
     }
 
     /**
