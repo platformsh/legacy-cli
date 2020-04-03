@@ -83,7 +83,7 @@ class EnvironmentXdebugCommand extends CommandBase
         if (!$ideKey) {
             $this->stdErr->writeln('<error>No IDE key found.</error>');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('To use Xdebug your project must have an <comment>IDE key</comment> set.');
+            $this->stdErr->writeln('To use Xdebug your project must have an <comment>idekey</comment> value set.');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
             $this->stdErr->writeln(
