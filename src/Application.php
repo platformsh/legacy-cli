@@ -149,6 +149,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Integration\IntegrationListCommand();
         $commands[] = new Command\Integration\IntegrationUpdateCommand();
         $commands[] = new Command\Integration\IntegrationValidateCommand();
+        $commands[] = new Command\Integration\Activity\IntegrationActivityGetCommand();
+        $commands[] = new Command\Integration\Activity\IntegrationActivityListCommand();
+        $commands[] = new Command\Integration\Activity\IntegrationActivityLogCommand();
         $commands[] = new Command\Local\LocalBuildCommand();
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();

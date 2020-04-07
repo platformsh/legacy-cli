@@ -35,16 +35,11 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         $this->validateInput($input);
 
-        $id = $input->getArgument('id');
         $project = $this->getSelectedProject();
-        $integration = $project->getIntegration($id);
+
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
-            try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln($e->getMessage());
-                return 1;
-            }
+            return 1;
         }
 
         // Get the values supplied via the command-line options.

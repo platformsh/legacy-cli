@@ -1,7 +1,7 @@
 <?php
-namespace Platformsh\Cli\Command\Activity;
+namespace Platformsh\Cli\Command\Integration\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityGetCommand extends CommandBase
+class IntegrationActivityGetCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}
@@ -19,42 +19,45 @@ class ActivityGetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('activity:get')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
+            ->setName('integration:activity:get')
+            ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
+            ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
-            ->setDescription('View detailed information on a single activity');
+            ->setDescription('View detailed information on a single integration activity');
         $this->addProjectOption()
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addExample('Find the time a project was created', '--all --type project.create -P completed_at');
-        $this->addExample('Find the duration (in seconds) of the last activity', '-P duration');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $this->validateInput($input);
 
-        $id = $input->getArgument('id');
+        $project = $this->getSelectedProject();
+
+        $integration = $this->selectIntegration($project, $input->getArgument('integration'), $input->isInteractive());
+        if (!$integration) {
+            return 1;
+        }
+
+        $id = $input->getArgument('activity');
         if ($id) {
-            $activity = $this->getSelectedProject()
-                ->getActivity($id);
+            $activity = $project->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $this->getActivities($input), 'Activity');
+                $activity = $this->api()->matchPartialId($id, $integration->getActivities(), 'Activity');
                 if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
+                    $this->stdErr->writeln("Integration activity not found: <error>$id</error>");
 
                     return 1;
                 }
             }
         } else {
-            $activities = $this->getActivities($input, 1);
+            $activities = $integration->getActivities();
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
-                $this->stdErr->writeln('No activities found');
+                $this->stdErr->writeln('No integration activities found');
 
                 return 1;
             }
@@ -83,6 +86,7 @@ class ActivityGetCommand extends CommandBase
             return 0;
         }
 
+
         // The activity "log" property is going to be removed.
         unset($properties['payload'], $properties['log']);
 
@@ -105,35 +109,16 @@ class ActivityGetCommand extends CommandBase
             $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
-                'To view the log for this activity, run: <info>%s activity:log %s</info>',
+                'To view the log for this activity, run: <info>%s integration:activity:log %s</info>',
                 $executable,
                 $activity->id
             ));
             $this->stdErr->writeln(sprintf(
-                'To list activities, run: <info>%s activities</info>',
+                'To list activities, run: <info>%s integration:activities</info>',
                 $executable
             ));
         }
 
         return 0;
-    }
-
-    /**
-     * Get activities on the project or environment.
-     *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param int                                             $limit
-     *
-     * @return \Platformsh\Client\Model\Activity[]
-     */
-    private function getActivities(InputInterface $input, $limit = 0)
-    {
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-            return $this->getSelectedEnvironment()
-                ->getActivities($limit, $input->getOption('type'));
-        }
-
-        return $this->getSelectedProject()
-            ->getActivities($limit, $input->getOption('type'));
     }
 }
