@@ -50,6 +50,23 @@ Use the 'list' command to get a list of available options and commands:
 
     platform list
 
+## Authentication
+
+There are two ways to authenticate:
+
+1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
+  local server and a browser, allowing you to log in to Platform.sh via the
+  normal login form, including via third-party providers like Bitbucket, GitHub
+  and Google.
+
+2. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
+  these allow non-interactive authentication. To use an API token, you can run
+  the `platform auth:api-token-login` command. Alternatively you can supply the
+  API token in an environment variable named `PLATFORMSH_CLI_TOKEN`.
+
+  *_Warning_*: An API token can act as the account that created it, with no
+  restrictions. Use a separate machine account to limit the token's access.
+
 ### Commands
 
 The current output of `platform list` is as follows:
@@ -81,6 +98,7 @@ app
   app:config-get                            View the configuration of an app
   app:list (apps)                           List apps in the project
 auth
+  auth:api-token-login                      Log in to Platform.sh using an API token
   auth:browser-login (login)                Log in to Platform.sh via a browser
   auth:info                                 Display your account information
   auth:logout (logout)                      Log out of Platform.sh
@@ -193,31 +211,6 @@ worker
   worker:list (workers)                     Get a list of all deployed workers
 ```
 
-## Known issues
-
-### Caching
-
-The CLI caches details of your projects and their environments, and some other
-information. These caches could become out-of-date. You can clear caches with
-the command `platform clear-cache` (or `platform cc` for short).
-
-## Authentication
-
-There are currently three ways to authenticate:
-
-1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
-  local server and a browser, allowing you to log in to Platform.sh via the
-  normal login form, including via third-party providers like Bitbucket, GitHub
-  and Google.
-
-2. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
-  these allow non-interactive authentication. To use an API token, you can run
-  the `platform auth:api-token-login` command. Alternatively you can supply the
-  API token in an environment variable named `PLATFORMSH_CLI_TOKEN`.
-
-  *_Warning_*: An API token can act as the account that created it, with no
-  restrictions. Use a separate machine account to limit the token's access.
-
 ## Customization
 
 You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`.
@@ -275,6 +268,14 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
+
+## Known issues
+
+### Caching
+
+The CLI caches details of your projects and their environments, and some other
+information. These caches could become out-of-date. You can clear caches with
+the command `platform clear-cache` (or `platform cc` for short).
 
 ## Contributing
 
