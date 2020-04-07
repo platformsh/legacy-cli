@@ -5,6 +5,8 @@ namespace Platformsh\Cli\Service;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
+use Platformsh\Cli\ApiToken\Storage;
+use Platformsh\Cli\ApiToken\StorageInterface;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
@@ -32,14 +34,17 @@ class Api
     /** @var \Doctrine\Common\Cache\CacheProvider */
     protected $cache;
 
+    /** @var StorageInterface */
+    private $apiTokenStorage;
+
     /** @var EventDispatcherInterface */
     public $dispatcher;
 
     /** @var string */
     protected $sessionId = 'default';
 
-    /** @var string|null */
-    protected $apiToken;
+    /** @var string */
+    protected $apiToken = '';
 
     /** @var string */
     protected $apiTokenType = 'exchange';
@@ -68,26 +73,29 @@ class Api
     /**
      * Constructor.
      *
-     * @param Config|null                $config
-     * @param CacheProvider|null            $cache
+     * @param Config|null $config
+     * @param CacheProvider|null $cache
+     * @param StorageInterface|null $apiTokenStorage
      * @param EventDispatcherInterface|null $dispatcher
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
+        StorageInterface $apiTokenStorage = null,
         EventDispatcherInterface $dispatcher = null
     ) {
         $this->config = $config ?: new Config();
+        $this->apiTokenStorage = $apiTokenStorage ?: Storage::factory($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
 
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
 
-        $this->sessionId = $this->config->get('api.session_id') ?: 'default';
+        $this->sessionId = $this->config->getSessionId();
         if (strpos($this->sessionId, 'api-token') === 0) {
             throw new \InvalidArgumentException('Invalid session ID: ' . $this->sessionId);
         }
 
-        if (!isset($this->apiToken)) {
+        if ($this->apiToken === '') {
             // Exchangeable API tokens: a token which is exchanged for a
             // temporary access token.
             if ($this->config->has('api.token_file')) {
@@ -112,7 +120,7 @@ class Api
         }
 
         // Ensure a unique session ID per API token.
-        if (isset($this->apiToken)) {
+        if ($this->apiToken !== '') {
             $this->sessionId = 'api-token-' . substr(hash('sha256', $this->apiToken), 0, 8);
         }
     }
@@ -150,11 +158,22 @@ class Api
     /**
      * Returns whether the CLI is authenticating using an API token.
      *
+     * @param bool $includeStored
+     *
      * @return bool
      */
-    public function hasApiToken()
+    public function hasApiToken($includeStored = true)
     {
-        return isset($this->apiToken);
+        if (!$includeStored) {
+            $apiConfig = $this->config->get('api');
+
+            return isset($apiConfig['token'])
+                || isset($apiConfig['token_file'])
+                || isset($apiConfig['access_token_file'])
+                || isset($apiConfig['access_token']);
+        }
+
+        return $this->apiTokenStorage->getToken() !== '';
     }
 
     /**
@@ -171,6 +190,22 @@ class Api
         $files = glob($dir . '/sess-cli-*/*', GLOB_NOSORT);
 
         return !empty($files);
+    }
+
+    /**
+     * Logs out of the current session.
+     */
+    public function logout()
+    {
+        // Delete the stored API token, if any.
+        $this->apiTokenStorage->deleteToken();
+
+        // Log out in the connector (this clears the "session" and attempts
+        // to revoke stored tokens).
+        $this->getClient(false)->getConnector()->logOut();
+
+        // Clear the cache.
+        $this->cache->flushAll();
     }
 
     /**
@@ -205,6 +240,63 @@ class Api
     }
 
     /**
+     * @return array
+     */
+    public function getConnectorOptions() {
+        $connectorOptions = [];
+        $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
+        $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
+        $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
+        $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
+        $connectorOptions['user_agent'] = $this->getUserAgent();
+
+        // Load an API token from storage, if there is one saved.
+        $storedToken = $this->apiTokenStorage->getToken();
+        if ($storedToken !== '') {
+            $this->apiToken = $storedToken;
+            $this->apiTokenType = 'exchange';
+        }
+        $connectorOptions['api_token'] = $this->apiToken;
+        $connectorOptions['api_token_type'] = $this->apiTokenType;
+
+        $proxy = $this->getProxy();
+        if ($proxy !== null) {
+            $connectorOptions['proxy'] = $proxy;
+        }
+
+        // Override the OAuth 2.0 token and revoke URLs if provided.
+        if ($this->config->has('api.oauth2_token_url')) {
+            $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
+        }
+        if ($this->config->has('api.oauth2_revoke_url')) {
+            $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
+        }
+
+        return $connectorOptions;
+    }
+
+    /**
+     * @return array
+     */
+    public function getGuzzleOptions() {
+        $options = [
+            'defaults' => [
+                'headers' => ['User-Agent' => $this->getUserAgent()],
+                'debug' => $this->config->get('api.debug') ? STDERR : false,
+                'verify' => !$this->config->get('api.skip_ssl'),
+                'proxy' => $this->getProxy(),
+            ],
+        ];
+
+        if (extension_loaded('zlib')) {
+            $options['defaults']['decode_content'] = true;
+            $options['defaults']['headers']['Accept-Encoding'] = 'gzip';
+        }
+
+        return $options;
+    }
+
+    /**
      * Get the API client object.
      *
      * @param bool $autoLogin Whether to log in, if the client is not already
@@ -216,28 +308,7 @@ class Api
     public function getClient($autoLogin = true, $reset = false)
     {
         if (!isset(self::$client) || $reset) {
-            $connectorOptions = [];
-            $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
-            $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
-            $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
-            $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
-            $connectorOptions['user_agent'] = $this->getUserAgent();
-            $connectorOptions['api_token'] = $this->apiToken;
-            $connectorOptions['api_token_type'] = $this->apiTokenType;
-            $proxy = $this->getProxy();
-            if ($proxy !== null) {
-                $connectorOptions['proxy'] = $proxy;
-            }
-
-            // Override the OAuth 2.0 token and revoke URLs if provided.
-            if ($this->config->has('api.oauth2_token_url')) {
-                $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
-            }
-            if ($this->config->has('api.oauth2_revoke_url')) {
-                $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
-            }
-
-            $connector = new Connector($connectorOptions);
+            $connector = new Connector($this->getConnectorOptions());
 
             // Set up a persistent session to store OAuth2 tokens. By default,
             // this will be stored in a JSON file:
@@ -804,7 +875,7 @@ class Api
     public function getAccessToken()
     {
         // Check for legacy API tokens.
-        if (isset($this->apiToken) && $this->apiTokenType === 'access') {
+        if ($this->apiToken !== '' && $this->apiTokenType === 'access') {
             return $this->apiToken;
         }
 

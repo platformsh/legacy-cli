@@ -26,7 +26,16 @@ services:
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
-        arguments: ['@config', '@cache']
+        arguments: ['@config', '@cache', '@api_token_storage']
+
+    api_token_storage:
+      class:     '\Platformsh\Cli\ApiToken\StorageInterface'
+      factory:   'api_token_storage_factory:factory'
+      arguments: ['@config']
+
+    api_token_storage_factory:
+      class:     '\Platformsh\Cli\ApiToken\Storage'
+      public:    false
 
     cache:
         class:     '\Doctrine\Common\Cache\CacheProvider'

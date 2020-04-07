@@ -18,24 +18,9 @@ class LoginRequiredException extends HttpException
         $message = $message ?: $this->message;
         $this->config = $config ?: new Config();
         $executable = $this->config->get('application.executable');
-        $message .= "\n\nPlease log in by running:\n    <comment>$executable login</comment>";
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $message .= "\n\n" . $aHelp;
-        }
+        $message .= "\n\nPlease log in by running:\n    <comment>$executable login</comment>"
+            . "\n\nTo log in using an API token, run: <comment>$executable auth:api-token-login</comment>";
 
         parent::__construct($message, $previous);
-    }
-
-    /**
-     * @return string|null
-     */
-    private function getApiTokenHelp()
-    {
-        if ($this->config->has('service.api_token_help_url')) {
-            return 'To authenticate non-interactively using an API token, see:'
-                . "\n    " . $this->config->get('service.api_token_help_url');
-        }
-
-        return null;
     }
 }

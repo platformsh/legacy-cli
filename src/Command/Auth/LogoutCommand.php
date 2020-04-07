@@ -21,21 +21,15 @@ class LogoutCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Ignore API tokens for this command.
-        if ($this->api()->hasApiToken()) {
-            $this->stdErr->writeln('<comment>Warning: an API token is set</comment>');
+        // API tokens set via the environment or the config file cannot be
+        // removed using this command.
+        // API tokens set via the auth:api-token-login command will be safely
+        // deleted.
+        if ($this->api()->hasApiToken(false)) {
+            $this->stdErr->writeln('<comment>Warning: an API token is set via config</comment>');
         }
 
-        // Log out.
-        $this->api()->getClient(false)
-             ->getConnector()
-             ->logOut();
-
-        // Clear the cache.
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
-
+        $this->api()->logout();
         $this->stdErr->writeln('You are now logged out.');
 
         // Check for other sessions.
