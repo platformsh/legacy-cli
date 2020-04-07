@@ -75,7 +75,6 @@ service:
   docs_search_url: 'https://www.google.com/search?q=site%3Adocs.platform.sh%20{{ terms }}'
   accounts_url: 'https://accounts.platform.sh'
   pricing_url: 'https://platform.sh/pricing'
-  default_from_address: 'noreply@platform.sh'
   api_token_help_url: 'https://docs.platform.sh/gettingstarted/cli/api-tokens.html'
   available_regions:
     - eu-2.platform.sh

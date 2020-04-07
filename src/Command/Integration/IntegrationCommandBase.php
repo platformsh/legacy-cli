@@ -338,13 +338,6 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The environment IDs to exclude',
                 'required' => false,
             ]),
-            'from_address' => new EmailAddressField('From address', [
-                'conditions' => ['type' => [
-                    'health.email',
-                ]],
-                'description' => 'The From address for alert emails',
-                'default' => $this->config()->getWithDefault('service.default_from_address', null),
-            ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
                     'health.email',

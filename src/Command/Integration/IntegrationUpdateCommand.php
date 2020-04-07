@@ -5,6 +5,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationUpdateCommand extends IntegrationCommandBase
@@ -20,6 +21,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();
+        $this->addOption('from-address', null, InputOption::VALUE_OPTIONAL, '[Deprecated option, no longer used]');
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
             'ZXhhbXBsZSB --fetch-branches 1'
@@ -28,10 +30,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(
-            ['type'],
-            'The option --%s is deprecated and will be removed in a future version.'
-        );
+        $this->warnAboutDeprecatedOptions(['type', 'from-address']);
 
         $this->validateInput($input);
 

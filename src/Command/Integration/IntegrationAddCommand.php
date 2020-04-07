@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Integration;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationAddCommand extends IntegrationCommandBase
@@ -18,6 +19,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
             ->setDescription('Add an integration to the project');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();
+        $this->addOption('from-address', null, InputOption::VALUE_OPTIONAL, '[Deprecated option, no longer used]');
         $this->addExample(
             'Add an integration with a GitHub repository',
             '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
@@ -30,6 +32,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['from-address']);
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
