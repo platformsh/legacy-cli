@@ -290,6 +290,12 @@ class Manager {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (no DISPLAY)');
             }
 
+            // Check if there is a Gnome session.
+            $xdgDesktop = getenv('XDG_CURRENT_DESKTOP');
+            if ($xdgDesktop === false || stripos($xdgDesktop, 'GNOME') === false) {
+                throw new \RuntimeException('Unable to find a credentials helper for this system (Gnome session not detected)');
+            }
+
             // The Linux helper needs "libsecret" to be installed.
             if (!$this->shell->execute('ldconfig --print-cache | grep -q libsecret')) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (libsecret is not installed)');
