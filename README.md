@@ -125,6 +125,9 @@ environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
 integration
+  integration:activity:get                  View detailed information on a single integration activity
+  integration:activity:list (i:act)         Get a list of activities for an integration
+  integration:activity:log                  Display the log for an integration activity
   integration:add                           Add an integration to the project
   integration:delete                        Delete an integration from a project
   integration:get                           View details of an integration

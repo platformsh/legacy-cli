@@ -5,6 +5,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
+use Platformsh\Client\Model\Project;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
@@ -12,6 +13,7 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
@@ -21,6 +23,47 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /** @var array */
     private $bitbucketAccessTokens = [];
+
+    /**
+     * @param Project $project
+     * @param string|null $id
+     * @param bool $interactive
+     *
+     * @return Integration|false
+     */
+    protected function selectIntegration(Project $project, $id, $interactive) {
+        if (!$id && !$interactive) {
+            $this->stdErr->writeln('An integration ID is required.');
+
+            return false;
+        } elseif (!$id) {
+            $integrations = $project->getIntegrations();
+            if (empty($integrations)) {
+                $this->stdErr->writeln('No integrations found.');
+
+                return false;
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $choices = [];
+            foreach ($integrations as $integration) {
+                $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
+            }
+            $id = $questionHelper->choose($choices, 'Enter a number to choose an integration:');
+        }
+
+        $integration = $project->getIntegration($id);
+        if (!$integration) {
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return false;
+            }
+        }
+
+        return $integration;
+    }
 
     /**
      * @return Form
