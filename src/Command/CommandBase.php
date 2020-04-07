@@ -642,7 +642,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addEnvironmentOption()
     {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID');
     }
 
@@ -653,7 +652,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addAppOption()
     {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
