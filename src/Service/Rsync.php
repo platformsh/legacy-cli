@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Service;
 
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\NullOutput;
+
 /**
  * Helper class which runs rsync.
  */
@@ -9,15 +12,32 @@ class Rsync
 {
 
     private $shell;
+    private $ssh;
 
     /**
      * Constructor.
      *
      * @param Shell|null $shellHelper
+     * @param Ssh|null $ssh
      */
-    public function __construct(Shell $shellHelper = null)
+    public function __construct(Shell $shellHelper = null, Ssh $ssh = null)
     {
         $this->shell = $shellHelper ?: new Shell();
+        $this->ssh = $ssh ?: new Ssh(new ArrayInput([]), new NullOutput());
+    }
+
+    /**
+     * Returns environment variables for configuring rsync.
+     *
+     * @return array
+     */
+    private function env() {
+        $env = [];
+        if ($this->ssh->getSshArgs() !== []) {
+            $env['RSYNC_RSH'] = $this->ssh->getSshCommand();
+        }
+
+        return $env;
     }
 
     /**
@@ -104,6 +124,6 @@ class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, [], null);
+        $this->shell->execute($params, null, true, false, $this->env(), null);
     }
 }

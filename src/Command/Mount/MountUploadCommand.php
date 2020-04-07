@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -30,6 +31,7 @@ class MountUploadCommand extends CommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addRemoteContainerOptions();
+        Ssh::configureInput($this->getDefinition());
     }
 
     /**

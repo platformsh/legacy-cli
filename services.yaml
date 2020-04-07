@@ -103,7 +103,7 @@ services:
 
     rsync:
       class:     '\Platformsh\Cli\Service\Rsync'
-      arguments: ['@shell']
+      arguments: ['@shell', '@ssh']
 
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'
