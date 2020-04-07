@@ -22,8 +22,9 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $project = $this->getSelectedProject();
 
-        $integration = $this->selectIntegration($this->getSelectedProject(), $input->getArgument('id'), $input->isInteractive());
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
             return 1;
         }
