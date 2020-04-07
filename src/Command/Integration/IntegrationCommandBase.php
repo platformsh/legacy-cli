@@ -344,6 +344,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'The From address for alert emails',
                 'default' => $this->config()->getWithDefault('service.default_from_address', null),
+                'required' => false,
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
