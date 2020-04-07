@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "5e446cff976f61cf4a3eb187a389de6e71618ba6",
-        "sha256": "23e3c7dfdd983582ffce5e565e7e84b2d2575b0ee44c4decfc025db9fe323438",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.52.3/platform.phar",
-        "version": "3.52.3",
+        "sha1": "f1ec15a838ea347deb0df956c3fadb143cd419c4",
+        "sha256": "d493736e5996510490e381963653728cf2bbef709ba98e27ffdce3ccf7b209f3",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.53.0/platform.phar",
+        "version": "3.53.0",
         "php": {
             "min": "5.5.9"
         },
@@ -248,6 +248,11 @@
                 "notes": "New features:\n\n* Add an `environment:xdebug` (`xdebug`) command, which opens an SSH tunnel to\n  help debug PHP applications. The application must be configured with an\n  xdebug trigger key (help is available by running the command).\n\nImprovements to Windows installation\n\n* Generate a `platform.bat` file during installation (the `self:install`\n  command) so `platform` can be found in the Path.\n* Use \\ as the directory separator in user-facing installation paths.\n* Fix browser login: two bugs that prevented starting the local server, and\n  preventing opening the URL in the browser.\n* Improve installation help messages for setting up the Path environment\n  variable when using the Command Prompt.",
                 "show from": "3.51.0",
                 "hide from": "3.52.0"
+            },
+            {
+                "notes": "New features:\n\n  * Use Docker credential helpers to store secrets.\n    There are 3 Docker credential helpers available from:\n    https://github.com/docker/docker-credential-helpers\n\n    These allow storing secrets in a system appropriate way: Keychain on OS X,\n    the libsecret keyring on Linux (the GNOME keyring), and the Credential\n    Manager on Windows.\n\n    This falls back to the previous file-based storage for systems incompatible with\n    the credential helpers.\n\n  * Add integration:activity commands:\n    - integration:activity:get\n    - integration:activity:list (i:act)\n    - integration:activity:log\n\n  * Add API token login command (auth:api-token-login).\n\n  * Supply SSH options to mount:upload and mount:download commands.\n    This allows specifying an SSH key with the --identity-file (-i) option to\n    these commands.\n\nOther changes:\n\n  * Remove password login help (the auth:password-login command is deprecated).\n  * xdebug: change \"key\" to \"idekey\".\n  * Prefer .zshrc rather than .zprofile for installation in ZSH.\n  * Show the command output for failed processes to help debugging.",
+                "show from": "3.52.0",
+                "hide from": "3.53.0"
             }
         ]
     }
