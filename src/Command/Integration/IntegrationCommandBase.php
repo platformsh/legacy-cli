@@ -352,6 +352,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The recipient email address(es)',
                 'validator' => function ($emails) {
                     $invalid = array_filter($emails, function ($email) {
+                        // The special placeholders #viewers and #admins are
+                        // valid recipients.
+                        if (in_array($email, ['#viewers', '#admins'])) {
+                            return false;
+                        }
+
                         return !filter_var($email, FILTER_VALIDATE_EMAIL);
                     });
                     if (count($invalid)) {
