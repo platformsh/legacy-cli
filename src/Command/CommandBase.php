@@ -386,7 +386,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 if ($urlService->canOpenUrls()
                     && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
                     $this->stdErr->writeln('');
-                    $exitCode = $this->runOtherCommand('auth:browser-login');
+                    $exitCode = $this->runOtherCommand('auth:browser-login', ['--force' => true]);
                     $this->stdErr->writeln('');
                     $success = $exitCode === 0;
                 }

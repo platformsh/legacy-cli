@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Service;
 
+use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\ApiToken\Storage;
 use Platformsh\Cli\ApiToken\StorageInterface;
 use Platformsh\Cli\CredentialHelper\Manager;
@@ -13,6 +15,7 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -20,6 +23,9 @@ use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Storage\File;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -33,6 +39,12 @@ class Api
 
     /** @var \Doctrine\Common\Cache\CacheProvider */
     protected $cache;
+
+    /** @var OutputInterface */
+    private $output;
+
+    /** @var OutputInterface */
+    private $stdErr;
 
     /** @var StorageInterface */
     private $apiTokenStorage;
@@ -75,16 +87,20 @@ class Api
      *
      * @param Config|null $config
      * @param CacheProvider|null $cache
+     * @param OutputInterface|null $output
      * @param StorageInterface|null $apiTokenStorage
      * @param EventDispatcherInterface|null $dispatcher
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
+        OutputInterface $output = null,
         StorageInterface $apiTokenStorage = null,
         EventDispatcherInterface $dispatcher = null
     ) {
         $this->config = $config ?: new Config();
+        $this->output = $output ?: new ConsoleOutput();
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
         $this->apiTokenStorage = $apiTokenStorage ?: Storage::factory($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
 
@@ -272,7 +288,42 @@ class Api
             $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
         }
 
+        $connectorOptions['on_refresh_error'] = function (BadResponseException $e) {
+            return $this->onRefreshError($e);
+        };
+
         return $connectorOptions;
+    }
+
+    /**
+     * Logs out and prompts for re-authentication after a token refresh error.
+     *
+     * @param BadResponseException $e
+     *
+     * @return AccessToken|null
+     */
+    private function onRefreshError(BadResponseException $e) {
+        $response = $e->getResponse();
+        if ($response && !in_array($response->getStatusCode(), [400, 401])) {
+            return null;
+        }
+
+        $this->logout();
+        $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
+
+        if ($response && $this->stdErr->isVeryVerbose()) {
+            $this->stdErr->writeln($e->getMessage() . ApiResponseException::getErrorDetails($response));
+        }
+
+        $this->stdErr->writeln('');
+
+        $this->dispatcher->dispatch('login_required');
+        $session = $this->getClient(false)->getConnector()->getSession();
+        if (!$session->get('accessToken')) {
+            return null;
+        }
+
+        return new AccessToken($session->get('accessToken'), $session->get('tokenType') ?: null, ['expires' => $session->get('expires') ?: null]);
     }
 
     /**

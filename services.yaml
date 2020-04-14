@@ -26,7 +26,7 @@ services:
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
-        arguments: ['@config', '@cache', '@api_token_storage']
+        arguments: ['@config', '@cache', '@output', '@api_token_storage']
 
     api_token_storage:
       class:     '\Platformsh\Cli\ApiToken\StorageInterface'
