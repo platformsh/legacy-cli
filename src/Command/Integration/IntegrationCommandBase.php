@@ -342,7 +342,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'health.email',
                 ]],
-                'description' => 'The From address for alert emails',
+                'description' => '[Optional] Custom From address for alert emails',
                 'default' => $this->config()->getWithDefault('service.default_from_address', null),
                 'required' => false,
             ]),
