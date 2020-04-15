@@ -334,9 +334,9 @@ class LocalBuild
                 return false;
             }
         }
-        if (!rename($tmpBuildDir, $buildDir)) {
+        if (is_dir($tmpBuildDir) && !rename($tmpBuildDir, $buildDir)) {
             $this->output->writeln(sprintf(
-                'Failed to move temporary build directory into <error>%s</error>',
+                'Failed to move temporary build directory to <error>%s</error>',
                 $buildDir
             ));
 
