@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 class ProjectGetCommand extends CommandBase
 {
     protected function configure()
@@ -25,7 +25,8 @@ class ProjectGetCommand extends CommandBase
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
             ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to 'master' or the first available environment")
             ->addOption('depth', null, InputOption::VALUE_REQUIRED, 'Create a shallow clone: limit the number of commits in the history')
-            ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
+            ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning')
+            ->addOption('no-create-hooks', null, InputOption::VALUE_NONE, 'Do not create hooks in your git repository to help you avoid common mistakes');
         $this->addProjectOption();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
@@ -197,6 +198,17 @@ class ProjectGetCommand extends CommandBase
             $projectLabel,
             $projectRootRelative
         ));
+
+        if (!$input->getOption('no-create-hooks')) {
+            $this->debug('Creating hooks');
+
+            $questionHelper = $this->getService('question_helper');
+            $question = 'It looks like you already have a pre-commit hook, do you want to overwrite your existing pre-commit hook with ours?';
+
+            if(!$git->hasHook('pre-commit', $projectRoot) || $questionHelper->confirm($question)) {
+                $git->createHook('pre-commit', $projectRoot, $this->config()->get('application.executable'));
+            }            
+        }
 
         // Return early if there is no code in the repository.
         if (!glob($projectRoot . '/*', GLOB_NOSORT)) {

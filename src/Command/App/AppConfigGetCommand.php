@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\App;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
+use Platformsh\Cli\Local\LocalApplication;
+
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,7 +21,8 @@ class AppConfigGetCommand extends CommandBase
             ->setName('app:config-get')
             ->setDescription('View the configuration of an app')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->addOption('local','L', InputOption::VALUE_NONE, 'Use the local configuration');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -31,6 +34,7 @@ class AppConfigGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        
         // Allow override via PLATFORM_APPLICATION.
         $prefix = $this->config()->get('service.env_prefix');
         if (getenv($prefix . 'APPLICATION') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
@@ -40,6 +44,9 @@ class AppConfigGetCommand extends CommandBase
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'APPLICATION');
             }
             $appConfig = new AppConfig($decoded);
+        } elseif((bool) $input->getOption('local')) {
+            $local = new LocalApplication($this->getProjectRoot());
+            $appConfig = new AppConfig($local->getConfig());        
         } else {
             $this->validateInput($input);
             $this->warnAboutDeprecatedOptions(['identity-file']);

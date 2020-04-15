@@ -286,6 +286,24 @@ class Git
     }
 
     /**
+     * diff local against the Git remote.
+     *
+     * @param string      $remote
+     * @param string|null $branch
+     * @param string|null $dir
+     * @param bool        $mustRun
+     *
+     * @return string
+     */
+    public function diff($remote, $additional_args = null, $dir = null, $mustRun = false)
+    {
+        $args = ['diff', $remote];
+        if($additional_args) {
+            $args = array_merge($args, $additional_args);
+        }
+        return $this->execute($args, $dir, $mustRun, false);
+    }
+    /**
      * Pull a ref from a repository.
      *
      * @param string $repository A remote repository name or URL.
@@ -431,6 +449,32 @@ class Git
         return (bool) $this->execute($args, false, $mustRun, false);
     }
 
+    public function hasHook($hookName,$projectRoot) {
+        $gitRoot = $projectRoot . '/.git';
+        $dest_file="$gitRoot/hooks/$hookName";
+        
+        return file_exists($dest_file);
+    }
+
+    public function createHook($hookName, $projectRoot, $application_executable) {
+        $source_file="resources/hooks/$hookName";
+        $gitRoot = $projectRoot . '/.git';        
+        $dest_file="$gitRoot/hooks/$hookName";
+        
+        if(!file_exists($source_file)) {
+            throw new \RuntimeException('Hook does not exist');
+        }
+        
+        if(file_put_contents($dest_file, 
+            str_replace(
+                '$APPLICATION_EXECUTABLE', 
+                $application_executable,
+                file_get_contents($source_file)
+            )
+        )) {
+            chmod($dest_file,0755);
+        }
+    }
     /**
      * Find the root directory of a Git repository.
      *
