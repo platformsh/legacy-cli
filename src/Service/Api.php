@@ -22,6 +22,7 @@ use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\PlatformClient;
+use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -319,11 +320,35 @@ class Api
 
         $this->dispatcher->dispatch('login_required');
         $session = $this->getClient(false)->getConnector()->getSession();
-        if (!$session->get('accessToken')) {
+
+        return $this->tokenFromSession($session);
+    }
+
+    /**
+     * Loads and returns an AccessToken, if possible, from a session.
+     *
+     * @param SessionInterface $session
+     *
+     * @return AccessToken|null
+     */
+    private function tokenFromSession(SessionInterface $session) {
+        if (!$accessToken = $session->get('accessToken')) {
             return null;
         }
+        $map = [
+            'expires' => 'expires',
+            'refreshToken' => 'refresh_token',
+            'scope' => 'scope',
+        ];
+        $tokenData = [];
+        foreach ($map as $sessionKey => $tokenKey) {
+            $value = $session->get($sessionKey);
+            if ($value !== false && $value !== null) {
+                $tokenData[$tokenKey] = $value;
+            }
+        }
 
-        return new AccessToken($session->get('accessToken'), $session->get('tokenType') ?: null, ['expires' => $session->get('expires') ?: null]);
+        return new AccessToken($tokenData['access_token'], $session->get('tokenType') ?: null, $tokenData);
     }
 
     /**
