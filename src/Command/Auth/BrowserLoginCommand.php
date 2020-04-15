@@ -165,7 +165,8 @@ class BrowserLoginCommand extends CommandBase
         // Show some help.
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold>Help:</>');
-        $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
+        $this->stdErr->writeln('  Leave this command running during login.');
+        $this->stdErr->writeln('  If you need to quit, use Ctrl+C.');
         $this->stdErr->writeln("\n" . preg_replace('/^/m', '  ', $this->getApiTokenHelp()));
         $this->stdErr->writeln('');
 
