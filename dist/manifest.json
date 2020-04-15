@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "273b81502850892cc1171a3b9ddf71dd012c2260",
-        "sha256": "a23d9da35d332748be790f8161fdff53a52eeca5bbb2fe2e88b7aab393b78fdf",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.53.1/platform.phar",
-        "version": "3.53.1",
+        "sha1": "1e90f764feb4203f79eb7b68158ffd76d9dd8da3",
+        "sha256": "06ca91da1ea38b26eedf72fbee2289a3372179accd50f148f32fcdb1c475fdf5",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.54.0/platform.phar",
+        "version": "3.54.0",
         "php": {
             "min": "5.5.9"
         },
@@ -253,6 +253,11 @@
                 "notes": "New features:\n\n  * Use Docker credential helpers to store secrets.\n    There are 3 Docker credential helpers available from:\n    https://github.com/docker/docker-credential-helpers\n\n    These allow storing secrets in a system appropriate way: Keychain on OS X,\n    the libsecret keyring on Linux (the GNOME keyring), and the Credential\n    Manager on Windows.\n\n    This falls back to the previous file-based storage for systems incompatible with\n    the credential helpers.\n\n  * Add integration:activity commands:\n    - integration:activity:get\n    - integration:activity:list (i:act)\n    - integration:activity:log\n\n  * Add API token login command (auth:api-token-login).\n\n  * Supply SSH options to mount:upload and mount:download commands.\n    This allows specifying an SSH key with the --identity-file (-i) option to\n    these commands.\n\nOther changes:\n\n  * Remove password login help (the auth:password-login command is deprecated).\n  * xdebug: change \"key\" to \"idekey\".\n  * Prefer .zshrc rather than .zprofile for installation in ZSH.\n  * Show the command output for failed processes to help debugging.",
                 "show from": "3.52.0",
                 "hide from": "3.53.0"
+            },
+            {
+                "notes": "New features:\n\n* Automatically prompt for login when token refresh fails.\n\nOther changes:\n\n* Fix deleting httpaccess settings via the environment:httpaccess command.\n* Remove the unused --environment option for integration:activity commands\n  This also stops the commands unnecessarily prompting for an environment.\n* Tweak help for browser login.\n* Remove default From address for health.email notifications\n  The API now provides a sensible default.",
+                "show from": "3.53.0",
+                "hide from": "3.54.0"
             }
         ]
     }
