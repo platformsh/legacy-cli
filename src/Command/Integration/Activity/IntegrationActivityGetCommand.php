@@ -24,15 +24,16 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
             ->setDescription('View detailed information on a single integration activity');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->addProjectOption();
+        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->warnAboutDeprecatedOptions(['environment']);
+        $this->validateInput($input, true);
 
         $project = $this->getSelectedProject();
 

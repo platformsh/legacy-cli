@@ -30,13 +30,14 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         $this->setHiddenAliases(['integration:activities']);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->addProjectOption();
+        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->warnAboutDeprecatedOptions(['environment']);
+        $this->validateInput($input, true);
 
         $project = $this->getSelectedProject();
 

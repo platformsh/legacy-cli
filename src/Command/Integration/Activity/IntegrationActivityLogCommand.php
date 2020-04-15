@@ -24,13 +24,14 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
             ->setDescription('Display the log for an integration activity');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->addProjectOption();
+        $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->warnAboutDeprecatedOptions(['environment']);
+        $this->validateInput($input, true);
 
         $project = $this->getSelectedProject();
 
