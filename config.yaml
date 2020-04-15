@@ -47,6 +47,7 @@ application:
 # Configuration for working with projects locally.
 local:
   local_dir: '.platform/local'
+  cache_dir: '.platform/local/build-cache'
   archive_dir: '.platform/local/build-archives'
   build_dir: '.platform/local/builds'
   dependencies_dir: '.platform/local/deps'
