@@ -185,8 +185,8 @@ abstract class IntegrationCommandBase extends CommandBase
                     'bitbucket_server',
                     'github',
                 ]],
-                'description' => 'The repository to track (e.g. \'username/repository\')',
-                'questionLine' => 'The repository (e.g. \'username/repository\')',
+                'description' => 'The repository to track (e.g. \'owner/repository\')',
+                'questionLine' => 'The repository (e.g. \'owner/repository\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
