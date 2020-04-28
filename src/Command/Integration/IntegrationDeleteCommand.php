@@ -14,7 +14,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     {
         $this
             ->setName('integration:delete')
-            ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.')
             ->setDescription('Delete an integration from a project');
         $this->addProjectOption()->addWaitOptions();
     }
