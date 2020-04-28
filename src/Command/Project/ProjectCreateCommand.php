@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Project;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
@@ -83,6 +84,12 @@ EOF
                 $currentProject = $this->getCurrentProject();
             } catch (ProjectNotFoundException $e) {
                 $currentProject = false;
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                    $currentProject = false;
+                } else {
+                    throw $e;
+                }
             }
 
             $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
