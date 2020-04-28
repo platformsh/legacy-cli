@@ -117,8 +117,8 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             ));
             $this->stdErr->writeln(sprintf(
                 'To list activities for this integration, run: <info>%s integration:activities %s</info>',
-                $integration->id,
-                $executable
+                $executable,
+                $integration->id
             ));
         }
 
