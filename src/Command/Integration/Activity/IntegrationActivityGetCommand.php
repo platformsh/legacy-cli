@@ -110,13 +110,15 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
-                'To view the log for this activity, run: <info>%s integration:activity:log %s</info>',
+                'To view the log for this activity, run: <info>%s integration:activity:log %s %s</info>',
                 $executable,
+                $integration->id,
                 $activity->id
             ));
             $this->stdErr->writeln(sprintf(
-                'To list activities, run: <info>%s integration:activities</info>',
-                $executable
+                'To list activities for this integration, run: <info>%s integration:activities %s</info>',
+                $executable,
+                $integration->id
             ));
         }
 
