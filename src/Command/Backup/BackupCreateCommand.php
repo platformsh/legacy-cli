@@ -40,9 +40,13 @@ class BackupCreateCommand extends CommandBase
             } elseif (!$selectedEnvironment->isActive()) {
                 $this->stdErr->writeln('The environment is not active.');
             } else {
-                $access = $selectedEnvironment->getUser($this->api()->getMyAccount()['id']);
-                if ($access->role !== 'admin') {
-                    $this->stdErr->writeln('You must be an administrator to create a backup.');
+                try {
+                    $access = $selectedEnvironment->getUser($this->api()->getMyAccount()['id']);
+                    if ($access->role !== 'admin') {
+                        $this->stdErr->writeln('You must be an administrator to create a backup.');
+                    }
+                } catch (\InvalidArgumentException $e) {
+                    // Suppress exceptions when the 'access' API is not available for this environment.
                 }
             }
 
