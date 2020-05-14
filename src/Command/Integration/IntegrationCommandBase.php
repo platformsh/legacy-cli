@@ -10,6 +10,7 @@ use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
 use Platformsh\ConsoleForm\Field\Field;
+use Platformsh\ConsoleForm\Field\FileField;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
@@ -128,6 +129,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.pagerduty',
                     'health.slack',
                     'health.webhook',
+                    'script',
                 ],
             ]),
             'base_url' => new UrlField('Base URL', [
@@ -301,22 +303,40 @@ abstract class IntegrationCommandBase extends CommandBase
                 'questionLine' => 'Enter the JWS shared secret key, for validating webhook requests',
                 'required' => false,
             ]),
-            'events' => new ArrayField('Events to report', [
+            'script' => new FileField('Script file', [
+                'conditions' => ['type' => [
+                    'script',
+                ]],
+                'optionName' => 'file',
+                'allowedExtensions' => ['.js', ''],
+                'contentsAsValue' => true,
+                'description' => 'The name of a local file that contains the script to upload',
+                'normalizer' => function ($value) {
+                    if (getenv('HOME') && strpos($value, '~/') === 0) {
+                        return getenv('HOME') . '/' . substr($value, 2);
+                    }
+
+                    return $value;
+                },
+            ]),
+            'events' => new ArrayField('Events', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
+                    'script',
                 ]],
                 'default' => ['*'],
-                'description' => 'A list of events to report, e.g. environment.push',
+                'description' => 'A list of events to act on, e.g. environment.push',
                 'optionName' => 'events',
             ]),
-            'states' => new ArrayField('States to report', [
+            'states' => new ArrayField('States', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
+                    'script',
                 ]],
                 'default' => ['complete'],
-                'description' => 'A list of states to report, e.g. pending, in_progress, complete',
+                'description' => 'A list of states to act on, e.g. pending, in_progress, complete',
                 'optionName' => 'states',
             ]),
             'environments' => new ArrayField('Included environments', [
@@ -463,6 +483,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
         $client = $this->api()->getHttpClient();
 
+        $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
             'Checking webhook configuration on the repository: <info>%s</info>',
             $repoName
