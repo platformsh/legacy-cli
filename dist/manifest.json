@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "04a3d506c9134f572dadfb37722bc5e98ef7cec0",
-        "sha256": "75416fc0789bed9c5c12e89259420b8af66601479b80b0dc55a73cdf34f46879",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.54.2/platform.phar",
-        "version": "3.54.2",
+        "sha1": "d31eadf81afdae8e628c8b1c825faf22289166fa",
+        "sha256": "0855ffcd2b5388bc4c552674fc5416446caaef4dbd1feb7c689c64f993472235",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.55.0/platform.phar",
+        "version": "3.55.0",
         "php": {
             "min": "5.5.9"
         },
@@ -258,6 +258,11 @@
                 "notes": "New features:\n\n* Automatically prompt for login when token refresh fails.\n\nOther changes:\n\n* Fix deleting httpaccess settings via the environment:httpaccess command.\n* Remove the unused --environment option for integration:activity commands\n  This also stops the commands unnecessarily prompting for an environment.\n* Tweak help for browser login.\n* Remove default From address for health.email notifications\n  The API now provides a sensible default.",
                 "show from": "3.53.0",
                 "hide from": "3.54.0"
+            },
+            {
+                "notes": "New features:\n\n*  Add activity scripts (`script`) integration type\n\nOther changes:\n\n* Suppress \"Link not found: #manage-access\" exception in backup:create command.\n* Clarify deprecation message for the --type option on the integration:update command.\n* Make integration:update command determine changes correctly.",
+                "show from": "3.54.0",
+                "hide from": "3.55.0"
             }
         ]
     }
