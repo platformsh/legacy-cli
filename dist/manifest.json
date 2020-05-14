@@ -260,7 +260,7 @@
                 "hide from": "3.54.0"
             },
             {
-                "notes": "New features:\n\n*  Add activity scripts (`script`) integration type\n\nOther changes:\n\n* Suppress \"Link not found: #manage-access\" exception in backup:create command.\n* Clarify deprecation message for the --type option on the integration:update command.\n* Make integration:update command determine changes correctly.",
+                "notes": "New features:\n\n* Add activity scripts (`script`) integration type\n\nOther changes:\n\n* Suppress \"Link not found: #manage-access\" exception in backup:create command.\n* Clarify deprecation message for the --type option on the integration:update command.\n* Make integration:update command determine changes correctly.",
                 "show from": "3.54.0",
                 "hide from": "3.55.0"
             }
