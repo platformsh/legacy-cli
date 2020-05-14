@@ -29,7 +29,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         $this->warnAboutDeprecatedOptions(
             ['type'],
-            'The option --%s is deprecated and will be removed in a future version.'
+            'The --type option is not supported on the integration:update command. The integration type cannot be changed.'
         );
 
         $this->validateInput($input);
