@@ -158,6 +158,8 @@ class LocalApplication
      * Get the application's configuration as an object.
      *
      * @throws InvalidConfigException if config is not found or invalid
+     * @throws \Symfony\Component\Yaml\Exception\ParseException if config cannot be parsed
+     * @throws \Exception if the config file cannot be read
      *
      * @return AppConfig
      */
