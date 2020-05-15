@@ -100,7 +100,7 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @return string|null
      */
-    protected function formatDate($value)
+    public function formatDate($value)
     {
         $format = null;
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {

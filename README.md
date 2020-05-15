@@ -266,6 +266,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_SHELL_CONFIG_FILE`: specify the shell configuration file that the installer should write to (as an absolute path). If not set, a file such as `~/.bashrc` will be chosen automatically. Set this to an empty string to disable writing to a shell config file.
 * `PLATFORMSH_CLI_TOKEN`: an API token. *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access. Additionally, storing a secret in an environment variable can be insecure. It may be better to use the `auth:api-token-login` command. The environment variable is preferable on CI systems like Jenkins and GitLab.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
+* `PLATFORMSH_CLI_AUTO_LOAD_SSH_CERT`: set to 1 to enable automatic loading of an SSH certificate when running login or SSH commands
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
 

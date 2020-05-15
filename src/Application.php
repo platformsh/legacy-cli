@@ -195,6 +195,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Backup\BackupListCommand();
         $commands[] = new Command\Backup\BackupRestoreCommand();
         $commands[] = new Command\SourceOperation\RunCommand();
+        $commands[] = new Command\SshCert\SshCertLoadCommand();
         $commands[] = new Command\SshKey\SshKeyAddCommand();
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
         $commands[] = new Command\SshKey\SshKeyListCommand();

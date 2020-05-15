@@ -125,6 +125,16 @@ api:
   # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
+  # Certifier API endpoint
+  certifier_api_url: 'https://ssh.api.platform.sh'
+
+  # Wildcard domain
+  ssh_domain_wildcard: '*.platform.sh'
+
+  # Whether to auto-load an SSH certificate on login and SSH commands.
+  # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
+  auto_load_ssh_cert: false
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'platform'

@@ -35,7 +35,7 @@ class WelcomeCommand extends CommandBase
 
         $executable = $this->config()->get('application.executable');
 
-        if ($this->api()->isLoggedIn()) {
+        if ($this->api()->isLoggedIn() && !$this->config()->get('api.auto_load_ssh_cert')) {
             $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
         }
 

@@ -89,15 +89,7 @@ class ApiTokenLoginCommand extends CommandBase
         $question->setHidden(true);
         $questionHelper->ask($input, $output, $question);
 
-        $info = $this->api()->getClient(false, true)->getAccountInfo();
-        if (isset($info['username'], $info['mail'])) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                'You are logged in as <info>%s</info> (%s).',
-                $info['username'],
-                $info['mail']
-            ));
-        }
+        $this->finalizeLogin();
 
         return 0;
     }
