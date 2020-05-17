@@ -7,6 +7,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -266,52 +267,10 @@ class Certifier
     private function getUserSshConfigChanges($currentConfig, $newConfig)
     {
         $serviceName = (string)$this->config->get('service.name');
-        $begin = '# BEGIN: ' . $serviceName . ' certificate configuration';
-        $end = '# END: ' . $serviceName . ' certificate configuration';
+        $begin = '# BEGIN: ' . $serviceName . ' certificate configuration' . PHP_EOL;
+        $end = PHP_EOL . '# END: ' . $serviceName . ' certificate configuration';
 
-        // Look for the position of the $begin string in the current config.
-        $beginPos = strpos($currentConfig, $begin);
-
-        // Otherwise, look for a line that loosely matches the $begin string.
-        if ($beginPos === false) {
-            $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET: ' . $serviceName) . '[^\n]*$/m';
-            if (preg_match($beginPattern, $currentConfig, $matches, PREG_OFFSET_CAPTURE)) {
-                $beginPos = $matches[0][1];
-            }
-        }
-
-        // Find the snippet's end: the first occurrence of $end after $begin.
-        $endPos = false;
-        if ($beginPos !== false) {
-            $endPos = strpos($currentConfig, $end, $beginPos);
-        }
-
-        // If an existing snippet has been found, update it.
-        if ($beginPos !== false && $endPos !== false && $endPos > $beginPos) {
-            if ($newConfig !== '') {
-                $insert = $begin . PHP_EOL . $newConfig . ' ' . PHP_EOL . $end;
-            } else {
-                $insert = '';
-            }
-
-            return substr_replace(
-                $currentConfig,
-                $insert,
-                $beginPos,
-                $endPos + strlen($end) - $beginPos
-            );
-        }
-
-        // Otherwise, add a new snippet to the end of the file.
-        $output = rtrim($currentConfig, PHP_EOL);
-        if (strlen($output)) {
-            $output .= PHP_EOL . PHP_EOL;
-        }
-        $output .= $begin
-            . PHP_EOL . $newConfig . ' ' . PHP_EOL . $end
-            . PHP_EOL;
-
-        return $output;
+        return (new Snippeter())->updateSnippet($currentConfig, $newConfig, $begin, $end);
     }
 
     /**
