@@ -46,6 +46,10 @@ services:
         class:     '\Platformsh\Cli\Service\CacheFactory'
         public:    false
 
+    certifier:
+      class:     '\Platformsh\Cli\SshCert\Certifier'
+      arguments: ['@api', '@config', '@shell', '@fs', '@output']
+
     config:
         class:     '\Platformsh\Cli\Service\Config'
 
@@ -124,7 +128,7 @@ services:
 
     ssh:
         class:     '\Platformsh\Cli\Service\Ssh'
-        arguments: ['@input', '@output']
+        arguments: ['@input', '@output', '@certifier']
 
     state:
         class:     '\Platformsh\Cli\Service\State'

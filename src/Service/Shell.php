@@ -105,22 +105,29 @@ class Shell
             OutputInterface::VERBOSITY_VERBOSE
         );
 
+        $blankLine = false;
+
         if (!empty($input) && is_string($input)) {
             $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input), OutputInterface::VERBOSITY_VERBOSE);
+            $blankLine = true;
         }
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
+            $blankLine = true;
             $process->setEnv($env + $this->getParentEnv());
         }
 
         if ($dir && is_dir($dir)) {
             $process->setWorkingDirectory($dir);
             $this->showWorkingDirMessage($dir);
+            $blankLine = true;
         }
 
         // Blank line just to aid debugging.
-        $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
+        if ($blankLine) {
+            $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
+        }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
 

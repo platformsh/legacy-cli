@@ -1604,4 +1604,34 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell);
     }
+
+    /**
+     * Finalizes login: refreshes SSH certificate, prints account information.
+     */
+    protected function finalizeLogin()
+    {
+        // Reset the API client so that it will use the new tokens.
+        $client = $this->api()->getClient(false, true);
+        $this->stdErr->writeln('You are logged in.');
+
+        // Generate a new certificate from the certifier API.
+        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
+        $certifier = $this->getService('certifier');
+        if ($certifier->isAutoLoadEnabled()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Generating SSH certificate...');
+            $certifier->generateCertificate();
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $certifier->addUserSshConfig($questionHelper);
+        }
+
+        // Show user account info.
+        $info = $client->getAccountInfo();
+        $this->stdErr->writeln(sprintf(
+            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
+            $info['username'],
+            $info['mail']
+        ));
+    }
 }

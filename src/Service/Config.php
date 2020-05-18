@@ -167,11 +167,18 @@ class Config
     }
 
     /**
+     * @param bool $subDir
+     *
      * @return string
      */
-    public function getSessionDir()
+    public function getSessionDir($subDir = false)
     {
-        return $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
+        $sessionDir = $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
+        if ($subDir) {
+            return $sessionDir . DIRECTORY_SEPARATOR . 'sess-cli-' . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
+        }
+
+        return $sessionDir;
     }
 
     /**
@@ -227,6 +234,7 @@ class Config
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
+            'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
             'UPDATES_CHECK' => 'updates.check',
         ];
 

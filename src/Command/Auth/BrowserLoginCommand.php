@@ -228,17 +228,7 @@ class BrowserLoginCommand extends CommandBase
         $session = $this->api()->getClient(false)->getConnector()->getSession();
         $this->saveAccessToken($token, $session);
 
-        // Reset the API client so that it will use the new tokens.
-        $client = $this->api()->getClient(false, true);
-        $this->stdErr->writeln('You are logged in.');
-
-        // Show user account info.
-        $info = $client->getAccountInfo();
-        $this->stdErr->writeln(sprintf(
-            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
-            $info['username'],
-            $info['mail']
-        ));
+        $this->finalizeLogin();
 
         return 0;
     }

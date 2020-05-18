@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Self;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -225,15 +226,11 @@ EOT
         }
 
         $appName = (string) $this->config()->get('application.name');
-        $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration';
-        $end = '# END SNIPPET';
+        $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration' . PHP_EOL;
+        $end = ' # END SNIPPET';
+        $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
 
         if ($shellConfigFile === false || !$modify) {
-            $suggestedShellConfig = PHP_EOL
-                . $begin
-                . PHP_EOL
-                . $suggestedShellConfig
-                . ' ' . $end;
             if ($shellConfigFile !== false) {
                 $this->stdErr->writeln(sprintf(
                     'To set up the CLI, add the following lines to: <comment>%s</comment>',
@@ -245,45 +242,11 @@ EOT
                 );
             }
 
-            $this->stdErr->writeln($suggestedShellConfig);
+            $this->stdErr->writeln($begin . $suggestedShellConfig . $end);
             return 1;
         }
 
-        // Look for the position of the $begin string in the current config.
-        $beginPos = strpos($currentShellConfig, $begin);
-
-        // Otherwise, look for a line that loosely matches the $begin string.
-        if ($beginPos === false) {
-            $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
-            if (preg_match($beginPattern, $currentShellConfig, $matches, PREG_OFFSET_CAPTURE)) {
-                $beginPos = $matches[0][1];
-            }
-        }
-
-        // Find the snippet's end: the first occurrence of $end after $begin.
-        $endPos = false;
-        if ($beginPos !== false) {
-            $endPos = strpos($currentShellConfig, $end, $beginPos);
-        }
-
-        // If an existing snippet has been found, update it. Otherwise, add a
-        // new snippet to the end of the file.
-        if ($beginPos !== false && $endPos !== false && $endPos > $beginPos) {
-            $newShellConfig = substr_replace(
-                $currentShellConfig,
-                $begin . PHP_EOL . $suggestedShellConfig . ' ' . $end,
-                $beginPos,
-                $endPos + strlen($end) - $beginPos
-            );
-        } else {
-            $newShellConfig = rtrim($currentShellConfig, PHP_EOL);
-            if (strlen($newShellConfig)) {
-                $newShellConfig .= PHP_EOL . PHP_EOL;
-            }
-            $newShellConfig .= $begin
-                . PHP_EOL . $suggestedShellConfig . ' ' . $end
-                . PHP_EOL;
-        }
+        $newShellConfig = (new Snippeter())->updateSnippet($currentShellConfig, $suggestedShellConfig, $begin, $end, $beginPattern);
 
         if (file_exists($shellConfigFile)) {
             copy($shellConfigFile, $shellConfigFile . '.cli.bak');

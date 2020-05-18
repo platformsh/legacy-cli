@@ -2,20 +2,25 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\SshCert\Certifier;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;
+    protected $ssh;
+    protected $certifier;
 
-    public function __construct(InputInterface $input, OutputInterface $output)
+    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier)
     {
         $this->input = $input;
         $this->output = $output;
+        $this->certifier = $certifier;
     }
 
     /**
@@ -64,6 +69,19 @@ class Ssh implements InputConfiguringInterface
             }
             $options['IdentitiesOnly'] = 'yes';
             $options['IdentityFile'] = $file;
+        } else {
+            // Inject the SSH certificate.
+            $sshCert = $this->certifier->getExistingCertificate();
+            if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
+                if (!$sshCert || $sshCert->metadata()->hasExpired()) {
+                    $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
+                    $stdErr->writeln('Generating SSH certificate', OutputInterface::VERBOSITY_VERBOSE);
+                    $sshCert = $this->certifier->generateCertificate();
+                }
+
+                $options['CertificateFile'] = $sshCert->certificateFilename();
+                $options['IdentityFile'] = $sshCert->privateKeyFilename();
+            }
         }
 
         if ($this->output->isDebug()) {
