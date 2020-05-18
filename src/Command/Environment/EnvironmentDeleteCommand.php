@@ -16,6 +16,7 @@ class EnvironmentDeleteCommand extends CommandBase
     {
         $this
             ->setName('environment:delete')
+            ->setAliases(['environment:deactivate'])
             ->setDescription('Delete an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
