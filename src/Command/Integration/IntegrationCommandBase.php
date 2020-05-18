@@ -215,6 +215,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'Build every pull request as an environment',
             ]),
+            'build_draft_pull_requests' => new BooleanField('Build draft pull requests', [
+                'conditions' => [
+                    'type' => [
+                        'github',
+                    ],
+                    'build_pull_requests' => true,
+                ],
+            ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
               'conditions' => [
                 'type' => [
@@ -224,6 +232,16 @@ abstract class IntegrationCommandBase extends CommandBase
               ],
               'default' => false,
               'description' => 'Build pull requests based on their post-merge state',
+            ]),
+            'build_wip_merge_requests' => new BooleanField('Build WIP merge requests', [
+                'conditions' => [
+                    'type' => [
+                        'gitlab',
+                    ],
+                    'build_merge_requests' => true,
+                ],
+                'description' => 'GitLab: build WIP merge requests',
+                'questionLine' => 'Build WIP (work in progress) merge requests',
             ]),
             'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
                 'optionName' => 'merge-requests-clone-parent-data',
