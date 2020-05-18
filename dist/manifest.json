@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "d31eadf81afdae8e628c8b1c825faf22289166fa",
-        "sha256": "0855ffcd2b5388bc4c552674fc5416446caaef4dbd1feb7c689c64f993472235",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.55.0/platform.phar",
-        "version": "3.55.0",
+        "sha1": "5084163dc6f57101bc45c104269a457d7ab264d2",
+        "sha256": "dfbbd90bd30e57dc76042277cf956a74730626e4873b7076028acd4e11d6c88d",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.56.0/platform.phar",
+        "version": "3.56.0",
         "php": {
             "min": "5.5.9"
         },
@@ -263,6 +263,11 @@
                 "notes": "New features:\n\n* Add activity scripts (`script`) integration type\n\nOther changes:\n\n* Suppress \"Link not found: #manage-access\" exception in backup:create command.\n* Clarify deprecation message for the --type option on the integration:update command.\n* Make integration:update command determine changes correctly.",
                 "show from": "3.54.0",
                 "hide from": "3.55.0"
+            },
+            {
+                "notes": "New features:\n\n* Support an option for building draft pull requests in the GitHub integration,\n  and the equivalent (building WIP merge requests) for GitLab.\n* Add automatic SSH certificate support (disabled by default).\n\nOther changes:\n\n* Add `environment:deactivate` as an alias of the `environment:delete` command.\n* Fix error in command listing, when the .platform.app.yaml is not found",
+                "show from": "3.55.0",
+                "hide from": "3.56.0"
             }
         ]
     }
