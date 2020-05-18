@@ -234,7 +234,9 @@ class Config
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
+            'CERTIFIER_URL' => 'api.certifier_url',
             'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
+            'SSH_DOMAIN_WILDCARD' => 'api.ssh_domain_wildcard',
             'UPDATES_CHECK' => 'updates.check',
         ];
 

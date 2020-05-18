@@ -217,7 +217,7 @@ class Certifier
         // Generate a request object using the access token.
         // @todo move this request into the PHP client
         $httpClient = $this->api->getClient()->getConnector()->getClient();
-        $certificate = $httpClient->post($this->config->get('api.certifier_api_url') . '/ssh', [
+        $certificate = $httpClient->post($this->config->get('api.certifier_url') . '/ssh', [
             'headers' => [
                 'Content-Type' => 'application/json',
             ],

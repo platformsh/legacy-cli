@@ -125,10 +125,12 @@ api:
   # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
-  # Certifier API endpoint
-  certifier_api_url: 'https://ssh.api.platform.sh'
+  # Certifier API URL.
+  # Overridden by {application.env_prefix}CERTIFIER_URL env var.
+  certifier_url: 'https://ssh.api.platform.sh'
 
-  # Wildcard domain
+  # Wildcard domain for SSH configuration.
+  # Overridden by {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
   ssh_domain_wildcard: '*.platform.sh'
 
   # Whether to auto-load an SSH certificate on login and SSH commands.
