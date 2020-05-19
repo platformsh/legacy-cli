@@ -38,6 +38,8 @@ class Certificate {
     /**
      * Returns certificate metadata.
      *
+     * @throws \RuntimeException if the certificate file cannot be read
+     *
      * @return Metadata
      */
     public function metadata()
@@ -45,10 +47,32 @@ class Certificate {
         if (isset($this->metadata)) {
             return $this->metadata;
         }
-        $contents = file_get_contents($this->certFile);
+        $contents = \file_get_contents($this->certFile);
         if (!$contents) {
             throw new \RuntimeException('Failed to read certificate file: ' . $this->certFile);
         }
         return $this->metadata = new Metadata($contents);
+    }
+
+    /**
+     * Checks if the certificate has expired.
+     *
+     * @param int $buffer
+     *   A duration in seconds by which to reduce the certificate's lifetime,
+     *   to account for clock drift. Defaults to 300 (five minutes).
+     *
+     * @return bool
+     */
+    public function hasExpired($buffer = 300) {
+        return $this->metadata()->getValidBefore() - $buffer < \time();
+    }
+
+    /**
+     * Checks the certificate's "has MFA" claim: whether the user was authenticated via MFA.
+     *
+     * @return bool
+     */
+    public function hasMfa() {
+        return strpos($this->metadata()->extensions(), 'has-mfa@platform.sh') !== false;
     }
 }

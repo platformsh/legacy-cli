@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\SshCert;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\SshCert\Certificate;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -29,21 +30,19 @@ class SshCertLoadCommand extends CommandBase
         /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
         $certifier = $this->getService('certifier');
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $sshCert = $certifier->getExistingCertificate();
 
         $refresh = true;
-        if ($sshCert && !$input->getOption('new') && !$input->getOption('new-key') && !$sshCert->metadata()->hasExpired()) {
-            $this->stdErr->writeln(sprintf('An SSH certificate exists and is valid until: <info>%s</info>', $formatter->formatDate($sshCert->metadata()->validBefore())));
+        if ($sshCert && !$input->getOption('new') && !$input->getOption('new-key') && !$sshCert->hasExpired()) {
+            $this->stdErr->writeln('A valid SSH certificate exists');
+            $this->displayCertificate($sshCert);
             $refresh = false;
         }
 
         if ($refresh) {
-            $this->stdErr->writeln('Generating SSH certificate');
+            $this->stdErr->writeln('Generating SSH certificate...');
             $sshCert = $certifier->generateCertificate($input->getOption('new-key'));
-            $this->stdErr->writeln(sprintf('Created SSH certificate, valid until: <info>%s</info>', $formatter->formatDate($sshCert->metadata()->validBefore())));
+            $this->displayCertificate($sshCert);
         }
 
         if ($input->getOption('refresh-only')) {
@@ -55,5 +54,19 @@ class SshCertLoadCommand extends CommandBase
         $success = $certifier->addUserSshConfig($questionHelper);
 
         return $success ? 0 : 1;
+    }
+
+    private function displayCertificate(Certificate $cert)
+    {
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+        $validBefore = $formatter->formatDate($cert->metadata()->getValidBefore());
+        $claims = [
+            'Valid until' => $validBefore < time() ? '<fg=green>' . $validBefore . '</>' : $validBefore,
+            'Multi-factor authentication' => $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified',
+        ];
+        foreach ($claims as $claim => $value) {
+            $this->stdErr->writeln("  $claim: $value");
+        }
     }
 }

@@ -73,7 +73,7 @@ class Ssh implements InputConfiguringInterface
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
-                if (!$sshCert || $sshCert->metadata()->hasExpired()) {
+                if (!$sshCert || $sshCert->hasExpired()) {
                     $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
                     $stdErr->writeln('Generating SSH certificate', OutputInterface::VERBOSITY_VERBOSE);
                     $sshCert = $this->certifier->generateCertificate();
