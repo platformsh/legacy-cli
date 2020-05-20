@@ -75,12 +75,19 @@ class Ssh implements InputConfiguringInterface
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
                 if (!$sshCert || $sshCert->hasExpired()) {
                     $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
-                    $stdErr->writeln('Generating SSH certificate', OutputInterface::VERBOSITY_VERBOSE);
-                    $sshCert = $this->certifier->generateCertificate();
+                    $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
+                    try {
+                        $sshCert = $this->certifier->generateCertificate();
+                        $stdErr->writeln('A new SSH certificate has been generated.', OutputInterface::VERBOSITY_VERBOSE);
+                    } catch (\Exception $e) {
+                        $stdErr->writeln('Failed to generate SSH certificate: <error>' . $e->getMessage() . '</error>');
+                    }
                 }
 
-                $options['CertificateFile'] = $sshCert->certificateFilename();
-                $options['IdentityFile'] = $sshCert->privateKeyFilename();
+                if ($sshCert) {
+                    $options['CertificateFile'] = $sshCert->certificateFilename();
+                    $options['IdentityFile'] = $sshCert->privateKeyFilename();
+                }
             }
         }
 

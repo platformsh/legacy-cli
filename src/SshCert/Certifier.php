@@ -61,10 +61,16 @@ class Certifier
             throw new \RuntimeException('Failed to read public key file: ' . $publicContents);
         }
 
+        $certificateFilename = $sshPair['private'] . '-cert.pub';
+        // Remove the existing certificate before generating a new one, so as
+        // not to leave an invalid key/cert set.
+        if (\file_exists($certificateFilename)) {
+            $this->fs->remove($certificateFilename);
+        }
+
         $this->stdErr->writeln('Requesting certificate from the API', OutputInterface::VERBOSITY_VERBOSE);
         $certificate = $this->requestCertificate($publicContents);
 
-        $certificateFilename = $sshPair['private'] . '-cert.pub';
         $this->fs->writeFile($certificateFilename, $certificate);
         @chmod($certificateFilename, 0600);
 
@@ -77,7 +83,7 @@ class Certifier
     /**
      * Checks whether a valid certificate exists with other necessary files.
      *
-     * @return Certificate|false
+     * @return Certificate|null
      */
     public function getExistingCertificate()
     {
@@ -86,11 +92,8 @@ class Certifier
         $cert = $private . '-cert.pub';
 
         $exists = is_dir($dir) && file_exists($private) && file_exists($cert);
-        if (!$exists) {
-            return false;
-        }
 
-        return new Certificate($cert, $private);
+        return $exists ? new Certificate($cert, $private) : null;
     }
 
     /**
@@ -214,21 +217,12 @@ class Certifier
      */
     private function requestCertificate($sshKey)
     {
-        // Generate a request object using the access token.
-        // @todo move this request into the PHP client
+        // @todo make this available in the PHP client library
         $httpClient = $this->api->getClient()->getConnector()->getClient();
-        $certificate = $httpClient->post($this->config->get('api.certifier_url') . '/ssh', [
-            'headers' => [
-                'Content-Type' => 'application/json',
-            ],
-            'json' => [
-                'key' => $sshKey,
-            ],
-        ])->json();
-
-        if (empty($certificate)) {
-            throw new \RuntimeException('Failed to refresh the certificate.');
-        }
+        $certificate = $httpClient->post(
+            $this->config->get('api.certifier_url') . '/ssh',
+            ['json' => ['key' => $sshKey]]
+        )->json();
 
         return $certificate['certificate'];
     }

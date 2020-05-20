@@ -60,13 +60,13 @@ class SshCertLoadCommand extends CommandBase
     {
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $validBefore = $formatter->formatDate($cert->metadata()->getValidBefore());
-        $claims = [
-            'Valid until' => $validBefore < time() ? '<fg=green>' . $validBefore . '</>' : $validBefore,
-            'Multi-factor authentication' => $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified',
-        ];
-        foreach ($claims as $claim => $value) {
-            $this->stdErr->writeln("  $claim: $value");
-        }
+        $expires = $formatter->formatDate($cert->metadata()->getValidBefore());
+        $expiresWithColor = $expires < time() ? '<fg=green>' . $expires . '</>' : $expires;
+        $mfaWithColor = $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified';
+        $this->stdErr->writeln([
+            "  Expires at: $expiresWithColor",
+            "  Multi-factor authentication: $mfaWithColor"
+        ]);
+        $this->stdErr->writeln('The certificate will be automatically refreshed when necessary.');
     }
 }
