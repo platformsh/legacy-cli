@@ -72,7 +72,7 @@ class Certifier
         $certificate = $this->requestCertificate($publicContents);
 
         $this->fs->writeFile($certificateFilename, $certificate);
-        @chmod($certificateFilename, 0600);
+        $this->chmod($certificateFilename, 0600);
 
         $this->stdErr->writeln('Generating include file for SSH configuration', OutputInterface::VERBOSITY_VERBOSE);
         $this->createSshConfig($certificateFilename, $sshPair['private']);
@@ -148,6 +148,8 @@ class Certifier
             $this->stdErr->writeln('Configuration file updated successfully: <info>' . $filename . '</info>');
         }
 
+        $this->chmod($filename, 0600);
+
         return true;
     }
 
@@ -191,8 +193,8 @@ class Certifier
         }
         // Generate new keys and set permissions.
         $this->shell->execute(['ssh-keygen', '-t', 'rsa', '-N', '', '-f', $sshInfo['private']], null, true);
-        @chmod($sshInfo['private'], 0600);
-        @chmod($sshInfo['public'], 0600);
+        $this->chmod($sshInfo['private'], 0600);
+        $this->chmod($sshInfo['public'], 0600);
 
         return $sshInfo;
     }
@@ -245,6 +247,24 @@ class Certifier
         ];
 
         $this->fs->writeFile($filename, implode(PHP_EOL, $lines) . PHP_EOL, false);
+        $this->chmod($filename, 0600);
+    }
+
+    /**
+     * Change file permissions and emit a warning on failure.
+     *
+     * @param string $filename
+     * @param int $mode
+     *
+     * @return bool
+     */
+    private function chmod($filename, $mode)
+    {
+        if (!@chmod($filename, $mode)) {
+            $this->stdErr->writeln('Warning: failed to change permissions on file: <comment>' . $filename . '</comment>');
+            return false;
+        }
+        return true;
     }
 
     /**
