@@ -319,6 +319,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($newVersion !== false) {
             $this->continueAfterUpdating($currentVersion, $newVersion, $pharFilename);
+            exit(0);
         }
 
         $this->stdErr->writeln('');
@@ -339,8 +340,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!isset($this->input) || !$this->input instanceof ArgvInput || !is_executable($pharFilename)) {
             return;
         }
-        list($currentMajorVersion,) = explode('.', $currentVersion, 2);
-        list($newMajorVersion,) = explode('.', $newVersion, 2);
+        list($currentMajorVersion,) = explode('.', ltrim($currentVersion, 'v'), 2);
+        list($newMajorVersion,) = explode('.', ltrim($newVersion, 'v'), 2);
         if ($newMajorVersion !== $currentMajorVersion) {
             return;
         }
