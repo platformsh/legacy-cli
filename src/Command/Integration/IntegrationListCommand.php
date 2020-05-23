@@ -105,7 +105,10 @@ class IntegrationListCommand extends IntegrationCommandBase
                 break;
 
             case 'health.email':
-                $summary = sprintf("From: %s\nTo: %s", $details['from_address'], implode(', ', $details['recipients']));
+                $summary = 'To: ' . implode(', ', $details['recipients']);
+                if (!empty($details['from_address'])) {
+                    $summary = 'From: ' . $details['from_address'] . "\n" . $summary;
+                }
                 break;
 
             case 'health.slack':
