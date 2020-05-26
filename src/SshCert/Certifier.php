@@ -343,7 +343,7 @@ class Certifier
      *
      * @return array
      */
-    private function getUserDefaultSshIdentityFiles()
+    public function getUserDefaultSshIdentityFiles()
     {
         $dir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
         if (!\is_dir($dir)) {

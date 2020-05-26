@@ -44,6 +44,13 @@ class Ssh implements InputConfiguringInterface
 
         $args = [];
         foreach ($options as $name => $value) {
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    $args[] = '-o';
+                    $args[] = $name . ' ' . $item;
+                }
+                continue;
+            }
             $args[] = '-o';
             $args[] = $name . ' ' . $value;
         }
@@ -86,7 +93,10 @@ class Ssh implements InputConfiguringInterface
 
                 if ($sshCert) {
                     $options['CertificateFile'] = $sshCert->certificateFilename();
-                    $options['IdentityFile'] = $sshCert->privateKeyFilename();
+                    $options['IdentityFile'] = [$sshCert->privateKeyFilename()];
+                    foreach ($this->certifier->getUserDefaultSshIdentityFiles() as $identityFile) {
+                        $options['IdentityFile'][] = $identityFile;
+                    }
                 }
             }
         }
