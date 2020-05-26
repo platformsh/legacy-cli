@@ -109,7 +109,7 @@ class DependencyInstaller
     {
         // Python has 'python', 'python2', and 'python3'.
         if (strpos($name, 'python') === 0) {
-            return new DependencyManager\Pip($this->shell);
+            return new DependencyManager\Pip($this->shell, $name);
         }
 
         $stacks = [

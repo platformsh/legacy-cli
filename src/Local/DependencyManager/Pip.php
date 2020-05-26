@@ -2,9 +2,17 @@
 
 namespace Platformsh\Cli\Local\DependencyManager;
 
+use Platformsh\Cli\Service\Shell;
+
 class Pip extends DependencyManagerBase
 {
-    protected $command = 'pip';
+    private $stack;
+
+    public function __construct(Shell $shell, $stack)
+    {
+        $this->stack = $stack;
+        parent::__construct($shell);
+    }
 
     /**
      * {@inheritdoc}
@@ -25,10 +33,24 @@ class Pip extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
+    public function getCommandName()
+    {
+        if ($this->stack === 'python3' && $this->shell->commandExists('pip3')) {
+            return 'pip3';
+        } elseif ($this->stack === 'python2' && $this->shell->commandExists('pip2')) {
+            return 'pip2';
+        }
+
+        return 'pip';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function install($path, array $dependencies, $global = false)
     {
         file_put_contents($path . '/requirements.txt', $this->formatRequirementsTxt($dependencies));
-        $command = 'pip install --requirement=requirements.txt';
+        $command = $this->getCommandName() . ' install --requirement=requirements.txt';
         if (!$global) {
             $command .= ' --prefix=.';
         }
