@@ -1,11 +1,12 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Local;
 
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
 use Platformsh\Cli\Local\BuildFlavor\Symfony;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Config;
 
 class LocalApplicationTest extends \PHPUnit_Framework_TestCase
@@ -16,6 +17,7 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     public function setUp() {
         $this->config = new Config();
         $this->config->override('service.app_config_file', '_platform.app.yaml');
+        $this->config->override('service.applications_config_file', '_platform/applications.yaml');
     }
 
     public function testBuildFlavorDetectionDrupal()
@@ -43,19 +45,13 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     {
         $appRoot = 'tests/data/apps/vanilla';
 
-        $app = new LocalApplication($appRoot, $this->config);
-        $app->setConfig(['type' => 'hhvm:3.7', 'build' => ['flavor' => 'symfony']]);;
+        $app = new LocalApplication($appRoot, $this->config, null, new AppConfig([
+            'type' => 'hhvm:3.7',
+            'build' => ['flavor' => 'symfony'],
+        ]));
         $buildFlavor = $app->getBuildFlavor();
 
         $this->assertInstanceOf(Symfony::class, $buildFlavor);
-    }
-
-    public function testBuildFlavorDetectionMultiple()
-    {
-        $fakeRepositoryRoot = 'tests/data/repositories/multiple';
-
-        $applications = LocalApplication::getApplications($fakeRepositoryRoot, $this->config);
-        $this->assertCount(6, $applications, 'Detect multiple apps');
     }
 
     public function testBuildFlavorDetectionNone()
@@ -74,14 +70,6 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
         $config = $app->getConfig();
         $this->assertEquals(['name' => 'simple'], $config);
         $this->assertEquals('simple', $app->getId());
-    }
-
-    public function testFindNestedApps()
-    {
-        $fakeAppRoot = 'tests/data/repositories/multiple/nest';
-
-        $apps = LocalApplication::getApplications($fakeAppRoot, $this->config);
-        $this->assertEquals(count($apps), 3);
     }
 
     public function testGetAppConfigNested()

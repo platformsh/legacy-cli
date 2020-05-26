@@ -57,7 +57,9 @@ class EnvironmentXdebugCommand extends CommandBase
         static $isPhp;
         if (!isset($isPhp)) {
             $isPhp = false;
-            foreach (LocalApplication::getApplications($directory, $this->config()) as $app) {
+            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+            $finder = $this->getService('app_finder');
+            foreach ($finder->findApplications($directory) as $app) {
                 $type = $app->getType();
                 if ($type === 'php' || strpos($type, 'php:') === 0) {
                     $isPhp = true;

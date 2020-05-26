@@ -91,7 +91,9 @@ class MountUploadCommand extends CommandBase
                 }
             }
 
-            $applications = LocalApplication::getApplications($projectRoot, $this->config());
+            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+            $finder = $this->getService('app_finder');
+            $applications = $finder->findApplications($projectRoot);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
                 if ($candidateApp->getName() === $container->getName()) {

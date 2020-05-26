@@ -229,7 +229,9 @@ class MountDownloadCommand extends CommandBase
         if (!isset($this->localApps)) {
             $this->localApps = [];
             if ($projectRoot = $this->getProjectRoot()) {
-                $this->localApps = LocalApplication::getApplications($projectRoot, $this->config());
+                /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+                $finder = $this->getService('app_finder');
+                $this->localApps = $finder->findApplications($projectRoot);
             }
         }
 

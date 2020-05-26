@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
@@ -52,7 +53,9 @@ class AppListCommand extends CommandBase
         $showLocalPath = false;
         $localApps = [];
         if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent()) {
-            $localApps = LocalApplication::getApplications($projectRoot, $this->config());
+            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+            $finder = $this->getService('app_finder');
+            $localApps = $finder->findApplications($projectRoot);
             $showLocalPath = true;
         }
         // Get the local path for a given application.
