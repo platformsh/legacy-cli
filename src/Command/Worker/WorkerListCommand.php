@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Worker;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -30,11 +31,13 @@ class WorkerListCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        $workers = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'))
-            ->workers;
+        $deployment = $this->api()
+            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+
+        $workers = $deployment->workers;
         if (empty($workers)) {
             $this->stdErr->writeln('No workers found.');
+            $this->recommendOtherCommands($deployment);
 
             return 0;
         }
@@ -60,6 +63,29 @@ class WorkerListCommand extends CommandBase
 
         $table->render($rows, ['Name', 'Type', 'Commands']);
 
+        if (!$table->formatIsMachineReadable()) {
+            $this->recommendOtherCommands($deployment);
+        }
+
         return 0;
+    }
+
+    private function recommendOtherCommands(EnvironmentDeployment $deployment)
+    {
+        if ($deployment->webapps || $deployment->services) {
+            $this->stdErr->writeln('');
+        }
+        if ($deployment->webapps) {
+            $this->stdErr->writeln(sprintf(
+                'To list applications, run: <info>%s apps</info>',
+                $this->config()->get('application.executable')
+            ));
+        }
+        if ($deployment->services) {
+            $this->stdErr->writeln(sprintf(
+                'To list services, run: <info>%s services</info>',
+                $this->config()->get('application.executable')
+            ));
+        }
     }
 }
