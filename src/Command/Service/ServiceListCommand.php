@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Service;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -37,14 +38,7 @@ class ServiceListCommand extends CommandBase
 
         if (!count($services)) {
             $this->stdErr->writeln('No services found.');
-
-            if ($deployment->webapps) {
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf(
-                    'To list applications, run: <info>%s apps</info>',
-                    $this->config()->get('application.executable')
-                ));
-            }
+            $this->recommendOtherCommands($deployment);
 
             return 0;
         }
@@ -74,14 +68,29 @@ class ServiceListCommand extends CommandBase
 
         $table->render($rows, $headers);
 
-        if (!$table->formatIsMachineReadable() && $deployment->webapps) {
+        if (!$table->formatIsMachineReadable()) {
+            $this->recommendOtherCommands($deployment);
+        }
+
+        return 0;
+    }
+
+    private function recommendOtherCommands(EnvironmentDeployment $deployment)
+    {
+        if ($deployment->webapps || $deployment->workers) {
             $this->stdErr->writeln('');
+        }
+        if ($deployment->webapps) {
             $this->stdErr->writeln(sprintf(
                 'To list applications, run: <info>%s apps</info>',
                 $this->config()->get('application.executable')
             ));
         }
-
-        return 0;
+        if ($deployment->workers) {
+            $this->stdErr->writeln(sprintf(
+                'To list workers, run: <info>%s workers</info>',
+                $this->config()->get('application.executable')
+            ));
+        }
     }
 }
