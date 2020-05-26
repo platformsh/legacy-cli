@@ -16,7 +16,6 @@ use Symfony\Component\Filesystem\Exception\IOException;
 class Certifier
 {
     const PRIVATE_KEY_FILENAME = 'id_rsa';
-    const CONFIG_FILENAME = 'config';
 
     private $api;
     private $config;
@@ -106,10 +105,9 @@ class Certifier
     public function addUserSshConfig(QuestionHelper $questionHelper)
     {
         $filename = $this->getUserSshConfigFilename();
-        $includeFilename = $this->getCertificateDir() . DIRECTORY_SEPARATOR . self::CONFIG_FILENAME;
 
         $suggestedConfig = 'Host ' . $this->config->get('api.ssh_domain_wildcard') . PHP_EOL
-            . '  Include ' . $includeFilename;
+            . '  Include ' . $this->getCliSshConfigDir() . DIRECTORY_SEPARATOR . '*.config';
 
         $manualMessage = 'To configure SSH manually, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
@@ -159,8 +157,22 @@ class Certifier
     public function deleteConfiguration()
     {
         $dir = $this->getCertificateDir();
-        if (is_dir($dir)) {
+        $configFilename = $this->getSessionSshConfigFilename();
+        if (\file_exists($dir) || \file_exists($configFilename)) {
             $this->stdErr->writeln('Deleting SSH certificate and related files');
+            $this->fs->remove([$dir, $configFilename]);
+        }
+    }
+
+    /**
+     * Deletes all SSH configuration files.
+     */
+    public function deleteAllConfiguration()
+    {
+        $dir = $this->getCliSshConfigDir();
+        if (\file_exists($dir)) {
+            $appName = $this->config->get('application.name');
+            $this->stdErr->writeln(sprintf('Deleting all %s SSH configuration', $appName));
             $this->fs->remove($dir);
             $this->removeUserSshConfig();
         }
@@ -210,6 +222,26 @@ class Certifier
     }
 
     /**
+     * Returns the directory for CLI-specific SSH configuration files.
+     *
+     * @return string
+     */
+    private function getCliSshConfigDir()
+    {
+        return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . 'ssh';
+    }
+
+    /**
+     * Returns the absolute filename for a session-specific SSH configuration file.
+     *
+     * @return string
+     */
+    private function getSessionSshConfigFilename()
+    {
+        return $this->getCliSshConfigDir() . DIRECTORY_SEPARATOR . $this->config->getSessionIdSlug() . '.config';
+    }
+
+    /**
      * Generates a short lived SSH certificate for the user identified by the provided oauth token,
      * based on a provided SSH public key, and signed by one of the SSH authority keys.
      *
@@ -237,7 +269,6 @@ class Certifier
      */
     private function createSshConfig($certificateFilename, $privateKeyFilename)
     {
-        $filename = $this->getCertificateDir() . DIRECTORY_SEPARATOR . self::CONFIG_FILENAME;
         $executable = $this->config->get('application.executable');
         $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
         $lines = [
@@ -246,6 +277,11 @@ class Certifier
             sprintf('  IdentityFile %s', $privateKeyFilename),
         ];
 
+        foreach ($this->getUserDefaultSshIdentityFiles() as $identityFile) {
+            $lines[] = sprintf('  IdentityFile %s', $identityFile);
+        }
+
+        $filename = $this->getSessionSshConfigFilename();
         $this->fs->writeFile($filename, implode(PHP_EOL, $lines) . PHP_EOL, false);
         $this->chmod($filename, 0600);
     }
@@ -295,6 +331,41 @@ class Certifier
     private function getUserSshConfigFilename()
     {
         return $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . 'config';
+    }
+
+    /**
+     * Returns the user's default SSH identity files (if they exist).
+     *
+     * These are the filenames that are used by SSH when there is no
+     * IdentityFile specified, and when there is no SSH agent.
+     *
+     * @see https://man.openbsd.org/ssh#i
+     *
+     * @return array
+     */
+    private function getUserDefaultSshIdentityFiles()
+    {
+        $dir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
+        if (!\is_dir($dir)) {
+            return [];
+        }
+        $basenames = [
+            'id_rsa',
+            'id_ecdsa_sk',
+            'id_ecdsa',
+            'id_ed25519_sk',
+            'id_ed25519',
+            'id_dsa',
+        ];
+        $files = [];
+        foreach ($basenames as $basename) {
+            $filename = $dir . DIRECTORY_SEPARATOR . $basename;
+            if (\file_exists($filename) && \file_exists($filename . '.pub')) {
+                $files[] = $filename;
+            }
+        }
+
+        return $files;
     }
 
     /**

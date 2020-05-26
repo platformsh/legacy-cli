@@ -175,7 +175,7 @@ class Config
     {
         $sessionDir = $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
         if ($subDir) {
-            return $sessionDir . DIRECTORY_SEPARATOR . 'sess-cli-' . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
+            return $sessionDir . DIRECTORY_SEPARATOR . $this->getSessionIdSlug();
         }
 
         return $sessionDir;
@@ -187,6 +187,16 @@ class Config
     public function getSessionId()
     {
         return $this->get('api.session_id') ?: 'default';
+    }
+
+    /**
+     * @param string $prefix
+     *
+     * @return string
+     */
+    public function getSessionIdSlug($prefix = 'sess-cli-')
+    {
+        return $prefix . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
     }
 
     /**
