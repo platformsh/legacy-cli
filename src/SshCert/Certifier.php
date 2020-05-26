@@ -237,7 +237,6 @@ class Certifier
      */
     private function createSshConfig($certificateFilename, $privateKeyFilename)
     {
-        $filename = $this->getCertificateDir() . DIRECTORY_SEPARATOR . self::CONFIG_FILENAME;
         $executable = $this->config->get('application.executable');
         $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
         $lines = [
@@ -246,6 +245,11 @@ class Certifier
             sprintf('  IdentityFile %s', $privateKeyFilename),
         ];
 
+        foreach ($this->getUserDefaultSshIdentityFiles() as $identityFile) {
+            $lines[] = sprintf('  IdentityFile %s', $identityFile);
+        }
+
+        $filename = $this->getCertificateDir() . DIRECTORY_SEPARATOR . self::CONFIG_FILENAME;
         $this->fs->writeFile($filename, implode(PHP_EOL, $lines) . PHP_EOL, false);
         $this->chmod($filename, 0600);
     }
@@ -295,6 +299,41 @@ class Certifier
     private function getUserSshConfigFilename()
     {
         return $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . 'config';
+    }
+
+    /**
+     * Returns the user's default SSH identity files (if they exist).
+     *
+     * These are the filenames that are used by SSH when there is no
+     * IdentityFile specified, and when there is no SSH agent.
+     *
+     * @see https://man.openbsd.org/ssh#i
+     *
+     * @return array
+     */
+    private function getUserDefaultSshIdentityFiles()
+    {
+        $dir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
+        if (!\is_dir($dir)) {
+            return [];
+        }
+        $basenames = [
+            'id_rsa',
+            'id_ecdsa_sk',
+            'id_ecdsa',
+            'id_ed25519_sk',
+            'id_ed25519',
+            'id_dsa',
+        ];
+        $files = [];
+        foreach ($basenames as $basename) {
+            $filename = $dir . DIRECTORY_SEPARATOR . $basename;
+            if (\file_exists($filename) && \file_exists($filename . '.pub')) {
+                $files[] = $filename;
+            }
+        }
+
+        return $files;
     }
 
     /**
