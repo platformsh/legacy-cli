@@ -44,6 +44,14 @@ $installScript = sprintf(
     $baseUrl . '/manifest.json',
 );
 
+$revertScript = '';
+if ($config->has('application.installer_url')) {
+    $revertScript = sprintf(
+        'curl -sfS %s | php',
+        $config->get('application.installer_url')
+    );
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -72,18 +80,27 @@ $installScript = sprintf(
         }
 
         body {
-            margin: 3em;
+            max-width: 40em;
+            margin: 3em auto;
         }
 
         p {
-            max-width: 40em;
-            margin: 1em auto;
             word-break: break-all;
         }
 
         img {
             display: block;
             margin: 10px auto;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+        .code-block {
+            display: inline-block;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #fff;
         }
     </style>
 </head>
@@ -132,10 +149,17 @@ $installScript = sprintf(
         </p>
     <?php endif; ?>
     <?php if ($installScript): ?>
+        <h3>Testing instructions</h3>
         <p>
-            Install with:<br/>
-            <code><?= htmlspecialchars($installScript) ?></code>
+            Install this version with:<br/>
+            <code class="code-block"><?= htmlspecialchars($installScript) ?></code>
         </p>
+        <?php if ($revertScript): ?>
+        <p>
+            Install the stable version again with:<br/>
+            <code class="code-block"><?= htmlspecialchars($revertScript) ?></code>
+        </p>
+        <?php endif; ?>
     <?php endif; ?>
 
 </body>
