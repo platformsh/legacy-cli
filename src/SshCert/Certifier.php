@@ -73,10 +73,11 @@ class Certifier
         $this->fs->writeFile($certificateFilename, $certificate);
         $this->chmod($certificateFilename, 0600);
 
-        $this->stdErr->writeln('Generating include file for SSH configuration', OutputInterface::VERBOSITY_VERBOSE);
-        $this->createSshConfig($certificateFilename, $sshPair['private']);
+        $certificate = new Certificate($certificateFilename, $sshPair['private']);
 
-        return new Certificate($certificateFilename, $sshPair['private']);
+        $this->createSshConfig($certificate);
+
+        return $certificate;
     }
 
     /**
@@ -98,12 +99,15 @@ class Certifier
     /**
      * Adds configuration to the user's global SSH config file (~/.ssh/config).
      *
+     * @param Certificate $sshCert
      * @param QuestionHelper $questionHelper
      *
      * @return bool
      */
-    public function addUserSshConfig(QuestionHelper $questionHelper)
+    public function addUserSshConfig(Certificate $sshCert, QuestionHelper $questionHelper)
     {
+        $this->createSshConfig($sshCert);
+
         $filename = $this->getUserSshConfigFilename();
 
         $suggestedConfig = 'Host ' . $this->config->get('api.ssh_domain_wildcard') . PHP_EOL
@@ -264,25 +268,30 @@ class Certifier
     /**
      * Creates an SSH config file, which sets and auto-refreshes the certificate.
      *
-     * @param string $certificateFilename
-     * @param string $privateKeyFilename
+     * @param Certificate $certificate
      */
-    private function createSshConfig($certificateFilename, $privateKeyFilename)
+    private function createSshConfig(Certificate $certificate)
     {
         $executable = $this->config->get('application.executable');
         $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
         $lines = [
             sprintf('Match host %s exec "%s"', $this->config->get('api.ssh_domain_wildcard'), $refreshCommand),
-            sprintf('  CertificateFile %s', $certificateFilename),
-            sprintf('  IdentityFile %s', $privateKeyFilename),
+            sprintf('  CertificateFile %s', $certificate->certificateFilename()),
+            sprintf('  IdentityFile %s', $certificate->privateKeyFilename()),
         ];
 
         foreach ($this->getUserDefaultSshIdentityFiles() as $identityFile) {
             $lines[] = sprintf('  IdentityFile %s', $identityFile);
         }
 
+        $config = implode(PHP_EOL, $lines) . PHP_EOL;
+
         $filename = $this->getSessionSshConfigFilename();
-        $this->fs->writeFile($filename, implode(PHP_EOL, $lines) . PHP_EOL, false);
+        if (!\file_exists($filename) || \file_get_contents($filename) !== $config) {
+            $this->stdErr->writeln('Generating include file for SSH configuration', OutputInterface::VERBOSITY_VERBOSE);
+            $this->fs->writeFile($filename, $config, false);
+        }
+
         $this->chmod($filename, 0600);
     }
 

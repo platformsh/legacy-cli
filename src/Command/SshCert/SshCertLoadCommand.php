@@ -55,7 +55,7 @@ class SshCertLoadCommand extends CommandBase
 
         /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $success = $certifier->addUserSshConfig($questionHelper);
+        $success = $certifier->addUserSshConfig($sshCert, $questionHelper);
 
         return $success ? 0 : 1;
     }
