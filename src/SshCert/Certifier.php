@@ -68,7 +68,7 @@ class Certifier
         }
 
         $this->stdErr->writeln('Requesting certificate from the API', OutputInterface::VERBOSITY_VERBOSE);
-        $certificate = $this->requestCertificate($publicContents);
+        $certificate = $this->api->getClient()->getSshCertificate($publicContents);
 
         $this->fs->writeFile($certificateFilename, $certificate);
         $this->chmod($certificateFilename, 0600);
@@ -243,26 +243,6 @@ class Certifier
     private function getSessionSshConfigFilename()
     {
         return $this->getCliSshConfigDir() . DIRECTORY_SEPARATOR . $this->config->getSessionIdSlug() . '.config';
-    }
-
-    /**
-     * Generates a short lived SSH certificate for the user identified by the provided oauth token,
-     * based on a provided SSH public key, and signed by one of the SSH authority keys.
-     *
-     * @param string the ssh public key.
-     *
-     * @return string the certificate.
-     */
-    private function requestCertificate($sshKey)
-    {
-        // @todo make this available in the PHP client library
-        $httpClient = $this->api->getClient()->getConnector()->getClient();
-        $certificate = $httpClient->post(
-            $this->config->get('api.certifier_url') . '/ssh',
-            ['json' => ['key' => $sshKey]]
-        )->json();
-
-        return $certificate['certificate'];
     }
 
     /**

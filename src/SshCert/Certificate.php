@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\SshCert;
 
+use Platformsh\Client\SshCert\Metadata;
+
 class Certificate {
     private $certFile;
     private $privateKeyFile;
