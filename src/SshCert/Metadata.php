@@ -2,6 +2,11 @@
 
 namespace Platformsh\Cli\SshCert;
 
+/**
+ * Parses an OpenSSH RSA certificate.
+ *
+ * @see https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.certkeys?annotate=HEAD
+ */
 class Metadata {
 
     private $keyType;
@@ -21,17 +26,12 @@ class Metadata {
     private $signature;
 
     /**
-     * CertificateSsh constructor.
-     *
-     * Get all the keys from a RSA certificate.
-     *
-     * @see: https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.certkeys?annotate=HEAD
+     * Constructor
      *
      * @param string $string The certificate's contents.
      */
     public function __construct($string)
     {
-        // Remove the key type i.e: ssh-rsa-cert-v01@openssh.com
         list($type, $cert) = \explode(' ', $string);
         if ($type !== 'ssh-rsa-cert-v01@openssh.com') {
             throw new \InvalidArgumentException('Unsupported key type: ' . $type);
@@ -47,11 +47,11 @@ class Metadata {
         $this->serial = $this->readUint64($bytes);
         $this->type = $this->readUint32($bytes);
         $this->keyId = $this->readString($bytes);
-        $this->validPrincipals = $this->readString($bytes);
+        $this->validPrincipals = $this->readPrincipals($this->readString($bytes));
         $this->validAfter = $this->readUint64($bytes);
         $this->validBefore = $this->readUint64($bytes);
-        $this->criticalOptions = $this->readString($bytes);
-        $this->extensions = $this->readString($bytes);
+        $this->criticalOptions = $this->readTuples($bytes);
+        $this->extensions = $this->readTuples($bytes);
         $this->reserved = $this->readString($bytes);
         $this->signatureKey = $this->readString($bytes);
         $this->signature = $this->readString($bytes);
@@ -66,7 +66,7 @@ class Metadata {
     private function readString(&$bytes) {
         $len = \unpack('N', \substr($bytes, 0, 4));
         // The first unnamed element from \unpack() will be keyed by 1.
-        $str = \substr($bytes, 4, $len[1] + 4 - 1);
+        $str = \substr($bytes, 4, $len[1]);
         $bytes = \substr($bytes, 4 + $len[1]);
         return $str;
     }
@@ -96,6 +96,41 @@ class Metadata {
     }
 
     /**
+     * Reads the next set of tuples, and removes it from the remaining bytes.
+     *
+     * @see https://github.com/golang/crypto/commit/59435533c88bd0b1254c738244da1fe96b59d05d
+     *
+     * @param string $bytes
+     *
+     * @return array
+     */
+    private function readTuples(&$bytes) {
+        $container = $this->readString($bytes);
+        $tuples = [];
+        while (strlen($container) > 0) {
+            $key = $this->readString($container);
+            $value = $this->readString($container);
+            $tuples[$key] = $value;
+        }
+        return $tuples;
+    }
+
+    /**
+     * Reads principles from a packed string.
+     *
+     * @param string $str
+     *
+     * @return string[]
+     */
+    private function readPrincipals($str) {
+        $principals = [];
+        while (strlen($str) > 0) {
+            $principals[] = $this->readString($str);
+        }
+        return $principals;
+    }
+
+    /**
      * Returns the expiry date of the certificate, as a UNIX timestamp.
      *
      * @return int
@@ -105,12 +140,25 @@ class Metadata {
     }
 
     /**
-     * Returns the certificate extensions (a string).
+     * Returns the certificate extensions.
+     *
+     * @return array
+     */
+    public function getExtensions() {
+        return $this->extensions;
+    }
+
+    /**
+     * Returns the certificate's key ID.
+     *
+     * According to PROTOCOL.certkeys:
+     * "key id is a free-form text field that is filled in by the CA at the time
+     * of signing; the intention is that the contents of this field are used to
+     * identify the identity principal in log messages."
      *
      * @return string
      */
-    public function extensions()
-    {
-        return $this->extensions;
+    public function getKeyId() {
+        return $this->keyId;
     }
 }
