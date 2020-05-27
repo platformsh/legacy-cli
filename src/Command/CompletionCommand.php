@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
@@ -239,7 +240,8 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $apps = [];
         if ($projectRoot = $this->getWelcomeCommand()->getProjectRoot()) {
-            foreach (LocalApplication::getApplications($projectRoot) as $app) {
+            $finder = new ApplicationFinder();
+            foreach ($finder->findApplications($projectRoot) as $app) {
                 $name = $app->getName();
                 if ($name !== null) {
                     $apps[] = $name;

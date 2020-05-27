@@ -38,6 +38,9 @@ class LocalBuild
     /** @var Config */
     protected $config;
 
+    /** @var ApplicationFinder */
+    protected $applicationFinder;
+
     /**
      * LocalBuild constructor.
      *
@@ -54,7 +57,8 @@ class LocalBuild
         Shell $shell = null,
         Filesystem $fs = null,
         Git $git = null,
-        DependencyInstaller $dependencyInstaller = null
+        DependencyInstaller $dependencyInstaller = null,
+        ApplicationFinder $applicationFinder = null
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
@@ -65,6 +69,7 @@ class LocalBuild
         $this->fsHelper = $fs ?: new Filesystem($this->shellHelper);
         $this->gitHelper = $git ?: new Git($this->shellHelper);
         $this->dependencyInstaller = $dependencyInstaller ?: new DependencyInstaller($this->output, $this->shellHelper);
+        $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 
     /**
@@ -114,7 +119,7 @@ class LocalBuild
 
         $ids = [];
         $success = true;
-        foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
+        foreach ($this->applicationFinder->findApplications($sourceDir) as $app) {
             $id = $app->getId();
             $ids[] = $id;
             if ($apps && !in_array($id, $apps)) {

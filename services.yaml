@@ -37,6 +37,10 @@ services:
       class:     '\Platformsh\Cli\ApiToken\Storage'
       public:    false
 
+    app_finder:
+      class:     '\Platformsh\Cli\Local\ApplicationFinder'
+      arguments: ['@config']
+
     cache:
         class:     '\Doctrine\Common\Cache\CacheProvider'
         factory:   'cache_factory:createCacheProvider'
@@ -59,7 +63,7 @@ services:
 
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
-        arguments: ['@config', '@shell', '@local.project', '@api']
+        arguments: ['@config', '@shell', '@local.project', '@api', '@app_finder']
 
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
@@ -79,7 +83,7 @@ services:
 
     local.build:
         class:     '\Platformsh\Cli\Local\LocalBuild'
-        arguments: ['@config', '@output', '@shell', '@fs', '@git', '@local.dependency_installer']
+        arguments: ['@config', '@output', '@shell', '@fs', '@git', '@local.dependency_installer', '@app_finder']
 
     local.dependency_installer:
         class:     '\Platformsh\Cli\Local\DependencyInstaller'

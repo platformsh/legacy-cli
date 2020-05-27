@@ -19,7 +19,7 @@ class YamlParser
      *
      * @throws \Platformsh\Cli\Exception\InvalidConfigException if the config is invalid
      * @throws ParseException if the config could not be parsed
-     * @throws \Exception if the file cannot be read
+     * @throws \RuntimeException if the file cannot be read
      *
      * @return mixed
      */
@@ -88,17 +88,17 @@ class YamlParser
      *
      * @param string $filename
      *
-     * @throws \Exception if the file cannot be found or read.
+     * @throws \RuntimeException if the file cannot be found or read.
      *
      * @return string
      */
     private function readFile($filename)
     {
         if (!file_exists($filename)) {
-            throw new \Exception(sprintf('File not found: %s', $filename));
+            throw new \RuntimeException(sprintf('File not found: %s', $filename));
         }
         if (!is_readable($filename) || ($content = file_get_contents($filename)) === false) {
-            throw new \Exception(sprintf('Failed to read file: %s', $filename));
+            throw new \RuntimeException(sprintf('Failed to read file: %s', $filename));
         }
 
         return $content;
