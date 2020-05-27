@@ -73,6 +73,15 @@ class Certificate {
      * @return bool
      */
     public function hasMfa() {
-        return strpos($this->metadata()->extensions(), 'has-mfa@platform.sh') !== false;
+        return \array_key_exists('has-mfa@platform.sh', $this->metadata()->getExtensions());
+    }
+
+    /**
+     * Checks the certificate's "is app" claim: whether the authentication mode is non-interactive.
+     *
+     * @return bool
+     */
+    public function isApp() {
+        return \array_key_exists('is-app@platform.sh', $this->metadata()->getExtensions());
     }
 }
