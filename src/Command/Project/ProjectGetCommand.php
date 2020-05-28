@@ -114,8 +114,7 @@ class ProjectGetCommand extends CommandBase
         } catch (\RuntimeException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
-                '<error>Failed to connect to the %s Git server</error>',
-                $this->config()->get('service.name')
+                'Failed to connect to the Git repository: <error>' . $gitUrl . '</error>'
             ));
 
             $this->suggestSshRemedies($gitUrl);
@@ -305,6 +304,16 @@ class ProjectGetCommand extends CommandBase
      */
     protected function suggestSshRemedies($gitUrl)
     {
+        $internalDomain = $this->config()->get('detection.git_domain');
+        $isInternal = substr($gitUrl, -strlen($internalDomain)) === $internalDomain;
+        if (!$isInternal) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(
+                'Please make sure you have the correct access rights and the repository exists.'
+            );
+            return;
+        }
+
         $sshKeys = [];
         try {
             $sshKeys = $this->api()->getClient(false)->getSshKeys();
