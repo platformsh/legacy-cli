@@ -973,27 +973,6 @@ class Api
     }
 
     /**
-     * Sort URLs, preferring shorter ones with HTTPS.
-     *
-     * @param string $a
-     * @param string $b
-     *
-     * @return int
-    */
-    public function urlSort($a, $b)
-    {
-        $result = 0;
-        foreach ([$a, $b] as $key => $url) {
-            if (parse_url($url, PHP_URL_SCHEME) === 'https') {
-                $result += $key === 0 ? -2 : 2;
-            }
-        }
-        $result += strlen($a) <= strlen($b) ? -1 : 1;
-
-        return $result;
-    }
-
-    /**
      * Get the authenticated HTTP client.
      *
      * @return ClientInterface
@@ -1088,22 +1067,18 @@ class Api
     {
         $deployment = $deployment ?: $this->getCurrentDeployment($environment);
         $routes = Route::fromDeploymentApi($deployment->routes);
-        $appUrls = [];
-        foreach ($routes as $route) {
-            if ($route->type === 'upstream' && $route->getUpstreamName() === $appName) {
-                // Use the primary route, if it matches this app.
-                if ($route->primary) {
-                    return $route->url;
-                }
 
-                $appUrls[] = $route->url;
-            }
+        // Return the first route that matches this app.
+        // The routes will already have been sorted.
+        $routes = \array_filter($routes, function (Route $route) use ($appName) {
+            return $route->type === 'upstream' && $route->getUpstreamName() === $appName;
+        });
+        $route = reset($routes);
+        if ($route) {
+            return $route->url;
         }
-        usort($appUrls, [$this, 'urlSort']);
-        $siteUrl = reset($appUrls);
-        if ($siteUrl) {
-            return $siteUrl;
-        }
+
+        // Fall back to the public-url property.
         if ($environment->hasLink('public-url')) {
             return $environment->getLink('public-url');
         }

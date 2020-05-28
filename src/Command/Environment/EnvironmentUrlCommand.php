@@ -71,15 +71,6 @@ class EnvironmentUrlCommand extends CommandBase
             return $route->url;
         }, $routes);
 
-        // Sort URLs by preference (HTTPS first, shorter URLs first).
-        usort($urls, [$this->api(), 'urlSort']);
-
-        // Shift the primary URL to the top of the list.
-        if ($primaryUrl !== null) {
-            array_unshift($urls, $primaryUrl);
-            $urls = array_unique($urls);
-        }
-
         $this->displayOrOpenUrls($urls, $input, $output);
 
         return 0;
