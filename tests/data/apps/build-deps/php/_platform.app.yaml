@@ -1,0 +1,12 @@
+name: build-deps-php
+type: php:7.4
+build:
+  flavor: none
+dependencies:
+  php:
+    platformsh/cli: '*'
+hooks:
+  build: |
+    set -xe
+    command -v platform
+    platform --version
