@@ -1411,7 +1411,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $template = 'The option --%s is deprecated and no longer used. It will be removed in a future version.';
         }
         foreach ($options as $option) {
-            if ($this->input->hasOption($option) && $this->input->getOption($option)) {
+            if ($this->input->hasOption($option) && $this->input->getParameterOption(['--' . $option])) {
                 $this->labeledMessage(
                     'DEPRECATED',
                     sprintf($template, $option)
