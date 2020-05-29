@@ -25,9 +25,8 @@ application:
   # This can be overridden in the user config file.
   writable_user_dir: '.platformsh'
 
-  # The default interactive login method: either 'browser' or 'password'.
+  # The default interactive login method: either 'browser' or 'api-token'.
   # This can be overridden in the user config file.
-  # N.B. password login is now deprecated, and will be removed from the API in future.
   login_method: browser
 
   # The default timezone for times displayed or interpreted by the CLI.
@@ -42,7 +41,8 @@ application:
   date_format: c
 
   # Disabled commands (a list of full command names).
-  disabled_commands: []
+  disabled_commands:
+    - auth:password-login
 
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
