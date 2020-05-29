@@ -1,0 +1,10 @@
+name: build-deps-node
+type: nodejs:12
+dependencies:
+  nodejs:
+    less: '*'
+hooks:
+  build: |
+    set -xe
+    command -v lessc
+    lessc --version

@@ -1,0 +1,12 @@
+name: build-deps-ruby
+type: ruby:2.7
+build:
+  flavor: none
+dependencies:
+  ruby:
+    compass: '*'
+hooks:
+  build: |
+    set -xe
+    command -v compass
+    compass version
