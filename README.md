@@ -173,7 +173,7 @@ repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository
 route
-  route:get                                 View a resolved route
+  route:get                                 View detailed information about a route
   route:list (routes)                       List all routes for an environment
 self
   self:install                              Install or update CLI configuration files

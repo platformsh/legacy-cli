@@ -59,14 +59,21 @@ class RouteListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
-        $header = ['Route', 'Type', 'To'];
+        $header = [
+            'route' => 'Route',
+            'type' => 'Type',
+            'to' => 'To',
+            'url' => 'URL',
+        ];
+        $defaultColumns = ['route', 'type', 'to'];
         $rows = [];
         foreach ($routes as $route) {
-            $rows[] = [
-                new AdaptiveTableCell($route->original_url, ['wrap' => false]),
-                $route->type,
-                $route->type == 'upstream' ? $route->upstream : $route->to,
-            ];
+            $row = [];
+            $row['route'] = new AdaptiveTableCell($route->original_url, ['wrap' => false]);
+            $row['type'] = $route->type;
+            $row['to'] = $route->type == 'upstream' ? $route->upstream : $route->to;
+            $row['url'] = $route->url;
+            $rows[] = $row;
         }
 
         if (!$table->formatIsMachineReadable()) {
@@ -82,7 +89,7 @@ class RouteListCommand extends CommandBase
             }
         }
 
-        $table->render($rows, $header);
+        $table->render($rows, $header, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

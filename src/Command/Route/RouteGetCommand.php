@@ -19,7 +19,7 @@ class RouteGetCommand extends CommandBase
     {
         $this
             ->setName('route:get')
-            ->setDescription('View a resolved route')
+            ->setDescription('View detailed information about a route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'A route ID to select')
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Select the primary route')
@@ -105,7 +105,6 @@ class RouteGetCommand extends CommandBase
                     $items[$originalUrl] .= ' - <info>primary</info>';
                 }
             }
-            uksort($items, [$this->api(), 'urlSort']);
             $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:');
         }
 

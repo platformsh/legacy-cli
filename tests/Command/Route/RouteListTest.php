@@ -13,16 +13,16 @@ class RouteListTest extends \PHPUnit_Framework_TestCase
 {
     public function setUp() {
         $mockRoutes = base64_encode(json_encode([
+            'http://example.com' => [
+                'type' => 'redirect',
+                'to' => 'https://{default}',
+                'original_url' => 'http://{default}',
+            ],
             'https://example.com' => [
                 'primary' => true,
                 'type' => 'upstream',
                 'upstream' => 'app:http',
                 'original_url' => 'https://{default}',
-            ],
-            'http://example.com' => [
-                'type' => 'redirect',
-                'to' => 'https://{default}',
-                'original_url' => 'http://{default}',
             ],
         ]));
         putenv('PLATFORM_ROUTES=' . $mockRoutes);
