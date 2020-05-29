@@ -6,7 +6,7 @@ dependencies:
   nodejs:
     less: '*'
   python:
-    pipenv: '*'
+    pip: '*'
   php:
     platformsh/cli: '*'
   ruby:

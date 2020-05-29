@@ -35,10 +35,16 @@ class Pip extends DependencyManagerBase
      */
     public function getCommandName()
     {
-        if ($this->stack === 'python3' && $this->shell->commandExists('pip3')) {
-            return 'pip3';
-        } elseif ($this->stack === 'python2' && $this->shell->commandExists('pip2')) {
-            return 'pip2';
+        $commands = ['pip', 'pip3', 'pip2'];
+        if ($this->stack === 'python3') {
+            $commands = ['pip3', 'pip'];
+        } elseif ($this->stack === 'python2') {
+            $commands = ['pip2', 'pip'];
+        }
+        foreach ($commands as $command) {
+            if ($this->shell->commandExists($command)) {
+                return $command;
+            }
         }
 
         return 'pip';
