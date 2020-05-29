@@ -33,11 +33,16 @@ class BackupRestoreCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
 
+        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
+        $loader = $this->getService('activity_loader');
+
         $backupName = $input->getArgument('backup');
         if (!empty($backupName)) {
+            $backupActivities = $loader->load($environment, null, 'environment.backup', null, function (Activity $activity) use ($backupName) {
+                return $activity->payload['backup_name'] === $backupName;
+            });
             // Find the specified backup.
-            $backupActivities = $environment->getActivities(0, 'environment.backup');
-            foreach ($backupActivities as $activity) {
+            foreach (\array_reverse($backupActivities) as $activity) {
                 if ($activity['payload']['backup_name'] == $backupName) {
                     $selectedActivity = $activity;
                     break;
