@@ -15,7 +15,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         $this
             ->setName('integration:update')
-            ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update')
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();
