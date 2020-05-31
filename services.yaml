@@ -26,16 +26,7 @@ services:
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
-        arguments: ['@config', '@cache', '@output', '@api_token_storage']
-
-    api_token_storage:
-      class:     '\Platformsh\Cli\ApiToken\StorageInterface'
-      factory:   'api_token_storage_factory:factory'
-      arguments: ['@config']
-
-    api_token_storage_factory:
-      class:     '\Platformsh\Cli\ApiToken\Storage'
-      public:    false
+        arguments: ['@config', '@cache', '@output', '@token_config']
 
     app_finder:
       class:     '\Platformsh\Cli\Local\ApplicationFinder'
@@ -145,6 +136,10 @@ services:
     table:
         class:     '\Platformsh\Cli\Service\Table'
         arguments: ['@input', '@output']
+
+    token_config:
+      class:       '\Platformsh\Cli\Service\TokenConfig'
+      arguments:   ['@config']
 
     url:
         class:     '\Platformsh\Cli\Service\Url'

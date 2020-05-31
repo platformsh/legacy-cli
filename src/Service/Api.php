@@ -7,8 +7,6 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\ApiToken\Storage;
-use Platformsh\Cli\ApiToken\StorageInterface;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
@@ -47,20 +45,11 @@ class Api
     /** @var OutputInterface */
     private $stdErr;
 
-    /** @var StorageInterface */
-    private $apiTokenStorage;
+    /** @var TokenConfig */
+    protected $tokenConfig;
 
     /** @var EventDispatcherInterface */
     public $dispatcher;
-
-    /** @var string */
-    protected $sessionId = 'default';
-
-    /** @var string */
-    protected $apiToken = '';
-
-    /** @var string */
-    protected $apiTokenType = 'exchange';
 
     /** @var PlatformClient */
     protected static $client;
@@ -89,57 +78,23 @@ class Api
      * @param Config|null $config
      * @param CacheProvider|null $cache
      * @param OutputInterface|null $output
-     * @param StorageInterface|null $apiTokenStorage
+     * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
         OutputInterface $output = null,
-        StorageInterface $apiTokenStorage = null,
+        TokenConfig $tokenConfig = null,
         EventDispatcherInterface $dispatcher = null
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
-        $this->apiTokenStorage = $apiTokenStorage ?: Storage::factory($this->config);
+        $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
 
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
-
-        $this->sessionId = $this->config->getSessionId();
-        if (strpos($this->sessionId, 'api-token') === 0) {
-            throw new \InvalidArgumentException('Invalid session ID: ' . $this->sessionId);
-        }
-
-        if ($this->apiToken === '') {
-            // Exchangeable API tokens: a token which is exchanged for a
-            // temporary access token.
-            if ($this->config->has('api.token_file')) {
-                $this->apiToken = $this->loadTokenFromFile($this->config->get('api.token_file'));
-                $this->apiTokenType = 'exchange';
-                $this->sessionId = 'api-token';
-            } elseif ($this->config->has('api.token')) {
-                $this->apiToken = $this->config->get('api.token');
-                $this->apiTokenType = 'exchange';
-                $this->sessionId = 'api-token';
-            } elseif ($this->config->has('api.access_token_file') || $this->config->has('api.access_token')) {
-                // Permanent, personal access token (deprecated) - an OAuth 2.0
-                // bearer token which is used directly in API requests.
-                @trigger_error('This type of API token (a permanent access token) is deprecated. Please generate a new API token when possible.', E_USER_DEPRECATED);
-                if ($this->config->has('api.access_token_file')) {
-                    $this->apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
-                } else {
-                    $this->apiToken = $this->config->get('api.access_token');
-                }
-                $this->apiTokenType = 'access';
-            }
-        }
-
-        // Ensure a unique session ID per API token.
-        if ($this->apiToken !== '') {
-            $this->sessionId = 'api-token-' . substr(hash('sha256', $this->apiToken), 0, 8);
-        }
     }
 
     /**
@@ -151,28 +106,6 @@ class Api
     }
 
     /**
-     * Load an API token from a file.
-     *
-     * @param string $filename
-     *   A filename, either relative to the user config directory, or absolute.
-     *
-     * @return string
-     */
-    protected function loadTokenFromFile($filename)
-    {
-        if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
-            $filename = $this->config->getUserConfigDir() . '/' . $filename;
-        }
-
-        $content = file_get_contents($filename);
-        if ($content === false) {
-            throw new \RuntimeException('Failed to read file: ' . $filename);
-        }
-
-        return trim($content);
-    }
-
-    /**
      * Returns whether the CLI is authenticating using an API token.
      *
      * @param bool $includeStored
@@ -181,16 +114,7 @@ class Api
      */
     public function hasApiToken($includeStored = true)
     {
-        if (!$includeStored) {
-            $apiConfig = $this->config->get('api');
-
-            return isset($apiConfig['token'])
-                || isset($apiConfig['token_file'])
-                || isset($apiConfig['access_token_file'])
-                || isset($apiConfig['access_token']);
-        }
-
-        return $this->apiTokenStorage->getToken() !== '';
+        return $this->tokenConfig->getAccessToken() || $this->tokenConfig->getApiToken($includeStored);
     }
 
     /**
@@ -215,7 +139,7 @@ class Api
     public function logout()
     {
         // Delete the stored API token, if any.
-        $this->apiTokenStorage->deleteToken();
+        $this->tokenConfig->storage()->deleteToken();
 
         // Log out in the connector (this clears the "session" and attempts
         // to revoke stored tokens).
@@ -268,14 +192,13 @@ class Api
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->getUserAgent();
 
-        // Load an API token from storage, if there is one saved.
-        $storedToken = $this->apiTokenStorage->getToken();
-        if ($storedToken !== '') {
-            $this->apiToken = $storedToken;
-            $this->apiTokenType = 'exchange';
+        if ($apiToken = $this->tokenConfig->getApiToken()) {
+            $connectorOptions['api_token'] = $apiToken;
+            $connectorOptions['api_token_type'] = 'exchange';
+        } elseif ($accessToken = $this->tokenConfig->getAccessToken()) {
+            $connectorOptions['api_token'] = $accessToken;
+            $connectorOptions['api_token_type'] = 'access';
         }
-        $connectorOptions['api_token'] = $this->apiToken;
-        $connectorOptions['api_token_type'] = $this->apiTokenType;
 
         $proxy = $this->getProxy();
         if ($proxy !== null) {
@@ -391,7 +314,7 @@ class Api
             // this will be stored in a JSON file:
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
-            $session->setId('cli-' . $this->sessionId);
+            $session->setId('cli-' . $this->config->getSessionId());
 
             $this->initSessionStorage();
             $session->setStorage($this->sessionStorage);
@@ -500,7 +423,7 @@ class Api
      */
     public function getProjects($refresh = null)
     {
-        $cacheKey = sprintf('%s:projects', $this->sessionId);
+        $cacheKey = sprintf('%s:projects', $this->config->getSessionId());
 
         /** @var Project[] $projects */
         $projects = [];
@@ -552,7 +475,7 @@ class Api
         }
 
         // Find the project directly.
-        $cacheKey = sprintf('%s:project:%s:%s', $this->sessionId, $id, $host);
+        $cacheKey = sprintf('%s:project:%s:%s', $this->config->getSessionId(), $id, $host);
         $cached = $this->cache->fetch($cacheKey);
         if ($refresh || !$cached) {
             $scheme = 'https';
@@ -692,7 +615,7 @@ class Api
      */
     public function getMyAccount($reset = false)
     {
-        $cacheKey = sprintf('%s:my-account', $this->sessionId);
+        $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         if ($reset || !($info = $this->cache->fetch($cacheKey))) {
             $info = $this->getClient()->getAccountInfo($reset);
             $this->cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
@@ -756,8 +679,8 @@ class Api
      */
     public function clearProjectsCache()
     {
-        $this->cache->delete(sprintf('%s:projects', $this->sessionId));
-        $this->cache->delete(sprintf('%s:my-account', $this->sessionId));
+        $this->cache->delete(sprintf('%s:projects', $this->config->getSessionId()));
+        $this->cache->delete(sprintf('%s:my-account', $this->config->getSessionId()));
     }
 
     /**
@@ -951,9 +874,9 @@ class Api
      */
     public function getAccessToken()
     {
-        // Check for legacy API tokens.
-        if ($this->apiToken !== '' && $this->apiTokenType === 'access') {
-            return $this->apiToken;
+        // Check for an externally configured access token.
+        if ($accessToken = $this->tokenConfig->getAccessToken()) {
+            return $accessToken;
         }
 
         // Get the access token from the session.
