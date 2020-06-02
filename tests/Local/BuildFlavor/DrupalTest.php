@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests\BuildFlavor;
+namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Filesystem;
 

@@ -12,9 +12,10 @@ class ApplicationFinderTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $config = new Config();
-        $config->override('service.app_config_file', '_platform.app.yaml');
-        $config->override('service.applications_config_file', '_platform/applications.yaml');
+        $config = (new Config())->withOverrides([
+            'service.app_config_file' => '_platform.app.yaml',
+            'service.applications_config_file' =>  '_platform/applications.yaml',
+        ]);
         $this->finder = new ApplicationFinder($config);
     }
 

@@ -70,11 +70,13 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('Command not found: nonexistent', $result);
         $this->assertContains("https://example.com\n", $result);
 
+        $display = getenv('DISPLAY');
         putenv('DISPLAY=none');
         $result = $this->runCommand([
             '--browser' => 'nonexistent',
         ], OutputInterface::VERBOSITY_DEBUG);
         $this->assertContains('no display found', $result);
         $this->assertContains("https://example.com\n", $result);
+        putenv('DISPLAY=' . $display);
     }
 }

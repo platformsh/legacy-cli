@@ -10,31 +10,24 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Config
 {
-    protected static $config = [];
-
-    protected $env = [];
-
-    protected $userConfig = null;
-
+    private $config;
+    private $defaultsFile;
+    private $env;
     private $fs;
-
     private $version;
 
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
-     * @param bool        $reset
      */
-    public function __construct(array $env = null, $defaultsFile = null, $reset = false)
+    public function __construct(array $env = null, $defaultsFile = null)
     {
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
-        if (empty(self::$config) || $reset) {
-            $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
-            self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyUserConfigOverrides();
-            $this->applyEnvironmentOverrides();
-        }
+        $this->defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
+        $this->config = $this->loadConfigFromFile($this->defaultsFile);
+        $this->applyUserConfigOverrides();
+        $this->applyEnvironmentOverrides();
     }
 
     /**
@@ -58,7 +51,7 @@ class Config
      */
     public function has($name, $notNull = true)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
 
         return $exists && (!$notNull || $value !== null);
     }
@@ -74,7 +67,7 @@ class Config
      */
     public function get($name)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             throw new \RuntimeException('Configuration not defined: ' . $name);
         }
@@ -92,7 +85,7 @@ class Config
      */
     public function getWithDefault($name, $default)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             return $default;
         }
@@ -105,7 +98,7 @@ class Config
      */
     public function getHomeDirectory()
     {
-        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
+        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
         foreach ($envVars as $envVar) {
             $value = getenv($envVar);
@@ -200,16 +193,20 @@ class Config
     }
 
     /**
-     * Override a config value.
+     * Returns a new Config instance with overridden values.
      *
-     * @param string $name
-     * @param mixed  $value
+     * @param array $overrides
      *
-     * @internal Used for tests etc.
+     * @return self
      */
-    public function override($name, $value)
+    public function withOverrides(array $overrides)
     {
-        NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $name), $value);
+        $config = new self($this->env, $this->defaultsFile);
+        foreach ($overrides as $key => $value) {
+            NestedArrayUtil::setNestedArrayValue($config->config, explode('.', $key), $value);
+        }
+
+        return $config;
     }
 
     /**
@@ -217,7 +214,7 @@ class Config
      *
      * @return array
      */
-    protected function loadConfigFromFile($filename)
+    private function loadConfigFromFile($filename)
     {
         $contents = file_get_contents($filename);
         if ($contents === false) {
@@ -227,7 +224,7 @@ class Config
         return (array) Yaml::parse($contents);
     }
 
-    protected function applyEnvironmentOverrides()
+    private function applyEnvironmentOverrides()
     {
         $overrideMap = [
             'TOKEN' => 'api.token',
@@ -253,7 +250,7 @@ class Config
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);
             if ($value !== false) {
-                NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $key), $value, true);
+                NestedArrayUtil::setNestedArrayValue($this->config, explode('.', $key), $value, true);
             }
         }
     }
@@ -267,9 +264,9 @@ class Config
      * @return mixed|false
      *   The value of the environment variable, or false if it is not set.
      */
-    protected function getEnv($name)
+    private function getEnv($name)
     {
-        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
+        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
             return $this->env[$prefix . $name];
         }
@@ -280,20 +277,17 @@ class Config
     /**
      * @return array
      */
-    public function getUserConfig()
+    private function getUserConfig()
     {
-        if (!isset($this->userConfig)) {
-            $this->userConfig = [];
-            $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
-            if (file_exists($userConfigFile)) {
-                $this->userConfig = $this->loadConfigFromFile($userConfigFile);
-            }
+        $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+        if (file_exists($userConfigFile)) {
+            return $this->loadConfigFromFile($userConfigFile);
         }
 
-        return $this->userConfig;
+        return [];
     }
 
-    protected function applyUserConfigOverrides()
+    private function applyUserConfigOverrides()
     {
         // A whitelist of allowed overrides.
         $overrideMap = [
@@ -314,14 +308,14 @@ class Config
                 $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
                 if ($exists) {
                     $configParents = explode('.', $configKey);
-                    $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
+                    $default = NestedArrayUtil::getNestedArrayValue($this->config, $configParents, $defaultExists);
                     if ($defaultExists && is_array($default)) {
                         if (!is_array($value)) {
                             continue;
                         }
                         $value = array_replace_recursive($default, $value);
                     }
-                    NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
+                    NestedArrayUtil::setNestedArrayValue($this->config, $configParents, $value, true);
                 }
             }
         }
@@ -336,7 +330,7 @@ class Config
      */
     public function isExperimentEnabled($name)
     {
-        return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
+        return !empty($this->config['experimental']['all_experiments']) || !empty($this->config['experimental'][$name]);
     }
 
     /**
@@ -348,16 +342,16 @@ class Config
      */
     public function isCommandEnabled($name)
     {
-        if (!empty(self::$config['application']['disabled_commands'])
-            && in_array($name, self::$config['application']['disabled_commands'])) {
+        if (!empty($this->config['application']['disabled_commands'])
+            && in_array($name, $this->config['application']['disabled_commands'])) {
             return false;
         }
-        if (!empty(self::$config['application']['experimental_commands'])
-            && in_array($name, self::$config['application']['experimental_commands'])) {
-            return !empty(self::$config['experimental']['all_experiments'])
+        if (!empty($this->config['application']['experimental_commands'])
+            && in_array($name, $this->config['application']['experimental_commands'])) {
+            return !empty($this->config['experimental']['all_experiments'])
                 || (
-                    !empty(self::$config['experimental']['enable_commands'])
-                    && in_array($name, self::$config['experimental']['enable_commands'])
+                    !empty($this->config['experimental']['enable_commands'])
+                    && in_array($name, $this->config['experimental']['enable_commands'])
                 );
         }
 

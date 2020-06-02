@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests\BuildFlavor;
+namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
@@ -30,11 +30,12 @@ abstract class BaseBuildFlavorTest extends \PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
-        self::$config = new CliConfig();
 
-        // We rename the app config file to avoid confusion when building the
-        // CLI itself on platform.sh
-        self::$config->override('service.app_config_file', '_platform.app.yaml');
+        self::$config = (new CliConfig())->withOverrides([
+            // We rename the app config file to avoid confusion when building the
+            // CLI itself on platform.sh
+            'service.app_config_file' => '_platform.app.yaml',
+        ]);
     }
 
     /**

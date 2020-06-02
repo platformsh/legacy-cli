@@ -28,7 +28,7 @@ class Application extends ParentApplication
     protected $cliConfig;
 
     /** @var string */
-    private $envPrefix = '';
+    private $envPrefix;
 
     /**
      * {@inheritdoc}

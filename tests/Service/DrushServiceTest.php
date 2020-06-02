@@ -1,10 +1,11 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
@@ -30,8 +31,7 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $config = new Config();
-        $config->override('service.app_config_file', '_platform.app.yaml');
+        $config = (new Config())->withOverrides(['service.app_config_file' => '_platform.app.yaml']);
         $this->drush = new Drush($config);
 
         // Set up a dummy project with a remote environment.

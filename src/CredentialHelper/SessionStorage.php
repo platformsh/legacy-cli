@@ -13,6 +13,7 @@ class SessionStorage implements SessionStorageInterface
 {
     private $serverUrlBase;
     private $manager;
+    private $config;
 
     /**
      * CredentialsHelperStorage constructor.
@@ -23,11 +24,13 @@ class SessionStorage implements SessionStorageInterface
      *   not actually have to be a URL at this time, and a human-readable value
      *   is more helpful to the user. In Windows this will be described as the
      *   "Internet or network address".
+     * @param Config|null $config
      */
-    public function __construct(Manager $manager, $serverUrlPrefix)
+    public function __construct(Manager $manager, $serverUrlPrefix, Config $config = null)
     {
         $this->manager = $manager;
         $this->serverUrlBase = rtrim($serverUrlPrefix, '/');
+        $this->config = $config ?: new Config();
     }
 
     /**
@@ -102,7 +105,7 @@ class SessionStorage implements SessionStorageInterface
     private function loadFromFile(SessionInterface $session)
     {
         $id = preg_replace('/[^\w\-]+/', '-', $session->getId());
-        $dir = (new Config())->getSessionDir(true);
+        $dir = $this->config->getSessionDir(true);
         $filename = "$dir/sess-$id.json";
         if (is_readable($filename) && ($contents = file_get_contents($filename))) {
             $data = json_decode($contents, true) ?: [];

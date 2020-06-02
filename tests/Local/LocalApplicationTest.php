@@ -15,9 +15,10 @@ class LocalApplicationTest extends \PHPUnit_Framework_TestCase
     private $config;
 
     public function setUp() {
-        $this->config = new Config();
-        $this->config->override('service.app_config_file', '_platform.app.yaml');
-        $this->config->override('service.applications_config_file', '_platform/applications.yaml');
+        $this->config = (new Config())->withOverrides([
+            'service.app_config_file' => '_platform.app.yaml',
+            'service.applications_config_file' =>  '_platform/applications.yaml',
+        ]);
     }
 
     public function testBuildFlavorDetectionDrupal()
