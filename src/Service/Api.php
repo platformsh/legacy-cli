@@ -52,7 +52,7 @@ class Api
     public $dispatcher;
 
     /** @var PlatformClient */
-    protected static $client;
+    protected $client;
 
     /** @var Environment[] */
     protected static $environmentsCache = [];
@@ -115,6 +115,28 @@ class Api
     public function hasApiToken($includeStored = true)
     {
         return $this->tokenConfig->getAccessToken() || $this->tokenConfig->getApiToken($includeStored);
+    }
+
+    /**
+     * Lists existing sessions.
+     *
+     * @return string[]
+     */
+    public function listSessionIds()
+    {
+        $ids = [];
+        if ($this->sessionStorage instanceof SessionStorage) {
+            $ids = $this->sessionStorage->listSessionIds();
+        }
+        $dir = $this->config->getSessionDir();
+        $files = glob($dir . '/sess-cli-*', GLOB_NOSORT);
+        foreach ($files as $file) {
+            if (\preg_match('@/sess-cli-([a-z0-9_-]+)@i', $file, $matches)) {
+                $ids[] = $matches[1];
+            }
+        }
+
+        return \array_unique($ids);
     }
 
     /**
@@ -307,7 +329,7 @@ class Api
      */
     public function getClient($autoLogin = true, $reset = false)
     {
-        if (!isset(self::$client) || $reset) {
+        if (!isset($this->client) || $reset) {
             $connector = new Connector($this->getConnectorOptions());
 
             // Set up a persistent session to store OAuth2 tokens. By default,
@@ -325,7 +347,7 @@ class Api
                 $session->load(true);
             }
 
-            self::$client = new PlatformClient($connector);
+            $this->client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
@@ -342,7 +364,7 @@ class Api
             }
         }
 
-        return self::$client;
+        return $this->client;
     }
 
     /**

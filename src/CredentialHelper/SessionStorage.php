@@ -78,6 +78,21 @@ class SessionStorage implements SessionStorageInterface
     }
 
     /**
+     * @return array
+     */
+    public function listSessionIds()
+    {
+        $ids = [];
+        foreach ($this->listAllServerUrls() as $url) {
+            $path = basename($url);
+            if ($path !== 'api-token') {
+                $ids[] = $path;
+            }
+        }
+        return $ids;
+    }
+
+    /**
      * Deletes all sessions from the credential store.
      */
     public function deleteAll() {

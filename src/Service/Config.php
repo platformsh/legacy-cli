@@ -26,8 +26,23 @@ class Config
 
         $this->defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
         $this->config = $this->loadConfigFromFile($this->defaultsFile);
+
+        // Load the session ID from a file.
+        $sessionIdFile = $this->getSessionIdFile();
+        if (\file_exists($sessionIdFile)) {
+            $id = \file_get_contents($sessionIdFile);
+            if ($id !== false) {
+                $this->config['api']['session_id'] = $id;
+            }
+        }
+
         $this->applyUserConfigOverrides();
         $this->applyEnvironmentOverrides();
+
+        // Validate the session ID.
+        if (isset($this->config['api']['session_id'])) {
+            $this->validateSessionId($this->config['api']['session_id']);
+        }
     }
 
     /**
@@ -190,6 +205,48 @@ class Config
     public function getSessionIdSlug($prefix = 'sess-cli-')
     {
         return $prefix . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
+    }
+
+    /**
+     * Sets a new session ID.
+     *
+     * @param string $id
+     * @param bool   $persist
+     */
+    public function setSessionId($id, $persist = false)
+    {
+        $this->validateSessionId($id);
+        $this->config['api']['session_id'] = $id;
+        if ($persist) {
+            $filename = $this->getSessionIdFile();
+            if ($id === 'default') {
+                $this->fs()->remove($filename);
+            } else {
+                $this->fs()->writeFile($filename, $id, false);
+            }
+        }
+    }
+
+    /**
+     * Returns the path to a file where the session ID is saved.
+     *
+     * @return string
+     */
+    private function getSessionIdFile()
+    {
+        return $this->getWritableUserDir() . DIRECTORY_SEPARATOR . 'session-id';
+    }
+
+    /**
+     * Validates a user-provided session ID.
+     *
+     * @param string $id
+     */
+    public function validateSessionId($id)
+    {
+        if (strpos($id, 'api-token-') === 0 || !\preg_match('@^[a-z0-9_-]+$@i', $id)) {
+            throw new \InvalidArgumentException('Invalid session ID: ' . $id);
+        }
     }
 
     /**
