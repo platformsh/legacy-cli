@@ -111,7 +111,7 @@ class Certifier
         $filename = $this->getUserSshConfigFilename();
 
         $suggestedConfig = 'Host ' . $this->config->get('api.ssh_domain_wildcard') . PHP_EOL
-            . '  Include ' . $this->getCliSshConfigDir() . DIRECTORY_SEPARATOR . '*.config';
+            . '  Include ' . $this->config->getSessionDir() . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'ssh' . DIRECTORY_SEPARATOR . 'config';
 
         $manualMessage = 'To configure SSH manually, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
@@ -169,20 +169,6 @@ class Certifier
     }
 
     /**
-     * Deletes all SSH configuration files.
-     */
-    public function deleteAllConfiguration()
-    {
-        $dir = $this->getCliSshConfigDir();
-        if (\file_exists($dir)) {
-            $appName = $this->config->get('application.name');
-            $this->stdErr->writeln(sprintf('Deleting all %s SSH configuration', $appName));
-            $this->fs->remove($dir);
-            $this->removeUserSshConfig();
-        }
-    }
-
-    /**
      * Generate a temporary ssh key pair to request a new certificate.
      *
      * @param string $dir
@@ -226,26 +212,6 @@ class Certifier
     }
 
     /**
-     * Returns the directory for CLI-specific SSH configuration files.
-     *
-     * @return string
-     */
-    private function getCliSshConfigDir()
-    {
-        return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . 'ssh';
-    }
-
-    /**
-     * Returns the absolute filename for a session-specific SSH configuration file.
-     *
-     * @return string
-     */
-    private function getSessionSshConfigFilename()
-    {
-        return $this->getCliSshConfigDir() . DIRECTORY_SEPARATOR . $this->config->getSessionIdSlug() . '.config';
-    }
-
-    /**
      * Creates an SSH config file, which sets and auto-refreshes the certificate.
      *
      * @param Certificate $certificate
@@ -266,7 +232,7 @@ class Certifier
 
         $config = implode(PHP_EOL, $lines) . PHP_EOL;
 
-        $filename = $this->getSessionSshConfigFilename();
+        $filename = $this->getCertificateDir() . DIRECTORY_SEPARATOR . 'config';
         if (!\file_exists($filename) || \file_get_contents($filename) !== $config) {
             $this->stdErr->writeln('Generating include file for SSH configuration', OutputInterface::VERBOSITY_VERBOSE);
             $this->fs->writeFile($filename, $config, false);
@@ -360,7 +326,7 @@ class Certifier
     /**
      * Removes certificate configuration from the user's global SSH config file.
      */
-    private function removeUserSshConfig()
+    public function removeUserSshConfig()
     {
         $sshConfigFile = $this->getUserSshConfigFilename();
         if (!file_exists($sshConfigFile)) {
@@ -374,6 +340,7 @@ class Certifier
         if ($newConfig === $currentSshConfig) {
             return;
         }
+        $this->stdErr->writeln('');
         $this->stdErr->writeln('Removing configuration from SSH configuration file: <info>' . $sshConfigFile . '</info>');
 
         try {

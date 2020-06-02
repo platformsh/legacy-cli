@@ -40,8 +40,8 @@ class LogoutCommand extends CommandBase
         // Check for other sessions.
         if ($input->getOption('all')) {
             $this->api()->deleteAllSessions();
-            $certifier->deleteAllConfiguration();
             $this->stdErr->writeln('All sessions have been deleted.');
+            $certifier->removeUserSshConfig();
         } elseif ($this->api()->anySessionsExist()) {
             $this->stdErr->writeln(sprintf(
                 'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
