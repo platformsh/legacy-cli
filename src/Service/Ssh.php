@@ -16,11 +16,13 @@ class Ssh implements InputConfiguringInterface
     protected $ssh;
     protected $certifier;
     protected $sshConfig;
+    protected $keySelector;
 
-    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig)
+    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig, KeySelector $keySelector)
     {
         $this->input = $input;
         $this->output = $output;
+        $this->keySelector = $keySelector;
         $this->certifier = $certifier;
         $this->sshConfig = $sshConfig;
     }
@@ -96,9 +98,17 @@ class Ssh implements InputConfiguringInterface
                 if ($sshCert) {
                     $options['CertificateFile'] = $sshCert->certificateFilename();
                     $options['IdentityFile'] = [$sshCert->privateKeyFilename()];
-                    foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
-                        $options['IdentityFile'][] = $identityFile;
-                    }
+                }
+            }
+        }
+
+        if (empty($options['IdentitiesOnly'])) {
+            if ($sessionIdentityFile = $identityFile = $this->keySelector->getIdentityFile()) {
+                $options['IdentityFile'][] = $identityFile;
+            }
+            foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
+                if ($identityFile !== $sessionIdentityFile) {
+                    $options['IdentityFile'][] = $identityFile;
                 }
             }
         }
