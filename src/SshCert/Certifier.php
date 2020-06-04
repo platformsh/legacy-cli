@@ -110,8 +110,6 @@ class Certifier
             $this->stdErr->writeln('Deleting SSH certificate and related files');
             $this->fs->remove([$private, $cert, $public]);
         }
-
-        $this->sshConfig->deleteSessionConfiguration();
     }
 
     /**

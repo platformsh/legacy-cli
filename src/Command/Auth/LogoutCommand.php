@@ -32,10 +32,15 @@ class LogoutCommand extends CommandBase
         $this->api()->logout();
         $this->stdErr->writeln('You are now logged out.');
 
-        // Delete certificate files and configuration.
+        // Delete certificate files.
         /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
         $certifier = $this->getService('certifier');
         $certifier->deleteFiles();
+
+        // Delete session configuration.
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        $sshConfig->deleteSessionConfiguration();
 
         // Check for other sessions.
         if ($input->getOption('all')) {
