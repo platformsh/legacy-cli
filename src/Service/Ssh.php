@@ -79,7 +79,7 @@ class Ssh implements InputConfiguringInterface
                 throw new \InvalidArgumentException('Identity file not found: ' . $file);
             }
             $options['IdentitiesOnly'] = 'yes';
-            $options['IdentityFile'] = $file;
+            $options['IdentityFile'] = [$file];
         } else {
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
@@ -102,12 +102,13 @@ class Ssh implements InputConfiguringInterface
             }
         }
 
-        if (empty($options['IdentitiesOnly'])) {
-            if ($sessionIdentityFile = $identityFile = $this->keySelector->getIdentityFile()) {
-                $options['IdentityFile'][] = $identityFile;
-            }
+        if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->keySelector->getIdentityFile())) {
+            $options['IdentityFile'][] = $sessionIdentityFile;
+        }
+
+        if (!empty($options['IdentityFile'])) {
             foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
-                if ($identityFile !== $sessionIdentityFile) {
+                if (!in_array($identityFile, $options['IdentityFile'])) {
                     $options['IdentityFile'][] = $identityFile;
                 }
             }
