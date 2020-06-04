@@ -8,7 +8,6 @@ use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\SshConfig;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Certifier
@@ -22,14 +21,14 @@ class Certifier
     private $stdErr;
     private $sshConfig;
 
-    public function __construct(Api $api = null, Config $config = null, Shell $shell = null, Filesystem $fs = null, OutputInterface $output = null, SshConfig $sshConfig = null)
+    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output, SshConfig $sshConfig)
     {
-        $this->api = $api ?: new Api();
-        $this->config = $config ?: new Config();
-        $this->shell = $shell ?: new Shell();
-        $this->fs = $fs ?: new Filesystem();
-        $this->stdErr = $output ? ($output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output) : new NullOutput();
-        $this->sshConfig = $sshConfig ?: new SshConfig($this->config, $this->fs, $this->stdErr);
+        $this->api = $api;
+        $this->config = $config;
+        $this->shell = $shell;
+        $this->fs = $fs;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $this->sshConfig = $sshConfig;
     }
 
     /**

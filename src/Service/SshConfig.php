@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Service;
 use Platformsh\Cli\SshCert\Certificate;
 use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
 
@@ -13,16 +12,14 @@ class SshConfig {
     private $config;
     private $fs;
     private $stdErr;
+    private $keySelector;
 
-    public function __construct(Config $config, Filesystem $fs, OutputInterface $output = null)
+    public function __construct(Config $config, Filesystem $fs, OutputInterface $output, KeySelector $keySelector)
     {
         $this->config = $config;
         $this->fs = $fs;
-        if ($output) {
-            $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        } else {
-            $this->stdErr = new NullOutput();
-        }
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $this->keySelector = $keySelector;
     }
 
     /**
@@ -43,18 +40,19 @@ class SshConfig {
             $lines[] = sprintf('Match host %s exec "%s"', $this->config->get('api.ssh_domain_wildcard'), $refreshCommand);
             $lines[] = sprintf('  CertificateFile %s', $certificate->certificateFilename());
             $lines[] = sprintf('  IdentityFile %s', $certificate->privateKeyFilename());
-
-            // As IdentityFile has been used, we need to add the user's default
-            // identities to make sure they are still available, after the
-            // certificate.
-            foreach ($this->getUserDefaultSshIdentityFiles() as $defaultSshIdentityFile) {
-                $lines[] = sprintf('  IdentityFile %s', $defaultSshIdentityFile);
-            }
         }
 
         if (empty($lines)) {
             $this->deleteSessionConfiguration();
             return false;
+        }
+
+        // Add the preferred session identity file first, and then the default
+        // files.
+        $sessionIdentityFile = $this->keySelector->getIdentityFile();
+        $defaultFiles = $this->getUserDefaultSshIdentityFiles();
+        foreach (\array_filter(\array_unique(\array_merge([$sessionIdentityFile], $defaultFiles))) as $identityFile) {
+            $lines[] = sprintf('IdentityFile %s', $identityFile);
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
