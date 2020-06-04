@@ -132,7 +132,11 @@ services:
 
     ssh:
         class:     '\Platformsh\Cli\Service\Ssh'
-        arguments: ['@input', '@output', '@certifier']
+        arguments: ['@input', '@output', '@certifier', '@ssh_config']
+
+    ssh_config:
+        class:     '\Platformsh\Cli\Service\SshConfig'
+        arguments: ['@config', '@fs', '@output']
 
     state:
         class:     '\Platformsh\Cli\Service\State'

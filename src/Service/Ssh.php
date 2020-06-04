@@ -15,12 +15,14 @@ class Ssh implements InputConfiguringInterface
     protected $output;
     protected $ssh;
     protected $certifier;
+    protected $sshConfig;
 
-    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier)
+    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig)
     {
         $this->input = $input;
         $this->output = $output;
         $this->certifier = $certifier;
+        $this->sshConfig = $sshConfig;
     }
 
     /**
@@ -85,16 +87,16 @@ class Ssh implements InputConfiguringInterface
                     $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
                     try {
                         $sshCert = $this->certifier->generateCertificate();
-                        $stdErr->writeln('A new SSH certificate has been generated.', OutputInterface::VERBOSITY_VERBOSE);
+                        $stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
                     } catch (\Exception $e) {
-                        $stdErr->writeln('Failed to generate SSH certificate: <error>' . $e->getMessage() . '</error>');
+                        $stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));
                     }
                 }
 
                 if ($sshCert) {
                     $options['CertificateFile'] = $sshCert->certificateFilename();
                     $options['IdentityFile'] = [$sshCert->privateKeyFilename()];
-                    foreach ($this->certifier->getUserDefaultSshIdentityFiles() as $identityFile) {
+                    foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
                         $options['IdentityFile'][] = $identityFile;
                     }
                 }

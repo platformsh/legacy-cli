@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\SshCert;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\SshCert\Certificate;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,7 +15,7 @@ class SshCertLoadCommand extends CommandBase
     {
         $this
             ->setName('ssh-cert:load')
-            ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate (do not write SSH config)')
+            ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate, if necessary (do not write SSH config)')
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
             ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed with a new SSH key pair')
             ->setDescription('Generate a new certificate from the certifier API');
@@ -53,9 +52,12 @@ class SshCertLoadCommand extends CommandBase
             return 0;
         }
 
-        /** @var QuestionHelper $questionHelper */
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $success = $certifier->addUserSshConfig($sshCert, $questionHelper);
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        $sshConfig->configureSessionSsh($sshCert);
+        $success = $sshConfig->addUserSshConfig($questionHelper);
 
         return $success ? 0 : 1;
     }

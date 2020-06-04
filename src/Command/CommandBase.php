@@ -1618,6 +1618,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Generate a new certificate from the certifier API.
         /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
         $certifier = $this->getService('certifier');
+        $sshCert = null;
         if ($certifier->isAutoLoadEnabled()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Generating SSH certificate...');
@@ -1625,12 +1626,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $sshCert = $certifier->generateCertificate();
                 $this->stdErr->writeln('A new SSH certificate has been generated.');
                 $this->stdErr->writeln('It will be automatically refreshed when necessary.');
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
-                $certifier->addUserSshConfig($sshCert, $questionHelper);
             } catch (\Exception $e) {
                 $this->stdErr->writeln('Failed to generate SSH certificate: <error>' . $e->getMessage() . '</error>');
             }
+        }
+
+        // Write SSH configuration.
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        if ($sshConfig->configureSessionSsh($sshCert)) {
+            $sshConfig->addUserSshConfig($questionHelper);
         }
 
         // Show user account info.
