@@ -43,7 +43,7 @@ services:
 
     certifier:
       class:     '\Platformsh\Cli\SshCert\Certifier'
-      arguments: ['@api', '@config', '@shell', '@fs', '@output', '@ssh_config']
+      arguments: ['@api', '@config', '@shell', '@fs', '@output']
 
     config:
         class:     '\Platformsh\Cli\Service\Config'
@@ -71,11 +71,6 @@ services:
     identifier:
         class:     '\Platformsh\Cli\Service\Identifier'
         arguments: ['@config', '@api', '@output', '@cache']
-
-    key_selector:
-        class:     '\Platformsh\Cli\Service\KeySelector'
-        arguments: ['@config', '@api', '@output']
-        public:    false
 
     local.build:
         class:     '\Platformsh\Cli\Local\LocalBuild'
@@ -128,11 +123,15 @@ services:
 
     ssh:
         class:     '\Platformsh\Cli\Service\Ssh'
-        arguments: ['@input', '@output', '@certifier', '@ssh_config', '@key_selector']
+        arguments: ['@input', '@output', '@certifier', '@ssh_config', '@ssh_key']
 
     ssh_config:
         class:     '\Platformsh\Cli\Service\SshConfig'
-        arguments: ['@config', '@fs', '@output', '@key_selector']
+        arguments: ['@config', '@fs', '@output', '@ssh_key', '@certifier']
+
+    ssh_key:
+        class:     '\Platformsh\Cli\Service\SshKey'
+        arguments: ['@config', '@api', '@output']
 
     state:
         class:     '\Platformsh\Cli\Service\State'

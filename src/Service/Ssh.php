@@ -16,13 +16,13 @@ class Ssh implements InputConfiguringInterface
     protected $ssh;
     protected $certifier;
     protected $sshConfig;
-    protected $keySelector;
+    protected $sshKey;
 
-    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig, KeySelector $keySelector)
+    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
     {
         $this->input = $input;
         $this->output = $output;
-        $this->keySelector = $keySelector;
+        $this->sshKey = $sshKey;
         $this->certifier = $certifier;
         $this->sshConfig = $sshConfig;
     }
@@ -98,20 +98,17 @@ class Ssh implements InputConfiguringInterface
                 if ($sshCert) {
                     $options['CertificateFile'] = $sshCert->certificateFilename();
                     $options['IdentityFile'] = [$sshCert->privateKeyFilename()];
+                    foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
+                        $options['IdentityFile'][] = $identityFile;
+                    }
                 }
             }
         }
 
-        if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->keySelector->getIdentityFile())) {
+        if (empty($options['IdentitiesOnly'])
+            && ($sessionIdentityFile = $this->sshKey->selectIdentity())
+            && (empty($options['IdentityFile']) || !in_array($sessionIdentityFile, $options['IdentityFile'], true))) {
             $options['IdentityFile'][] = $sessionIdentityFile;
-        }
-
-        if (!empty($options['IdentityFile'])) {
-            foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
-                if (!in_array($identityFile, $options['IdentityFile'])) {
-                    $options['IdentityFile'][] = $identityFile;
-                }
-            }
         }
 
         if ($this->output->isDebug()) {
@@ -121,6 +118,9 @@ class Ssh implements InputConfiguringInterface
         } elseif ($this->output->isQuiet()) {
             $options['LogLevel'] = 'QUIET';
         }
+
+        // Ensure the session SSH config is up to date.
+        $this->sshConfig->configureSessionSsh();
 
         return $options;
     }

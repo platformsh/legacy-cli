@@ -2,7 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\SshCert\Certificate;
+use Platformsh\Cli\SshCert\Certifier;
 use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,34 +12,39 @@ class SshConfig {
     private $config;
     private $fs;
     private $stdErr;
-    private $keySelector;
+    private $sshKey;
+    private $certifier;
 
-    public function __construct(Config $config, Filesystem $fs, OutputInterface $output, KeySelector $keySelector)
+    public function __construct(Config $config, Filesystem $fs, OutputInterface $output, SshKey $sshKey, Certifier $certifier)
     {
         $this->config = $config;
         $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->keySelector = $keySelector;
+        $this->sshKey = $sshKey;
+        $this->certifier = $certifier;
     }
 
     /**
      * Creates or updates session-specific SSH configuration.
      *
-     * @param Certificate|null $certificate
-     *
      * @return bool
      *   True if there is any session configuration, false otherwise.
      */
-    public function configureSessionSsh(Certificate $certificate = null)
+    public function configureSessionSsh()
     {
         $lines = [];
 
-        if ($certificate) {
+        if ($certificate = $this->certifier->getExistingCertificate()) {
             $executable = $this->config->get('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
             $lines[] = sprintf('Match host %s exec "%s"', $this->config->get('api.ssh_domain_wildcard'), $refreshCommand);
             $lines[] = sprintf('  CertificateFile %s', $certificate->certificateFilename());
             $lines[] = sprintf('  IdentityFile %s', $certificate->privateKeyFilename());
+        }
+
+        $sessionIdentityFile = $this->sshKey->selectIdentity();
+        if ($sessionIdentityFile !== null) {
+            $lines[] = sprintf('IdentityFile %s', $sessionIdentityFile);
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
@@ -51,12 +56,12 @@ class SshConfig {
             return false;
         }
 
-        // Add the preferred session identity file first, and then the default
-        // files.
-        $sessionIdentityFile = $this->keySelector->getIdentityFile();
-        $defaultFiles = $this->getUserDefaultSshIdentityFiles();
-        foreach (\array_filter(\array_unique(\array_merge([$sessionIdentityFile], $defaultFiles))) as $identityFile) {
-            $lines[] = sprintf('IdentityFile %s', $identityFile);
+        // Add default files if there is no preferred session identity file.
+        if ($sessionIdentityFile === null) {
+            $defaultFiles = $this->getUserDefaultSshIdentityFiles();
+            foreach ($defaultFiles as $identityFile) {
+                $lines[] = sprintf('IdentityFile %s', $identityFile);
+            }
         }
 
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);

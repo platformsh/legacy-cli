@@ -76,11 +76,9 @@ class SessionSwitchCommand extends CommandBase {
         $this->api()->getClient(false, true);
 
         // Set up SSH config.
-        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
-        $certifier = $this->getService('certifier');
         /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
         $sshConfig = $this->getService('ssh_config');
-        $sshConfig->configureSessionSsh($certifier->getExistingCertificate());
+        $sshConfig->configureSessionSsh();
 
         $this->stdErr->writeln(sprintf('Session ID changed from <info>%s</info> to <info>%s</info>', $previousId, $config->getSessionId()));
 

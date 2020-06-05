@@ -6,7 +6,6 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
-use Platformsh\Cli\Service\SshConfig;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -19,16 +18,14 @@ class Certifier
     private $shell;
     private $fs;
     private $stdErr;
-    private $sshConfig;
 
-    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output, SshConfig $sshConfig)
+    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output)
     {
         $this->api = $api;
         $this->config = $config;
         $this->shell = $shell;
         $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->sshConfig = $sshConfig;
     }
 
     /**
@@ -50,7 +47,7 @@ class Certifier
      */
     public function generateCertificate($newKeyPair = false)
     {
-        $dir = $this->sshConfig->getSessionSshDir();
+        $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
 
         $sshPair = $this->generateSshKey($dir, $newKeyPair);
@@ -74,8 +71,6 @@ class Certifier
 
         $certificate = new Certificate($certificateFilename, $sshPair['private']);
 
-        $this->sshConfig->configureSessionSsh($certificate);
-
         return $certificate;
     }
 
@@ -86,7 +81,7 @@ class Certifier
      */
     public function getExistingCertificate()
     {
-        $dir = $this->sshConfig->getSessionSshDir();
+        $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $private = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
         $cert = $private . '-cert.pub';
 
@@ -100,7 +95,7 @@ class Certifier
      */
     public function deleteFiles()
     {
-        $dir = $this->sshConfig->getSessionSshDir();
+        $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $private = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
         $public = $private . '.pub';
         $cert = $private . '-cert.pub';

@@ -67,6 +67,7 @@ local:
 # Details about the cloud service that the CLI works with.
 service:
   name: 'Platform.sh'
+  slug: 'platformsh'
   env_prefix: 'PLATFORM_'
   header_prefix: 'X-Platform'
   app_config_file: '.platform.app.yaml'

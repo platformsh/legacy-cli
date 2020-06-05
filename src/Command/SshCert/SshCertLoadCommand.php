@@ -48,15 +48,16 @@ class SshCertLoadCommand extends CommandBase
             $this->displayCertificate($sshCert);
         }
 
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        $sshConfig->configureSessionSsh();
+
         if ($input->getOption('refresh-only')) {
             return 0;
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
-        $sshConfig->configureSessionSsh($sshCert);
         $success = $sshConfig->addUserSshConfig($questionHelper);
 
         return $success ? 0 : 1;

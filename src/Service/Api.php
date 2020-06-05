@@ -20,6 +20,7 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
@@ -674,6 +675,20 @@ class Api
         }
 
         return $info;
+    }
+
+    /**
+     * Get the logged-in user's SSH keys.
+     *
+     * @param bool $reset
+     *
+     * @return SshKey[]
+     */
+    public function getSshKeys($reset = false)
+    {
+        $data = $this->getMyAccount($reset);
+
+        return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->get('api.accounts_api_url'), '/') . '/', $this->getHttpClient());
     }
 
     /**
