@@ -32,7 +32,12 @@ class Config
         if (\file_exists($sessionIdFile)) {
             $id = \file_get_contents($sessionIdFile);
             if ($id !== false) {
-                $this->config['api']['session_id'] = $id;
+                try {
+                    $this->validateSessionId(\trim($id));
+                } catch (\InvalidArgumentException $e) {
+                    throw new \InvalidArgumentException('Invalid session ID in file: ' . $sessionIdFile);
+                }
+                $this->config['api']['session_id'] = \trim($id);
             }
         }
 
