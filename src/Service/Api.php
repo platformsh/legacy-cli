@@ -52,7 +52,7 @@ class Api
     public $dispatcher;
 
     /** @var PlatformClient */
-    protected $client;
+    protected static $client;
 
     /** @var Environment[] */
     protected static $environmentsCache = [];
@@ -329,7 +329,7 @@ class Api
      */
     public function getClient($autoLogin = true, $reset = false)
     {
-        if (!isset($this->client) || $reset) {
+        if (!isset(self::$client) || $reset) {
             $connector = new Connector($this->getConnectorOptions());
 
             // Set up a persistent session to store OAuth2 tokens. By default,
@@ -347,7 +347,7 @@ class Api
                 $session->load(true);
             }
 
-            $this->client = new PlatformClient($connector);
+            self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required');
@@ -364,7 +364,7 @@ class Api
             }
         }
 
-        return $this->client;
+        return self::$client;
     }
 
     /**
