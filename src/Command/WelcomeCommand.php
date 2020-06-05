@@ -35,6 +35,10 @@ class WelcomeCommand extends CommandBase
 
         $executable = $this->config()->get('application.executable');
 
+        if ($this->api()->isLoggedIn() && ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1)) {
+            $this->stdErr->writeln(sprintf("The current session ID is: <info>%s</info>\n", $this->config()->getSessionId()));
+        }
+
         if ($this->api()->isLoggedIn() && !$this->config()->get('api.auto_load_ssh_cert')) {
             $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
         }

@@ -66,6 +66,10 @@ class AuthInfoCommand extends CommandBase
         $table = $this->getService('table');
         $table->renderSimple($values, $header);
 
+        if (!$table->formatIsMachineReadable() && count($this->api()->listSessionIds()) > 1) {
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+        }
+
         return 0;
     }
 }

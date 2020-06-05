@@ -379,6 +379,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
+            if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
+                $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+                $this->stdErr->writeln(sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln('');
+            }
+
             $method = $this->config()->getWithDefault('application.login_method', 'browser');
             if ($method === 'browser') {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
