@@ -209,7 +209,7 @@ class CompletionCommand extends ParentCompletionCommand
      */
     public function getEnvironmentsForCheckout()
     {
-        $project = $this->getWelcomeCommand()->getCurrentProject();
+        $project = $this->getWelcomeCommand()->getCurrentProject(true);
         if (!$project) {
             return [];
         }
@@ -274,7 +274,7 @@ class CompletionCommand extends ParentCompletionCommand
         $commandLine = $this->handler->getContext()
             ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->getWelcomeCommand()->getCurrentProject())) {
+        if (!$currentProjectId && ($currentProject = $this->getWelcomeCommand()->getCurrentProject(true))) {
             return $currentProject;
         } elseif (isset($this->projects[$currentProjectId])) {
             return $this->projects[$currentProjectId];

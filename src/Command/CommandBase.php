@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
@@ -415,11 +416,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Get the current project if the user is in a project directory.
      *
+     * @param bool $suppressErrors Suppress 403 or not found errors.
+     *
      * @throws \RuntimeException
      *
      * @return Project|false The current project
      */
-    public function getCurrentProject()
+    public function getCurrentProject($suppressErrors = false)
     {
         if (isset($this->currentProject)) {
             return $this->currentProject;
@@ -433,8 +436,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
-            $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+            try {
+                $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+            } catch (BadResponseException $e) {
+                if ($suppressErrors && $e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
+                    return $this->currentProject = false;
+                }
+                throw $e;
+            }
             if (!$project) {
+                if ($suppressErrors) {
+                    return $this->currentProject = false;
+                }
                 throw new ProjectNotFoundException(
                     "Project not found: " . $config['id']
                     . "\nEither you do not have access to the project or it no longer exists."
@@ -459,7 +472,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)
     {
         if (!($projectRoot = $this->getProjectRoot())
-            || !($project = $this->getCurrentProject())
+            || !($project = $this->getCurrentProject(true))
             || ($expectedProject !== null && $expectedProject->id !== $project->id)) {
             return false;
         }
@@ -538,12 +551,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
         // Double-check that the passed project is the current one, and that it
         // still exists.
-        try {
-            $currentProject = $this->getCurrentProject();
-            if (!$currentProject || $currentProject->id != $event->getProject()->id) {
-                return;
-            }
-        } catch (ProjectNotFoundException $e) {
+        $currentProject = $this->getCurrentProject(true);
+        if (!$currentProject || $currentProject->id != $event->getProject()->id) {
             return;
         }
         // Ignore the project if it doesn't contain a Drupal application.
@@ -603,7 +612,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function selectedProjectIsCurrent()
     {
-        $current = $this->getCurrentProject();
+        $current = $this->getCurrentProject(true);
         if (!$current || !$this->hasSelectedProject()) {
             return false;
         }
