@@ -9,12 +9,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SessionSwitchCommand extends CommandBase {
     protected $hiddenInList = true;
-    protected $stability = 'alpha';
+    protected $stability = 'beta';
 
     protected function configure()
     {
         $this->setName('session:switch')
-            ->addArgument('id', InputArgument::OPTIONAL, 'Set the new session ID');
+            ->setDescription('Switch between sessions')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The new session ID');
+        $this->setHelp(
+            'Multiple session IDs allow you to be logged into multiple accounts at the same time.'
+            . "\n\nThe default ID is \"default\"."
+        );
+        $this->addExample('Change to the session named "personal"', 'personal');
+        $this->addExample('Change to the default session', 'default');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
