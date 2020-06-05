@@ -42,8 +42,12 @@ class SshConfig {
             $lines[] = sprintf('  IdentityFile %s', $certificate->privateKeyFilename());
         }
 
+        $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
+        $includerFilename = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config';
         if (empty($lines)) {
-            $this->deleteSessionConfiguration();
+            if (\file_exists($includerFilename) || \file_exists($sessionSpecificFilename)) {
+                $this->fs->remove([$includerFilename, $sessionSpecificFilename]);
+            }
             return false;
         }
 
@@ -55,10 +59,9 @@ class SshConfig {
             $lines[] = sprintf('IdentityFile %s', $identityFile);
         }
 
-        $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
         $this->writeSshIncludeFile(
-            $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config',
+            $includerFilename,
             [
                 '# Include the SSH config file for the active session.',
                 'Include ' . $sessionSpecificFilename,
