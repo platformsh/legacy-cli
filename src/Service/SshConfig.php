@@ -63,7 +63,9 @@ class SshConfig {
         $this->writeSshIncludeFile(
             $includerFilename,
             [
-                '# Include the SSH config file for the active session.',
+                '# This file is included from your SSH config file (~/.ssh/config).',
+                '# In turn, it includes the configuration for the currently active CLI session.',
+                '# It is updated automatically when certain CLI commands are run.',
                 'Include ' . $sessionSpecificFilename,
             ]
         );
