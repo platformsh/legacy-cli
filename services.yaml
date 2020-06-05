@@ -66,11 +66,11 @@ services:
 
     git_data_api:
         class:     '\Platformsh\Cli\Service\GitDataApi'
-        arguments: ['@api']
+        arguments: ['@api', '@cache']
 
     identifier:
         class:     '\Platformsh\Cli\Service\Identifier'
-        arguments: ['@config', '@api', '@output']
+        arguments: ['@config', '@api', '@output', '@cache']
 
     key_selector:
         class:     '\Platformsh\Cli\Service\KeySelector'

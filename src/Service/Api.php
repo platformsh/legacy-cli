@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use Doctrine\Common\Cache\CacheProvider;
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Exception\BadResponseException;
@@ -33,11 +34,14 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 class Api
 {
+    /** @var EventDispatcherInterface */
+    public $dispatcher;
+
     /** @var Config */
-    protected $config;
+    private $config;
 
     /** @var \Doctrine\Common\Cache\CacheProvider */
-    protected $cache;
+    private $cache;
 
     /** @var OutputInterface */
     private $output;
@@ -46,31 +50,59 @@ class Api
     private $stdErr;
 
     /** @var TokenConfig */
-    protected $tokenConfig;
+    private $tokenConfig;
 
-    /** @var EventDispatcherInterface */
-    public $dispatcher;
+    /**
+     * The library's API client object.
+     *
+     * This is static so that a freshly logged-in client can then be reused by a parent command with a different service container.
+     *
+     * @var PlatformClient
+     */
+    private static $client;
 
-    /** @var PlatformClient */
-    protected static $client;
+    /**
+     * A cache of environments lists, keyed by project ID.
+     *
+     * @var string<Environment[]>
+     */
+    private static $environmentsCache = [];
 
-    /** @var Environment[] */
-    protected static $environmentsCache = [];
+    /**
+     * A cache of account details arrays, keyed by project ID.
+     *
+     * @see Api::getAccount()
+     *
+     * @var string<array>
+     */
+    private static $accountsCache = [];
 
-    /** @var bool */
-    protected static $environmentsCacheRefreshed = false;
+    /**
+     * A cache of project access lists, keyed by project ID.
+     *
+     * @see Api::getProjectAccesses()
+     *
+     * @var string<\Platformsh\Client\Model\ProjectAccess[]>
+     */
+    private static $projectAccessesCache = [];
 
-    /** @var \Platformsh\Client\Model\Account[] */
-    protected static $accountsCache = [];
+    /**
+     * A cache of not-found environment IDs.
+     *
+     * @see Api::getEnvironment()
+     *
+     * @var string[]
+     */
+    private static $notFound = [];
 
-    /** @var \Platformsh\Client\Model\ProjectAccess[] */
-    protected static $projectAccessesCache = [];
-
-    /** @var array */
-    protected static $notFound = [];
-
-    /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
-    protected $sessionStorage;
+    /**
+     * Session storage, via files or credential helpers.
+     *
+     * @see Api::initSessionStorage()
+     *
+     * @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null
+     */
+    private $sessionStorage;
 
     /**
      * Constructor.
@@ -93,16 +125,7 @@ class Api
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
-
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
-    }
-
-    /**
-     * @return \Doctrine\Common\Cache\CacheProvider
-     */
-    public function getCache()
-    {
-        return $this->cache;
     }
 
     /**
@@ -190,7 +213,7 @@ class Api
      *
      * @return string
      */
-    protected function getUserAgent()
+    private function getUserAgent()
     {
         return sprintf(
             '%s/%s (%s; %s; PHP %s)',
@@ -203,9 +226,13 @@ class Api
     }
 
     /**
+     * Returns options to instantiate an API client library Connector.
+     *
+     * @see Connector::__construct()
+     *
      * @return array
      */
-    public function getConnectorOptions() {
+    private function getConnectorOptions() {
         $connectorOptions = [];
         $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
@@ -298,6 +325,10 @@ class Api
     }
 
     /**
+     * Returns configuration options for instantiating a Guzzle HTTP client.
+     *
+     * @see Client::__construct()
+     *
      * @return array
      */
     public function getGuzzleOptions() {
@@ -319,7 +350,7 @@ class Api
     }
 
     /**
-     * Get the API client object.
+     * Returns the API client object.
      *
      * @param bool $autoLogin Whether to log in, if the client is not already
      *                        authenticated (default: true).
@@ -561,7 +592,6 @@ class Api
             }
 
             $this->cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
-            self::$environmentsCacheRefreshed = true;
         } else {
             $environments = [];
             $endpoint = $project->getUri();
