@@ -66,8 +66,12 @@ class AuthInfoCommand extends CommandBase
         $table = $this->getService('table');
         $table->renderSimple($values, $header);
 
-        if (!$table->formatIsMachineReadable() && count($this->api()->listSessionIds()) > 1) {
+        if (!$table->formatIsMachineReadable() && ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+            if (!$this->config()->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+            }
         }
 
         return 0;

@@ -262,7 +262,7 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_HOME`: override the home directory (inside which the .platformsh directory is stored)
 * `PLATFORMSH_CLI_NO_COLOR`: set to 1 to disable colors in output
 * `PLATFORMSH_CLI_NO_INTERACTION`: set to 1 to disable interaction (useful for scripting). _Warning_: this will bypass any confirmation questions.
-* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
+* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default'). The `session:switch` command (beta) is now available as an alternative.
 * `PLATFORMSH_CLI_SHELL_CONFIG_FILE`: specify the shell configuration file that the installer should write to (as an absolute path). If not set, a file such as `~/.bashrc` will be chosen automatically. Set this to an empty string to disable writing to a shell config file.
 * `PLATFORMSH_CLI_TOKEN`: an API token. *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access. Additionally, storing a secret in an environment variable can be insecure. It may be better to use the `auth:api-token-login` command. The environment variable is preferable on CI systems like Jenkins and GitLab.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check

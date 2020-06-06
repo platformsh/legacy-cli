@@ -233,6 +233,18 @@ class Config
     }
 
     /**
+     * Returns whether the session ID was set via the environment.
+     *
+     * This means that the session:switch command cannot be used.
+     *
+     * @return bool
+     */
+    public function isSessionIdFromEnv()
+    {
+        return $this->getEnv('SESSION_ID') === $this->config['api']['session_id'];
+    }
+
+    /**
      * Returns the path to a file where the session ID is saved.
      *
      * @return string

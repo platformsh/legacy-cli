@@ -1663,4 +1663,37 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $info['mail']
         ));
     }
+
+    /**
+     * Shows information about the currently logged in user and their session, if applicable.
+     *
+     * @param bool $newline Whether to prepend a newline if there is output.
+     */
+    protected function showSessionInfo($newline = true)
+    {
+        $api = $this->api();
+        $config = $this->config();
+        $sessionId = $config->getSessionId();
+        if ($sessionId !== 'default' || count($api->listSessionIds()) > 1) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+                $newline = false;
+            }
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
+            if (!$config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $config->get('application.executable')));
+            }
+        }
+        if ($api->isLoggedIn()) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $accountInfo = $api->getMyAccount();
+            $this->stdErr->writeln(sprintf(
+                'You are logged in as <info>%s</info> (<info>%s</info>)',
+                $accountInfo['username'],
+                $accountInfo['mail']
+            ));
+        }
+    }
 }

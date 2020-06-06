@@ -92,6 +92,8 @@ class Certifier
 
     /**
      * Deletes certificate and SSH configuration files.
+     *
+     * Called from the logout command.
      */
     public function deleteFiles()
     {
@@ -101,6 +103,7 @@ class Certifier
         $cert = $private . '-cert.pub';
 
         if (\file_exists($private) || \file_exists($cert) || \file_exists($public)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Deleting SSH certificate and related files');
             $this->fs->remove([$private, $cert, $public]);
         }

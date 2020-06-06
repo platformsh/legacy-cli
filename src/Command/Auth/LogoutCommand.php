@@ -45,10 +45,11 @@ class LogoutCommand extends CommandBase
         // Check for other sessions.
         if ($input->getOption('all')) {
             $this->api()->deleteAllSessions();
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('All sessions have been deleted.');
         } elseif ($this->api()->anySessionsExist()) {
-            $this->stdErr->writeln(sprintf("\nThe current session ID is: <info>%s</info>\n", $this->config()->getSessionId()));
-
+            $this->showSessionInfo();
+            $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
                 $this->config()->get('application.executable')

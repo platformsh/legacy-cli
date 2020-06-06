@@ -48,6 +48,13 @@ class BrowserLoginCommand extends CommandBase
             $this->stdErr->writeln("\n" . $this->getApiTokenHelp('comment'));
             return 1;
         }
+        if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+            if (!$this->config()->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+            }
+            $this->stdErr->writeln('');
+        }
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
             // Get account information, simultaneously checking whether the API

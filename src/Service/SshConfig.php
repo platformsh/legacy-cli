@@ -179,6 +179,8 @@ class SshConfig {
 
     /**
      * Deletes session-specific SSH configuration files.
+     *
+     * Called from the logout command.
      */
     public function deleteSessionConfiguration()
     {
@@ -187,6 +189,7 @@ class SshConfig {
             $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config',
         ];
         if (array_filter($files, '\\file_exists') !== []) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Deleting all session SSH configuration');
             $this->fs->remove($files);
         }
