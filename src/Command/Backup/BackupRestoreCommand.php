@@ -38,7 +38,7 @@ class BackupRestoreCommand extends CommandBase
 
         $backupName = $input->getArgument('backup');
         if (!empty($backupName)) {
-            $backupActivities = $loader->load($environment, null, 'environment.backup', null, function (Activity $activity) use ($backupName) {
+            $backupActivities = $loader->load($environment, null, 'environment.backup', null, 'complete', 'success', function (Activity $activity) use ($backupName) {
                 return $activity->payload['backup_name'] === $backupName;
             });
             // Find the specified backup.

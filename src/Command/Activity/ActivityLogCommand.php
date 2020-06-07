@@ -19,6 +19,7 @@ class ActivityLogCommand extends CommandBase
     {
         $this
             ->setName('activity:log')
+            ->setDescription('Display the log for an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption(
                 'refresh',
@@ -28,9 +29,13 @@ class ActivityLogCommand extends CommandBase
                 3
             )
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
-            ->setDescription('Display the log for an activity');
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity)')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled')
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
+                'Include only incomplete activities (when selecting a default activity).'
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -42,14 +47,21 @@ class ActivityLogCommand extends CommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
+        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
+        $loader = $this->getService('activity_loader');
+
+        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
+            $apiResource = $this->getSelectedEnvironment();
+        } else {
+            $apiResource = $this->getSelectedProject();
+        }
+
         $id = $input->getArgument('id');
         if ($id) {
             $activity = $this->getSelectedProject()
-                             ->getActivity($id);
+                ->getActivity($id);
             if (!$activity) {
-                $activities = $this->getSelectedEnvironment()
-                    ->getActivities(0, $input->getOption('type'));
-                $activity = $this->api()->matchPartialId($id, $activities, 'Activity');
+                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -57,12 +69,9 @@ class ActivityLogCommand extends CommandBase
                 }
             }
         } else {
-            if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-                $activities = $this->getSelectedEnvironment()
-                    ->getActivities(1, $input->getOption('type'));
-            } else {
-                $activities = $this->getSelectedProject()
-                    ->getActivities(1, $input->getOption('type'));
+            $activities = $loader->loadFromInput($apiResource, $input, 1);
+            if ($activities === false) {
+                return 1;
             }
             /** @var Activity $activity */
             $activity = reset($activities);

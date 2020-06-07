@@ -23,6 +23,7 @@ class ActivityMonitor
         Activity::STATE_PENDING => 'pending',
         Activity::STATE_COMPLETE => 'complete',
         Activity::STATE_IN_PROGRESS => 'in progress',
+        Activity::STATE_CANCELLED => 'cancelled',
     ];
 
     protected $output;
