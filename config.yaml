@@ -1,3 +1,13 @@
+## CLI configuration
+##
+## Some keys can be overridden by environment variables and/or in the user config file.
+## See comments on each key.
+##
+## All environment variables are prefixed by {application.env_prefix}.
+## The user config file is "config.yaml" in {application.user_config_dir}, under the home directory.
+##
+## For the implementation see ./src/Service/Config.php
+
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
