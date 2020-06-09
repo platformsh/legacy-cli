@@ -175,8 +175,7 @@ class Shell
             return $_ENV;
         }
 
-        // If $_ENV is empty, then we can only use a whitelist of all the
-        // variables that we might want to use.
+        // If $_ENV is empty, then guess all the variables that we might want to use.
         $candidates = [
             'TERM',
             'TERM_SESSION_ID',

@@ -363,7 +363,7 @@ class Config
 
     private function applyUserConfigOverrides()
     {
-        // A whitelist of allowed overrides.
+        // A list of allowed overrides.
         $overrideMap = [
             'api' => 'api',
             'local.copy_on_windows' => 'local.copy_on_windows',

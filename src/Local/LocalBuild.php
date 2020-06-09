@@ -469,16 +469,16 @@ class LocalBuild
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
         // build(s).
-        $blacklist = [];
+        $exclude = [];
         if (!$includeActive) {
-            $blacklist = $this->getActiveBuilds($projectRoot);
+            $exclude = $this->getActiveBuilds($projectRoot);
         }
 
         return $this->cleanDirectory(
             $projectRoot . '/' . $this->config->get('local.build_dir'),
             $maxAge,
             $keepMax,
-            $blacklist,
+            $exclude,
             $quiet
         );
     }
@@ -563,12 +563,12 @@ class LocalBuild
      * @param string   $directory
      * @param int|null $maxAge
      * @param int      $keepMax
-     * @param array    $blacklist
+     * @param array    $exclude
      * @param bool     $quiet
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $blacklist = [], $quiet = true)
+    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $exclude = [], $quiet = true)
     {
         if (!is_dir($directory)) {
             return [0, 0];
@@ -588,7 +588,7 @@ class LocalBuild
         $numDeleted = 0;
         $numKept = 0;
         foreach ($files as $filename) {
-            if (in_array($filename, $blacklist)) {
+            if (in_array($filename, $exclude)) {
                 $numKept++;
                 continue;
             }

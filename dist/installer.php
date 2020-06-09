@@ -161,11 +161,11 @@ class Installer {
                 'The "phar" stream wrapper is allowed by Suhosin.',
                 'The "phar" stream wrapper is blocked by Suhosin.',
                 function () {
-                    $white = ini_get('suhosin.executor.include.whitelist');
-                    $black = ini_get('suhosin.executor.include.blacklist');
+                    $allowed = ini_get('suhosin.executor.include.whitelist');
+                    $blocked = ini_get('suhosin.executor.include.blacklist');
 
-                    if ((false === stripos($white, 'phar'))
-                        || (false !== stripos($black, 'phar'))
+                    if ((false === stripos($allowed, 'phar'))
+                        || (false !== stripos($blocked, 'phar'))
                     ) {
                         return false;
                     }
