@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "ae3a6adf54f0b69f1505e06320da1ece580fdfdd",
-        "sha256": "62bf15c435e06f9be8637b1cd41847badca60b16467853d508fcf6c491013c05",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.56.6/platform.phar",
-        "version": "3.56.6",
+        "sha1": "dbfe9a331d4740b62e620d7f1b9fb1d8beda4b06",
+        "sha256": "46f6c0448964b0aa426be8c07206cdb4241510e6bc6c9b3a2703898eefbb9189",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.57.0/platform.phar",
+        "version": "3.57.0",
         "php": {
             "min": "5.5.9"
         },
@@ -269,6 +269,11 @@
                 "notes": "New features:\n\n* Support an option for building draft pull requests in the GitHub integration,\n  and the equivalent (building WIP merge requests) for GitLab.\n* Add automatic SSH certificate support (disabled by default).\n\nOther changes:\n\n* Add `environment:deactivate` as an alias of the `environment:delete` command.\n* Fix error in command listing, when the .platform.app.yaml is not found",
                 "show from": "3.55.0",
                 "hide from": "3.56.0"
+            },
+            {
+                "notes": "New features:\n\n* Improve SSH key commands\n  - Provide a choice and a more meaningful key name when generating a key in the\n    `ssh-key:add` command.\n  - Clarify the account that an SSH key is going to be added to.\n  - Append the `.pub` extension automatically.\n  - Show the local path (if present) in the `ssh-key:list` (`ssh-keys`) command.\n  - Ensure session-based SSH configuration is up to date, when running any SSH command.\n* Automatically select an SSH key from `~/.ssh` corresponding to the user\n  account when there are multiple identities available, and specify it in SSH\n  commands.\n* Provide an interactive choice in the `integration:update` command when no\n  integration ID is specified.\n* Add a `session:switch` command (beta), which helps change the session when\n  managing multiple accounts. When there is more than one session present,\n  information (session ID and logged-in user email) is displayed in various\n  relevant commands.\n\nOther changes:\n\n* Fix irrelevant 403 errors when the user does not have access to the current\n  project, but they specified another project in the command line anyway.\n* Include only one session's SSH certificate configuration.\n* Fix use of certifier URL configuration.\n* Remove the command `auth:password-login`, which no longer works.",
+                "show from": "3.56.0",
+                "hide from": "3.57.0"
             }
         ]
     }
