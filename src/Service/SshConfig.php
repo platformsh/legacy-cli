@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\SshCert\Certifier;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -37,6 +38,9 @@ class SshConfig {
         if ($certificate = $this->certifier->getExistingCertificate()) {
             $executable = $this->config->get('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
+            if (!OsUtil::isWindows()) {
+                $refreshCommand .= ' 2>/dev/null';
+            }
             $lines[] = sprintf('Match host %s exec "%s"', $this->config->get('api.ssh_domain_wildcard'), $refreshCommand);
             $lines[] = sprintf('  CertificateFile %s', $certificate->certificateFilename());
             $lines[] = sprintf('  IdentityFile %s', $certificate->privateKeyFilename());
