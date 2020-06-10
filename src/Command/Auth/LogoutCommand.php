@@ -50,8 +50,13 @@ class LogoutCommand extends CommandBase
             $this->api()->deleteAllSessions();
             $this->stdErr->writeln('');
             $this->stdErr->writeln('All sessions have been deleted.');
-        } elseif ($this->api()->anySessionsExist()) {
             $this->showSessionInfo();
+            return 0;
+        }
+
+        $this->showSessionInfo();
+
+        if ($this->api()->anySessionsExist()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
