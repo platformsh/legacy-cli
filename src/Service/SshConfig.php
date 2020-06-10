@@ -33,6 +33,12 @@ class SshConfig {
      */
     public function configureSessionSsh()
     {
+        // Backwards compatibility: delete the old SSH configuration file.
+        $legacy = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'sess-cli-default.config';
+        if (\file_exists($legacy)) {
+            $this->fs->remove($legacy);
+        }
+
         $lines = [];
 
         if ($certificate = $this->certifier->getExistingCertificate()) {
@@ -78,12 +84,6 @@ class SshConfig {
                 'Include ' . $sessionSpecificFilename,
             ]
         );
-
-        // Backwards compatibility: delete the old SSH configuration file.
-        $legacy = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'sess-cli-default.config';
-        if (\file_exists($legacy)) {
-            $this->fs->remove($legacy);
-        }
 
         return true;
     }
