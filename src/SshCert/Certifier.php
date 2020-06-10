@@ -91,25 +91,6 @@ class Certifier
     }
 
     /**
-     * Deletes certificate and SSH configuration files.
-     *
-     * Called from the logout command.
-     */
-    public function deleteFiles()
-    {
-        $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
-        $private = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
-        $public = $private . '.pub';
-        $cert = $private . '-cert.pub';
-
-        if (\file_exists($private) || \file_exists($cert) || \file_exists($public)) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('Deleting SSH certificate and related files');
-            $this->fs->remove([$private, $cert, $public]);
-        }
-    }
-
-    /**
      * Generate a temporary ssh key pair to request a new certificate.
      *
      * @param string $dir
