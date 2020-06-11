@@ -144,6 +144,8 @@ class Api
     /**
      * Lists existing sessions.
      *
+     * Excludes API-token-specific session IDs.
+     *
      * @return string[]
      */
     public function listSessionIds()
@@ -159,6 +161,9 @@ class Api
                 $ids[] = $matches[1];
             }
         }
+        $ids = \array_filter($ids, function ($id) {
+           return strpos($id, 'api-token-') !== 0;
+        });
 
         return \array_unique($ids);
     }
