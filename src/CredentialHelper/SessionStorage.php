@@ -120,8 +120,8 @@ class SessionStorage implements SessionStorageInterface
     private function loadFromFile(SessionInterface $session)
     {
         $id = preg_replace('/[^\w\-]+/', '-', $session->getId());
-        $dir = $this->config->getSessionDir(true);
-        $filename = "$dir/sess-$id.json";
+        $dir = $this->config->getSessionDir();
+        $filename = "$dir/sess-$id/sess-$id.json";
         if (is_readable($filename) && ($contents = file_get_contents($filename))) {
             $data = json_decode($contents, true) ?: [];
             $session->setData($data);

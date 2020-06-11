@@ -284,7 +284,14 @@ class Api
         }
 
         $this->logout();
-        $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
+
+        $body = (string) $e->getRequest()->getBody();
+        \parse_str($body, $parsed);
+        if (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token') {
+            $this->stdErr->writeln('<comment>The API token is invalid.</comment>');
+        } else {
+            $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
+        }
 
         if ($response && $this->stdErr->isVeryVerbose()) {
             $this->stdErr->writeln($e->getMessage() . ApiResponseException::getErrorDetails($response));
@@ -362,16 +369,29 @@ class Api
     public function getClient($autoLogin = true, $reset = false)
     {
         if (!isset(self::$client) || $reset) {
-            $connector = new Connector($this->getConnectorOptions());
+            $options = $this->getConnectorOptions();
+            $connector = new Connector($options);
 
             // Set up a persistent session to store OAuth2 tokens. By default,
             // this will be stored in a JSON file:
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
-            $session->setId('cli-' . $this->config->getSessionId());
+            $sessionId = $this->config->getSessionId();
+
+            // Override the session ID if an API token is set.
+            // This ensures file storage from other credentials will not be
+            // reused.
+            if (!empty($options['api_token'])) {
+                $sessionId = 'api-token-' . \substr(\hash('sha256', $options['api_token']), 0, 32);
+            }
+            $session->setId('cli-' . $sessionId);
 
             $this->initSessionStorage();
-            $session->setStorage($this->sessionStorage);
+
+            // Don't use any storage for the session if an access token is set.
+            if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
+                $session->setStorage($this->sessionStorage);
+            }
 
             // Ensure session data is (re-)loaded every time.
             // @todo move this to the Session

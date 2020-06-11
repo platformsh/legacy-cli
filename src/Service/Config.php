@@ -220,7 +220,6 @@ class Config
      */
     public function setSessionId($id, $persist = false)
     {
-        $this->validateSessionId($id);
         $this->config['api']['session_id'] = $id;
         if ($persist) {
             $filename = $this->getSessionIdFile();
