@@ -314,16 +314,12 @@ class ProjectGetCommand extends CommandBase
             return;
         }
 
-        $sshKeys = [];
-        try {
-            $sshKeys = $this->api()->getClient(false)->getSshKeys();
-        } catch (\Exception $e) {
-            // Ignore exceptions.
-        }
+        /** @var \Platformsh\Cli\Service\SshKey $sshKey */
+        $sshKey = $this->getService('ssh_key');
 
         $this->stdErr->writeln('');
 
-        if (empty($sshKeys)) {
+        if (!$sshKey->hasLocalKey()) {
             $this->stdErr->writeln(sprintf(
                 'You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
                 $this->config()->get('application.executable')

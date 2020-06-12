@@ -34,10 +34,10 @@ class SshKey {
      *   selected key.
      */
     public function selectIdentity() {
-        $keys = $this->api->getSshKeys();
-        $accountKeyFingerprints = \array_map(function (SshKeyModel $sshKey) {
-            return $sshKey->fingerprint;
-        }, $keys);
+        $accountKeyFingerprints = $this->listAccountKeyFingerprints();
+        if (!$accountKeyFingerprints) {
+            return null;
+        }
 
         // Do not return a specific key if there is only one that will likely
         // be used by default.
@@ -72,6 +72,31 @@ class SshKey {
             $publicKeyList = \glob($this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . '*.pub') ?: [];
         }
         return $publicKeyList;
+    }
+
+    /**
+     * Lists SSH key MD5 fingerprints in the user's account.
+     *
+     * @return string[]
+     */
+    private function listAccountKeyFingerprints()
+    {
+        $keys = $this->api->getSshKeys();
+        if (!count($keys)) {
+            return [];
+        }
+
+        return \array_map(function (SshKeyModel $sshKey) {
+            return $sshKey->fingerprint;
+        }, $keys);
+    }
+
+    /**
+     * Checks whether the user has an SSH key in ~/.ssh matching their account.
+     */
+    public function hasLocalKey()
+    {
+        return $this->findIdentityMatchingPublicKeys($this->listAccountKeyFingerprints()) !== null;
     }
 
     /**

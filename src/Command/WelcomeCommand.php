@@ -38,8 +38,12 @@ class WelcomeCommand extends CommandBase
         $this->showSessionInfo();
 
         if ($this->api()->isLoggedIn() && !$this->config()->get('api.auto_load_ssh_cert')) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
+            /** @var \Platformsh\Cli\Service\SshKey $sshKey */
+            $sshKey = $this->getService('ssh_key');
+            if (!$sshKey->hasLocalKey()) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln("To add an SSH key, run: <info>$executable ssh-key:add</info>");
+            }
         }
 
         $this->stdErr->writeln('');
