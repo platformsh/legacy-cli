@@ -28,6 +28,8 @@ class UserAddCommand extends CommandBase
         $this->addWaitOptions();
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
+        $this->addExample('Add Bob as a viewer on the "master" environment, and a contributor on environments starting with "dev"', 'bob@example.com -r master:a -r dev%:c');
+        $this->addExample('Add Charlie as viewer on "master" and "staging"', 'charlie@example.com -r master:v -r staging:v');
     }
 
     /**
