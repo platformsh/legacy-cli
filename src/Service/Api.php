@@ -198,6 +198,12 @@ class Api
 
         // Clear the cache.
         $this->cache->flushAll();
+
+        // Ensure the session directory is wiped.
+        $dir = $this->config->getSessionDir(true);
+        if (is_dir($dir)) {
+            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+        }
     }
 
     /**

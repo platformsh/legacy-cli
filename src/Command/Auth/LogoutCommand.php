@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,7 +16,8 @@ class LogoutCommand extends CommandBase
         $this
             ->setName('auth:logout')
             ->setAliases(['logout'])
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out of all sessions')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')
+            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions')
             ->setDescription('Log out of ' . $this->config()->get('service.name'));
     }
 
@@ -29,6 +31,27 @@ class LogoutCommand extends CommandBase
             $this->stdErr->writeln('<comment>Warning: an API token is set via config</comment>');
         }
 
+        if ($input->getOption('other') && !$input->getOption('all')) {
+            $currentSessionId = $this->config()->getSessionId();
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $currentSessionId));
+            $other = \array_filter($this->api()->listSessionIds(), function ($sessionId) use ($currentSessionId) {
+                return $sessionId !== $currentSessionId;
+            });
+            if (empty($other)) {
+                $this->stdErr->writeln('No other sessions exist.');
+                return 0;
+            }
+            $this->stdErr->writeln('');
+            foreach ($other as $sessionId) {
+                $api = new Api($this->config()->withOverrides(['api.session_id' => $sessionId]), null, $output);
+                $api->logout();
+                $this->stdErr->writeln(sprintf('Logged out from session: <info>%s</info>', $sessionId));
+            }
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('All other sessions have been deleted.');
+            return 0;
+        }
+
         $this->api()->logout();
         $this->stdErr->writeln('You are now logged out.');
 
@@ -36,14 +59,6 @@ class LogoutCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
         $sshConfig = $this->getService('ssh_config');
         $sshConfig->deleteSessionConfiguration();
-
-        // Delete session files.
-        $dir = $this->config()->getSessionDir(true);
-        if (\file_exists($dir)) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
-            $fs->remove($dir);
-        }
 
         // Check for other sessions.
         if ($input->getOption('all')) {
