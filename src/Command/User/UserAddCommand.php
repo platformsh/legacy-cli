@@ -294,24 +294,24 @@ class UserAddCommand extends CommandBase
                     } else {
                         continue;
                     }
-                } else {
-                    if ($access) {
-                        if ($access->role === $role) {
-                            continue;
-                        }
-                        $this->stdErr->writeln("Setting the user's role on the environment <info>$environmentId</info> to: $role");
-                        $result = $access->update(['role' => $role]);
-                    } else {
-                        $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                        $result = $environment->addUser($userId, $role);
+                } elseif ($access) {
+                    if ($access->role === $role) {
+                        continue;
                     }
+                    $this->stdErr->writeln("Setting the user's role on the environment <info>$environmentId</info> to: $role");
+                    $result = $access->update(['role' => $role]);
+                } else {
+                    $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
+                    $result = $environment->addUser($userId, $role);
                 }
                 $activities = array_merge($activities, $result->getActivities());
             }
         }
 
         // Wait for activities to complete.
-        if ($this->shouldWait($input)) {
+        if (!$activities) {
+            $this->redeployWarning();
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             if (!$activityMonitor->waitMultiple($activities, $project)) {
