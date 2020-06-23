@@ -27,6 +27,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
@@ -533,6 +534,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
+            $this->debug('No environment was found to match the current Git branch: ' . $currentBranch);
         }
 
         return false;
@@ -756,7 +758,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
             $projects = $this->api()->getProjects();
-            if (count($projects) > 0 && count($projects) < 25) {
+            if (count($projects) > 0) {
                 $this->debug('No project specified: offering a choice...');
                 $projectId = $this->offerProjectChoice($projects);
 
@@ -849,6 +851,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($selectDefaultEnv) {
+            $this->debug('No environment specified or detected: finding a default...');
             $environments = $this->api()->getEnvironments($this->project);
             $defaultId = $this->api()->getDefaultEnvironmentId($environments);
             if ($defaultId && isset($environments[$defaultId])) {
@@ -858,7 +861,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
-            $this->debug('No environment specified: offering a choice...');
+            $this->debug('No environment specified or detected: offering a choice...');
             $this->environment = $this->offerEnvironmentChoice($this->api()->getEnvironments($this->project));
             return;
         }
@@ -1101,35 +1104,52 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @return string
      *   The chosen project ID.
      */
-    protected final function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    final protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
-        // Build and sort a list of project options.
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        if (count($projects) >= 25 || count($projects) > (new Terminal())->getHeight() - 3) {
+            $autocomplete = [];
+            foreach ($projects as $project) {
+                if ($project->title) {
+                    $autocomplete[$project->id] = $project->id . ' - <question>' . $project->title . '</question>';
+                } else {
+                    $autocomplete[$project->id] = $project->id;
+                }
+            }
+            asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
+            return $questionHelper->askInput('Enter a project ID', null, array_values($autocomplete), function ($value) use ($autocomplete) {
+                list($id, ) = explode(' - ', $value);
+                if (!isset($autocomplete[$id]) && !$this->api()->getProject($id)) {
+                    throw new \RuntimeException('Project not found: ' . $id);
+                }
+                return $id;
+            });
+        }
+
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
-        $id = $questionHelper->choose($projectList, $text, null, false);
-
-        return $id;
+        return $questionHelper->choose($projectList, $text, null, false);
     }
 
     /**
      * Offers a choice of environments.
      *
      * @param Environment[] $environments
+     * @param string $text
      *
      * @return Environment
      */
-    protected final function offerEnvironmentChoice(array $environments)
+    final protected function offerEnvironmentChoice(array $environments, $text = 'Enter a number to choose an environment:')
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
@@ -1139,19 +1159,30 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $questionHelper = $this->getService('question_helper');
         $default = $this->api()->getDefaultEnvironmentId($environments);
 
-        // Build and sort a list of options (environment IDs).
-        $ids = array_keys($environments);
-        sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
+        if (count($environments) > (new Terminal())->getHeight() / 2) {
+            $ids = array_keys($environments);
+            sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
-        $id = $questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
-            if (!isset($environments[$value])) {
-                throw new \RuntimeException('Environment not found: ' . $value);
+            $id = $questionHelper->askInput('Enter an environment ID', $default, array_keys($environments), function ($value) use ($environments) {
+                if (!isset($environments[$value])) {
+                    throw new \RuntimeException('Environment not found: ' . $value);
+                }
+
+                return $value;
+            });
+        } else {
+            $environmentList = [];
+            foreach ($environments as $environment) {
+                $environmentList[$environment->id] = $this->api()->getEnvironmentLabel($environment, false);
+            }
+            asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
+
+            if ($default) {
+                $text .= "\n" . 'Default: <question>' . $default . '</question>';
             }
 
-            return $value;
-        });
-
-        $this->stdErr->writeln('');
+            $id = $questionHelper->choose($environmentList, $text, $default);
+        }
 
         return $environments[$id];
     }
