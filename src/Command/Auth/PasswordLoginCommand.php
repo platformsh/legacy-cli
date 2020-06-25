@@ -32,7 +32,7 @@ class PasswordLoginCommand extends CommandBase
             . $accountsUrl . '/user/password</info>'
             . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
             . $executable . ' auth:browser-login</info>'
-            . "\n\n" . $this->getApiTokenHelp();
+            . "\n\n" . $this->getNonInteractiveAuthHelp();
         $this->setHelp($help);
     }
 
@@ -43,8 +43,8 @@ class PasswordLoginCommand extends CommandBase
             return 1;
         }
         if (!$input->isInteractive()) {
-            $this->stdErr->writeln('Non-interactive login is not supported.');
-            $this->stdErr->writeln("\n" . $this->getApiTokenHelp('comment'));
+            $this->stdErr->writeln('Non-interactive use of this command is not supported.');
+            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
 

@@ -44,7 +44,7 @@ class ApiTokenLoginCommand extends CommandBase
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive use of this command is not supported.');
-            $this->stdErr->writeln("\n" . $this->getApiTokenHelp('comment'));
+            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
 

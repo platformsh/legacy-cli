@@ -32,9 +32,13 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
 
-        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
-            . "\n\n" . $this->getApiTokenHelp();
-        $this->setHelp($help);
+        $executable = $this->config()->get('application.executable');
+        $help = 'Use this command to log in to the ' . $applicationName . ' using a web browser.'
+            . "\n\nIt launches a temporary local website which redirects you to log in if necessary, and then captures the resulting authorization code."
+            . "\n\nYour system's default browser will be used. You can override this using the <info>--browser</info> option."
+            . "\n\nAlternatively, to log in using an API token (without a browser), run: <info>$executable auth:api-token-login</info>"
+            . "\n\n" . $this->getNonInteractiveAuthHelp();
+        $this->setHelp(\wordwrap($help, 80));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -44,8 +48,8 @@ class BrowserLoginCommand extends CommandBase
             return 1;
         }
         if (!$input->isInteractive()) {
-            $this->stdErr->writeln('Non-interactive login is not supported.');
-            $this->stdErr->writeln("\n" . $this->getApiTokenHelp('comment'));
+            $this->stdErr->writeln('Non-interactive use of this command is not supported.');
+            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
         if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
@@ -174,7 +178,6 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('<options=bold>Help:</>');
         $this->stdErr->writeln('  Leave this command running during login.');
         $this->stdErr->writeln('  If you need to quit, use Ctrl+C.');
-        $this->stdErr->writeln("\n" . preg_replace('/^/m', '  ', $this->getApiTokenHelp()));
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.

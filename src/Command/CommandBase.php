@@ -1560,17 +1560,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Get help on how to use API tokens.
+     * Get help on how to use API tokens non-interactively.
      *
      * @param string $tag
      *
      * @return string
      */
-    protected function getApiTokenHelp($tag = 'info')
+    protected function getNonInteractiveAuthHelp($tag = 'info')
     {
-        $executable = $this->config()->get('application.executable');
+        $prefix = $this->config()->get('application.env_prefix');
 
-        return "To log in using an API token, run: <$tag>$executable auth:api-token-login</$tag>";
+        return "To authenticate non-interactively, configure an API token using the <$tag>${prefix}TOKEN</$tag> environment variable.";
     }
 
     /**
