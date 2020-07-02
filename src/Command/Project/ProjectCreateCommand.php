@@ -274,6 +274,7 @@ EOF
                     $regions[$region->id] = $region->label;
                 }
             }
+            \ksort($regions, SORT_NATURAL);
         } else {
             $regions = (array) $this->config()->get('service.available_regions');
         }
