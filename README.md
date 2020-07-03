@@ -18,7 +18,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ## Installation
 
-Simply use this command:
+Run this command to install the CLI:
 
     curl -sS https://platform.sh/cli/installer | php
 
