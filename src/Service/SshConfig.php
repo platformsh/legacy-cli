@@ -81,7 +81,8 @@ class SshConfig {
                 '# This file is included from your SSH config file (~/.ssh/config).',
                 '# In turn, it includes the configuration for the currently active CLI session.',
                 '# It is updated automatically when certain CLI commands are run.',
-                'Include ' . $sessionSpecificFilename,
+                'Host ' . $this->config->get('api.ssh_domain_wildcard'),
+                '  Include ' . $sessionSpecificFilename,
             ]
         );
 
@@ -136,8 +137,7 @@ class SshConfig {
     {
         $filename = $this->getUserSshConfigFilename();
 
-        $suggestedConfig = 'Host ' . $this->config->get('api.ssh_domain_wildcard') . PHP_EOL
-            . '  Include ' . $this->getCliSshDir() . DIRECTORY_SEPARATOR . '*.config';
+        $suggestedConfig = 'Include ' . $this->getCliSshDir() . DIRECTORY_SEPARATOR . '*.config';
 
         $manualMessage = 'To configure SSH manually, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
