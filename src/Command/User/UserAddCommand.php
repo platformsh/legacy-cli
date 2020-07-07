@@ -3,6 +3,8 @@ namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\EnvironmentAccess;
+use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
+use Platformsh\Client\Model\Invitation\Environment;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -251,20 +253,41 @@ class UserAddCommand extends CommandBase
         // Ask for confirmation.
         if ($existingProjectAccess) {
             if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
-
                 return 1;
             }
         } else {
             $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
             $this->stdErr->writeln('');
             if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
-
                 return 1;
             }
         }
+        $this->stdErr->writeln('');
 
-        // Make the required modifications on the project level: add the user,
-        // change their role, or do nothing.
+        // If the user does not already exist on the project, then use the Invitations API.
+        if (!$existingProjectAccess && $this->config()->getWithDefault('api.invitations', false)) {
+            $this->stdErr->writeln('Inviting the user to the project...');
+            $environments = [];
+            foreach ($desiredEnvironmentRoles as $id => $role) {
+                $environments[] = new Environment($id, $role);
+            }
+            try {
+                // Force the project to have an API gateway URL for the purpose
+                // of this call. Invitations are only available via the
+                // gateway.
+                $project->setBaseUrl($this->config()->get('api.base_url') . '/projects/' . \urlencode($project->id));
+                $project->inviteUserByEmail($email, $desiredProjectRole, $environments);
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('An invitation has been sent to <info>%s</info>', $email));
+            } catch (AlreadyInvitedException $e) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
+            }
+
+            return 0;
+        }
+
+        // Make the desired changes at the project level.
         if (!$existingProjectAccess) {
             $this->stdErr->writeln("Adding the user to the project");
             $result = $project->addUser($email, $desiredProjectRole);
