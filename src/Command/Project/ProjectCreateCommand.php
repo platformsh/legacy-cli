@@ -274,7 +274,7 @@ EOF
                     $regions[$region->id] = $region->label;
                 }
             }
-            \ksort($regions, SORT_NATURAL);
+            \uksort($regions, [$this->api(), 'compareRegionIds']);
         } else {
             $regions = (array) $this->config()->get('service.available_regions');
         }

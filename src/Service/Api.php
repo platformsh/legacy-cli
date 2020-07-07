@@ -1128,4 +1128,22 @@ class Api
             }
         }
     }
+
+    /**
+     * Compares domains as a sorting function. Used to sort region IDs.
+     *
+     * @param string $regionA
+     * @param string $regionB
+     *
+     * @return int
+     */
+    public function compareDomains($regionA, $regionB)
+    {
+        if (strpos($regionA, '.') && strpos($regionB, '.')) {
+            $partsA = explode('.', $regionA, 2);
+            $partsB = explode('.', $regionB, 2);
+            return (\strnatcasecmp($partsA[1], $partsB[1]) * 10) + \strnatcasecmp($partsA[0], $partsB[0]);
+        }
+        return \strnatcasecmp($regionA, $regionB);
+    }
 }
