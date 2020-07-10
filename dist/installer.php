@@ -560,8 +560,8 @@ class Installer {
             return null;
         }
         foreach (['https', 'http'] as $scheme) {
-            if (getenv($scheme . '_proxy')) {
-                return str_replace($scheme . '://', 'tcp://', getenv($scheme . '_proxy'));
+            if ($proxy = getenv($scheme . '_proxy')) {
+                return $proxy;
             }
         }
         return null;
