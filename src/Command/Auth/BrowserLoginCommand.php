@@ -140,6 +140,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
+            'CLI_OAUTH_PROMPT' => $input->getOption('force') ? 'consent select_account' : 'consent',
             'CLI_OAUTH_FILE' => $responseFile,
         ] + $this->getParentEnv());
         $process->setTimeout(null);
@@ -211,7 +212,11 @@ class BrowserLoginCommand extends CommandBase
             $this->stdErr->writeln('Failed to get an authorization code.');
             $this->stdErr->writeln('');
             if (!empty($response['error']) && !empty($response['error_description'])) {
-                $this->stdErr->writeln(sprintf('%s (<error>%s</error>)', $response['error_description'], $response['error']));
+                $this->stdErr->writeln('  OAuth 2.0 error: <error>' . $response['error'] . '</error>');
+                $this->stdErr->writeln('  Description: ' . $response['error_description']);
+                if (!empty($response['error_hint'])) {
+                    $this->stdErr->writeln('  Hint: ' . $response['error_hint']);
+                }
                 $this->stdErr->writeln('');
             } elseif (!empty($response['error_description'])) {
                 $this->stdErr->writeln($response['error_description']);

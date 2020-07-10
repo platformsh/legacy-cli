@@ -11,6 +11,7 @@ class Listener
     private $localUrl;
     private $response;
     private $codeChallenge;
+    private $prompt;
 
     public function __construct() {
         $required = [
@@ -19,6 +20,7 @@ class Listener
             'CLI_OAUTH_CLIENT_ID',
             'CLI_OAUTH_FILE',
             'CLI_OAUTH_CODE_CHALLENGE',
+            'CLI_OAUTH_PROMPT'
         ];
         if ($missing = array_diff($required, array_keys($_ENV))) {
             throw new \RuntimeException('Invalid environment, missing: ' . implode(', ', $missing));
@@ -27,6 +29,7 @@ class Listener
         $this->authUrl = $_ENV['CLI_OAUTH_AUTH_URL'];
         $this->clientId = $_ENV['CLI_OAUTH_CLIENT_ID'];
         $this->file = $_ENV['CLI_OAUTH_FILE'];
+        $this->prompt = $_ENV['CLI_OAUTH_PROMPT'];
         $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
         $this->localUrl = $localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
@@ -41,6 +44,7 @@ class Listener
             'redirect_uri' => $this->localUrl,
             'state' => $this->state,
             'client_id' => $this->clientId,
+            'prompt' => $this->prompt,
             'response_type' => 'code',
             'code_challenge' => $this->codeChallenge,
             'code_challenge_method' => 'S256',
@@ -83,7 +87,8 @@ class Listener
         // Respond after an OAuth2 error.
         if (isset($_GET['error'])) {
             $message = isset($_GET['error_description']) ? $_GET['error_description'] : null;
-            $this->reportError($message, $_GET['error']);
+            $hint = isset($_GET['error_hint']) ? $_GET['error_hint'] : null;
+            $this->reportError($message, $_GET['error'], $hint);
             return;
         }
 
@@ -123,10 +128,11 @@ class Listener
     }
 
     /**
-     * @param string      $message The error message.
-     * @param string|null $error   An OAuth2 error type.
+     * @param string $message The error message.
+     * @param string|null $error An OAuth2 error type.
+     * @param string|null $hint An OAuth2 error hint.
      */
-    private function reportError($message = null, $error = null)
+    private function reportError($message = null, $error = null, $hint = null)
     {
         $this->response->headers['Status'] = 401;
         $this->response->content = '<h1 class="error">Error</h1>';
@@ -136,8 +142,11 @@ class Listener
         if (isset($message)) {
             $this->response->content .= '<p class="error">' . htmlspecialchars($message) . '</p>';
         }
-        if ($message || $error) {
-            $response = ['error' => $error, 'error_description' => $message];
+        if (isset($hint)) {
+            $this->response->content .= '<p class="error">' . htmlspecialchars($hint) . '</p>';
+        }
+        if ($message || $error || $hint) {
+            $response = ['error' => $error, 'error_description' => $message, 'error_hint' => $hint];
             if (!$this->sendToTerminal($response)) {
                 $this->response->content .= '<p class="error">Additionally: failed to send error message back to terminal</p>';
             }
