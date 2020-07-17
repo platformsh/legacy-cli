@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "9b5ecb5ad3a82e77ebfc9ffa7c5a115a0edba2dc",
-        "sha256": "9358ac46166b28768d56cb5a6d0e08f52987e16e73659962ae1412cf36fac1ae",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.57.6/platform.phar",
-        "version": "3.57.6",
+        "sha1": "f39d129d41a552357e1ebcf71a439372191739f0",
+        "sha256": "b9cf31803b47cdc6fb88e9eb2992ae5adb63403623767bc83df201137e9db092",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.58.0/platform.phar",
+        "version": "3.58.0",
         "php": {
             "min": "5.5.9"
         },
@@ -274,6 +274,11 @@
                 "notes": "New features:\n\n* Improve SSH key commands\n  - Provide a choice and a more meaningful key name when generating a key in the\n    `ssh-key:add` command.\n  - Clarify the account that an SSH key is going to be added to.\n  - Append the `.pub` extension automatically.\n  - Show the local path (if present) in the `ssh-key:list` (`ssh-keys`) command.\n  - Ensure session-based SSH configuration is up to date, when running any SSH command.\n* Automatically select an SSH key from `~/.ssh` corresponding to the user\n  account when there are multiple identities available, and specify it in SSH\n  commands.\n* Provide an interactive choice in the `integration:update` command when no\n  integration ID is specified.\n* Add a `session:switch` command (beta), which helps change the session when\n  managing multiple accounts. When there is more than one session present,\n  information (session ID and logged-in user email) is displayed in various\n  relevant commands.\n\nOther changes:\n\n* Fix irrelevant 403 errors when the user does not have access to the current\n  project, but they specified another project in the command line anyway.\n* Include only one session's SSH certificate configuration.\n* Fix use of certifier URL configuration.\n* Remove the command `auth:password-login`, which no longer works.",
                 "show from": "3.56.0",
                 "hide from": "3.57.0"
+            },
+            {
+                "notes": "* Support prompting for re-authentication in the login command.\n  The command `platform login --force` (or `-f`) will now ask the\n  authentication server to prompt the user to log in again, even if they\n  already had a session in that browser. This is helpful for refreshing\n  authentication status (e.g. to re-verify 2FA), or for logging in as another\n  account.\n* The region list in the `platform create` command is now sorted\n  alphabetically (with the subdomain and suffix sorted separately).\n* Add `--count` (`-c`) option to the `self:stats` command to modify the results per page.\n* Move the SSH hostname to the session-specific SSH configuration. This means\n  less rewriting needed for the global `~/.ssh/config` file when changing CLI\n  configuration.",
+                "show from": "3.57.0",
+                "hide from": "3.58.0"
             }
         ]
     }
