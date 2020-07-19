@@ -384,6 +384,7 @@ EOT
             return getenv($envPrefix . 'APP_DIR') . '/.environment';
         }
 
+        // Default to Bash filenames.
         $candidates = [
             '.bashrc',
             '.bash_profile',
@@ -397,10 +398,12 @@ EOT
             ];
         }
 
+        // Use .zshrc on ZSH.
         if ($shellType === 'zsh' || (empty($shellType) && getenv('ZSH'))) {
-            array_unshift($candidates, '.zshrc');
+            $candidates = ['.zshrc'];
         }
 
+        // Pick the first of the candidate files that already exists.
         $homeDir = $this->config()->getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
@@ -410,10 +413,13 @@ EOT
             }
         }
 
-        // If none of the files exist (yet), and we are on Bash, and the home
-        // directory is writable, then use ~/.bashrc or ~/.bash_profile on
-        // OS X.
-        if (is_writable($homeDir) && $shellType === 'bash') {
+        if (!is_writable($homeDir)) {
+            return false;
+        }
+
+        // If none of the files exist (yet), and the home directory is writable,
+        // then create a new file based on the shell type.
+        if ($shellType === 'bash') {
             if (OsUtil::isOsX()) {
                 $this->debug('OS X: defaulting to ~/.bash_profile');
 
@@ -422,6 +428,10 @@ EOT
             $this->debug('Defaulting to ~/.bashrc');
 
             return $homeDir . DIRECTORY_SEPARATOR . '.bashrc';
+        } elseif ($shellType === 'zsh') {
+            $this->debug('Defaulting to ~/.zshrc');
+
+            return $homeDir . DIRECTORY_SEPARATOR . '.zshrc';
         }
 
         return false;
