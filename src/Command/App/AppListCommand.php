@@ -63,7 +63,6 @@ class AppListCommand extends CommandBase
             foreach ($localApps as $localApp) {
                 if ($localApp->getName() === $appName) {
                     return $localApp->getRoot();
-                    break;
                 }
             }
 

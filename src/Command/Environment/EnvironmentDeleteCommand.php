@@ -139,7 +139,7 @@ EOF
         // Find a list of branches merged on the remote.
         $git->fetch($remoteName);
         $mergedBranches = $git->getMergedBranches($remoteName . '/' . $base, true);
-        $mergedBranches = array_filter($mergedBranches, function ($mergedBranch) use ($remoteName, $base) {
+        $mergedBranches = array_filter($mergedBranches, function ($mergedBranch) use ($remoteName) {
             return strpos($mergedBranch, $remoteName) === 0;
         });
         $stripLength = strlen($remoteName . '/');

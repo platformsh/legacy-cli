@@ -1635,7 +1635,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Generate a new certificate from the certifier API.
         /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
         $certifier = $this->getService('certifier');
-        $sshCert = null;
         if ($certifier->isAutoLoadEnabled()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Generating SSH certificate...');

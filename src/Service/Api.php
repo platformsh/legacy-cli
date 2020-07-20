@@ -324,7 +324,7 @@ class Api
      * @return AccessToken|null
      */
     private function tokenFromSession(SessionInterface $session) {
-        if (!$accessToken = $session->get('accessToken')) {
+        if (!$session->get('accessToken')) {
             return null;
         }
         $map = [
