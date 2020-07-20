@@ -149,6 +149,9 @@ api:
   # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
   auto_load_ssh_cert: false
 
+  # Whether the API supports project invitations.
+  invitations: true
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'platform'

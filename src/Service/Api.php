@@ -247,6 +247,7 @@ class Api
     private function getConnectorOptions() {
         $connectorOptions = [];
         $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
+        $connectorOptions['api_url'] = $this->config->getWithDefault('api.base_url', '');
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
         $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
         $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
@@ -531,8 +532,12 @@ class Api
             $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
+            $apiUrl = $this->config->getWithDefault('api.base_url', '');
             foreach ((array) $cached as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
+                if ($apiUrl) {
+                    $projects[$id]->setApiUrl($apiUrl);
+                }
             }
         }
 
@@ -580,6 +585,10 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
+            $apiUrl = $this->config->getWithDefault('api.base_url', '');
+            if ($apiUrl) {
+                $projects[$id]->setApiUrl($apiUrl);
+            }
         }
 
         return $project;
