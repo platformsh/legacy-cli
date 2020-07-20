@@ -49,11 +49,10 @@ class ApiTokenLoginCommand extends CommandBase
         }
 
         $tokenClient = new Client($this->api()->getGuzzleOptions());
-        $tokenUrl = Url::fromString($this->config()->get('api.accounts_api_url'))
-            ->combine('/oauth2/token')
-            ->__toString();
+        $clientId = $this->config()->get('api.oauth2_client_id');
+        $tokenUrl = $this->config()->get('api.oauth2_token_url');
 
-        $validator = function ($apiToken) use ($tokenClient, $tokenUrl) {
+        $validator = function ($apiToken) use ($tokenClient, $clientId, $tokenUrl) {
             $apiToken = trim($apiToken);
             if (!strlen($apiToken)) {
                 throw new \RuntimeException('The token cannot be empty');
@@ -61,7 +60,7 @@ class ApiTokenLoginCommand extends CommandBase
 
             try {
                 $token = (new ApiToken($tokenClient, [
-                    'client_id' => $this->config()->get('api.oauth2_client_id'),
+                    'client_id' => $clientId,
                     'token_url' => $tokenUrl,
                     'auth_location' => 'headers',
                     'api_token' => $apiToken,
