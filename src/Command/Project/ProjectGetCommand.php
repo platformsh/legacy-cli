@@ -304,8 +304,17 @@ class ProjectGetCommand extends CommandBase
      */
     protected function suggestSshRemedies($gitUrl)
     {
-        $internalDomain = $this->config()->get('detection.git_domain');
-        $isInternal = substr($gitUrl, -strlen($internalDomain)) === $internalDomain;
+        // Remove the path from the git URI to get the SSH part.
+        $gitSshUri = '';
+        if (strpos($gitUrl, ':') !== false) {
+            list($gitSshUri,) = explode(':', $gitUrl, 2);
+        }
+
+        // Determine whether the URL is for an internal Git repository, as
+        // opposed to a third-party one (like GitLab/GitHub).
+        $internalDomainSuffix = $this->config()->get('detection.git_domain');
+        $isInternal = substr($gitSshUri, -strlen($internalDomainSuffix)) === $internalDomainSuffix;
+
         if (!$isInternal) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
@@ -333,11 +342,10 @@ class ProjectGetCommand extends CommandBase
             $this->config()->get('application.executable')
         ));
 
-        if (strpos($gitUrl, ':') !== false) {
-            list($gitSshUrl,) = explode(':', $gitUrl, 2);
+        if ($gitSshUri !== '') {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You can test your connection to the Git server by running:');
-            $this->stdErr->writeln(sprintf('<comment>ssh -v %s</comment>', escapeshellarg($gitSshUrl)));
+            $this->stdErr->writeln(sprintf('<comment>ssh -v %s</comment>', escapeshellarg($gitSshUri)));
         }
     }
 }
