@@ -281,7 +281,7 @@
                 "hide from": "3.58.0"
             },
             {
-                "notes": "* Support new user invitations\n* Installer improvements:\n  - Create a .zshrc file if it doesn't already exist, on ZSH.\n  - Require the mbstring extension (#955).",
+                "notes": "* Support new user invitations\n* Installer improvements:\n  - Create a .zshrc file if it doesn't already exist, on ZSH.\n  - Require the mbstring extension.",
                 "show from": "3.58.0",
                 "hide from": "3.59.0"
             }
