@@ -587,7 +587,7 @@ class Api
             $project = new Project($cached, $baseUrl, $guzzleClient);
             $apiUrl = $this->config->getWithDefault('api.base_url', '');
             if ($apiUrl) {
-                $projects[$id]->setApiUrl($apiUrl);
+                $project->setApiUrl($apiUrl);
             }
         }
 
