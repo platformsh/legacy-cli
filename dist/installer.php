@@ -120,6 +120,8 @@ class Installer {
         );
 
         $required_extensions = [
+            // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
+            'mbstring',
             'openssl',
             'pcre',
         ];
