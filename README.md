@@ -54,18 +54,15 @@ Use the 'list' command to get a list of available options and commands:
 
 There are two ways to authenticate:
 
-1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
-  local server and a browser, allowing you to log in to Platform.sh via the
-  normal login form, including via third-party providers like Bitbucket, GitHub
-  and Google.
+1. The recommended way is `platform login`, which lets you log in via a web browser, including via third-party providers such as Google, GitHub and Bitbucket.
 
-2. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
-  these allow non-interactive authentication. To use an API token, you can run
-  the `platform auth:api-token-login` command. Alternatively you can supply the
-  API token in an environment variable named `PLATFORMSH_CLI_TOKEN`.
+2. If using a browser is not possible, use an [API token](https://docs.platform.sh/gettingstarted/cli/api-tokens.html).
 
-  *_Warning_*: An API token can act as the account that created it, with no
-  restrictions. Use a separate machine account to limit the token's access.
+    An interactive command is available for this: `platform auth:api-token-login`
+
+    For non-interactive uses such as scripts or CI systems, set the API token in an environment variable named `PLATFORMSH_CLI_TOKEN`. This can be insecure if not handled properly, although it is appropriate for systems such as CircleCI, Jenkins and GitLab.
+
+    *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access.
 
 ### Commands
 
