@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "f39d129d41a552357e1ebcf71a439372191739f0",
-        "sha256": "b9cf31803b47cdc6fb88e9eb2992ae5adb63403623767bc83df201137e9db092",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.58.0/platform.phar",
-        "version": "3.58.0",
+        "sha1": "54ee13afe9e9aa95c1fc79aafcc26ea96c573d4e",
+        "sha256": "86eb99473da97fb0786bf7c4a28f7f809572872f97b65e37d33e66cf3893d1f0",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.59.0/platform.phar",
+        "version": "3.59.0",
         "php": {
             "min": "5.5.9"
         },
@@ -279,6 +279,11 @@
                 "notes": "* Support prompting for re-authentication in the login command.\n  The command `platform login --force` (or `-f`) will now ask the\n  authentication server to prompt the user to log in again, even if they\n  already had a session in that browser. This is helpful for refreshing\n  authentication status (e.g. to re-verify 2FA), or for logging in as another\n  account.\n* The region list in the `platform create` command is now sorted\n  alphabetically (with the subdomain and suffix sorted separately).\n* Add `--count` (`-c`) option to the `self:stats` command to modify the results per page.\n* Move the SSH hostname to the session-specific SSH configuration. This means\n  less rewriting needed for the global `~/.ssh/config` file when changing CLI\n  configuration.",
                 "show from": "3.57.0",
                 "hide from": "3.58.0"
+            },
+            {
+                "notes": "* Support new user invitations\n* Installer improvements:\n  - Create a .zshrc file if it doesn't already exist, on ZSH.\n  - Require the mbstring extension (#955).",
+                "show from": "3.58.0",
+                "hide from": "3.59.0"
             }
         ]
     }
