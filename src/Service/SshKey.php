@@ -29,11 +29,20 @@ class SshKey {
      * accounts, and (2) if the user has only one key, but it is in a
      * non-standard location.
      *
+     * @param bool $reset
+     *
      * @return string|null
      *   An absolute filename of an SSH private key, or null if there is no
      *   selected key.
      */
-    public function selectIdentity() {
+    public function selectIdentity($reset = false) {
+        // Cache, mainly to avoid repetition of the output message.
+        static $selectedIdentity = false;
+        if (!$reset && $selectedIdentity !== false) {
+            return $selectedIdentity;
+        }
+        $selectedIdentity = null;
+
         $accountKeyFingerprints = $this->listAccountKeyFingerprints();
         if (!$accountKeyFingerprints) {
             return null;
@@ -52,7 +61,7 @@ class SshKey {
 
         if ($key = $this->findIdentityMatchingPublicKeys($accountKeyFingerprints)) {
             $this->stdErr->writeln(sprintf('Automatically selected SSH identity: <info>%s</info>', $key), OutputInterface::VERBOSITY_VERBOSE);
-            return $key;
+            return $selectedIdentity = $key;
         }
 
         return null;

@@ -111,7 +111,7 @@ class SshConfig {
             $this->stdErr->writeln(sprintf('Updating SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERBOSE);
             $this->fs->writeFile($filename, $contents, false);
         } else {
-            $this->stdErr->writeln(sprintf('Validated SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERBOSE);
+            $this->stdErr->writeln(sprintf('Validated SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERY_VERBOSE);
         }
         $this->chmod($filename, 0600);
     }
