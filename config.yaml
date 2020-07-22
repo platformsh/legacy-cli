@@ -147,7 +147,7 @@ api:
 
   # Whether to auto-load an SSH certificate on login and SSH commands.
   # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
-  auto_load_ssh_cert: false
+  auto_load_ssh_cert: true
 
   # Whether the API supports project invitations.
   invitations: true
