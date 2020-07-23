@@ -48,17 +48,23 @@ class SshConfig {
                 $refreshCommand .= ' 2>/dev/null';
             }
             // Use Match solely to run the refresh command.
+            $lines[] = '# Auto-refresh the SSH certificate:';
             $lines[] = sprintf('Match exec "%s"', $refreshCommand);
             $lines[] = sprintf('Match all');
+            $lines[] = '';
 
             // Indentation in the SSH config is for readability (it has no other effect).
-            $lines[] = sprintf('  CertificateFile %s', $certificate->certificateFilename());
-            $lines[] = sprintf('  IdentityFile %s', $certificate->privateKeyFilename());
+            $lines[] = '# Include the certificate and its key:';
+            $lines[] = sprintf('CertificateFile %s', $certificate->certificateFilename());
+            $lines[] = sprintf('IdentityFile %s', $certificate->privateKeyFilename());
+            $lines[] = '';
         }
 
         $sessionIdentityFile = $this->sshKey->selectIdentity();
         if ($sessionIdentityFile !== null) {
-            $lines[] = sprintf('  IdentityFile %s', $sessionIdentityFile);
+            $lines[] = '# This SSH key was detected as corresponding to the session:';
+            $lines[] = sprintf('IdentityFile %s', $sessionIdentityFile);
+            $lines[] = '';
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
@@ -71,11 +77,12 @@ class SshConfig {
         }
 
         // Add default files if there is no preferred session identity file.
-        if ($sessionIdentityFile === null) {
-            $defaultFiles = $this->getUserDefaultSshIdentityFiles();
+        if ($sessionIdentityFile === null && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
+            $lines[] = '# Include SSH "default" identity files:';
             foreach ($defaultFiles as $identityFile) {
-                $lines[] = sprintf('  IdentityFile %s', $identityFile);
+                $lines[] = sprintf('IdentityFile %s', $identityFile);
             }
+            $lines[] = '';
         }
 
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
@@ -91,6 +98,7 @@ class SshConfig {
             foreach ($wildcards as $wildcard) {
                 $includerLines[] = 'Host ' . $wildcard;
                 $includerLines[] = '  Include ' . $sessionSpecificFilename;
+                $includerLines[] = '';
             }
             $includerLines[] = 'Host *';
             $this->writeSshIncludeFile(
