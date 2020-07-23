@@ -41,16 +41,14 @@ class Certifier
     /**
      * Generates a new certificate.
      *
-     * @param bool $newKeyPair Whether to recreate the SSH key pair.
-     *
      * @return Certificate
      */
-    public function generateCertificate($newKeyPair = false)
+    public function generateCertificate()
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
 
-        $sshPair = $this->generateSshKey($dir, $newKeyPair);
+        $sshPair = $this->generateSshKey($dir, true);
         $publicContents = file_get_contents($sshPair['public']);
         if (!$publicContents) {
             throw new \RuntimeException('Failed to read public key file: ' . $publicContents);

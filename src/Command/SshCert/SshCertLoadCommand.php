@@ -15,12 +15,14 @@ class SshCertLoadCommand extends CommandBase
             ->setName('ssh-cert:load')
             ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate, if necessary (do not write SSH config)')
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
-            ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed with a new SSH key pair')
+            ->addOption('new-key', null, InputOption::VALUE_NONE, '[Deprecated] Use --new instead')
             ->setDescription('Generate an SSH certificate');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['new-key'], 'The --new-key option is deprecated. Use --new instead.');
+
         // Initialize the API service to ensure event listeners etc.
         $this->api();
 
@@ -42,7 +44,7 @@ class SshCertLoadCommand extends CommandBase
 
         if ($refresh) {
             $this->stdErr->writeln('Generating SSH certificate...');
-            $sshCert = $certifier->generateCertificate($input->getOption('new-key'));
+            $sshCert = $certifier->generateCertificate();
             $this->displayCertificate($sshCert);
         }
 
