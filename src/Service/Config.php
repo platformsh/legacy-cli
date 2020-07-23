@@ -316,7 +316,6 @@ class Config
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
             'CERTIFIER_URL' => 'api.certifier_url',
             'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
-            'SSH_DOMAIN_WILDCARD' => 'api.ssh_domain_wildcard',
             'UPDATES_CHECK' => 'updates.check',
         ];
 
@@ -325,6 +324,11 @@ class Config
             if ($value !== false) {
                 NestedArrayUtil::setNestedArrayValue($this->config, explode('.', $key), $value, true);
             }
+        }
+
+        // Special case: replace the list api.ssh_domain_wildcards with the value of {PREFIX}SSH_DOMAIN_WILDCARD.
+        if (($value = $this->getEnv('SSH_DOMAIN_WILDCARD')) !== false) {
+            $this->config['api']['ssh_domain_wildcards'] = [$value];
         }
     }
 

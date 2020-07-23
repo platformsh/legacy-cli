@@ -141,9 +141,9 @@ api:
   # Overridden by {application.env_prefix}CERTIFIER_URL env var.
   certifier_url: 'https://ssh.api.platform.sh'
 
-  # Wildcard domain for SSH configuration.
-  # Overridden by {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
-  ssh_domain_wildcard: '*.platform.sh'
+  # Wildcard domains for SSH configuration.
+  # Can be replaced by a single value using the {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
+  ssh_domain_wildcards: ['*.platform.sh']
 
   # Whether to auto-load an SSH certificate on login and SSH commands.
   # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var

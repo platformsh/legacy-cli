@@ -47,7 +47,9 @@ class SshConfig {
             if (!OsUtil::isWindows()) {
                 $refreshCommand .= ' 2>/dev/null';
             }
-            $lines[] = sprintf('Match host %s exec "%s"', $this->config->get('api.ssh_domain_wildcard'), $refreshCommand);
+            // Use Match solely to run the refresh command.
+            $lines[] = sprintf('Match exec "%s"', $refreshCommand);
+            $lines[] = sprintf('Match all');
 
             // Indentation in the SSH config is for readability (it has no other effect).
             $lines[] = sprintf('  CertificateFile %s', $certificate->certificateFilename());
@@ -76,21 +78,26 @@ class SshConfig {
             }
         }
 
-        // End the Match block, for neatness.
-        $lines[] = 'Match all';
-
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
-        $this->writeSshIncludeFile(
-            $includerFilename,
-            [
-                '# This file is included from your SSH config file (~/.ssh/config).',
-                '# In turn, it includes the configuration for the currently active CLI session.',
-                '# It is updated automatically when certain CLI commands are run.',
-                'Host ' . $this->config->get('api.ssh_domain_wildcard'),
-                '  Include ' . $sessionSpecificFilename,
-                'Host *', // ends the Host block
-            ]
-        );
+
+        $includerLines = [
+            '# This file is included from your SSH config file (~/.ssh/config).',
+            '# In turn, it includes the configuration for the currently active CLI session.',
+            '# It is updated automatically when certain CLI commands are run.',
+        ];
+
+        $wildcards = $this->config->get('api.ssh_domain_wildcards');
+        if (count($wildcards)) {
+            foreach ($wildcards as $wildcard) {
+                $includerLines[] = 'Host ' . $wildcard;
+                $includerLines[] = '  Include ' . $sessionSpecificFilename;
+            }
+            $includerLines[] = 'Host *';
+            $this->writeSshIncludeFile(
+                $includerFilename,
+                $includerLines
+            );
+        }
 
         return true;
     }
