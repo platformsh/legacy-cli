@@ -5,7 +5,8 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 ## Requirements
 
 * Operating system: Linux, OS X, or Windows 10
-* PHP 5.5.9 or higher, with cURL support
+* PHP 5.5.9 or higher, with the following extensions: `curl`, `json`,
+ `mbstring`, `pcre`, and `phar`. The installation command will check for these.
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
