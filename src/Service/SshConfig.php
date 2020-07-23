@@ -48,13 +48,15 @@ class SshConfig {
                 $refreshCommand .= ' 2>/dev/null';
             }
             $lines[] = sprintf('Match host %s exec "%s"', $this->config->get('api.ssh_domain_wildcard'), $refreshCommand);
+
+            // Indentation in the SSH config is for readability (it has no other effect).
             $lines[] = sprintf('  CertificateFile %s', $certificate->certificateFilename());
             $lines[] = sprintf('  IdentityFile %s', $certificate->privateKeyFilename());
         }
 
         $sessionIdentityFile = $this->sshKey->selectIdentity();
         if ($sessionIdentityFile !== null) {
-            $lines[] = sprintf('IdentityFile %s', $sessionIdentityFile);
+            $lines[] = sprintf('  IdentityFile %s', $sessionIdentityFile);
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
@@ -70,9 +72,12 @@ class SshConfig {
         if ($sessionIdentityFile === null) {
             $defaultFiles = $this->getUserDefaultSshIdentityFiles();
             foreach ($defaultFiles as $identityFile) {
-                $lines[] = sprintf('IdentityFile %s', $identityFile);
+                $lines[] = sprintf('  IdentityFile %s', $identityFile);
             }
         }
+
+        // End the Match block, for neatness.
+        $lines[] = 'Match all';
 
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
         $this->writeSshIncludeFile(
@@ -83,6 +88,7 @@ class SshConfig {
                 '# It is updated automatically when certain CLI commands are run.',
                 'Host ' . $this->config->get('api.ssh_domain_wildcard'),
                 '  Include ' . $sessionSpecificFilename,
+                'Host *', // ends the Host block
             ]
         );
 
