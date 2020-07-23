@@ -182,6 +182,8 @@ service
   service:mongo:restore (mongorestore)      Restore a binary archive dump of data into MongoDB
   service:mongo:shell (mongo)               Use the MongoDB shell
   service:redis-cli (redis)                 Access the Redis CLI
+ssh-cert
+  ssh-cert:load                             Generate an SSH certificate
 ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key

@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshCertLoadCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     protected function configure()
     {
         $this
@@ -18,7 +16,7 @@ class SshCertLoadCommand extends CommandBase
             ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate, if necessary (do not write SSH config)')
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
             ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed with a new SSH key pair')
-            ->setDescription('Generate a new certificate from the certifier API');
+            ->setDescription('Generate an SSH certificate');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
