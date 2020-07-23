@@ -95,11 +95,8 @@ class SshConfig {
 
         $wildcards = $this->config->get('api.ssh_domain_wildcards');
         if (count($wildcards)) {
-            foreach ($wildcards as $wildcard) {
-                $includerLines[] = 'Host ' . $wildcard;
-                $includerLines[] = '  Include ' . $sessionSpecificFilename;
-                $includerLines[] = '';
-            }
+            $includerLines[] = 'Host ' . implode(' ', $wildcards);
+            $includerLines[] = '  Include ' . $sessionSpecificFilename;
             $includerLines[] = 'Host *';
             $this->writeSshIncludeFile(
                 $includerFilename,
@@ -158,7 +155,16 @@ class SshConfig {
     {
         $filename = $this->getUserSshConfigFilename();
 
-        $suggestedConfig = 'Include ' . $this->getCliSshDir() . DIRECTORY_SEPARATOR . '*.config';
+        $wildcards = $this->config->get('api.ssh_domain_wildcards');
+        if (!$wildcards) {
+            return true;
+        }
+
+        $suggestedConfig = \implode("\n", [
+            'Host ' . \implode(' ', $wildcards),
+            '  Include ' . $this->getCliSshDir() . DIRECTORY_SEPARATOR . '*.config',
+            'Host *',
+        ]);
 
         $manualMessage = 'To configure SSH manually, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
