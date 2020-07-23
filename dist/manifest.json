@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "be6d7919c5a776dbcbdc7887c47d27651f5f49f3",
-        "sha256": "cd367d27beb28c7ee9852c5fbe5ae808f1dbff448d1ff8fed7ceab9a792b6839",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.59.1/platform.phar",
-        "version": "3.59.1",
+        "sha1": "a9876994d679afa26a6b6e130ece8e4ae6474a27",
+        "sha256": "52dd24f7168ac9fac687e94b5be7664b494b2fcbb3d6867783162d47f25a3b58",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.60.0/platform.phar",
+        "version": "3.60.0",
         "php": {
             "min": "5.5.9"
         },
@@ -284,6 +284,11 @@
                 "notes": "* Support new user invitations\n* Installer improvements:\n  - Create a .zshrc file if it doesn't already exist, on ZSH.\n  - Require the mbstring extension.",
                 "show from": "3.58.0",
                 "hide from": "3.59.0"
+            },
+            {
+                "notes": "New features:\n\n* Autoload SSH certificates on login or SSH, by default.\n    When supported by all relevant servers (soon), SSH certificates will:\n    - Enable support for multi-factor authentication on projects that require it for SSH access.\n    - Make it no longer necessary to add or administer SSH keys manually.\n\n  Note: SSH certificates can be checked or reloaded using the `ssh-cert:load` command.\n\nOther changes:\n\n* SSH configuration improvements:\n  - Denote top-level SSH configuration with a `Host` block, to avoid issues where a previous `Host` or `Match` configuration had not been closed.\n  - End the Host blocks explicitly with `Host *`\n* Fix detection of third-party Git domains for `project:get` (`get`) command errors.",
+                "show from": "3.59.0",
+                "hide from": "3.60.0"
             }
         ]
     }
