@@ -84,16 +84,26 @@ abstract class DomainCommandBase extends CommandBase
     protected function handleApiException(ClientException $e, Project $project)
     {
         $response = $e->getResponse();
-        if ($response !== null && $response->getStatusCode() === 403) {
+        if (!$response) {
+            throw $e;
+        }
+        if ($response->getStatusCode() === 403) {
             $project->ensureFull();
             $data = $project->getData();
             if (!$project->hasLink('#manage-domains')
                 && !empty($data['subscription']['plan'])
                 && $data['subscription']['plan'] === 'development') {
                 $this->stdErr->writeln('This project is on a Development plan. Upgrade the plan to add domains.');
+                return;
             }
-        } else {
-            throw $e;
         }
+        if ($response->getStatusCode() === 400) {
+            $data = $response->json();
+            if (isset($data['detail']) && strpos($data['detail'], 'already claimed') !== false) {
+                $this->stdErr->writeln('This domain is already claimed by another service.');
+                return;
+            }
+        }
+        throw $e;
     }
 }
