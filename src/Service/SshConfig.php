@@ -39,7 +39,13 @@ class SshConfig {
             $this->fs->remove($legacy);
         }
 
+        $domainWildcards = $this->config->get('api.ssh_domain_wildcards');
+
         $lines = [];
+
+        if ($domainWildcards) {
+            $lines[] = 'Host ' . implode(' ', $domainWildcards);
+        }
 
         if ($certificate = $this->certifier->getExistingCertificate()) {
             $executable = $this->config->get('application.executable');
@@ -49,8 +55,11 @@ class SshConfig {
             }
             // Use Match solely to run the refresh command.
             $lines[] = '# Auto-refresh the SSH certificate:';
-            $lines[] = sprintf('Match exec "%s"', $refreshCommand);
-            $lines[] = sprintf('Match all');
+            if ($domainWildcards) {
+                $lines[] = sprintf('Match host %s exec "%s"', \implode(' ', $domainWildcards), $refreshCommand);
+            } else {
+                $lines[] = sprintf('Match exec "%s"', $refreshCommand);
+            }
             $lines[] = '';
 
             // Indentation in the SSH config is for readability (it has no other effect).
@@ -84,6 +93,8 @@ class SshConfig {
             }
             $lines[] = '';
         }
+
+        $lines[] = sprintf('Host *');
 
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
 
