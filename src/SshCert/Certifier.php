@@ -11,7 +11,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Certifier
 {
-    const PRIVATE_KEY_FILENAME = 'id_rsa';
+    const KEY_ALGORITHM = 'ed25519';
+    const PRIVATE_KEY_FILENAME = 'id_ed25519';
 
     private $api;
     private $config;
@@ -41,16 +42,14 @@ class Certifier
     /**
      * Generates a new certificate.
      *
-     * @param bool $newKeyPair Whether to recreate the SSH key pair.
-     *
      * @return Certificate
      */
-    public function generateCertificate($newKeyPair = false)
+    public function generateCertificate()
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
 
-        $sshPair = $this->generateSshKey($dir, $newKeyPair);
+        $sshPair = $this->generateSshKey($dir, true);
         $publicContents = file_get_contents($sshPair['public']);
         if (!$publicContents) {
             throw new \RuntimeException('Failed to read public key file: ' . $publicContents);
@@ -116,7 +115,7 @@ class Certifier
             $this->fs->remove($sshInfo);
         }
         // Generate new keys and set permissions.
-        $this->shell->execute(['ssh-keygen', '-t', 'rsa', '-N', '', '-f', $sshInfo['private']], null, true);
+        $this->shell->execute(['ssh-keygen', '-t', self::KEY_ALGORITHM, '-N', '', '-f', $sshInfo['private']], null, true);
         $this->chmod($sshInfo['private'], 0600);
         $this->chmod($sshInfo['public'], 0600);
 
