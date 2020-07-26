@@ -49,6 +49,14 @@ class Certifier
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
 
+        // Remove the old certificate and key from the SSH agent.
+        $this->shell->execute(['ssh-add', '-d', $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME], null, false, !$this->stdErr->isVeryVerbose());
+
+        // Ensure the user is logged in to the API, so that an auto-login will
+        // not be triggered after we have generated keys (auto-login triggers a
+        // logout, which wipes keys).
+        $apiClient = $this->api->getClient();
+
         $sshPair = $this->generateSshKey($dir, true);
         $publicContents = file_get_contents($sshPair['public']);
         if (!$publicContents) {
@@ -63,12 +71,18 @@ class Certifier
         }
 
         $this->stdErr->writeln('Requesting certificate from the API', OutputInterface::VERBOSITY_VERBOSE);
-        $certificate = $this->api->getClient()->getSshCertificate($publicContents);
+        $certificate = $apiClient->getSshCertificate($publicContents);
 
         $this->fs->writeFile($certificateFilename, $certificate);
         $this->chmod($certificateFilename, 0600);
 
         $certificate = new Certificate($certificateFilename, $sshPair['private']);
+
+        // Add the key to the SSH agent, if possible, silently.
+        // In verbose mode the full command will be printed, so the user can
+        // re-run it to check error details.
+        $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
+        $this->shell->execute(['ssh-add', '-t', $lifetime, $sshPair['private']], null, false, !$this->stdErr->isVerbose());
 
         return $certificate;
     }
