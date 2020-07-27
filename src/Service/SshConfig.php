@@ -43,10 +43,6 @@ class SshConfig {
 
         $lines = [];
 
-        if ($domainWildcards) {
-            $lines[] = 'Host ' . implode(' ', $domainWildcards);
-        }
-
         if ($certificate = $this->certifier->getExistingCertificate()) {
             $executable = $this->config->get('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
@@ -56,7 +52,7 @@ class SshConfig {
             // Use Match solely to run the refresh command.
             $lines[] = '# Auto-refresh the SSH certificate:';
             if ($domainWildcards) {
-                $lines[] = sprintf('Match host %s exec "%s"', \implode(' ', $domainWildcards), $refreshCommand);
+                $lines[] = sprintf('Match host "%s" exec "%s"', \implode(',', $domainWildcards), $refreshCommand);
             } else {
                 $lines[] = sprintf('Match exec "%s"', $refreshCommand);
             }
@@ -67,6 +63,10 @@ class SshConfig {
             $lines[] = sprintf('CertificateFile %s', $certificate->certificateFilename());
             $lines[] = sprintf('IdentityFile %s', $certificate->privateKeyFilename());
             $lines[] = '';
+        }
+
+        if ($domainWildcards) {
+            $lines[] = 'Host ' . implode(' ', $domainWildcards);
         }
 
         $sessionIdentityFile = $this->sshKey->selectIdentity();
@@ -94,8 +94,6 @@ class SshConfig {
             $lines[] = '';
         }
 
-        $lines[] = sprintf('Host *');
-
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
 
         $includerLines = [
@@ -108,7 +106,6 @@ class SshConfig {
         if (count($wildcards)) {
             $includerLines[] = 'Host ' . implode(' ', $wildcards);
             $includerLines[] = '  Include ' . $sessionSpecificFilename;
-            $includerLines[] = 'Host *';
             $this->writeSshIncludeFile(
                 $includerFilename,
                 $includerLines
