@@ -100,7 +100,7 @@ class ActivityMonitor
         $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
         $bar->start();
 
-        $logStream = $this->getLogStream($activity);
+        $logStream = $this->getLogStream($activity, $bar);
         $bar->advance();
 
         // Read the log while waiting for the activity to complete.
@@ -426,16 +426,30 @@ class ActivityMonitor
      * Returns the activity log as a PHP stream resource.
      *
      * @param Activity $activity
+     * @param ProgressBar $bar
+     *   Progress bar, updated when we retry.
      *
      * @return resource
      */
-    private function getLogStream(Activity $activity) {
+    private function getLogStream(Activity $activity, ProgressBar $bar) {
         $url = $activity->getLink('log');
-        $stream = fopen($url, 'r', false, $this->api->getStreamContext());
-        if ($stream === false) {
-            throw new \RuntimeException('Failed to open stream: ' . $url);
+
+        // Try fetching the stream with a 10 second timeout per call, and a .5
+        // second interval between calls, for up to 30 seconds.
+        $readTimeout = 10;
+        $interval = .5;
+        $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
+        $start = \microtime(true);
+        while ($stream === false) {
+            if (\microtime(true) - $start > 30) {
+                throw new \RuntimeException('Failed to open activity log stream: ' . $url);
+            }
+            $bar->advance();
+            \usleep($interval * 1000000);
+            $bar->advance();
+            $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         }
-        stream_set_blocking($stream, 0);
+        \stream_set_blocking($stream, 0);
 
         return $stream;
     }
