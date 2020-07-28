@@ -15,7 +15,6 @@ class PasswordLoginCommand extends CommandBase
     protected function configure()
     {
         $service = $this->config()->get('service.name');
-        $accountsUrl = $this->config()->get('service.accounts_url');
         $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:password-login');
@@ -27,9 +26,9 @@ class PasswordLoginCommand extends CommandBase
         $this->setDescription('Log in to ' . $service . ' using a username and password');
 
         $help = 'Use this command to log in to your ' . $service . ' account in the terminal.'
-            . "\n\nYou can create an account at:\n    <info>" . $accountsUrl . '</info>'
+            . "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>'
             . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
-            . $accountsUrl . '/user/password</info>'
+            . $this->config()->get('service.reset_password_url') . '</info>'
             . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
             . $executable . ' auth:browser-login</info>'
             . "\n\n" . $this->getNonInteractiveAuthHelp();
@@ -134,7 +133,7 @@ class PasswordLoginCommand extends CommandBase
                     '<error>Login failed. Please check your credentials.</error>',
                     '',
                     "Forgot your password? Or don't have a password yet? Visit:",
-                    '  <comment>' . $this->config()->get('service.accounts_url') . '/user/password</comment>',
+                    '  <comment>' . $this->config()->get('service.reset_password_url') . '</comment>',
                     '',
                 ]);
                 $this->configureAccount($input, $output);

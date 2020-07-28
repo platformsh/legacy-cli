@@ -246,7 +246,6 @@ class Api
      */
     private function getConnectorOptions() {
         $connectorOptions = [];
-        $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
         $connectorOptions['api_url'] = $this->config->getWithDefault('api.base_url', '');
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
         $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
@@ -728,7 +727,7 @@ class Api
     {
         $data = $this->getMyAccount($reset);
 
-        return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->get('api.accounts_api_url'), '/') . '/', $this->getHttpClient());
+        return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->get('api.base_url'), '/') . '/', $this->getHttpClient());
     }
 
     /**

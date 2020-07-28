@@ -17,7 +17,6 @@ class ApiTokenLoginCommand extends CommandBase
     protected function configure()
     {
         $service = $this->config()->get('service.name');
-        $accountsUrl = $this->config()->get('service.accounts_url');
         $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:api-token-login');
@@ -28,9 +27,9 @@ class ApiTokenLoginCommand extends CommandBase
         $this->setDescription('Log in to ' . $service . ' using an API token');
 
         $help = 'Use this command to log in to your ' . $service . ' account using an API token.'
-            . "\n\nYou can create an account at:\n    <info>" . $accountsUrl . '</info>'
+            . "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>'
             . "\n\nIf you have an account, but you do not already have an API token, you can create one here:\n    <info>"
-            . $accountsUrl . '/user/api-tokens</info>'
+            . $this->config()->get('service.api_tokens_url') . '</info>'
             . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
             . $executable . ' auth:browser-login</info>';
         $this->setHelp($help);

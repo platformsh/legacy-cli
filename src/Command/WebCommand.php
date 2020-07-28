@@ -48,7 +48,7 @@ class WebCommand extends CommandBase
                 }
             }
         } else {
-            $url = $this->config()->get('service.accounts_url');
+            $url = $this->config()->getWithDefault('service.console_url', $this->config()->get('service.accounts_url'));
         }
 
         /** @var \Platformsh\Cli\Service\Url $urlService */

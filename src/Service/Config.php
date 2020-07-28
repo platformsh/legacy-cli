@@ -309,8 +309,6 @@ class Config
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
             'API_URL' => 'api.base_url',
-            'ACCOUNTS_API' => 'api.accounts_api_url',
-            'ACCOUNTS_API_URL' => 'api.accounts_api_url',
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
