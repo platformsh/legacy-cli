@@ -155,7 +155,7 @@ class VariableCreateCommand extends VariableCommandBase
         $this->displayVariable($result->getEntity());
 
         $success = true;
-        if (!$result->countActivities()) {
+        if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
