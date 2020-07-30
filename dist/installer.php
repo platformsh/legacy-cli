@@ -1,373 +1,668 @@
-<?php
+<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
+
 /**
  * @file
  * SymfonyCloud (PHP) CLI installer.
+ *
+ * This script will check requirements, download the CLI, move it into place,
+ * and run the self:install command (to set up the PATH and autocompletion).
+ *
+ * Example (via curl):
+ *      curl -sS https://a.s5y.io/cli/installer | php -- --dev
+ *
+ * Example (via downloaded file):
+ *      php installer.php -- --dev
+ *
+ * Supported options:
+ *      --alpha, --beta, --dev Install an unstable version.
+ *      --no-ansi              Disable ANSI (no colors).
+ *      --ansi                 Enable ANSI (e.g. for colors).
+ *      --min VERSION          Min version to install.
+ *      --max VERSION          Max version to install (not recommended).
+ *      --manifest URL         A manifest JSON file URL (use for testing).
+ *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
+ *
+ * This file's syntax must support PHP 5.5.9 or higher.
+ * It must not include any other files.
  */
 
-define('CLI_UPDATE_MANIFEST_URL', getenv('PLATFORMSH_CLI_MANIFEST_URL') ?: 'https://a.s5y.io/cli/manifest.json');
-define('CLI_CONFIG_DIR', '.symfony-cloud-cli');
-define('CLI_EXECUTABLE', 'symfony-cloud');
-define('CLI_NAME', 'SymfonyCloud (PHP) CLI');
-define('CLI_PHAR', CLI_EXECUTABLE . '.phar');
+namespace Platformsh\Cli\Installer;
 
-// Set up the CLI I/O.
-setUpIo();
+// Check the minimum PHP version for this installer to run.
+if (version_compare(PHP_VERSION, '5.5.9', '<')) {
+    /** @noinspection PhpUnhandledExceptionInspection */
+    throw new \Exception(sprintf('The PHP version is %s, but 5.5.9 or greater is required.', PHP_VERSION));
+}
 
-set_error_handler(
-    function ($code, $message) {
-        if ($code & error_reporting()) {
-            echo PHP_EOL . "Error ($code): $message" . PHP_EOL;
-            exit(1);
+// Ensure we are running via the command line.
+if (PHP_SAPI !== 'cli') {
+    throw new \RuntimeException('This can only be run via command-line PHP.');
+}
+
+// Skip running the installer if we are including this from the CLI itself.
+// This allows us to run tests on functions defined in this file.
+$isCliInclude = defined('CLI_ROOT') && CLI_ROOT === dirname(__DIR__);
+if (!$isCliInclude) {
+    (new Installer())->run();
+}
+
+class Installer {
+    private $envPrefix;
+    private $manifestUrl;
+    private $configDir;
+    private $executable;
+    private $cliName;
+    private $pharName;
+    private $argv;
+
+    public function __construct(array $args = []) {
+        $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
+        $this->envPrefix = 'SYMFONY_CLOUD_CLI_';
+        if (getenv($this->envPrefix . 'MANIFEST_URL') !== false) {
+            $this->manifestUrl = getenv($this->envPrefix . 'MANIFEST_URL');
+        } elseif ($manifestOption = $this->getOption('manifest')) {
+            $this->manifestUrl = $manifestOption;
+        } else {
+            $this->manifestUrl = 'https://a.s5y.io/cli/manifest.json';
         }
+        $this->configDir = '.symfony-cloud-cli';
+        $this->executable = 'symfony-cloud';
+        $this->cliName = 'SymfonyCloud CLI';
+        $this->pharName = $this->executable . '.phar';
     }
-);
 
-output(CLI_NAME . " installer", 'heading');
+    /**
+     * Runs the install itself.
+     */
+    public function run() {
+        error_reporting(E_ALL);
+        ini_set('log_errors', 0);
+        ini_set('display_errors', 1);
 
-// Run environment checks.
-output(PHP_EOL . "Environment check", 'heading');
+        $this->output($this->cliName . " installer", 'heading');
 
-// Check the PHP version.
-$min_php = '5.5.9';
-check(
-    sprintf('The PHP version is supported: %s.', PHP_VERSION),
-    sprintf('The PHP version is %s, but %s or greater is required.', PHP_VERSION, $min_php),
-    function () use ($min_php) {
-        return version_compare(PHP_VERSION, $min_php, '>=');
-    }
-);
+        // Run environment checks.
+        $this->output(PHP_EOL . "Environment check", 'heading');
 
-// Check that the JSON extension is installed (needed in this script).
-check(
-    'The "json" PHP extension is installed.',
-    'The "json" PHP extension is required.',
-    function () {
-        return extension_loaded('json');
-    }
-);
+        // Check that the JSON extension is installed (needed in this script).
+        $this->check(
+            'The "json" PHP extension is installed.',
+            'The "json" PHP extension is required.',
+            function () {
+                return extension_loaded('json');
+            }
+        );
 
-// Check that the Phar extension is installed (needed in this script).
-check(
-    'The "phar" PHP extension is installed.',
-    'The "phar" PHP extension is required.',
-    function () {
-        return extension_loaded('phar');
-    }
-);
+        // Check that the Phar extension is installed (needed in this script).
+        $this->check(
+            'The "phar" PHP extension is installed.',
+            'The "phar" PHP extension is required.',
+            function () {
+                return extension_loaded('phar');
+            }
+        );
 
-// Check that Git is installed.
-check(
-    'Git is installed.',
-    'Warning: Git will be needed.',
-    function () {
-        exec('command -v git', $output, $return_var);
-        return $return_var === 0;
-    },
-    false
-);
+        // Check that Git is installed.
+        $this->check(
+            'Git is installed.',
+            'Warning: Git will be needed.',
+            function () {
+                if (defined('PHP_WINDOWS_VERSION_BUILD')) {
+                    $command = 'where git';
+                } else {
+                    $command = 'command -v git';
+                }
+                exec($command, $output, $return_var);
+                return $return_var === 0;
+            },
+            false
+        );
 
-// Check that the openssl extension exists.
-check(
-    'The "openssl" PHP extension is installed.',
-    'Warning: the "openssl" PHP extension will be needed.',
-    function () {
-        return extension_loaded('openssl');
-    },
-    false
-);
+        $required_extensions = [
+            'openssl',
+            'pcre',
+        ];
+        foreach ($required_extensions as $extension) {
+            $this->check(
+                'The "' . $extension . '" PHP extension is installed.',
+                'The "' . $extension . '" PHP extension is required.',
+                function () use ($extension) {
+                    return extension_loaded($extension);
+                }
+            );
+        }
 
-// Check that the curl extension exists.
-check(
-    'The "curl" PHP extension is installed.',
-    'Warning: the "curl" PHP extension will be needed.',
-    function () {
-        return extension_loaded('curl');
-    },
-    false
-);
+        // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
+        $this->check(
+            'One or both of the "mbstring" or "iconv" PHP extensions is installed.',
+            'One or both of the "mbstring" or "iconv" PHP extensions is required.',
+            function () {
+                return \extension_loaded('mbstring') || \extension_loaded('iconv');
+            }
+        );
 
-// Check that the ctype extension exists.
-check(
-    'The "ctype" PHP extension is installed.',
-    'Warning: the "ctype" PHP extension will be needed.',
-    function () {
-        return extension_loaded('ctype');
-    },
-    false
-);
+        $this->check(
+            'The "curl" PHP extension is installed.',
+            'The "curl" PHP extension is strongly recommended.',
+            function () {
+                return extension_loaded('curl');
+            },
+            false
+        );
 
-// Check that the mbstring and/or iconv extensions exist.
-check(
-    'The "mbstring" and/or "iconv" PHP extensions are installed.',
-    'Warning: the "mbstring" and/or "iconv" PHP extensions will be needed.',
-    function () {
-        return extension_loaded('mbstring') || extension_loaded('iconv');
-    },
-    false
-);
+        // Check pcntl and posix - needed for tunnel:open and server:start.
+        // Skip the check on Windows, as they are not available there anyway.
+        if (DIRECTORY_SEPARATOR !== '\\') {
+            $this->check(
+                'The "pcntl" and "posix" extensions are installed.',
+                'The "pcntl" and "posix" extensions are needed for some commands.',
+                function () {
+                    return extension_loaded('pcntl') && extension_loaded('posix');
+                },
+                false
+            );
+        }
 
-// Check Suhosin restrictions.
-if (extension_loaded('suhosin')) {
-    check(
-        'The "phar" stream wrapper is allowed by Suhosin.',
-        'The "phar" stream wrapper is blocked by Suhosin.',
-        function () {
-            $white = ini_get('suhosin.executor.include.whitelist');
-            $black = ini_get('suhosin.executor.include.blacklist');
+        // Check Suhosin restrictions.
+        if (extension_loaded('suhosin')) {
+            $this->check(
+                'The "phar" stream wrapper is allowed by Suhosin.',
+                'The "phar" stream wrapper is blocked by Suhosin.',
+                function () {
+                    $allowed = ini_get('suhosin.executor.include.whitelist');
+                    $blocked = ini_get('suhosin.executor.include.blacklist');
 
-            if ((false === stripos($white, 'phar'))
-                || (false !== stripos($black, 'phar'))
-            ) {
-                return false;
+                    if ((false === stripos($allowed, 'phar'))
+                        || (false !== stripos($blocked, 'phar'))
+                    ) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            );
+        }
+
+        // Check whether PHP can open files via URLs.
+        $this->check(
+            'The "allow_url_fopen" setting is on.',
+            'The "allow_url_fopen" setting is off; it must be on.',
+            function () {
+                return (true == ini_get('allow_url_fopen'));
+            }
+        );
+
+        // Check a troublesome APC setting.
+        $this->check(
+            'The "apc.enable_cli" setting is off.',
+            'Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
+            function () {
+                return (false == ini_get('apc.enable_cli'));
+            },
+            false
+        );
+
+        // The necessary checks have passed. Start downloading the right version.
+        $this->output(PHP_EOL . 'Download', 'heading');
+
+        $latest = $this->performTask('Finding the latest version', function () {
+            return $this->findLatestVersion($this->manifestUrl);
+        });
+
+        $this->performTask('Downloading version ' . $latest['version'], function () use ($latest) {
+            $url = $latest['url'];
+
+            // A relative download URL is treated as relative to the manifest URL.
+            if (strpos($url, '//') === false && strpos($this->manifestUrl, '//') !== false) {
+                $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
+                $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
             }
 
-            return true;
+            if (!file_put_contents($this->pharName, file_get_contents($url))) {
+                return TaskResult::failure('The download failed');
+            }
+
+            return TaskResult::success();
+        });
+
+        $pharPath = realpath($this->pharName) ?: $this->pharName;
+
+        $this->performTask('Checking file integrity', function () use ($latest, $pharPath) {
+            if ($latest['sha256'] !== hash_file('sha256', $pharPath)) {
+                unlink($pharPath);
+
+                return TaskResult::failure('The download was incomplete, or the file is corrupted');
+            }
+
+            return TaskResult::success();
+        });
+
+        $this->performTask('Checking that the file is a valid Phar', function () use ($pharPath) {
+            try {
+                new \Phar($pharPath);
+            } catch (\Exception $e) {
+                return TaskResult::failure(
+                    'The file is not a valid Phar archive' . "\n" . $e->getMessage()
+                );
+            }
+
+            return TaskResult::success();
+        });
+
+        $this->output(PHP_EOL . 'Install', 'heading');
+
+        $this->performTask('Making the Phar executable', function () use ($pharPath) {
+            if (!chmod($pharPath, 0755)) {
+                return TaskResult::failure('Failed to make the Phar executable');
+            }
+
+            return TaskResult::success();
+        });
+
+        if ($homeDir = $this->getHomeDirectory()) {
+            $pharPath = $this->performTask('Moving the Phar to your home directory', function () use ($pharPath, $homeDir) {
+                $binDir = $homeDir . DIRECTORY_SEPARATOR . $this->configDir . DIRECTORY_SEPARATOR . 'bin';
+                if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
+                    return TaskResult::failure('Failed to create directory: ' . $binDir);
+                }
+
+                $destination = $binDir . DIRECTORY_SEPARATOR . $this->executable;
+                if (!rename($pharPath, $destination)) {
+                    return TaskResult::failure('Failed to move the Phar to: ' . $destination);
+                }
+
+                return TaskResult::success($destination);
+            });
+            $this->output('  Executable location: ' . $pharPath);
         }
-    );
-}
 
-// Check whether PHP can open files via URLs.
-check(
-    'The "allow_url_fopen" setting is on.',
-    'The "allow_url_fopen" setting is off; it must be on.',
-    function () {
-        return (true == ini_get('allow_url_fopen'));
+        $this->output(PHP_EOL . 'Running self:install command...' . PHP_EOL);
+        $result = $this->selfInstall($pharPath);
+
+        exit($result);
     }
-);
 
-// Check a troublesome APC setting.
-check(
-    'The "apc.enable_cli" setting is off.',
-    'Warning: the "apc.enable_cli" is on; this may cause problems with Phar files.',
-    function () {
-        return (false == ini_get('apc.enable_cli'));
-    },
-    false
-);
-
-// The necessary checks have passed. Start downloading the right version.
-output(PHP_EOL . 'Download', 'heading');
-
-output('  Finding the latest version...');
-$manifest = file_get_contents(CLI_UPDATE_MANIFEST_URL);
-if ($manifest === false) {
-    output('  Failed to download manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
-    exit(1);
-}
-
-$manifest = json_decode($manifest);
-if ($manifest === null) {
-    output('  Failed to decode manifest file: ' . CLI_UPDATE_MANIFEST_URL, 'error');
-    exit(1);
-}
-
-// Find the item with the greatest version number in the manifest.
-/** @var stdClass|null $latest */
-$latest = null;
-foreach ($manifest as $item) {
-    if (empty($latest) || version_compare($item->version, $latest->version, '>')) {
-        if (!strpos($item->version, '-') || strpos($item->version, '-stable')) {
-            $latest = $item;
+    /**
+     * Runs the 'self:install' command.
+     *
+     * @param string $pharPath The path of the Phar executable.
+     *
+     * @return int The command's exit code.
+     */
+    private function selfInstall($pharPath) {
+        $command = 'php ' . escapeshellarg($pharPath) . ' self:install --yes';
+        if ($shellType = $this->getOption('shell-type')) {
+            $command .= ' --shell-type ' . escapeshellarg($shellType);
         }
+        putenv('CLICOLOR_FORCE=' . ($this->terminalSupportsAnsi() ? '1' : '0'));
+
+        return $this->runCommand($command, true);
     }
-}
-if (empty($latest)) {
-    output('  No download was found.', 'error');
-    exit(1);
-}
 
-output("  Downloading version {$latest->version}...");
-if (!file_put_contents(CLI_PHAR, file_get_contents($latest->url))) {
-    output('  The download failed.', 'error');
-}
+    /**
+     * Finds the latest version to download from the manifest.
+     *
+     * @param string $manifestUrl
+     *
+     * @return TaskResult
+     */
+    private function findLatestVersion($manifestUrl) {
+        $manifest = file_get_contents($manifestUrl);
+        if ($manifest === false) {
+            return TaskResult::failure('Failed to download manifest file: ' . $manifestUrl);
+        }
+        $manifest = json_decode($manifest, true);
+        if ($manifest === null) {
+            return TaskResult::failure('Failed to decode manifest file: ' . $manifestUrl);
+        }
 
-$pharPath = realpath(CLI_PHAR) ?: CLI_PHAR;
+        $allowedSuffixes = ['stable'];
+        foreach (['beta', 'alpha', 'dev'] as $suffix) {
+            if ($this->flagEnabled($suffix)) {
+                $allowedSuffixes[] = $suffix;
+            }
+        }
+        $phpVersion = PHP_VERSION;
+        $resolver = new VersionResolver();
+        $versions = $resolver->findInstallableVersions($manifest, $phpVersion, $allowedSuffixes);
+        if (empty($versions)) {
+            return TaskResult::failure($resolver->explainNoInstallableVersions($manifest, $phpVersion, $allowedSuffixes));
+        }
+        try {
+            $latest = $resolver->findLatestVersion($versions, $this->getOption('min'), $this->getOption('max'));
+        } catch (\Exception $e) {
+            return TaskResult::failure($e->getMessage());
+        }
 
-output('  Checking file integrity...');
-if ($latest->sha256 !== hash_file('sha256', $pharPath)) {
-    unlink(CLI_PHAR);
-    output('  The download was corrupted.', 'error');
-    exit(1);
-}
-
-output('  Checking that the file is a valid Phar (PHP Archive)...');
-
-try {
-    new Phar($pharPath);
-} catch (Exception $e) {
-    output('  The file is not a valid Phar archive.', 'error');
-
-    throw $e;
-}
-
-output(PHP_EOL . 'Install', 'heading');
-
-output('  Making the Phar executable...');
-if (!chmod($pharPath, 0755)) {
-    output('  Failed to make the Phar executable: ' . $pharPath, 'warning');
-}
-
-if ($homeDir = getHomeDirectory()) {
-    output('  Moving the Phar to your home directory...');
-    $binDir = $homeDir . '/' . CLI_CONFIG_DIR . '/bin';
-    if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
-        output('  Failed to create directory: ' . $binDir, 'error');
-    } elseif (!rename($pharPath, $binDir . '/' . CLI_EXECUTABLE)) {
-        output('  Failed to move the Phar to: ' . $binDir . '/' . CLI_EXECUTABLE, 'error');
-    } else {
-        $pharPath = $binDir . '/' . CLI_EXECUTABLE;
-        output('  Successfully moved the Phar to: ' . $pharPath);
+        return TaskResult::success($latest);
     }
-}
 
-output(PHP_EOL . '  Running self:install command...' . PHP_EOL);
-putenv('CLICOLOR_FORCE=' . (is_ansi() ? '1' : '0'));
-$commandline = 'php ' . $pharPath . ' self:install';
-if (!is_interactive()) {
-    $commandline .= ' --yes';
-}
-$process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
-$result = proc_close($process);
+    /**
+     * @param string   $summaryText Description of the task.
+     * @param callable $task        A function that returns a TaskResult.
+     * @param string   $indent      Whether to indent the summary & errors.
+     *
+     * @return mixed The result of the task, if any.
+     */
+    private function performTask($summaryText, $task, $indent = '  ') {
+        $this->output($indent . $summaryText . '...', null, false);
+        /** @var TaskResult $result */
+        $result = $task();
+        if (!$result->isSuccess()) {
+            $this->output('');
+            if ($message = $result->getMessage()) {
+                $this->output('Error: ' . $message, 'error');
+            }
+            exit(1);
+        }
+        $this->output(' done', 'success');
 
-exit($result);
+        return $result->getData();
+    }
 
-/**
- * Checks a condition, outputs a message, and exits if failed.
- *
- * @param string   $success   The success message.
- * @param string   $failure   The failure message.
- * @param callable $condition The condition to check.
- * @param bool     $exit      Whether to exit on failure.
- */
-function check($success, $failure, $condition, $exit = true)
-{
-    if ($condition()) {
-        output('  [*] ' . $success, 'success');
-    } else {
-        output('  [ ] ' . $failure, $exit ? 'error' : 'warning');
+    /**
+     * Runs a shell command.
+     *
+     * @param string $cmd
+     * @param bool $forceStdout Whether to redirect all stderr output to stdout.
+     *
+     * @return int The command's exit code.
+     */
+    private function runCommand($cmd, $forceStdout = false) {
+        /*
+         * Set up the STDIN, STDOUT and STDERR constants.
+         *
+         * Due to a PHP bug, these constants are not available when the PHP script
+         * is being read from stdin.
+         *
+         * See https://bugs.php.net/bug.php?id=43283
+         */
+        if (!defined('STDIN')) {
+            define('STDIN', fopen('php://stdin', 'r'));
+        }
+        if (!defined('STDOUT')) {
+            define('STDOUT', fopen('php://stdout', 'w'));
+        }
+        if (!defined('STDERR')) {
+            define('STDERR', fopen('php://stderr', 'w'));
+        }
 
-        if ($exit) {
+        $process = proc_open($cmd, [STDIN, STDOUT, $forceStdout ? STDOUT : STDERR], $pipes);
+
+        return proc_close($process);
+    }
+
+    /**
+     * Checks a condition, outputs a message, and exits if failed.
+     *
+     * @param string   $success   The success message.
+     * @param string   $failure   The failure message.
+     * @param callable $condition The condition to check.
+     * @param bool     $exit      Whether to exit on failure.
+     */
+    private function check($success, $failure, $condition, $exit = true) {
+        if ($condition()) {
+            $this->output('  [*] ' . $success, 'success');
+        }
+        elseif (!$exit) {
+            $this->output('  [!] ' . $failure, 'warning');
+        }
+        else {
+            $this->output('  [X] ' . $failure, 'error');
             exit(1);
         }
     }
-}
 
-/**
- * Outputs formatted text.
- *
- * @param string $text
- * @param string $color
- * @param bool   $newLine
- */
-function output($text, $color = null, $newLine = true)
-{
-    static $ansi;
-    if (!isset($ansi)) {
-        $ansi = is_ansi();
-    }
+    /**
+     * Outputs formatted text.
+     *
+     * @param string $text
+     * @param string $color
+     * @param bool   $newLine
+     */
+    private function output($text, $color = null, $newLine = true) {
+        static $styles = [
+            'success' => "\033[0;32m%s\033[0m",
+            'error' => "\033[31;31m%s\033[0m",
+            'info' => "\033[33m%s\033[39m",
+            'warning' => "\033[33m%s\033[39m",
+            'heading' => "\033[1;33m%s\033[22;39m",
+        ];
 
-    static $styles = array(
-        'success' => "\033[0;32m%s\033[0m",
-        'error' => "\033[31;31m%s\033[0m",
-        'info' => "\033[33m%s\033[39m",
-        'warning' => "\033[33m%s\033[39m",
-        'heading' => "\033[1;33m%s\033[22;39m",
-    );
+        $format = '%s';
 
-    $format = '%s';
-
-    if (isset($styles[$color]) && $ansi) {
-        $format = $styles[$color];
-    }
-
-    if ($newLine) {
-        $format .= PHP_EOL;
-    }
-
-    printf($format, $text);
-}
-
-/**
- * Returns whether to use ANSI escape sequences.
- *
- * @return bool
- */
-function is_ansi()
-{
-    global $argv;
-    if (!empty($argv)) {
-        if (in_array('--no-ansi', $argv)) {
-            return false;
-        } elseif (in_array('--ansi', $argv)) {
-            return true;
+        if (isset($styles[$color]) && $this->terminalSupportsAnsi()) {
+            $format = $styles[$color];
         }
+
+        if ($newLine) {
+            $format .= PHP_EOL;
+        }
+
+        printf($format, $text);
     }
 
-    // On Windows, default to no ANSI, except in ANSICON and ConEmu.
-    // Everywhere else, default to ANSI if stdout is a terminal.
-    return (DIRECTORY_SEPARATOR == '\\')
-        ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
-        : (function_exists('posix_isatty') && posix_isatty(1));
-}
+    /**
+     * Test if a flag is on the command line.
+     *
+     * @param string $flag A flag name (only letters, shortcuts not supported).
+     *
+     * @return bool
+     */
+    private function flagEnabled($flag) {
+        return in_array('--' . $flag, $this->argv, true);
+    }
 
-/**
- * Returns whether the terminal is interactive.
- *
- * @return bool
- */
-function is_interactive()
-{
-    global $argv;
-    if (!empty($argv) && array_intersect(['--no-interaction', '-y', '--yes'], $argv)) {
+    /**
+     * Get a command-line option that requires a value.
+     *
+     * @param string $name An option name (only letters, shortcuts not supported).
+     *
+     * @return string
+     */
+    private function getOption($name) {
+        foreach ($this->argv as $key => $arg) {
+            if (strpos($arg, '--' . $name . '=') === 0) {
+                return substr($arg, strlen('--' . $name . '='));
+            }
+            $next = isset($this->argv[$key + 1]) && substr($this->argv[$key + 1], 0, 1) !== '-'
+                ? $this->argv[$key + 1]
+                : '';
+            if ($arg === '--' . $name) {
+                if ($next === '') {
+                    throw new \InvalidArgumentException('Option --' . $name . ' requires a value');
+                }
+                return $next;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Returns whether to use ANSI escape sequences.
+     *
+     * @return bool
+     */
+    private function terminalSupportsAnsi() {
+        static $ansi;
+        if (isset($ansi)) {
+            return $ansi;
+        }
+
+        global $argv;
+        if (!empty($argv)) {
+            if ($this->flagEnabled('no-ansi')) {
+                return $ansi = false;
+            }
+            elseif ($this->flagEnabled('ansi')) {
+                return $ansi = true;
+            }
+        }
+
+        // On Windows, default to no ANSI, except in ANSICON and ConEmu.
+        // Everywhere else, default to ANSI if stdout is a terminal.
+        /** @noinspection PhpComposerExtensionStubsInspection */
+        return $ansi = (DIRECTORY_SEPARATOR == '\\')
+            ? (false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI'))
+            : (function_exists('posix_isatty') && posix_isatty(1));
+    }
+
+    /**
+     * Finds the user's home directory.
+     *
+     * @return string|false
+     *   The user's home directory as an absolute path, or false on failure.
+     */
+    private function getHomeDirectory() {
+        $vars = [$this->envPrefix . 'HOME', 'HOME', 'USERPROFILE'];
+        foreach ($vars as $var) {
+            if ($home = getenv($var)) {
+                return realpath($home) ?: $home;
+            }
+        }
+        if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+            return $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+        }
+
         return false;
     }
-
-    if (function_exists('posix_isatty')) {
-        return posix_isatty(STDOUT) && posix_isatty(STDERR);
-    }
-
-    return true;
 }
 
-/**
- * Sets up the STDIN, STDOUT and STDERR constants.
- *
- * Due to a PHP bug, these constants are not available when the PHP script is
- * being read from stdin.
- *
- * @see https://bugs.php.net/bug.php?id=43283
- */
-function setUpIo()
-{
-    if (PHP_SAPI !== 'cli') {
-        throw new RuntimeException('This can only be run via command-line PHP.');
+class TaskResult {
+    private $success = false;
+    private $message = '';
+    private $data;
+
+    private function __construct($success, $message = '', $data = null) {
+        $this->success = $success;
+        $this->message = $message;
+        $this->data = $data;
     }
-    if (!defined('STDIN')) {
-        define('STDIN', fopen('php://stdin',  'r'));
+
+    public static function success($data = null) {
+        return new self(true, '', $data);
     }
-    if (!defined('STDOUT')) {
-        define('STDOUT', fopen('php://stdout',  'w'));
+
+    public static function failure($errorMessage) {
+        return new self(false, $errorMessage);
     }
-    if (!defined('STDERR')) {
-        define('STDERR', fopen('php://stderr',  'w'));
+
+    public function isSuccess() {
+        return $this->success;
+    }
+
+    public function getMessage() {
+        return $this->message;
+    }
+
+    public function getData() {
+        return $this->data;
     }
 }
 
-/**
- * Finds the user's home directory.
- *
- * @return string|false
- *   The user's home directory as an absolute path, or false on failure.
- */
-function getHomeDirectory()
-{
-    if ($home = getenv('HOME')) {
-        return $home;
-    } elseif ($userProfile = getenv('USERPROFILE')) {
-        return $userProfile;
-    } elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-        return $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
+class VersionResolver {
+    /**
+     * Finds the latest installable version in the manifest.
+     *
+     * @param array  $versions
+     * @param string $phpVersion
+     * @param array  $allowedSuffixes
+     *
+     * @return array
+     *   A list of versions, filtered by those that are installable.
+     */
+    public function findInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable']) {
+        $installable = [];
+        foreach ($versions as $version) {
+            if (isset($version['php']['min']) && version_compare($version['php']['min'], $phpVersion, '>')) {
+                continue;
+            }
+            if ($dashPos = strpos($version['version'], '-')) {
+                $suffix = substr($version['version'], $dashPos + 1);
+                if (!in_array($suffix, $allowedSuffixes) && !in_array('dev', $allowedSuffixes)) {
+                    continue;
+                }
+            }
+            $installable[] = $version;
+        }
+
+        return $installable;
     }
 
-    return false;
+    /**
+     * Explains why no installable versions could be found.
+     *
+     * @param array  $versions
+     * @param string $phpVersion
+     * @param array  $allowedSuffixes
+     *
+     * @return string
+     */
+    public function explainNoInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable']) {
+        $reasons = [];
+        foreach ($versions as $version) {
+            $name = 'v' . $version['version'];
+            if (isset($version['php']['min']) && version_compare($version['php']['min'], $phpVersion, '>')) {
+                $reasons[] = sprintf('Version %s requires PHP %s (current PHP version is %s)', $name, $version['php']['min'], $phpVersion);
+                continue;
+            }
+            if ($dashPos = strpos($version['version'], '-')) {
+                $suffix = substr($version['version'], $dashPos + 1);
+                if (!in_array($suffix, $allowedSuffixes) && !in_array('dev', $allowedSuffixes)) {
+                    $reasons[] = sprintf('Version %s has the suffix -%s, not allowed', $name, $suffix);
+                    continue;
+                }
+            }
+        }
+
+        $explanation = 'No installable versions were found.';
+        if (count($reasons)) {
+            foreach ($reasons as $reason) {
+                $explanation .= "\n    - $reason";
+            }
+        }
+
+        return $explanation;
+    }
+
+    /**
+     * Finds the latest version in a list of versions.
+     *
+     * @param array  $versions
+     * @param string $min
+     * @param string $max
+     *
+     * @throws \RuntimeException
+     *
+     * @return array
+     */
+    public function findLatestVersion(array $versions, $min = '', $max = '') {
+        usort($versions, function (array $a, array $b) {
+            return version_compare($a['version'], $b['version']);
+        });
+        $selected = [];
+        foreach ($versions as $version) {
+            $satisfiesMin = $min === '' || version_compare($version['version'], ltrim($min, 'v'), '>=');
+            $satisfiesMax = $max === '' || version_compare($version['version'], ltrim($max, 'v'), '<=');
+            if ($satisfiesMin && $satisfiesMax) {
+                $selected = $version;
+            }
+        }
+        if (empty($selected)) {
+            $message = 'Failed to find a version';
+            if ($min !== '') {
+                $message .= ' >= ' . $min;
+            }
+            if ($max !== '') {
+                if ($min !== '') {
+                    $message .= ' and';
+                }
+                $message .= ' <= ' . $max;
+            }
+            throw new \RuntimeException($message);
+        }
+
+        return $selected;
+    }
 }

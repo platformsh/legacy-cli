@@ -70,15 +70,12 @@ class ActivityGetCommand extends CommandBase
         if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
             $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
         } else {
-            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, false);
-            if ($input->getOption('property')) {
-                $properties['description_html'] = $activity->description;
-            }
+            $properties['description'] = $activity->description;
         }
 
         // Add the fake "duration" property.
         if (!isset($properties['duration'])) {
-            $properties['duration'] = $this->getDuration($activity);
+            $properties['duration'] = (new \Platformsh\Cli\Model\Activity())->getDuration($activity);
         }
 
         if ($property = $input->getOption('property')) {
@@ -86,11 +83,12 @@ class ActivityGetCommand extends CommandBase
             return 0;
         }
 
+        // The activity "log" property is going to be removed.
         unset($properties['payload'], $properties['log']);
 
         $this->stdErr->writeln(
-            'These properties have been omitted for brevity: <comment>payload</comment> and <comment>log</comment>.'
-            . ' You can still view them with the -P (--property) option.',
+            'The <comment>payload</comment> property has been omitted for brevity.'
+            . ' You can still view it with the -P (--property) option.',
             OutputInterface::VERBOSITY_VERBOSE
         );
 
@@ -137,28 +135,5 @@ class ActivityGetCommand extends CommandBase
 
         return $this->getSelectedProject()
             ->getActivities($limit, $input->getOption('type'));
-    }
-
-    /**
-     * Calculates the duration of an activity, whether complete or not.
-     *
-     * @param \Platformsh\Client\Model\Activity $activity
-     * @param int|null                          $now
-     *
-     * @return int|null
-     */
-    private function getDuration(Activity $activity, $now = null)
-    {
-        if ($activity->isComplete()) {
-            $end = strtotime($activity->completed_at);
-        } elseif (!empty($activity->started_at)) {
-            $now = $now === null ? time() : $now;
-            $end = $now;
-        } else {
-            $end = strtotime($activity->updated_at);
-        }
-        $start = !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
-
-        return $end !== false && $start !== false && $end - $start > 0 ? $end - $start : null;
     }
 }

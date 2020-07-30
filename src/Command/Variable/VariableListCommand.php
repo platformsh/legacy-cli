@@ -15,7 +15,7 @@ class VariableListCommand extends VariableCommandBase
     {
         $this
             ->setName('variable:list')
-            ->setAliases(['variables'])
+            ->setAliases(['variables', 'var'])
             ->setDescription('List variables');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());
@@ -67,25 +67,37 @@ class VariableListCommand extends VariableCommandBase
             }
         }
 
+        $header = [
+            'name' => 'Name',
+            'level' => 'Level',
+            'value' => 'Value',
+            'is_enabled' => 'Enabled',
+        ];
         $rows = [];
 
         /** @var \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable $variable */
         foreach ($variables as $variable) {
             $row = [];
-            $row[] = $variable->name;
-            $row[] = new AdaptiveTableCell($this->getVariableLevel($variable), ['wrap' => false]);
+            $row['name'] = $variable->name;
+            $row['level'] = new AdaptiveTableCell($this->getVariableLevel($variable), ['wrap' => false]);
 
             // Handle sensitive variables' value (it isn't exposed in the API).
             if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
-                $row[] = '<fg=yellow>[Hidden: sensitive value]</>';
+                $row['value'] = $table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
             } else {
-                $row[] = wordwrap($variable->value, 40, "\n", true);
+                $row['value'] = $variable->value;
+            }
+
+            if ($variable->hasProperty('is_enabled')) {
+                $row['is_enabled'] = $variable->is_enabled ? 'true' : 'false';
+            } else {
+                $row['is_enabled'] = '';
             }
 
             $rows[] = $row;
         }
 
-        $table->render($rows, ['Name', 'Level', 'Value']);
+        $table->render($rows, $header);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

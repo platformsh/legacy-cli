@@ -56,7 +56,7 @@ class IdentifierTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expected, $identifier->identify($url));
 
-        $url = 'https://ui.platform.sh/foo/4jkbdba6zde2i';
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i';
         $expected = [
             'projectId' => '4jkbdba6zde2i',
             'environmentId' => null,
@@ -65,10 +65,33 @@ class IdentifierTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expected, $identifier->identify($url));
 
-        $url = 'https://ui.platform.sh/foo/4jkbdba6zde2i/bar';
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i/bar';
         $expected = [
             'projectId' => '4jkbdba6zde2i',
             'environmentId' => 'bar',
+            'host' => null,
+            'appId' => null,
+        ];
+        $this->assertEquals($expected, $identifier->identify($url));
+    }
+
+    public function testIdentifyWithEnvironmentIdOf0()
+    {
+        $identifier = new Identifier();
+
+        $url = 'https://eu-2.platform.sh/projects/4jkbdba6zde2i/environments/0';
+        $expected = [
+            'projectId' => '4jkbdba6zde2i',
+            'environmentId' => '0',
+            'host' => 'eu-2.platform.sh',
+            'appId' => null,
+        ];
+        $this->assertEquals($expected, $identifier->identify($url));
+
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i/0';
+        $expected = [
+            'projectId' => '4jkbdba6zde2i',
+            'environmentId' => '0',
             'host' => null,
             'appId' => null,
         ];

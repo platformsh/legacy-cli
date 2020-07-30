@@ -21,6 +21,14 @@ class OsUtil
     }
 
     /**
+     * @return bool
+     */
+    public static function isLinux()
+    {
+        return stripos(PHP_OS, 'Linux') !== false;
+    }
+
+    /**
      * Escapes a shell argument for POSIX shells, even when run on Windows.
      *
      * PHP's escapeshellarg() function adapts its output depending on the
@@ -34,5 +42,33 @@ class OsUtil
     public static function escapePosixShellArg($arg)
     {
         return "'" . str_replace("'", "'\\''", $arg) . "'";
+    }
+
+    /**
+     * Escapes a shell argument, with Windows compatibility.
+     *
+     * @see \Symfony\Component\Process\Process::escapeArgument()
+     *
+     * @param string $argument
+     *
+     * @return string
+     */
+    public static function escapeShellArg($argument)
+    {
+        if ('\\' !== \DIRECTORY_SEPARATOR) {
+            return self::escapePosixShellArg($argument);
+        }
+        if ('' === $argument = (string) $argument) {
+            return '""';
+        }
+        if (false !== strpos($argument, "\0")) {
+            $argument = str_replace("\0", '?', $argument);
+        }
+        if (!preg_match('/[\/()%!^"<>&|\s]/', $argument)) {
+            return $argument;
+        }
+        $argument = preg_replace('/(\\\\+)$/', '$1$1', $argument);
+
+        return '"' . str_replace(['"', '^', '%', '!', "\n"], ['""', '"^^"', '"^%"', '"^!"', '!LF!'], $argument) . '"';
     }
 }

@@ -84,7 +84,7 @@ class SelfUpdater
      */
     public function update($manifestUrl = null, $currentVersion = null)
     {
-        $currentVersion = $currentVersion ?: $this->config->get('application.version');
+        $currentVersion = $currentVersion ?: $this->config->getVersion();
         $manifestUrl = $manifestUrl ?: $this->config->get('application.manifest_url');
         $applicationName = $this->config->get('application.name');
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
@@ -117,7 +117,7 @@ class SelfUpdater
         }
 
         $updater = new Updater($localPhar, false);
-        $strategy = new ManifestStrategy($currentVersion, $manifestUrl, $this->allowMajor, $this->allowUnstable);
+        $strategy = new ManifestStrategy(ltrim($currentVersion, 'v'), $manifestUrl, $this->allowMajor, $this->allowUnstable);
         $strategy->setManifestTimeout($this->timeout);
         $updater->setStrategyObject($strategy);
 

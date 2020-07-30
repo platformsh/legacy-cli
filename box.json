@@ -27,5 +27,9 @@
   ],
   "main": "bin/platform",
   "output": "symfony-cloud.phar",
-  "stub": "stub.php"
+  "stub": "stub.php",
+  "compactors": [
+      "KevinGH\\Box\\Compactor\\Json",
+      "KevinGH\\Box\\Compactor\\Php"
+  ]
 }

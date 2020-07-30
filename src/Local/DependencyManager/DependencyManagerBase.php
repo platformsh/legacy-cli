@@ -16,7 +16,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
     /**
      * {@inheritdoc}
      */
-    public function getCommandName($global = false)
+    public function getCommandName()
     {
         return $this->command;
     }
@@ -26,7 +26,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
      */
     public function isAvailable()
     {
-        return $this->shell->commandExists($this->command);
+        return $this->shell->commandExists($this->getCommandName());
     }
 
     /**

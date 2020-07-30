@@ -2,20 +2,31 @@
 
 namespace Platformsh\Cli\Service;
 
+use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use Doctrine\Common\Cache\CacheProvider;
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
+use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Cli\CredentialHelper\Manager;
+use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Session\KeychainStorage;
+use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
+use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\PlatformClient;
+use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -24,130 +35,189 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 class Api
 {
-    /** @var Config */
-    protected $config;
-
-    /** @var \Doctrine\Common\Cache\CacheProvider */
-    protected $cache;
-
     /** @var EventDispatcherInterface */
     public $dispatcher;
 
-    /** @var string */
-    protected $sessionId = 'default';
+    /** @var Config */
+    private $config;
 
-    /** @var string|null */
-    protected $apiToken;
+    /** @var \Doctrine\Common\Cache\CacheProvider */
+    private $cache;
 
-    /** @var string */
-    protected $apiTokenType = 'exchange';
+    /** @var OutputInterface */
+    private $output;
 
-    /** @var PlatformClient */
-    protected static $client;
+    /** @var OutputInterface */
+    private $stdErr;
 
-    /** @var Environment[] */
-    protected static $environmentsCache = [];
+    /** @var TokenConfig */
+    private $tokenConfig;
 
-    /** @var bool */
-    protected static $environmentsCacheRefreshed = false;
+    /**
+     * The library's API client object.
+     *
+     * This is static so that a freshly logged-in client can then be reused by a parent command with a different service container.
+     *
+     * @var PlatformClient
+     */
+    private static $client;
 
-    /** @var \Platformsh\Client\Model\Account[] */
-    protected static $accountsCache = [];
+    /**
+     * A cache of environments lists, keyed by project ID.
+     *
+     * @var string<Environment[]>
+     */
+    private static $environmentsCache = [];
 
-    /** @var \Platformsh\Client\Model\ProjectAccess[] */
-    protected static $projectAccessesCache = [];
+    /**
+     * A cache of account details arrays, keyed by project ID.
+     *
+     * @see Api::getAccount()
+     *
+     * @var string<array>
+     */
+    private static $accountsCache = [];
 
-    /** @var array */
-    protected static $notFound = [];
+    /**
+     * A cache of project access lists, keyed by project ID.
+     *
+     * @see Api::getProjectAccesses()
+     *
+     * @var string<\Platformsh\Client\Model\ProjectAccess[]>
+     */
+    private static $projectAccessesCache = [];
 
-    /** @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null */
-    protected $sessionStorage;
+    /**
+     * A cache of not-found environment IDs.
+     *
+     * @see Api::getEnvironment()
+     *
+     * @var string[]
+     */
+    private static $notFound = [];
+
+    /**
+     * Session storage, via files or credential helpers.
+     *
+     * @see Api::initSessionStorage()
+     *
+     * @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null
+     */
+    private $sessionStorage;
 
     /**
      * Constructor.
      *
-     * @param Config|null                $config
-     * @param CacheProvider|null            $cache
+     * @param Config|null $config
+     * @param CacheProvider|null $cache
+     * @param OutputInterface|null $output
+     * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
+        OutputInterface $output = null,
+        TokenConfig $tokenConfig = null,
         EventDispatcherInterface $dispatcher = null
     ) {
         $this->config = $config ?: new Config();
+        $this->output = $output ?: new ConsoleOutput();
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
+        $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
-
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
-
-        $this->sessionId = $this->config->get('api.session_id') ?: 'default';
-        if ($this->sessionId === 'api-token') {
-            throw new \InvalidArgumentException('Invalid session ID: ' . $this->sessionId);
-        }
-
-        if (!isset($this->apiToken)) {
-            // Exchangeable API tokens: a token which is exchanged for a
-            // temporary access token.
-            if ($this->config->has('api.token_file')) {
-                $this->apiToken = $this->loadTokenFromFile($this->config->get('api.token_file'));
-                $this->apiTokenType = 'exchange';
-                $this->sessionId = 'api-token';
-            } elseif ($this->config->has('api.token')) {
-                $this->apiToken = $this->config->get('api.token');
-                $this->apiTokenType = 'exchange';
-                $this->sessionId = 'api-token';
-            } elseif ($this->config->has('api.access_token_file') || $this->config->has('api.access_token')) {
-                // Permanent, personal access token (deprecated) - an OAuth 2.0
-                // bearer token which is used directly in API requests.
-                @trigger_error('This type of API token (a permanent access token) is deprecated. Please generate a new API token when possible.', E_USER_DEPRECATED);
-                if ($this->config->has('api.access_token_file')) {
-                    $this->apiToken = $this->loadTokenFromFile($this->config->get('api.access_token_file'));
-                } else {
-                    $this->apiToken = $this->config->get('api.access_token');
-                }
-                $this->apiTokenType = 'access';
-            }
-        }
-    }
-
-    /**
-     * @return \Doctrine\Common\Cache\CacheProvider
-     */
-    public function getCache()
-    {
-        return $this->cache;
-    }
-
-    /**
-     * Load an API token from a file.
-     *
-     * @param string $filename
-     *   A filename, either relative to the user config directory, or absolute.
-     *
-     * @return string
-     */
-    protected function loadTokenFromFile($filename)
-    {
-        if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
-            $filename = $this->config->getUserConfigDir() . '/' . $filename;
-        }
-
-        $content = file_get_contents($filename);
-        if ($content === false) {
-            throw new \RuntimeException('Failed to read file: ' . $filename);
-        }
-
-        return trim($content);
     }
 
     /**
      * Returns whether the CLI is authenticating using an API token.
      *
+     * @param bool $includeStored
+     *
      * @return bool
      */
-    public function hasApiToken()
+    public function hasApiToken($includeStored = true)
     {
-        return isset($this->apiToken);
+        return $this->tokenConfig->getAccessToken() || $this->tokenConfig->getApiToken($includeStored);
+    }
+
+    /**
+     * Lists existing sessions.
+     *
+     * Excludes API-token-specific session IDs.
+     *
+     * @return string[]
+     */
+    public function listSessionIds()
+    {
+        $ids = [];
+        if ($this->sessionStorage instanceof SessionStorage) {
+            $ids = $this->sessionStorage->listSessionIds();
+        }
+        $dir = $this->config->getSessionDir();
+        $files = glob($dir . '/sess-cli-*', GLOB_NOSORT);
+        foreach ($files as $file) {
+            if (\preg_match('@/sess-cli-([a-z0-9_-]+)@i', $file, $matches)) {
+                $ids[] = $matches[1];
+            }
+        }
+        $ids = \array_filter($ids, function ($id) {
+           return strpos($id, 'api-token-') !== 0;
+        });
+
+        return \array_unique($ids);
+    }
+
+    /**
+     * Checks if any sessions exist (with any session ID).
+     *
+     * @return bool
+     */
+    public function anySessionsExist()
+    {
+        if ($this->sessionStorage instanceof SessionStorage && $this->sessionStorage->hasAnySessions()) {
+            return true;
+        }
+        $dir = $this->config->getSessionDir();
+        $files = glob($dir . '/sess-cli-*/*', GLOB_NOSORT);
+
+        return !empty($files);
+    }
+
+    /**
+     * Logs out of the current session.
+     */
+    public function logout()
+    {
+        // Delete the stored API token, if any.
+        $this->tokenConfig->storage()->deleteToken();
+
+        // Log out in the connector (this clears the "session" and attempts
+        // to revoke stored tokens).
+        $this->getClient(false)->getConnector()->logOut();
+
+        // Clear the cache.
+        $this->cache->flushAll();
+
+        // Ensure the session directory is wiped.
+        $dir = $this->config->getSessionDir(true);
+        if (is_dir($dir)) {
+            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+        }
+    }
+
+    /**
+     * Deletes all sessions.
+     */
+    public function deleteAllSessions()
+    {
+        if ($this->sessionStorage instanceof SessionStorage) {
+            $this->sessionStorage->deleteAll();
+        }
+        $dir = $this->config->getSessionDir();
+        if (is_dir($dir)) {
+            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+        }
     }
 
     /**
@@ -155,12 +225,12 @@ class Api
      *
      * @return string
      */
-    protected function getUserAgent()
+    private function getUserAgent()
     {
         return sprintf(
             '%s/%s (%s; %s; PHP %s)',
             str_replace(' ', '-', $this->config->get('application.name')),
-            $this->config->get('application.version'),
+            $this->config->getVersion(),
             php_uname('s'),
             php_uname('r'),
             PHP_VERSION
@@ -168,7 +238,139 @@ class Api
     }
 
     /**
-     * Get the API client object.
+     * Returns options to instantiate an API client library Connector.
+     *
+     * @see Connector::__construct()
+     *
+     * @return array
+     */
+    private function getConnectorOptions() {
+        $connectorOptions = [];
+        $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
+        $connectorOptions['api_url'] = $this->config->getWithDefault('api.base_url', '');
+        $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
+        $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
+        $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
+        $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
+        $connectorOptions['user_agent'] = $this->getUserAgent();
+
+        if ($apiToken = $this->tokenConfig->getApiToken()) {
+            $connectorOptions['api_token'] = $apiToken;
+            $connectorOptions['api_token_type'] = 'exchange';
+        } elseif ($accessToken = $this->tokenConfig->getAccessToken()) {
+            $connectorOptions['api_token'] = $accessToken;
+            $connectorOptions['api_token_type'] = 'access';
+        }
+
+        $proxy = $this->getProxy();
+        if ($proxy !== null) {
+            $connectorOptions['proxy'] = $proxy;
+        }
+
+        // Override the OAuth 2.0 token and revoke URLs if provided.
+        if ($this->config->has('api.oauth2_token_url')) {
+            $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
+        }
+        if ($this->config->has('api.oauth2_revoke_url')) {
+            $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
+        }
+
+        $connectorOptions['on_refresh_error'] = function (BadResponseException $e) {
+            return $this->onRefreshError($e);
+        };
+
+        return $connectorOptions;
+    }
+
+    /**
+     * Logs out and prompts for re-authentication after a token refresh error.
+     *
+     * @param BadResponseException $e
+     *
+     * @return AccessToken|null
+     */
+    private function onRefreshError(BadResponseException $e) {
+        $response = $e->getResponse();
+        if ($response && !in_array($response->getStatusCode(), [400, 401])) {
+            return null;
+        }
+
+        $this->logout();
+
+        $body = (string) $e->getRequest()->getBody();
+        \parse_str($body, $parsed);
+        if (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token') {
+            $this->stdErr->writeln('<comment>The API token is invalid.</comment>');
+        } else {
+            $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
+        }
+
+        if ($response && $this->stdErr->isVeryVerbose()) {
+            $this->stdErr->writeln($e->getMessage() . ApiResponseException::getErrorDetails($response));
+        }
+
+        $this->stdErr->writeln('');
+
+        $this->dispatcher->dispatch('login_required');
+        $session = $this->getClient(false)->getConnector()->getSession();
+
+        return $this->tokenFromSession($session);
+    }
+
+    /**
+     * Loads and returns an AccessToken, if possible, from a session.
+     *
+     * @param SessionInterface $session
+     *
+     * @return AccessToken|null
+     */
+    private function tokenFromSession(SessionInterface $session) {
+        if (!$session->get('accessToken')) {
+            return null;
+        }
+        $map = [
+            'expires' => 'expires',
+            'refreshToken' => 'refresh_token',
+            'scope' => 'scope',
+        ];
+        $tokenData = [];
+        foreach ($map as $sessionKey => $tokenKey) {
+            $value = $session->get($sessionKey);
+            if ($value !== false && $value !== null) {
+                $tokenData[$tokenKey] = $value;
+            }
+        }
+
+        return new AccessToken($tokenData['access_token'], $session->get('tokenType') ?: null, $tokenData);
+    }
+
+    /**
+     * Returns configuration options for instantiating a Guzzle HTTP client.
+     *
+     * @see Client::__construct()
+     *
+     * @return array
+     */
+    public function getGuzzleOptions() {
+        $options = [
+            'defaults' => [
+                'headers' => ['User-Agent' => $this->getUserAgent()],
+                'debug' => $this->config->get('api.debug') ? STDERR : false,
+                'verify' => !$this->config->get('api.skip_ssl'),
+                'proxy' => $this->getProxy(),
+            ],
+        ];
+
+        if (extension_loaded('zlib')) {
+            $options['defaults']['decode_content'] = true;
+            $options['defaults']['headers']['Accept-Encoding'] = 'gzip';
+        }
+
+        return $options;
+    }
+
+    /**
+     * Returns the API client object.
      *
      * @param bool $autoLogin Whether to log in, if the client is not already
      *                        authenticated (default: true).
@@ -179,41 +381,29 @@ class Api
     public function getClient($autoLogin = true, $reset = false)
     {
         if (!isset(self::$client) || $reset) {
-            $connectorOptions = [];
-            $connectorOptions['accounts'] = rtrim($this->config->get('api.accounts_api_url'), '/') . '/';
-            $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
-            $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
-            $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
-            $connectorOptions['user_agent'] = $this->getUserAgent();
-            $connectorOptions['api_token'] = $this->apiToken;
-            $connectorOptions['api_token_type'] = $this->apiTokenType;
-
-            // Proxy support with the http_proxy or https_proxy environment
-            // variables.
-            if (PHP_SAPI === 'cli') {
-                $proxies = [];
-                foreach (['https', 'http'] as $scheme) {
-                    $proxies[$scheme] = str_replace('http://', 'tcp://', getenv($scheme . '_proxy'));
-                }
-                $proxies = array_filter($proxies);
-                if (count($proxies)) {
-                    $connectorOptions['proxy'] = count($proxies) == 1 ? reset($proxies) : $proxies;
-                }
-            }
-
-            $connector = new Connector($connectorOptions);
+            $options = $this->getConnectorOptions();
+            $connector = new Connector($options);
 
             // Set up a persistent session to store OAuth2 tokens. By default,
             // this will be stored in a JSON file:
             // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
             $session = $connector->getSession();
-            $session->setId('cli-' . $this->sessionId);
+            $sessionId = $this->config->getSessionId();
 
-            $this->sessionStorage = KeychainStorage::isSupported()
-                && $this->config->isExperimentEnabled('use_keychain')
-                ? new KeychainStorage($this->config->get('application.name'))
-                : new File($this->config->getSessionDir());
-            $session->setStorage($this->sessionStorage);
+            // Override the session ID if an API token is set.
+            // This ensures file storage from other credentials will not be
+            // reused.
+            if (!empty($options['api_token'])) {
+                $sessionId = 'api-token-' . \substr(\hash('sha256', $options['api_token']), 0, 32);
+            }
+            $session->setId('cli-' . $sessionId);
+
+            $this->initSessionStorage();
+
+            // Don't use any storage for the session if an access token is set.
+            if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
+                $session->setStorage($this->sessionStorage);
+            }
 
             // Ensure session data is (re-)loaded every time.
             // @todo move this to the Session
@@ -242,6 +432,75 @@ class Api
     }
 
     /**
+     * Initializes session credential storage.
+     */
+    private function initSessionStorage() {
+        // Attempt to use the docker-credential-helpers.
+        $manager = new Manager($this->config);
+        if ($manager->isSupported()) {
+            $manager->install();
+            $this->sessionStorage = new SessionStorage($manager, $this->config->get('application.slug'), $this->config);
+            return;
+        }
+
+        // Fall back to file storage.
+        $this->sessionStorage = new File($this->config->getSessionDir());
+    }
+
+    /**
+     * Finds a proxy address based on the http_proxy or https_proxy environment variables.
+     *
+     * @return string|array|null
+     */
+    private function getProxy() {
+        // The proxy variables should be ignored in a non-CLI context.
+        if (PHP_SAPI !== 'cli') {
+            return null;
+        }
+        $proxies = [];
+        foreach (['https', 'http'] as $scheme) {
+            $proxies[$scheme] = str_replace($scheme . '://', 'tcp://', getenv($scheme . '_proxy'));
+        }
+        $proxies = array_filter($proxies);
+        if (count($proxies)) {
+            return count($proxies) === 1 ? reset($proxies) : $proxies;
+        }
+
+        return null;
+    }
+
+    /**
+     * Constructs a stream context for using the API with stream functions.
+     *
+     * @return resource
+     */
+    public function getStreamContext() {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'follow_location' => 0,
+                'timeout' => 15,
+                'user_agent' => $this->getUserAgent(),
+                'header' => [
+                    'Authorization: Bearer ' . $this->getAccessToken(),
+                ],
+            ],
+        ];
+        $proxy = $this->getProxy();
+        if (is_array($proxy)) {
+            if (isset($proxy['https'])) {
+                $opts['http']['proxy'] = $proxy['https'];
+            } elseif (isset($proxy['http'])) {
+                $opts['http']['proxy'] = $proxy['http'];
+            }
+        } elseif (is_string($proxy) && $proxy !== '') {
+            $opts['http']['proxy'] = $proxy;
+        }
+
+        return stream_context_create($opts);
+    }
+
+    /**
      * Return the user's projects.
      *
      * @param bool|null $refresh Whether to refresh the list of projects.
@@ -250,7 +509,7 @@ class Api
      */
     public function getProjects($refresh = null)
     {
-        $cacheKey = sprintf('%s:projects', $this->sessionId);
+        $cacheKey = sprintf('%s:projects', $this->config->getSessionId());
 
         /** @var Project[] $projects */
         $projects = [];
@@ -273,8 +532,12 @@ class Api
             $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
+            $apiUrl = $this->config->getWithDefault('api.base_url', '');
             foreach ((array) $cached as $id => $data) {
                 $projects[$id] = new Project($data, $data['_endpoint'], $guzzleClient);
+                if ($apiUrl) {
+                    $projects[$id]->setApiUrl($apiUrl);
+                }
             }
         }
 
@@ -296,11 +559,13 @@ class Api
         // separate cache.
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
-            return $projects[$id];
+            if ($host === null || stripos(parse_url($projects[$id]->getUri(), PHP_URL_HOST), $host) !== false) {
+                return $projects[$id];
+            }
         }
 
         // Find the project directly.
-        $cacheKey = sprintf('%s:project:%s:%s', $this->sessionId, $id, $host);
+        $cacheKey = sprintf('%s:project:%s:%s', $this->config->getSessionId(), $id, $host);
         $cached = $this->cache->fetch($cacheKey);
         if ($refresh || !$cached) {
             $scheme = 'https';
@@ -320,6 +585,10 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
+            $apiUrl = $this->config->getWithDefault('api.base_url', '');
+            if ($apiUrl) {
+                $project->setApiUrl($apiUrl);
+            }
         }
 
         return $project;
@@ -364,7 +633,6 @@ class Api
             }
 
             $this->cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
-            self::$environmentsCacheRefreshed = true;
         } else {
             $environments = [];
             $endpoint = $project->getUri();
@@ -440,7 +708,7 @@ class Api
      */
     public function getMyAccount($reset = false)
     {
-        $cacheKey = sprintf('%s:my-account', $this->sessionId);
+        $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         if ($reset || !($info = $this->cache->fetch($cacheKey))) {
             $info = $this->getClient()->getAccountInfo($reset);
             $this->cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
@@ -450,25 +718,46 @@ class Api
     }
 
     /**
+     * Get the logged-in user's SSH keys.
+     *
+     * @param bool $reset
+     *
+     * @return SshKey[]
+     */
+    public function getSshKeys($reset = false)
+    {
+        $data = $this->getMyAccount($reset);
+
+        return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->get('api.accounts_api_url'), '/') . '/', $this->getHttpClient());
+    }
+
+    /**
      * Get a user's account info.
      *
-     * @param ProjectAccess $user
-     * @param bool $reset
+     * @param ProjectAccess $access
+     * @param bool          $reset
      *
      * @return array
      *   An array containing 'email' and 'display_name'.
      */
-    public function getAccount(ProjectAccess $user, $reset = false)
+    public function getAccount(ProjectAccess $access, $reset = false)
     {
-        if (isset(self::$accountsCache[$user->id]) && !$reset) {
-            return self::$accountsCache[$user->id];
+        if (isset(self::$accountsCache[$access->id]) && !$reset) {
+            return self::$accountsCache[$access->id];
         }
 
-        $cacheKey = 'account:' . $user->id;
+        $cacheKey = 'account:' . $access->id;
         if ($reset || !($details = $this->cache->fetch($cacheKey))) {
-            $details = $user->getAccount()->getProperties();
-            $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
-            self::$accountsCache[$user->id] = $details;
+            $data = $access->getData();
+            // Use embedded user information if possible.
+            if (isset($data['_embedded']['users'][0]) && count($data['_embedded']['users']) === 1) {
+                $details = $data['_embedded']['users'][0];
+                self::$accountsCache[$access->id] = $details;
+            } else {
+                $details = $access->getAccount()->getProperties();
+                $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
+                self::$accountsCache[$access->id] = $details;
+            }
         }
 
         return $details;
@@ -497,8 +786,8 @@ class Api
      */
     public function clearProjectsCache()
     {
-        $this->cache->delete(sprintf('%s:projects', $this->sessionId));
-        $this->cache->delete(sprintf('%s:my-account', $this->sessionId));
+        $this->cache->delete(sprintf('%s:projects', $this->config->getSessionId()));
+        $this->cache->delete(sprintf('%s:my-account', $this->config->getSessionId()));
     }
 
     /**
@@ -604,7 +893,7 @@ class Api
     {
         foreach ($this->getProjectAccesses($project, $reset) as $user) {
             $account = $this->getAccount($user);
-            if ($account['email'] === $email) {
+            if ($account['email'] === $email || strtolower($account['email']) === strtolower($email)) {
                 return $user;
             }
         }
@@ -623,9 +912,9 @@ class Api
     public function getProjectLabel(Project $project, $tag = 'info')
     {
         $title = $project->title;
-        $pattern = $title ? '%2$s (%3$s)' : '%3$s';
+        $pattern = strlen($title) > 0 ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
-            $pattern = $title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+            $pattern = strlen($title) > 0 ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
         }
 
         return sprintf($pattern, $tag, $title, $project->id);
@@ -643,7 +932,7 @@ class Api
     {
         $id = $environment->id;
         $title = $environment->title;
-        $use_title = $title && $title !== $id;
+        $use_title = strlen($title) > 0 && $title !== $id;
         $pattern = $use_title ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
             $pattern = $use_title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
@@ -692,11 +981,19 @@ class Api
      */
     public function getAccessToken()
     {
+        // Check for an externally configured access token.
+        if ($accessToken = $this->tokenConfig->getAccessToken()) {
+            return $accessToken;
+        }
+
+        // Get the access token from the session.
         $session = $this->getClient()->getConnector()->getSession();
         $token = $session->get('accessToken');
         $expires = $session->get('expires');
+
+        // If there is no token, or it has expired, make an API request, which
+        // automatically obtains a token and saves it to the session.
         if (!$token || $expires < time()) {
-            // Force a connection to the API to ensure there is an access token.
             $this->getMyAccount(true);
             if (!$token = $session->get('accessToken')) {
                 throw new \RuntimeException('No access token found');
@@ -707,44 +1004,13 @@ class Api
     }
 
     /**
-     * Sort URLs, preferring shorter ones with HTTPS.
-     *
-     * @param string $a
-     * @param string $b
-     *
-     * @return int
-    */
-    public function urlSort($a, $b)
-    {
-        $result = 0;
-        foreach ([$a, $b] as $key => $url) {
-            if (parse_url($url, PHP_URL_SCHEME) === 'https') {
-                $result += $key === 0 ? -2 : 2;
-            }
-        }
-        $result += strlen($a) <= strlen($b) ? -1 : 1;
-
-        return $result;
-    }
-
-    /**
-     * Get the HTTP client.
+     * Get the authenticated HTTP client.
      *
      * @return ClientInterface
      */
     public function getHttpClient()
     {
-        return $this->getClient(false)->getConnector()->getClient();
-    }
-
-    /**
-     * Delete all keychain keys.
-     */
-    public function deleteFromKeychain()
-    {
-        if ($this->sessionStorage instanceof KeychainStorage) {
-            $this->sessionStorage->deleteAll();
-        }
+        return $this->getClient()->getConnector()->getClient();
     }
 
     /**
@@ -757,18 +1023,32 @@ class Api
      */
     public function getCurrentDeployment(Environment $environment, $refresh = false)
     {
-        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id]);
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
         $data = $this->cache->fetch($cacheKey);
         if ($data === false || $refresh) {
             $deployment = $environment->getCurrentDeployment();
             $data = $deployment->getData();
             $data['_uri'] = $deployment->getUri();
-            $this->cache->save($cacheKey, $data, $this->config->get('api.environments_ttl'));
+            $this->cache->save($cacheKey, $data);
         } else {
             $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
         return $deployment;
+    }
+
+    /**
+     * Returns whether the current deployment for an environment is already cached.
+     *
+     * @param Environment $environment
+     *
+     * @return bool
+     */
+    public function hasCachedCurrentDeployment(Environment $environment)
+    {
+        $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
+
+        return $this->cache->contains($cacheKey);
     }
 
     /**
@@ -817,18 +1097,19 @@ class Api
     public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
     {
         $deployment = $deployment ?: $this->getCurrentDeployment($environment);
-        $routes = $deployment->routes;
-        $appUrls = [];
-        foreach ($routes as $url => $route) {
-            if ($route->type === 'upstream' && $route->__get('upstream') === $appName) {
-                $appUrls[] = $url;
-            }
+        $routes = Route::fromDeploymentApi($deployment->routes);
+
+        // Return the first route that matches this app.
+        // The routes will already have been sorted.
+        $routes = \array_filter($routes, function (Route $route) use ($appName) {
+            return $route->type === 'upstream' && $route->getUpstreamName() === $appName;
+        });
+        $route = reset($routes);
+        if ($route) {
+            return $route->url;
         }
-        usort($appUrls, [$this, 'urlSort']);
-        $siteUrl = reset($appUrls);
-        if ($siteUrl) {
-            return $siteUrl;
-        }
+
+        // Fall back to the public-url property.
         if ($environment->hasLink('public-url')) {
             return $environment->getLink('public-url');
         }
@@ -855,5 +1136,23 @@ class Api
                 $this->clearProjectsCache();
             }
         }
+    }
+
+    /**
+     * Compares domains as a sorting function. Used to sort region IDs.
+     *
+     * @param string $regionA
+     * @param string $regionB
+     *
+     * @return int
+     */
+    public function compareDomains($regionA, $regionB)
+    {
+        if (strpos($regionA, '.') && strpos($regionB, '.')) {
+            $partsA = explode('.', $regionA, 2);
+            $partsB = explode('.', $regionB, 2);
+            return (\strnatcasecmp($partsA[1], $partsB[1]) * 10) + \strnatcasecmp($partsA[0], $partsB[0]);
+        }
+        return \strnatcasecmp($regionA, $regionB);
     }
 }

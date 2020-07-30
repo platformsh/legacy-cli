@@ -44,7 +44,7 @@ class LocalDirCommand extends CommandBase
 
                 return 1;
             }
-            $dir .= '/' . $subDirs[$subDir];
+            $dir .= DIRECTORY_SEPARATOR . $subDirs[$subDir];
         }
 
         if (!is_dir($dir)) {

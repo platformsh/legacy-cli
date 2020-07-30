@@ -5,6 +5,8 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -24,8 +26,9 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
             ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch')
-            ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment after pushing')
-            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate)');
+            ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment before pushing')
+            ->addOption('branch', null, InputOption::VALUE_NONE, 'DEPRECATED: alias of --activate')
+            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate or --branch)');
         $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
@@ -33,13 +36,15 @@ class EnvironmentPushCommand extends CommandBase
         $this->addExample('Push code to the current environment');
         $this->addExample('Push code, without waiting for deployment', '--no-wait');
         $this->addExample(
-            'Push code and activate the environment as a child of \'develop\'',
+            'Push code, first branching or activating the environment as a child of \'develop\'',
             '--activate --parent develop'
         );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['branch'], 'The option --%s is deprecated and will be removed in future. Use --activate, which has the same effect.');
+
         $this->validateInput($input, true);
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
@@ -80,45 +85,48 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         // Guard against accidental pushing to production.
+        // @todo if/when the API provides "is this production" for an environment, use that instead of hardcoding branch names
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if ($target === 'master'
-            && !$questionHelper->confirm(
-                'Are you sure you want to push to the <comment>master</comment> (production) branch?'
-            )) {
-            return 1;
+        if (in_array($target, ['master', 'production'])) {
+            $questionText = sprintf(
+                'Are you sure you want to push to the %s branch?',
+                '<comment>' . $target . '</comment>' . ($target === 'production' ? '' : ' (production)')
+            );
+            if (!$questionHelper->confirm($questionText)) {
+                return 1;
+            }
         }
 
         // Determine whether the target environment is new.
         $project = $this->getSelectedProject();
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
-        $this->stdErr->writeln(sprintf(
-            'Pushing <info>%s</info> to the %s environment <info>%s</info>',
-            $source,
-            $targetEnvironment ? 'existing' : 'new',
-            $target
-        ));
 
-        $activate = false;
-        $parentId = null;
+        $activities = [];
         if ($target !== 'master') {
-            // Determine whether to activate the environment after pushing.
+            // Determine whether to activate the environment.
+            $activate = false;
             if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {
-                $activate = $input->getOption('activate')
-                    || ($input->isInteractive() && $questionHelper->confirm(sprintf(
-                        'Activate <info>%s</info> after pushing?',
-                        $target
-                    )));
+                $activate = $input->getOption('branch')
+                    || $input->getOption('activate');
+                if (!$activate && $input->isInteractive()) {
+                    $questionText = $targetEnvironment
+                        ? sprintf('Do you want to activate the target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment))
+                        : sprintf('Create <info>%s</info> as an active environment?', $target);
+                    $activate = $questionHelper->confirm($questionText);
+                }
             }
 
-            // If activating, determine what the environment's parent should be.
             if ($activate) {
-                $parentId = $input->getOption('parent');
-                if (!$parentId) {
-                    $autoCompleterValues = array_keys($this->api()->getEnvironments($project));
-                    $parentId = $autoCompleterValues === ['master']
-                        ? 'master'
-                        : $questionHelper->askInput('Parent environment', 'master', $autoCompleterValues);
+                // If activating, determine what the environment's parent should be.
+                $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment ?: null);
+
+                // Activate the target environment. The deployment activity
+                // will queue up behind whatever other activities are created
+                // here.
+                $activities = $this->activateTarget($target, $parentId, $project);
+                if ($activities === false) {
+                    return 1;
                 }
             }
         }
@@ -152,9 +160,25 @@ class EnvironmentPushCommand extends CommandBase
         $git->setSshCommand($ssh->getSshCommand($extraSshOptions));
 
         // Push.
+        $this->stdErr->writeln(sprintf(
+            'Pushing <info>%s</info> to the %s environment <info>%s</info>',
+            $source,
+            $targetEnvironment ? 'existing' : 'new',
+            $target
+        ));
         $success = $git->execute($gitArgs, null, false, false, $env);
         if (!$success) {
             return 1;
+        }
+
+        // Wait if there are still activities.
+        if ($this->shouldWait($input) && !empty($activities)) {
+            /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
+            $monitor = $this->getService('activity_monitor');
+            $success = $monitor->waitMultiple($activities, $project);
+            if (!$success) {
+                return 1;
+            }
         }
 
         // Clear some caches after pushing.
@@ -170,18 +194,96 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        if ($activate) {
-            $args = [
-                '--project' => $project->getUri(),
-                '--environment' => $target,
-                '--parent' => $parentId,
-                '--yes' => true,
-                '--no-wait' => $input->getOption('no-wait'),
-            ];
+        return 0;
+    }
 
-            return $this->runOtherCommand('environment:activate', $args);
+    /**
+     * Branches the target environment or activates it with the given parent.
+     *
+     * @param string $target
+     * @param string $parentId
+     * @param Project $project
+     *
+     * @return false|array A list of activities, or false on failure.
+     */
+    private function activateTarget($target, $parentId, Project $project) {
+        $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
+        if (!$parentEnvironment) {
+            throw new \RuntimeException("Parent environment not found: $parentId");
         }
 
-        return 0;
+        $targetEnvironment = $this->api()->getEnvironment($target, $project);
+        if ($targetEnvironment) {
+            $activities = [];
+            if ($targetEnvironment->parent !== $parentId) {
+                $activities = array_merge(
+                    $activities,
+                    $targetEnvironment->update(['parent' => $parentId])->getActivities()
+                );
+            }
+            $activities[] = $targetEnvironment->activate();
+            $this->stdErr->writeln(sprintf(
+                'Activated environment <info>%s</info>',
+                $this->api()->getEnvironmentLabel($targetEnvironment)
+            ));
+            $this->api()->clearEnvironmentsCache($project->id);
+
+            return $activities;
+        }
+
+        // For new environments, use branch() to create them as active in the first place.
+        if (!$parentEnvironment->operationAvailable('branch', true)) {
+            $this->stdErr->writeln(sprintf(
+                'Operation not available: the environment %s cannot be branched.',
+                $this->api()->getEnvironmentLabel($parentEnvironment, 'error')
+            ));
+
+            if ($parentEnvironment->is_dirty) {
+                $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
+            } elseif (!$parentEnvironment->isActive()) {
+                $this->stdErr->writeln('The environment is not active.');
+            }
+
+            return false;
+        }
+
+        $activity = $parentEnvironment->branch($target, $target);
+        $this->stdErr->writeln(sprintf(
+            'Branched <info>%s</info> from parent %s',
+            $target,
+            $this->api()->getEnvironmentLabel($parentEnvironment)
+        ));
+        $this->debug(sprintf('Branch activity ID / state: %s / %s', $activity->id, $activity->state));
+
+        $this->api()->clearEnvironmentsCache($project->id);
+
+        return [$activity];
+    }
+
+    /**
+     * Determines the parent of the target environment (for activate / branch).
+     *
+     * @param Project          $project
+     * @param Environment|null $targetEnvironment
+     *
+     * @return string The parent environment ID.
+     */
+    private function findTargetParent(Project $project, Environment $targetEnvironment = null) {
+        if ($targetEnvironment && $targetEnvironment->parent) {
+            return $targetEnvironment->parent;
+        }
+
+        $environments = $this->api()->getEnvironments($project);
+        if ($this->hasSelectedEnvironment()) {
+            $defaultId = $this->getSelectedEnvironment()->id;
+        } else {
+            $defaultId = $this->api()->getDefaultEnvironmentId($environments);
+        }
+        if (array_keys($environments) === [$defaultId]) {
+            return $defaultId;
+        }
+        $questionHelper = $this->getService('question_helper');
+
+        return $questionHelper->askInput('Parent environment', $defaultId, array_keys($environments));
     }
 }

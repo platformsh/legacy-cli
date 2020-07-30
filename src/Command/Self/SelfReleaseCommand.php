@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,16 +19,16 @@ class SelfReleaseCommand extends CommandBase
         $defaultRepo = $this->config()->getWithDefault('application.github_repo', null);
         $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'master');
 
-        $this
-            ->setName('self:release')
+        $this->setName('self:release')
             ->setDescription('Build and release a new version')
+            ->addArgument('version', InputArgument::OPTIONAL, 'The new version number')
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'The manifest file to update')
-            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest')
+            ->addOption('manifest-mode', null, InputOption::VALUE_REQUIRED, 'How to update the manifest file', 'update-latest-matching')
             ->addOption('release-branch', null, InputOption::VALUE_REQUIRED, 'Override the release branch', $defaultReleaseBranch)
-            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'Specify the last version number')
-            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes')
+            ->addOption('last-version', null, InputOption::VALUE_REQUIRED, 'The last version number')
+            ->addOption('no-check-changes', null, InputOption::VALUE_NONE, 'Skip check for uncommitted changes, or no change since the last version')
             ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
 
@@ -55,13 +56,9 @@ class SelfReleaseCommand extends CommandBase
         $releaseBranch = $input->getOption('release-branch');
         if ($git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
             $this->stdErr->writeln('You must be on the ' . $releaseBranch . ' branch to make a release.');
+            $this->stdErr->writeln('Check out master, or use the --release-branch option to override this.');
 
             return 1;
-        }
-
-        $developmentDiffStat = $git->execute(['diff', '--numstat', $releaseBranch . '...development'], CLI_ROOT);
-        if (is_string($developmentDiffStat) && strlen(trim($developmentDiffStat)) && $questionHelper->confirm('Merge changes from development?')) {
-            $git->execute(['merge', 'development'], CLI_ROOT, true);
         }
 
         if (!$input->getOption('no-check-changes')) {
@@ -70,6 +67,7 @@ class SelfReleaseCommand extends CommandBase
                 foreach (explode("\n", $gitStatus) as $statusLine) {
                     if (strpos($statusLine, ' config.yaml') === false) {
                         $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
+                        $this->stdErr->writeln('Use the --no-check-changes option to override this.');
 
                         return 1;
                     }
@@ -85,30 +83,70 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
 
-        $newVersion = $this->config()->get('application.version');
-        $this->stdErr->writeln('The version number defined in the config.yaml file is: <comment>' . $newVersion . '</comment>');
+        // Find the previous version number.
+        if ($input->getOption('last-version')) {
+            $lastVersion = ltrim($input->getOption('last-version'), 'v');
+            $lastTag = 'v' . $lastVersion;
 
-        if (substr($newVersion, 0, 1) === 'v') {
-            $this->stdErr->writeln('The version number should not be prefixed by `v`.');
+            $this->stdErr->writeln('Last version number: <info>' . $lastVersion . '</info>');
+        } else {
+            $lastTag = $shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
+            $lastVersion = ltrim($lastTag, 'v');
+            $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
+        }
+
+        if (!$input->getOption('no-check-changes') && !$this->hasGitDifferences($lastTag)) {
+            $this->stdErr->writeln('There are no changes since the last version.');
 
             return 1;
         }
-        if (!$questionHelper->confirm('Is <comment>' . $newVersion . '</comment> the correct new version number?')) {
-            $this->stdErr->writeln('Update the version number in config.yaml and re-run this command.');
 
-            return 1;
-        }
+        $allowLower = (bool) $input->getOption('allow-lower');
+        $validateNewVersion = function ($next) use ($lastVersion, $allowLower) {
+            if ($next === null) {
+                throw new \InvalidArgumentException('The new version is required.');
+            }
+            if (!$allowLower && version_compare($next, $lastVersion, '<=')) {
+                throw new \InvalidArgumentException(
+                    'The new version number must be greater than ' . $lastVersion
+                    . "\n" . 'Use --allow-lower to skip this check.'
+                );
+            }
 
-        // Validate the --phar option.
-        $pharFilename = $input->getOption('phar');
-        if ($pharFilename && !file_exists($pharFilename)) {
-            $this->stdErr->writeln('File not found: <error>' . $pharFilename . '</error>');
+            return $next;
+        };
 
-            return 1;
+        $newVersion = $input->getArgument('version');
+        if ($newVersion !== null) {
+            $validateNewVersion($newVersion);
+        } else {
+            if (!$input->isInteractive()) {
+                $this->stdErr->writeln('The version number is required in non-interactive mode.');
+
+                return 1;
+            }
+
+            // Find a good default new version number.
+            $default = null;
+            $autoComplete = [];
+            if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$/', $lastVersion)) {
+                $nextPatch = preg_replace_callback('/^([0-9]+\.[0-9]+\.)([0-9]+)(\-[a-z]+)?.*$/', function (array $matches) {
+                    return $matches[1] . ($matches[2] + 1) . $matches[3];
+                }, $lastVersion);
+                $nextMinor = preg_replace_callback('/^([0-9]+\.)([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches) {
+                    return $matches[1] . ($matches[2] + 1) . '.0' . $matches[3];
+                }, $lastVersion);
+                $nextMajor = preg_replace_callback('/^([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches) {
+                    return ($matches[1] + 1) . '.0.0' . $matches[2];
+                }, $lastVersion);
+                $default = $nextPatch;
+                $autoComplete = [$nextPatch, $nextMinor, $nextMajor];
+            }
+
+            $newVersion = $questionHelper->askInput('New version number', $default, $autoComplete, $validateNewVersion);
         }
 
         // Set up GitHub API connection details.
-        $tagName = 'v' . $newVersion;
         $http = new Client();
         $repo = $input->getOption('repo') ?: $this->config()->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
@@ -116,6 +154,7 @@ class SelfReleaseCommand extends CommandBase
         $repoGitUrl = 'git@github.com:' . $repo . '.git';
 
         // Check if the chosen version number already exists as a release.
+        $tagName = 'v' . ltrim($newVersion, 'v');
         $existsResponse = $http->get($repoApiUrl . '/releases/tags/' . $tagName, [
             'headers' => [
                 'Authorization' => 'token ' . $gitHubToken,
@@ -136,6 +175,14 @@ class SelfReleaseCommand extends CommandBase
             return 1;
         }
 
+        // Validate the --phar option.
+        $pharFilename = $input->getOption('phar');
+        if ($pharFilename && !file_exists($pharFilename)) {
+            $this->stdErr->writeln('File not found: <error>' . $pharFilename . '</error>');
+
+            return 1;
+        }
+
         // Check the manifest file for the right item to update.
         $manifestFile = $input->getOption('manifest') ?: CLI_ROOT . '/dist/manifest.json';
         $contents = file_get_contents($manifestFile);
@@ -151,53 +198,40 @@ class SelfReleaseCommand extends CommandBase
             throw new \RuntimeException('Failed to decode manifest file: ' . $manifestFile);
         }
         $latestItem = null;
+        $latestSameMajorItem = null;
         foreach ($manifest as $key => $item) {
             if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
                 $latestItem = &$manifest[$key];
             }
+            if ($this->majorVersion($item['version']) === $this->majorVersion($newVersion)) {
+                if ($latestSameMajorItem || version_compare($item['version'], $latestSameMajorItem['version'], '>')) {
+                    $latestSameMajorItem = &$manifest[$key];
+                }
+            }
         }
+        $manifestItem = null;
         switch ($input->getOption('manifest-mode')) {
             case 'update-latest':
                 $manifestItem = &$latestItem;
                 break;
 
+            case 'update-latest-matching':
+                $manifestItem = &$latestSameMajorItem;
+                break;
+
             case 'add':
-                array_unshift($manifest, []);
-                $manifestItem = &$manifest[0];
                 break;
 
             default:
                 throw new \RuntimeException('Unrecognised --manifest-mode: ' . $input->getOption('manifest-mode'));
         }
-
-        // Fetch the previous version details from the GitHub API.
-        if ($input->getOption('last-version')) {
-            $lastVersion = ltrim($input->getOption('last-version'), 'v');
-            $lastTag = 'v' . $lastVersion;
-        } else {
-            $latestRelease = $http->get($repoApiUrl . '/releases/latest', [
-                'headers' => [
-                    'Authorization' => 'token ' . $gitHubToken,
-                    'Accept' => 'application/vnd.github.v3+json',
-                    'Content-Type' => 'application/json',
-                ],
-                'debug' => $output->isDebug(),
-            ])->json();
-            $lastTag = $latestRelease['tag_name'];
-            $lastVersion = ltrim($lastTag, 'v');
-            $this->stdErr->writeln('  Found latest version: v' . $lastVersion);
-        }
-
-        // Validate the new version number against the previous version.
-        if (version_compare($newVersion, $lastVersion, '<') && !$input->getOption('allow-lower')) {
-            $this->stdErr->writeln(sprintf('The new version number <error>%s</error> is lower than the last version number <error>%s</error>.', $newVersion, $lastVersion));
-            $this->stdErr->writeln('Use --allow-lower to skip this check.');
-
-            return 1;
+        if ($manifestItem === null) {
+            array_unshift($manifest, []);
+            $manifestItem = &$manifest[0];
         }
 
         // Confirm the release changelog.
-        $changelog = $this->getReleaseChangelog($lastVersion, $repoApiUrl);
+        $changelog = $this->getReleaseChangelog($lastTag);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -213,6 +247,7 @@ class SelfReleaseCommand extends CommandBase
             $result = $this->runOtherCommand('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
+                '--replace-version' => $newVersion,
             ]);
             if ($result !== 0) {
                 $this->stdErr->writeln('The build failed');
@@ -285,7 +320,7 @@ class SelfReleaseCommand extends CommandBase
         $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
 
         // Push to GitHub.
-        if (!$questionHelper->confirm('Push changes and tag to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
+        if (!$questionHelper->confirm('Push changes to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
             return 1;
         }
         $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:' . $releaseBranch], CLI_ROOT, true);
@@ -296,9 +331,8 @@ class SelfReleaseCommand extends CommandBase
         $releaseDescription = sprintf('Changes since [%s](%s):', $lastTag, $lastReleasePublicUrl);
         if (!empty($changelog)) {
             $releaseDescription .= "\n\n" . $changelog;
-        } else {
-            $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
         }
+        $releaseDescription .= "\n\n" . 'https://github.com/' . $repoUrl . '/compare/' . $lastTag . '...' . $tagName;
         $releaseDescription .= "\n\n" . sprintf('SHA-256 checksum for `%s`:', $pharPublicFilename)
             . "\n" . sprintf('`%s`', hash_file('sha256', $pharFilename));
         $this->stdErr->writeln('');
@@ -318,6 +352,7 @@ class SelfReleaseCommand extends CommandBase
                 'name' => $tagName,
                 'body' => $releaseDescription,
                 'draft' => true,
+                'prerelease' => $this->isPreRelease($newVersion),
             ],
             'debug' => $output->isDebug(),
         ]);
@@ -360,14 +395,12 @@ class SelfReleaseCommand extends CommandBase
     }
 
     /**
-     * @param string $lastVersion The last version number.
-     * @param string $repoApiUrl
+     * @param string $lastVersionTag The tag corresponding to the last version.
      *
      * @return string
      */
-    private function getReleaseChangelog($lastVersion, $repoApiUrl)
+    private function getReleaseChangelog($lastVersionTag)
     {
-        $lastVersionTag = 'v' . ltrim($lastVersion, 'v');
         $filename = CLI_ROOT . '/release-changelog.md';
         if (file_exists($filename)) {
             $mTime = filemtime($filename);
@@ -381,7 +414,7 @@ class SelfReleaseCommand extends CommandBase
             }
         }
         if (empty($changelog)) {
-            $changelog = $this->getGitChangelog($lastVersionTag, $repoApiUrl);
+            $changelog = $this->getGitChangelog($lastVersionTag);
             (new Filesystem())->dumpFile($filename, $changelog);
         }
 
@@ -405,22 +438,38 @@ class SelfReleaseCommand extends CommandBase
     }
 
     /**
+     * Checks if there are relevant Git differences since the last version.
+     *
+     * @param string      $since
+     *
+     * @return bool
+     */
+    private function hasGitDifferences($since)
+    {
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+        $stat = $git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
+        if (!is_string($stat)) {
+            return false;
+        }
+
+        foreach (explode("\n", trim($stat)) as $line) {
+            // Exclude config.yaml and dist/manifest.json from the check.
+            if (strpos($line, ' config.yaml') === false && strpos($line, ' dist/manifest.json') === false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param string $since
-     * @param string $repoApiUrl
      *
      * @return string
      */
-    private function getGitChangelog($since, $repoApiUrl)
+    private function getGitChangelog($since)
     {
-        $http = new Client();
-        $sha = $http->get($repoApiUrl . '/commits/' . rawurlencode($since), [
-            'headers' => [
-                'Authorization' => 'token ' . getenv('GITHUB_TOKEN'),
-                'Accept' => 'application/vnd.github.v3.sha',
-            ],
-            'debug' => $this->stdErr->isDebug(),
-        ])->getBody();
-
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $changelog = $git->execute([
@@ -431,7 +480,7 @@ class SelfReleaseCommand extends CommandBase
             '--grep=(Release v|\[skip changelog\])',
             '--perl-regexp',
             '--regexp-ignore-case',
-            $sha . '...HEAD'
+            $since . '...HEAD'
         ], CLI_ROOT);
         if (!is_string($changelog)) {
             return '';
@@ -442,5 +491,36 @@ class SelfReleaseCommand extends CommandBase
         $changelog = trim($changelog);
 
         return $changelog;
+    }
+
+    /**
+     * Check if a version number is for a pre-release version.
+     *
+     * @param string $version
+     *
+     * @return bool
+     */
+    private function isPreRelease($version)
+    {
+        return preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?\-.+/', $version) === 1;
+    }
+
+    /**
+     * @param string $version
+     *
+     * @return int
+     */
+    private function majorVersion($version)
+    {
+        if ($dotPos = strpos($version, '.', 1)) {
+            $major = substr($version, 0, $dotPos);
+            if (is_numeric($major)) {
+                return (int) $major;
+            }
+        } elseif (is_numeric($version)) {
+            return (int) $version;
+        }
+
+        throw new \RuntimeException('Failed to find major version for: ' . $version);
     }
 }

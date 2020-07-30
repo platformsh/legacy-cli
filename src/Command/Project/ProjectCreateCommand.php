@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Command\Project;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
+use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
@@ -29,6 +31,9 @@ class ProjectCreateCommand extends CommandBase
 
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
+
+        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository (default)');
+        $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
@@ -55,10 +60,54 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+
+        // Validate the --set-remote option.
+        $setRemote = (bool) $input->getOption('set-remote');
+        $projectRoot = $this->getProjectRoot();
+        $gitRoot = $projectRoot !== false ? $projectRoot : $git->getRoot();
+        if ($setRemote && $gitRoot === false) {
+            $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository.');
+            $this->stdErr->writeln('Use <info>git init<info> to create a repository.');
+
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
+
+        if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
+            try {
+                $currentProject = $this->getCurrentProject();
+            } catch (ProjectNotFoundException $e) {
+                $currentProject = false;
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                    $currentProject = false;
+                } else {
+                    throw $e;
+                }
+            }
+
+            $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
+            if ($currentProject) {
+                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject)));
+            }
+            $this->stdErr->writeln('');
+
+            if ($setRemote) {
+                $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository.', $options['title']));
+            } else {
+                $setRemote = $questionHelper->confirm(sprintf(
+                    'Set the new project <info>%s</info> as the remote for this repository?',
+                    $options['title'])
+                );
+            }
+            $this->stdErr->writeln('');
+        }
 
         $estimate = $this->api()
             ->getClient()
@@ -154,25 +203,56 @@ EOF
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
+
+        $project = $this->api()->getProject($subscription->project_id);
+        $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+
+        if ($setRemote && $gitRoot !== false && $project !== false) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'Setting the remote project for this repository to: %s',
+                $this->api()->getProjectLabel($project)
+            ));
+
+            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+            $localProject = $this->getService('local.project');
+            $localProject->mapDirectory($gitRoot, $project);
+        }
+
         return 0;
     }
 
     /**
      * Return a list of plans.
      *
-     * The default list is in the config `service.available_plans`. This can be
-     * overridden by the user config `experimental.available_plans`.
+     * The default list is in the config `service.available_plans`. This is
+     * replaced at runtime by an API call.
      *
-     * @return string[]
+     * @param bool $runtime
+     *
+     * @return array
      */
-    protected function getAvailablePlans()
+    protected function getAvailablePlans($runtime = false)
     {
-        $config = $this->config();
-        if ($config->has('experimental.available_plans')) {
-            return $config->get('experimental.available_plans');
+        static $plans;
+        if (is_array($plans)) {
+            return $plans;
         }
 
-        return $config->get('service.available_plans');
+        if (!$runtime) {
+            return (array) $this->config()->get('service.available_plans');
+        }
+
+        $plans = [];
+        foreach ($this->api()->getClient()->getPlans() as $plan) {
+            if ($plan->hasProperty('price', false)) {
+                $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
+            } else {
+                $plans[$plan->name] = $plan->label;
+            }
+        }
+
+        return $plans;
     }
 
     /**
@@ -194,6 +274,7 @@ EOF
                     $regions[$region->id] = $region->label;
                 }
             }
+            \uksort($regions, [$this->api(), 'compareDomains']);
         } else {
             $regions = (array) $this->config()->get('service.available_regions');
         }
@@ -227,6 +308,9 @@ EOF
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
+            'optionsCallback' => function () {
+                return $this->getAvailablePlans(true);
+            },
             'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
             'allowOther' => true,
           ]),

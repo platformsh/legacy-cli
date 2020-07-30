@@ -17,7 +17,9 @@ class YamlParser
      *
      * @param string $filename
      *
-     * @throws \Exception if the file cannot be read
+     * @throws \Platformsh\Cli\Exception\InvalidConfigException if the config is invalid
+     * @throws ParseException if the config could not be parsed
+     * @throws \RuntimeException if the file cannot be read
      *
      * @return mixed
      */
@@ -40,6 +42,7 @@ class YamlParser
      */
     public function parseContent($content, $filename)
     {
+        $content = $this->cleanUp($content);
         try {
             $parsed = (new Yaml())->parse($content, Yaml::PARSE_CUSTOM_TAGS);
         } catch (ParseException $e) {
@@ -50,21 +53,52 @@ class YamlParser
     }
 
     /**
+     * Cleans up YAML to conform to the Symfony parser's expectations.
+     *
+     * @param string $content
+     *
+     * @return string
+     */
+    private function cleanUp($content)
+    {
+        // If an entire file or snippet is indented, remove the indent.
+        if (substr(ltrim($content, "\r\n"), 0, 1) === ' ') {
+            $lines = preg_split('/\n|\r|\r\n/', $content);
+            $indents = [];
+            foreach ($lines as $line) {
+                // Ignore blank lines.
+                if (trim($line) === '') {
+                    continue;
+                }
+                $indents[] = strlen($line) - strlen(ltrim($line, ' '));
+            }
+            if (!empty($indents[0]) && $indents[0] === min($indents)) {
+                foreach ($lines as &$line) {
+                    $line = substr($line, $indents[0]);
+                }
+                $content = implode("\n", $lines);
+            }
+        }
+
+        return $content;
+    }
+
+    /**
      * Reads a file and throws appropriate exceptions on failure.
      *
      * @param string $filename
      *
-     * @throws \Exception if the file cannot be found or read.
+     * @throws \RuntimeException if the file cannot be found or read.
      *
      * @return string
      */
     private function readFile($filename)
     {
         if (!file_exists($filename)) {
-            throw new \Exception(sprintf('File not found: %s', $filename));
+            throw new \RuntimeException(sprintf('File not found: %s', $filename));
         }
         if (!is_readable($filename) || ($content = file_get_contents($filename)) === false) {
-            throw new \Exception(sprintf('Failed to read file: %s', $filename));
+            throw new \RuntimeException(sprintf('Failed to read file: %s', $filename));
         }
 
         return $content;

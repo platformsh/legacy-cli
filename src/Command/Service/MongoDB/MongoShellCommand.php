@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -28,17 +29,15 @@ class MongoShellCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
         if ($this->runningViaMulti) {
             throw new \RuntimeException('The mongo-shell command cannot run via multi');
         }
 
-        $sshUrl = $this->getSelectedEnvironment()
-            ->getSshUrl($this->selectApp($input));
-
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
         $relationshipsService = $this->getService('relationships');
-        $service = $relationshipsService->chooseService($sshUrl, $input, $output, ['mongodb']);
+        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+
+        $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -47,7 +46,7 @@ class MongoShellCommand extends CommandBase
 
         if ($input->getOption('eval')) {
             $command .= ' --eval ' . OsUtil::escapePosixShellArg($input->getOption('eval'));
-        };
+        }
 
         $sshOptions = [];
 
@@ -58,24 +57,15 @@ class MongoShellCommand extends CommandBase
             $command .= ' --verbose';
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
-        $sshCommand = $ssh->getSshCommand($sshOptions);
-        if ($this->isTerminal(STDIN)) {
-            $sshCommand .= ' -t';
+        if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+            $host->setExtraSshArgs(['-t']);
         }
-        $sshCommand .= ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($command);
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
 
         $this->stdErr->writeln(
-            sprintf('Connecting to MongoDB service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $sshUrl),
+            sprintf('Connecting to MongoDB service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel()),
             OutputInterface::VERBOSITY_VERBOSE
         );
 
-        return $shell->executeSimple($sshCommand);
+        return $host->runCommandDirect($command);
     }
 }

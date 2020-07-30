@@ -9,8 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentInitCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     /**
      * {@inheritdoc}
      */
@@ -18,13 +16,22 @@ class EnvironmentInitCommand extends CommandBase
     {
         $this
             ->setName('environment:init')
+            ->setDescription('Initialize an environment from a public Git repository')
             ->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
+
+        if ($this->config()->get('service.name') === 'Platform.sh') {
+            $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh-templates/golang');
+        }
+
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addWaitOptions();
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input, true);
@@ -55,6 +62,19 @@ class EnvironmentInitCommand extends CommandBase
 
             return 1;
         }
+
+        // Summarize this action with a message.
+        $message = 'Initializing project ';
+        $message .= $this->api()->getProjectLabel($this->getSelectedProject());
+        if ($environment->id !== 'master') {
+            $message .= ', environment ' . $this->api()->getEnvironmentLabel($environment);
+        }
+        if ($input->getOption('profile')) {
+            $message .= ' with profile <info>' . $profile . '</info> (' . $url . ')';
+        } else {
+            $message .= ' with repository <info>' . $url . '</info>.';
+        }
+        $this->stdErr->writeln($message);
 
         $activity = $environment->initialize($profile, $url);
 

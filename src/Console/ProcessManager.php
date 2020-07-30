@@ -119,12 +119,11 @@ class ProcessManager
     public function startProcess(Process $process, $pidFile, OutputInterface $log)
     {
         $this->processes[$pidFile] = $process;
+        $errLog = $log instanceof ConsoleOutputInterface ? $log->getErrorOutput() : $log;
 
         try {
-            $process->start(function ($type, $buffer) use ($log) {
-                $output = $log instanceof ConsoleOutputInterface && $type === Process::ERR
-                    ? $log->getErrorOutput()
-                    : $log;
+            $process->start(function ($type, $buffer) use ($log, $errLog) {
+                $output = $type === Process::ERR ? $errLog : $log;
                 $output->write($buffer);
             });
         } catch (\Exception $e) {
@@ -137,7 +136,7 @@ class ProcessManager
             throw new \RuntimeException('Failed to write PID file: ' . $pidFile);
         }
 
-        $log->writeln(sprintf('Process started: %s', $process->getCommandLine()));
+        $errLog->writeln(sprintf('Process started: %s', $process->getCommandLine()), OutputInterface::VERBOSITY_VERBOSE);
 
         return $pid;
     }
@@ -163,11 +162,17 @@ class ProcessManager
                     // If the process has been stopped via another method, remove it
                     // from the list, and log a message.
                     $exitCode = $process->getExitCode();
-                    if ($exitCode === 143 || $exitCode === 147) {
-                        $log->writeln(sprintf('Process killed: %s', $process->getCommandLine()));
+                    if ($signal = $this->getSignal($exitCode)) {
+                        $log->writeln(sprintf('Process stopped with signal %s: %s', $signal, $process->getCommandLine()));
                     } elseif ($exitCode > 0) {
                         $log->writeln(sprintf(
-                            'Process stopped unexpectedly with exit code %s: %s',
+                            'Process failed with exit code %s: %s',
+                            $exitCode,
+                            $process->getCommandLine()
+                        ));
+                    } else {
+                        $log->writeln(sprintf(
+                            'Process stopped with exit code %s: %s',
                             $exitCode,
                             $process->getCommandLine()
                         ));
@@ -177,5 +182,56 @@ class ProcessManager
                 }
             }
         }
+    }
+
+    /**
+     * @param int $exitCode
+     *
+     * @return string|false
+     */
+    private function getSignal($exitCode)
+    {
+        if ($exitCode < 128 || $exitCode > 162) {
+            return false;
+        }
+
+        $signals = [
+            1 => 'SIGHUP',
+            2 => 'SIGINT',
+            3 => 'SIGQUIT',
+            4 => 'SIGILL',
+            5 => 'SIGTRAP',
+            6 => 'SIGABRT',
+            7 => 'SIGEMT',
+            8 => 'SIGFPE',
+            9 => 'SIGKILL',
+            10 => 'SIGBUS',
+            11 => 'SIGSEGV',
+            12 => 'SIGSYS',
+            13 => 'SIGPIPE',
+            14 => 'SIGALRM',
+            15 => 'SIGTERM',
+            16 => 'SIGUSR1',
+            17 => 'SIGUSR2',
+            18 => 'SIGCHLD',
+            19 => 'SIGPWR',
+            20 => 'SIGWINCH',
+            21 => 'SIGURG',
+            22 => 'SIGPOLL',
+            23 => 'SIGSTOP',
+            24 => 'SIGTSTP',
+            25 => 'SIGCONT',
+            26 => 'SIGTTIN',
+            27 => 'SIGTTOU',
+            28 => 'SIGVTALRM',
+            29 => 'SIGPROF',
+            30 => 'SIGXCPU',
+            31 => 'SIGXFSZ',
+            32 => 'SIGWAITING',
+            33 => 'SIGLWP',
+            34 => 'SIGAIO',
+        ];
+
+        return $signals[$exitCode - 128];
     }
 }

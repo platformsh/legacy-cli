@@ -8,6 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
+use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Session\SessionInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,7 +22,6 @@ class BrowserLoginCommand extends CommandBase
     {
         $service = $this->config()->get('service.name');
         $applicationName = $this->config()->get('application.name');
-        $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:browser-login');
         if ($this->config()->get('application.login_method') === 'browser') {
@@ -32,27 +32,32 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
 
-        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.'
-            . "\n\nAlternatively, to log in with a username and password in the terminal, use:\n    <info>"
-            . $executable . ' auth:password-login</info>';
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $help .= "\n\n" . $aHelp;
-        }
-        $this->setHelp($help);
+        $executable = $this->config()->get('application.executable');
+        $help = 'Use this command to log in to the ' . $applicationName . ' using a web browser.'
+            . "\n\nIt launches a temporary local website which redirects you to log in if necessary, and then captures the resulting authorization code."
+            . "\n\nYour system's default browser will be used. You can override this using the <info>--browser</info> option."
+            . "\n\nAlternatively, to log in using an API token (without a browser), run: <info>$executable auth:api-token-login</info>"
+            . "\n\n" . $this->getNonInteractiveAuthHelp();
+        $this->setHelp(\wordwrap($help, 80));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->api()->hasApiToken()) {
-            $this->stdErr->writeln('Cannot log in: an API token is set');
+        if ($this->api()->hasApiToken(false)) {
+            $this->stdErr->writeln('Cannot log in via the browser, because an API token is set via config.');
             return 1;
         }
         if (!$input->isInteractive()) {
-            $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->getApiTokenHelp('comment')) {
-                $this->stdErr->writeln("\n" . $aHelp);
-            }
+            $this->stdErr->writeln('Non-interactive use of this command is not supported.');
+            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
             return 1;
+        }
+        if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+            if (!$this->config()->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+            }
+            $this->stdErr->writeln('');
         }
         $connector = $this->api()->getClient(false)->getConnector();
         if (!$input->getOption('force') && $connector->isLoggedIn()) {
@@ -68,10 +73,18 @@ class BrowserLoginCommand extends CommandBase
                     $account['mail']
                 ));
 
-                // USE THE FORCE
-                $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
+                if ($input->isInteractive()) {
+                    /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                    $questionHelper = $this->getService('question_helper');
+                    if (!$questionHelper->confirm('Log in anyway?', false)) {
+                        return 1;
+                    }
+                } else {
+                    // USE THE FORCE
+                    $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
 
-                return 0;
+                    return 0;
+                }
             } catch (BadResponseException $e) {
                 if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
                     $this->debug('Already logged in, but a test request failed. Continuing with login.');
@@ -107,23 +120,13 @@ class BrowserLoginCommand extends CommandBase
         $listenerDir = $this->config()->getWritableUserDir() . '/oauth-listener';
         $this->createDocumentRoot($listenerDir);
 
-        // Create the file where an authorization code will be saved (by the
-        // local server script).
-        $codeFile = $listenerDir . '/.code';
-        if (file_put_contents($codeFile, '', LOCK_EX) === false) {
-            throw new \RuntimeException('Failed to create temporary file: ' . $codeFile);
+        // Create the file where a response will be saved (by the local server
+        // script).
+        $responseFile = $listenerDir . '/.response';
+        if (file_put_contents($responseFile, '', LOCK_EX) === false) {
+            throw new \RuntimeException('Failed to create temporary file: ' . $responseFile);
         }
-        chmod($codeFile, 0600);
-
-        // Find the authorization and token URLs.
-        $apiUrl = $this->config()->get('api.accounts_api_url');
-        $authHost = parse_url($apiUrl, PHP_URL_HOST);
-        $authScheme = parse_url($apiUrl, PHP_URL_SCHEME) ?: 'https';
-        if (!$authHost) {
-            throw new \RuntimeException('Failed to get API host.');
-        }
-        $authUrl = $authScheme . '://' . $authHost . '/oauth2/authorize';
-        $tokenUrl = $authScheme . '://' . $authHost . '/oauth2/token';
+        chmod($responseFile, 0600);
 
         // Start the local server.
         $process = new Process([
@@ -134,13 +137,16 @@ class BrowserLoginCommand extends CommandBase
             '-t',
             $listenerDir
         ]);
+        $codeVerifier = $this->generateCodeVerifier();
         $process->setEnv([
             'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
-            'CLI_OAUTH_STATE' => $this->getRandomState(),
-            'CLI_OAUTH_AUTH_URL' => $authUrl,
+            'CLI_OAUTH_STATE' => $this->generateCodeVerifier(), // the state can just be any random string
+            'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
+            'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
-            'CLI_OAUTH_FILE' => $codeFile,
-        ]);
+            'CLI_OAUTH_PROMPT' => $input->getOption('force') ? 'consent select_account' : 'consent',
+            'CLI_OAUTH_FILE' => $responseFile,
+        ] + $this->getParentEnv());
         $process->setTimeout(null);
         $this->stdErr->writeln('Starting local web server with command: <info>' . $process->getCommandLine() . '</info>', OutputInterface::VERBOSITY_VERY_VERBOSE);
         $process->start();
@@ -171,64 +177,92 @@ class BrowserLoginCommand extends CommandBase
         // Show some help.
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold>Help:</>');
-        $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
-        $executable = $this->config()->get('application.executable');
-        $this->stdErr->writeln(sprintf('  To log in within the terminal instead, quit and run: <info>%s auth:password-login</info>', $executable));
-        $this->stdErr->writeln(sprintf('  For more info, quit and run: <info>%s help login</info>', $executable));
+        $this->stdErr->writeln('  Leave this command running during login.');
+        $this->stdErr->writeln('  If you need to quit, use Ctrl+C.');
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.
-        $code = null;
-        while ($process->isRunning() && empty($code)) {
+        /** @var array|null $response */
+        $response = null;
+        while ($process->isRunning()) {
             usleep(300000);
-            if (!file_exists($codeFile)) {
-                $this->stdErr->writeln('File not found: <error>' . $codeFile . '</error>');
+            if (!file_exists($responseFile)) {
+                $this->stdErr->writeln('File not found: <error>' . $responseFile . '</error>');
                 $this->stdErr->writeln('');
                 break;
             }
-            $code = file_get_contents($codeFile);
-            if ($code === false) {
-                $this->stdErr->writeln('Failed to read file: <error>' . $codeFile . '</error>');
+            $responseRaw = file_get_contents($responseFile);
+            if ($responseRaw === false) {
+                $this->stdErr->writeln('Failed to read file: <error>' . $responseFile . '</error>');
                 $this->stdErr->writeln('');
+                break;
+            }
+            if ($responseRaw !== '') {
+                $response = json_decode($responseRaw, true);
                 break;
             }
         }
+
+        // Allow a little time for the final page to be displayed in the
+        // browser.
+        usleep(100000);
 
         // Clean up.
         $process->stop();
         (new Filesystem())->remove([$listenerDir]);
 
-        if (empty($code)) {
-            $this->stdErr->writeln('Failed to get an authorization code. Please try again.');
+        if (empty($response) || empty($response['code'])) {
+            $this->stdErr->writeln('Failed to get an authorization code.');
+            $this->stdErr->writeln('');
+            if (!empty($response['error']) && !empty($response['error_description'])) {
+                $this->stdErr->writeln('  OAuth 2.0 error: <error>' . $response['error'] . '</error>');
+                $this->stdErr->writeln('  Description: ' . $response['error_description']);
+                if (!empty($response['error_hint'])) {
+                    $this->stdErr->writeln('  Hint: ' . $response['error_hint']);
+                }
+                $this->stdErr->writeln('');
+            } elseif (!empty($response['error_description'])) {
+                $this->stdErr->writeln($response['error_description']);
+                $this->stdErr->writeln('');
+            }
+            $this->stdErr->writeln('Please try again.');
 
             return 1;
         }
 
+        $code = $response['code'];
+
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
-        $token = $this->getAccessToken($code, $localUrl, $tokenUrl);
+        $token = $this->getAccessToken($code, $codeVerifier, $localUrl);
 
-        // Finalize login: clear the cache and save the new credentials.
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
+        // Finalize login: log out and save the new credentials.
+        $this->api()->logout();
 
         // Save the new tokens to the persistent session.
-        $this->saveAccessToken($token, $this->api()->getClient(false)->getConnector()->getSession());
+        $session = $this->api()->getClient(false)->getConnector()->getSession();
+        $this->saveAccessToken($token, $session);
 
-        // Reset the API client so that it will use the new tokens.
-        $client = $this->api()->getClient(false, true);
-        $this->stdErr->writeln('You are logged in.');
-
-        // Show user account info.
-        $info = $client->getAccountInfo();
-        $this->stdErr->writeln(sprintf(
-            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
-            $info['username'],
-            $info['mail']
-        ));
+        $this->finalizeLogin();
 
         return 0;
+    }
+
+    /**
+     * Attempts to find parent environment variables for the local server.
+     *
+     * @return array
+     */
+    private function getParentEnv()
+    {
+        if (PHP_VERSION_ID >= 70100) {
+            return getenv();
+        }
+        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
+            return $_ENV;
+        }
+
+        return [];
     }
 
     /**
@@ -268,36 +302,69 @@ class BrowserLoginCommand extends CommandBase
      * Exchange the authorization code for an access token.
      *
      * @param string $authCode
+     * @param string $codeVerifier
      * @param string $redirectUri
-     * @param string $tokenUrl
      *
      * @return array
      */
-    private function getAccessToken($authCode, $redirectUri, $tokenUrl)
+    private function getAccessToken($authCode, $codeVerifier, $redirectUri)
     {
-        return (new Client())->post(
-            $tokenUrl,
-            [
-                'json' => [
-                    'grant_type' => 'authorization_code',
-                    'code' => $authCode,
-                    'client_id' => $this->config()->get('api.oauth2_client_id'),
-                    'redirect_uri' => $redirectUri,
-                ],
-                'auth' => false,
-                'verify' => !$this->config()->get('api.skip_ssl'),
-            ]
-        )->json();
+        $client = new Client();
+        $request = $client->createRequest('post', $this->config()->get('api.oauth2_token_url'), [
+            'body' => [
+                'grant_type' => 'authorization_code',
+                'code' => $authCode,
+                'client_id' => $this->config()->get('api.oauth2_client_id'),
+                'redirect_uri' => $redirectUri,
+                'code_verifier' => $codeVerifier,
+            ],
+            'auth' => false,
+            'verify' => !$this->config()->get('api.skip_ssl'),
+        ]);
+
+        try {
+            $response = $client->send($request);
+
+            return $response->json();
+        } catch (BadResponseException $e) {
+            throw ApiResponseException::create($request, $e->getResponse(), $e);
+        }
     }
 
     /**
-     * Get a random state to use with the OAuth2 code request.
+     * Get a PKCE code verifier to use with the OAuth2 code request.
      *
      * @return string
      */
-    private function getRandomState()
+    private function generateCodeVerifier()
     {
         // This uses paragonie/random_compat as a polyfill for PHP < 7.0.
-        return bin2hex(random_bytes(128));
+        return $this->base64UrlEncode(random_bytes(32));
+    }
+
+    /**
+     * Base64URL-encodes a string according to the PKCE spec.
+     *
+     * @see https://tools.ietf.org/html/rfc7636
+     *
+     * @param string $data
+     *
+     * @return string
+     */
+    private function base64UrlEncode($data)
+    {
+        return str_replace(['+', '/'], ['-', '_'], rtrim(base64_encode($data), '='));
+    }
+
+    /**
+     * Generates a PKCE code challenge using the S256 transformation on a verifier.
+     *
+     * @param string $verifier
+     *
+     * @return string
+     */
+    private function convertVerifierToChallenge($verifier)
+    {
+        return $this->base64UrlEncode(hash('sha256', $verifier, true));
     }
 }

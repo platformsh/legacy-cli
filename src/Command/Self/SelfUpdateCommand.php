@@ -25,7 +25,7 @@ class SelfUpdateCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $manifestUrl = $input->getOption('manifest') ?: $this->config()->get('application.manifest_url');
-        $currentVersion = $input->getOption('current-version') ?: $this->config()->get('application.version');
+        $currentVersion = $input->getOption('current-version') ?: $this->config()->getVersion();
 
         /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
         $cliUpdater = $this->getService('self_updater');

@@ -1,12 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationDeleteCommand extends CommandBase
+class IntegrationDeleteCommand extends IntegrationCommandBase
 {
     /**
      * {@inheritdoc}
@@ -15,7 +14,7 @@ class IntegrationDeleteCommand extends CommandBase
     {
         $this
             ->setName('integration:delete')
-            ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.')
             ->setDescription('Delete an integration from a project');
         $this->addProjectOption()->addWaitOptions();
     }
@@ -23,18 +22,11 @@ class IntegrationDeleteCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-
-        $id = $input->getArgument('id');
         $project = $this->getSelectedProject();
 
-        $integration = $project->getIntegration($id);
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
-            try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln($e->getMessage());
-                return 1;
-            }
+            return 1;
         }
 
         $confirmText = sprintf('Delete the integration <info>%s</info> (type: %s)?', $integration->id, $integration->type);
@@ -43,6 +35,8 @@ class IntegrationDeleteCommand extends CommandBase
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
+
+        $oldGitUrl = $project->getGitUrl();
 
         $result = $integration->delete();
 
@@ -53,6 +47,8 @@ class IntegrationDeleteCommand extends CommandBase
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
+
+        $this->updateGitUrl($oldGitUrl);
 
         return 0;
     }

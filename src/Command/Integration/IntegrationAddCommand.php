@@ -24,13 +24,14 @@ class IntegrationAddCommand extends IntegrationCommandBase
         );
         $this->addExample(
             'Add an integration with a GitLab repository',
-            '--type gitlab --repository mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
+            '--type gitlab --server-project mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
         );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
+        $project = $this->getSelectedProject();
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -54,10 +55,24 @@ class IntegrationAddCommand extends IntegrationCommandBase
             }
         }
 
+        $values = $this->postProcessValues($values);
+
+        // Confirm this action for Git source integrations.
+        if (isset($values['type']) && in_array($values['type'], ['github', 'gitlab', 'bitbucket', 'bitbucket_server'])) {
+            $this->stdErr->writeln(
+                "<comment>Warning:</comment> adding a '" . $values['type'] . "' integration will automatically synchronize code from the external Git repository."
+                . "\nThis means it can overwrite all the code in your project.\n"
+            );
+            if (!$questionHelper->confirm('Are you sure you want to continue?', false)) {
+                return 1;
+            }
+        }
+
+        // Save the current Git remote (to see if we need to update it, for Git source integrations).
+        $oldGitUrl = $project->getGitUrl();
 
         try {
-            $result = $this->getSelectedProject()
-                ->addIntegration($values['type'], $values);
+            $result = $project->addIntegration($values['type'], $values);
         } catch (BadResponseException $e) {
             if ($errors = Integration::listValidationErrors($e)) {
                 $this->stdErr->writeln('<error>The integration is invalid.</error>');
@@ -81,8 +96,10 @@ class IntegrationAddCommand extends IntegrationCommandBase
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
+
+        $this->updateGitUrl($oldGitUrl);
 
         $this->displayIntegration($integration);
 

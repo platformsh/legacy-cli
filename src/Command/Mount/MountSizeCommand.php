@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Helper\Helper;
@@ -9,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class MountSizeCommand extends MountCommandBase
+class MountSizeCommand extends CommandBase
 {
 
     /**
@@ -26,7 +29,7 @@ class MountSizeCommand extends MountCommandBase
         Ssh::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->addRemoteContainerOptions();
         $appConfigFile = $this->config()->get('service.app_config_file');
         $this->setHelp(<<<EOF
 Use this command to check the disk size and usage for an application's mounts.
@@ -44,23 +47,32 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $host = $this->selectHost($input, getenv($this->config()->get('service.env_prefix') . 'APPLICATION'));
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        if ($host instanceof LocalHost) {
+            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVars */
+            $envVars = $this->getService('remote_env_vars');
+            $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
+            $mounts = $mountService->mountsFromConfig($config);
+        } else {
+            $container = $this->selectRemoteContainer($input);
+            $mounts = $mountService->mountsFromConfig($container->getConfig());
+        }
 
-        $appName = $this->selectApp($input);
-
-        $appConfig = $this->getAppConfig($appName, $input->getOption('refresh'));
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $host->getLabel()));
 
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the application <info>%s</info>...', $appName));
+        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts on <info>%s</info>...', $host->getLabel()));
+        $this->stdErr->writeln('');
 
         // Get a list of the mount paths (and normalize them as relative paths,
         // relative to the application directory).
         $mountPaths = [];
-        foreach (array_keys($appConfig['mounts']) as $mountPath) {
+        foreach (array_keys($mounts) as $mountPath) {
             $mountPaths[] = trim(trim($mountPath), '/');
         }
 
@@ -76,7 +88,12 @@ EOF
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
-        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs';
+
+        // The 'df' command uses '-x' to exclude a bunch of irrelevant
+        // filesystem types. Currently mounts appear to use 'ext4', but that
+        // may not always be the case.
+        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs -x cgroup -x fake-sysfs';
+
         $commands[] = 'echo';
         $commands[] = 'cd "$' . $appDirVar . '"';
 
@@ -86,16 +103,7 @@ EOF
         $command = 'set -e; ' . implode('; ', $commands);
 
         // Connect to the application via SSH and run the commands.
-        $sshArgs = [
-            'ssh',
-            $this->getSelectedEnvironment()->getSshUrl($appName),
-        ];
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshArgs = array_merge($sshArgs, $ssh->getSshArgs());
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        $result = $shell->execute(array_merge($sshArgs, [$command]), null, true);
+        $result = $host->runCommand($command);
 
         // Separate the commands' output.
         list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
@@ -106,35 +114,53 @@ EOF
 
         // Build a table of results: one line per mount, one (multi-line) row
         // per filesystem.
-        $header = ['Mount(s)', 'Size(s)', 'Disk', 'Used', 'Available', 'Capacity'];
+        $header = [
+            'mounts' => 'Mount(s)',
+            'sizes' => 'Size(s)',
+            'max' => 'Disk',
+            'used' => 'Used',
+            'available' => 'Available',
+            'percent_used' => '% Used',
+        ];
         $rows = [];
         $showInBytes = $input->getOption('bytes');
         foreach ($volumeInfo as $info) {
             $row = [];
-            $row[] = implode("\n", $info['mounts']);
+            $row['mounts'] = implode("\n", $info['mounts']);
             $mountUsage = [];
             foreach ($info['mounts'] as $mountPath) {
                 $mountUsage[] = $mountSizes[$mountPath];
             }
             if ($showInBytes) {
-                $row[] = implode("\n", $mountUsage);
-                $row[] = $info['total'];
-                $row[] = $info['used'];
-                $row[] = $info['available'];
+                $row['sizes'] = implode("\n", $mountUsage);
+                $row['max'] = $info['total'];
+                $row['used'] = $info['used'];
+                $row['available'] = $info['available'];
             } else {
-                $row[] = implode("\n", array_map([Helper::class, 'formatMemory'], $mountUsage));
-                $row[] = Helper::formatMemory($info['total']);
-                $row[] = Helper::formatMemory($info['used']);
-                $row[] = Helper::formatMemory($info['available']);
+                $row['sizes'] = implode("\n", array_map([Helper::class, 'formatMemory'], $mountUsage));
+                $row['max'] = Helper::formatMemory($info['total']);
+                $row['used'] = Helper::formatMemory($info['used']);
+                $row['available'] = Helper::formatMemory($info['available']);
             }
-            $row[] = round($info['percent_used'], 1) . '%';
+            $row['percent_used'] = round($info['percent_used'], 1) . '%';
             $rows[] = $row;
         }
-
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->render($rows, $header);
+
+        if (!$table->formatIsMachineReadable()) {
+            if (count($volumeInfo) === 1 && count($mountPaths) > 1) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('All the mounts share the same disk.');
+            }
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To increase the available space, edit the <info>disk</info> key in the <info>%s</info> file.',
+                $this->config()->get('service.app_config_file')
+            ));
+        }
 
         return 0;
     }
@@ -153,11 +179,11 @@ EOF
     private function getDfColumn($line, $columnName)
     {
         $columnPatterns = [
-            'filesystem' => '#^(.+?)(\s+[0-9])#',
-            'total' => '#([0-9]+)\s+[0-9]+\s+[0-9]+\s+[0-9]+%\s+#',
-            'used' => '#([0-9]+)\s+[0-9]+\s+[0-9]+%\s+#',
-            'available' => '#([0-9]+)\s+[0-9]+%\s+#',
-            'path' => '#%\s+(/.+)$#',
+            'filesystem' => '/^(.+?)(\s+[0-9])/',
+            'total' => '/([0-9]+)\s+[0-9]+\s+[0-9]+\s+([0-9]+%|-)\s+/',
+            'used' => '/([0-9]+)\s+[0-9]+\s+([0-9]+%|-)\s+/',
+            'available' => '/([0-9]+)\s+([0-9]+%|-)\s+/',
+            'path' => '/\s(?:[0-9]+%|-)\s+(\/.+)$/',
         ];
         if (!isset($columnPatterns[$columnName])) {
             throw new \InvalidArgumentException("Invalid df column: $columnName");

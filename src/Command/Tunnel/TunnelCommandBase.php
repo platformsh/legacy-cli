@@ -15,25 +15,12 @@ abstract class TunnelCommandBase extends CommandBase
     protected $tunnelInfo;
     protected $canBeRunMultipleTimes = false;
 
-    public function checkSupport()
-    {
-        $messages = [];
-        foreach (['pcntl', 'posix'] as $extension) {
-            if (!extension_loaded($extension)) {
-                $messages[] = sprintf('The "%s" extension is required.', $extension);
-            }
-        }
-        if (count($messages)) {
-            throw new \RuntimeException(implode("\n", $messages));
-        }
-    }
-
     /**
      * Check whether a tunnel is already open.
      *
      * @param array $tunnel
      *
-     * @return bool|array
+     * @return false|array
      */
     protected function isTunnelOpen(array $tunnel)
     {
@@ -170,7 +157,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
-            return new StreamOutput($logResource);
+            return new StreamOutput($logResource, OutputInterface::VERBOSITY_VERBOSE);
         }
 
         return false;
@@ -190,6 +177,24 @@ abstract class TunnelCommandBase extends CommandBase
             $tunnel['relationship'],
             $tunnel['serviceKey'],
         ]);
+    }
+
+    /**
+     * @param array $tunnel
+     * @param array $service
+     *
+     * @return string
+     */
+    protected function getTunnelUrl(array $tunnel, array $service)
+    {
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+        $localService = array_merge($service, array_intersect_key([
+            'host' => self::LOCAL_IP,
+            'port' => $tunnel['localPort'],
+        ], $service));
+
+        return $relationshipsService->buildUrl($localService);
     }
 
     /**
@@ -257,7 +262,7 @@ abstract class TunnelCommandBase extends CommandBase
         }
         $project = $this->getSelectedProject();
         $environment = $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null;
-        $appName = $this->selectApp($input);
+        $appName = $this->hasSelectedEnvironment() ? $this->selectApp($input) : null;
         foreach ($tunnels as $key => $tunnel) {
             if ($tunnel['projectId'] !== $project->id
                 || ($environment !== null && $tunnel['environmentId'] !== $environment->id)

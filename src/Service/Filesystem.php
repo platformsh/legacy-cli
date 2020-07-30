@@ -117,26 +117,6 @@ class Filesystem
     }
 
     /**
-     * @return string The absolute path to the user's home directory
-     */
-    public static function getHomeDirectory()
-    {
-        foreach (['HOME', 'USERPROFILE'] as $envVar) {
-            if ($value = getenv($envVar)) {
-                if (!is_dir($value)) {
-                    throw new \RuntimeException(
-                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
-                    );
-                }
-
-                return $value;
-            }
-        }
-
-        throw new \RuntimeException('Could not determine home directory');
-    }
-
-    /**
      * @param string $dir
      * @param int $mode
      */
@@ -190,7 +170,7 @@ class Filesystem
                 // Skip symlinks, '.' and '..', and files in $skip.
                 if ($file === '.'
                     || $file === '..'
-                    || $this->inBlacklist($file, $skip)
+                    || $this->fileInList($file, $skip)
                     || is_link($source . '/' . $file)) {
                     continue;
                 }
@@ -269,16 +249,16 @@ class Filesystem
     }
 
     /**
-     * Check if a filename is in the blacklist.
+     * Check if a filename is in a list.
      *
      * @param string   $filename
-     * @param string[] $blacklist
+     * @param string[] $list
      *
      * @return bool
      */
-    protected function inBlacklist($filename, array $blacklist)
+    protected function fileInList($filename, array $list)
     {
-        foreach ($blacklist as $pattern) {
+        foreach ($list as $pattern) {
             if (fnmatch($pattern, $filename, FNM_PATHNAME | FNM_CASEFOLD)) {
                 return true;
             }
@@ -294,7 +274,7 @@ class Filesystem
      * @param string   $destination
      * @param bool     $skipExisting
      * @param bool     $recursive
-     * @param string[] $blacklist
+     * @param string[] $exclude
      * @param bool     $copy
      *
      * @throws \Exception When a conflict is discovered.
@@ -304,7 +284,7 @@ class Filesystem
         $destination,
         $skipExisting = true,
         $recursive = false,
-        $blacklist = [],
+        $exclude = [],
         $copy = false
     ) {
         if (!is_dir($destination)) {
@@ -316,19 +296,19 @@ class Filesystem
 
         // Files to always skip.
         $skip = ['.git', '.DS_Store'];
-        $skip = array_merge($skip, $blacklist);
+        $skip = array_merge($skip, $exclude);
 
         $sourceDirectory = opendir($source);
         while ($file = readdir($sourceDirectory)) {
             // Skip symlinks, '.' and '..', and files in $skip.
-            if ($file === '.' || $file === '..' || $this->inBlacklist($file, $skip) || is_link($source . '/' . $file)) {
+            if ($file === '.' || $file === '..' || $this->fileInList($file, $skip) || is_link($source . '/' . $file)) {
                 continue;
             }
             $sourceFile = $source . '/' . $file;
             $linkFile = $destination . '/' . $file;
 
             if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {
-                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, $blacklist, $copy);
+                $this->symlinkAll($sourceFile, $linkFile, $skipExisting, $recursive, $exclude, $copy);
                 continue;
             } elseif (file_exists($linkFile)) {
                 if ($skipExisting) {
@@ -342,7 +322,7 @@ class Filesystem
             }
 
             if ($copy) {
-                $this->copyAll($sourceFile, $linkFile, $blacklist);
+                $this->copyAll($sourceFile, $linkFile, $exclude);
             } else {
                 $this->symlink($sourceFile, $linkFile);
             }
@@ -491,5 +471,22 @@ class Filesystem
             }
         }
         throw new \RuntimeException("Tar command not found");
+    }
+
+    /**
+     * Validates a directory.
+     *
+     * @param string $directory
+     * @param bool   $writable
+     */
+    public function validateDirectory($directory, $writable = false)
+    {
+        if (!is_dir($directory)) {
+            throw new \InvalidArgumentException(sprintf('Directory not found: %s', $directory));
+        } elseif (!is_readable($directory)) {
+            throw new \InvalidArgumentException(sprintf('Directory not readable: %s', $directory));
+        } elseif ($writable && !is_writable($directory)) {
+            throw new \InvalidArgumentException(sprintf('Directory not writable: %s', $directory));
+        }
     }
 }

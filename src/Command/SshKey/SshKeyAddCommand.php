@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\SshKey;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -9,8 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshKeyAddCommand extends CommandBase
 {
-    const DEFAULT_BASENAME = 'id_rsa';
-
     protected function configure()
     {
         $this
@@ -28,109 +27,112 @@ class SshKeyAddCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Shell $shellHelper */
         $shellHelper = $this->getService('shell');
 
+        $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
+
+        $account = $this->api()->getMyAccount();
+        $this->stdErr->writeln(sprintf(
+            "Adding an SSH key to your %s account (<info>%s</info>)\n",
+            $this->config()->get('service.name'),
+            $account['mail']
+        ));
+
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
-            $defaultKeyPath = $fs->getHomeDirectory() . '/.ssh/' . self::DEFAULT_BASENAME;
+            $defaultKeyPath = $sshDir . DIRECTORY_SEPARATOR . 'id_rsa';
             $defaultPublicKeyPath = $defaultKeyPath . '.pub';
 
             // Look for an existing local key.
-            if (file_exists($defaultPublicKeyPath)
+            if (\file_exists($defaultPublicKeyPath)
                 && $questionHelper->confirm(
-                    'Use existing local key <info>' . basename($defaultPublicKeyPath) . '</info>?'
+                    'Use existing local key <info>' . \basename($defaultPublicKeyPath) . '</info>?'
                 )) {
+                $this->stdErr->writeln('');
                 $publicKeyPath = $defaultPublicKeyPath;
             } elseif ($shellHelper->commandExists('ssh-keygen')
                 && $questionHelper->confirm('Generate a new key?')) {
                 // Offer to generate a key.
-                $newKeyPath = $this->getNewKeyPath();
+                $newKeyPath = $this->askNewKeyPath($questionHelper);
+                $this->stdErr->writeln('');
+
                 $args = ['ssh-keygen', '-t', 'rsa', '-f', $newKeyPath, '-N', ''];
                 $shellHelper->execute($args, null, true);
                 $publicKeyPath = $newKeyPath . '.pub';
-                $this->stdErr->writeln("Generated a new key: $publicKeyPath");
+                $this->stdErr->writeln("Generated a new key: $publicKeyPath\n");
 
                 // An SSH agent is required if the key's filename is unusual.
                 if (!in_array(basename($newKeyPath), ['id_rsa', 'id_dsa'])) {
                     $this->stdErr->writeln('Add this key to an SSH agent with:');
                     $this->stdErr->writeln('    eval $(ssh-agent)');
-                    $this->stdErr->writeln('    ssh-add ' . escapeshellarg($newKeyPath));
+                    $this->stdErr->writeln('    ssh-add ' . \escapeshellarg($newKeyPath));
+                    $this->stdErr->writeln('');
                 }
             } else {
-                $this->stdErr->writeln("<error>You must specify the path to a public SSH key</error>");
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('You must specify the path to a public SSH key');
                 return 1;
             }
+        } elseif (\strpos($publicKeyPath, '.pub') === false && \file_exists($publicKeyPath . '.pub')) {
+            $publicKeyPath .= '.pub';
+            $this->debug('Using public key: ' . $publicKeyPath . '.pub');
         }
 
-        if (!file_exists($publicKeyPath)) {
+        if (!\file_exists($publicKeyPath)) {
             $this->stdErr->writeln("File not found: <error>$publicKeyPath<error>");
             return 1;
         }
 
         // Use ssh-keygen to help validate the key.
         if ($shellHelper->commandExists('ssh-keygen')) {
-            // Newer versions of ssh-keygen require the -E argument to get an
-            // MD5 fingerprint. Older versions of ssh-keygen return an MD5
-            // fingerprint anyway.
-            $oldArgs = ['ssh-keygen', '-l', '-f', $publicKeyPath];
-            $newArgs = array_merge($oldArgs, ['-E', 'md5']);
-            $result = $shellHelper->execute($newArgs, null, false);
-            if ($result === false) {
-                $result = $shellHelper->execute($oldArgs, null, false);
-            }
-
-            // If both commands failed, the key is not valid.
-            if ($result === false) {
+            $args = ['ssh-keygen', '-l', '-f', $publicKeyPath];
+            if (!$shellHelper->execute($args, null, false)) {
                 $this->stdErr->writeln("The file does not contain a valid public key: <error>$publicKeyPath</error>");
                 return 1;
             }
+        }
 
-            // Extract the fingerprint from the command output.
-            if (preg_match('/^\s*[0-9]+ +(MD5:)?([0-9a-z:]+)( |$)/i', $result, $matches)) {
-                $fingerprint = str_replace(':', '', $matches[2]);
-            } else {
-                $this->debug("Unexpected output from ssh-keygen: $result");
-            }
+        /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
+        $sshKeyService = $this->getService('ssh_key');
+        $fingerprint = $sshKeyService->getPublicKeyFingerprint($publicKeyPath);
 
-            // Check whether the public key already exists in the user's account.
-            if (isset($fingerprint) && $this->keyExistsByFingerprint($fingerprint)) {
-                $this->stdErr->writeln(sprintf(
-                    'An SSH key already exists in your %s account with the same fingerprint: %s',
-                    $this->config()->get('service.name'),
-                    $fingerprint
-                ));
-                $this->stdErr->writeln(sprintf(
-                    'List your SSH keys with: <info>%s ssh-keys</info>',
-                    $this->config()->get('application.executable')
-                ));
+        // Check whether the public key already exists in the user's account.
+        if ($this->keyExistsByFingerprint($fingerprint)) {
+            $this->stdErr->writeln('This key already exists in your account.');
+            $this->stdErr->writeln(\sprintf(
+                'List your SSH keys with: <info>%s ssh-keys</info>',
+                $this->config()->get('application.executable')
+            ));
 
-                return 0;
-            }
+            return 0;
         }
 
         // Get the public key content.
-        $publicKey = file_get_contents($publicKeyPath);
+        $publicKey = \file_get_contents($publicKeyPath);
         if ($publicKey === false) {
             $this->stdErr->writeln("Failed to read public key file: <error>$publicKeyPath</error>");
             return 1;
         }
 
-        // Ask for a key name, if it's not specified by the --name option. It
-        // will default to the machine's hostname.
-        $name = $input->getOption('name');
-        if (!$name) {
-            $defaultName = gethostname() ?: null;
-            $name = $questionHelper->askInput('Enter a name for the key', $defaultName);
-        }
-
         // Add the new key.
-        $this->api()->getClient()->addSshKey($publicKey, $name);
+        $this->api()->getClient()->addSshKey($publicKey, $input->getOption('name'));
 
-        $this->stdErr->writeln(sprintf(
+        $this->stdErr->writeln(\sprintf(
             'The SSH key <info>%s</info> has been successfully added to your %s account.',
-            basename($publicKeyPath),
+            \basename($publicKeyPath),
             $this->config()->get('service.name')
         ));
+
+        // Reset and warm the SSH keys cache.
+        try {
+            $this->api()->getSshKeys(true);
+        } catch (\Exception $e) {
+            // Suppress exceptions; we do not need the result of this call.
+        }
+
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        if ($sshConfig->configureSessionSsh()) {
+            $sshConfig->addUserSshConfig($questionHelper);
+        }
 
         return 0;
     }
@@ -154,31 +156,36 @@ class SshKeyAddCommand extends CommandBase
     }
 
     /**
-     * Find the path for a new SSH key.
+     * Find the default path for a new SSH key.
      *
-     * If the file already exists, this will recurse to find a new filename. The
-     * first will be "id_rsa", the second "id_rsa2", the third "id_rsa3", and so
-     * on.
-     *
-     * @param int $number
+     * @param QuestionHelper $questionHelper
      *
      * @return string
      */
-    protected function getNewKeyPath($number = 1)
+    private function askNewKeyPath(QuestionHelper $questionHelper)
     {
-        $basename = self::DEFAULT_BASENAME;
-        if ($number > 1) {
-            $basename = strpos($basename, '.key')
-                ? str_replace('.key', '.' . $number . 'key', $basename)
-                : $basename . '.' . $number;
+        $basename = 'id_rsa-' . $this->config()->get('service.slug');
+        $accountInfo = $this->api()->getMyAccount();
+        if (!empty($accountInfo['username'])) {
+            $basename .= '-' . $accountInfo['username'];
         }
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
-        $filename = $fs->getHomeDirectory() . '/.ssh/' . $basename;
-        if (file_exists($filename)) {
-            return $this->getNewKeyPath(++$number);
+        $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
+        for ($i = 2; \file_exists($sshDir . DIRECTORY_SEPARATOR . $basename); $i++) {
+            $basename .= $i;
         }
 
-        return $filename;
+        return $questionHelper->askInput('Enter a filename for the new key (relative to ~/.ssh)', $basename, [], function ($path) use ($sshDir) {
+            if (\substr($path, 0, 1) !== '/') {
+                if (\substr($path, 0, 1) === '~/') {
+                    $path = $this->config()->getHomeDirectory() . '/' . \substr($path, 2);
+                } else {
+                    $path = $sshDir . DIRECTORY_SEPARATOR . ltrim($path, '\\/');
+                }
+            }
+            if (\file_exists($path)) {
+                throw new \RuntimeException('The file already exists: ' . $path);
+            }
+            return $path;
+        });
     }
 }

@@ -48,9 +48,13 @@ class State
     public function set($key, $value, $save = true)
     {
         $this->load();
-        NestedArrayUtil::setNestedArrayValue($this->state, explode('.', $key), $value);
-        if ($save) {
-            $this->save();
+        $parents = explode('.', $key);
+        $current = NestedArrayUtil::getNestedArrayValue($this->state, $parents);
+        if ($current !== $value) {
+            NestedArrayUtil::setNestedArrayValue($this->state, $parents, $value);
+            if ($save) {
+                $this->save();
+            }
         }
     }
 
@@ -85,6 +89,6 @@ class State
      */
     protected function getFilename()
     {
-        return Filesystem::getHomeDirectory() . '/' . $this->config->get('application.user_state_file');
+        return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . $this->config->get('application.user_state_file');
     }
 }

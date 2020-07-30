@@ -128,11 +128,7 @@ EOT
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog(
-                $activity,
-                "Synchronization complete",
-                "Synchronization failed"
-            );
+            $success = $activityMonitor->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }

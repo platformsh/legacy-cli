@@ -47,7 +47,7 @@ class EnvironmentBranchCommand extends CommandBase
         $parentEnvironment = $this->getSelectedEnvironment();
 
         $branchName = $input->getArgument('id');
-        if (empty($branchName)) {
+        if ($branchName === null) {
             if ($input->isInteractive()) {
                 // List environments.
                 return $this->runOtherCommand(
@@ -117,11 +117,11 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $title = $input->getOption('title') ?: $branchName;
+        $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
         $this->stdErr->writeln(sprintf(
             'Creating a new environment %s, branched from %s',
-            $title && $title !== $branchName
+            strlen($title) > 0 && $title !== $branchName
                 ? '<info>' . $title . '</info> (' . $branchName . ')'
                 : '<info>' . $branchName . '</info>',
             $this->api()->getEnvironmentLabel($parentEnvironment)
@@ -169,11 +169,7 @@ class EnvironmentBranchCommand extends CommandBase
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $remoteSuccess = $activityMonitor->waitAndLog(
-                $activity,
-                "The environment <info>$branchName</info> has been created.",
-                '<error>Branching failed</error>'
-            );
+            $remoteSuccess = $activityMonitor->waitAndLog($activity);
 
             // If a new local branch has been created, set it to track the
             // remote branch. This requires first fetching the new branch from

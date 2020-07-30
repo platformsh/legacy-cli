@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Exception\ProcessFailedException;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
@@ -15,6 +16,9 @@ use Platformsh\Client\Model\Project;
 
 class Drush
 {
+    /** @var Api */
+    protected $api;
+
     /** @var Shell */
     protected $shellHelper;
 
@@ -36,19 +40,31 @@ class Drush
     /** @var string|null */
     protected $executable;
 
+    /** @var string[] */
+    protected $cachedAppRoots = [];
+
+    /** @var ApplicationFinder */
+    protected $applicationFinder;
+
     /**
-     * @param Config|null       $config
-     * @param Shell|null        $shellHelper
+     * @param Config|null $config
+     * @param Shell|null $shellHelper
      * @param LocalProject|null $localProject
+     * @param Api|null $api
+     * @param ApplicationFinder|null $applicationFinder
      */
     public function __construct(
         Config $config = null,
         Shell $shellHelper = null,
-        LocalProject $localProject = null
+        LocalProject $localProject = null,
+        Api $api = null,
+        ApplicationFinder $applicationFinder = null
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
         $this->localProject = $localProject ?: new LocalProject();
+        $this->api = $api ?: new Api($this->config);
+        $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 
     public function setHomeDir($homeDir)
@@ -58,7 +74,26 @@ class Drush
 
     public function getHomeDir()
     {
-        return $this->homeDir ?: Filesystem::getHomeDirectory();
+        return $this->homeDir ?: $this->config->getHomeDirectory();
+    }
+
+    /**
+     * @param string $sshUrl
+     * @param string $enterpriseAppRoot
+     */
+    public function setCachedAppRoot($sshUrl, $enterpriseAppRoot)
+    {
+        $this->cachedAppRoots[$sshUrl] = $enterpriseAppRoot;
+    }
+
+    /**
+     * @param string $sshUrl
+     *
+     * @return string
+     */
+    public function getCachedAppRoot($sshUrl)
+    {
+        return isset($this->cachedAppRoots[$sshUrl]) ? $this->cachedAppRoots[$sshUrl] : false;
     }
 
     /**
@@ -255,18 +290,6 @@ class Drush
     }
 
     /**
-     * @return string
-     */
-    protected function getAutoRemoveKey()
-    {
-        return preg_replace(
-            '/[^a-z-]+/',
-            '-',
-            str_replace('.', '', strtolower($this->config->get('application.name')))
-        ) . '-auto-remove';
-    }
-
-    /**
      * Get the alias group for a project.
      *
      * @param Project $project
@@ -326,7 +349,7 @@ class Drush
     public function getDrupalApps($projectRoot)
     {
         return array_filter(
-            LocalApplication::getApplications($projectRoot, $this->config),
+            $this->applicationFinder->findApplications($projectRoot),
             function (LocalApplication $app) {
                 return Drupal::isDrupal($app->getRoot());
             }
@@ -343,6 +366,30 @@ class Drush
         $types[] = new DrushPhp($this->config, $this);
 
         return $types;
+    }
+
+    /**
+     * Returns the site URL.
+     *
+     * @param Environment      $environment
+     * @param LocalApplication $app
+     *
+     * @todo this is really a hidden dependency on the Api service
+     *
+     * @return string|null
+     */
+    public function getSiteUrl(Environment $environment, LocalApplication $app)
+    {
+        if ($this->api->hasCachedCurrentDeployment($environment)) {
+            return $this->api->getSiteUrl($environment, $app->getName());
+        }
+
+        $urls = $environment->getRouteUrls();
+        if (count($urls) === 1) {
+            return reset($urls) ?: null;
+        }
+
+        return null;
     }
 
     /**

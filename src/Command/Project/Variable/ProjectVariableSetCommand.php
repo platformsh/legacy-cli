@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableSetCommand extends CommandBase
 {
     protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     /**
      * {@inheritdoc}
@@ -28,12 +29,12 @@ class ProjectVariableSetCommand extends CommandBase
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')
             ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
             ->setDescription('Set a variable for a project');
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
+        );
         $this->addProjectOption()
              ->addWaitOptions();
-        $this->addExample('Set the variable "example" to the string "123"', 'example 123');
-        $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
-        $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
-        $this->addExample('Set the variable "example" to the string "abc", but only at build time', 'example abc --no-visible-runtime');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -27,13 +27,17 @@ class Application extends ParentApplication
     /** @var Config */
     protected $cliConfig;
 
+    /** @var string */
+    private $envPrefix;
+
     /**
      * {@inheritdoc}
      */
     public function __construct()
     {
         $this->cliConfig = new Config();
-        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->get('application.version'));
+        $this->envPrefix = $this->cliConfig->get('application.env_prefix');
+        parent::__construct($this->cliConfig->get('application.name'), $this->cliConfig->getVersion());
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
@@ -62,8 +66,8 @@ class Application extends ParentApplication
             new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
             new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages'),
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
-            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts; disable interaction'),
-            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
+            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to any yes/no questions; disable interaction'),
+            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to any yes/no questions; disable interaction'),
         ]);
     }
 
@@ -87,9 +91,11 @@ class Application extends ParentApplication
             return $commands;
         }
 
+        $commands[] = new Command\ApiCurlCommand();
         $commands[] = new Command\BotCommand();
         $commands[] = new Command\ClearCacheCommand();
         $commands[] = new Command\CompletionCommand();
+        $commands[] = new Command\DecodeCommand();
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\LegacyMigrateCommand();
         $commands[] = new Command\MultiCommand();
@@ -101,6 +107,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthInfoCommand();
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();
+        $commands[] = new Command\Auth\ApiTokenLoginCommand();
         $commands[] = new Command\Auth\PasswordLoginCommand();
         $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
@@ -132,15 +139,20 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentRedeployCommand();
         $commands[] = new Command\Environment\EnvironmentRelationshipsCommand();
         $commands[] = new Command\Environment\EnvironmentSshCommand();
+        $commands[] = new Command\Environment\EnvironmentScpCommand();
         $commands[] = new Command\Environment\EnvironmentSynchronizeCommand();
         $commands[] = new Command\Environment\EnvironmentUrlCommand();
         $commands[] = new Command\Environment\EnvironmentSetRemoteCommand();
+        $commands[] = new Command\Environment\EnvironmentXdebugCommand();
         $commands[] = new Command\Integration\IntegrationAddCommand();
         $commands[] = new Command\Integration\IntegrationDeleteCommand();
         $commands[] = new Command\Integration\IntegrationGetCommand();
         $commands[] = new Command\Integration\IntegrationListCommand();
         $commands[] = new Command\Integration\IntegrationUpdateCommand();
         $commands[] = new Command\Integration\IntegrationValidateCommand();
+        $commands[] = new Command\Integration\Activity\IntegrationActivityGetCommand();
+        $commands[] = new Command\Integration\Activity\IntegrationActivityListCommand();
+        $commands[] = new Command\Integration\Activity\IntegrationActivityLogCommand();
         $commands[] = new Command\Local\LocalBuildCommand();
         $commands[] = new Command\Local\LocalCleanCommand();
         $commands[] = new Command\Local\LocalDrushAliasesCommand();
@@ -179,9 +191,12 @@ class Application extends ParentApplication
         $commands[] = new Command\Service\MongoDB\MongoShellCommand();
         $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Service\ServiceListCommand();
-        $commands[] = new Command\Snapshot\SnapshotCreateCommand();
-        $commands[] = new Command\Snapshot\SnapshotListCommand();
-        $commands[] = new Command\Snapshot\SnapshotRestoreCommand();
+        $commands[] = new Command\Session\SessionSwitchCommand();
+        $commands[] = new Command\Backup\BackupCreateCommand();
+        $commands[] = new Command\Backup\BackupListCommand();
+        $commands[] = new Command\Backup\BackupRestoreCommand();
+        $commands[] = new Command\SourceOperation\RunCommand();
+        $commands[] = new Command\SshCert\SshCertLoadCommand();
         $commands[] = new Command\SshKey\SshKeyAddCommand();
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
         $commands[] = new Command\SshKey\SshKeyListCommand();
@@ -190,10 +205,12 @@ class Application extends ParentApplication
         $commands[] = new Command\Tunnel\TunnelInfoCommand();
         $commands[] = new Command\Tunnel\TunnelListCommand();
         $commands[] = new Command\Tunnel\TunnelOpenCommand();
+        $commands[] = new Command\Tunnel\TunnelSingleCommand();
         $commands[] = new Command\User\UserAddCommand();
         $commands[] = new Command\User\UserDeleteCommand();
         $commands[] = new Command\User\UserListCommand();
         $commands[] = new Command\User\UserGetCommand();
+        $commands[] = new Command\User\UserUpdateCommand();
         $commands[] = new Command\Variable\VariableCreateCommand();
         $commands[] = new Command\Variable\VariableDeleteCommand();
         $commands[] = new Command\Variable\VariableDisableCommand();
@@ -204,6 +221,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Variable\VariableUpdateCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
+        $commands[] = new Command\WinkyCommand();
         $commands[] = new Command\Worker\WorkerListCommand();
 
         return $commands;
@@ -238,8 +256,10 @@ class Application extends ParentApplication
      */
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
-        // Set the input to non-interactive if the yes or no options are used.
-        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
+        // Set the input to non-interactive if the yes or no options are used,
+        // or if the PLATFORMSH_CLI_NO_INTERACTION variable is not empty.
+        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])
+          || getenv($this->envPrefix . 'NO_INTERACTION')) {
             $input->setInteractive(false);
         }
 
@@ -253,7 +273,7 @@ class Application extends ParentApplication
         } elseif (getenv('NO_COLOR')
             || getenv('CLICOLOR_FORCE') === '0'
             || getenv('TERM') === 'dumb'
-            || getenv($this->cliConfig->get('application.env_prefix') . 'NO_COLOR')) {
+            || getenv($this->envPrefix . 'NO_COLOR')) {
             $output->setDecorated(false);
         }
 

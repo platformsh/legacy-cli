@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableDeleteCommand extends CommandBase
 {
     protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     /**
      * {@inheritdoc}
@@ -22,9 +23,12 @@ class ProjectVariableDeleteCommand extends CommandBase
             ->setName('project:variable:delete')
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->setDescription('Delete a variable from a project');
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use: <info>variable:delete --level project [variable]</info>"
+        );
         $this->addProjectOption()
              ->addWaitOptions();
-        $this->addExample('Delete the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

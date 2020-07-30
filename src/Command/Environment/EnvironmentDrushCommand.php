@@ -20,13 +20,15 @@ class EnvironmentDrushCommand extends CommandBase
             ->setName('environment:drush')
             ->setAliases(['drush'])
             ->setDescription('Run a drush command on the remote environment')
-            ->addArgument('cmd', InputArgument::OPTIONAL, 'A command and arguments to pass to Drush', 'status');
+            ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addAppOption();
         Ssh::configureInput($this->getDefinition());
-        $this->addExample('Run "drush status" on the remote environment');
-        $this->addExample('Enable the Overlay module on the remote environment', "'en overlay'");
+        $this->addExample('Run "drush status" on the remote environment', 'status');
+        $this->addExample('Enable the Overlay module on the remote environment', 'en overlay');
+        $this->addExample('Get a one-time login link (using -- before options)', 'user-login -- --mail=name@example.com');
+        $this->addExample('Alternative syntax (quoting the whole command)', "'user-login --mail=name@example.com'");
     }
 
     public function isHidden()
@@ -44,58 +46,65 @@ class EnvironmentDrushCommand extends CommandBase
     {
         $this->validateInput($input);
 
-        $drushCommand = $input->getArgument('cmd');
+        $drushCommand = (array) $input->getArgument('cmd');
+        if (count($drushCommand) === 1) {
+            $drushCommand = reset($drushCommand);
+        } else {
+            $drushCommand = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $drushCommand));
+        }
 
         // Pass through options that the CLI shares with Drush.
         foreach (['yes', 'no', 'quiet'] as $option) {
-            if ($input->getOption($option)) {
+            if ($input->getOption($option) && !preg_match('/\b' . preg_quote($option) . '\b/', $drushCommand)) {
                 $drushCommand .= " --$option";
             }
         }
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $drushCommand .= " --debug";
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-            $drushCommand .= " --verbose";
-        } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $drushCommand .= " --verbose";
-        } elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
-            $drushCommand .= " --quiet";
+        if (!preg_match('/\b((verbose|debug|quiet)\b|-v)/', $drushCommand)) {
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG ) {
+                $drushCommand .= " --debug";
+            } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+                $drushCommand .= " --verbose";
+            } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $drushCommand .= " --verbose";
+            } elseif ($output->getVerbosity() == OutputInterface::VERBOSITY_QUIET) {
+                $drushCommand .= " --quiet";
+            }
         }
 
-        $appName = $this->selectApp($input);
+        $appContainer = $this->selectRemoteContainer($input, false);
+        $host = $this->selectHost($input, false, $appContainer);
+        $appName = $appContainer->getName();
 
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $sshUrl = $selectedEnvironment->getSshUrl($appName);
 
-        // Get the document root for the application, to find the Drupal root.
         $deployment = $this->api()->getCurrentDeployment($selectedEnvironment);
-        $remoteApp = $deployment->getWebApp($appName);
-        $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
 
         // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
-        // determine the path to Drupal. Fall back to a combination of the known
-        // document root and the PLATFORM_APP_DIR variable.
-        $envPrefix = (string) $this->config()->get('service.env_prefix');
-        $appRoot = sprintf('${%sAPP_DIR:-/app}', $envPrefix);
-        $drupalRoot = sprintf('${%sDOCUMENT_ROOT:-%s}', $envPrefix, $appRoot . '/' . $relativeDocRoot);
+        // determine the path to Drupal.
+        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
+        $envVarsService = $this->getService('remote_env_vars');
+        $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $host);
+        if ($documentRoot !== '') {
+            $drupalRoot = $documentRoot;
+        } else {
+            // Fall back to a combination of the document root (from the
+            // deployment configuration) and the PLATFORM_APP_DIR variable.
+            $appDir = $envVarsService->getEnvVar('APP_DIR', $host) ?: '/app';
+
+            $remoteApp = $deployment->getWebApp($appName);
+            $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();
+
+            $drupalRoot = $appDir . '/' . $relativeDocRoot;
+        }
 
         $columns = (new Terminal())->getWidth();
 
-        $sshDrushCommand = "COLUMNS=$columns drush --root=\"$drupalRoot\"";
+        $sshDrushCommand = "COLUMNS=$columns drush --root=" . OsUtil::escapePosixShellArg($drupalRoot);
         if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
             $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
         $sshDrushCommand .= ' ' . $drushCommand;
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $command = $ssh->getSshCommand()
-            . ' ' . escapeshellarg($sshUrl)
-            . ' ' . escapeshellarg($sshDrushCommand);
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        return $shell->executeSimple($command);
+        return $host->runCommandDirect($sshDrushCommand);
     }
 }

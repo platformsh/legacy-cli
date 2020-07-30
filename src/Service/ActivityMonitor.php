@@ -3,7 +3,9 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\ActivityLog\LogItem;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -24,13 +26,19 @@ class ActivityMonitor
     ];
 
     protected $output;
+    protected $config;
+    protected $api;
 
     /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param OutputInterface $output
+     * @param Config $config
+     * @param Api $api
      */
-    public function __construct(OutputInterface $output)
+    public function __construct(OutputInterface $output, Config $config, Api $api)
     {
         $this->output = $output;
+        $this->config = $config;
+        $this->api = $api;
     }
 
     /**
@@ -57,64 +65,167 @@ class ActivityMonitor
     /**
      * Wait for a single activity to complete, and display the log continuously.
      *
-     * @param Activity    $activity The activity.
-     * @param string|null $success  A message to show on success.
-     * @param string|null $failure  A message to show on failure.
+     * @param Activity $activity The activity.
+     * @param int $pollInterval The interval between refreshing the activity (seconds).
+     * @param bool|string $timestamps Whether to display timestamps (or pass in a date format).
+     * @param bool $context Whether to add a context message.
+     * @param OutputInterface|null $logOutput The output object for log messages (defaults to stderr).
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $success = null, $failure = null)
+    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null)
     {
         $stdErr = $this->getStdErr();
+        $logOutput = $logOutput ?: $stdErr;
 
-        $stdErr->writeln(sprintf(
-            'Waiting for the activity <info>%s</info> (%s):',
-            $activity->id,
-            self::getFormattedDescription($activity)
-        ));
+        if ($context) {
+            $stdErr->writeln(sprintf(
+                'Waiting for the activity <info>%s</info> (%s):',
+                $activity->id,
+                self::getFormattedDescription($activity)
+            ));
+            $stdErr->writeln('');
+        }
 
         // The progress bar will show elapsed time and the activity's state.
         $bar = $this->newProgressBar($stdErr);
-        $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-            return $this->formatState($activity->state);
+        $overrideState = '';
+        $bar->setPlaceholderFormatterDefinition('state', function () use ($activity, &$overrideState) {
+            return $this->formatState($overrideState ?: $activity->state);
         });
-        $bar->setFormat('  [%bar%] %elapsed:6s% (%state%)');
+        $startTime = $this->getStart($activity) ?: time();
+        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
+            return Helper::formatTime(time() - $startTime);
+        });
+        $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
         $bar->start();
 
-        // Wait for the activity to complete.
-        $activity->wait(
-            // Advance the progress bar whenever the activity is polled.
-            function () use ($bar) {
-                $bar->advance();
-            },
-            // Display new log output when it is available.
-            function ($log) use ($stdErr, $bar) {
-                // Clear the progress bar and ensure the current line is flushed.
-                $bar->clear();
-                $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
+        $logStream = $this->getLogStream($activity);
+        $bar->advance();
 
-                // Display the new log output.
-                $stdErr->write($this->indent($log));
-
-                // Display the progress bar again.
-                $bar->advance();
+        // Read the log while waiting for the activity to complete.
+        $lastRefresh = microtime(true);
+        $buffer = '';
+        while (!feof($logStream) || !$activity->isComplete()) {
+            // If $pollInterval has passed, or if there is nothing else left
+            // to do, then refresh the activity.
+            if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
+                $activity->refresh();
+                $overrideState = '';
+                $lastRefresh = microtime(true);
             }
-        );
+
+            // Update the progress bar.
+            $bar->advance();
+
+            // Wait to see if a read will not block the stream, for up to .2
+            // seconds.
+            if (!$this->canRead($logStream, 200000)) {
+                continue;
+            }
+
+            // Parse the log.
+            $items = $this->parseLog($logStream, $buffer);
+            if (empty($items)) {
+                continue;
+            }
+
+            // If there is log output, assume the activity must be in progress.
+            if ($activity->state === Activity::STATE_PENDING) {
+                $overrideState = Activity::STATE_IN_PROGRESS;
+            }
+
+            // Format log items.
+            $formatted = $this->formatLog($items, $timestamps);
+
+            // Clear the progress bar and ensure the current line is flushed.
+            $bar->clear();
+            $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
+
+            // Display the new log output.
+            $logOutput->write($formatted);
+
+            // Display the progress bar again.
+            $bar->advance();
+        }
         $bar->finish();
         $stdErr->writeln('');
 
         // Display the success or failure messages.
         switch ($activity['result']) {
             case Activity::RESULT_SUCCESS:
-                $stdErr->writeln($success ?: "Activity <info>{$activity->id}</info> succeeded");
+                $stdErr->writeln("Activity <info>{$activity->id}</info> succeeded");
                 return true;
 
             case Activity::RESULT_FAILURE:
-                $stdErr->writeln($failure ?: "Activity <error>{$activity->id}</error> failed");
+                $stdErr->writeln("Activity <error>{$activity->id}</error> failed");
                 return false;
         }
 
         return false;
+    }
+
+    /**
+     * Reads the log stream and returns LogItem objects.
+     *
+     * @param resource $stream
+     *   The stream.
+     * @param string   &$buffer
+     *   A string where a buffer can be stored between stream updates.
+     *
+     * @return LogItem[]
+     */
+    private function parseLog($stream, &$buffer) {
+        $buffer .= stream_get_contents($stream);
+        $lastNewline = strrpos($buffer, "\n");
+        if ($lastNewline === false) {
+            return [];
+        }
+        $content = substr($buffer, 0, $lastNewline + 1);
+        $buffer = substr($buffer, $lastNewline + 1);
+
+        return LogItem::multipleFromJsonStream($content);
+    }
+
+    /**
+     * Waits to see if a stream can be read (if the read will not block).
+     *
+     * @param resource $stream  The stream.
+     * @param int      $microseconds A timeout in microseconds.
+     *
+     * @return bool
+     */
+    private function canRead($stream, $microseconds) {
+        $readSet = [$stream];
+        $ignore = [];
+
+        return (bool) stream_select($readSet, $ignore, $ignore, 0, $microseconds);
+    }
+
+    /**
+     * Formats log items for display.
+     *
+     * @param LogItem[]   $items
+     *   The log items.
+     * @param bool|string $timestamps
+     *   False for no timestamps, or a string date format or true to display timestamps
+     *
+     * @return string
+     */
+    public function formatLog(array $items, $timestamps = false) {
+        $timestampFormat = false;
+        if ($timestamps !== false) {
+            $timestampFormat = $timestamps ?: $this->config->getWithDefault('application.date_format', 'Y-m-d H:i:s');
+        }
+        $formatItem = function (LogItem $item) use ($timestampFormat) {
+            if ($timestampFormat !== false) {
+                return '[' . $item->getTime()->format($timestampFormat) . '] '. $item->getMessage();
+            }
+
+            return $item->getMessage();
+        };
+
+        return implode('', array_map($formatItem, $items));
     }
 
     /**
@@ -180,7 +291,7 @@ class ActivityMonitor
             // which are not contained in this list must be refreshed
             // individually.
             $projectActivities = $project->getActivities(0, null, $mostRecentTimestamp ?: null);
-            foreach ($activities as $activity) {
+            foreach ($activities as &$activity) {
                 $refreshed = false;
                 foreach ($projectActivities as $projectActivity) {
                     if ($projectActivity->id === $activity->id) {
@@ -219,7 +330,7 @@ class ActivityMonitor
                     // If the activity failed, show the complete log.
                     $stdErr->writeln('  Description: ' . $description);
                     $stdErr->writeln('  Log:');
-                    $stdErr->writeln($this->indent($activity->log));
+                    $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                     break;
             }
         }
@@ -249,7 +360,7 @@ class ActivityMonitor
      */
     public static function formatResult($result, $decorate = true)
     {
-        $name = isset(self::$stateNames[$result]) ? self::$stateNames[$result] : $result;
+        $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
@@ -300,5 +411,32 @@ class ActivityMonitor
         $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
 
         return $value;
+    }
+
+    /**
+     * @param Activity $activity
+     *
+     * @return false|int
+     */
+    private function getStart(Activity $activity) {
+        return !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
+    }
+
+    /**
+     * Returns the activity log as a PHP stream resource.
+     *
+     * @param Activity $activity
+     *
+     * @return resource
+     */
+    private function getLogStream(Activity $activity) {
+        $url = $activity->getLink('log');
+        $stream = fopen($url, 'r', false, $this->api->getStreamContext());
+        if ($stream === false) {
+            throw new \RuntimeException('Failed to open stream: ' . $url);
+        }
+        stream_set_blocking($stream, 0);
+
+        return $stream;
     }
 }

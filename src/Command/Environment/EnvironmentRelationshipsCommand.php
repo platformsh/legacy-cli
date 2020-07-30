@@ -33,18 +33,24 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-
-        $app = $this->selectApp($input);
-        $environment = $this->getSelectedEnvironment();
-
-        $sshUrl = $environment->getSshUrl($app);
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
         $relationshipsService = $this->getService('relationships');
-        $value = $relationshipsService->getRelationships($sshUrl, $input->getOption('refresh'));
+        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+
+        $relationships = $relationshipsService->getRelationships($host, $input->getOption('refresh'));
+
+        foreach ($relationships as $name => $relationship) {
+            foreach ($relationship as $index => $instance) {
+                if (!isset($instance['url'])) {
+                    $relationships[$name][$index]['url'] = $relationshipsService->buildUrl($instance);
+                }
+            }
+        }
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $formatter->displayData($output, $value, $input->getOption('property'));
+        $formatter->displayData($output, $relationships, $input->getOption('property'));
+
+        return 0;
     }
 }

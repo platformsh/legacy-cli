@@ -34,16 +34,6 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test FilesystemHelper::getHomeDirectory().
-     */
-    public function testGetHomeDirectory()
-    {
-        $homeDir = $this->fs->getHomeDirectory();
-        $this->assertNotEmpty($homeDir, 'Home directory returned');
-        $this->assertNotEmpty(realpath($homeDir), 'Home directory exists');
-    }
-
-    /**
      * Test FilesystemHelper::remove() on directories.
      */
     public function testRemoveDir()
@@ -143,7 +133,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
 
-        // Test with a blacklist.
+        // Test with a list of excluded files.
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
         $this->fs->symlinkAll($testSource, $testDestination, true, false, ['test-file']);

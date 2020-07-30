@@ -7,8 +7,14 @@ use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Local\BuildFlavor\BuildFlavorInterface;
 use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Util\YamlParser;
-use Symfony\Component\Finder\Finder;
 
+/**
+ * Represents an application stored locally inside a source directory.
+ *
+ * Normally instantiated via ApplicationFinder::findApplications().
+ *
+ * @see ApplicationFinder::findApplications()
+ */
 class LocalApplication
 {
 
@@ -24,8 +30,9 @@ class LocalApplication
      * @param string      $appRoot
      * @param Config|null $cliConfig
      * @param string|null $sourceDir
+     * @param AppConfig|null $appConfig
      */
-    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null)
+    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null, AppConfig $appConfig = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
@@ -34,6 +41,7 @@ class LocalApplication
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
         $this->mount = new Mount();
+        $this->config = $appConfig;
     }
 
     /**
@@ -44,6 +52,18 @@ class LocalApplication
     public function getId()
     {
         return $this->getName() ?: $this->getPath() ?: 'default';
+    }
+
+    /**
+     * Returns the type of the app.
+     *
+     * @return string|null
+     */
+    public function getType()
+    {
+        $config = $this->getConfig();
+
+        return isset($config['type']) ? $config['type'] : null;
     }
 
     /**
@@ -122,19 +142,10 @@ class LocalApplication
     }
 
     /**
-     * Override the application config.
-     *
-     * @param array $config
-     */
-    public function setConfig(array $config)
-    {
-        $this->config = new AppConfig($config);
-    }
-
-    /**
      * Get the application's configuration, parsed from its YAML definition.
      *
      * @return array
+     * @throws \Exception
      */
     public function getConfig()
     {
@@ -144,19 +155,20 @@ class LocalApplication
     /**
      * Get the application's configuration as an object.
      *
-     * @throws \Exception if the configuration file cannot be read
-     * @throws InvalidConfigException if config is invalid
+     * @throws InvalidConfigException if config is not found or invalid
+     * @throws \Symfony\Component\Yaml\Exception\ParseException if config cannot be parsed
+     * @throws \Exception if the config file cannot be read
      *
      * @return AppConfig
      */
     private function getConfigObject()
     {
         if (!isset($this->config)) {
-            $config = [];
             $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
-            if (file_exists($file)) {
-                $config = (array) (new YamlParser())->parseFile($file);
+            if (!file_exists($file)) {
+                throw new InvalidConfigException('Configuration file not found: ' . $file);
             }
+            $config = (array) (new YamlParser())->parseFile($file);
             $this->config = new AppConfig($config);
         }
 
@@ -170,7 +182,11 @@ class LocalApplication
      */
     public function getSharedFileMounts()
     {
-        return $this->mount->getSharedFileMounts($this->getConfig());
+        $config = $this->getConfig();
+
+        return !empty($config['mounts'])
+            ? $this->mount->getSharedFileMounts($config['mounts'])
+            : [];
     }
 
     /**
@@ -210,60 +226,6 @@ class LocalApplication
             }
         }
         throw new InvalidConfigException('Build flavor not found: ' . $key);
-    }
-
-    /**
-     * Get a list of applications in a directory.
-     *
-     * @param string $directory
-     *     The absolute path to a directory.
-     * @param Config|null $config
-     *     CLI configuration.
-     *
-     * @return LocalApplication[]
-     */
-    public static function getApplications($directory, Config $config = null)
-    {
-        // Finder can be extremely slow with a deep directory structure. The
-        // search depth is limited to safeguard against this.
-        $finder = new Finder();
-        $config = $config ?: new Config();
-        $finder->in($directory)
-               ->ignoreDotFiles(false)
-               ->name($config->get('service.app_config_file'))
-               ->ignoreUnreadableDirs()
-               ->exclude([
-                   '.idea',
-                   $config->get('local.local_dir'),
-                   'builds',
-                   'node_modules',
-                   'vendor',
-               ])
-               ->depth('< 5');
-
-        /** @var \Platformsh\Cli\Local\LocalApplication[] $applications */
-        $applications = [];
-
-        /** @var \Symfony\Component\Finder\SplFileInfo $file */
-        foreach ($finder as $file) {
-            $appRoot = dirname($file->getRealPath());
-            $applications[$appRoot] = new LocalApplication($appRoot, $config, $directory);
-        }
-
-        // If there are no application config files found, treat the
-        // directory as a single application.
-        if (empty($applications)) {
-            $applications[$directory] = new LocalApplication($directory, $config, $directory);
-        }
-
-        if (count($applications) === 1) {
-            foreach ($applications as $application) {
-                $application->setSingle(true);
-                break;
-            }
-        }
-
-        return $applications;
     }
 
     /**

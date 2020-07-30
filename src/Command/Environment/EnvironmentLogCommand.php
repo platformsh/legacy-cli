@@ -25,7 +25,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
         $this->addProjectOption()
              ->addEnvironmentOption()
-             ->addAppOption();
+             ->addRemoteContainerOptions();
         $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
         $this->addExample('Read the deploy log', 'deploy');
@@ -41,9 +41,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
-        $appName = $this->selectApp($input);
-        $sshUrl = $selectedEnvironment->getSshUrl($appName);
+        $container = $this->selectRemoteContainer($input);
+        $sshUrl = $container->getSshUrl();
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');

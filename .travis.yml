@@ -1,35 +1,38 @@
 language: php
 dist: trusty
 
-php: nightly
+php: '7.4'
 env: TEST_SCRIPT=scripts/test/unit.sh
 
 matrix:
   include:
-    - php: 5.6
+    - php: '5.6'
       env: TEST_SCRIPT=scripts/test/security.sh
-    - php: 7.2
+    - php: '7.4'
       env: TEST_SCRIPT=scripts/test/security.sh
 
-    - php: 5.6
+    - php: '5.6'
       env: TEST_SCRIPT=scripts/test/installer.sh
 
-    - php: 5.6
+    - php: '5.6'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: 7.0
+    - php: '7.0'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: 7.1
+    - php: '7.1'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: 7.2
+    - php: '7.2'
       env: TEST_SCRIPT=scripts/test/unit.sh
-    - php: nightly
+    - php: '7.3'
+      env: TEST_SCRIPT=scripts/test/unit.sh
+    - php: '7.4'
       env: TEST_SCRIPT=scripts/test/unit.sh
 
-    - php: 7.2
+    - php: '7.4'
+      env: TEST_SCRIPT=scripts/test/build-and-install.sh
+
+    # The "slow" test doesn't work on 7.4 yet because of Drush archive errors.
+    - php: '7.3'
       env: TEST_SCRIPT=scripts/test/slow.sh
-
-  allow_failures:
-    - php: nightly
 
   fast_finish: true
 
@@ -39,6 +42,8 @@ cache:
     - $HOME/.drush/cache
 
 install:
-  - composer install --no-interaction
+  # No scripts on Travis, because Box isn't needed, and anyway it can't be
+  # installed under PHP <7.1.
+  - composer install --no-interaction --no-scripts
 
 script: "$TEST_SCRIPT"

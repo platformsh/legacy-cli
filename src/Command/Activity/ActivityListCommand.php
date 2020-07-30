@@ -19,7 +19,7 @@ class ActivityListCommand extends CommandBase
     {
         $this
             ->setName('activity:list')
-            ->setAliases(['activities'])
+            ->setAliases(['activities', 'act'])
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
@@ -113,6 +113,20 @@ class ActivityListCommand extends CommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');
+
+            $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
+            $maybeMoreAvailable = count($activities) === $max;
+            if ($maybeMoreAvailable) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'More activities may be available.'
+                    . ' To display older activities, increase <info>--limit</info> above %d, or set <info>--start</info> to a date in the past.'
+                    . ' For more information, run: <info>%s activity:list -h</info>',
+                    $max,
+                    $executable
+                ));
+            }
+
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for an activity, run: <info>%s activity:log [id]</info>',

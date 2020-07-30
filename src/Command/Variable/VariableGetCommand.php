@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -36,18 +37,20 @@ class VariableGetCommand extends VariableCommandBase
         $this->validateInput($input, $level === self::LEVEL_PROJECT);
 
         $name = $input->getArgument('name');
-        if (!$name) {
+        if ($name) {
+            $variable = $this->getExistingVariable($name, $level);
+            if (!$variable) {
+                return 1;
+            }
+        } elseif ($input->isInteractive()) {
+                $variable = $this->chooseVariable($level);
+        } else {
             return $this->runOtherCommand('variable:list', array_filter([
                 '--level' => $level,
                 '--project' => $this->getSelectedProject()->id,
                 '--environment' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
                 '--format' => $input->getOption('format'),
             ]));
-        }
-
-        $variable = $this->getExistingVariable($name, $level);
-        if (!$variable) {
-            return 1;
         }
 
         if ($variable instanceof EnvironmentLevelVariable && !$variable->is_enabled) {
@@ -97,5 +100,30 @@ class VariableGetCommand extends VariableCommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * @param string|null $level
+     *
+     * @return ProjectLevelVariable|EnvironmentLevelVariable
+     */
+    private function chooseVariable($level) {
+        $variables = [];
+        if ($level === 'project' || $level === null) {
+            $variables = array_merge($variables, $this->getSelectedProject()->getVariables());
+        }
+        if ($level === 'environment' || $level === null) {
+            $variables = array_merge($variables, $this->getSelectedEnvironment()->getVariables());
+        }
+        $options = [];
+        foreach ($variables as $key => $variable) {
+            $options[$key] = $variable->name;
+        }
+        asort($options);
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $key = $questionHelper->choose($options, 'Enter a number to choose a variable:');
+
+        return $variables[$key];
     }
 }

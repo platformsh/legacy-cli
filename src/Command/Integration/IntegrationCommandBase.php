@@ -5,10 +5,12 @@ use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
+use Platformsh\Client\Model\Project;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
 use Platformsh\ConsoleForm\Field\Field;
+use Platformsh\ConsoleForm\Field\FileField;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
@@ -23,6 +25,47 @@ abstract class IntegrationCommandBase extends CommandBase
     private $bitbucketAccessTokens = [];
 
     /**
+     * @param Project $project
+     * @param string|null $id
+     * @param bool $interactive
+     *
+     * @return Integration|false
+     */
+    protected function selectIntegration(Project $project, $id, $interactive) {
+        if (!$id && !$interactive) {
+            $this->stdErr->writeln('An integration ID is required.');
+
+            return false;
+        } elseif (!$id) {
+            $integrations = $project->getIntegrations();
+            if (empty($integrations)) {
+                $this->stdErr->writeln('No integrations found.');
+
+                return false;
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $choices = [];
+            foreach ($integrations as $integration) {
+                $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
+            }
+            $id = $questionHelper->choose($choices, 'Enter a number to choose an integration:');
+        }
+
+        $integration = $project->getIntegration($id);
+        if (!$integration) {
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return false;
+            }
+        }
+
+        return $integration;
+    }
+
+    /**
      * @return Form
      */
     protected function getForm()
@@ -32,6 +75,37 @@ abstract class IntegrationCommandBase extends CommandBase
         }
 
         return $this->form;
+    }
+
+    /**
+     * Performs extra logic on values after the form is complete.
+     *
+     * @param array            $values
+     * @param Integration|null $integration
+     *
+     * @return array
+     */
+    protected function postProcessValues(array $values, Integration $integration = null)
+    {
+        // Find the integration type.
+        $type = isset($values['type'])
+            ? $values['type']
+            : ($integration !== null ? $integration->type : null);
+
+        // Process Bitbucket Server values.
+        if ($type === 'bitbucket_server') {
+            // Translate base_url into url.
+            if (isset($values['base_url'])) {
+                $values['url'] = $values['base_url'];
+                unset($values['base_url']);
+            }
+            // Split bitbucket_server "repository" into project/repository.
+            if (isset($values['repository']) && strpos($values['repository'], '/', 1) !== false) {
+                list($values['project'], $values['repository']) = explode('/', $values['repository'], 2);
+            }
+        }
+
+        return $values;
     }
 
     /**
@@ -46,6 +120,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'questionLine' => '',
                 'options' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                     'gitlab',
                     'hipchat',
@@ -53,7 +128,22 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                     'health.pagerduty',
                     'health.slack',
+                    'health.webhook',
+                    'script',
                 ],
+            ]),
+            'base_url' => new UrlField('Base URL', [
+                'conditions' => ['type' => [
+                    'gitlab',
+                    'bitbucket_server',
+                ]],
+                'description' => 'The base URL of the server installation',
+            ]),
+            'username' => new Field('Username', [
+                'conditions' =>  ['type' => [
+                    'bitbucket_server',
+                ]],
+                'description' => 'The Bitbucket Server username',
             ]),
             'token' => new Field('Token', [
                 'conditions' => ['type' => [
@@ -61,8 +151,9 @@ abstract class IntegrationCommandBase extends CommandBase
                     'gitlab',
                     'hipchat',
                     'health.slack',
+                    'bitbucket_server',
                 ]],
-                'description' => 'An OAuth token for the integration',
+                'description' => 'An access token for the integration',
             ]),
             'key' => new Field('OAuth consumer key', [
                 'optionName' => 'key',
@@ -80,18 +171,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'A Bitbucket OAuth consumer secret',
                 'valueKeys' => ['app_credentials', 'secret'],
             ]),
-            'base_url' => new UrlField('Base URL', [
-                'conditions' => ['type' => [
-                    'gitlab',
-                ]],
-                'description' => 'The base URL of the GitLab installation',
-            ]),
             'project' => new Field('Project', [
-                'optionName' => 'gitlab-project',
+                'optionName' => 'server-project',
                 'conditions' => ['type' => [
                     'gitlab',
                 ]],
-                'description' => 'The GitLab project (e.g. \'namespace/repo\')',
+                'description' => 'The project (e.g. \'namespace/repo\')',
                 'validator' => function ($string) {
                     return strpos($string, '/', 1) !== false;
                 },
@@ -99,10 +184,11 @@ abstract class IntegrationCommandBase extends CommandBase
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                 ]],
-                'description' => 'The repository to track (e.g. \'user/repo\')',
-                'questionLine' => 'The repository (e.g. \'user/repo\')',
+                'description' => 'The repository to track (e.g. \'owner/repository\')',
+                'questionLine' => 'The repository (e.g. \'owner/repository\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -124,9 +210,18 @@ abstract class IntegrationCommandBase extends CommandBase
             'build_pull_requests' => new BooleanField('Build pull requests', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                 ]],
                 'description' => 'Build every pull request as an environment',
+            ]),
+            'build_draft_pull_requests' => new BooleanField('Build draft pull requests', [
+                'conditions' => [
+                    'type' => [
+                        'github',
+                    ],
+                    'build_pull_requests' => true,
+                ],
             ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
               'conditions' => [
@@ -137,6 +232,16 @@ abstract class IntegrationCommandBase extends CommandBase
               ],
               'default' => false,
               'description' => 'Build pull requests based on their post-merge state',
+            ]),
+            'build_wip_merge_requests' => new BooleanField('Build WIP merge requests', [
+                'conditions' => [
+                    'type' => [
+                        'gitlab',
+                    ],
+                    'build_merge_requests' => true,
+                ],
+                'description' => 'GitLab: build WIP merge requests',
+                'questionLine' => 'Build WIP (work in progress) merge requests',
             ]),
             'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
                 'optionName' => 'merge-requests-clone-parent-data',
@@ -154,6 +259,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => [
                     'type' => [
                         'github',
+                        'bitbucket_server',
                     ],
                     'build_pull_requests' => true,
                 ],
@@ -173,6 +279,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'fetch_branches' => new BooleanField('Fetch branches', [
                 'conditions' => ['type' => [
                     'bitbucket',
+                    'bitbucket_server',
                     'github',
                     'gitlab',
                 ]],
@@ -182,6 +289,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => [
                     'type' => [
                         'bitbucket',
+                        'bitbucket_server',
                         'github',
                         'gitlab',
                     ],
@@ -199,27 +307,54 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
+                    'health.webhook',
                     'webhook',
                 ]],
-                'description' => 'Generic webhook: a URL to receive JSON data',
+                'description' => 'Webhook: a URL to receive JSON data',
                 'questionLine' => 'What is the webhook URL (to which JSON data will be posted)?',
             ]),
-            'events' => new ArrayField('Events to report', [
+            'shared_key' => new Field('Shared key', [
+                'conditions' => ['type' => [
+                    'health.webhook',
+                ]],
+                'description' => 'Webhook: the JWS shared secret key',
+                'questionLine' => 'Enter the JWS shared secret key, for validating webhook requests',
+                'required' => false,
+            ]),
+            'script' => new FileField('Script file', [
+                'conditions' => ['type' => [
+                    'script',
+                ]],
+                'optionName' => 'file',
+                'allowedExtensions' => ['.js', ''],
+                'contentsAsValue' => true,
+                'description' => 'The name of a local file that contains the script to upload',
+                'normalizer' => function ($value) {
+                    if (getenv('HOME') && strpos($value, '~/') === 0) {
+                        return getenv('HOME') . '/' . substr($value, 2);
+                    }
+
+                    return $value;
+                },
+            ]),
+            'events' => new ArrayField('Events', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
+                    'script',
                 ]],
                 'default' => ['*'],
-                'description' => 'A list of events to report, e.g. environment.push',
+                'description' => 'A list of events to act on, e.g. environment.push',
                 'optionName' => 'events',
             ]),
-            'states' => new ArrayField('States to report', [
+            'states' => new ArrayField('States', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
+                    'script',
                 ]],
                 'default' => ['complete'],
-                'description' => 'A list of states to report, e.g. pending, in_progress, complete',
+                'description' => 'A list of states to act on, e.g. pending, in_progress, complete',
                 'optionName' => 'states',
             ]),
             'environments' => new ArrayField('Included environments', [
@@ -244,8 +379,9 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'health.email',
                 ]],
-                'description' => 'The From address for alert emails',
+                'description' => '[Optional] Custom From address for alert emails',
                 'default' => $this->config()->getWithDefault('service.default_from_address', null),
+                'required' => false,
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
@@ -254,6 +390,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The recipient email address(es)',
                 'validator' => function ($emails) {
                     $invalid = array_filter($emails, function ($email) {
+                        // The special placeholders #viewers and #admins are
+                        // valid recipients.
+                        if (in_array($email, ['#viewers', '#admins'])) {
+                            return false;
+                        }
+
                         return !filter_var($email, FILTER_VALIDATE_EMAIL);
                     });
                     if (count($invalid)) {
@@ -327,7 +469,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 return;
             }
             $accessToken = $this->getBitbucketAccessToken($appCredentials);
-            $hooksApiUrl = sprintf('https://api.bitbucket.org/2.0/repositories/%s/hooks', rawurlencode($integration->getProperty('repository')));
+            $hooksApiUrl = sprintf('https://api.bitbucket.org/2.0/repositories/%s/hooks', $integration->getProperty('repository'));
             $requestOptions = [
                 'auth' => false,
                 'headers' => [
@@ -359,6 +501,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
         $client = $this->api()->getHttpClient();
 
+        $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
             'Checking webhook configuration on the repository: <info>%s</info>',
             $repoName
@@ -601,5 +744,31 @@ abstract class IntegrationCommandBase extends CommandBase
                 $output->writeln($error);
             }
         }
+    }
+
+    /**
+     * Updates the Git remote URL for the current project.
+     *
+     * @param string $oldGitUrl
+     */
+    protected function updateGitUrl($oldGitUrl)
+    {
+        if (!$this->selectedProjectIsCurrent()) {
+            return;
+        }
+        $project = $this->getCurrentProject();
+        $projectRoot = $this->getProjectRoot();
+        if (!$project || !$projectRoot) {
+            return;
+        }
+        $project->refresh();
+        $newGitUrl = $project->getGitUrl();
+        if ($newGitUrl === $oldGitUrl) {
+            return;
+        }
+        $this->stdErr->writeln(sprintf('Updating Git remote URL from %s to %s', $oldGitUrl, $newGitUrl));
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local.project');
+        $localProject->ensureGitRemote($projectRoot, $newGitUrl);
     }
 }

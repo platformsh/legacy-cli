@@ -1,0 +1,40 @@
+name: app
+type: php:7.3
+disk: 128
+
+hooks:
+  build: |
+    set -e
+    mkdir -p web
+
+    export version=dev-"$PLATFORM_TREE_ID"
+
+    composer bin all install
+    ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$version" --output web/platform.phar
+
+    cat << EOF > .environment
+    alias platform="php \${PLATFORM_APP_DIR}/web/platform.phar"
+    export CLI_URL_PATH=platform.phar
+    export CLI_BUILD_DATE="$(date)"
+    export CLI_VERSION="$version"
+    EOF
+
+    mv dist/dev-build-index.php web/index.php
+    mv dist/installer.php web/installer
+    export sha256="$(sha256sum web/platform.phar | cut -f1 -d' ')"
+    cat <<EOF > web/manifest.json
+    [
+      {
+        "version": "$version",
+        "sha256": "$sha256",
+        "name": "platform.phar",
+        "url": "platform.phar"
+      }
+    ]
+    EOF
+
+web:
+  locations:
+    '/':
+      root: web
+      index: ['index.php']

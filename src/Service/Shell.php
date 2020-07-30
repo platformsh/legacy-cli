@@ -70,12 +70,13 @@ class Shell
     /**
      * Execute a command.
      *
-     * @param array       $args
-     * @param string|null $dir
-     * @param bool        $mustRun
-     * @param bool        $quiet
-     * @param array       $env
-     * @param int|null    $timeout
+     * @param string|array $args
+     * @param string|null  $dir
+     * @param bool         $mustRun
+     * @param bool         $quiet
+     * @param array        $env
+     * @param int|null     $timeout
+     * @param string|null  $input
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
@@ -84,9 +85,9 @@ class Shell
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
+    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
     {
-        $process = new Process($args, null, null, null, $timeout);
+        $process = new Process($args, null, null, $input, $timeout);
 
         // Avoid adding 'exec' to every command. It is not needed in this
         // context as we do not need to send signals to the process. Also it
@@ -104,14 +105,28 @@ class Shell
             OutputInterface::VERBOSITY_VERBOSE
         );
 
+        $blankLine = false;
+
+        if (!empty($input) && is_string($input)) {
+            $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input), OutputInterface::VERBOSITY_VERBOSE);
+            $blankLine = true;
+        }
+
         if (!empty($env)) {
             $this->showEnvMessage($env);
+            $blankLine = true;
             $process->setEnv($env + $this->getParentEnv());
         }
 
         if ($dir && is_dir($dir)) {
             $process->setWorkingDirectory($dir);
             $this->showWorkingDirMessage($dir);
+            $blankLine = true;
+        }
+
+        // Blank line just to aid debugging.
+        if ($blankLine) {
+            $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
         }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
@@ -160,8 +175,7 @@ class Shell
             return $_ENV;
         }
 
-        // If $_ENV is empty, then we can only use a whitelist of all the
-        // variables that we might want to use.
+        // If $_ENV is empty, then guess all the variables that we might want to use.
         $candidates = [
             'TERM',
             'TERM_SESSION_ID',

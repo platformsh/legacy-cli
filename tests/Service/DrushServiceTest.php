@@ -1,9 +1,11 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
@@ -29,7 +31,8 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->drush = new Drush();
+        $config = (new Config())->withOverrides(['service.app_config_file' => '_platform.app.yaml']);
+        $this->drush = new Drush($config);
 
         // Set up a dummy project with a remote environment.
         $this->project = new Project([
@@ -75,8 +78,8 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local', $aliases);
 
         // Check that YAML aliases exist.
-        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.alias.yml');
-        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.alias.yml'));
+        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
+        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
         $this->assertArrayHasKey('master', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
     }
@@ -145,8 +148,8 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local--drupal2', $aliases);
 
         // Check that YAML aliases exist.
-        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.alias.yml');
-        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.alias.yml'));
+        $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
+        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
         $this->assertArrayHasKey('master--drupal1', $aliases);
         $this->assertArrayHasKey('_local--drupal1', $aliases);
         $this->assertArrayHasKey('master--drupal2', $aliases);

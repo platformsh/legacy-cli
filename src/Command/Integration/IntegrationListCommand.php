@@ -49,12 +49,14 @@ class IntegrationListCommand extends IntegrationCommandBase
 
         $table->render($rows, $header);
 
-        $executable = $this->config()->get('application.executable');
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Add a new integration with: <info>' . $executable . ' integration:add</info>');
-        $this->stdErr->writeln('Delete an integration with: <info>' . $executable . ' integration:delete [id]</info>');
+        if (!$table->formatIsMachineReadable()) {
+            $executable = $this->config()->get('application.executable');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Add a new integration with: <info>' . $executable . ' integration:add</info>');
+            $this->stdErr->writeln('Delete an integration with: <info>' . $executable . ' integration:delete [id]</info>');
+        }
 
         return 0;
     }
@@ -78,6 +80,14 @@ class IntegrationListCommand extends IntegrationCommandBase
                 }
                 break;
 
+            case 'bitbucket_server':
+                $summary = sprintf('Project: %s', $details['project']);
+                $summary .= "\n" . sprintf('Base URL: %s', $details['url']);
+                if ($integration->hasLink('#hook')) {
+                    $summary .= "\n" . sprintf('Hook URL: %s', $integration->getLink('#hook'));
+                }
+                break;
+
             case 'gitlab':
                 $summary = sprintf('Project: %s', $details['project']);
                 $summary .= "\n" . sprintf('Base URL: %s', $details['base_url']);
@@ -95,7 +105,10 @@ class IntegrationListCommand extends IntegrationCommandBase
                 break;
 
             case 'health.email':
-                $summary = sprintf("From: %s\nTo: %s", $details['from_address'], implode(', ', $details['recipients']));
+                $summary = 'To: ' . implode(', ', $details['recipients']);
+                if (!empty($details['from_address'])) {
+                    $summary = 'From: ' . $details['from_address'] . "\n" . $summary;
+                }
                 break;
 
             case 'health.slack':
@@ -104,6 +117,10 @@ class IntegrationListCommand extends IntegrationCommandBase
 
             case 'health.pagerduty':
                 $summary = sprintf('Routing key: %s', $details['routing_key']);
+                break;
+
+            case 'script':
+                $summary = sprintf("Script:\n%s", trim(substr($details['script'], 0, 300)));
                 break;
 
             default:

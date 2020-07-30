@@ -2,20 +2,29 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\SshCert\Certifier;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;
+    protected $ssh;
+    protected $certifier;
+    protected $sshConfig;
+    protected $sshKey;
 
-    public function __construct(InputInterface $input, OutputInterface $output)
+    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
     {
         $this->input = $input;
         $this->output = $output;
+        $this->sshKey = $sshKey;
+        $this->certifier = $certifier;
+        $this->sshConfig = $sshConfig;
     }
 
     /**
@@ -39,6 +48,13 @@ class Ssh implements InputConfiguringInterface
 
         $args = [];
         foreach ($options as $name => $value) {
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    $args[] = '-o';
+                    $args[] = $name . ' ' . $item;
+                }
+                continue;
+            }
             $args[] = '-o';
             $args[] = $name . ' ' . $value;
         }
@@ -63,7 +79,36 @@ class Ssh implements InputConfiguringInterface
                 throw new \InvalidArgumentException('Identity file not found: ' . $file);
             }
             $options['IdentitiesOnly'] = 'yes';
-            $options['IdentityFile'] = $file;
+            $options['IdentityFile'] = [$file];
+        } else {
+            // Inject the SSH certificate.
+            $sshCert = $this->certifier->getExistingCertificate();
+            if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
+                if (!$sshCert || $sshCert->hasExpired()) {
+                    $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
+                    $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
+                    try {
+                        $sshCert = $this->certifier->generateCertificate();
+                        $stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
+                    } catch (\Exception $e) {
+                        $stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));
+                    }
+                }
+
+                if ($sshCert) {
+                    $options['CertificateFile'] = $sshCert->certificateFilename();
+                    $options['IdentityFile'] = [$sshCert->privateKeyFilename()];
+                    foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
+                        $options['IdentityFile'][] = $identityFile;
+                    }
+                }
+            }
+        }
+
+        if (empty($options['IdentitiesOnly'])
+            && ($sessionIdentityFile = $this->sshKey->selectIdentity())
+            && (empty($options['IdentityFile']) || !in_array($sessionIdentityFile, $options['IdentityFile'], true))) {
+            $options['IdentityFile'][] = $sessionIdentityFile;
         }
 
         if ($this->output->isDebug()) {
@@ -73,6 +118,9 @@ class Ssh implements InputConfiguringInterface
         } elseif ($this->output->isQuiet()) {
             $options['LogLevel'] = 'QUIET';
         }
+
+        // Ensure the session SSH config is up to date.
+        $this->sshConfig->configureSessionSsh();
 
         return $options;
     }

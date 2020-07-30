@@ -3,6 +3,8 @@ namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\EnvironmentAccess;
+use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
+use Platformsh\Client\Model\Invitation\Environment;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -20,16 +22,31 @@ class UserAddCommand extends CommandBase
     {
         $this
             ->setName('user:add')
-            ->setAliases(['user:update'])
-            ->setDescription('Add a user to the project, or set their role(s)')
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
-            ->addOption('role', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer').\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'.\nThe role can be abbreviated, e.g. 'master:c'.");
+            ->setDescription('Add a user to the project')
+            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
+
+        $this->addRoleOption();
         $this->addProjectOption();
         $this->addWaitOptions();
+
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
-        $this->addExample('Make Bob an admin on the "develop" and "stage" environments', 'bob@example.com -r develop:a,stage:a');
-        $this->addExample('Make Charlie a contributor on all existing environments', 'charlie@example.com -r %:c');
-        $this->addExample('Make Damien an admin on "master" and all (existing) environments starting with "pr-"', 'damien@example.com -r master:a -r pr-%:a');
+        $this->addExample('Add Bob as a viewer on the "master" environment, and a contributor on environments starting with "dev"', 'bob@example.com -r master:a -r dev%:c');
+        $this->addExample('Add Charlie as viewer on "master" and "staging"', 'charlie@example.com -r master:v -r staging:v');
+    }
+
+    /**
+     * Adds the --role (-r) option to the command.
+     */
+    protected function addRoleOption()
+    {
+        $this->addOption(
+            'role',
+            'r',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            "The user's project role ('admin' or 'viewer') or environment-specific role (e.g. 'master:contributor' or 'stage:viewer')."
+            . "\nThe character % can be used as a wildcard in the environment ID e.g. '%:viewer'."
+            . "\nThe role can be abbreviated, e.g. 'master:c'."
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -63,9 +80,6 @@ class UserAddCommand extends CommandBase
                     $choices[$account['email']] = $this->getUserLabel($access);
                 }
                 $email = $questionHelper->choose($choices, 'Enter a number to choose a user to update:');
-                if (count($choices) > 1) {
-                    $hasOutput = true;
-                }
             } else {
                 $question = new Question("Enter the user's email address: ");
                 $question->setValidator(function ($answer) {
@@ -239,20 +253,37 @@ class UserAddCommand extends CommandBase
         // Ask for confirmation.
         if ($existingProjectAccess) {
             if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
-
                 return 1;
             }
         } else {
             $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
             $this->stdErr->writeln('');
             if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
-
                 return 1;
             }
         }
+        $this->stdErr->writeln('');
 
-        // Make the required modifications on the project level: add the user,
-        // change their role, or do nothing.
+        // If the user does not already exist on the project, then use the Invitations API.
+        if (!$existingProjectAccess && $this->config()->getWithDefault('api.invitations', false)) {
+            $this->stdErr->writeln('Inviting the user to the project...');
+            $environments = [];
+            foreach ($desiredEnvironmentRoles as $id => $role) {
+                $environments[] = new Environment($id, $role);
+            }
+            try {
+                $project->inviteUserByEmail($email, $desiredProjectRole, $environments);
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('An invitation has been sent to <info>%s</info>', $email));
+            } catch (AlreadyInvitedException $e) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
+            }
+
+            return 0;
+        }
+
+        // Make the desired changes at the project level.
         if (!$existingProjectAccess) {
             $this->stdErr->writeln("Adding the user to the project");
             $result = $project->addUser($email, $desiredProjectRole);
@@ -282,24 +313,24 @@ class UserAddCommand extends CommandBase
                     } else {
                         continue;
                     }
-                } else {
-                    if ($access) {
-                        if ($access->role === $role) {
-                            continue;
-                        }
-                        $this->stdErr->writeln("Setting the user's role on the environment <info>$environmentId</info> to: $role");
-                        $result = $access->update(['role' => $role]);
-                    } else {
-                        $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                        $result = $environment->addUser($userId, $role);
+                } elseif ($access) {
+                    if ($access->role === $role) {
+                        continue;
                     }
+                    $this->stdErr->writeln("Setting the user's role on the environment <info>$environmentId</info> to: $role");
+                    $result = $access->update(['role' => $role]);
+                } else {
+                    $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
+                    $result = $environment->addUser($userId, $role);
                 }
                 $activities = array_merge($activities, $result->getActivities());
             }
         }
 
         // Wait for activities to complete.
-        if ($this->shouldWait($input)) {
+        if (!$activities) {
+            $this->redeployWarning();
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             if (!$activityMonitor->waitMultiple($activities, $project)) {

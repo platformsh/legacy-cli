@@ -10,6 +10,8 @@ class Listener
     private $file;
     private $localUrl;
     private $response;
+    private $codeChallenge;
+    private $prompt;
 
     public function __construct() {
         $required = [
@@ -17,6 +19,8 @@ class Listener
             'CLI_OAUTH_AUTH_URL',
             'CLI_OAUTH_CLIENT_ID',
             'CLI_OAUTH_FILE',
+            'CLI_OAUTH_CODE_CHALLENGE',
+            'CLI_OAUTH_PROMPT'
         ];
         if ($missing = array_diff($required, array_keys($_ENV))) {
             throw new \RuntimeException('Invalid environment, missing: ' . implode(', ', $missing));
@@ -25,6 +29,8 @@ class Listener
         $this->authUrl = $_ENV['CLI_OAUTH_AUTH_URL'];
         $this->clientId = $_ENV['CLI_OAUTH_CLIENT_ID'];
         $this->file = $_ENV['CLI_OAUTH_FILE'];
+        $this->prompt = $_ENV['CLI_OAUTH_PROMPT'];
+        $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
         $this->localUrl = $localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
     }
@@ -38,7 +44,10 @@ class Listener
             'redirect_uri' => $this->localUrl,
             'state' => $this->state,
             'client_id' => $this->clientId,
+            'prompt' => $this->prompt,
             'response_type' => 'code',
+            'code_challenge' => $this->codeChallenge,
+            'code_challenge_method' => 'S256',
         ], null, '&', PHP_QUERY_RFC3986);
     }
 
@@ -53,8 +62,12 @@ class Listener
                 $this->reportError('Invalid state parameter');
                 return;
             }
-            if (!file_put_contents($this->file, $_GET['code'], LOCK_EX)) {
-                $this->reportError('Failed to write authorization code to file');
+            if (isset($_GET['code_challenge']) && $_GET['code_challenge'] !== $this->codeChallenge) {
+                $this->reportError('Invalid returned code_challenge parameter');
+                return;
+            }
+            if (!$this->sendToTerminal(['code' => $_GET['code']])) {
+                $this->reportError('Failed to send authorization code back to terminal');
                 return;
             }
             $this->setRedirect($this->localUrl . '/?done');
@@ -65,13 +78,21 @@ class Listener
 
         // Show the final result page.
         if (array_key_exists('done', $_GET)) {
-            $this->response->content = '<p><strong>Successfully logged in.</strong></p>'
-                . '<p>You can return to the command line.</p>';
+            $this->response->content = '<h1>Successfully logged in</h1>'
+                . '<p>You can return to the command line</p>';
 
             return;
         }
 
-        // Redirect to login.
+        // Respond after an OAuth2 error.
+        if (isset($_GET['error'])) {
+            $message = isset($_GET['error_description']) ? $_GET['error_description'] : null;
+            $hint = isset($_GET['error_hint']) ? $_GET['error_hint'] : null;
+            $this->reportError($message, $_GET['error'], $hint);
+            return;
+        }
+
+        // In any other case: redirect to login.
         $url = $this->getOAuthUrl();
         $this->setRedirect($url);
         $this->response->content = '<p><a href="' . htmlspecialchars($url) .'">Log in</a>.</p>';
@@ -97,13 +118,40 @@ class Listener
     }
 
     /**
-     * @param string $message
+     * @param array $response
+     *
+     * @return bool
      */
-    private function reportError($message)
+    private function sendToTerminal(array $response)
+    {
+        return (bool) file_put_contents($this->file, json_encode($response), LOCK_EX);
+    }
+
+    /**
+     * @param string $message The error message.
+     * @param string|null $error An OAuth2 error type.
+     * @param string|null $hint An OAuth2 error hint.
+     */
+    private function reportError($message = null, $error = null, $hint = null)
     {
         $this->response->headers['Status'] = 401;
-        $this->response->content = '<p>An error occurred while trying to log in. Please try again.</p>'
-            . '<p>Error message: <code>' . htmlspecialchars($message) . '</code></p>';
+        $this->response->content = '<h1 class="error">Error</h1>';
+        if (isset($error)) {
+            $this->response->content .= '<p class="error"><code>' . htmlspecialchars($error) . '</code></p>';
+        }
+        if (isset($message)) {
+            $this->response->content .= '<p class="error">' . htmlspecialchars($message) . '</p>';
+        }
+        if (isset($hint)) {
+            $this->response->content .= '<p class="error">' . htmlspecialchars($hint) . '</p>';
+        }
+        if ($message || $error || $hint) {
+            $response = ['error' => $error, 'error_description' => $message, 'error_hint' => $hint];
+            if (!$this->sendToTerminal($response)) {
+                $this->response->content .= '<p class="error">Additionally: failed to send error message back to terminal</p>';
+            }
+        }
+        $this->response->content .= '<p>Please try again</p>';
     }
 }
 
@@ -160,6 +208,13 @@ foreach ($response->headers as $name => $value) {
         img {
             display: block;
             margin: 10px auto;
+        }
+
+        .error {
+            color: darkred;
+        }
+        .error-hint {
+            font-style: oblique;
         }
     </style>
 </head>

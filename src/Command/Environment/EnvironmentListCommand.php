@@ -18,6 +18,9 @@ class EnvironmentListCommand extends CommandBase
     protected $currentEnvironment;
     protected $mapping = [];
 
+    /** @var \Platformsh\Cli\Service\PropertyFormatter */
+    protected $formatter;
+
     /**
      * {@inheritdoc}
      */
@@ -25,7 +28,7 @@ class EnvironmentListCommand extends CommandBase
     {
         $this
             ->setName('environment:list')
-            ->setAliases(['environments'])
+            ->setAliases(['environments', 'env'])
             ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
@@ -99,6 +102,8 @@ class EnvironmentListCommand extends CommandBase
 
             $row[] = new AdaptiveTableCell($id, $cellOptions);
 
+            $row['machine_name'] = $environment->machine_name;
+
             if ($branch = array_search($environment->id, $this->mapping)) {
                 $row[] = sprintf('%s (%s)', $environment->title, $branch);
             } else {
@@ -106,6 +111,9 @@ class EnvironmentListCommand extends CommandBase
             }
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
+
+            $row[] = $this->formatter->format($environment->created_at, 'created_at');
+            $row[] = $this->formatter->format($environment->updated_at, 'updated_at');
 
             $rows[] = $row;
             if (isset($this->children[$environment->id])) {
@@ -173,20 +181,24 @@ class EnvironmentListCommand extends CommandBase
             $this->children['master'] = [];
         }
 
-        $headers = ['ID', 'Name', 'Status'];
+        $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Created', 'Updated'];
+        $defaultColumns = ['id', 'title', 'status'];
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $this->formatter = $this->getService('property_formatter');
+
         if ($table->formatIsMachineReadable()) {
-            $table->render($this->buildEnvironmentRows($tree, false, false), $headers);
+            $table->render($this->buildEnvironmentRows($tree, false, false), $headers, $defaultColumns);
 
             return;
         }
 
         $this->stdErr->writeln("Your environments are: ");
 
-        $table->render($this->buildEnvironmentRows($tree), $headers);
+        $table->render($this->buildEnvironmentRows($tree), $headers, $defaultColumns);
 
         if (!$this->currentEnvironment) {
             return;
@@ -218,7 +230,7 @@ class EnvironmentListCommand extends CommandBase
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-                'Make a snapshot of the current environment by running <info>' . $executable . ' snapshot:create</info>'
+                'Make a backup of the current environment by running <info>' . $executable . ' backup</info>'
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {

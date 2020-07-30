@@ -10,28 +10,43 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Config
 {
-    protected static $config = [];
-
-    protected $env = [];
-
-    protected $userConfig = null;
-
+    private $config;
+    private $defaultsFile;
+    private $env;
     private $fs;
+    private $version;
 
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
-     * @param bool        $reset
      */
-    public function __construct(array $env = null, $defaultsFile = null, $reset = false)
+    public function __construct(array $env = null, $defaultsFile = null)
     {
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
-        if (empty(self::$config) || $reset) {
-            $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
-            self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyUserConfigOverrides();
-            $this->applyEnvironmentOverrides();
+        $this->defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
+        $this->config = $this->loadConfigFromFile($this->defaultsFile);
+
+        // Load the session ID from a file.
+        $sessionIdFile = $this->getSessionIdFile();
+        if (\file_exists($sessionIdFile)) {
+            $id = \file_get_contents($sessionIdFile);
+            if ($id !== false) {
+                try {
+                    $this->validateSessionId(\trim($id));
+                } catch (\InvalidArgumentException $e) {
+                    throw new \InvalidArgumentException('Invalid session ID in file: ' . $sessionIdFile);
+                }
+                $this->config['api']['session_id'] = \trim($id);
+            }
+        }
+
+        $this->applyUserConfigOverrides();
+        $this->applyEnvironmentOverrides();
+
+        // Validate the session ID.
+        if (isset($this->config['api']['session_id'])) {
+            $this->validateSessionId($this->config['api']['session_id']);
         }
     }
 
@@ -56,7 +71,7 @@ class Config
      */
     public function has($name, $notNull = true)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
 
         return $exists && (!$notNull || $value !== null);
     }
@@ -72,7 +87,7 @@ class Config
      */
     public function get($name)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             throw new \RuntimeException('Configuration not defined: ' . $name);
         }
@@ -90,12 +105,38 @@ class Config
      */
     public function getWithDefault($name, $default)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             return $default;
         }
 
         return $value;
+    }
+
+    /**
+     * @return string The absolute path to the user's home directory
+     */
+    public function getHomeDirectory()
+    {
+        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
+        $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
+        foreach ($envVars as $envVar) {
+            $value = getenv($envVar);
+            if (array_key_exists($envVar, $this->env)) {
+                $value = $this->env[$envVar];
+            }
+            if (is_string($value) && $value !== '') {
+                if (!is_dir($value)) {
+                    throw new \RuntimeException(
+                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
+                    );
+                }
+
+                return realpath($value) ?: $value;
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Could not determine home directory. Set the %s environment variable.', $prefix . 'HOME'));
     }
 
     /**
@@ -110,17 +151,7 @@ class Config
     {
         $path = $this->get('application.user_config_dir');
 
-        return $absolute ? $this->fs()->getHomeDirectory() . '/' . $path : $path;
-    }
-
-    /**
-     * Inject the filesystem service.
-     *
-     * @param Filesystem $fs
-     */
-    public function setFs(Filesystem $fs)
-    {
-        $this->fs = $fs;
+        return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
     }
 
     /**
@@ -136,23 +167,119 @@ class Config
      */
     public function getWritableUserDir()
     {
-        $configDir = $this->getUserConfigDir();
+        $path = $this->get('application.writable_user_dir');
+        $configDir = $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path;
 
         // If the config directory is not writable (e.g. if we are on a
         // Platform.sh environment), use a temporary directory instead.
         if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
-            return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
+            return sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->get('application.tmp_sub_dir');
         }
 
         return $configDir;
     }
 
     /**
+     * @param bool $subDir
+     *
      * @return string
      */
-    public function getSessionDir()
+    public function getSessionDir($subDir = false)
     {
-        return $this->getWritableUserDir() . '/.session';
+        $sessionDir = $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
+        if ($subDir) {
+            return $sessionDir . DIRECTORY_SEPARATOR . $this->getSessionIdSlug();
+        }
+
+        return $sessionDir;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSessionId()
+    {
+        return $this->get('api.session_id') ?: 'default';
+    }
+
+    /**
+     * @param string $prefix
+     *
+     * @return string
+     */
+    public function getSessionIdSlug($prefix = 'sess-cli-')
+    {
+        return $prefix . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
+    }
+
+    /**
+     * Sets a new session ID.
+     *
+     * @param string $id
+     * @param bool   $persist
+     */
+    public function setSessionId($id, $persist = false)
+    {
+        $this->config['api']['session_id'] = $id;
+        if ($persist) {
+            $filename = $this->getSessionIdFile();
+            if ($id === 'default') {
+                $this->fs()->remove($filename);
+            } else {
+                $this->fs()->writeFile($filename, $id, false);
+            }
+        }
+    }
+
+    /**
+     * Returns whether the session ID was set via the environment.
+     *
+     * This means that the session:switch command cannot be used.
+     *
+     * @return bool
+     */
+    public function isSessionIdFromEnv()
+    {
+        return $this->getEnv('SESSION_ID') === $this->config['api']['session_id'];
+    }
+
+    /**
+     * Returns the path to a file where the session ID is saved.
+     *
+     * @return string
+     */
+    private function getSessionIdFile()
+    {
+        return $this->getWritableUserDir() . DIRECTORY_SEPARATOR . 'session-id';
+    }
+
+    /**
+     * Validates a user-provided session ID.
+     *
+     * @param string $id
+     */
+    public function validateSessionId($id)
+    {
+        if (strpos($id, 'api-token-') === 0 || !\preg_match('@^[a-z0-9_-]+$@i', $id)) {
+            throw new \InvalidArgumentException('Invalid session ID: ' . $id);
+        }
+    }
+
+    /**
+     * Returns a new Config instance with overridden values.
+     *
+     * @param array $overrides
+     *
+     * @return self
+     */
+    public function withOverrides(array $overrides)
+    {
+        $config = new self($this->env, $this->defaultsFile);
+        foreach ($overrides as $key => $value) {
+            NestedArrayUtil::setNestedArrayValue($config->config, explode('.', $key), $value);
+        }
+
+        return $config;
     }
 
     /**
@@ -160,7 +287,7 @@ class Config
      *
      * @return array
      */
-    protected function loadConfigFromFile($filename)
+    private function loadConfigFromFile($filename)
     {
         $contents = file_get_contents($filename);
         if ($contents === false) {
@@ -170,7 +297,7 @@ class Config
         return (array) Yaml::parse($contents);
     }
 
-    protected function applyEnvironmentOverrides()
+    private function applyEnvironmentOverrides()
     {
         $overrideMap = [
             'TOKEN' => 'api.token',
@@ -181,15 +308,27 @@ class Config
             'DRUSH' => 'local.drush_executable',
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
+            'API_URL' => 'api.base_url',
             'ACCOUNTS_API' => 'api.accounts_api_url',
+            'ACCOUNTS_API_URL' => 'api.accounts_api_url',
+            'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
+            'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
+            'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
+            'CERTIFIER_URL' => 'api.certifier_url',
+            'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
             'UPDATES_CHECK' => 'updates.check',
         ];
 
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);
             if ($value !== false) {
-                NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $key), $value, true);
+                NestedArrayUtil::setNestedArrayValue($this->config, explode('.', $key), $value, true);
             }
+        }
+
+        // Special case: replace the list api.ssh_domain_wildcards with the value of {PREFIX}SSH_DOMAIN_WILDCARD.
+        if (($value = $this->getEnv('SSH_DOMAIN_WILDCARD')) !== false) {
+            $this->config['api']['ssh_domain_wildcards'] = [$value];
         }
     }
 
@@ -202,9 +341,9 @@ class Config
      * @return mixed|false
      *   The value of the environment variable, or false if it is not set.
      */
-    protected function getEnv($name)
+    private function getEnv($name)
     {
-        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
+        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
             return $this->env[$prefix . $name];
         }
@@ -215,22 +354,19 @@ class Config
     /**
      * @return array
      */
-    public function getUserConfig()
+    private function getUserConfig()
     {
-        if (!isset($this->userConfig)) {
-            $this->userConfig = [];
-            $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
-            if (file_exists($userConfigFile)) {
-                $this->userConfig = $this->loadConfigFromFile($userConfigFile);
-            }
+        $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+        if (file_exists($userConfigFile)) {
+            return $this->loadConfigFromFile($userConfigFile);
         }
 
-        return $this->userConfig;
+        return [];
     }
 
-    protected function applyUserConfigOverrides()
+    private function applyUserConfigOverrides()
     {
-        // A whitelist of allowed overrides.
+        // A list of allowed overrides.
         $overrideMap = [
             'api' => 'api',
             'local.copy_on_windows' => 'local.copy_on_windows',
@@ -238,6 +374,7 @@ class Config
             'experimental' => 'experimental',
             'updates' => 'updates',
             'application.login_method' => 'application.login_method',
+            'application.writable_user_dir' => 'application.writable_user_dir',
             'application.date_format' => 'application.date_format',
             'application.timezone' => 'application.timezone',
         ];
@@ -248,14 +385,14 @@ class Config
                 $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
                 if ($exists) {
                     $configParents = explode('.', $configKey);
-                    $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
+                    $default = NestedArrayUtil::getNestedArrayValue($this->config, $configParents, $defaultExists);
                     if ($defaultExists && is_array($default)) {
                         if (!is_array($value)) {
                             continue;
                         }
                         $value = array_replace_recursive($default, $value);
                     }
-                    NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
+                    NestedArrayUtil::setNestedArrayValue($this->config, $configParents, $value, true);
                 }
             }
         }
@@ -270,7 +407,7 @@ class Config
      */
     public function isExperimentEnabled($name)
     {
-        return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
+        return !empty($this->config['experimental']['all_experiments']) || !empty($this->config['experimental'][$name]);
     }
 
     /**
@@ -282,19 +419,41 @@ class Config
      */
     public function isCommandEnabled($name)
     {
-        if (!empty(self::$config['application']['disabled_commands'])
-            && in_array($name, self::$config['application']['disabled_commands'])) {
+        if (!empty($this->config['application']['disabled_commands'])
+            && in_array($name, $this->config['application']['disabled_commands'])) {
             return false;
         }
-        if (!empty(self::$config['application']['experimental_commands'])
-            && in_array($name, self::$config['application']['experimental_commands'])) {
-            return !empty(self::$config['experimental']['all_experiments'])
+        if (!empty($this->config['application']['experimental_commands'])
+            && in_array($name, $this->config['application']['experimental_commands'])) {
+            return !empty($this->config['experimental']['all_experiments'])
                 || (
-                    !empty(self::$config['experimental']['enable_commands'])
-                    && in_array($name, self::$config['experimental']['enable_commands'])
+                    !empty($this->config['experimental']['enable_commands'])
+                    && in_array($name, $this->config['experimental']['enable_commands'])
                 );
         }
 
         return true;
+    }
+
+    /**
+     * Returns this application version.
+     *
+     * @return string
+     */
+    public function getVersion() {
+        if (isset($this->version)) {
+            return $this->version;
+        }
+        $version = $this->get('application.version');
+        if (substr($version, 0, 1) === '@' && substr($version, -1) === '@') {
+            // Silently try getting the version from Git.
+            $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
+            if ($tag !== false && substr($tag, 0, 1) === 'v') {
+                $version = trim($tag);
+            }
+        }
+        $this->version = $version;
+
+        return $version;
     }
 }

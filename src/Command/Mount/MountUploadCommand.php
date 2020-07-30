@@ -2,13 +2,16 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class MountUploadCommand extends MountCommandBase
+class MountUploadCommand extends CommandBase
 {
 
     /**
@@ -27,7 +30,8 @@ class MountUploadCommand extends MountCommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();
         $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->addRemoteContainerOptions();
+        Ssh::configureInput($this->getDefinition());
     }
 
     /**
@@ -36,18 +40,17 @@ class MountUploadCommand extends MountCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        $appName = $this->selectApp($input);
 
-        $appConfig = $this->getAppConfig($appName, (bool) $input->getOption('refresh'));
+        $container = $this->selectRemoteContainer($input);
+        /** @var \Platformsh\Cli\Service\Mount $mountService */
+        $mountService = $this->getService('mount');
+        $mounts = $mountService->mountsFromConfig($container->getConfig());
 
-        if (empty($appConfig['mounts'])) {
-            $this->stdErr->writeln(sprintf('The app "%s" doesn\'t define any mounts.', $appConfig['name']));
+        if (empty($mounts)) {
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
 
             return 1;
         }
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
-        $mounts = $mountService->normalizeMounts($appConfig['mounts']);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -55,10 +58,19 @@ class MountUploadCommand extends MountCommandBase
         $fs = $this->getService('fs');
 
         if ($input->getOption('mount')) {
-            $mountPath = $mountService->validateMountPath($input->getOption('mount'), $mounts);
+            $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
+            $options = [];
+            foreach ($mounts as $path => $definition) {
+                if ($definition['source'] === 'local') {
+                    $options[$path] = sprintf('<question>%s</question>', $path);
+                } else {
+                    $options[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
+                }
+            }
+
             $mountPath = $questionHelper->choose(
-                $this->getMountsAsOptions($mounts),
+                $options,
                 'Enter a number to choose a mount to upload to:'
             );
         } else {
@@ -72,17 +84,19 @@ class MountUploadCommand extends MountCommandBase
         if ($input->getOption('source')) {
             $source = $input->getOption('source');
         } elseif ($projectRoot = $this->getProjectRoot()) {
-            $sharedMounts = $mountService->getSharedFileMounts($appConfig);
+            $sharedMounts = $mountService->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
                 if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
                     $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 
-            $applications = LocalApplication::getApplications($projectRoot, $this->config());
+            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+            $finder = $this->getService('app_finder');
+            $applications = $finder->findApplications($projectRoot);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
-                if ($candidateApp->getName() === $appName) {
+                if ($candidateApp->getName() === $container->getName()) {
                     $appPath = $path;
                     break;
                 }
@@ -108,7 +122,10 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->validateDirectory($source);
+        $fs->validateDirectory($source);
+
+        /** @var \Platformsh\Cli\Service\Rsync $rsync */
+        $rsync = $this->getService('rsync');
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
@@ -120,11 +137,26 @@ class MountUploadCommand extends MountCommandBase
             return 1;
         }
 
-        $this->runSync($appName, $mountPath, $source, true, [
+        $rsyncOptions = [
             'delete' => $input->getOption('delete'),
             'exclude' => $input->getOption('exclude'),
             'include' => $input->getOption('include'),
-        ]);
+            'verbose' => $output->isVeryVerbose(),
+            'quiet' => $output->isQuiet(),
+        ];
+
+        if (OsUtil::isOsX()) {
+            if ($rsync->supportsConvertingFilenames() !== false) {
+                $this->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
+                $rsyncOptions['convert-mac-filenames'] = true;
+            } else {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Warning: the installed version of <comment>rsync</comment> does not support converting filenames with special characters (the --iconv flag). You may need to upgrade rsync.');
+            }
+        }
+
+        $this->stdErr->writeln('');
+        $rsync->syncUp($container->getSshUrl(), $source, $mountPath, $rsyncOptions);
 
         return 0;
     }

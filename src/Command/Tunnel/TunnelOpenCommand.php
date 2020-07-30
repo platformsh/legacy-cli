@@ -20,6 +20,19 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this->addEnvironmentOption();
         $this->addAppOption();
         Ssh::configureInput($this->getDefinition());
+        $this->setHelp(<<<EOF
+This command opens SSH tunnels to all of the relationships of an application.
+
+Connections can then be made to the application's services as if they were
+local, for example a local MySQL client can be used, or the Solr web
+administration endpoint can be accessed through a local browser.
+
+This command requires the posix and pcntl PHP extensions (as multiple
+background CLI processes are created to keep the SSH tunnels open). The
+<info>tunnel:single</info> command can be used on systems without these
+extensions.
+EOF
+        );
     }
 
     /**
@@ -27,10 +40,37 @@ class TunnelOpenCommand extends TunnelCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkSupport();
+        $requiredExtensions = ['pcntl', 'posix'];
+        $missingExtensions = [];
+        foreach ($requiredExtensions as $requiredExtension) {
+            if (!extension_loaded($requiredExtension)) {
+                $missingExtensions[] = $requiredExtension;
+                $this->stdErr->writeln(sprintf('The <error>%s</error> PHP extension is required.', $requiredExtension));
+            }
+        }
+        if (!empty($missingExtensions)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('The alternative <info>tunnel:single</info> command does not require these extensions.');
+
+            return 1;
+        }
+
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
+
+        $container = $this->selectRemoteContainer($input, false);
+        $appName = $container->getName();
+        $sshUrl = $container->getSshUrl();
+        $host = $this->selectHost($input, false, $container);
+
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+        $relationships = $relationshipsService->getRelationships($host);
+        if (!$relationships) {
+            $this->stdErr->writeln('No relationships found.');
+            return 1;
+        }
 
         if ($environment->id === 'master') {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
@@ -40,17 +80,7 @@ class TunnelOpenCommand extends TunnelCommandBase
             if (!$questionHelper->confirm($confirmText, false)) {
                 return 1;
             }
-        }
-
-        $appName = $this->selectApp($input);
-        $sshUrl = $environment->getSshUrl($appName);
-
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $relationships = $relationshipsService->getRelationships($sshUrl);
-        if (!$relationships) {
-            $this->stdErr->writeln('No relationships found.');
-            return 1;
+            $this->stdErr->writeln('');
         }
 
         $logFile = $this->config()->getWritableUserDir() . '/tunnels.log';
@@ -93,9 +123,9 @@ class TunnelOpenCommand extends TunnelCommandBase
 
                 if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
                     $this->stdErr->writeln(sprintf(
-                        'A tunnel is already open on port %s for the relationship: <info>%s</info>',
-                        $openTunnelInfo['localPort'],
-                        $relationshipString
+                        'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
+                        $relationshipString,
+                        $this->getTunnelUrl($openTunnelInfo, $service)
                     ));
                     continue;
                 }
@@ -135,15 +165,17 @@ class TunnelOpenCommand extends TunnelCommandBase
                 $this->saveTunnelInfo();
 
                 $this->stdErr->writeln(sprintf(
-                    'SSH tunnel opened on port %s to relationship: <info>%s</info>',
-                    $localPort,
-                    $relationshipString
+                    'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
+                    $relationshipString,
+                    $this->getTunnelUrl($tunnel, $service)
                 ));
+
                 $processIds[] = $pid;
             }
         }
 
         if (count($processIds)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln("Logs are written to: $logFile");
         }
 

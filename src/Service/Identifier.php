@@ -6,6 +6,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -22,17 +23,18 @@ class Identifier
     /**
      * Constructor.
      *
-     * @param \Platformsh\Cli\Service\Config|null                    $config
-     * @param \Platformsh\Cli\Service\Api|null                       $api
+     * @param \Platformsh\Cli\Service\Config|null $config
+     * @param \Platformsh\Cli\Service\Api|null $api
      * @param \Symfony\Component\Console\Output\OutputInterface|null $output
+     * @param CacheProvider|null $cache
      */
-    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null)
+    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null, CacheProvider $cache = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
         $output = $output ?: new NullOutput();
         $this->stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
-        $this->cache = $this->api->getCache();
+        $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
     }
 
     /**
@@ -119,11 +121,11 @@ class Identifier
             return $result;
         }
 
-        if ($this->config->has('detection.ui_domain')
-            && $host === $this->config->get('detection.ui_domain')
+        if ($this->config->has('detection.console_domain')
+            && $host === $this->config->get('detection.console_domain')
             && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)) {
             $result['projectId'] = $matches[1];
-            if (!empty($matches[3])) {
+            if (isset($matches[3])) {
                 $result['environmentId'] = rawurldecode($matches[3]);
             }
 

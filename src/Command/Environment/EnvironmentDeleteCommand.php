@@ -16,6 +16,7 @@ class EnvironmentDeleteCommand extends CommandBase
     {
         $this
             ->setName('environment:delete')
+            ->setAliases(['environment:deactivate'])
             ->setDescription('Delete an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to delete')
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es) too')
@@ -138,7 +139,7 @@ EOF
         // Find a list of branches merged on the remote.
         $git->fetch($remoteName);
         $mergedBranches = $git->getMergedBranches($remoteName . '/' . $base, true);
-        $mergedBranches = array_filter($mergedBranches, function ($mergedBranch) use ($remoteName, $base) {
+        $mergedBranches = array_filter($mergedBranches, function ($mergedBranch) use ($remoteName) {
             return strpos($mergedBranch, $remoteName) === 0;
         });
         $stripLength = strlen($remoteName . '/');
