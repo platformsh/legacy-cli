@@ -1,10 +1,10 @@
 [
     {
         "name": "symfony-cloud.phar",
-        "sha1": "2585449034dcf5b224c12bd4cb9a5d1409b639e4",
-        "sha256": "465a948f406775048cbc55c7465208c4a09788eced5797ea4d364b4e12a62244",
-        "url": "https://a.s5y.io/sites/default/files/symfony-cloud-v0.0.25.phar",
-        "version": "0.0.25",
+        "sha1": "0587ccfdfa44142b68ac7ceb1f08d0ee55c9ba47",
+        "sha256": "38e6aab0caeb065c415917d8024c6326fa2a371b525c2f1a9f83e4e93de23a9b",
+        "url": "https://a.s5y.io/sites/default/files/symfony-cloud-v0.0.26.phar",
+        "version": "0.0.26",
         "php": {
             "min": "5.5.9"
         }
