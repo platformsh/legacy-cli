@@ -40,7 +40,6 @@ class MongoDumpCommand extends CommandBase
         $host = $this->selectHost($input, getenv($envPrefix . 'RELATIONSHIPS') !== false);
 
         if ($host instanceof RemoteHost) {
-            $this->validateInput($input);
             $appName = $this->selectApp($input);
         } else {
             $appName = getenv($envPrefix . 'APPLICATION_NAME');
