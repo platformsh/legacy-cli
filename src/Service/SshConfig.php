@@ -8,6 +8,7 @@ use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Process\Process;
 
 class SshConfig {
     private $config;
@@ -15,6 +16,7 @@ class SshConfig {
     private $stdErr;
     private $sshKey;
     private $certifier;
+    private $openSshVersion;
 
     public function __construct(Config $config, Filesystem $fs, OutputInterface $output, SshKey $sshKey, Certifier $certifier)
     {
@@ -33,6 +35,10 @@ class SshConfig {
      */
     public function configureSessionSsh()
     {
+        if (!$this->supportsInclude()) {
+            return false;
+        }
+
         // Backwards compatibility: delete the old SSH configuration file.
         $legacy = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'sess-cli-default.config';
         if (\file_exists($legacy)) {
@@ -161,6 +167,10 @@ class SshConfig {
      */
     public function addUserSshConfig(QuestionHelper $questionHelper)
     {
+        if (!$this->supportsInclude()) {
+            return false;
+        }
+
         $filename = $this->getUserSshConfigFilename();
 
         $wildcards = $this->config->get('api.ssh_domain_wildcards');
@@ -355,5 +365,94 @@ class SshConfig {
         } catch (IOException $e) {
             $this->stdErr->writeln('The configuration could not be automatically removed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Finds the locally installed OpenSSH version.
+     *
+     * @param bool $reset
+     *
+     * @return string|false
+     */
+    private function findVersion($reset = false)
+    {
+        if (isset($this->openSshVersion) && !$reset) {
+            return $this->openSshVersion;
+        }
+        $this->openSshVersion = false;
+        $process = new Process('ssh -V');
+        $process->run();
+        if (!$process->isSuccessful()) {
+            return false;
+        }
+        $stdErr = $process->getErrorOutput();
+        if (\preg_match('/OpenSSH_([0-9.]+[^ ]*)/', $stdErr, $matches)) {
+            $this->openSshVersion = $matches[1];
+        }
+        return $this->openSshVersion;
+    }
+
+    /**
+     * Checks if the installed OpenSSH version is below a given value.
+     *
+     * @param string $test
+     *
+     * @return bool
+     *   True if the version is determined and it is lower than the $test value, false otherwise.
+     */
+    private function versionIsBelow($test)
+    {
+        $version = $this->findVersion();
+        if (!$version) {
+            return false;
+        }
+        return \version_compare($version, $test, '<');
+    }
+
+    /**
+     * Checks if the installed OpenSSH version supports the 'Include' syntax.
+     *
+     * @return bool
+     */
+    public function supportsInclude() {
+        return !$this->versionIsBelow('7.3');
+    }
+
+    /**
+     * Checks if the installed OpenSSH version supports the 'CertificateFile' syntax.
+     *
+     * @return bool
+     */
+    public function supportsCertificateFile() {
+        return !$this->versionIsBelow('7.2');
+    }
+
+    /**
+     * Checks if the required version is supported, and prints a warning.
+     *
+     * @return bool
+     *   False if an incorrect version is installed, true otherwise.
+     */
+    public function checkRequiredVersion()
+    {
+        $version = $this->findVersion();
+        if (!$version) {
+            $this->stdErr->writeln('Unable to determine the installed OpenSSH version.', OutputInterface::VERBOSITY_VERBOSE);
+            return true;
+        }
+        if (\version_compare($version, '6.5', '<')) {
+            $this->stdErr->writeln(\sprintf(
+                'OpenSSH version <error>%s</error> is installed. Version 6.5 or above is required. Some features depend on version 7.3 or above.',
+                $version
+            ));
+            return false;
+        }
+        if (\version_compare($version, '7.3', '<')) {
+            $this->stdErr->writeln(\sprintf(
+                'OpenSSH version <comment>%s</comment> is installed. Some features depend on version 7.3 or above.',
+                $version
+            ));
+        }
+        return true;
     }
 }

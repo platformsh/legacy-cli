@@ -84,8 +84,9 @@ class Ssh implements InputConfiguringInterface
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
-                if (!$sshCert || $sshCert->hasExpired()) {
-                    $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
+                $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
+
+                if ((!$sshCert || $sshCert->hasExpired()) && $this->sshConfig->checkRequiredVersion()) {
                     $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
                     try {
                         $sshCert = $this->certifier->generateCertificate();
@@ -96,7 +97,9 @@ class Ssh implements InputConfiguringInterface
                 }
 
                 if ($sshCert) {
-                    $options['CertificateFile'] = $sshCert->certificateFilename();
+                    if ($this->sshConfig->supportsCertificateFile()) {
+                        $options['CertificateFile'] = $sshCert->certificateFilename();
+                    }
                     $options['IdentityFile'] = [$sshCert->privateKeyFilename()];
                     foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
                         $options['IdentityFile'][] = $identityFile;

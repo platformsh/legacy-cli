@@ -29,12 +29,17 @@ class SshCertInfoCommand extends CommandBase
 
         /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
         $certifier = $this->getService('certifier');
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
 
         $cert = $certifier->getExistingCertificate();
         if (!$cert || !$this->isValid($cert)) {
             if ($input->getOption('no-refresh')) {
                 $this->stdErr->writeln('No valid SSH certificate found.');
                 $this->stdErr->writeln('To generate a certificate, run this command again without the <comment>--no-refresh</comment> option.');
+                return 1;
+            }
+            if (!$sshConfig->checkRequiredVersion()) {
                 return 1;
             }
             // Generate a new certificate.

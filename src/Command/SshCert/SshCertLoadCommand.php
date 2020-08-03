@@ -42,15 +42,19 @@ class SshCertLoadCommand extends CommandBase
             $refresh = false;
         }
 
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+
         if ($refresh) {
+            if (!$sshConfig->checkRequiredVersion()) {
+                return 1;
+            }
             $this->stdErr->writeln('Generating SSH certificate...');
             $sshCert = $certifier->generateCertificate();
             $this->displayCertificate($sshCert);
         }
 
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
-        $sshConfig->configureSessionSsh();
+        $hasSessionConfig = $sshConfig->configureSessionSsh();
 
         if ($input->getOption('refresh-only')) {
             return 0;
@@ -58,7 +62,7 @@ class SshCertLoadCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $success = $sshConfig->addUserSshConfig($questionHelper);
+        $success = !$hasSessionConfig || $sshConfig->addUserSshConfig($questionHelper);
 
         return $success ? 0 : 1;
     }
