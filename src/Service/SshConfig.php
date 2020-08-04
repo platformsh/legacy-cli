@@ -382,11 +382,15 @@ class SshConfig {
         $this->openSshVersion = false;
         $process = new Process('ssh -V');
         $process->run();
+        $errorOutput = $process->getErrorOutput();
         if (!$process->isSuccessful()) {
+            if ($this->stdErr->isVerbose()) {
+                $this->stdErr->writeln('Unable to determine the installed OpenSSH version. The command output was:');
+                $this->stdErr->writeln($errorOutput);
+            }
             return false;
         }
-        $stdErr = $process->getErrorOutput();
-        if (\preg_match('/OpenSSH_([0-9.]+[^ ,]*)/', $stdErr, $matches)) {
+        if (\preg_match('/OpenSSH_([0-9.]+[^ ,]*)/', $errorOutput, $matches)) {
             $this->openSshVersion = $matches[1];
         }
         return $this->openSshVersion;
@@ -437,7 +441,6 @@ class SshConfig {
     {
         $version = $this->findVersion();
         if (!$version) {
-            $this->stdErr->writeln('Unable to determine the installed OpenSSH version.', OutputInterface::VERBOSITY_VERBOSE);
             return true;
         }
         if (\version_compare($version, '6.5', '<')) {
