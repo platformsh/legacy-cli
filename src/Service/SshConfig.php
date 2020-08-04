@@ -386,7 +386,7 @@ class SshConfig {
             return false;
         }
         $stdErr = $process->getErrorOutput();
-        if (\preg_match('/OpenSSH_([0-9.]+[^ ]*)/', $stdErr, $matches)) {
+        if (\preg_match('/OpenSSH_([0-9.]+[^ ,]*)/', $stdErr, $matches)) {
             $this->openSshVersion = $matches[1];
         }
         return $this->openSshVersion;
