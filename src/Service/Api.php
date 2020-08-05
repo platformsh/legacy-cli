@@ -247,6 +247,9 @@ class Api
     private function getConnectorOptions() {
         $connectorOptions = [];
         $connectorOptions['api_url'] = $this->config->getWithDefault('api.base_url', '');
+        if ($this->config->has('api.accounts_api_url')) {
+            $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
+        }
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
         $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
         $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;

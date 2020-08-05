@@ -308,6 +308,7 @@ class Config
             'DRUSH' => 'local.drush_executable',
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
+            'ACCOUNTS_API' => 'api.accounts_api_url',
             'API_URL' => 'api.base_url',
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
