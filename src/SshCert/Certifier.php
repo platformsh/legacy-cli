@@ -129,7 +129,14 @@ class Certifier
             $this->fs->remove($sshInfo);
         }
         // Generate new keys and set permissions.
-        $this->shell->execute(['ssh-keygen', '-t', self::KEY_ALGORITHM, '-N', '', '-f', $sshInfo['private']], null, true);
+        $args = [
+            'ssh-keygen',
+            '-t', self::KEY_ALGORITHM,
+            '-f', $sshInfo['private'],
+            '-N', '', // No passphrase
+            '-C', $this->config->get('application.slug') . '-temporary-cert', // Key comment
+        ];
+        $this->shell->execute($args, null, true);
         $this->chmod($sshInfo['private'], 0600);
         $this->chmod($sshInfo['public'], 0600);
 
