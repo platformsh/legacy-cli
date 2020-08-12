@@ -217,7 +217,7 @@ class Installer {
                 $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
             }
 
-            if (!file_put_contents($this->pharName, file_get_contents($url, false, $this->getStreamContext()))) {
+            if (!file_put_contents($this->pharName, file_get_contents($url, false, $this->getStreamContext(300)))) {
                 return TaskResult::failure('The download failed');
             }
 
@@ -306,7 +306,7 @@ class Installer {
      * @return TaskResult
      */
     private function findLatestVersion($manifestUrl) {
-        $manifest = file_get_contents($manifestUrl, false, $this->getStreamContext());
+        $manifest = file_get_contents($manifestUrl, false, $this->getStreamContext(15));
         if ($manifest === false) {
             return TaskResult::failure('Failed to download manifest file: ' . $manifestUrl);
         }
@@ -530,14 +530,16 @@ class Installer {
     /**
      * Constructs a stream context for downloading files.
      *
+     * @param int $timeout
+     *
      * @return resource
      */
-    private function getStreamContext() {
+    private function getStreamContext($timeout) {
         $opts = [
             'http' => [
                 'method' => 'GET',
                 'follow_location' => 1,
-                'timeout' => 15,
+                'timeout' => $timeout,
                 'user_agent' => $this->userAgent,
             ],
         ];
