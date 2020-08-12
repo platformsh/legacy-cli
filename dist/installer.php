@@ -52,6 +52,7 @@ class Installer {
     private $configDir;
     private $executable;
     private $cliName;
+    private $userAgent;
     private $pharName;
     private $argv;
 
@@ -69,6 +70,12 @@ class Installer {
         $this->configDir = '.platformsh';
         $this->executable = 'platform';
         $this->cliName = 'Platform.sh CLI';
+        $this->userAgent = sprintf(
+            'platformsh-cli-installer (%s; %s; PHP %s)',
+            php_uname('s'),
+            php_uname('r'),
+            PHP_VERSION
+        );
         $this->pharName = $this->executable . '.phar';
     }
 
@@ -219,7 +226,7 @@ class Installer {
                 $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
             }
 
-            if (!file_put_contents($this->pharName, file_get_contents($url))) {
+            if (!file_put_contents($this->pharName, file_get_contents($url, false, $this->getStreamContext(300)))) {
                 return TaskResult::failure('The download failed');
             }
 
@@ -308,7 +315,7 @@ class Installer {
      * @return TaskResult
      */
     private function findLatestVersion($manifestUrl) {
-        $manifest = file_get_contents($manifestUrl);
+        $manifest = file_get_contents($manifestUrl, false, $this->getStreamContext(15));
         if ($manifest === false) {
             return TaskResult::failure('Failed to download manifest file: ' . $manifestUrl);
         }
@@ -527,6 +534,48 @@ class Installer {
         }
 
         return false;
+    }
+
+    /**
+     * Constructs a stream context for downloading files.
+     *
+     * @param int $timeout
+     *
+     * @return resource
+     */
+    private function getStreamContext($timeout) {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'follow_location' => 1,
+                'timeout' => $timeout,
+                'user_agent' => $this->userAgent,
+            ],
+        ];
+        if ($proxy = $this->getProxy()) {
+            $opts['http']['proxy'] = $proxy;
+        }
+
+        return stream_context_create($opts);
+    }
+
+    /**
+     * Finds a proxy address based on the https_proxy or http_proxy environment variable.
+     *
+     * @return string|null
+     */
+    private function getProxy() {
+        // The proxy variables should be ignored in a non-CLI context.
+        // This check has probably already been run, but it's important.
+        if (PHP_SAPI !== 'cli') {
+            return null;
+        }
+        foreach (['https', 'http'] as $scheme) {
+            if ($proxy = getenv($scheme . '_proxy')) {
+                return $proxy;
+            }
+        }
+        return null;
     }
 }
 
