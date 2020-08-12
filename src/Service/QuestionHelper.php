@@ -127,7 +127,7 @@ class QuestionHelper extends BaseQuestionHelper
     public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null)
     {
         if ($default !== null) {
-            $questionText .= ' <question>[' . $default . ']</question>';
+            $questionText .= ' (default: <question>' . $default . '</question>)';
         }
         $questionText .= ': ';
         $question = new Question($questionText, $default);
