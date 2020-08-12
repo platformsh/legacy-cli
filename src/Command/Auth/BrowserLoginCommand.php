@@ -145,6 +145,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
             'CLI_OAUTH_PROMPT' => $input->getOption('force') ? 'consent select_account' : 'consent',
+            'CLI_OAUTH_SCOPE' => 'offline_access',
             'CLI_OAUTH_FILE' => $responseFile,
         ] + $this->getParentEnv());
         $process->setTimeout(null);

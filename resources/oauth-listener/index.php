@@ -12,6 +12,7 @@ class Listener
     private $response;
     private $codeChallenge;
     private $prompt;
+    private $scope;
 
     public function __construct() {
         $required = [
@@ -31,6 +32,7 @@ class Listener
         $this->file = $_ENV['CLI_OAUTH_FILE'];
         $this->prompt = $_ENV['CLI_OAUTH_PROMPT'];
         $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
+        $this->scope = isset($_ENV['CLI_OAUTH_SCOPE']) ? $_ENV['CLI_OAUTH_SCOPE'] : '';
         $this->localUrl = $localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
     }
@@ -48,6 +50,7 @@ class Listener
             'response_type' => 'code',
             'code_challenge' => $this->codeChallenge,
             'code_challenge_method' => 'S256',
+            'scope' => $this->scope,
         ], null, '&', PHP_QUERY_RFC3986);
     }
 
@@ -185,7 +188,7 @@ foreach ($response->headers as $name => $value) {
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <title><?php echo $response->title; ?></title>
