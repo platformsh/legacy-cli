@@ -145,6 +145,10 @@ api:
   # Can be replaced by a single value using the {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
   ssh_domain_wildcards: ['*.platform.sh']
 
+  # Whether auto-generated SSH certificate identities should be added to the SSH agent.
+  # Enabling this may be useful for those who use agent forwarding.
+  add_to_ssh_agent: false
+
   # Whether to auto-load an SSH certificate on login and SSH commands.
   # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
   auto_load_ssh_cert: true
