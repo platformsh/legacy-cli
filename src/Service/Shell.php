@@ -124,12 +124,15 @@ class Shell
             $blankLine = true;
         }
 
-        // Blank line just to aid debugging.
+        // Conditional blank line just to aid debugging.
         if ($blankLine) {
             $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
         }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
+
+        // Another blank line after the command output ends.
+        $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
 
         return is_int($result) ? $result === 0 : $result;
     }
@@ -216,8 +219,14 @@ class Shell
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
         try {
-            $process->mustRun($quiet ? null : function ($type, $buffer) {
-                $output = $type === Process::ERR ? $this->stdErr : $this->output;
+            $process->mustRun(function ($type, $buffer) use ($quiet) {
+                $output = $type === Process::ERR ? $this->output : $this->stdErr;
+                if ($quiet) {
+                    // Always show stderr output in debug mode.
+                    if ($type !== Process::ERR || !$output->isDebug()) {
+                        return;
+                    }
+                }
                 $output->write(preg_replace('/^/m', '  ', $buffer));
             });
         } catch (ProcessFailedException $e) {
