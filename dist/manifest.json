@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "601a467250cb4a0c45f5a51102e3b214f00af460",
-        "sha256": "c6eda56990e0f2b14ae50fda61754fdf37d7a4d1f003a0c8707e5ad06730e30a",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.60.4/platform.phar",
-        "version": "3.60.4",
+        "sha1": "93f8a19ff692c19e60e07494a484ea613affef24",
+        "sha256": "6f5114c2a27a3d4631d857cf938eda184bbb431568bfbf006958a6dd3526323f",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.61.0/platform.phar",
+        "version": "3.61.0",
         "php": {
             "min": "5.5.9"
         },
@@ -289,6 +289,11 @@
                 "notes": "New features:\n\n* Autoload SSH certificates on login or SSH, by default.\n    When supported by all relevant servers (soon), SSH certificates will:\n    - Enable support for multi-factor authentication on projects that require it for SSH access.\n    - Make it no longer necessary to add or administer SSH keys manually.\n\n  Note: SSH certificates can be checked or reloaded using the `ssh-cert:load` command.\n\nOther changes:\n\n* SSH configuration improvements:\n  - Denote top-level SSH configuration with a `Host` block, to avoid issues where a previous `Host` or `Match` configuration had not been closed.\n  - End the Host blocks explicitly with `Host *`\n* Fix detection of third-party Git domains for `project:get` (`get`) command errors.",
                 "show from": "3.59.0",
                 "hide from": "3.60.0"
+            },
+            {
+                "notes": "New features:\n\n* Project choice will now be via an autocomplete, rather than a list, if there\n  are too many to list (more than 25, or more than the terminal height). Start\n  typing a project ID, or use the up and down arrows to scroll through the\n  autocomplete suggestions.\n* Similarly, the environment choice can now be via a list, if there are few\n  enough to display like that, otherwise the older autocomplete will show.\n* The installer now supports a proxy defined with one of the `https_proxy` or\n  `http_proxy` environment variables.\n\nOther changes:\n\n* Use --globoff by default in curl commands\n* Disable use of the SSH agent unless explicitly enabled in the user config file.\n  Add this to the user config file to automatically add keys/certificates to the SSH agent:\n  ```yaml\n  # ~/.platformsh/config.yaml\n  api:\n    add_to_ssh_agent: true\n  ```\n* Explicitly request the `offline_access` scope when logging in.\n* Add a comment to auto-generated temporary SSH keys.",
+                "show from": "3.60.0",
+                "hide from": "3.61.0"
             }
         ]
     }
