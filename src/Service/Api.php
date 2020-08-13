@@ -21,6 +21,7 @@ use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
+use Platformsh\Client\Model\User;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
@@ -765,6 +766,35 @@ class Api
         }
 
         return $details;
+    }
+
+    /**
+     * Get user information.
+     *
+     * This is from the /users API which deals with basic authentication
+     * related data.
+     *
+     * @param string|null $id
+     *   The user ID. Defaults to the current user.
+     * @param bool $reset
+     *
+     * @return User
+     */
+    public function getUser($id = null, $reset = false)
+    {
+        $id = $id ?: $this->getMyAccount()['id']; // @todo achieve this more efficiently
+        $cacheKey = 'user:' . $id;
+        if ($reset || !($data = $this->cache->fetch($cacheKey))) {
+            $user = $this->getClient()->getUser($id);
+            if (!$user) {
+                throw new \InvalidArgumentException('User not found: ' . $id);
+            }
+            $this->cache->save($cacheKey, $user->getData(), $this->config->get('api.users_ttl'));
+        } else {
+            $connector = $this->getClient()->getConnector();
+            $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
+        }
+        return $user;
     }
 
     /**

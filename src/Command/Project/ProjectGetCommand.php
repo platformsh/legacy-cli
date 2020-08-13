@@ -323,29 +323,10 @@ class ProjectGetCommand extends CommandBase
             return;
         }
 
-        /** @var \Platformsh\Cli\Service\SshKey $sshKey */
-        $sshKey = $this->getService('ssh_key');
-
-        $this->stdErr->writeln('');
-
-        if (!$sshKey->hasLocalKey()) {
-            $this->stdErr->writeln(sprintf(
-                'You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
-                $this->config()->get('application.executable')
-            ));
-            return;
-        }
-
-        $this->stdErr->writeln('Please check your SSH credentials');
-        $this->stdErr->writeln(sprintf(
-            'You can list your keys by running: <comment>%s ssh-keys</comment>',
-            $this->config()->get('application.executable')
-        ));
-
+        /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
+        $sshDiagnostics = $this->getService('ssh_diagnostics');
         if ($gitSshUri !== '') {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('You can test your connection to the Git server by running:');
-            $this->stdErr->writeln(sprintf('<comment>ssh -v %s</comment>', escapeshellarg($gitSshUri)));
+            $sshDiagnostics->diagnoseFailure($gitSshUri);
         }
     }
 }
