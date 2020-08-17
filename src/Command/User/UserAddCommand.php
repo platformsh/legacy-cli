@@ -26,6 +26,8 @@ class UserAddCommand extends CommandBase
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
+        $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
+
         $this->addProjectOption();
         $this->addWaitOptions();
 
@@ -272,12 +274,17 @@ class UserAddCommand extends CommandBase
                 $environments[] = new Environment($id, $role);
             }
             try {
-                $project->inviteUserByEmail($email, $desiredProjectRole, $environments);
+                $project->inviteUserByEmail($email, $desiredProjectRole, $environments, $input->getOption('force-invite'));
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf('An invitation has been sent to <info>%s</info>', $email));
             } catch (AlreadyInvitedException $e) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
+                if ($questionHelper->confirm('Do you want to send this invitation anyway?')) {
+                    $project->inviteUserByEmail($email, $desiredProjectRole, $environments, true);
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf('A new invitation has been sent to <info>%s</info>', $email));
+                }
             }
 
             return 0;
