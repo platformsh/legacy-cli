@@ -174,7 +174,27 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships(HostInterface $host, $refresh = false)
     {
-        return $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh);
+        $relationships = $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh);
+
+        // Handle weird mongodb URIs.
+        foreach ($relationships as &$relationship) {
+            foreach ($relationship as &$instance) {
+                if (isset($instance['scheme']) && isset($instance['host'])
+                    && $instance['scheme'] === 'mongodb' && strpos($instance['host'], 'mongodb://') === 0) {
+                    $mongodbUri = $instance['host'];
+                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', function ($matches) {
+                        return $matches[1] . \explode(',', $matches[2])[0] . $matches[3];
+                    }, $mongodbUri);
+                    $urlParts = \parse_url($url);
+                    if ($urlParts) {
+                        $instance = array_merge($instance, $urlParts);
+                        $instance['url'] = $mongodbUri;
+                    }
+                }
+            }
+        }
+
+        return $relationships;
     }
 
     /**
@@ -282,12 +302,17 @@ class Relationships implements InputConfiguringInterface
     public function buildUrl(array $instance)
     {
         $parts = $instance;
+
         // Convert to parse_url parts.
-        $parts['user'] = $parts['username'];
-        $parts['pass'] = $parts['password'];
+        if (isset($parts['username'])) {
+            $parts['user'] = $parts['username'];
+        }
+        if (isset($parts['password'])) {
+            $parts['pass'] = $parts['password'];
+        }
         unset($parts['username'], $parts['password']);
         // The 'query' is expected to be a string.
-        if (is_array($parts['query'])) {
+        if (isset($parts['query']) && is_array($parts['query'])) {
             unset($parts['query']['is_master']);
             $parts['query'] = (new Query($parts['query']))->__toString();
         }
