@@ -174,11 +174,29 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships(HostInterface $host, $refresh = false)
     {
-        $relationships = $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh);
+        return $this->normalizeRelationships(
+            $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh)
+        );
+    }
 
-        // Handle weird mongodb URIs.
+    /**
+     * Normalizes relationships that have weird output in the API.
+     *
+     * If only real-life relationships were this simple.
+     *
+     * @param array $relationships
+     *
+     * @return array
+     */
+    private function normalizeRelationships(array $relationships)
+    {
         foreach ($relationships as &$relationship) {
             foreach ($relationship as &$instance) {
+                // If there is a "host" which is actually a full MongoDB
+                // multi-instance URI such a mongodb://hostname1,hostname2,hostname3:1234/path?query
+                // then this converts it into a valid URL (selecting just the
+                // first hostname), and parses that to populate the instance
+                // definition.
                 if (isset($instance['scheme']) && isset($instance['host'])
                     && $instance['scheme'] === 'mongodb' && strpos($instance['host'], 'mongodb://') === 0) {
                     $mongodbUri = $instance['host'];
@@ -187,13 +205,15 @@ class Relationships implements InputConfiguringInterface
                     }, $mongodbUri);
                     $urlParts = \parse_url($url);
                     if ($urlParts) {
-                        $instance = array_merge($instance, $urlParts);
+                        $instance = array_merge($urlParts, $instance);
+                        // Fix the "host" to be a hostname.
+                        $instance['host'] = $urlParts['host'];
+                        // Set the "url" as the original "host".
                         $instance['url'] = $mongodbUri;
                     }
                 }
             }
         }
-
         return $relationships;
     }
 
