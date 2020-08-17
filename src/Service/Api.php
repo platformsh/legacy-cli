@@ -474,14 +474,16 @@ class Api
     /**
      * Constructs a stream context for using the API with stream functions.
      *
+     * @param int|float $timeout
+     *
      * @return resource
      */
-    public function getStreamContext() {
+    public function getStreamContext($timeout = 15) {
         $opts = [
             'http' => [
                 'method' => 'GET',
                 'follow_location' => 0,
-                'timeout' => 15,
+                'timeout' => $timeout,
                 'user_agent' => $this->getUserAgent(),
                 'header' => [
                     'Authorization: Bearer ' . $this->getAccessToken(),
