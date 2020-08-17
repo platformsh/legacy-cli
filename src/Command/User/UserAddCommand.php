@@ -26,7 +26,10 @@ class UserAddCommand extends CommandBase
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
-        $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
+
+        if ($this->config()->getWithDefault('api.invitations', false)) {
+            $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
+        }
 
         $this->addProjectOption();
         $this->addWaitOptions();
