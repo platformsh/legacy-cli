@@ -269,10 +269,10 @@ class Drush
 
         $aliases = [];
 
-        // Run the command with a 5-second timeout. An exception will be thrown
-        // if it fails.
+        // Run the command with a timeout. An exception will be thrown if it fails.
+        // A user experienced timeouts when this was set to 5 seconds, so it was increased to 30.
         try {
-            $result = $this->shellHelper->execute($args, null, true, true, [], 5);
+            $result = $this->shellHelper->execute($args, null, true, true, [], 30);
             if (is_string($result)) {
                 $aliases = (array) json_decode($result, true);
             }
