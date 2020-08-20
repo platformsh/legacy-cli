@@ -60,7 +60,8 @@ class BrowserLoginCommand extends CommandBase
             $this->stdErr->writeln('');
         }
         $connector = $this->api()->getClient(false)->getConnector();
-        if (!$input->getOption('force') && $connector->isLoggedIn()) {
+        $force = $input->getOption('force');
+        if (!$force && $connector->isLoggedIn()) {
             // Get account information, simultaneously checking whether the API
             // login is still valid. If the request works, then do not log in
             // again (unless --force is used). If the request fails, proceed
@@ -79,6 +80,7 @@ class BrowserLoginCommand extends CommandBase
                     if (!$questionHelper->confirm('Log in anyway?', false)) {
                         return 1;
                     }
+                    $force = true;
                 } else {
                     // USE THE FORCE
                     $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
@@ -144,7 +146,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
-            'CLI_OAUTH_PROMPT' => $input->getOption('force') ? 'consent select_account' : 'consent',
+            'CLI_OAUTH_PROMPT' => $force ? 'consent select_account' : 'consent',
             'CLI_OAUTH_SCOPE' => 'offline_access',
             'CLI_OAUTH_FILE' => $responseFile,
         ] + $this->getParentEnv());
