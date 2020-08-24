@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      COMPOSER_HOME: /cache/composer
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        composer install --no-dev --no-interaction
+        cd vendor-bin/box
+        composer install --no-interaction
+    - name: Symlink vendor/bin/box
+      run: |
+       mkdir -p vendor/bin
+       ln -s "$(realpath vendor-bin/box/vendor/bin/box)" vendor/bin/box
+    - name: Build platform.phar
+      env:
+        CI_COMMIT_SHA: ${{ github.event.after }}
+      run: |
+        CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | head -c8)
+        ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_SHORT_SHA" --output platform.phar
+    - uses: actions/upload-artifact@v2
+      with:
+        name: cli-phar
+        path: platform.phar
