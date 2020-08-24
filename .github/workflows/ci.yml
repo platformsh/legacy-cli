@@ -25,9 +25,10 @@ jobs:
     - name: Build platform.phar
       env:
         CI_COMMIT_SHA: ${{ github.event.after }}
+        CI_COMMIT_REF_NAME: ${{ github.head_ref }}
       run: |
         CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | head -c8)
-        ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_SHORT_SHA" --output platform.phar
+        ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_REF_NAME"-"$CI_COMMIT_SHORT_SHA" --output platform.phar
     - uses: actions/upload-artifact@v2
       with:
         name: cli-phar
