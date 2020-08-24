@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Project;
 use Cocur\Slugify\Slugify;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\DependencyMissingException;
+use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
@@ -12,6 +13,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 
 class ProjectGetCommand extends CommandBase
 {
@@ -111,13 +113,13 @@ class ProjectGetCommand extends CommandBase
         try {
             $repoExists = $git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
                 || $git->remoteRefExists($gitUrl);
-        } catch (\RuntimeException $e) {
+        } catch (ProcessFailedException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln(sprintf(
                 'Failed to connect to the Git repository: <error>' . $gitUrl . '</error>'
             ));
 
-            $this->suggestSshRemedies($gitUrl);
+            $this->suggestSshRemedies($gitUrl, $e->getProcess());
 
             return 1;
         }
@@ -301,8 +303,9 @@ class ProjectGetCommand extends CommandBase
      * Suggest SSH key commands for the user, if the Git connection fails.
      *
      * @param string $gitUrl
+     * @param Process $process
      */
-    protected function suggestSshRemedies($gitUrl)
+    protected function suggestSshRemedies($gitUrl, Process $process)
     {
         // Remove the path from the git URI to get the SSH part.
         $gitSshUri = '';
@@ -310,12 +313,12 @@ class ProjectGetCommand extends CommandBase
             list($gitSshUri,) = explode(':', $gitUrl, 2);
         }
 
+        /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
+        $sshDiagnostics = $this->getService('ssh_diagnostics');
+
         // Determine whether the URL is for an internal Git repository, as
         // opposed to a third-party one (like GitLab/GitHub).
-        $internalDomainSuffix = $this->config()->get('detection.git_domain');
-        $isInternal = substr($gitSshUri, -strlen($internalDomainSuffix)) === $internalDomainSuffix;
-
-        if (!$isInternal) {
+        if ($gitSshUri === '' || !$sshDiagnostics->sshHostIsInternal($gitSshUri)) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
                 'Please make sure you have the correct access rights and the repository exists.'
@@ -323,10 +326,6 @@ class ProjectGetCommand extends CommandBase
             return;
         }
 
-        /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
-        $sshDiagnostics = $this->getService('ssh_diagnostics');
-        if ($gitSshUri !== '') {
-            $sshDiagnostics->diagnoseFailure($gitSshUri);
-        }
+        $sshDiagnostics->diagnoseFailure($gitSshUri, $process->getExitCode(), $process);
     }
 }

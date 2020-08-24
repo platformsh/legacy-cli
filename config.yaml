@@ -143,6 +143,7 @@ api:
   certifier_url: 'https://ssh.api.platform.sh'
 
   # Wildcard domains for SSH configuration.
+  # This is also used to detect whether to run diagnostics on an SSH connection error.
   # Can be replaced by a single value using the {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
   ssh_domain_wildcards: ['*.platform.sh']
 

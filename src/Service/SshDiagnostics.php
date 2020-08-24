@@ -9,7 +9,6 @@ use Symfony\Component\Process\Process;
 
 class SshDiagnostics
 {
-    // This would be a private const from PHP 7.1
     const _SSH_ERROR_EXIT_CODE = 255;
 
     private $ssh;
@@ -64,24 +63,76 @@ class SshDiagnostics
         if (!$reset && isset($this->connectionTestResult)) {
             return $this->connectionTestResult;
         }
+        $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_VERBOSE);
         $process = new Process($this->ssh->getSshCommand([], $uri, 'exit'));
         $process->run();
         return $this->connectionTestResult = $process;
     }
 
     /**
+     * Hackily finds a host from an SSH URI.
+     *
+     * @param string $uri
+     *
+     * @return string|false
+     */
+    private function getHost($uri)
+    {
+        // Parse the SSH URI to get the hostname.
+        if (\strpos($uri, '@') !== false) {
+            list(, $uri) = \explode('@', $uri, 2);
+        }
+        if (\strpos($uri, '://') !== false) {
+            list(, $uri) = \explode('://', $uri, 2);
+        }
+        if (\strpos($uri, ':') !== false) {
+            list($uri, ) = \explode(':', $uri, 2);
+        }
+        return \parse_url('ssh://' . $uri, PHP_URL_HOST);
+    }
+
+    /**
+     * Checks if an SSH URI is for an internal (first-party) SSH server.
+     *
+     * @param string $uri
+     *
+     * @return bool
+     *  True if the URI is for an internal server, false if it's external or it cannot be determined.
+     */
+    public function sshHostIsInternal($uri)
+    {
+        $host = $this->getHost($uri);
+        if ($host === false) {
+            return false;
+        }
+        // Check against the wildcard list.
+        foreach ($this->config->getWithDefault('api.ssh_domain_wildcards', []) as $wildcard) {
+            if (\strpos($host, \str_replace('*.', '', $wildcard)) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Diagnoses and reports reasons for an SSH command failure.
      *
      * @param string $uri
+     *   The SSH connection URI.
+     * @param int $exitCode
+     *   The exit code from the SSH command.
      * @param Process|null $failedProcess
      *   The failed SSH process. Another SSH command will run automatically if a process is not available.
      * @param bool $blankLine
      *   Whether to output a blank line first if anything will be printed.
      */
-    public function diagnoseFailure($uri, Process $failedProcess = null, $blankLine = true)
+    public function diagnoseFailure($uri, $exitCode, Process $failedProcess = null, $blankLine = true)
     {
-        $failedProcess = $failedProcess ?: $this->testConnection($uri);
-        if ($failedProcess->getExitCode() !== self::_SSH_ERROR_EXIT_CODE) {
+        if ($exitCode !== self::_SSH_ERROR_EXIT_CODE) {
+            return;
+        }
+        // Only check when the SSH URI matches an internal SSH host.
+        if (!$this->sshHostIsInternal($uri)) {
             return;
         }
 

@@ -80,6 +80,13 @@ class EnvironmentScpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
-        return $shell->executeSimple($command);
+        $exitCode = $shell->executeSimple($command);
+        if ($exitCode !== 0) {
+            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
+            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics->diagnoseFailure($sshUrl, $exitCode);
+        }
+
+        return $exitCode;
     }
 }

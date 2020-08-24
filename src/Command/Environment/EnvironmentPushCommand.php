@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Exception\EnvironmentStateException;
@@ -166,8 +167,12 @@ class EnvironmentPushCommand extends CommandBase
             $targetEnvironment ? 'existing' : 'new',
             $target
         ));
-        $success = $git->execute($gitArgs, null, false, false, $env);
-        if (!$success) {
+        try {
+            $git->execute($gitArgs, null, true, false, $env);
+        } catch (ProcessFailedException $e) {
+            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
+            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics->diagnoseFailure($project->getGitUrl(), $e->getProcess()->getExitCode(), $e->getProcess());
             return 1;
         }
 

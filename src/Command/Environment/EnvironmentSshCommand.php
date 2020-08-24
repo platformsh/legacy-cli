@@ -76,7 +76,7 @@ class EnvironmentSshCommand extends CommandBase
         if ($exitCode !== 0) {
             /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
             $diagnostics = $this->getService('ssh_diagnostics');
-            $diagnostics->diagnoseFailure($sshUrl);
+            $diagnostics->diagnoseFailure($sshUrl, $exitCode);
         }
 
         return $exitCode;

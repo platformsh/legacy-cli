@@ -77,7 +77,7 @@ class Rsync
         try {
             $this->doSync($from, $to, $options);
         } catch (ProcessFailedException $e) {
-            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess());
+            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess()->getExitCode(), $e->getProcess());
             throw new ProcessFailedException($e->getProcess(), false);
         }
     }
@@ -97,7 +97,7 @@ class Rsync
         try {
             $this->doSync($from, $to, $options);
         } catch (ProcessFailedException $e) {
-            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess());
+            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess()->getExitCode(), $e->getProcess());
             throw new ProcessFailedException($e->getProcess(), false);
         }
     }
