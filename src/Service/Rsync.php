@@ -2,8 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\NullOutput;
+use Platformsh\Cli\Exception\ProcessFailedException;
 
 /**
  * Helper class which runs rsync.
@@ -13,17 +12,20 @@ class Rsync
 
     private $shell;
     private $ssh;
+    private $sshDiagnostics;
 
     /**
      * Constructor.
      *
-     * @param Shell|null $shellHelper
-     * @param Ssh|null $ssh
+     * @param Shell $shellHelper
+     * @param Ssh $ssh
+     * @param SshDiagnostics $sshDiagnostics
      */
-    public function __construct(Shell $shellHelper = null, Ssh $ssh = null)
+    public function __construct(Shell $shellHelper, Ssh $ssh, SshDiagnostics $sshDiagnostics)
     {
-        $this->shell = $shellHelper ?: new Shell();
-        $this->ssh = $ssh ?: new Ssh(new ArrayInput([]), new NullOutput());
+        $this->shell = $shellHelper;
+        $this->ssh = $ssh;
+        $this->sshDiagnostics = $sshDiagnostics;
     }
 
     /**
@@ -72,7 +74,12 @@ class Rsync
         // contents rather than the directory itself.
         $from = rtrim($localDir, '/') . '/';
         $to = sprintf('%s:%s', $sshUrl, $remoteDir);
-        $this->doSync($from, $to, $options);
+        try {
+            $this->doSync($from, $to, $options);
+        } catch (ProcessFailedException $e) {
+            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess());
+            throw new ProcessFailedException($e->getProcess(), false);
+        }
     }
 
     /**
@@ -87,7 +94,12 @@ class Rsync
     {
         $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
         $to = $localDir;
-        $this->doSync($from, $to, $options);
+        try {
+            $this->doSync($from, $to, $options);
+        } catch (ProcessFailedException $e) {
+            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess());
+            throw new ProcessFailedException($e->getProcess(), false);
+        }
     }
 
     /**

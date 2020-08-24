@@ -88,6 +88,7 @@ service:
   api_tokens_url: 'https://accounts.platform.sh/user/api-tokens'
   register_url: 'https://auth.api.platform.sh'
   reset_password_url: 'https://auth.api.platform.sh/reset-password'
+  mfa_setup_url: ~
   console_url: 'https://console.platform.sh'
   pricing_url: 'https://platform.sh/pricing'
   api_token_help_url: 'https://docs.platform.sh/gettingstarted/cli/api-tokens.html'

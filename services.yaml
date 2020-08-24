@@ -111,7 +111,7 @@ services:
 
     rsync:
       class:     '\Platformsh\Cli\Service\Rsync'
-      arguments: ['@shell', '@ssh']
+      arguments: ['@shell', '@ssh', '@ssh_diagnostics']
 
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'
@@ -128,6 +128,10 @@ services:
     ssh_config:
         class:     '\Platformsh\Cli\Service\SshConfig'
         arguments: ['@config', '@fs', '@output', '@ssh_key', '@certifier']
+
+    ssh_diagnostics:
+      class:     '\Platformsh\Cli\Service\SshDiagnostics'
+      arguments: ['@ssh', '@output', '@certifier', '@ssh_key', '@api', '@config']
 
     ssh_key:
         class:     '\Platformsh\Cli\Service\SshKey'

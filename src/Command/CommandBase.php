@@ -1648,10 +1648,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         /** @var Ssh $ssh */
         $ssh = $this->getService('ssh');
+        /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
+        $sshDiagnostics = $this->getService('ssh_diagnostics');
 
         $this->debug('Selected host: ' . $remoteContainer->getSshUrl());
 
-        return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell);
+        return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell, $sshDiagnostics);
     }
 
     /**

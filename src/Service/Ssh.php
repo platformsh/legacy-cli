@@ -38,11 +38,15 @@ class Ssh implements InputConfiguringInterface
     }
 
     /**
+     * Returns arguments for an SSH command.
+     *
      * @param array $extraOptions
+     * @param string|null $uri
+     * @param string|null $remoteCommand
      *
      * @return array
      */
-    public function getSshArgs(array $extraOptions = [])
+    public function getSshArgs(array $extraOptions = [], $uri = null, $remoteCommand = null)
     {
         $options = array_merge($this->getSshOptions(), $extraOptions);
 
@@ -57,6 +61,13 @@ class Ssh implements InputConfiguringInterface
             }
             $args[] = '-o';
             $args[] = $name . ' ' . $value;
+        }
+
+        if ($uri !== null) {
+            $args[] = $uri;
+        }
+        if ($remoteCommand !== null) {
+            $args[] = $remoteCommand;
         }
 
         return $args;
@@ -132,13 +143,15 @@ class Ssh implements InputConfiguringInterface
      * Returns an SSH command line.
      *
      * @param array $extraOptions
+     * @param string|null $uri
+     * @param string|null $remoteCommand
      *
      * @return string
      */
-    public function getSshCommand(array $extraOptions = [])
+    public function getSshCommand(array $extraOptions = [], $uri = null, $remoteCommand = null)
     {
         $command = 'ssh';
-        $args = $this->getSshArgs($extraOptions);
+        $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
         if (!empty($args)) {
             $command .= ' ' . implode(' ', array_map('escapeshellarg', $args));
         }
