@@ -71,12 +71,15 @@ class SshConfig {
             $lines[] = '';
         }
 
+
+        $hostBlock = '';
         if ($domainWildcards) {
-            $lines[] = 'Host ' . implode(' ', $domainWildcards);
+            $hostBlock = 'Host ' . implode(' ', $domainWildcards);
         }
 
         $sessionIdentityFile = $this->sshKey->selectIdentity();
         if ($sessionIdentityFile !== null) {
+            $lines[] = $hostBlock;
             $lines[] = '# This SSH key was detected as corresponding to the session:';
             $lines[] = sprintf('IdentityFile %s', $sessionIdentityFile);
             $lines[] = '';
@@ -95,6 +98,7 @@ class SshConfig {
         if ($sessionIdentityFile === null && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
             $lines[] = '# Include SSH "default" identity files:';
             foreach ($defaultFiles as $identityFile) {
+                $lines[] = $hostBlock;
                 $lines[] = sprintf('IdentityFile %s', $identityFile);
             }
             $lines[] = '';
