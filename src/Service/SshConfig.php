@@ -85,15 +85,6 @@ class SshConfig {
             $lines[] = '';
         }
 
-        $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
-        $includerFilename = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config';
-        if (empty($lines)) {
-            if (\file_exists($includerFilename) || \file_exists($sessionSpecificFilename)) {
-                $this->fs->remove([$includerFilename, $sessionSpecificFilename]);
-            }
-            return false;
-        }
-
         // Add default files if there is no preferred session identity file.
         if ($sessionIdentityFile === null && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
             $lines[] = '# Include SSH "default" identity files:';
@@ -102,6 +93,15 @@ class SshConfig {
                 $lines[] = sprintf('IdentityFile %s', $identityFile);
             }
             $lines[] = '';
+        }
+
+        $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
+        $includerFilename = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config';
+        if (empty($lines)) {
+            if (\file_exists($includerFilename) || \file_exists($sessionSpecificFilename)) {
+                $this->fs->remove([$includerFilename, $sessionSpecificFilename]);
+            }
+            return false;
         }
 
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);
