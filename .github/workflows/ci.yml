@@ -7,9 +7,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      COMPOSER_HOME: /home/runner/.composer/cache
-
     steps:
     - uses: actions/checkout@v2
 
