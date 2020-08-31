@@ -15,6 +15,7 @@ class Config
     private $env;
     private $fs;
     private $version;
+    private $homeDir;
 
     /**
      * @param array|null  $env
@@ -114,10 +115,17 @@ class Config
     }
 
     /**
+     * Returns the user's home directory.
+     *
+     * @param bool $reset Reset the static cache.
+     *
      * @return string The absolute path to the user's home directory
      */
-    public function getHomeDirectory()
+    public function getHomeDirectory($reset = false)
     {
+        if (!$reset && isset($this->homeDir)) {
+            return $this->homeDir;
+        }
         $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
         foreach ($envVars as $envVar) {
@@ -131,8 +139,8 @@ class Config
                         sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
                     );
                 }
-
-                return realpath($value) ?: $value;
+                $this->homeDir = realpath($value) ?: $value;
+                return $this->homeDir;
             }
         }
 
