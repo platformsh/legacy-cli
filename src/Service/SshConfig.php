@@ -140,7 +140,7 @@ class SshConfig {
             return $path;
         }
         // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
-        return $path;
+        return '"' . \str_replace('"', '"""', $path) . '"';
     }
 
     /**
