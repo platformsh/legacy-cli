@@ -122,7 +122,10 @@ class SshConfig {
     }
 
     /**
-     * Adds quotes around a path, if it contains spaces, for SSH config.
+     * Formats a file path for an SSH config option.
+     *
+     * This should be applied to the IdentityFile and CertificateFile option
+     * values. See the ssh_config(5) man page: https://www.freebsd.org/cgi/man.cgi?ssh_config%285%29
      *
      * @param string $path
      *
