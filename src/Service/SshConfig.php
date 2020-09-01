@@ -66,8 +66,8 @@ class SshConfig {
 
             // Indentation in the SSH config is for readability (it has no other effect).
             $lines[] = '# Include the certificate and its key:';
-            $lines[] = sprintf('CertificateFile %s', $certificate->certificateFilename());
-            $lines[] = sprintf('IdentityFile %s', $certificate->privateKeyFilename());
+            $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
+            $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($certificate->privateKeyFilename()));
             $lines[] = '';
         }
 
@@ -78,7 +78,7 @@ class SshConfig {
         $sessionIdentityFile = $this->sshKey->selectIdentity();
         if ($sessionIdentityFile !== null) {
             $lines[] = '# This SSH key was detected as corresponding to the session:';
-            $lines[] = sprintf('IdentityFile %s', $sessionIdentityFile);
+            $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
             $lines[] = '';
         }
 
@@ -95,7 +95,7 @@ class SshConfig {
         if ($sessionIdentityFile === null && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
             $lines[] = '# Include SSH "default" identity files:';
             foreach ($defaultFiles as $identityFile) {
-                $lines[] = sprintf('IdentityFile %s', $identityFile);
+                $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($identityFile));
             }
             $lines[] = '';
         }
@@ -119,6 +119,28 @@ class SshConfig {
         }
 
         return true;
+    }
+
+    /**
+     * Formats a file path for an SSH config option.
+     *
+     * This should be applied to the IdentityFile and CertificateFile option
+     * values. See the ssh_config(5) man page: https://www.freebsd.org/cgi/man.cgi?ssh_config%285%29
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public function formatFilePath($path)
+    {
+        // Replace the home directory with the SSH token %d, which solves most quoting problems.
+        $home = $this->config->getHomeDirectory();
+        $path = \str_replace($home, '%d', $path);
+        if (\strpos($path, ' ') === false) {
+            return $path;
+        }
+        // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
+        return '"' . \str_replace('"', '"""', $path) . '"';
     }
 
     /**
