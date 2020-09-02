@@ -274,6 +274,12 @@ class Relationships implements InputConfiguringInterface
             case 'mongodump':
             case 'mongoexport':
             case 'mongorestore':
+                if (isset($database['url'])) {
+                    if ($command === 'mongo') {
+                        return $database['url'];
+                    }
+                    return sprintf('--uri %s', OsUtil::escapePosixShellArg($database['url']));
+                }
                 $args = sprintf(
                     '--username %s --password %s --host %s --port %d',
                     OsUtil::escapePosixShellArg($database['username']),
