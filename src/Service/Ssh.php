@@ -123,10 +123,13 @@ class Ssh implements InputConfiguringInterface
             }
         }
 
-        if (empty($options['IdentitiesOnly'])
-            && ($sessionIdentityFile = $this->sshKey->selectIdentity())
-            && (empty($options['IdentityFile']) || !in_array($sessionIdentityFile, $options['IdentityFile'], true))) {
+        if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
             $options['IdentityFile'][] = $this->sshConfig->formatFilePath($sessionIdentityFile);
+        }
+
+        // For neatness, do not repeat IdentityFile values.
+        if (isset($options['IdentityFile']) && \is_array($options['IdentityFile'])) {
+            $options['IdentityFile'] = \array_unique($options['IdentityFile']);
         }
 
         if ($this->output->isDebug()) {
