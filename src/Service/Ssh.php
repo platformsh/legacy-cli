@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\SshCert\Certifier;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -160,7 +161,7 @@ class Ssh implements InputConfiguringInterface
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
         if (!empty($args)) {
-            $command .= ' ' . implode(' ', array_map('escapeshellarg', $args));
+            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
         }
 
         return $command;
