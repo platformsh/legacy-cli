@@ -63,6 +63,14 @@ class VariableGetCommand extends VariableCommandBase
         }
 
         if ($input->getOption('pipe')) {
+            if (!$variable->hasProperty('value')) {
+                if ($variable->is_sensitive) {
+                    $this->stdErr->writeln('The variable is sensitive, so its value cannot be read.');
+                } else {
+                    $this->stdErr->writeln('No variable value found.');
+                }
+                return 1;
+            }
             $output->writeln($variable->value);
 
             return 0;
@@ -72,6 +80,11 @@ class VariableGetCommand extends VariableCommandBase
         $properties['level'] = $this->getVariableLevel($variable);
 
         if ($property = $input->getOption('property')) {
+            if ($property === 'value' && !isset($properties['value']) && $variable->is_sensitive) {
+                $this->stdErr->writeln('The variable is sensitive, so its value cannot be read.');
+                return 1;
+            }
+
             /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
             $formatter->displayData($output, $properties, $property);
