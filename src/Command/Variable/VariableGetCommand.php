@@ -43,7 +43,11 @@ class VariableGetCommand extends VariableCommandBase
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-                $variable = $this->chooseVariable($level);
+            $variable = $this->chooseVariable($level);
+            if (!$variable) {
+                $this->stdErr->writeln('No variables found');
+                return 1;
+            }
         } else {
             return $this->runOtherCommand('variable:list', array_filter([
                 '--level' => $level,
@@ -105,7 +109,7 @@ class VariableGetCommand extends VariableCommandBase
     /**
      * @param string|null $level
      *
-     * @return ProjectLevelVariable|EnvironmentLevelVariable
+     * @return ProjectLevelVariable|EnvironmentLevelVariable|false
      */
     private function chooseVariable($level) {
         $variables = [];
@@ -114,6 +118,9 @@ class VariableGetCommand extends VariableCommandBase
         }
         if ($level === 'environment' || $level === null) {
             $variables = array_merge($variables, $this->getSelectedEnvironment()->getVariables());
+        }
+        if (empty($variables)) {
+            return false;
         }
         $options = [];
         foreach ($variables as $key => $variable) {
