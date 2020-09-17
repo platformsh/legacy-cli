@@ -84,9 +84,10 @@ class SshDiagnostics
         if (!$reset && isset($this->connectionTestResult)) {
             return $this->connectionTestResult;
         }
-        $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_VERBOSE);
+        $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
         $process = new Process($this->ssh->getSshCommand([], $uri, 'exit'));
         $process->run();
+        $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
         return $this->connectionTestResult = $process;
     }
 
