@@ -50,6 +50,27 @@ class SshDiagnostics
     }
 
     /**
+     * Checks if SSH authentication succeeded, even if the connection failed.
+     *
+     * This occurs if the SSH key or certificate was correct, but the requested
+     * service does not exist or the user does not have access to it.
+     *
+     * @param string $uri
+     * @param Process|null $failedProcess
+     *
+     * @return bool
+     */
+    private function authenticationSucceded($uri, $failedProcess = null)
+    {
+        $failedProcess = $failedProcess ?: $this->testConnection($uri);
+        $stdErr = $failedProcess->getErrorOutput();
+
+        return stripos($stdErr, "reason: service doesn't exist") !== false
+            || stripos($stdErr, 'reason: service not found') !== false
+            || stripos($stdErr, 'you successfully authenticated, but') !== false;
+    }
+
+    /**
      * Tests the SSH connection (and caches the result).
      *
      * @param string $uri
@@ -63,9 +84,10 @@ class SshDiagnostics
         if (!$reset && isset($this->connectionTestResult)) {
             return $this->connectionTestResult;
         }
-        $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_VERBOSE);
+        $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
         $process = new Process($this->ssh->getSshCommand([], $uri, 'exit'));
         $process->run();
+        $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
         return $this->connectionTestResult = $process;
     }
 
@@ -161,6 +183,10 @@ class SshDiagnostics
                 }
                 $this->stdErr->writeln(\sprintf('Then log in again with: <comment>%s login -f</comment>', $executable));
             }
+            return;
+        }
+
+        if ($this->authenticationSucceded($uri, $failedProcess)) {
             return;
         }
 
