@@ -29,20 +29,6 @@ class Rsync
     }
 
     /**
-     * Returns environment variables for configuring rsync.
-     *
-     * @return array
-     */
-    private function env() {
-        $env = [];
-        if ($this->ssh->getSshArgs() !== []) {
-            $env['RSYNC_RSH'] = $this->ssh->getSshCommand();
-        }
-
-        return $env;
-    }
-
-    /**
      * Finds whether the installed version of rsync supports the --iconv flag.
      *
      * @return bool|null
@@ -112,6 +98,10 @@ class Rsync
     private function doSync($from, $to, array $options = [])
     {
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
+        if ($this->ssh->getSshArgs() !== []) {
+            $params[] = '--rsh';
+            $params[] = $this->ssh->getSshCommand();
+        }
 
         if (!empty($options['verbose'])) {
             $params[] = '-vv';
@@ -136,6 +126,6 @@ class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, $this->env(), null);
+        $this->shell->execute($params, null, true, false, [], null);
     }
 }
