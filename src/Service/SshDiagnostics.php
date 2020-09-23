@@ -60,7 +60,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function authenticationSucceded($uri, $failedProcess = null)
+    private function authenticationSucceeded($uri, $failedProcess = null)
     {
         $failedProcess = $failedProcess ?: $this->testConnection($uri);
         $stdErr = $failedProcess->getErrorOutput();
@@ -186,7 +186,7 @@ class SshDiagnostics
             return;
         }
 
-        if ($this->authenticationSucceded($uri, $failedProcess)) {
+        if ($this->authenticationSucceeded($uri, $failedProcess)) {
             return;
         }
 
