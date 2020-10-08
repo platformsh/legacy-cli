@@ -261,11 +261,22 @@ class Shell
             if (is_executable($command)) {
                 $result[$command] = $command;
             } else {
-                $args = ['command', '-v', $command];
                 if (OsUtil::isWindows()) {
-                    $args = ['where', $command];
+                    $commands = [['where', $command], ['which', $command]];
+                } else {
+                    $commands = [['command', '-v', $command], ['which', $command]];
                 }
-                $result[$command] = $this->execute($args, null, false, true);
+                foreach ($commands as $key => $args) {
+                    try {
+                        $result[$command] = $this->execute($args);
+                    } catch (\Platformsh\Cli\Exception\ProcessFailedException $e) {
+                        $result[$command] = false;
+                        if ($e->getProcess()->getExitCode() === 127) {
+                            continue;
+                        }
+                    }
+                    break;
+                }
                 if ($result[$command] === false && $noticeOnError) {
                     trigger_error(sprintf("Failed to find command via: %s", implode(' ', $args)), E_USER_NOTICE);
                 }
