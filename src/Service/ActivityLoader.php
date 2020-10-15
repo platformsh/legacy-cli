@@ -40,19 +40,21 @@ class ActivityLoader
      * Load activities.
      *
      * @param Resource    $apiResource
-     * @param int         $limit
+     * @param int|null    $limit
      * @param string|null $type
      * @param int|null    $startsAt
+     * @param callable|null $stopCondition
+     *   A test to perform on each activity. If it returns true, loading is stopped.
      *
      * @return \Platformsh\Client\Model\Activity[]
      */
-    public function load(Resource $apiResource, $limit, $type, $startsAt)
+    public function load(Resource $apiResource, $limit, $type, $startsAt, callable $stopCondition = null)
     {
         /** @var \Platformsh\Client\Model\Environment|\Platformsh\Client\Model\Project $apiResource */
-        $activities = $apiResource->getActivities($limit, $type, $startsAt);
+        $activities = $apiResource->getActivities($limit ?: 0, $type, $startsAt);
         $progress = new ProgressBar($this->getProgressOutput());
         $progress->setMessage($type === 'environment.backup' ? 'Loading backups...' : 'Loading activities...');
-        $progress->setFormat('%message% %current% (max: %max%)');
+        $progress->setFormat($limit === null ? '%message% %current%' : '%message% %current% (max: %max%)');
         $progress->start($limit);
 
         // Index the array by the activity ID for deduplication.
@@ -63,16 +65,20 @@ class ActivityLoader
         $activities = $indexed;
         unset($indexed);
 
-        while (count($activities) < $limit) {
+        while ($limit === null || count($activities) < $limit) {
             if ($activity = end($activities)) {
                 $startsAt = strtotime($activity->created_at);
             }
-            $nextActivities = $apiResource->getActivities($limit - count($activities), $type, $startsAt);
+            $nextActivities = $apiResource->getActivities($limit ? $limit - count($activities) : 0, $type, $startsAt);
             $new = false;
             foreach ($nextActivities as $activity) {
                 if (!isset($activities[$activity->id])) {
                     $activities[$activity->id] = $activity;
                     $new = true;
+                    if (isset($stopCondition) && $stopCondition($activity)) {
+                        $progress->setProgress(count($activities));
+                        break 2;
+                    }
                 }
             }
             if (!$new) {

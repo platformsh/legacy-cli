@@ -130,9 +130,9 @@ class SelfBuildCommand extends CommandBase
             $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
             $boxConfig = array_merge($originalConfig, $boxConfig);
             $boxConfig['base-path'] = CLI_ROOT;
-            $filename = tempnam(sys_get_temp_dir(), 'cli-box-');
-            file_put_contents($filename, json_encode($boxConfig));
-            $boxArgs[] = '--config=' . $filename;
+            $tmpJson = tempnam(sys_get_temp_dir(), 'cli-box-');
+            file_put_contents($tmpJson, json_encode($boxConfig));
+            $boxArgs[] = '--config=' . $tmpJson;
         }
 
         $this->stdErr->writeln('Building Phar package using Box');

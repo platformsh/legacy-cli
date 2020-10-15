@@ -26,7 +26,11 @@ services:
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
-        arguments: ['@config', '@cache']
+        arguments: ['@config', '@cache', '@output', '@token_config']
+
+    app_finder:
+      class:     '\Platformsh\Cli\Local\ApplicationFinder'
+      arguments: ['@config']
 
     cache:
         class:     '\Doctrine\Common\Cache\CacheProvider'
@@ -37,6 +41,10 @@ services:
         class:     '\Platformsh\Cli\Service\CacheFactory'
         public:    false
 
+    certifier:
+      class:     '\Platformsh\Cli\SshCert\Certifier'
+      arguments: ['@api', '@config', '@shell', '@fs', '@output']
+
     config:
         class:     '\Platformsh\Cli\Service\Config'
 
@@ -46,7 +54,7 @@ services:
 
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
-        arguments: ['@config', '@shell', '@local.project', '@api']
+        arguments: ['@config', '@shell', '@local.project', '@api', '@app_finder']
 
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'
@@ -58,15 +66,15 @@ services:
 
     git_data_api:
         class:     '\Platformsh\Cli\Service\GitDataApi'
-        arguments: ['@api']
+        arguments: ['@api', '@cache']
 
     identifier:
         class:     '\Platformsh\Cli\Service\Identifier'
-        arguments: ['@config', '@api', '@output']
+        arguments: ['@config', '@api', '@output', '@cache']
 
     local.build:
         class:     '\Platformsh\Cli\Local\LocalBuild'
-        arguments: ['@config', '@output', '@shell', '@fs', '@git', '@local.dependency_installer']
+        arguments: ['@config', '@output', '@shell', '@fs', '@git', '@local.dependency_installer', '@app_finder']
 
     local.dependency_installer:
         class:     '\Platformsh\Cli\Local\DependencyInstaller'
@@ -103,7 +111,7 @@ services:
 
     rsync:
       class:     '\Platformsh\Cli\Service\Rsync'
-      arguments: ['@shell']
+      arguments: ['@shell', '@ssh', '@ssh_diagnostics']
 
     self_updater:
         class:     '\Platformsh\Cli\Service\SelfUpdater'
@@ -115,7 +123,19 @@ services:
 
     ssh:
         class:     '\Platformsh\Cli\Service\Ssh'
-        arguments: ['@input', '@output']
+        arguments: ['@input', '@output', '@certifier', '@ssh_config', '@ssh_key']
+
+    ssh_config:
+        class:     '\Platformsh\Cli\Service\SshConfig'
+        arguments: ['@config', '@fs', '@output', '@ssh_key', '@certifier']
+
+    ssh_diagnostics:
+      class:     '\Platformsh\Cli\Service\SshDiagnostics'
+      arguments: ['@ssh', '@output', '@certifier', '@ssh_key', '@api', '@config']
+
+    ssh_key:
+        class:     '\Platformsh\Cli\Service\SshKey'
+        arguments: ['@config', '@api', '@output']
 
     state:
         class:     '\Platformsh\Cli\Service\State'
@@ -124,6 +144,10 @@ services:
     table:
         class:     '\Platformsh\Cli\Service\Table'
         arguments: ['@input', '@output']
+
+    token_config:
+      class:       '\Platformsh\Cli\Service\TokenConfig'
+      arguments:   ['@config']
 
     url:
         class:     '\Platformsh\Cli\Service\Url'

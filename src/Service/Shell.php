@@ -105,24 +105,34 @@ class Shell
             OutputInterface::VERBOSITY_VERBOSE
         );
 
+        $blankLine = false;
+
         if (!empty($input) && is_string($input)) {
             $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input), OutputInterface::VERBOSITY_VERBOSE);
+            $blankLine = true;
         }
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
+            $blankLine = true;
             $process->setEnv($env + $this->getParentEnv());
         }
 
         if ($dir && is_dir($dir)) {
             $process->setWorkingDirectory($dir);
             $this->showWorkingDirMessage($dir);
+            $blankLine = true;
         }
 
-        // Blank line just to aid debugging.
-        $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
+        // Conditional blank line just to aid debugging.
+        if ($blankLine) {
+            $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
+        }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
+
+        // Another blank line after the command output ends.
+        $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
 
         return is_int($result) ? $result === 0 : $result;
     }
@@ -168,8 +178,7 @@ class Shell
             return $_ENV;
         }
 
-        // If $_ENV is empty, then we can only use a whitelist of all the
-        // variables that we might want to use.
+        // If $_ENV is empty, then guess all the variables that we might want to use.
         $candidates = [
             'TERM',
             'TERM_SESSION_ID',
@@ -210,8 +219,14 @@ class Shell
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
         try {
-            $process->mustRun($quiet ? null : function ($type, $buffer) {
-                $output = $type === Process::ERR ? $this->stdErr : $this->output;
+            $process->mustRun(function ($type, $buffer) use ($quiet) {
+                $output = $type === Process::ERR ? $this->output : $this->stdErr;
+                if ($quiet) {
+                    // Always show stderr output in debug mode.
+                    if ($type !== Process::ERR || !$output->isDebug()) {
+                        return;
+                    }
+                }
                 $output->write(preg_replace('/^/m', '  ', $buffer));
             });
         } catch (ProcessFailedException $e) {
@@ -246,11 +261,22 @@ class Shell
             if (is_executable($command)) {
                 $result[$command] = $command;
             } else {
-                $args = ['command', '-v', $command];
                 if (OsUtil::isWindows()) {
-                    $args = ['where', $command];
+                    $commands = [['where', $command], ['which', $command]];
+                } else {
+                    $commands = [['command', '-v', $command], ['which', $command]];
                 }
-                $result[$command] = $this->execute($args, null, false, true);
+                foreach ($commands as $key => $args) {
+                    try {
+                        $result[$command] = $this->execute($args);
+                    } catch (\Platformsh\Cli\Exception\ProcessFailedException $e) {
+                        $result[$command] = false;
+                        if ($e->getProcess()->getExitCode() === 127) {
+                            continue;
+                        }
+                    }
+                    break;
+                }
                 if ($result[$command] === false && $noticeOnError) {
                     trigger_error(sprintf("Failed to find command via: %s", implode(' ', $args)), E_USER_NOTICE);
                 }

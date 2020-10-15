@@ -3,6 +3,8 @@ namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\EnvironmentAccess;
+use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
+use Platformsh\Client\Model\Invitation\Environment;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -24,10 +26,17 @@ class UserAddCommand extends CommandBase
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
+
+        if ($this->config()->getWithDefault('api.invitations', false)) {
+            $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
+        }
+
         $this->addProjectOption();
         $this->addWaitOptions();
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
+        $this->addExample('Add Bob as a viewer on the "master" environment, and a contributor on environments starting with "dev"', 'bob@example.com -r master:a -r dev%:c');
+        $this->addExample('Add Charlie as viewer on "master" and "staging"', 'charlie@example.com -r master:v -r staging:v');
     }
 
     /**
@@ -249,20 +258,42 @@ class UserAddCommand extends CommandBase
         // Ask for confirmation.
         if ($existingProjectAccess) {
             if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
-
                 return 1;
             }
         } else {
             $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
             $this->stdErr->writeln('');
             if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
-
                 return 1;
             }
         }
+        $this->stdErr->writeln('');
 
-        // Make the required modifications on the project level: add the user,
-        // change their role, or do nothing.
+        // If the user does not already exist on the project, then use the Invitations API.
+        if (!$existingProjectAccess && $this->config()->getWithDefault('api.invitations', false)) {
+            $this->stdErr->writeln('Inviting the user to the project...');
+            $environments = [];
+            foreach ($desiredEnvironmentRoles as $id => $role) {
+                $environments[] = new Environment($id, $role);
+            }
+            try {
+                $project->inviteUserByEmail($email, $desiredProjectRole, $environments, $input->getOption('force-invite'));
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('An invitation has been sent to <info>%s</info>', $email));
+            } catch (AlreadyInvitedException $e) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
+                if ($questionHelper->confirm('Do you want to send this invitation anyway?')) {
+                    $project->inviteUserByEmail($email, $desiredProjectRole, $environments, true);
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf('A new invitation has been sent to <info>%s</info>', $email));
+                }
+            }
+
+            return 0;
+        }
+
+        // Make the desired changes at the project level.
         if (!$existingProjectAccess) {
             $this->stdErr->writeln("Adding the user to the project");
             $result = $project->addUser($email, $desiredProjectRole);
@@ -292,24 +323,24 @@ class UserAddCommand extends CommandBase
                     } else {
                         continue;
                     }
-                } else {
-                    if ($access) {
-                        if ($access->role === $role) {
-                            continue;
-                        }
-                        $this->stdErr->writeln("Setting the user's role on the environment <info>$environmentId</info> to: $role");
-                        $result = $access->update(['role' => $role]);
-                    } else {
-                        $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
-                        $result = $environment->addUser($userId, $role);
+                } elseif ($access) {
+                    if ($access->role === $role) {
+                        continue;
                     }
+                    $this->stdErr->writeln("Setting the user's role on the environment <info>$environmentId</info> to: $role");
+                    $result = $access->update(['role' => $role]);
+                } else {
+                    $this->stdErr->writeln("Adding the user to the environment: <info>$environmentId</info>");
+                    $result = $environment->addUser($userId, $role);
                 }
                 $activities = array_merge($activities, $result->getActivities());
             }
         }
 
         // Wait for activities to complete.
-        if ($this->shouldWait($input)) {
+        if (!$activities) {
+            $this->redeployWarning();
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             if (!$activityMonitor->waitMultiple($activities, $project)) {

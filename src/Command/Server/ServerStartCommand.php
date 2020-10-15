@@ -51,7 +51,9 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        $apps = LocalApplication::getApplications($projectRoot);
+        /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+        $finder = $this->getService('app_finder');
+        $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
             $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;

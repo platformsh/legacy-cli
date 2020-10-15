@@ -64,18 +64,21 @@ class EnvironmentSshCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
         $sshOptions = [];
-        $command = $ssh->getSshCommand($sshOptions);
         if ($this->isTerminal(STDIN)) {
-            $command .= ' -t';
+            $sshOptions['RequestTTY'] = 'force';
         }
-        $command .= ' ' . escapeshellarg($sshUrl);
-        if ($remoteCommand) {
-            $command .= ' ' . escapeshellarg($remoteCommand);
-        }
+        $command = $ssh->getSshCommand($sshOptions, $sshUrl, $remoteCommand);
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
-        return $shell->executeSimple($command);
+        $exitCode = $shell->executeSimple($command);
+        if ($exitCode !== 0) {
+            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
+            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics->diagnoseFailure($sshUrl, $exitCode);
+        }
+
+        return $exitCode;
     }
 }

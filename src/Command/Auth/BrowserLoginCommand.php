@@ -32,28 +32,36 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         Url::configureInput($this->getDefinition());
 
-        $help = 'Use this command to log in to the ' . $applicationName . ' using a browser.';
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $help .= "\n\n" . $aHelp;
-        }
-        $this->setHelp($help);
+        $executable = $this->config()->get('application.executable');
+        $help = 'Use this command to log in to the ' . $applicationName . ' using a web browser.'
+            . "\n\nIt launches a temporary local website which redirects you to log in if necessary, and then captures the resulting authorization code."
+            . "\n\nYour system's default browser will be used. You can override this using the <info>--browser</info> option."
+            . "\n\nAlternatively, to log in using an API token (without a browser), run: <info>$executable auth:api-token-login</info>"
+            . "\n\n" . $this->getNonInteractiveAuthHelp();
+        $this->setHelp(\wordwrap($help, 80));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->api()->hasApiToken()) {
-            $this->stdErr->writeln('Cannot log in: an API token is set');
+        if ($this->api()->hasApiToken(false)) {
+            $this->stdErr->writeln('Cannot log in via the browser, because an API token is set via config.');
             return 1;
         }
         if (!$input->isInteractive()) {
-            $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->getApiTokenHelp('comment')) {
-                $this->stdErr->writeln("\n" . $aHelp);
-            }
+            $this->stdErr->writeln('Non-interactive use of this command is not supported.');
+            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
+        if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+            if (!$this->config()->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+            }
+            $this->stdErr->writeln('');
+        }
         $connector = $this->api()->getClient(false)->getConnector();
-        if (!$input->getOption('force') && $connector->isLoggedIn()) {
+        $force = $input->getOption('force');
+        if (!$force && $connector->isLoggedIn()) {
             // Get account information, simultaneously checking whether the API
             // login is still valid. If the request works, then do not log in
             // again (unless --force is used). If the request fails, proceed
@@ -72,6 +80,7 @@ class BrowserLoginCommand extends CommandBase
                     if (!$questionHelper->confirm('Log in anyway?', false)) {
                         return 1;
                     }
+                    $force = true;
                 } else {
                     // USE THE FORCE
                     $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
@@ -137,6 +146,8 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
             'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
             'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
+            'CLI_OAUTH_PROMPT' => $force ? 'consent select_account' : 'consent',
+            'CLI_OAUTH_SCOPE' => 'offline_access',
             'CLI_OAUTH_FILE' => $responseFile,
         ] + $this->getParentEnv());
         $process->setTimeout(null);
@@ -169,10 +180,8 @@ class BrowserLoginCommand extends CommandBase
         // Show some help.
         $this->stdErr->writeln('');
         $this->stdErr->writeln('<options=bold>Help:</>');
-        $this->stdErr->writeln('  Use Ctrl+C to quit this process.');
-        if ($aHelp = $this->getApiTokenHelp()) {
-            $this->stdErr->writeln("\n" . preg_replace('/^/m', '  ', $aHelp));
-        }
+        $this->stdErr->writeln('  Leave this command running during login.');
+        $this->stdErr->writeln('  If you need to quit, use Ctrl+C.');
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.
@@ -209,7 +218,11 @@ class BrowserLoginCommand extends CommandBase
             $this->stdErr->writeln('Failed to get an authorization code.');
             $this->stdErr->writeln('');
             if (!empty($response['error']) && !empty($response['error_description'])) {
-                $this->stdErr->writeln(sprintf('%s (<error>%s</error>)', $response['error_description'], $response['error']));
+                $this->stdErr->writeln('  OAuth 2.0 error: <error>' . $response['error'] . '</error>');
+                $this->stdErr->writeln('  Description: ' . $response['error_description']);
+                if (!empty($response['error_hint'])) {
+                    $this->stdErr->writeln('  Hint: ' . $response['error_hint']);
+                }
                 $this->stdErr->writeln('');
             } elseif (!empty($response['error_description'])) {
                 $this->stdErr->writeln($response['error_description']);
@@ -226,30 +239,14 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('Login information received. Verifying...');
         $token = $this->getAccessToken($code, $codeVerifier, $localUrl);
 
-        // Finalize login: call logOut() on the old connector, clear the cache
-        // and save the new credentials.
-        $connector = $this->api()->getClient(false)->getConnector();
-        $session = $connector->getSession();
-        $connector->logOut();
-
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
-        $cache->flushAll();
+        // Finalize login: log out and save the new credentials.
+        $this->api()->logout();
 
         // Save the new tokens to the persistent session.
+        $session = $this->api()->getClient(false)->getConnector()->getSession();
         $this->saveAccessToken($token, $session);
 
-        // Reset the API client so that it will use the new tokens.
-        $client = $this->api()->getClient(false, true);
-        $this->stdErr->writeln('You are logged in.');
-
-        // Show user account info.
-        $info = $client->getAccountInfo();
-        $this->stdErr->writeln(sprintf(
-            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
-            $info['username'],
-            $info['mail']
-        ));
+        $this->finalizeLogin();
 
         return 0;
     }

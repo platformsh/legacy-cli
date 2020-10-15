@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Command\App;
+namespace Platformsh\Cli\Tests\Command;
 
 use Platformsh\Cli\Command\WelcomeCommand;
 use Symfony\Component\Console\Input\ArrayInput;

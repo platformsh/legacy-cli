@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
@@ -26,6 +27,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
@@ -319,6 +321,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($newVersion !== false) {
             $this->continueAfterUpdating($currentVersion, $newVersion, $pharFilename);
+            exit(0);
         }
 
         $this->stdErr->writeln('');
@@ -339,8 +342,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!isset($this->input) || !$this->input instanceof ArgvInput || !is_executable($pharFilename)) {
             return;
         }
-        list($currentMajorVersion,) = explode('.', $currentVersion, 2);
-        list($newMajorVersion,) = explode('.', $newVersion, 2);
+        list($currentMajorVersion,) = explode('.', ltrim($currentVersion, 'v'), 2);
+        list($newMajorVersion,) = explode('.', ltrim($newVersion, 'v'), 2);
         if ($newMajorVersion !== $currentMajorVersion) {
             return;
         }
@@ -377,6 +380,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
+            if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
+                $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+                if (!$this->config()->isSessionIdFromEnv()) {
+                    $this->stdErr->writeln(sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+                }
+                $this->stdErr->writeln('');
+            }
+
             $method = $this->config()->getWithDefault('application.login_method', 'browser');
             if ($method === 'browser') {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
@@ -386,7 +397,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 if ($urlService->canOpenUrls()
                     && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
                     $this->stdErr->writeln('');
-                    $exitCode = $this->runOtherCommand('auth:browser-login');
+                    $exitCode = $this->runOtherCommand('auth:browser-login', ['--force' => true]);
                     $this->stdErr->writeln('');
                     $success = $exitCode === 0;
                 }
@@ -414,11 +425,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Get the current project if the user is in a project directory.
      *
+     * @param bool $suppressErrors Suppress 403 or not found errors.
+     *
      * @throws \RuntimeException
      *
      * @return Project|false The current project
      */
-    public function getCurrentProject()
+    public function getCurrentProject($suppressErrors = false)
     {
         if (isset($this->currentProject)) {
             return $this->currentProject;
@@ -432,8 +445,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
-            $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+            try {
+                $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+            } catch (BadResponseException $e) {
+                if ($suppressErrors && $e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
+                    return $this->currentProject = false;
+                }
+                throw $e;
+            }
             if (!$project) {
+                if ($suppressErrors) {
+                    return $this->currentProject = false;
+                }
                 throw new ProjectNotFoundException(
                     "Project not found: " . $config['id']
                     . "\nEither you do not have access to the project or it no longer exists."
@@ -458,7 +481,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)
     {
         if (!($projectRoot = $this->getProjectRoot())
-            || !($project = $this->getCurrentProject())
+            || !($project = $this->getCurrentProject(true))
             || ($expectedProject !== null && $expectedProject->id !== $project->id)) {
             return false;
         }
@@ -511,6 +534,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
+            $this->debug('No environment was found to match the current Git branch: ' . $currentBranch);
         }
 
         return false;
@@ -537,12 +561,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
         // Double-check that the passed project is the current one, and that it
         // still exists.
-        try {
-            $currentProject = $this->getCurrentProject();
-            if (!$currentProject || $currentProject->id != $event->getProject()->id) {
-                return;
-            }
-        } catch (ProjectNotFoundException $e) {
+        $currentProject = $this->getCurrentProject(true);
+        if (!$currentProject || $currentProject->id != $event->getProject()->id) {
             return;
         }
         // Ignore the project if it doesn't contain a Drupal application.
@@ -602,7 +622,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function selectedProjectIsCurrent()
     {
-        $current = $this->getCurrentProject();
+        $current = $this->getCurrentProject(true);
         if (!$current || !$this->hasSelectedProject()) {
             return false;
         }
@@ -642,7 +662,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addEnvironmentOption()
     {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID');
     }
 
@@ -653,7 +672,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addAppOption()
     {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name');
     }
 
@@ -740,7 +758,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
             $projects = $this->api()->getProjects();
-            if (count($projects) > 0 && count($projects) < 25) {
+            if (count($projects) > 0) {
                 $this->debug('No project specified: offering a choice...');
                 $projectId = $this->offerProjectChoice($projects);
 
@@ -833,6 +851,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($selectDefaultEnv) {
+            $this->debug('No environment specified or detected: finding a default...');
             $environments = $this->api()->getEnvironments($this->project);
             $defaultId = $this->api()->getDefaultEnvironmentId($environments);
             if ($defaultId && isset($environments[$defaultId])) {
@@ -842,7 +861,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
-            $this->debug('No environment specified: offering a choice...');
+            $this->debug('No environment specified or detected: offering a choice...');
             $this->environment = $this->offerEnvironmentChoice($this->api()->getEnvironments($this->project));
             return;
         }
@@ -1085,35 +1104,52 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @return string
      *   The chosen project ID.
      */
-    protected final function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    final protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
-        // Build and sort a list of project options.
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        if (count($projects) >= 25 || count($projects) > (new Terminal())->getHeight() - 3) {
+            $autocomplete = [];
+            foreach ($projects as $project) {
+                if ($project->title) {
+                    $autocomplete[$project->id] = $project->id . ' - <question>' . $project->title . '</question>';
+                } else {
+                    $autocomplete[$project->id] = $project->id;
+                }
+            }
+            asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
+            return $questionHelper->askInput('Enter a project ID', null, array_values($autocomplete), function ($value) use ($autocomplete) {
+                list($id, ) = explode(' - ', $value);
+                if (!isset($autocomplete[$id]) && !$this->api()->getProject($id)) {
+                    throw new \RuntimeException('Project not found: ' . $id);
+                }
+                return $id;
+            });
+        }
+
         $projectList = [];
         foreach ($projects as $project) {
             $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
-        $id = $questionHelper->choose($projectList, $text, null, false);
-
-        return $id;
+        return $questionHelper->choose($projectList, $text, null, false);
     }
 
     /**
      * Offers a choice of environments.
      *
      * @param Environment[] $environments
+     * @param string $text
      *
      * @return Environment
      */
-    protected final function offerEnvironmentChoice(array $environments)
+    final protected function offerEnvironmentChoice(array $environments, $text = 'Enter a number to choose an environment:')
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
@@ -1123,19 +1159,30 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $questionHelper = $this->getService('question_helper');
         $default = $this->api()->getDefaultEnvironmentId($environments);
 
-        // Build and sort a list of options (environment IDs).
-        $ids = array_keys($environments);
-        sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
+        if (count($environments) > (new Terminal())->getHeight() / 2) {
+            $ids = array_keys($environments);
+            sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
-        $id = $questionHelper->askInput('Environment ID', $default, array_keys($environments), function ($value) use ($environments) {
-            if (!isset($environments[$value])) {
-                throw new \RuntimeException('Environment not found: ' . $value);
+            $id = $questionHelper->askInput('Enter an environment ID', $default, array_keys($environments), function ($value) use ($environments) {
+                if (!isset($environments[$value])) {
+                    throw new \RuntimeException('Environment not found: ' . $value);
+                }
+
+                return $value;
+            });
+        } else {
+            $environmentList = [];
+            foreach ($environments as $environment) {
+                $environmentList[$environment->id] = $this->api()->getEnvironmentLabel($environment, false);
+            }
+            asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
+
+            if ($default) {
+                $text .= "\n" . 'Default: <question>' . $default . '</question>';
             }
 
-            return $value;
-        });
-
-        $this->stdErr->writeln('');
+            $id = $questionHelper->choose($environmentList, $text, $default);
+        }
 
         return $environments[$id];
     }
@@ -1546,20 +1593,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Get help on how to use API tokens.
+     * Get help on how to use API tokens non-interactively.
      *
      * @param string $tag
      *
-     * @return string|null
+     * @return string
      */
-    protected function getApiTokenHelp($tag = 'info')
+    protected function getNonInteractiveAuthHelp($tag = 'info')
     {
-        if ($this->config()->has('service.api_token_help_url')) {
-            return "To authenticate non-interactively using an API token, see:\n    <$tag>"
-                . $this->config()->get('service.api_token_help_url') . "</$tag>";
-        }
+        $prefix = $this->config()->get('application.env_prefix');
 
-        return null;
+        return "To authenticate non-interactively, configure an API token using the <$tag>${prefix}TOKEN</$tag> environment variable.";
     }
 
     /**
@@ -1604,9 +1648,86 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         /** @var Ssh $ssh */
         $ssh = $this->getService('ssh');
+        /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
+        $sshDiagnostics = $this->getService('ssh_diagnostics');
 
         $this->debug('Selected host: ' . $remoteContainer->getSshUrl());
 
-        return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell);
+        return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell, $sshDiagnostics);
+    }
+
+    /**
+     * Finalizes login: refreshes SSH certificate, prints account information.
+     */
+    protected function finalizeLogin()
+    {
+        // Reset the API client so that it will use the new tokens.
+        $client = $this->api()->getClient(false, true);
+        $this->stdErr->writeln('You are logged in.');
+
+        // Generate a new certificate from the certifier API.
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
+        $certifier = $this->getService('certifier');
+        if ($certifier->isAutoLoadEnabled() && $sshConfig->checkRequiredVersion()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Generating SSH certificate...');
+            try {
+                $certifier->generateCertificate();
+                $this->stdErr->writeln('A new SSH certificate has been generated.');
+                $this->stdErr->writeln('It will be automatically refreshed when necessary.');
+            } catch (\Exception $e) {
+                $this->stdErr->writeln('Failed to generate SSH certificate: <error>' . $e->getMessage() . '</error>');
+            }
+        }
+
+        // Write SSH configuration.
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if ($sshConfig->configureSessionSsh()) {
+            $sshConfig->addUserSshConfig($questionHelper);
+        }
+
+        // Show user account info.
+        $info = $client->getAccountInfo();
+        $this->stdErr->writeln(sprintf(
+            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
+            $info['username'],
+            $info['mail']
+        ));
+    }
+
+    /**
+     * Shows information about the currently logged in user and their session, if applicable.
+     *
+     * @param bool $newline Whether to prepend a newline if there is output.
+     */
+    protected function showSessionInfo($newline = true)
+    {
+        $api = $this->api();
+        $config = $this->config();
+        $sessionId = $config->getSessionId();
+        if ($sessionId !== 'default' || count($api->listSessionIds()) > 1) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+                $newline = false;
+            }
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
+            if (!$config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $config->get('application.executable')));
+            }
+        }
+        if ($api->isLoggedIn()) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $accountInfo = $api->getMyAccount();
+            $this->stdErr->writeln(sprintf(
+                'You are logged in as <info>%s</info> (<info>%s</info>)',
+                $accountInfo['username'],
+                $accountInfo['mail']
+            ));
+        }
     }
 }

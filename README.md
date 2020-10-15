@@ -5,7 +5,8 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 ## Requirements
 
 * Operating system: Linux, OS X, or Windows 10
-* PHP 5.5.9 or higher, with cURL support
+* PHP 5.5.9 or higher, with the following extensions: `curl`, `json`,
+ `mbstring`, `pcre`, and `phar`. The installation command will check for these.
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
@@ -18,7 +19,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 
 ## Installation
 
-Simply use this command:
+Run this command to install the CLI:
 
     curl -sS https://platform.sh/cli/installer | php
 
@@ -49,6 +50,20 @@ You can run the Platform.sh CLI in your shell by typing `platform`.
 Use the 'list' command to get a list of available options and commands:
 
     platform list
+
+## Authentication
+
+There are two ways to authenticate:
+
+1. The recommended way is `platform login`, which lets you log in via a web browser, including via third-party providers such as Google, GitHub and Bitbucket.
+
+2. If using a browser is not possible, use an [API token](https://docs.platform.sh/gettingstarted/cli/api-tokens.html).
+
+    An interactive command is available for this: `platform auth:api-token-login`
+
+    For non-interactive uses such as scripts or CI systems, set the API token in an environment variable named `PLATFORMSH_CLI_TOKEN`. This can be insecure if not handled properly, although it is appropriate for systems such as CircleCI, Jenkins and GitLab.
+
+    *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access.
 
 ### Commands
 
@@ -81,6 +96,7 @@ app
   app:config-get                            View the configuration of an app
   app:list (apps)                           List apps in the project
 auth
+  auth:api-token-login                      Log in to Platform.sh using an API token
   auth:browser-login (login)                Log in to Platform.sh via a browser
   auth:info                                 Display your account information
   auth:logout (logout)                      Log out of Platform.sh
@@ -125,6 +141,9 @@ environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
 integration
+  integration:activity:get                  View detailed information on a single integration activity
+  integration:activity:list (i:act)         Get a list of activities for an integration
+  integration:activity:log                  Display the log for an integration activity
   integration:add                           Add an integration to the project
   integration:delete                        Delete an integration from a project
   integration:get                           View details of an integration
@@ -152,7 +171,7 @@ repo
   repo:cat                                  Read a file in the project repository
   repo:ls                                   List files in the project repository
 route
-  route:get                                 View a resolved route
+  route:get                                 View detailed information about a route
   route:list (routes)                       List all routes for an environment
 self
   self:install                              Install or update CLI configuration files
@@ -164,6 +183,8 @@ service
   service:mongo:restore (mongorestore)      Restore a binary archive dump of data into MongoDB
   service:mongo:shell (mongo)               Use the MongoDB shell
   service:redis-cli (redis)                 Access the Redis CLI
+ssh-cert
+  ssh-cert:load                             Generate an SSH certificate
 ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key
@@ -190,31 +211,6 @@ worker
   worker:list (workers)                     Get a list of all deployed workers
 ```
 
-## Known issues
-
-### Caching
-
-The CLI caches details of your projects and their environments, and some other
-information. These caches could become out-of-date. You can clear caches with
-the command `platform clear-cache` (or `platform cc` for short).
-
-## Authentication
-
-There are currently three ways to authenticate:
-
-1. `platform login` (AKA `platform auth:browser-login`): this opens a temporary
-  local server and a browser, allowing you to log in to Platform.sh via the
-  normal login form, including via services like Bitbucket, GitHub and Google.
-
-2. [API tokens](https://docs.platform.sh/gettingstarted/cli/api-tokens.html):
-  these allow non-interactive authentication. See
-  [Customization](#customization) below for how to use an API token. Remember to
-  use a separate machine account if you want to limit the token's access.
-
-3. `platform auth:password-login`: this allows you to log in with a username and
-  password, and a two-factor token if applicable. This is deprecated, and will
-  be removed from the API in future.
-
 ## Customization
 
 You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`.
@@ -222,17 +218,15 @@ These are the possible keys, and their default values:
 
 ```yaml
 api:
-  # A path (relative or absolute) to a file containing an API token.
-  # The file should be stored with minimal permissions.
-  # Run 'platform logout --all' if you change this value.
-  token_file: null
+  # Whether to disable the docker-credential-helpers credential storage method.
+  # When enabled (default), and if supported, credentials are stored in:
+  #   - OS X: the default keychain
+  #   - Linux: the default collection in the Secret Service
+  #   - Windows: the Credential Manager under "Generic Credentials"
+  # When disabled or not supported, credentials are stored in a hidden file.
+  disable_credential_helpers: false
 
 application:
-  # The method used for interactive login: 'browser' or 'password' (defaults to
-  # 'browser'). Password login is deprecated and will be removed from the API
-  # in future.
-  login_method: browser
-
   # The default timezone for times displayed or interpreted by the CLI.
   # An empty (falsy) value here means the PHP or system timezone will be used.
   # For a list of timezones, see: http://php.net/manual/en/timezones.php
@@ -241,6 +235,10 @@ application:
   # The default date format string, for dates and times displayed by the CLI.
   # For a list of formats, see: http://php.net/manual/en/function.date.php
   date_format: c
+
+  # A directory (relative to the home directory) where the CLI can write
+  # user-specific files, for storing state, logs, credentials, etc.
+  writable_user_dir: '.platformsh'
 
 local:
   # Set this to true to avoid some Windows symlink issues.
@@ -264,12 +262,21 @@ Other customization is available via environment variables:
 * `PLATFORMSH_CLI_HOME`: override the home directory (inside which the .platformsh directory is stored)
 * `PLATFORMSH_CLI_NO_COLOR`: set to 1 to disable colors in output
 * `PLATFORMSH_CLI_NO_INTERACTION`: set to 1 to disable interaction (useful for scripting). _Warning_: this will bypass any confirmation questions.
-* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default')
+* `PLATFORMSH_CLI_SESSION_ID`: change user session (default 'default'). The `session:switch` command (beta) is now available as an alternative.
 * `PLATFORMSH_CLI_SHELL_CONFIG_FILE`: specify the shell configuration file that the installer should write to (as an absolute path). If not set, a file such as `~/.bashrc` will be chosen automatically. Set this to an empty string to disable writing to a shell config file.
-* `PLATFORMSH_CLI_TOKEN`: an API token. _Warning_: storing a secret in an environment variable can be insecure. It may be better to use `config.yaml` as above, depending on your system. The environment variable is preferable on CI systems like Jenkins and GitLab.
+* `PLATFORMSH_CLI_TOKEN`: an API token. *_Warning_*: An API token can act as the account that created it, with no restrictions. Use a separate machine account to limit the token's access. Additionally, storing a secret in an environment variable can be insecure. It may be better to use the `auth:api-token-login` command. The environment variable is preferable on CI systems like Jenkins and GitLab.
 * `PLATFORMSH_CLI_UPDATES_CHECK`: set to 0 to disable the automatic updates check
+* `PLATFORMSH_CLI_AUTO_LOAD_SSH_CERT`: set to 1 to enable automatic loading of an SSH certificate when running login or SSH commands
 * `CLICOLOR_FORCE`: set to 1 or 0 to force colorized output on or off, respectively
 * `http_proxy` or `https_proxy`: specify a proxy for connecting to Platform.sh
+
+## Known issues
+
+### Caching
+
+The CLI caches details of your projects and their environments, and some other
+information. These caches could become out-of-date. You can clear caches with
+the command `platform clear-cache` (or `platform cc` for short).
 
 ## Contributing
 

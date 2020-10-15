@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Local\LocalApplication;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
@@ -165,7 +166,17 @@ class CompletionCommand extends ParentCompletionCommand
                 'service:mongo:restore',
                 'archive',
                 Completion::TYPE_ARGUMENT
-            )
+            ),
+            new Completion\ShellPathCompletion(
+                'integration:add',
+                'file',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'integration:update',
+                'file',
+                Completion::TYPE_OPTION
+            ),
         ]);
 
         try {
@@ -198,7 +209,7 @@ class CompletionCommand extends ParentCompletionCommand
      */
     public function getEnvironmentsForCheckout()
     {
-        $project = $this->getWelcomeCommand()->getCurrentProject();
+        $project = $this->getWelcomeCommand()->getCurrentProject(true);
         if (!$project) {
             return [];
         }
@@ -229,7 +240,8 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $apps = [];
         if ($projectRoot = $this->getWelcomeCommand()->getProjectRoot()) {
-            foreach (LocalApplication::getApplications($projectRoot) as $app) {
+            $finder = new ApplicationFinder();
+            foreach ($finder->findApplications($projectRoot) as $app) {
                 $name = $app->getName();
                 if ($name !== null) {
                     $apps[] = $name;
@@ -262,7 +274,7 @@ class CompletionCommand extends ParentCompletionCommand
         $commandLine = $this->handler->getContext()
             ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
-        if (!$currentProjectId && ($currentProject = $this->getWelcomeCommand()->getCurrentProject())) {
+        if (!$currentProjectId && ($currentProject = $this->getWelcomeCommand()->getCurrentProject(true))) {
             return $currentProject;
         } elseif (isset($this->projects[$currentProjectId])) {
             return $this->projects[$currentProjectId];

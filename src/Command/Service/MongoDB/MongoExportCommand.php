@@ -108,11 +108,19 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 
         $command = 'mongo '
             . $relationshipsService->getDbCommandArgs('mongo', $service)
-            . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js);
+            . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js)
+            . ' 2>/dev/null';
 
         $result = $host->runCommand($command);
         if (!is_string($result)) {
             return [];
+        }
+
+        // Handle log messages that mongo prints to stdout.
+        // https://jira.mongodb.org/browse/SERVER-23810
+        // Hopefully the end of the output is a JavaScript array.
+        if (substr($result, -1) === ']' && substr(trim($result), 0, 1) !== '[' && ($openPos = strrpos($result, "\n[")) !== false) {
+            $result = substr($result, $openPos);
         }
 
         $collections = json_decode($result, true) ?: [];

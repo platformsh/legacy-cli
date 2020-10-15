@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,7 +51,7 @@ class EnvironmentScpCommand extends CommandBase
         $command = 'scp';
 
         if ($sshArgs = $ssh->getSshArgs()) {
-            $command .= ' ' . implode(' ', array_map('escapeshellarg', $sshArgs));
+            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $sshArgs));
         }
 
         if ($input->getOption('recursive')) {
@@ -80,6 +81,13 @@ class EnvironmentScpCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
 
-        return $shell->executeSimple($command);
+        $exitCode = $shell->executeSimple($command);
+        if ($exitCode !== 0) {
+            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
+            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics->diagnoseFailure($sshUrl, $exitCode);
+        }
+
+        return $exitCode;
     }
 }

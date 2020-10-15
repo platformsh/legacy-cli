@@ -17,21 +17,22 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "fdbe56ad089fddb833845c42157f82d5b9d32773",
-        "sha256": "aa420d0f2cf1efd90efb464dd0d7d544c1ba5be381e79eb22a86afb6f17bd181",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.52.2/platform.phar",
-        "version": "3.52.2",
+        "sha1": "885625ea83030ee9ba9ff3c26051c364ca74c4a5",
+        "sha256": "eef49450192506eb7acc1087d9fb0943d15846d17911fa71cdade1bbb635e8f0",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.62.6/platform.phar",
+        "version": "3.62.6",
         "php": {
             "min": "5.5.9"
         },
         "updating": [
             {
                 "notes": "Major changes since version 2.x.x:\n\n* In version 2.x.x, the CLI had a project file structure including a 'repository' directory (and a 'builds' directory, 'shared', etc.). In version 3.x.x, this is no longer the case: the CLI operates directly inside your project's Git repository. The CLI will work with the old file structure, and there is a migration tool ('platform legacy-migrate') for updating to the new structure.\n\n* The web root has changed location from 'www' to '_www', to avoid conflicts with actual project files in the repo.\n\n* The CLI now requires PHP version 5.5.9 (minimum) due to updated dependencies.\n\nVersion 3.x.x also comes with many other smaller improvements and bug fixes.",
+                "show from": "2",
                 "hide from": "3"
             },
             {
                 "notes": "The web root has moved again, from '.www' to '_www'. If you have already been using version 3, you may wish to update your local web server configuration.",
-                "show from": "3",
+                "show from": "3.0.0",
                 "hide from": "3.0.2"
             },
             {
@@ -248,6 +249,56 @@
                 "notes": "New features:\n\n* Add an `environment:xdebug` (`xdebug`) command, which opens an SSH tunnel to\n  help debug PHP applications. The application must be configured with an\n  xdebug trigger key (help is available by running the command).\n\nImprovements to Windows installation\n\n* Generate a `platform.bat` file during installation (the `self:install`\n  command) so `platform` can be found in the Path.\n* Use \\ as the directory separator in user-facing installation paths.\n* Fix browser login: two bugs that prevented starting the local server, and\n  preventing opening the URL in the browser.\n* Improve installation help messages for setting up the Path environment\n  variable when using the Command Prompt.",
                 "show from": "3.51.0",
                 "hide from": "3.52.0"
+            },
+            {
+                "notes": "New features:\n\n  * Use Docker credential helpers to store secrets.\n    There are 3 Docker credential helpers available from:\n    https://github.com/docker/docker-credential-helpers\n\n    These allow storing secrets in a system appropriate way: Keychain on OS X,\n    the libsecret keyring on Linux (the GNOME keyring), and the Credential\n    Manager on Windows.\n\n    This falls back to the previous file-based storage for systems incompatible with\n    the credential helpers.\n\n  * Add integration:activity commands:\n    - integration:activity:get\n    - integration:activity:list (i:act)\n    - integration:activity:log\n\n  * Add API token login command (auth:api-token-login).\n\n  * Supply SSH options to mount:upload and mount:download commands.\n    This allows specifying an SSH key with the --identity-file (-i) option to\n    these commands.\n\nOther changes:\n\n  * Remove password login help (the auth:password-login command is deprecated).\n  * xdebug: change \"key\" to \"idekey\".\n  * Prefer .zshrc rather than .zprofile for installation in ZSH.\n  * Show the command output for failed processes to help debugging.",
+                "show from": "3.52.0",
+                "hide from": "3.53.0"
+            },
+            {
+                "notes": "New features:\n\n* Automatically prompt for login when token refresh fails.\n\nOther changes:\n\n* Fix deleting httpaccess settings via the environment:httpaccess command.\n* Remove the unused --environment option for integration:activity commands\n  This also stops the commands unnecessarily prompting for an environment.\n* Tweak help for browser login.\n* Remove default From address for health.email notifications\n  The API now provides a sensible default.",
+                "show from": "3.53.0",
+                "hide from": "3.54.0"
+            },
+            {
+                "notes": "New features:\n\n* Add activity scripts (`script`) integration type\n\nOther changes:\n\n* Suppress \"Link not found: #manage-access\" exception in backup:create command.\n* Clarify deprecation message for the --type option on the integration:update command.\n* Make integration:update command determine changes correctly.",
+                "show from": "3.54.0",
+                "hide from": "3.55.0"
+            },
+            {
+                "notes": "New features:\n\n* Support an option for building draft pull requests in the GitHub integration,\n  and the equivalent (building WIP merge requests) for GitLab.\n* Add automatic SSH certificate support (disabled by default).\n\nOther changes:\n\n* Add `environment:deactivate` as an alias of the `environment:delete` command.\n* Fix error in command listing, when the .platform.app.yaml is not found",
+                "show from": "3.55.0",
+                "hide from": "3.56.0"
+            },
+            {
+                "notes": "New features:\n\n* Improve SSH key commands\n  - Provide a choice and a more meaningful key name when generating a key in the\n    `ssh-key:add` command.\n  - Clarify the account that an SSH key is going to be added to.\n  - Append the `.pub` extension automatically.\n  - Show the local path (if present) in the `ssh-key:list` (`ssh-keys`) command.\n  - Ensure session-based SSH configuration is up to date, when running any SSH command.\n* Automatically select an SSH key from `~/.ssh` corresponding to the user\n  account when there are multiple identities available, and specify it in SSH\n  commands.\n* Provide an interactive choice in the `integration:update` command when no\n  integration ID is specified.\n* Add a `session:switch` command (beta), which helps change the session when\n  managing multiple accounts. When there is more than one session present,\n  information (session ID and logged-in user email) is displayed in various\n  relevant commands.\n\nOther changes:\n\n* Fix irrelevant 403 errors when the user does not have access to the current\n  project, but they specified another project in the command line anyway.\n* Include only one session's SSH certificate configuration.\n* Fix use of certifier URL configuration.\n* Remove the command `auth:password-login`, which no longer works.",
+                "show from": "3.56.0",
+                "hide from": "3.57.0"
+            },
+            {
+                "notes": "* Support prompting for re-authentication in the login command.\n  The command `platform login --force` (or `-f`) will now ask the\n  authentication server to prompt the user to log in again, even if they\n  already had a session in that browser. This is helpful for refreshing\n  authentication status (e.g. to re-verify 2FA), or for logging in as another\n  account.\n* The region list in the `platform create` command is now sorted\n  alphabetically (with the subdomain and suffix sorted separately).\n* Add `--count` (`-c`) option to the `self:stats` command to modify the results per page.\n* Move the SSH hostname to the session-specific SSH configuration. This means\n  less rewriting needed for the global `~/.ssh/config` file when changing CLI\n  configuration.",
+                "show from": "3.57.0",
+                "hide from": "3.58.0"
+            },
+            {
+                "notes": "* Support new user invitations\n* Installer improvements:\n  - Create a .zshrc file if it doesn't already exist, on ZSH.\n  - Require the mbstring extension.",
+                "show from": "3.58.0",
+                "hide from": "3.59.0"
+            },
+            {
+                "notes": "New features:\n\n* Autoload SSH certificates on login or SSH, by default.\n    When supported by all relevant servers (soon), SSH certificates will:\n    - Enable support for multi-factor authentication on projects that require it for SSH access.\n    - Make it no longer necessary to add or administer SSH keys manually.\n\n  Note: SSH certificates can be checked or reloaded using the `ssh-cert:load` command.\n\nOther changes:\n\n* SSH configuration improvements:\n  - Denote top-level SSH configuration with a `Host` block, to avoid issues where a previous `Host` or `Match` configuration had not been closed.\n  - End the Host blocks explicitly with `Host *`\n* Fix detection of third-party Git domains for `project:get` (`get`) command errors.",
+                "show from": "3.59.0",
+                "hide from": "3.60.0"
+            },
+            {
+                "notes": "New features:\n\n* Project choice will now be via an autocomplete, rather than a list, if there\n  are too many to list (more than 25, or more than the terminal height). Start\n  typing a project ID, or use the up and down arrows to scroll through the\n  autocomplete suggestions.\n* Similarly, the environment choice can now be via a list, if there are few\n  enough to display like that, otherwise the older autocomplete will show.\n* The installer now supports a proxy defined with one of the `https_proxy` or\n  `http_proxy` environment variables.\n\nOther changes:\n\n* Use --globoff by default in curl commands\n* Disable use of the SSH agent unless explicitly enabled in the user config file.\n  Add this to the user config file to automatically add keys/certificates to the SSH agent:\n  ```yaml\n  # ~/.platformsh/config.yaml\n  api:\n    add_to_ssh_agent: true\n  ```\n* Explicitly request the `offline_access` scope when logging in.\n* Add a comment to auto-generated temporary SSH keys.",
+                "show from": "3.60.0",
+                "hide from": "3.61.0"
+            },
+            {
+                "notes": "* Support force-sending an invitation in the `user:add` command (via a prompt,\n  or the `--force-invite` option).\n* Retry fetching the activity log stream to avoid errors when an activity is starting.\n* Show the stderr of every shell command, if in debug mode (`-vvv`).\n* Handle multi-host mongodb URIs in relationships.",
+                "show from": "3.61.0",
+                "hide from": "3.62.0"
             }
         ]
     }

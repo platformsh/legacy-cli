@@ -53,7 +53,9 @@ class UserDeleteCommand extends CommandBase
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if ($this->shouldWait($input)) {
+        if (!$result->getActivities()) {
+            $this->redeployWarning();
+        } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);

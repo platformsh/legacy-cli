@@ -56,7 +56,7 @@ class RedisCliCommand extends CommandBase
         }
 
         $this->stdErr->writeln(
-            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getCacheKey())
+            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel())
         );
 
         if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {

@@ -27,8 +27,8 @@ class AuthInfoCommand extends CommandBase
         $info = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $propertyWhitelist = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
-        $info = array_intersect_key($info, array_flip($propertyWhitelist));
+        $propertiesToDisplay = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
+        $info = array_intersect_key($info, array_flip($propertiesToDisplay));
 
         $property = $input->getArgument('property');
         if ($input->getOption('property')) {
@@ -56,7 +56,7 @@ class AuthInfoCommand extends CommandBase
         unset($info['uuid']);
         $values = [];
         $header = [];
-        foreach ($propertyWhitelist as $property) {
+        foreach ($propertiesToDisplay as $property) {
             if (isset($info[$property])) {
                 $values[] = $formatter->format($info[$property], $property);
                 $header[] = $property;
@@ -65,6 +65,14 @@ class AuthInfoCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->renderSimple($values, $header);
+
+        if (!$table->formatIsMachineReadable() && ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+            if (!$this->config()->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+            }
+        }
 
         return 0;
     }

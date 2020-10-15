@@ -38,6 +38,9 @@ class LocalBuild
     /** @var Config */
     protected $config;
 
+    /** @var ApplicationFinder */
+    protected $applicationFinder;
+
     /**
      * LocalBuild constructor.
      *
@@ -54,7 +57,8 @@ class LocalBuild
         Shell $shell = null,
         Filesystem $fs = null,
         Git $git = null,
-        DependencyInstaller $dependencyInstaller = null
+        DependencyInstaller $dependencyInstaller = null,
+        ApplicationFinder $applicationFinder = null
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
@@ -65,6 +69,7 @@ class LocalBuild
         $this->fsHelper = $fs ?: new Filesystem($this->shellHelper);
         $this->gitHelper = $git ?: new Git($this->shellHelper);
         $this->dependencyInstaller = $dependencyInstaller ?: new DependencyInstaller($this->output, $this->shellHelper);
+        $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 
     /**
@@ -114,7 +119,7 @@ class LocalBuild
 
         $ids = [];
         $success = true;
-        foreach (LocalApplication::getApplications($sourceDir, $this->config) as $app) {
+        foreach ($this->applicationFinder->findApplications($sourceDir) as $app) {
             $id = $app->getId();
             $ids[] = $id;
             if ($apps && !in_array($id, $apps)) {
@@ -464,16 +469,16 @@ class LocalBuild
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
         // build(s).
-        $blacklist = [];
+        $exclude = [];
         if (!$includeActive) {
-            $blacklist = $this->getActiveBuilds($projectRoot);
+            $exclude = $this->getActiveBuilds($projectRoot);
         }
 
         return $this->cleanDirectory(
             $projectRoot . '/' . $this->config->get('local.build_dir'),
             $maxAge,
             $keepMax,
-            $blacklist,
+            $exclude,
             $quiet
         );
     }
@@ -558,12 +563,12 @@ class LocalBuild
      * @param string   $directory
      * @param int|null $maxAge
      * @param int      $keepMax
-     * @param array    $blacklist
+     * @param array    $exclude
      * @param bool     $quiet
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $blacklist = [], $quiet = true)
+    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $exclude = [], $quiet = true)
     {
         if (!is_dir($directory)) {
             return [0, 0];
@@ -583,7 +588,7 @@ class LocalBuild
         $numDeleted = 0;
         $numKept = 0;
         foreach ($files as $filename) {
-            if (in_array($filename, $blacklist)) {
+            if (in_array($filename, $exclude)) {
                 $numKept++;
                 continue;
             }

@@ -21,13 +21,13 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 'access',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'Access restriction in the format "permission:address"'
+                'Access restriction in the format "permission:address". Use 0 to clear all addresses.'
             )
             ->addOption(
                 'auth',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'Authentication details in the format "username:password"'
+                'HTTP Basic auth credentials in the format "username:password". Use 0 to clear all credentials.'
             )
             ->addOption(
                 'enabled',
@@ -139,72 +139,61 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $access = $input->getOption('access');
 
         $accessOpts = [];
+        $change = false;
 
         $enabled = $input->getOption('enabled');
         if ($enabled !== null) {
+            $change = true;
             $accessOpts['is_enabled'] = !in_array($enabled, ['0', 'false']);
         }
 
-        if ($access) {
+        if ($access === ['0']) {
+            $accessOpts['addresses'] = null;
+            $change = true;
+        } elseif ($access !== []) {
             $accessOpts['addresses'] = [];
             foreach (array_filter($access) as $access) {
-                $accessOpts["addresses"][] = $this->parseAccess($access);
+                $accessOpts['addresses'][] = $this->parseAccess($access);
             }
+            $change = true;
         }
 
-        if ($auth) {
-            $accessOpts['basic_auth'] = [];
+        if ($auth === ['0']) {
+            $accessOpts['basic_auth'] = null;
+            $change = true;
+        } elseif ($auth !== []) {
             foreach (array_filter($auth) as $auth) {
                 $parsed = $this->parseAuth($auth);
-                $accessOpts["basic_auth"][$parsed["username"]] = $parsed["password"];
+                $accessOpts['basic_auth'][$parsed['username']] = $parsed['password'];
             }
+            $change = true;
         }
 
-        // Ensure the environment is refreshed.
         $selectedEnvironment = $this->getSelectedEnvironment();
-        $selectedEnvironment->ensureFull();
         $environmentId = $selectedEnvironment->id;
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        if (!empty($accessOpts)) {
-            $current = (array) $selectedEnvironment->http_access;
+        // Patch the environment with the changes.
+        if ($change) {
+            $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
+            $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
 
-            // Merge existing settings. Not using a reference here, as that
-            // would affect the comparison with $current later.
-            foreach ($current as $key => $value) {
-                if (!isset($accessOpts[$key])) {
-                    $accessOpts[$key] = $value;
-                }
+            $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
+
+            $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
+
+            $success = true;
+            if (!$result->countActivities()) {
+                $this->redeployWarning();
+            } elseif ($this->shouldWait($input)) {
+                /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
+                $activityMonitor = $this->getService('activity_monitor');
+                $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             }
 
-            if ($current != $accessOpts) {
-                // The API only accepts {} for an empty "basic_auth" value,
-                // rather than [].
-                if (isset($accessOpts['basic_auth']) && $accessOpts['basic_auth'] === []) {
-                    $accessOpts['basic_auth'] = (object) [];
-                }
-
-                // Patch the environment with the changes.
-                $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
-                $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
-
-                $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
-
-                $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
-
-                $success = true;
-                if (!$result->countActivities()) {
-                    $this->redeployWarning();
-                } elseif ($this->shouldWait($input)) {
-                    /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-                    $activityMonitor = $this->getService('activity_monitor');
-                    $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
-                }
-
-                return $success ? 0 : 1;
-            }
+            return $success ? 0 : 1;
         }
 
         $this->stdErr->writeln("HTTP access settings for the environment <info>$environmentId</info>:");

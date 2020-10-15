@@ -50,13 +50,16 @@ class SshKeyDeleteCommand extends CommandBase
             $this->config()->get('service.name')
         ));
 
-        // Reset and warm the account info cache, to keep the has_key property
-        // up to date.
+        // Reset and warm the SSH keys cache.
         try {
-            $this->api()->getMyAccount(true);
+            $this->api()->getSshKeys(true);
         } catch (\Exception $e) {
             // Suppress exceptions; we do not need the result of this call.
         }
+
+        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
+        $sshConfig = $this->getService('ssh_config');
+        $sshConfig->configureSessionSsh();
 
         return 0;
     }

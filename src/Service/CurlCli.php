@@ -25,6 +25,7 @@ class CurlCli implements InputConfiguringInterface {
         $definition->addOption(new InputOption('include', 'i', InputOption::VALUE_NONE, 'Include headers in the output'));
         $definition->addOption(new InputOption('head', 'I', InputOption::VALUE_NONE, 'Fetch headers only'));
         $definition->addOption(new InputOption('disable-compression', null, InputOption::VALUE_NONE, 'Do not use the curl --compressed flag'));
+        $definition->addOption(new InputOption('enable-glob', null, InputOption::VALUE_NONE, 'Enable curl globbing (remove the --globoff flag)'));
         $definition->addOption(new InputOption('header', 'H', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Extra header(s)'));
     }
 
@@ -75,6 +76,10 @@ class CurlCli implements InputConfiguringInterface {
 
         if (!$input->getOption('disable-compression')) {
             $commandline .= ' --compressed';
+        }
+
+        if (!$input->getOption('enable-glob')) {
+            $commandline .= ' --globoff';
         }
 
         foreach ($input->getOption('header') as $header) {

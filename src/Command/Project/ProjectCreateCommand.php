@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Project;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
@@ -83,6 +84,12 @@ EOF
                 $currentProject = $this->getCurrentProject();
             } catch (ProjectNotFoundException $e) {
                 $currentProject = false;
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                    $currentProject = false;
+                } else {
+                    throw $e;
+                }
             }
 
             $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
@@ -198,6 +205,8 @@ EOF
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
 
         $project = $this->api()->getProject($subscription->project_id);
+        $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+
         if ($setRemote && $gitRoot !== false && $project !== false) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -265,6 +274,7 @@ EOF
                     $regions[$region->id] = $region->label;
                 }
             }
+            \uksort($regions, [$this->api(), 'compareDomains']);
         } else {
             $regions = (array) $this->config()->get('service.available_regions');
         }

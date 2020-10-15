@@ -35,10 +35,18 @@ class WelcomeCommand extends CommandBase
 
         $executable = $this->config()->get('application.executable');
 
-        if ($this->api()->isLoggedIn()) {
-            $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
+        $this->showSessionInfo();
+
+        if ($this->api()->isLoggedIn() && !$this->config()->get('api.auto_load_ssh_cert')) {
+            /** @var \Platformsh\Cli\Service\SshKey $sshKey */
+            $sshKey = $this->getService('ssh_key');
+            if (!$sshKey->hasLocalKey()) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln("To add an SSH key, run: <info>$executable ssh-key:add</info>");
+            }
         }
 
+        $this->stdErr->writeln('');
         $this->stdErr->writeln("To view all commands, run: <info>$executable list</info>");
     }
 
@@ -49,7 +57,6 @@ class WelcomeCommand extends CommandBase
     {
         // The project is not known. Show all projects.
         $this->runOtherCommand('projects', ['--refresh' => 0]);
-        $this->stdErr->writeln('');
     }
 
     /**
@@ -69,7 +76,7 @@ class WelcomeCommand extends CommandBase
             '--project' => $project->id,
         ]);
         $executable = $this->config()->get('application.executable');
-        $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>\n");
+        $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>");
     }
 
     /**
@@ -83,9 +90,7 @@ class WelcomeCommand extends CommandBase
             $messages = [];
             $messages[] = '<comment>This project is suspended.</comment>';
             if ($project->owner === $this->api()->getMyAccount()['id']) {
-                $messages[] = '<comment>Update your payment details to re-activate it: '
-                    . $this->config()->get('service.accounts_url')
-                    . '</comment>';
+                $messages[] = '<comment>Update your payment details to re-activate it</comment>';
             }
             $messages[] = '';
             $this->stdErr->writeln($messages);
@@ -133,7 +138,6 @@ class WelcomeCommand extends CommandBase
             }
         }
 
-        $this->stdErr->writeln('');
         $examples = [];
         if (getenv($envPrefix . 'APPLICATION')) {
             $examples[] = "To view application config, run: <info>$executable app:config</info>";
@@ -149,10 +153,10 @@ class WelcomeCommand extends CommandBase
             $examples[] = "To view variables, run: <info>$executable decode \${$envPrefix}VARIABLES</info>";
         }
         if (!empty($examples)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Local environment commands:');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(preg_replace('/^/m', '  ', implode("\n", $examples)));
-            $this->stdErr->writeln('');
         }
     }
 }

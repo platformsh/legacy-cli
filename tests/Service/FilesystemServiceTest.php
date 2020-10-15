@@ -133,7 +133,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
 
-        // Test with a blacklist.
+        // Test with a list of excluded files.
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
         $this->fs->symlinkAll($testSource, $testDestination, true, false, ['test-file']);

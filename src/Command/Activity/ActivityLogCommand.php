@@ -78,6 +78,7 @@ class ActivityLogCommand extends CommandBase
 
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
+            sprintf('<info>Type: </info>%s', $activity->type),
             sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
             sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
             sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),

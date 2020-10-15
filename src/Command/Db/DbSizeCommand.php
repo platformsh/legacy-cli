@@ -7,7 +7,6 @@ use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;

@@ -18,7 +18,8 @@ class SelfStatsCommand extends CommandBase
         $this
             ->setName('self:stats')
             ->setDescription('View stats on GitHub package downloads')
-            ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1);
+            ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Results per page (max: 100)', 20);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -39,7 +40,7 @@ class SelfStatsCommand extends CommandBase
                 ],
                 'query' => [
                     'page' => (int) $input->getOption('page'),
-                    'per_page' => 20,
+                    'per_page' => (int) $input->getOption('count'),
                 ],
             ])->json();
 

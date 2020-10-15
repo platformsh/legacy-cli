@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
 use Platformsh\Cli\Exception\ProcessFailedException;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\LocalProject;
@@ -42,22 +43,28 @@ class Drush
     /** @var string[] */
     protected $cachedAppRoots = [];
 
+    /** @var ApplicationFinder */
+    protected $applicationFinder;
+
     /**
      * @param Config|null $config
      * @param Shell|null $shellHelper
      * @param LocalProject|null $localProject
      * @param Api|null $api
+     * @param ApplicationFinder|null $applicationFinder
      */
     public function __construct(
         Config $config = null,
         Shell $shellHelper = null,
         LocalProject $localProject = null,
-        Api $api = null
+        Api $api = null,
+        ApplicationFinder $applicationFinder = null
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
         $this->localProject = $localProject ?: new LocalProject();
         $this->api = $api ?: new Api($this->config);
+        $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 
     public function setHomeDir($homeDir)
@@ -262,10 +269,10 @@ class Drush
 
         $aliases = [];
 
-        // Run the command with a 5-second timeout. An exception will be thrown
-        // if it fails.
+        // Run the command with a timeout. An exception will be thrown if it fails.
+        // A user experienced timeouts when this was set to 5 seconds, so it was increased to 30.
         try {
-            $result = $this->shellHelper->execute($args, null, true, true, [], 5);
+            $result = $this->shellHelper->execute($args, null, true, true, [], 30);
             if (is_string($result)) {
                 $aliases = (array) json_decode($result, true);
             }
@@ -342,7 +349,7 @@ class Drush
     public function getDrupalApps($projectRoot)
     {
         return array_filter(
-            LocalApplication::getApplications($projectRoot, $this->config),
+            $this->applicationFinder->findApplications($projectRoot),
             function (LocalApplication $app) {
                 return Drupal::isDrupal($app->getRoot());
             }

@@ -29,35 +29,9 @@ class IntegrationGetCommand extends IntegrationCommandBase
 
         $project = $this->getSelectedProject();
 
-        $id = $input->getArgument('id');
-        if (!$id && !$input->isInteractive()) {
-            $this->stdErr->writeln('An integration ID is required.');
-
-            return 1;
-        } elseif (!$id) {
-            $integrations = $project->getIntegrations();
-            if (empty($integrations)) {
-                $this->stdErr->writeln('No integrations found.');
-
-                return 1;
-            }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $choices = [];
-            foreach ($integrations as $integration) {
-                $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
-            }
-            $id = $questionHelper->choose($choices, 'Enter a number to choose an integration:');
-        }
-
-        $integration = $project->getIntegration($id);
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
-            try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln($e->getMessage());
-                return 1;
-            }
+            return 1;
         }
 
         if ($property = $input->getOption('property')) {

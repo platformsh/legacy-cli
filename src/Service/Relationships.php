@@ -174,7 +174,47 @@ class Relationships implements InputConfiguringInterface
      */
     public function getRelationships(HostInterface $host, $refresh = false)
     {
-        return $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh);
+        return $this->normalizeRelationships(
+            $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh)
+        );
+    }
+
+    /**
+     * Normalizes relationships that have weird output in the API.
+     *
+     * If only real-life relationships were this simple.
+     *
+     * @param array $relationships
+     *
+     * @return array
+     */
+    private function normalizeRelationships(array $relationships)
+    {
+        foreach ($relationships as &$relationship) {
+            foreach ($relationship as &$instance) {
+                // If there is a "host" which is actually a full MongoDB
+                // multi-instance URI such a mongodb://hostname1,hostname2,hostname3:1234/path?query
+                // then this converts it into a valid URL (selecting just the
+                // first hostname), and parses that to populate the instance
+                // definition.
+                if (isset($instance['scheme']) && isset($instance['host'])
+                    && $instance['scheme'] === 'mongodb' && strpos($instance['host'], 'mongodb://') === 0) {
+                    $mongodbUri = $instance['host'];
+                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', function ($matches) {
+                        return $matches[1] . \explode(',', $matches[2])[0] . $matches[3];
+                    }, $mongodbUri);
+                    $urlParts = \parse_url($url);
+                    if ($urlParts) {
+                        $instance = array_merge($urlParts, $instance);
+                        // Fix the "host" to be a hostname.
+                        $instance['host'] = $urlParts['host'];
+                        // Set the "url" as the original "host".
+                        $instance['url'] = $mongodbUri;
+                    }
+                }
+            }
+        }
+        return $relationships;
     }
 
     /**
@@ -234,6 +274,12 @@ class Relationships implements InputConfiguringInterface
             case 'mongodump':
             case 'mongoexport':
             case 'mongorestore':
+                if (isset($database['url'])) {
+                    if ($command === 'mongo') {
+                        return $database['url'];
+                    }
+                    return sprintf('--uri %s', OsUtil::escapePosixShellArg($database['url']));
+                }
                 $args = sprintf(
                     '--username %s --password %s --host %s --port %d',
                     OsUtil::escapePosixShellArg($database['username']),
@@ -282,12 +328,18 @@ class Relationships implements InputConfiguringInterface
     public function buildUrl(array $instance)
     {
         $parts = $instance;
+
         // Convert to parse_url parts.
-        $parts['user'] = $parts['username'];
-        $parts['pass'] = $parts['password'];
+        if (isset($parts['username'])) {
+            $parts['user'] = $parts['username'];
+        }
+        if (isset($parts['password'])) {
+            $parts['pass'] = $parts['password'];
+        }
         unset($parts['username'], $parts['password']);
         // The 'query' is expected to be a string.
-        if (is_array($parts['query'])) {
+        if (isset($parts['query']) && is_array($parts['query'])) {
+            unset($parts['query']['is_master']);
             $parts['query'] = (new Query($parts['query']))->__toString();
         }
 

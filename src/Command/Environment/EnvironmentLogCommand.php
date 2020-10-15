@@ -42,16 +42,13 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         }
 
         $container = $this->selectRemoteContainer($input);
-        $sshUrl = $container->getSshUrl();
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        $host = $this->selectHost($input, false, $container);
 
         $logDir = '/var/log';
 
         // Special handling for Platform.sh Enterprise (Integrated UI)
         // environments.
-        if (preg_match('/^ent-.*?platform\.sh$/', $sshUrl)) {
+        if (preg_match('/^ent-.*?platform\.sh$/', $container->getSshUrl())) {
             $logDir = '/var/log/platform/"$USER"';
             $this->debug('Detected Platform.sh Enterprise environment: using log directory: ' . $logDir);
         }
@@ -71,11 +68,11 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $questionHelper = $this->getService('question_helper');
 
             // Read the list of files from the environment.
-            $cacheKey = sprintf('log-files:%s', $sshUrl);
+            $cacheKey = sprintf('log-files:%s', $host->getCacheKey());
             /** @var \Doctrine\Common\Cache\CacheProvider $cache */
             $cache = $this->getService('cache');
             if (!$result = $cache->fetch($cacheKey)) {
-                $result = $shell->execute(['ssh', $sshUrl, 'ls -1 ' . $logDir . '/*.log']);
+                $result = $host->runCommand('ls -1 ' . $logDir . '/*.log');
 
                 // Cache the list for 1 day.
                 $cache->save($cacheKey, $result, 86400);
@@ -100,11 +97,9 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $command .= ' -f';
         }
 
-        $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $sshUrl, $logFilename));
+        $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $host->getLabel(), $logFilename));
 
-        $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
-
-        return $shell->executeSimple($sshCommand);
+        return $host->runCommandDirect($command);
     }
 
     /**

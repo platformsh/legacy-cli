@@ -75,7 +75,7 @@ class ActivityGetCommand extends CommandBase
 
         // Add the fake "duration" property.
         if (!isset($properties['duration'])) {
-            $properties['duration'] = $this->getDuration($activity);
+            $properties['duration'] = (new \Platformsh\Cli\Model\Activity())->getDuration($activity);
         }
 
         if ($property = $input->getOption('property')) {
@@ -135,28 +135,5 @@ class ActivityGetCommand extends CommandBase
 
         return $this->getSelectedProject()
             ->getActivities($limit, $input->getOption('type'));
-    }
-
-    /**
-     * Calculates the duration of an activity, whether complete or not.
-     *
-     * @param \Platformsh\Client\Model\Activity $activity
-     * @param int|null                          $now
-     *
-     * @return int|null
-     */
-    private function getDuration(Activity $activity, $now = null)
-    {
-        if ($activity->isComplete()) {
-            $end = strtotime($activity->completed_at);
-        } elseif (!empty($activity->started_at)) {
-            $now = $now === null ? time() : $now;
-            $end = $now;
-        } else {
-            $end = strtotime($activity->updated_at);
-        }
-        $start = !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
-
-        return $end !== false && $start !== false && $end - $start > 0 ? $end - $start : null;
     }
 }

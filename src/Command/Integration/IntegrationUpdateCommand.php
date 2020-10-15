@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,7 +15,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         $this
             ->setName('integration:update')
-            ->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update')
             ->setDescription('Update an integration');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();
@@ -30,45 +29,45 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         $this->warnAboutDeprecatedOptions(
             ['type'],
-            'The option --%s is deprecated and will be removed in a future version.'
+            'The --type option is not supported on the integration:update command. The integration type cannot be changed.'
         );
 
         $this->validateInput($input);
 
-        $id = $input->getArgument('id');
         $project = $this->getSelectedProject();
-        $integration = $project->getIntegration($id);
+
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
-            try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln($e->getMessage());
-                return 1;
-            }
+            return 1;
         }
 
-        // Get the values supplied via the command-line options.
+        $form = $this->getForm();
+
+        // Resolve options, only for one type.
+        $values = $integration->getProperties();
         $newValues = [];
-        foreach ($this->getForm()->getFields() as $key => $field) {
-            $value = $field->getValueFromInput($input);
+        foreach ($form->getFields() as $key => $field) {
+            if ($key === 'type') {
+                continue;
+            }
+            $field->onChange($values);
+            if (!$form->includeField($field, $values)) {
+                continue;
+            }
+            $value = $field->getValueFromInput($input, false);
             $parents = $field->getValueKeys() ?: [$key];
             if ($value !== null) {
-                NestedArrayUtil::setNestedArrayValue($newValues, $parents, $value, true);
+                $field->validate($value);
+                $value = $field->getFinalValue($value);
+                $form::setNestedArrayValue($newValues, $parents, $value, true);
             }
         }
 
         $this->postProcessValues($newValues, $integration);
 
-        // Merge current values with new values, accounting for nested arrays.
+        // Check if anything changed.
         foreach ($integration->getProperties() as $key => $currentValue) {
             if (isset($newValues[$key])) {
-                // If the new value is an array, it needs to be merged with the
-                // old values, e.g. ['foo' => 1, 'bar' => 7] plus ['foo' => 2]
-                // will become ['foo' => 2, 'bar' => 7].
-                if (is_array($currentValue)) {
-                    $newValues[$key] = array_replace_recursive($currentValue, $newValues[$key]);
-                }
-
                 // Remove any new values that are the same as the current value.
                 if ($this->valuesAreEqual($currentValue, $newValues[$key])) {
                     unset($newValues[$key]);
@@ -78,8 +77,9 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         if (!$newValues) {
             $this->stdErr->writeln('No changed values were provided to update.');
-            $this->stdErr->writeln('');
             $this->ensureHooks($integration);
+            $this->stdErr->writeln('');
+            $this->displayIntegration($integration);
 
             return 1;
         }
@@ -105,6 +105,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         $this->stdErr->writeln("Integration <info>{$integration->id}</info> (<info>{$integration->type}</info>) updated");
         $this->ensureHooks($integration);
+        $this->stdErr->writeln('');
 
         $this->displayIntegration($integration);
 

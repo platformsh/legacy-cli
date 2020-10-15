@@ -20,8 +20,7 @@ class SshKeyListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $keys = $this->api()->getClient()
-                     ->getSshKeys();
+        $keys = $this->api()->getSshKeys();
 
         if (empty($keys)) {
             $this->stdErr->writeln(sprintf(
@@ -29,21 +28,31 @@ class SshKeyListCommand extends CommandBase
                 $this->config()->get('service.name')
             ));
         } else {
+            $headers = ['ID', 'Title', 'Fingerprint', 'Local path'];
+            $defaultColumns = ['ID', 'Title', 'Local path'];
             /** @var \Platformsh\Cli\Service\Table $table */
             $table = $this->getService('table');
-            $headers = ['ID', 'Title', 'Fingerprint'];
+            /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
+            $sshKeyService = $this->getService('ssh_key');
             $rows = [];
             foreach ($keys as $key) {
-                $rows[] = [$key['key_id'], $key['title'], $key['fingerprint']];
+                $row = [$key->key_id, $key->title, $key->fingerprint];
+                $identity = $sshKeyService->findIdentityMatchingPublicKeys([$key->fingerprint]);
+                $path = $identity ? $identity . '.pub' : '';
+                if (!$identity && !$table->formatIsMachineReadable()) {
+                    $path = '<comment>Not found</comment>';
+                }
+                $row[] = $path;
+                $rows[] = $row;
             }
             if ($table->formatIsMachineReadable()) {
-                $table->render($rows, $headers);
+                $table->render($rows, $headers, $defaultColumns);
 
                 return 0;
             }
 
             $this->stdErr->writeln("Your SSH keys are:");
-            $table->render($rows, $headers);
+            $table->render($rows, $headers, $defaultColumns);
         }
 
         $this->stdErr->writeln('');

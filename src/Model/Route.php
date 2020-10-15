@@ -52,7 +52,7 @@ class Route
             $result[] = static::fromData($properties);
         }
 
-        return $result;
+        return static::sort($result);
     }
 
     /**
@@ -75,7 +75,7 @@ class Route
             $result[] = static::fromData($properties);
         }
 
-        return $result;
+        return static::sort($result);
     }
 
     /**
@@ -94,6 +94,33 @@ class Route
             $result[] = static::fromData($route);
         }
 
-        return $result;
+        return static::sort($result);
+    }
+
+    /**
+     * Sorts routes, preferring based on ID or primary status, and preferring shorter URLs with HTTPS.
+     *
+     * @param Route[] $routes
+     *
+     * @return Route[]
+     */
+    private static function sort(array $routes) {
+        usort($routes, function (Route $a, Route $b) {
+            $result = 0;
+            if ($a->primary) {
+                $result -= 4;
+            } elseif ($b->primary) {
+                $result += 4;
+            }
+            foreach ([$a, $b] as $key => $route) {
+                if (parse_url($route->url, PHP_URL_SCHEME) === 'https') {
+                    $result += $key === 0 ? -2 : 2;
+                }
+            }
+            $result += strlen($a->url) <= strlen($b->url) ? -1 : 1;
+            return $result;
+        });
+
+        return $routes;
     }
 }

@@ -14,7 +14,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     {
         $this
             ->setName('integration:delete')
-            ->addArgument('id', InputArgument::REQUIRED, 'The integration ID')
+            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.')
             ->setDescription('Delete an integration from a project');
         $this->addProjectOption()->addWaitOptions();
     }
@@ -22,18 +22,11 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-
-        $id = $input->getArgument('id');
         $project = $this->getSelectedProject();
 
-        $integration = $project->getIntegration($id);
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
-            try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln($e->getMessage());
-                return 1;
-            }
+            return 1;
         }
 
         $confirmText = sprintf('Delete the integration <info>%s</info> (type: %s)?', $integration->id, $integration->type);

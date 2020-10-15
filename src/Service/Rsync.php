@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Exception\ProcessFailedException;
+
 /**
  * Helper class which runs rsync.
  */
@@ -9,15 +11,35 @@ class Rsync
 {
 
     private $shell;
+    private $ssh;
+    private $sshDiagnostics;
 
     /**
      * Constructor.
      *
-     * @param Shell|null $shellHelper
+     * @param Shell $shellHelper
+     * @param Ssh $ssh
+     * @param SshDiagnostics $sshDiagnostics
      */
-    public function __construct(Shell $shellHelper = null)
+    public function __construct(Shell $shellHelper, Ssh $ssh, SshDiagnostics $sshDiagnostics)
     {
-        $this->shell = $shellHelper ?: new Shell();
+        $this->shell = $shellHelper;
+        $this->ssh = $ssh;
+        $this->sshDiagnostics = $sshDiagnostics;
+    }
+
+    /**
+     * Returns environment variables for configuring rsync.
+     *
+     * @return array
+     */
+    private function env() {
+        $env = [];
+        if ($this->ssh->getSshArgs() !== []) {
+            $env['RSYNC_RSH'] = $this->ssh->getSshCommand();
+        }
+
+        return $env;
     }
 
     /**
@@ -52,7 +74,12 @@ class Rsync
         // contents rather than the directory itself.
         $from = rtrim($localDir, '/') . '/';
         $to = sprintf('%s:%s', $sshUrl, $remoteDir);
-        $this->doSync($from, $to, $options);
+        try {
+            $this->doSync($from, $to, $options);
+        } catch (ProcessFailedException $e) {
+            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess()->getExitCode(), $e->getProcess());
+            throw new ProcessFailedException($e->getProcess(), false);
+        }
     }
 
     /**
@@ -67,7 +94,12 @@ class Rsync
     {
         $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
         $to = $localDir;
-        $this->doSync($from, $to, $options);
+        try {
+            $this->doSync($from, $to, $options);
+        } catch (ProcessFailedException $e) {
+            $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess()->getExitCode(), $e->getProcess());
+            throw new ProcessFailedException($e->getProcess(), false);
+        }
     }
 
     /**
@@ -104,6 +136,6 @@ class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, [], null);
+        $this->shell->execute($params, null, true, false, $this->env(), null);
     }
 }

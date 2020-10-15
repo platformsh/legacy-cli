@@ -62,21 +62,14 @@ class ProjectVariableSetCommand extends CommandBase
         }
 
         // Set the variable to a new value.
-        $result = $this->getSelectedProject()
+        $this->getSelectedProject()
                        ->setVariable($variableName, $variableValue, $json, !$supressBuild, !$supressRuntime);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
-        $success = true;
-        if (!$result->countActivities()) {
-            $this->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
-        }
+        $this->redeployWarning();
 
-        return $success ? 0 : 1;
+        return 0;
     }
 
     /**

@@ -109,9 +109,9 @@ class TunnelSingleCommand extends TunnelCommandBase
 
         if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
             $this->stdErr->writeln(sprintf(
-                'A tunnel is already open for the relationship <info>%s</info> (on port %s)',
+                'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
                 $relationshipString,
-                $openTunnelInfo['localPort']
+                $this->getTunnelUrl($openTunnelInfo, $service)
             ));
 
             return 1;
@@ -121,7 +121,7 @@ class TunnelSingleCommand extends TunnelCommandBase
 
         $processManager = new ProcessManager();
         $process = $this->createTunnelProcess($sshUrl, $remoteHost, $remotePort, $localPort, $sshArgs);
-        $pid = $processManager->startProcess($process, $pidFile, $this->stdErr);
+        $pid = $processManager->startProcess($process, $pidFile, $output);
 
         // Wait a very small time to capture any immediate errors.
         usleep(100000);
@@ -140,38 +140,18 @@ class TunnelSingleCommand extends TunnelCommandBase
         $this->tunnelInfo[] = $tunnel;
         $this->saveTunnelInfo();
 
-        $this->stdErr->writeln('');
-
-        $this->stdErr->writeln(sprintf(
-            'SSH tunnel opened on port %s to relationship: <info>%s</info>',
-            $tunnel['localPort'],
-            $relationshipString
-        ));
-
-        $localService = array_merge($service, array_intersect_key([
-            'host' => self::LOCAL_IP,
-            'port' => $tunnel['localPort'],
-        ], $service));
-        $info = [
-            'username' => 'Username',
-            'password' => 'Password',
-            'scheme' => 'Scheme',
-            'host' => 'Host',
-            'port' => 'Port',
-            'path' => 'Path',
-        ];
-        foreach ($info as $key => $category) {
-            if (isset($localService[$key])) {
-                $this->stdErr->writeln(sprintf('  <info>%s</info>: %s', $category, $localService[$key]));
-            }
-        }
-
-        $this->stdErr->writeln('');
-
-        if (isset($localService['scheme']) && in_array($localService['scheme'], ['http', 'https'], true)) {
-            $this->stdErr->writeln(sprintf('URL: <info>%s</info>', $relationshipsService->buildUrl($localService)));
+        if ($output->isVerbose()) {
+            // Just an extra line for separation from the process manager's log.
             $this->stdErr->writeln('');
         }
+
+        $this->stdErr->writeln(sprintf(
+            'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
+            $relationshipString,
+            $this->getTunnelUrl($tunnel, $service)
+        ));
+
+        $this->stdErr->writeln('');
 
         $this->stdErr->writeln('Quitting this command (with Ctrl+C or equivalent) will close the tunnel.');
 

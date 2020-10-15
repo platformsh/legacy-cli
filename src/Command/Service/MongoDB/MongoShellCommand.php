@@ -46,7 +46,7 @@ class MongoShellCommand extends CommandBase
 
         if ($input->getOption('eval')) {
             $command .= ' --eval ' . OsUtil::escapePosixShellArg($input->getOption('eval'));
-        };
+        }
 
         $sshOptions = [];
 

@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Composer Cache Directory
+      id: composer-cache
+      run: |
+        echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+    - uses: actions/cache@v2
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    - name: Install dependencies
+      run: |
+        composer install --no-dev --no-interaction
+        cd vendor-bin/box
+        composer install --no-interaction
+
+    - name: Symlink vendor/bin/box
+      run: |
+       mkdir -p vendor/bin
+       ln -s "$(realpath vendor-bin/box/vendor/bin/box)" vendor/bin/box
+
+    - name: Build platform.phar
+      env:
+        CI_COMMIT_SHA: ${{ github.event.after }}
+        CI_COMMIT_REF_NAME: ${{ github.head_ref }}
+      run: |
+        CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | head -c8)
+        ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_REF_NAME"-"$CI_COMMIT_SHORT_SHA" --output platform.phar
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: cli-phar
+        path: platform.phar

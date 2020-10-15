@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Client\Model\Git\Tree;
@@ -18,10 +19,11 @@ class GitDataApi
     private $cache;
 
     public function __construct(
-        Api $api = null
+        Api $api = null,
+        CacheProvider $cache = null
     ) {
         $this->api = $api ?: new Api();
-        $this->cache = $this->api->getCache();
+        $this->cache = $cache ?: CacheFactory::createCacheProvider(new Config());
     }
 
     /**

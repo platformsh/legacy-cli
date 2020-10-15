@@ -5,10 +5,12 @@ use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
+use Platformsh\Client\Model\Project;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
 use Platformsh\ConsoleForm\Field\Field;
+use Platformsh\ConsoleForm\Field\FileField;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
@@ -21,6 +23,47 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /** @var array */
     private $bitbucketAccessTokens = [];
+
+    /**
+     * @param Project $project
+     * @param string|null $id
+     * @param bool $interactive
+     *
+     * @return Integration|false
+     */
+    protected function selectIntegration(Project $project, $id, $interactive) {
+        if (!$id && !$interactive) {
+            $this->stdErr->writeln('An integration ID is required.');
+
+            return false;
+        } elseif (!$id) {
+            $integrations = $project->getIntegrations();
+            if (empty($integrations)) {
+                $this->stdErr->writeln('No integrations found.');
+
+                return false;
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $choices = [];
+            foreach ($integrations as $integration) {
+                $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
+            }
+            $id = $questionHelper->choose($choices, 'Enter a number to choose an integration:');
+        }
+
+        $integration = $project->getIntegration($id);
+        if (!$integration) {
+            try {
+                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+            } catch (\InvalidArgumentException $e) {
+                $this->stdErr->writeln($e->getMessage());
+                return false;
+            }
+        }
+
+        return $integration;
+    }
 
     /**
      * @return Form
@@ -86,6 +129,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.pagerduty',
                     'health.slack',
                     'health.webhook',
+                    'script',
                 ],
             ]),
             'base_url' => new UrlField('Base URL', [
@@ -143,8 +187,8 @@ abstract class IntegrationCommandBase extends CommandBase
                     'bitbucket_server',
                     'github',
                 ]],
-                'description' => 'The repository to track (e.g. \'foo/bar\')',
-                'questionLine' => 'The repository (e.g. \'foo/bar\')',
+                'description' => 'The repository to track (e.g. \'owner/repository\')',
+                'questionLine' => 'The repository (e.g. \'owner/repository\')',
                 'validator' => function ($string) {
                     return substr_count($string, '/', 1) === 1;
                 },
@@ -171,6 +215,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'Build every pull request as an environment',
             ]),
+            'build_draft_pull_requests' => new BooleanField('Build draft pull requests', [
+                'conditions' => [
+                    'type' => [
+                        'github',
+                    ],
+                    'build_pull_requests' => true,
+                ],
+            ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
               'conditions' => [
                 'type' => [
@@ -180,6 +232,16 @@ abstract class IntegrationCommandBase extends CommandBase
               ],
               'default' => false,
               'description' => 'Build pull requests based on their post-merge state',
+            ]),
+            'build_wip_merge_requests' => new BooleanField('Build WIP merge requests', [
+                'conditions' => [
+                    'type' => [
+                        'gitlab',
+                    ],
+                    'build_merge_requests' => true,
+                ],
+                'description' => 'GitLab: build WIP merge requests',
+                'questionLine' => 'Build WIP (work in progress) merge requests',
             ]),
             'merge_requests_clone_parent_data' => new BooleanField('Clone data for merge requests', [
                 'optionName' => 'merge-requests-clone-parent-data',
@@ -259,22 +321,40 @@ abstract class IntegrationCommandBase extends CommandBase
                 'questionLine' => 'Enter the JWS shared secret key, for validating webhook requests',
                 'required' => false,
             ]),
-            'events' => new ArrayField('Events to report', [
+            'script' => new FileField('Script file', [
+                'conditions' => ['type' => [
+                    'script',
+                ]],
+                'optionName' => 'file',
+                'allowedExtensions' => ['.js', ''],
+                'contentsAsValue' => true,
+                'description' => 'The name of a local file that contains the script to upload',
+                'normalizer' => function ($value) {
+                    if (getenv('HOME') && strpos($value, '~/') === 0) {
+                        return getenv('HOME') . '/' . substr($value, 2);
+                    }
+
+                    return $value;
+                },
+            ]),
+            'events' => new ArrayField('Events', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
+                    'script',
                 ]],
                 'default' => ['*'],
-                'description' => 'A list of events to report, e.g. environment.push',
+                'description' => 'A list of events to act on, e.g. environment.push',
                 'optionName' => 'events',
             ]),
-            'states' => new ArrayField('States to report', [
+            'states' => new ArrayField('States', [
                 'conditions' => ['type' => [
                     'hipchat',
                     'webhook',
+                    'script',
                 ]],
                 'default' => ['complete'],
-                'description' => 'A list of states to report, e.g. pending, in_progress, complete',
+                'description' => 'A list of states to act on, e.g. pending, in_progress, complete',
                 'optionName' => 'states',
             ]),
             'environments' => new ArrayField('Included environments', [
@@ -299,8 +379,9 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'health.email',
                 ]],
-                'description' => 'The From address for alert emails',
+                'description' => '[Optional] Custom From address for alert emails',
                 'default' => $this->config()->getWithDefault('service.default_from_address', null),
+                'required' => false,
             ]),
             'recipients' => new ArrayField('Recipients', [
                 'conditions' => ['type' => [
@@ -309,6 +390,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The recipient email address(es)',
                 'validator' => function ($emails) {
                     $invalid = array_filter($emails, function ($email) {
+                        // The special placeholders #viewers and #admins are
+                        // valid recipients.
+                        if (in_array($email, ['#viewers', '#admins'])) {
+                            return false;
+                        }
+
                         return !filter_var($email, FILTER_VALIDATE_EMAIL);
                     });
                     if (count($invalid)) {
@@ -414,6 +501,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
         $client = $this->api()->getHttpClient();
 
+        $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
             'Checking webhook configuration on the repository: <info>%s</info>',
             $repoName
