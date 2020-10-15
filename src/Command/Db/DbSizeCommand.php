@@ -335,7 +335,7 @@ class DbSizeCommand extends CommandBase
      * @return int Estimated usage in bytes
      */
     private function getPgSqlUsage(HostInterface $host, array $database) {
-        return (int) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
+        return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
     }
 
     /**
@@ -368,7 +368,7 @@ class DbSizeCommand extends CommandBase
 
         $otherSizes = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlNonInnodbQuery((bool) $allocatedSizeSupported));
 
-        return (int) $otherSizes + (int) $innoDbSize;
+        return (float) $otherSizes + (float) $innoDbSize;
     }
 
     /**
