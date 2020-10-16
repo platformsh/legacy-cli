@@ -782,6 +782,9 @@ class Api
      */
     public function getUser($id = null, $reset = false)
     {
+        if (!$this->config->getWithDefault('api.auth', false)) {
+            throw new \BadMethodCallException('api.auth must be enabled for this method');
+        }
         $id = $id ?: $this->getMyAccount()['id']; // @todo achieve this more efficiently
         $cacheKey = 'user:' . $id;
         if ($reset || !($data = $this->cache->fetch($cacheKey))) {
