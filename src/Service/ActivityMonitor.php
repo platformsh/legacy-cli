@@ -435,13 +435,13 @@ class ActivityMonitor
         $url = $activity->getLink('log');
 
         // Try fetching the stream with a 10 second timeout per call, and a .5
-        // second interval between calls, for up to 30 seconds.
+        // second interval between calls, for up to 2 minutes.
         $readTimeout = 10;
         $interval = .5;
         $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         $start = \microtime(true);
         while ($stream === false) {
-            if (\microtime(true) - $start > 30) {
+            if (\microtime(true) - $start > 120) {
                 throw new \RuntimeException('Failed to open activity log stream: ' . $url);
             }
             $bar->advance();
