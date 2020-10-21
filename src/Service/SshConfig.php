@@ -133,9 +133,6 @@ class SshConfig {
      */
     public function formatFilePath($path)
     {
-        // Replace the home directory with the SSH token %d, which solves most quoting problems.
-        $home = $this->config->getHomeDirectory();
-        $path = \str_replace($home, '%d', $path);
         if (\strpos($path, ' ') === false) {
             return $path;
         }
