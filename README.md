@@ -23,6 +23,14 @@ Run this command to install the CLI:
 
     curl -sS https://platform.sh/cli/installer | php
 
+### Installing via multiple PHP commands
+
+You may instead need these commands in some shells (such as MINGW64 on Windows):
+
+    php -r "copy('https://platform.sh/cli/installer', 'platformsh-cli-installer.php');";
+    php platformsh-cli-installer.php ;
+    php -r "unlink('platformsh-cli-installer.php');";
+
 ### Installing manually
 
 1. Download the `platform.phar` file from the

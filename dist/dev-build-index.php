@@ -38,17 +38,23 @@ if ($config->has('application.github_repo')) {
 }
 
 $baseUrl = 'https://' . $_SERVER['HTTP_HOST'];
-$installScript = sprintf(
-    'curl -sfS %s | php -- --dev --manifest %s',
+$installScript = sprintf(<<<EOF
+php -r "copy('%s', 'tmp-installer.php');";
+php tmp-installer.php --dev --manifest '%s' ;
+php -r "unlink('tmp-installer.php');";
+EOF,
     $baseUrl . '/installer',
     $baseUrl . '/manifest.json',
 );
 
 $revertScript = '';
 if ($config->has('application.installer_url')) {
-    $revertScript = sprintf(
-        'curl -sfS %s | php',
-        $config->get('application.installer_url')
+    $revertScript = sprintf(<<<EOF
+php -r "copy('%s', 'tmp-installer.php');";
+php tmp-installer.php ;
+php -r "unlink('tmp-installer.php');";
+EOF,
+        $config->get('application.installer_url'),
     );
 }
 
@@ -95,6 +101,7 @@ if ($config->has('application.installer_url')) {
 
         code {
             font-family: "Courier New", Courier, monospace;
+            white-space: pre-line;
         }
         .code-block {
             display: inline-block;
