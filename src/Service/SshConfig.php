@@ -127,20 +127,24 @@ class SshConfig {
      * This should be applied to the IdentityFile and CertificateFile option
      * values. See the ssh_config(5) man page: https://www.freebsd.org/cgi/man.cgi?ssh_config%285%29
      *
+     * Note: a previous version of this method replaced the home directory with
+     * SSH's percent syntax (%d). However, this does not work on systems where
+     * the HOME environment variable is set to a directory other than the
+     * current user's (notably on GitHub Actions containers), because the
+     * OpenSSH client does not support reading HOME.
+     *
      * @param string $path
      *
      * @return string
      */
     public function formatFilePath($path)
     {
-        // Replace the home directory with the SSH token %d, which solves most quoting problems.
-        $home = $this->config->getHomeDirectory();
-        $path = \str_replace($home, '%d', $path);
-        if (\strpos($path, ' ') === false) {
-            return $path;
+        // Escape paths containing a space.
+        if (\strpos($path, ' ') !== false) {
+            // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
+            return '"' . \str_replace('"', '"""', $path) . '"';
         }
-        // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
-        return '"' . \str_replace('"', '"""', $path) . '"';
+        return $path;
     }
 
     /**
