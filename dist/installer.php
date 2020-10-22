@@ -92,23 +92,9 @@ class Installer {
         // Run environment checks.
         $this->output(PHP_EOL . "Environment check", 'heading');
 
-        // Check that the JSON extension is installed (needed in this script).
-        $this->check(
-            'The "json" PHP extension is installed.',
-            'The "json" PHP extension is required.',
-            function () {
-                return extension_loaded('json');
-            }
-        );
-
-        // Check that the Phar extension is installed (needed in this script).
-        $this->check(
-            'The "phar" PHP extension is installed.',
-            'The "phar" PHP extension is required.',
-            function () {
-                return extension_loaded('phar');
-            }
-        );
+        // Check that the JSON and Phar extensions are installed (needed in this script).
+        $this->checkExtension('json');
+        $this->checkExtension('phar');
 
         // Check that Git is installed.
         $this->check(
@@ -126,19 +112,9 @@ class Installer {
             false
         );
 
-        $required_extensions = [
-            'openssl',
-            'pcre',
-        ];
-        foreach ($required_extensions as $extension) {
-            $this->check(
-                'The "' . $extension . '" PHP extension is installed.',
-                'The "' . $extension . '" PHP extension is required.',
-                function () use ($extension) {
-                    return extension_loaded($extension);
-                }
-            );
-        }
+        // Check other required extensions.
+        $this->checkExtension('openssl');
+        $this->checkExtension('pcre');
 
         // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
         $this->check(
@@ -288,6 +264,48 @@ class Installer {
         $result = $this->selfInstall($pharPath);
 
         exit($result);
+    }
+
+    /**
+     * Checks if a required PHP extension is installed.
+     *
+     * This attempts to give configuration advice if the extension exists but
+     * is not yet enabled.
+     *
+     * @param string $extension
+     */
+    private function checkExtension($extension) {
+        if (\extension_loaded($extension)) {
+            $this->output('  [*] The "' . $extension . '" PHP extension is installed.', 'success');
+            return;
+        }
+        $this->output('  [X] The ' . $extension . ' PHP extension is required.', 'error');
+        $extFilename = DIRECTORY_SEPARATOR === '\\' ? 'php_' . $extension . '.dll' : $extension . '.so';
+        $extDirs = [
+            PHP_EXTENSION_DIR,
+            dirname(PHP_BINARY) . DIRECTORY_SEPARATOR . 'ext',
+        ];
+        foreach ($extDirs as $dir) {
+            $extPath = $dir . DIRECTORY_SEPARATOR . $extFilename;
+            if (!\file_exists($extPath)) {
+                continue;
+            }
+            $this->output("The extension already exists at: $extPath");
+            if (!empty(PHP_CONFIG_FILE_SCAN_DIR) && \is_dir(PHP_CONFIG_FILE_SCAN_DIR)) {
+                $this->output(
+                    "\nTo enable it, create a file named: " . PHP_CONFIG_FILE_SCAN_DIR . DIRECTORY_SEPARATOR . "$extension.ini"
+                    . "\ncontaining this line:"
+                    . "\nextension=$extPath"
+                );
+            } else {
+                $this->output(
+                    "\nTo enable it, edit your php.ini configuration file and add the line:"
+                    . "\nextension=$extPath"
+                );
+            }
+            break;
+        }
+        exit(1);
     }
 
     /**
