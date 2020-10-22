@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Tunnel;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelOpenCommand extends TunnelCommandBase
@@ -16,6 +17,7 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this
             ->setName('tunnel:open')
             ->setDescription("Open SSH tunnels to an app's relationships");
+        $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -89,9 +91,14 @@ EOF
             return 1;
         }
 
+        $sshOptions = [];
+        if ($input->getOption('gateway-ports')) {
+            $sshOptions['GatewayPorts'] = 'yes';
+        }
+
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $sshArgs = $ssh->getSshArgs();
+        $sshArgs = $ssh->getSshArgs($sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
 

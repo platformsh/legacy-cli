@@ -20,6 +20,7 @@ class TunnelSingleCommand extends TunnelCommandBase
             ->setName('tunnel:single')
             ->setDescription('Open a single SSH tunnel to an app relationship')
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');
+        $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -70,9 +71,14 @@ class TunnelSingleCommand extends TunnelCommandBase
             $this->stdErr->writeln('');
         }
 
+        $sshOptions = [];
+        if ($input->getOption('gateway-ports')) {
+            $sshOptions['GatewayPorts'] = 'yes';
+        }
+
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $sshArgs = $ssh->getSshArgs();
+        $sshArgs = $ssh->getSshArgs($sshOptions);
 
         $remoteHost = $service['host'];
         $remotePort = $service['port'];
