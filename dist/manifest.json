@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "885625ea83030ee9ba9ff3c26051c364ca74c4a5",
-        "sha256": "eef49450192506eb7acc1087d9fb0943d15846d17911fa71cdade1bbb635e8f0",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.62.6/platform.phar",
-        "version": "3.62.6",
+        "sha1": "2b510f4c9346eab98abd5a64d867025244ae8b52",
+        "sha256": "0ac581cda65deee5b632117670b557e95d6ace3b945994e54309bc8e1a8005d9",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.63.0/platform.phar",
+        "version": "3.63.0",
         "php": {
             "min": "5.5.9"
         },
@@ -299,6 +299,11 @@
                 "notes": "* Support force-sending an invitation in the `user:add` command (via a prompt,\n  or the `--force-invite` option).\n* Retry fetching the activity log stream to avoid errors when an activity is starting.\n* Show the stderr of every shell command, if in debug mode (`-vvv`).\n* Handle multi-host mongodb URIs in relationships.",
                 "show from": "3.61.0",
                 "hide from": "3.62.0"
+            },
+            {
+                "notes": "New features:\n\n* Add `--gateway-ports` (`-g`) option to tunnel commands. This allows tunnels\n  to be accessed from Docker containers for local development.\n* Installer: auto-detect existing but disabled extensions.\n\nOther changes:\n\n* Stop using SSH home directory substitution. This fixes an SSH issue in\n  GitHub Actions.\n* Fix missing Git detection on Windows. This improves the `get` command error\n  message when Git is not installed.\n* Fix `db:size` command on 32-bit platforms (handling sizes greater than 2GB).",
+                "show from": "3.62.0",
+                "hide from": "3.63.0"
             }
         ]
     }
