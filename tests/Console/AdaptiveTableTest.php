@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Console;
 
 use Platformsh\Cli\Console\AdaptiveTable;
 use Symfony\Component\Console\Helper\Helper;

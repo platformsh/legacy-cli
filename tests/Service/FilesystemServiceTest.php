@@ -1,8 +1,9 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 
 class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
 {

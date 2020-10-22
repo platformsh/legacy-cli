@@ -1,8 +1,9 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 
 /**
  * @group slow

@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\CredentialHelper;
 
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;

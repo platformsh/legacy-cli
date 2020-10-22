@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use Platformsh\Cli\Service\Identifier;
 

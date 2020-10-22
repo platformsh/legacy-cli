@@ -1,9 +1,10 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Local;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 
 class LocalProjectTest extends \PHPUnit_Framework_TestCase
 {
