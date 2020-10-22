@@ -3,7 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
-use Platformsh\Cli\Exception\ProcessFailedException;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 /**
  * Helper class which runs Git CLI commands and interprets the results.
@@ -63,7 +63,7 @@ class Git
         try {
             $this->execute(['--version'], null, true);
         } catch (ProcessFailedException $e) {
-            if ($e->getProcess()->getExitCode() === 127) {
+            if ($this->shellHelper->exceptionMeansCommandDoesNotExist($e)) {
                 throw new DependencyMissingException('Git must be installed', $e);
             }
         }
