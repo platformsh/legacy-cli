@@ -269,9 +269,9 @@ class Shell
                 foreach ($commands as $key => $args) {
                     try {
                         $result[$command] = $this->execute($args);
-                    } catch (\Platformsh\Cli\Exception\ProcessFailedException $e) {
+                    } catch (ProcessFailedException $e) {
                         $result[$command] = false;
-                        if ($e->getProcess()->getExitCode() === 127) {
+                        if ($this->exceptionMeansCommandDoesNotExist($e)) {
                             continue;
                         }
                     }
@@ -284,6 +284,29 @@ class Shell
         }
 
         return $result[$command];
+    }
+
+    /**
+     * Tests a process exception to see if it means the command does not exist.
+     *
+     * @param ProcessFailedException $e
+     *
+     * @return bool
+     */
+    public function exceptionMeansCommandDoesNotExist(ProcessFailedException $e) {
+        $process = $e->getProcess();
+        if ($process->getExitCode() === 127) {
+            return true;
+        }
+        if (DIRECTORY_SEPARATOR === '\\') {
+            if ($process->isOutputDisabled()) {
+                return true;
+            }
+            if (\stripos($process->getErrorOutput(), 'is not recognized as an internal or external command')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -2,24 +2,16 @@
 
 namespace Platformsh\Cli\Exception;
 
-use Symfony\Component\Process\Exception\RuntimeException;
 use Symfony\Component\Process\Process;
 
 /**
  * An exception thrown when a process fails.
  *
- * This is a copy of Symfony's ProcessFailedException, with an improved error
- * message.
- *
- * @see \Symfony\Component\Process\Exception\ProcessFailedException
+ * This extends Symfony's ProcessFailedException, with an improved error message.
  */
-class ProcessFailedException extends RuntimeException
+class ProcessFailedException extends \Symfony\Component\Process\Exception\ProcessFailedException
 {
-    private $process;
-
     /**
-     * ProcessFailedException constructor.
-     *
      * @param \Symfony\Component\Process\Process $process
      *     The failed process.
      * @param bool $includeOutput
@@ -28,9 +20,7 @@ class ProcessFailedException extends RuntimeException
      */
     public function __construct(Process $process, $includeOutput)
     {
-        if ($process->isSuccessful()) {
-            throw new \InvalidArgumentException('Expected a failed process, but the given process was successful.');
-        }
+        parent::__construct($process);
 
         $message = 'The command failed with the exit code: ' . $process->getExitCode();
         $message .= "\n\nFull command: " . $process->getCommandLine();
@@ -39,16 +29,6 @@ class ProcessFailedException extends RuntimeException
             $message .= "\n\nError output:\n" . $process->getErrorOutput();
         }
 
-        parent::__construct($message);
-
-        $this->process = $process;
-    }
-
-    /**
-     * @return \Symfony\Component\Process\Process
-     */
-    public function getProcess()
-    {
-        return $this->process;
+        $this->message = $message;
     }
 }
