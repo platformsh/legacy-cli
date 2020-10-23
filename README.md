@@ -23,6 +23,8 @@ Run this command to install the CLI:
 
     curl -sS https://platform.sh/cli/installer | php
 
+In some Windows terminals you may need `php.exe` instead of `php`.
+
 ### Installing manually
 
 1. Download the `platform.phar` file from the
