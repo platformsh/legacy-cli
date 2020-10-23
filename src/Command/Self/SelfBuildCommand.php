@@ -37,8 +37,11 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+
         $outputFilename = $input->getOption('output');
-        if ($outputFilename && !is_writable(dirname($outputFilename))) {
+        if ($outputFilename && !$fs->canWrite($outputFilename)) {
             $this->stdErr->writeln("Not writable: <error>$outputFilename</error>");
             return 1;
         }
@@ -69,8 +72,6 @@ class SelfBuildCommand extends CommandBase
         $boxConfig['replacements']['version-placeholder'] = $version;
 
         if ($outputFilename) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
             $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
             $phar = $boxConfig['output'];
         } else {
