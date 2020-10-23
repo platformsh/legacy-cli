@@ -21,6 +21,7 @@
  *      --max VERSION          Max version to install (not recommended).
  *      --manifest URL         A manifest JSON file URL (use for testing).
  *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
+ *      --insecure             Disable TLS verification (not recommended).
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
@@ -572,6 +573,10 @@ class Installer {
         ];
         if ($proxy = $this->getProxy()) {
             $opts['http']['proxy'] = $proxy;
+        }
+        if ($this->flagEnabled('insecure')) {
+            $opts['ssl']['verify_peer'] = false;
+            $opts['ssl']['verify_peer_name'] = false;
         }
 
         return stream_context_create($opts);
