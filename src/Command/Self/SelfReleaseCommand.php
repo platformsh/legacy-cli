@@ -17,7 +17,7 @@ class SelfReleaseCommand extends CommandBase
     protected function configure()
     {
         $defaultRepo = $this->config()->getWithDefault('application.github_repo', null);
-        $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'master');
+        $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'main');
 
         $this->setName('self:release')
             ->setDescription('Build and release a new version')
@@ -56,7 +56,6 @@ class SelfReleaseCommand extends CommandBase
         $releaseBranch = $input->getOption('release-branch');
         if ($git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
             $this->stdErr->writeln('You must be on the ' . $releaseBranch . ' branch to make a release.');
-            $this->stdErr->writeln('Check out master, or use the --release-branch option to override this.');
 
             return 1;
         }
