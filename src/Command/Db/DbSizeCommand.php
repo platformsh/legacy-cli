@@ -333,9 +333,14 @@ class DbSizeCommand extends CommandBase
      */
     private function getEstimatedUsage(HostInterface $host, array $database) {
         switch($database['scheme']) {
-            case 'pgsql': return $this->getPgSqlUsage($host, $database); break;
-            case 'mongodb': return $this->getMongoDbUsage($host, $database); break;
-            default: return $this->getMySqlUsage($host, $database);
+            case 'pgsql': 
+                return $this->getPgSqlUsage($host, $database); 
+            break;
+            case 'mongodb': 
+                return $this->getMongoDbUsage($host, $database); 
+            break;
+            default: 
+                return $this->getMySqlUsage($host, $database);
         }
     }
 
