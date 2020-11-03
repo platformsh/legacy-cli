@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command\Db;
 
-use Exception;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Relationships;
@@ -94,7 +93,7 @@ class DbSizeCommand extends CommandBase
 
         $this->showInaccessibleSchemas($service, $database);
 
-        if ($database['scheme'] !== 'pgsql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
+        if ($database['scheme'] !== 'pgsql' && $database['scheme'] !== 'mongodb' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
             $this->checkInnoDbTablesInNeedOfOptimizing($host, $database);
         }
 
@@ -228,16 +227,6 @@ class DbSizeCommand extends CommandBase
     }
 
     /**
-     * Returns a query to find disk usage for a PostgreSQL database.
-     *
-     * @return string
-     */
-    private function mongodbQuery()
-    {
-        return 'db.stats().fsUsedSize';
-    }
-
-    /**
      * Returns the psql CLI client command.
      *
      * @param array $database
@@ -263,7 +252,7 @@ class DbSizeCommand extends CommandBase
         return sprintf(
             "mongo %s --quiet --eval %s", 
             $dbUrl,
-            OsUtil::escapePosixShellArg("db.stats().fsUsedSize")
+            OsUtil::escapePosixShellArg("db.stats().fsUsedSize") # https://docs.mongodb.com/manual/reference/command/dbStats/
         );        
     }
 
