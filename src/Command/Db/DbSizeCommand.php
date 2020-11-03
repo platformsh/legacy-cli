@@ -2,11 +2,13 @@
 
 namespace Platformsh\Cli\Command\Db;
 
+use Exception;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,7 +52,7 @@ class DbSizeCommand extends CommandBase
 
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar(), $container);
 
-        $database = $relationships->chooseDatabase($host, $input, $output);
+        $database = $relationships->chooseDatabase($host, $input, $output, ['mysql','pgsql','mongodb']);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
@@ -226,6 +228,16 @@ class DbSizeCommand extends CommandBase
     }
 
     /**
+     * Returns a query to find disk usage for a PostgreSQL database.
+     *
+     * @return string
+     */
+    private function mongodbQuery()
+    {
+        return 'db.stats().fsUsedSize';
+    }
+
+    /**
      * Returns the psql CLI client command.
      *
      * @param array $database
@@ -241,6 +253,18 @@ class DbSizeCommand extends CommandBase
             'psql --echo-hidden -t --no-align %s',
             $dbUrl
         );
+    }
+
+    private function getMongodbCommand(array $database) {
+        /** @var \Platformsh\Cli\Service\Relationships $relationships */
+        $relationships = $this->getService('relationships');
+        $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
+        
+        return sprintf(
+            "mongo %s --quiet --eval %s", 
+            $dbUrl,
+            OsUtil::escapePosixShellArg("db.stats().fsUsedSize")
+        );        
     }
 
     /**
@@ -319,11 +343,11 @@ class DbSizeCommand extends CommandBase
      * @return int Estimated usage in bytes.
      */
     private function getEstimatedUsage(HostInterface $host, array $database) {
-        if ($database['scheme'] === 'pgsql') {
-            return $this->getPgSqlUsage($host, $database);
+        switch($database['scheme']) {
+            case 'pgsql': return $this->getPgSqlUsage($host, $database); break;
+            case 'mongodb': return $this->getMongoDbUsage($host, $database); break;
+            default: $this->getMySqlUsage($host, $database);
         }
-
-        return $this->getMySqlUsage($host, $database);
     }
 
     /**
@@ -336,6 +360,10 @@ class DbSizeCommand extends CommandBase
      */
     private function getPgSqlUsage(HostInterface $host, array $database) {
         return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
+    }
+
+    private function getMongoDbUsage(HostInterface $host, array $database) {
+        return (float) $host->runCommand($this->getMongodbCommand($database));
     }
 
     /**
