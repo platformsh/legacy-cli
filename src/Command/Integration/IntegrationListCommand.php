@@ -120,7 +120,8 @@ class IntegrationListCommand extends IntegrationCommandBase
                 break;
 
             case 'script':
-                $summary = sprintf("Script:\n%s", trim(substr($details['script'], 0, 300)));
+                // Replace tabs with spaces so that table cell width is consistent.
+                $summary = "Script:\n" . \substr(\str_replace("\t", '  ', $details['script']), 0, 300);
                 break;
 
             default:
