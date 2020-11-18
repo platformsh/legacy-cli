@@ -21,7 +21,8 @@ class EnvironmentUrlCommand extends CommandBase
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()
-             ->addEnvironmentOption();
+             ->addEnvironmentOption()
+             ->addAppOption();
         $this->addExample('Give a choice of URLs to open (or print all URLs if there is no browser)');
         $this->addExample('Print all URLs', '--pipe');
         $this->addExample('Print and/or open the primary route URL', '--primary');
