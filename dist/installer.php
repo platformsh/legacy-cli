@@ -60,19 +60,37 @@ class Installer {
     public function __construct(array $args = []) {
         $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
 
-        $this->envPrefix = 'PLATFORMSH_CLI_';
+        // This config is automatically replaced by the self:build command,
+        // to match the values in config.yaml.
+        $config = /* START_CONFIG */array (
+  'envPrefix' => 'PLATFORMSH_CLI_',
+  'manifestUrl' => 'https://platform.sh/cli/manifest.json',
+  'configDir' => '.platformsh',
+  'executable' => 'platform',
+  'cliName' => 'Platform.sh CLI',
+  'userAgent' => 'platformsh-cli',
+)/* END_CONFIG */;
+
+        $required = ['envPrefix', 'manifestUrl', 'configDir', 'executable', 'cliName'];
+        if ($missing = \array_diff($required, \array_keys($config))) {
+            throw new \InvalidArgumentException('Missing required config key(s): ' . \implode(', ', $missing));
+        }
+
+        foreach ($config as $key => $value) {
+            if (\property_exists($this, $key)) {
+                $this->{$key} = $value;
+            }
+        }
+
         if (getenv($this->envPrefix . 'MANIFEST_URL') !== false) {
             $this->manifestUrl = getenv($this->envPrefix . 'MANIFEST_URL');
         } elseif ($manifestOption = $this->getOption('manifest')) {
             $this->manifestUrl = $manifestOption;
-        } else {
-            $this->manifestUrl = 'https://platform.sh/cli/manifest.json';
         }
-        $this->configDir = '.platformsh';
-        $this->executable = 'platform';
-        $this->cliName = 'Platform.sh CLI';
+
         $this->userAgent = sprintf(
-            'platformsh-cli-installer (%s; %s; PHP %s)',
+            '%s-installer (%s; %s; PHP %s)',
+            $this->userAgent ?: 'cli',
             php_uname('s'),
             php_uname('r'),
             PHP_VERSION

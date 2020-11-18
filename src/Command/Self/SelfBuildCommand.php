@@ -71,6 +71,10 @@ class SelfBuildCommand extends CommandBase
         }
         $boxConfig['replacements']['version-placeholder'] = $version;
 
+        if (!$this->checkInstallerFile()) {
+            return 1;
+        }
+
         if ($outputFilename) {
             $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
             $phar = $boxConfig['output'];
@@ -163,5 +167,47 @@ class SelfBuildCommand extends CommandBase
         ]);
 
         return 0;
+    }
+
+    /**
+     * Ensure the installer.php file has config that matches config.yaml.
+     *
+     * @return bool
+     */
+    private function checkInstallerFile()
+    {
+        $installerFile = CLI_ROOT . '/dist/installer.php';
+        $installerContents = \file_get_contents($installerFile);
+        if ($installerContents === false) {
+            $this->stdErr->writeln('Failed to read installer file: <error>' . $installerFile . '</error>');
+            return false;
+        }
+        $start = "/* START_CONFIG */";
+        $end = "/* END_CONFIG */";
+        $startPos = \strpos($installerContents, $start) + \strlen($start);
+        $endPos = \strpos($installerContents, $end);
+        if ($startPos === false || $endPos === false || $endPos < $startPos) {
+            $this->stdErr->writeln('Failed to locate config in installer file: <error>' . $installerFile . '</error>');
+            return false;
+        }
+        $newConfig = \var_export([
+            'envPrefix' => $this->config()->get('application.env_prefix'),
+            'manifestUrl' => $this->config()->get('application.manifest_url'),
+            'configDir' => $this->config()->get('application.user_config_dir'),
+            'executable' => $this->config()->get('application.executable'),
+            'cliName' => $this->config()->get('application.name'),
+            'userAgent' => $this->config()->get('application.slug'),
+        ], true);
+        $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
+        if ($newContents !== $installerContents) {
+            $this->stdErr->writeln('Modifying installer file to match config');
+            if (!\file_put_contents($installerFile, $newContents)) {
+                $this->stdErr->writeln('Failed to write to installer file: <error>' . $installerFile . '</error>');
+                return false;
+            }
+        } else {
+            $this->stdErr->writeln('Verified installer file');
+        }
+        return true;
     }
 }
