@@ -168,6 +168,7 @@ class ProjectInfoCommand extends CommandBase
             'title' => 'string',
             'description' => 'string',
             'default_domain' => 'string',
+            'default_branch' => 'string',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
