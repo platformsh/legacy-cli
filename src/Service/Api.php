@@ -1100,6 +1100,26 @@ class Api
     }
 
     /**
+     * Get the default environment in a project.
+     *
+     * @param bool|null $refresh
+     *
+     * @return Environment|null
+     */
+    public function getDefaultEnvironment(Project $project, $refresh = null)
+    {
+        if ($env = $this->getEnvironment($project->default_branch, $project, $refresh)) {
+            return $env;
+        }
+        $envs = $this->getEnvironments($project, $refresh);
+        $id = $this->getDefaultEnvironmentId($envs);
+        if ($id !== null && isset($envs[$id])) {
+            return $envs[$id];
+        }
+        return null;
+    }
+
+    /**
      * Get the default environment in a list.
      *
      * @param array $environments An array of environments, keyed by ID.
@@ -1126,6 +1146,7 @@ class Api
         }
 
         // Check if there is a "master" environment.
+        // @todo use the project's default branch
         if (isset($environments['master'])) {
             return 'master';
         }

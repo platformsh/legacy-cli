@@ -36,7 +36,7 @@ class EnvironmentInitCommand extends CommandBase
     {
         $this->validateInput($input, true);
         if (!$this->hasSelectedEnvironment()) {
-            $this->selectEnvironment('master');
+            $this->selectEnvironment($this->getSelectedProject()->default_branch);
         }
 
         $environment = $this->getSelectedEnvironment();
@@ -66,9 +66,7 @@ class EnvironmentInitCommand extends CommandBase
         // Summarize this action with a message.
         $message = 'Initializing project ';
         $message .= $this->api()->getProjectLabel($this->getSelectedProject());
-        if ($environment->id !== 'master') {
-            $message .= ', environment ' . $this->api()->getEnvironmentLabel($environment);
-        }
+        $message .= ', environment ' . $this->api()->getEnvironmentLabel($environment);
         if ($input->getOption('profile')) {
             $message .= ' with profile <info>' . $profile . '</info> (' . $url . ')';
         } else {

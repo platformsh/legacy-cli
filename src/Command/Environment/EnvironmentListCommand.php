@@ -174,13 +174,6 @@ class EnvironmentListCommand extends CommandBase
 
         $tree = $this->buildEnvironmentTree($environments);
 
-        // To make the display nicer, we move all the children of master
-        // to the top level.
-        if (isset($this->children['master'])) {
-            $tree += $this->children['master'];
-            $this->children['master'] = [];
-        }
-
         $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Created', 'Updated'];
         $defaultColumns = ['id', 'title', 'status'];
 

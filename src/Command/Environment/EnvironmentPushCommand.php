@@ -85,11 +85,13 @@ class EnvironmentPushCommand extends CommandBase
             return 1;
         }
 
+        $project = $this->getSelectedProject();
+
         // Guard against accidental pushing to production.
         // @todo if/when the API provides "is this production" for an environment, use that instead of hardcoding branch names
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if (in_array($target, ['master', 'production'])) {
+        if (in_array($target, ['master', 'production', $project->default_branch])) {
             $questionText = sprintf(
                 'Are you sure you want to push to the %s branch?',
                 '<comment>' . $target . '</comment>' . ($target === 'production' ? '' : ' (production)')
@@ -100,11 +102,10 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         // Determine whether the target environment is new.
-        $project = $this->getSelectedProject();
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
 
         $activities = [];
-        if ($target !== 'master') {
+        if ($target !== $project->default_branch) {
             // Determine whether to activate the environment.
             $activate = false;
             if (!$targetEnvironment || $targetEnvironment->status === 'inactive') {

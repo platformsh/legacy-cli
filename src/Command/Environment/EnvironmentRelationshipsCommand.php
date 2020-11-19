@@ -27,8 +27,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
              ->addAppOption();
         Ssh::configureInput($this->getDefinition());
         $this->addExample("View all the current environment's relationships");
-        $this->addExample("View the 'master' environment's relationships", 'master');
-        $this->addExample("View the 'master' environment's database port", 'master --property database.0.port');
+        $this->addExample("View the 'main' environment's relationships", 'main');
+        $this->addExample("View the 'main' environment's database port", 'main --property database.0.port');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

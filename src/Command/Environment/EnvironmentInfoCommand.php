@@ -186,8 +186,8 @@ class EnvironmentInfoCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         switch ($property) {
             case 'parent':
-                if ($selectedEnvironment->id === 'master') {
-                    $message = "The master environment cannot have a parent";
+                if ($selectedEnvironment->id === 'master' || $selectedEnvironment->is_main) {
+                    $message = "The main environment cannot have a parent";
                     $valid = false;
                 } elseif ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";

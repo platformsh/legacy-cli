@@ -248,7 +248,7 @@ class CompletionCommand extends ParentCompletionCommand
                 }
             }
         } elseif ($project = $this->getProject()) {
-            if ($environment = $this->api->getEnvironment('master', $project, false)) {
+            if ($environment = $this->api->getDefaultEnvironment($project, false)) {
                 $apps = array_keys($environment->getSshUrls());
             }
         }
