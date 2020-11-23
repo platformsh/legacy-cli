@@ -66,8 +66,10 @@ class BrowserLoginCommand extends CommandBase
             // login is still valid. If the request works, then do not log in
             // again (unless --force is used). If the request fails, proceed
             // with login.
+            $api = $this->api();
             try {
-                $account = $this->api()->getMyAccount(true);
+                $api->inLoginCheck = true;
+                $account = $api->getMyAccount(true);
 
                 $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
                     $account['username'],
@@ -93,6 +95,8 @@ class BrowserLoginCommand extends CommandBase
                 } else {
                     throw $e;
                 }
+            } finally {
+                $api->inLoginCheck = false;
             }
         }
 

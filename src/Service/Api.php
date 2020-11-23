@@ -107,6 +107,13 @@ class Api
     private $sessionStorage;
 
     /**
+     * Sets whether we are currently verifying login using a test request.
+     *
+     * @var bool
+     */
+    public $inLoginCheck = false;
+
+    /**
      * Constructor.
      *
      * @param Config|null $config
@@ -297,6 +304,9 @@ class Api
         if ($response && !in_array($response->getStatusCode(), [400, 401])) {
             return null;
         }
+        if ($this->inLoginCheck) {
+            return null;
+        }
 
         $this->logout();
 
@@ -332,6 +342,7 @@ class Api
             return null;
         }
         $map = [
+            'accessToken' => 'access_token',
             'expires' => 'expires',
             'refreshToken' => 'refresh_token',
             'scope' => 'scope',
