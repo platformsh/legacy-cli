@@ -187,6 +187,7 @@ class BrowserLoginCommand extends CommandBase
         // Wait for the file to be filled with an OAuth2 authorization code.
         /** @var array|null $response */
         $response = null;
+        $start = time();
         while ($process->isRunning()) {
             usleep(300000);
             if (!file_exists($responseFile)) {
@@ -202,6 +203,11 @@ class BrowserLoginCommand extends CommandBase
             }
             if ($responseRaw !== '') {
                 $response = json_decode($responseRaw, true);
+                break;
+            }
+            if (time() - $start >= 1800) {
+                $this->stdErr->writeln('Login timed out after 30 minutes');
+                $this->stdErr->writeln('');
                 break;
             }
         }
