@@ -71,6 +71,22 @@ class SshDiagnostics
     }
 
     /**
+     * Checks if SSH host key verification failed.
+     *
+     * @param string $uri
+     * @param Process|null $failedProcess
+     *
+     * @return bool
+     */
+    private function hostKeyVerificationFailed($uri, $failedProcess = null)
+    {
+        $failedProcess = $failedProcess ?: $this->testConnection($uri);
+        $stdErr = $failedProcess->getErrorOutput();
+
+        return stripos($stdErr, "Host key verification failed.") !== false;
+    }
+
+    /**
      * Tests the SSH connection (and caches the result).
      *
      * @param string $uri
@@ -197,6 +213,23 @@ class SshDiagnostics
         }
 
         if ($this->authenticationSucceeded($uri, $failedProcess)) {
+            return;
+        }
+
+        if ($this->hostKeyVerificationFailed($uri, $failedProcess)) {
+            if ($blankLine) {
+                $this->stdErr->writeln('');
+            }
+            $this->stdErr->writeln('SSH was unable to verify the host key.');
+            if ($host = $this->getHost($uri)) {
+                $this->stdErr->writeln('In non-interactive environments, you can install the host key with:');
+                $this->stdErr->writeln('ssh-keyscan ' . \escapeshellarg($host) . ' >> $HOME/.ssh/known_hosts');
+                if (\strpos($host, 'ssh.') === 0) {
+                    $this->stdErr->writeln('ssh-keyscan ' . \escapeshellarg('git.' . \substr($host, 4)) . ' >> $HOME/.ssh/known_hosts');
+                } elseif (\strpos($host, 'git.') === 0) {
+                    $this->stdErr->writeln('ssh-keyscan ' . \escapeshellarg('ssh.' . \substr($host, 4)) . ' >> $HOME/.ssh/known_hosts');
+                }
+            }
             return;
         }
 
