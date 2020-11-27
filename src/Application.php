@@ -99,6 +99,7 @@ class Application extends ParentApplication
         $commands[] = new Command\DocsCommand();
         $commands[] = new Command\LegacyMigrateCommand();
         $commands[] = new Command\MultiCommand();
+        $commands[] = new Command\Activity\ActivityCancelCommand();
         $commands[] = new Command\Activity\ActivityGetCommand();
         $commands[] = new Command\Activity\ActivityListCommand();
         $commands[] = new Command\Activity\ActivityLogCommand();

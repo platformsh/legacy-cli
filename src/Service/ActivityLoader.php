@@ -37,14 +37,15 @@ class ActivityLoader
      * The --state, --incomplete, --result, --start, --limit, and --type options will be processed.
      *
      * @param int|null $limit Limit the number of activities to return, regardless of input.
+     * @param array $state Define the states to return, regardless of input.
+     * @param string $withOperation Filters the resulting activities to those with the specified operation available.
      *
      * @return \Platformsh\Client\Model\Activity[]|false
      *   False if an error occurred, an array of activities otherwise.
      */
-    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null)
+    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null, $state = [], $withOperation = '')
     {
-        $state = [];
-        if ($input->hasOption('state')) {
+        if ($state === [] && $input->hasOption('state')) {
             $state = $input->getOption('state');
             if (\count($state) === 1) {
                 $state = \array_filter(\preg_split('/[,\s]+/', \reset($state)), '\\strlen');
@@ -66,7 +67,13 @@ class ActivityLoader
             $this->stdErr->writeln('Invalid --start date: <error>' . $input->getOption('start') . '</error>');
             return [];
         }
-        return $this->load($apiResource, $limit, $type, $startsAt, $state, $result);
+        $activities = $this->load($apiResource, $limit, $type, $startsAt, $state, $result);
+        if ($withOperation) {
+            $activities = array_filter($activities, function (Activity $activity) use ($withOperation) {
+               return $activity->operationAvailable($withOperation);
+            });
+        }
+        return $activities;
     }
 
     /**
