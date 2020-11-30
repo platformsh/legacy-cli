@@ -425,7 +425,8 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     protected function ensureHooks(Integration $integration)
     {
-        if ($integration->type === 'github') {
+
+        if ($integration->type === 'github' && $integration->hasProperty('token')) {
             $hooksApiUrl = sprintf('https://api.github.com/repos/%s/hooks', $integration->getProperty('repository'));
             $requestOptions = [
                 'auth' => false,
@@ -444,7 +445,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'active' => true,
             ];
             $repoName = $integration->getProperty('repository');
-        } elseif ($integration->type === 'gitlab') {
+        } elseif ($integration->type === 'gitlab' && $integration->hasProperty('token')) {
             $baseUrl = rtrim($integration->getProperty('base_url'), '/');
             $hooksApiUrl = sprintf('%s/api/v4/projects/%s/hooks', $baseUrl, rawurlencode($integration->getProperty('project')));
             $requestOptions = [
