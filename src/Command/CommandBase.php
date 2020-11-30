@@ -380,28 +380,39 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
+            $sessionAdvice = [];
             if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
-                $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
+                $sessionAdvice[] = sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId());
                 if (!$this->config()->isSessionIdFromEnv()) {
-                    $this->stdErr->writeln(sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config()->get('application.executable'));
                 }
-                $this->stdErr->writeln('');
             }
 
             $method = $this->config()->getWithDefault('application.login_method', 'browser');
             if ($method === 'browser') {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
                 /** @var \Platformsh\Cli\Service\Url $url */
                 $urlService = $this->getService('url');
-                if ($urlService->canOpenUrls()
-                    && $questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
+                if ($urlService->canOpenUrls()) {
+                    $this->stdErr->writeln('Authentication is required.');
                     $this->stdErr->writeln('');
-                    $exitCode = $this->runOtherCommand('auth:browser-login', ['--force' => true]);
-                    $this->stdErr->writeln('');
-                    $success = $exitCode === 0;
+                    if ($sessionAdvice) {
+                        $this->stdErr->writeln($sessionAdvice);
+                        $this->stdErr->writeln('');
+                    }
+                    /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                    $questionHelper = $this->getService('question_helper');
+                    if ($questionHelper->confirm('Log in via a browser?')) {
+                        $this->stdErr->writeln('');
+                        $exitCode = $this->runOtherCommand('auth:browser-login', ['--force' => true]);
+                        $this->stdErr->writeln('');
+                        $success = $exitCode === 0;
+                    }
                 }
             } elseif ($method === 'password') {
+                if ($sessionAdvice) {
+                    $this->stdErr->writeln($sessionAdvice);
+                    $this->stdErr->writeln('');
+                }
                 $exitCode = $this->runOtherCommand('auth:password-login');
                 $this->stdErr->writeln('');
                 $success = $exitCode === 0;
