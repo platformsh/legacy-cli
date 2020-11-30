@@ -25,6 +25,10 @@ class ProjectCurlCommand extends CommandBase
     {
         $this->validateInput($input);
 
+        // Initialize the API service so that it gets CommandBase's event listeners
+        // (allowing for auto login).
+        $this->api();
+
         $url = $this->getSelectedProject()->getUri();
 
         /** @var CurlCli $curl */

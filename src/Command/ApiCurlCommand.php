@@ -29,6 +29,10 @@ class ApiCurlCommand extends CommandBase
     {
         $url = $this->config()->get('api.base_url');
 
+        // Initialize the API service so that it gets CommandBase's event listeners
+        // (allowing for auto login).
+        $this->api();
+
         /** @var CurlCli $curl */
         $curl = $this->getService('curl_cli');
 
