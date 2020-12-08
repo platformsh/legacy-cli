@@ -403,7 +403,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     $questionHelper = $this->getService('question_helper');
                     if ($questionHelper->confirm('Log in via a browser?')) {
                         $this->stdErr->writeln('');
-                        $exitCode = $this->runOtherCommand('auth:browser-login', ['--force' => true]);
+                        $exitCode = $this->runOtherCommand('auth:browser-login');
                         $this->stdErr->writeln('');
                         $success = $exitCode === 0;
                     }
