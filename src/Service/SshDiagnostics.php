@@ -205,7 +205,7 @@ class SshDiagnostics
                 $this->stdErr->writeln('');
             }
             $this->stdErr->writeln(sprintf(
-                'You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
+                '<error>[Could not connect]</error> Either the app is being deployed or you need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
                 $executable
             ));
             return;
