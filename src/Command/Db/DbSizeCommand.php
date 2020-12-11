@@ -336,10 +336,8 @@ class DbSizeCommand extends CommandBase
         switch($database['scheme']) {
             case 'pgsql': 
                 return $this->getPgSqlUsage($host, $database); 
-            break;
             case 'mongodb': 
-                return $this->getMongoDbUsage($host, $database); 
-            break;
+                return $this->getMongoDbUsage($host, $database);
             default: 
                 return $this->getMySqlUsage($host, $database);
         }
