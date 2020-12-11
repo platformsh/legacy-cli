@@ -44,7 +44,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return array|false
      */
-    public function chooseDatabase(HostInterface $host, InputInterface $input, OutputInterface $output, $types=['mysql','pgsql'])
+    public function chooseDatabase(HostInterface $host, InputInterface $input, OutputInterface $output, $types  = ['mysql', 'pgsql'])
     {
         return $this->chooseService($host, $input, $output, $types);
     }
