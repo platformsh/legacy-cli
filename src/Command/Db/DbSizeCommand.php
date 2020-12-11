@@ -93,7 +93,7 @@ class DbSizeCommand extends CommandBase
 
         $this->showInaccessibleSchemas($service, $database);
 
-        if ($database['scheme'] !== 'pgsql' && $database['scheme'] !== 'mongodb' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
+        if ($database['scheme'] === 'mysql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
             $this->checkInnoDbTablesInNeedOfOptimizing($host, $database);
         }
 
