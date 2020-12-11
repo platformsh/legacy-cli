@@ -250,9 +250,10 @@ class DbSizeCommand extends CommandBase
         $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
         
         return sprintf(
-            "mongo %s --quiet --eval %s", 
+            'mongo %s --quiet --eval %s', 
             $dbUrl,
-            OsUtil::escapePosixShellArg("db.stats().fsUsedSize") # https://docs.mongodb.com/manual/reference/command/dbStats/
+            // See https://docs.mongodb.com/manual/reference/command/dbStats/
+            OsUtil::escapePosixShellArg('db.stats().fsUsedSize')
         );        
     }
 
