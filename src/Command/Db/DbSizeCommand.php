@@ -244,7 +244,7 @@ class DbSizeCommand extends CommandBase
         );
     }
 
-    private function getMongodbCommand(array $database) {
+    private function getMongoDbCommand(array $database) {
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
         $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
