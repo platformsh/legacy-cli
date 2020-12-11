@@ -51,7 +51,7 @@ class DbSizeCommand extends CommandBase
 
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar(), $container);
 
-        $database = $relationships->chooseDatabase($host, $input, $output, ['mysql','pgsql','mongodb']);
+        $database = $relationships->chooseDatabase($host, $input, $output, ['mysql', 'pgsql', 'mongodb']);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
