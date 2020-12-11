@@ -18,8 +18,6 @@ class SshDiagnostics
     private $api;
     private $config;
 
-    private $connectionTestResult;
-
     public function __construct(Ssh $ssh, OutputInterface $output, Certifier $certifier, SshKey $sshKey, Api $api, Config $config)
     {
         $this->ssh = $ssh;
@@ -31,21 +29,14 @@ class SshDiagnostics
     }
 
     /**
-     * Checks whether the SSH connection fails due to MFA requirements.
+     * Checks whether the SSH connection failed due to MFA requirements.
      *
-     * @param string $uri
-     * @param Process|null $failedProcess
+     * @param Process $failedProcess
      *
      * @return bool
      */
-    private function connectionFailedDueToMFA($uri, $failedProcess = null)
+    private function connectionFailedDueToMFA(Process $failedProcess)
     {
-        if (($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa()) {
-            // MFA is verified.
-            return false;
-        }
-        $failedProcess = $failedProcess ?: $this->testConnection($uri);
-
         return stripos($failedProcess->getErrorOutput(), 'reason: access requires MFA') !== false;
     }
 
@@ -55,14 +46,12 @@ class SshDiagnostics
      * This occurs if the SSH key or certificate was correct, but the requested
      * service does not exist or the user does not have access to it.
      *
-     * @param string $uri
-     * @param Process|null $failedProcess
+     * @param Process $failedProcess
      *
      * @return bool
      */
-    private function authenticationSucceeded($uri, $failedProcess = null)
+    private function authenticationSucceeded(Process $failedProcess)
     {
-        $failedProcess = $failedProcess ?: $this->testConnection($uri);
         $stdErr = $failedProcess->getErrorOutput();
 
         return stripos($stdErr, "reason: service doesn't exist") !== false
@@ -73,38 +62,44 @@ class SshDiagnostics
     /**
      * Checks if SSH host key verification failed.
      *
-     * @param string $uri
-     * @param Process|null $failedProcess
+     * @param Process $failedProcess
      *
      * @return bool
      */
-    private function hostKeyVerificationFailed($uri, $failedProcess = null)
+    private function hostKeyVerificationFailed(Process $failedProcess)
     {
-        $failedProcess = $failedProcess ?: $this->testConnection($uri);
         $stdErr = $failedProcess->getErrorOutput();
 
         return stripos($stdErr, "Host key verification failed.") !== false;
     }
 
     /**
-     * Tests the SSH connection (and caches the result).
+     * Checks if SSH key authentication failed.
+     *
+     * @param Process $failedProcess
+     *
+     * @return bool
+     */
+    private function keyAuthenticationFailed(Process $failedProcess)
+    {
+        return stripos($failedProcess->getErrorOutput(), "Permission denied (publickey)") !== false;
+    }
+
+    /**
+     * Tests the SSH connection.
      *
      * @param string $uri
-     * @param bool   $reset
      *
      * @return Process
      *   A process (already run) that tested the SSH connection.
      */
-    private function testConnection($uri, $reset = false)
+    private function testConnection($uri)
     {
-        if (!$reset && isset($this->connectionTestResult)) {
-            return $this->connectionTestResult;
-        }
         $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
         $process = new Process($this->ssh->getSshCommand([], $uri, 'exit'));
         $process->run();
         $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
-        return $this->connectionTestResult = $process;
+        return $process;
     }
 
     /**
@@ -157,29 +152,21 @@ class SshDiagnostics
      *
      * @param string $uri
      *   The SSH connection URI.
-     * @param int $exitCode
-     *   The exit code from the SSH command.
-     * @param Process|null $failedProcess
-     *   The failed SSH process. Another SSH command will run automatically if a process is not available.
-     * @param bool $blankLine
-     *   Whether to output a blank line first if anything will be printed.
+     * @param Process $failedProcess
+     *   The failed SSH process.
      */
-    public function diagnoseFailure($uri, $exitCode, Process $failedProcess = null, $blankLine = true)
+    public function diagnoseFailure($uri, Process $failedProcess)
     {
-        if ($exitCode !== self::_SSH_ERROR_EXIT_CODE) {
-            return;
-        }
-        // Only check when the SSH URI matches an internal SSH host.
-        if (!$this->sshHostIsInternal($uri)) {
+        if (!$this->sshHostIsInternal($uri) || $failedProcess->getExitCode() !== self::_SSH_ERROR_EXIT_CODE) {
             return;
         }
 
         $executable = $this->config->get('application.executable');
 
-        if ($this->connectionFailedDueToMFA($uri, $failedProcess)) {
-            if ($blankLine) {
-                $this->stdErr->writeln('');
-            }
+        $mfaVerified = ($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa();
+
+        if (!$mfaVerified && $this->connectionFailedDueToMFA($failedProcess)) {
+            $this->stdErr->writeln('');
 
             if (!$this->certifier->getExistingCertificate() && !$this->certifier->isAutoLoadEnabled()) {
                 $this->stdErr->writeln('The SSH connection failed. An SSH certificate is required.');
@@ -212,14 +199,12 @@ class SshDiagnostics
             return;
         }
 
-        if ($this->authenticationSucceeded($uri, $failedProcess)) {
+        if ($this->authenticationSucceeded($failedProcess)) {
             return;
         }
 
-        if ($this->hostKeyVerificationFailed($uri, $failedProcess)) {
-            if ($blankLine) {
-                $this->stdErr->writeln('');
-            }
+        if ($this->hostKeyVerificationFailed($failedProcess)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('SSH was unable to verify the host key.');
             if ($host = $this->getHost($uri)) {
                 $this->stdErr->writeln('In non-interactive environments, you can install the host key with:');
@@ -233,15 +218,44 @@ class SshDiagnostics
             return;
         }
 
-        if (!$this->sshKey->hasLocalKey()) {
-            if ($blankLine) {
-                $this->stdErr->writeln('');
-            }
+        if ($this->keyAuthenticationFailed($failedProcess) && !$this->sshKey->hasLocalKey()) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
-                'You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
+                'The SSH connection failed. You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
                 $executable
             ));
             return;
         }
+    }
+
+    /**
+     * Diagnoses an SSH command failure, making a new test connection, if practical.
+     *
+     * Nothing will happen if it's not practical or not relevant.
+     *
+     * @param string $uri
+     *   The SSH URI (e.g. user@example.com).
+     * @param int $startTime
+     *   The start time of the original SSH attempt. Used to avoid running a test if too much time has passed.
+     * @param int $exitCode
+     *   The exit code of the SSH command. Used to check if diagnostics are relevant.
+     */
+    public function diagnoseFailureWithTest($uri, $startTime, $exitCode)
+    {
+        if ($exitCode !== self::_SSH_ERROR_EXIT_CODE || !$this->sshHostIsInternal($uri)) {
+            return;
+        }
+        // Do not make a test connection if too much time has passed. More than 3 seconds would indicate either some
+        // successful transfer or interaction taking place, or a connection that is so slow that a test would be
+        // excessively annoying.
+        if ($startTime !== 0 && \time() - $startTime > 3) {
+            return;
+        }
+        // Do not make a test connection if the user has somehow been logged out.
+        if (!$this->api->isLoggedIn()) {
+            return;
+        }
+        $failedProcess = $this->testConnection($uri);
+        $this->diagnoseFailure($uri, $failedProcess);
     }
 }

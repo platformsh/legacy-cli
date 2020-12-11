@@ -172,7 +172,7 @@ class EnvironmentPushCommand extends CommandBase
         } catch (ProcessFailedException $e) {
             /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
             $diagnostics = $this->getService('ssh_diagnostics');
-            $diagnostics->diagnoseFailure($project->getGitUrl(), $e->getProcess()->getExitCode(), $e->getProcess());
+            $diagnostics->diagnoseFailure($project->getGitUrl(), $e->getProcess());
             return 1;
         }
 

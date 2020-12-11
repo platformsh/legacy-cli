@@ -326,6 +326,6 @@ class ProjectGetCommand extends CommandBase
             return;
         }
 
-        $sshDiagnostics->diagnoseFailure($gitSshUri, $process->getExitCode(), $process);
+        $sshDiagnostics->diagnoseFailure($gitSshUri, $process);
     }
 }
