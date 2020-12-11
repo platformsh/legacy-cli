@@ -358,7 +358,7 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getMongoDbUsage(HostInterface $host, array $database) {
-        return (float) $host->runCommand($this->getMongodbCommand($database));
+        return (float) $host->runCommand($this->getMongoDbCommand($database));
     }
 
     /**
