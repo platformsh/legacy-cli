@@ -23,7 +23,10 @@ class ActivityListCommand extends CommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check activities on all environments')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled')
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments')
             ->setDescription('Get a list of activities for an environment or project');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
@@ -32,7 +35,8 @@ class ActivityListCommand extends CommandBase
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type environment.push')
-             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15');
+             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15')
+             ->addExample('List up to 25 incomplete activities', '--count 25 --state pending --state in_progress');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -40,14 +44,6 @@ class ActivityListCommand extends CommandBase
         $this->validateInput($input, $input->getOption('all'));
 
         $project = $this->getSelectedProject();
-
-        $startsAt = null;
-        if ($input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
-            $this->stdErr->writeln('Invalid date: <error>' . $input->getOption('start') . '</error>');
-            return 1;
-        }
-
-        $limit = (int) $input->getOption('limit');
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
             $environmentSpecific = true;
@@ -57,12 +53,12 @@ class ActivityListCommand extends CommandBase
             $apiResource = $project;
         }
 
-        $type = $input->getOption('type');
-
         /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
         $loader = $this->getService('activity_loader');
-        $activities = $loader->load($apiResource, $limit, $type, $startsAt);
-        if (!$activities) {
+        $activities = $loader->loadFromInput($apiResource, $input);
+        if ($activities === false) {
+            return 1;
+        } elseif ($activities === []) {
             $this->stdErr->writeln('No activities found');
 
             return 1;

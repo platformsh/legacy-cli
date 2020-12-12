@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -20,11 +21,16 @@ class ActivityGetCommand extends CommandBase
     {
         $this
             ->setName('activity:get')
+            ->setDescription('View detailed information on a single activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
-            ->setDescription('View detailed information on a single activity');
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity)')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled')
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
+                'Include only incomplete activities (when selecting a default activity).'
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         $this->addProjectOption()
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition());
@@ -37,12 +43,21 @@ class ActivityGetCommand extends CommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
+        /** @var ActivityLoader $loader */
+        $loader = $this->getService('activity_loader');
+
+        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
+            $apiResource = $this->getSelectedEnvironment();
+        } else {
+            $apiResource = $this->getSelectedProject();
+        }
+
         $id = $input->getArgument('id');
         if ($id) {
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $this->getActivities($input), 'Activity');
+                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -50,7 +65,10 @@ class ActivityGetCommand extends CommandBase
                 }
             }
         } else {
-            $activities = $this->getActivities($input, 1);
+            $activities = $loader->loadFromInput($apiResource, $input, 1);
+            if ($activities === false) {
+                return 1;
+            }
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
@@ -116,24 +134,5 @@ class ActivityGetCommand extends CommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * Get activities on the project or environment.
-     *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param int                                             $limit
-     *
-     * @return \Platformsh\Client\Model\Activity[]
-     */
-    private function getActivities(InputInterface $input, $limit = 0)
-    {
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-            return $this->getSelectedEnvironment()
-                ->getActivities($limit, $input->getOption('type'));
-        }
-
-        return $this->getSelectedProject()
-            ->getActivities($limit, $input->getOption('type'));
     }
 }

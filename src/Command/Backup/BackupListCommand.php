@@ -49,7 +49,7 @@ class BackupListCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
         $loader = $this->getService('activity_loader');
-        $activities = $loader->load($environment, $input->getOption('limit'), 'environment.backup', $startsAt);
+        $activities = $loader->load($environment, $input->getOption('limit'), 'environment.backup', $startsAt, 'complete', 'success');
         if (!$activities) {
             $this->stdErr->writeln('No backups found');
             return 1;

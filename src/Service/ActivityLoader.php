@@ -2,8 +2,10 @@
 
 namespace Platformsh\Cli\Service;
 
-use Platformsh\Client\Model\Resource;
+use Platformsh\Client\Model\Activities\HasActivitiesInterface;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -11,14 +13,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ActivityLoader
 {
 
-    private $output;
+    private $stdErr;
 
     /**
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
     public function __construct(OutputInterface $output)
     {
-        $this->output = $output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**
@@ -26,32 +28,72 @@ class ActivityLoader
      */
     private function getProgressOutput()
     {
-        if (!$this->output->isDecorated()) {
-            return new NullOutput();
-        }
-        if ($this->output instanceof ConsoleOutputInterface) {
-            return $this->output->getErrorOutput();
-        }
-
-        return $this->output;
+        return $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
     }
 
     /**
-     * Load activities.
+     * Loads activities, looking at options set in a command input.
      *
-     * @param Resource    $apiResource
+     * The --state, --incomplete, --result, --start, --limit, and --type options will be processed.
+     *
+     * @param int|null $limit Limit the number of activities to return, regardless of input.
+     * @param array $state Define the states to return, regardless of input.
+     * @param string $withOperation Filters the resulting activities to those with the specified operation available.
+     *
+     * @return \Platformsh\Client\Model\Activity[]|false
+     *   False if an error occurred, an array of activities otherwise.
+     */
+    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null, $state = [], $withOperation = '')
+    {
+        if ($state === [] && $input->hasOption('state')) {
+            $state = $input->getOption('state');
+            if (\count($state) === 1) {
+                $state = \array_filter(\preg_split('/[,\s]+/', \reset($state)), '\\strlen');
+            }
+            if ($input->getOption('incomplete')) {
+                if ($state && $state != [Activity::STATE_IN_PROGRESS, Activity::STATE_PENDING]) {
+                    $this->stdErr->writeln('The <comment>--incomplete</comment> option implies <comment>--state in_progress,pending</comment>');
+                }
+                $state = [Activity::STATE_IN_PROGRESS, Activity::STATE_PENDING];
+            }
+        }
+        if ($limit === null) {
+            $limit = $input->hasOption('limit') ? $input->getOption('limit') : null;
+        }
+        $type = $input->hasOption('type') ? $input->getOption('type') : null;
+        $result = $input->hasOption('result') ? $input->getOption('result') : null;
+        $startsAt = null;
+        if ($input->hasOption('start') && $input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
+            $this->stdErr->writeln('Invalid --start date: <error>' . $input->getOption('start') . '</error>');
+            return [];
+        }
+        $activities = $this->load($apiResource, $limit, $type, $startsAt, $state, $result);
+        if ($withOperation) {
+            $activities = array_filter($activities, function (Activity $activity) use ($withOperation) {
+               return $activity->operationAvailable($withOperation);
+            });
+        }
+        return $activities;
+    }
+
+    /**
+     * Loads activities.
+     *
+     * @param HasActivitiesInterface    $apiResource
      * @param int|null    $limit
      * @param string|null $type
      * @param int|null    $startsAt
+     * @param string|string[]|null    $state
+     * @param string|string[]|null    $result
      * @param callable|null $stopCondition
      *   A test to perform on each activity. If it returns true, loading is stopped.
      *
      * @return \Platformsh\Client\Model\Activity[]
      */
-    public function load(Resource $apiResource, $limit, $type, $startsAt, callable $stopCondition = null)
+    public function load(HasActivitiesInterface $apiResource, $limit = null, $type = null, $startsAt = null, $state = null, $result = null, callable $stopCondition = null)
     {
         /** @var \Platformsh\Client\Model\Environment|\Platformsh\Client\Model\Project $apiResource */
-        $activities = $apiResource->getActivities($limit ?: 0, $type, $startsAt);
+        $activities = $apiResource->getActivities($limit ?: 0, $type, $startsAt, $state, $result);
         $progress = new ProgressBar($this->getProgressOutput());
         $progress->setMessage($type === 'environment.backup' ? 'Loading backups...' : 'Loading activities...');
         $progress->setFormat($limit === null ? '%message% %current%' : '%message% %current% (max: %max%)');
@@ -69,7 +111,7 @@ class ActivityLoader
             if ($activity = end($activities)) {
                 $startsAt = strtotime($activity->created_at);
             }
-            $nextActivities = $apiResource->getActivities($limit ? $limit - count($activities) : 0, $type, $startsAt);
+            $nextActivities = $apiResource->getActivities($limit ? $limit - count($activities) : 0, $type, $startsAt, $state, $result);
             $new = false;
             foreach ($nextActivities as $activity) {
                 if (!isset($activities[$activity->id])) {

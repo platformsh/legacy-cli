@@ -26,6 +26,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state')
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
             ->setDescription('Get a list of activities for an integration');
         $this->setHiddenAliases(['integration:activities']);
         Table::configureInput($this->getDefinition());
@@ -58,7 +60,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
 
         /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
         $loader = $this->getService('activity_loader');
-        $activities = $loader->load($integration, $limit, $type, $startsAt);
+        $activities = $loader->load($integration, $limit, $type, $startsAt, $input->getOption('state'), $input->getOption('result'));
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
 
