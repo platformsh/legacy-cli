@@ -37,7 +37,8 @@ class EnvironmentInfoCommand extends CommandBase
              ->addExample('Show the date the environment was created', 'created_at')
              ->addExample('Enable email sending', 'enable_smtp true')
              ->addExample('Change the environment title', 'title "New feature"')
-             ->addExample("Change the environment's parent branch", 'parent sprint-2');
+             ->addExample("Change the environment's parent branch", 'parent sprint-2')
+             ->addExample("Unset the environment's parent branch", 'parent -');
         $this->setHiddenAliases(['environment:metadata']);
     }
 
@@ -110,11 +111,18 @@ class EnvironmentInfoCommand extends CommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
+
+        // @todo refactor normalizing the value according to the property (this is a mess)
         $type = $this->getType($property);
         if ($type === 'boolean' && $value === 'false') {
             $value = false;
         }
-        settype($value, $type);
+        if ($property === 'parent' && $value === '-') {
+            $value = null;
+        } else {
+            settype($value, $type);
+        }
+
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
@@ -186,6 +194,9 @@ class EnvironmentInfoCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         switch ($property) {
             case 'parent':
+                if ($value === '-') {
+                    break;
+                }
                 if ($selectedEnvironment->id === 'master' || $selectedEnvironment->is_main) {
                     $message = "The main environment cannot have a parent";
                     $valid = false;

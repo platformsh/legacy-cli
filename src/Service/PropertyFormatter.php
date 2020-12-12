@@ -31,7 +31,7 @@ class PropertyFormatter implements InputConfiguringInterface
      */
     public function format($value, $property = null)
     {
-        if ($value === null) {
+        if ($value === null && $property !== 'parent') {
             return '';
         }
 
