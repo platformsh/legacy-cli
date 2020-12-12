@@ -220,8 +220,16 @@ class SshDiagnostics
 
         if ($this->keyAuthenticationFailed($failedProcess) && !$this->sshKey->hasLocalKey()) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                'The SSH connection failed. You probably need to add an SSH key, with: <comment>%s ssh-key:add</comment>',
+            $this->stdErr->writeln('The SSH connection failed.');
+            if (!$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate()) {
+                $this->stdErr->writeln(\sprintf(
+                    'You may need to create an SSH certificate, by running: <comment>%s ssh-cert:load</comment>',
+                    $executable
+                ));
+                return;
+            }
+            $this->stdErr->writeln(\sprintf(
+                'You may need to add an SSH key, by running: <comment>%s ssh-key:add</comment>',
                 $executable
             ));
             return;
