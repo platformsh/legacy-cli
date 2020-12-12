@@ -152,13 +152,11 @@ EOF
         }
 
         // Reconcile this with the list of environments from the API.
-        $environments = $this->api()->getEnvironments($this->getSelectedProject(), true);
+        $project = $this->getSelectedProject();
+        $environments = $this->api()->getEnvironments($project, true);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
         unset($mergedEnvironments[$base]);
-        $defaultId = $this->api()->getDefaultEnvironmentId($environments);
-        if ($defaultId !== null) {
-            unset($mergedEnvironments[$defaultId]);
-        }
+        unset($mergedEnvironments[$project->default_branch]);
         $parent = $environments[$base]['parent'];
         if ($parent) {
             unset($mergedEnvironments[$parent]);
