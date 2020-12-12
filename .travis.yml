@@ -1,5 +1,5 @@
 language: php
-dist: trusty
+dist: xenial
 
 php: '7.4'
 env: TEST_SCRIPT=scripts/test/unit.sh
@@ -9,6 +9,8 @@ matrix:
     - php: '5.6'
       env: TEST_SCRIPT=scripts/test/security.sh
     - php: '7.4'
+      env: TEST_SCRIPT=scripts/test/security.sh
+    - php: '8.0'
       env: TEST_SCRIPT=scripts/test/security.sh
 
     - php: '5.6'
@@ -26,12 +28,13 @@ matrix:
       env: TEST_SCRIPT=scripts/test/unit.sh
     - php: '7.4'
       env: TEST_SCRIPT=scripts/test/unit.sh
+    - php: '8.0'
+      env: TEST_SCRIPT=scripts/test/unit.sh
 
     - php: '7.4'
       env: TEST_SCRIPT=scripts/test/build-and-install.sh
 
-    # The "slow" test doesn't work on 7.4 yet because of Drush archive errors.
-    - php: '7.3'
+    - php: '7.4'
       env: TEST_SCRIPT=scripts/test/slow.sh
 
   fast_finish: true
