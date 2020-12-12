@@ -863,10 +863,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($selectDefaultEnv) {
             $this->debug('No environment specified or detected: finding a default...');
-            $environments = $this->api()->getEnvironments($this->project);
-            $defaultId = $this->api()->getDefaultEnvironmentId($environments);
-            if ($defaultId && isset($environments[$defaultId])) {
-                $this->environment = $environments[$defaultId];
+            $environment = $this->api()->getDefaultEnvironment($this->project);
+            if ($environment) {
+                $this->environment = $environment;
                 return;
             }
         }
@@ -1168,13 +1167,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $default = $this->api()->getDefaultEnvironmentId($environments);
+        $defaultEnvironment = $this->api()->getDefaultEnvironment($this->project);
+        $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
 
         if (count($environments) > (new Terminal())->getHeight() / 2) {
             $ids = array_keys($environments);
             sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
-            $id = $questionHelper->askInput('Enter an environment ID', $default, array_keys($environments), function ($value) use ($environments) {
+            $id = $questionHelper->askInput('Enter an environment ID', $defaultEnvironmentId, array_keys($environments), function ($value) use ($environments) {
                 if (!isset($environments[$value])) {
                     throw new \RuntimeException('Environment not found: ' . $value);
                 }
@@ -1188,11 +1188,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
 
-            if ($default) {
-                $text .= "\n" . 'Default: <question>' . $default . '</question>';
+            if ($defaultEnvironmentId) {
+                $text .= "\n" . 'Default: <question>' . $defaultEnvironmentId . '</question>';
             }
 
-            $id = $questionHelper->choose($environmentList, $text, $default);
+            $id = $questionHelper->choose($environmentList, $text, $defaultEnvironmentId);
         }
 
         return $environments[$id];

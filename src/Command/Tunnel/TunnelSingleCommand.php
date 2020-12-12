@@ -55,15 +55,15 @@ class TunnelSingleCommand extends TunnelCommandBase
             return 1;
         }
 
-        if ($environment->id === 'master') {
+        if ($environment->is_main) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $confirmText = sprintf(
                 'Are you sure you want to open an SSH tunnel to'
                 . ' the relationship <comment>%s</comment> on the'
-                . ' <comment>%s</comment> (production) environment?',
+                . ' environment <comment>%s</comment>?',
                 $service['_relationship_name'],
-                $environment->id
+                $this->api()->getEnvironmentLabel($environment, false)
             );
             if (!$questionHelper->confirm($confirmText, false)) {
                 return 1;

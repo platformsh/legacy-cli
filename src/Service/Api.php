@@ -1100,34 +1100,43 @@ class Api
     }
 
     /**
-     * Get the default environment in a list.
+     * Get the default environment in a project.
      *
-     * @param array $environments An array of environments, keyed by ID.
+     * @param Project   $project
+     * @param bool|null $refresh
      *
-     * @return string|null
+     * @return Environment|null
      */
-    public function getDefaultEnvironmentId(array $environments)
+    public function getDefaultEnvironment(Project $project, $refresh = null)
     {
-        // If there is only one environment, use that.
-        if (count($environments) <= 1) {
-            $environment = reset($environments);
+        if ($env = $this->getEnvironment($project->default_branch, $project, $refresh)) {
+            return $env;
+        }
+        $envs = $this->getEnvironments($project, $refresh);
 
-            return $environment ? $environment->id : null;
+        if (isset($envs[$project->default_branch])) {
+            return $envs[$project->default_branch];
+        }
+
+        // If there is only one environment, use that.
+        if (count($envs) <= 1) {
+            return \reset($envs) ?: null;
         }
 
         // Check if there is only one "main" environment.
-        $main = array_filter($environments, function (Environment $environment) {
+        $main = \array_filter($envs, function (Environment $environment) {
             return $environment->is_main;
         });
-        if (count($main) === 1) {
-            $environment = reset($main);
-
-            return $environment ? $environment->id : null;
+        if (\count($main) === 1) {
+            return \reset($main) ?: null;
         }
 
-        // Check if there is a "master" environment.
-        if (isset($environments['master'])) {
-            return 'master';
+        // Check if there is only one "main" environment without a parent.
+        $mainOrphans = \array_filter($main, function (Environment $environment) {
+            return $environment->parent === null && $environment->is_main;
+        });
+        if (\count($mainOrphans) === 1) {
+            return \reset($mainOrphans) ?: null;
         }
 
         return null;

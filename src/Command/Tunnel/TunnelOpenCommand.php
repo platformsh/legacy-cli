@@ -74,11 +74,10 @@ EOF
             return 1;
         }
 
-        if ($environment->id === 'master') {
+        if ($environment->is_main) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            $confirmText = 'Are you sure you want to open SSH tunnel(s) to the'
-                . ' <comment>master</comment> (production) environment?';
+            $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api()->getEnvironmentLabel($environment, 'comment'));
             if (!$questionHelper->confirm($confirmText, false)) {
                 return 1;
             }

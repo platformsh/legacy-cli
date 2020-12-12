@@ -152,9 +152,11 @@ EOF
         }
 
         // Reconcile this with the list of environments from the API.
-        $environments = $this->api()->getEnvironments($this->getSelectedProject(), true);
+        $project = $this->getSelectedProject();
+        $environments = $this->api()->getEnvironments($project, true);
         $mergedEnvironments = array_intersect_key($environments, array_flip($mergedBranches));
-        unset($mergedEnvironments[$base], $mergedEnvironments['master']);
+        unset($mergedEnvironments[$base]);
+        unset($mergedEnvironments[$project->default_branch]);
         $parent = $environments[$base]['parent'];
         if ($parent) {
             unset($mergedEnvironments[$parent]);
@@ -180,8 +182,8 @@ EOF
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
-            if ($environmentId == 'master') {
-                $output->writeln("The <error>master</error> environment cannot be deleted.");
+            if ($environment->is_main) {
+                $output->writeln("The main environment cannot be deleted.");
                 $error = true;
                 continue;
             }
