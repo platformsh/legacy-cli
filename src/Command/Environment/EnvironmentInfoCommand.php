@@ -197,10 +197,7 @@ class EnvironmentInfoCommand extends CommandBase
                 if ($value === '-') {
                     break;
                 }
-                if ($selectedEnvironment->id === 'master' || $selectedEnvironment->is_main) {
-                    $message = "The main environment cannot have a parent";
-                    $valid = false;
-                } elseif ($value === $selectedEnvironment->id) {
+                if ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
                 } elseif (!$parentEnvironment = $this->api()->getEnvironment($value, $this->getSelectedProject())) {
