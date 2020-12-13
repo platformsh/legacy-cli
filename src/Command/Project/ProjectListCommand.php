@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
@@ -33,7 +34,10 @@ class ProjectListCommand extends CommandBase
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
         // Fetch the list of projects.
+        $progress = new ProgressMessage($output);
+        $progress->showIfOutputDecorated('Loading environments...');
         $projects = $this->api()->getProjects($refresh ? true : null);
+        $progress->done();
 
         // Filter the list of projects.
         $filters = [];

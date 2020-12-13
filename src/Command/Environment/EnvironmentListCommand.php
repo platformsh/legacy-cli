@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputInterface;
@@ -139,6 +140,9 @@ class EnvironmentListCommand extends CommandBase
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
+        $progress = new ProgressMessage($output);
+        $progress->showIfOutputDecorated('Loading environments...');
+
         $environments = $this->api()->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
 
         if ($input->getOption('no-inactive')) {
@@ -153,6 +157,8 @@ class EnvironmentListCommand extends CommandBase
         if ($input->getOption('reverse')) {
             $environments = array_reverse($environments, true);
         }
+
+        $progress->done();
 
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($environments));
