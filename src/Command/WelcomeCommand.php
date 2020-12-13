@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -112,10 +113,14 @@ class WelcomeCommand extends CommandBase
         $project = false;
         $environment = false;
         if ($this->api()->isLoggedIn()) {
+            $progress = new ProgressMessage($this->stdErr);
+            $progress->showIfOutputDecorated('Loading project information...');
             $project = $this->api()->getProject($projectId);
             if ($project && $environmentId) {
+                $progress->showIfOutputDecorated('Loading environment information...');
                 $environment = $this->api()->getEnvironment($environmentId, $project);
             }
+            $progress->done();
         }
 
         if ($project) {

@@ -35,7 +35,7 @@ class ProjectListCommand extends CommandBase
 
         // Fetch the list of projects.
         $progress = new ProgressMessage($output);
-        $progress->showIfOutputDecorated('Loading environments...');
+        $progress->showIfOutputDecorated('Loading projects...');
         $projects = $this->api()->getProjects($refresh ? true : null);
         $progress->done();
 

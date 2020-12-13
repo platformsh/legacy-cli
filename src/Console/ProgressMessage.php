@@ -60,7 +60,7 @@ class ProgressMessage
             if ($this->output->isDecorated()) {
                 $this->overwrite('', \substr_count($this->message, "\n"));
             } else {
-                $this->output->writeln(' <info>done</info>');
+                $this->output->writeln('');
             }
             $this->visible = false;
         }
