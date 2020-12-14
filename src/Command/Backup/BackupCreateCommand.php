@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Backup;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class BackupCreateCommand extends CommandBase
@@ -15,13 +16,19 @@ class BackupCreateCommand extends CommandBase
             ->setName('backup:create')
             ->setAliases(['backup'])
             ->setDescription('Make a backup of an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment');
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
+            ->addOption('unsafe', null, InputOption::VALUE_NONE,
+                'Unsafe backup: do not stop the environment.'
+                . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
+                . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.'
+            );
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
         $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
         $this->addExample('Make a backup of the current environment');
         $this->addExample('Request a backup (and exit quickly)', '--no-wait');
+        $this->addExample('Make a backup, avoiding downtime (but risking inconsistency)', '--unsafe');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -53,9 +60,13 @@ class BackupCreateCommand extends CommandBase
             return 1;
         }
 
-        $activity = $selectedEnvironment->backup();
+        $activity = $selectedEnvironment->backup((bool) $input->getOption('unsafe'));
 
-        $this->stdErr->writeln("Creating a backup of <info>$environmentId</info>");
+        if ($input->getOption('unsafe')) {
+            $this->stdErr->writeln("Creating an <comment>unsafe</comment> backup of <info>$environmentId</info>");
+        } else {
+            $this->stdErr->writeln("Creating a backup of <info>$environmentId</info>");
+        }
 
         if ($this->shouldWait($input)) {
             // Strongly recommend using --no-wait in a cron job.
