@@ -46,6 +46,7 @@ class ProgressMessage
         if ($message === '' || $message === $this->message) {
             return;
         }
+        $message = rtrim($message, "\n") . "\n";
         $this->output->write($message);
         $this->message = $message;
         $this->visible = true;
@@ -59,8 +60,6 @@ class ProgressMessage
         if ($this->visible) {
             if ($this->output->isDecorated()) {
                 $this->overwrite('', \substr_count($this->message, "\n"));
-            } else {
-                $this->output->writeln('');
             }
             $this->visible = false;
         }
