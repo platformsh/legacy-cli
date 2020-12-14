@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
@@ -458,8 +457,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
-            $progress = new ProgressMessage($this->output ?: new NullOutput());
-            $progress->showIfOutputDecorated('Loading project <info>' . $config['id'] . '</info>...');
             try {
                 $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             } catch (BadResponseException $e) {
@@ -467,8 +464,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     return $this->currentProject = false;
                 }
                 throw $e;
-            } finally {
-                $progress->done();
             }
             if (!$project) {
                 if ($suppressErrors) {
@@ -510,15 +505,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
 
-        $progress = new ProgressMessage($this->output ?: new NullOutput());
-
         // Check if there is a manual mapping set for the current branch.
         if (!empty($config['mapping'])
             && ($currentBranch = $git->getCurrentBranch())
             && !empty($config['mapping'][$currentBranch])) {
-            $progress->showIfOutputDecorated('Loading mapped environment <info>' . $config['mapping'][$currentBranch] . '</info>...');
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
-            $progress->done();
             if ($environment) {
                 $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $this->api()->getEnvironmentLabel($environment));
                 return $environment;
@@ -533,9 +524,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $upstream = $git->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
-            $progress->showIfOutputDecorated('Loading upstream environment <info>' . $potentialEnvironment . '</info>...');
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
-            $progress->done();
             if ($environment) {
                 $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
                 return $environment;
@@ -545,7 +534,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // There is no Git remote set. Fall back to trying the current branch
         // name.
         if (!empty($currentBranch) || ($currentBranch = $git->getCurrentBranch())) {
-            $progress->showIfOutputDecorated('Loading current environment <info>' . $currentBranch . '</info>...');
             $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
@@ -554,7 +542,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
                 }
             }
-            $progress->done();
             if ($environment) {
                 $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
                 return $environment;
@@ -769,11 +756,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function selectProject($projectId = null, $host = null, $detectCurrent = true)
     {
-        $progress = new ProgressMessage($this->output ?: new NullOutput());
         if (!empty($projectId)) {
-            $progress->showIfOutputDecorated('Loading project <info>' . $projectId . '</info>...');
             $this->project = $this->api()->getProject($projectId, $host);
-            $progress->done();
             if (!$this->project) {
                 throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
@@ -785,9 +769,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
-            $progress->showIfOutputDecorated('Loading project list...');
             $projects = $this->api()->getProjects();
-            $progress->done();
             if (count($projects) > 0) {
                 $this->debug('No project specified: offering a choice...');
                 $projectId = $this->offerProjectChoice($projects);
@@ -864,12 +846,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             ), OutputInterface::VERBOSITY_VERBOSE);
         }
 
-        $progress = new ProgressMessage($this->output ?: new NullOutput());
-
         if ($environmentId !== null) {
-            $progress->showIfOutputDecorated('Loading environment <info>' . $environmentId . '</info>...');
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
-            $progress->done();
             if (!$environment) {
                 throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);
             }
