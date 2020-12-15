@@ -17,7 +17,7 @@
   "finder": [
     {
       "in": "vendor",
-      "name": "*.php",
+      "name": "*.php*",
       "exclude": [
         "phpunit",
         "Tests",
