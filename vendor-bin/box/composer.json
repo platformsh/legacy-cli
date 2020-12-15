@@ -1,5 +1,10 @@
 {
     "require-dev": {
         "humbug/box": "^3.6"
+    },
+    "config": {
+        "platform": {
+            "php": "7.4.13"
+        }
     }
 }
