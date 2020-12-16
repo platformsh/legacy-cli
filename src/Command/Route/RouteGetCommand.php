@@ -88,13 +88,14 @@ class RouteGetCommand extends CommandBase
         $originalUrl = $input->getArgument('route');
         if (!$selectedRoute && ($originalUrl === null || $originalUrl === '')) {
             if (!$input->isInteractive()) {
-                $this->stdErr->writeln('You must specify a route via the <comment>route</comment> argument or <comment>--id</comment> option.');
+                $this->stdErr->writeln('You must specify a route via the <comment>route</comment> argument, the <comment>--id</comment> option, or the <comment>--primary</comment> option.');
 
                 return 1;
             }
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $items = [];
+            $default = null;
             foreach ($routes as $route) {
                 $originalUrl = $route->original_url;
                 $items[$originalUrl] = $originalUrl;
@@ -102,10 +103,11 @@ class RouteGetCommand extends CommandBase
                     $items[$originalUrl] .= ' (<info>' . $route->id . '</info>)';
                 }
                 if ($route->primary) {
+                    $default = $originalUrl;
                     $items[$originalUrl] .= ' - <info>primary</info>';
                 }
             }
-            $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:');
+            $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:', $default);
         }
 
         if (!$selectedRoute && $originalUrl !== null && $originalUrl !== '') {
