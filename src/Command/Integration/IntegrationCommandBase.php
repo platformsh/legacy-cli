@@ -362,6 +362,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'webhook',
                     'hipchat',
+                    'script',
                 ]],
                 'default' => ['*'],
                 'description' => 'The environment IDs to include',
