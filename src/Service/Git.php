@@ -116,14 +116,12 @@ class Git
             $args[] = '--remote';
         }
         $mergedBranches = $this->execute($args, $dir, $mustRun);
-        $array = array_map(
+        return array_map(
             function ($element) {
                 return trim($element, ' *');
             },
             explode("\n", $mergedBranches)
         );
-
-        return $array;
     }
 
     /**

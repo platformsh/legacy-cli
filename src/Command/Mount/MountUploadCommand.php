@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;

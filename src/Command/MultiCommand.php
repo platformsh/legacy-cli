@@ -75,9 +75,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             try {
                 $application->setCurrentCommand($command);
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
-                if ($command instanceof MultiAwareInterface) {
-                    $command->setRunningViaMulti(true);
-                }
+                $command->setRunningViaMulti(true);
                 $returnCode = $command->run($commandInput, $output);
                 $application->setCurrentCommand($this);
                 if ($returnCode !== 0) {

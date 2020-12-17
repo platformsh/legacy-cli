@@ -76,7 +76,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $aliases = $drush->getAliases($current_group);
         $new_group = ltrim($input->getOption('group'), '@');
-        if (empty($aliases) && !$new_group && $project && $current_group === $project->id) {
+        if (empty($aliases) && !$new_group && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
         }
 

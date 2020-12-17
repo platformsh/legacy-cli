@@ -23,7 +23,7 @@ class RouteListCommand extends CommandBase
             ->setAliases(['routes'])
             ->setDescription('List all routes for an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');;
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()

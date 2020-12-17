@@ -79,8 +79,9 @@ class ProjectVariableSetCommand extends CommandBase
      */
     protected function validateJson($string)
     {
-        $null = json_decode($string) === null;
-
-        return !$null || ($null && $string === 'null');
+        if ($string === 'null') {
+            return true;
+        }
+        return \json_decode($string) !== null;
     }
 }

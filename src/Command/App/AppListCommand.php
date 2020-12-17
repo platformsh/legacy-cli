@@ -2,8 +2,6 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\ApplicationFinder;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Symfony\Component\Console\Input\InputInterface;

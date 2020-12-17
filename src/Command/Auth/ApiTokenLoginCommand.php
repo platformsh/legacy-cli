@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Auth;
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
-use GuzzleHttp\Url;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\OAuth2\ApiToken;
 use Symfony\Component\Console\Input\InputInterface;
