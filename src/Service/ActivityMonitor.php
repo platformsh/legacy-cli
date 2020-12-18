@@ -204,17 +204,15 @@ class ActivityMonitor
         }
         $stdErr->writeln('Cancelling the activity...');
         try {
-            try {
-                $activity->cancel();
-            } catch (BadResponseException $e) {
-                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && \strpos($e->getMessage(), 'cannot be cancelled in its current state')) {
-                    $activity->refresh();
-                    $stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->state));
-                    return false;
-                }
-                throw $e;
-            }
+            $activity->cancel();
         } catch (\Exception $e) {
+            if ($e instanceof BadResponseException
+                && $e->getResponse() && $e->getResponse()->getStatusCode() === 400
+                && \strpos($e->getMessage(), 'cannot be cancelled in its current state') !== false) {
+                $activity->refresh();
+                $stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->state));
+                return false;
+            }
             $stdErr->writeln(\sprintf('Failed to cancel the activity: <error>%s</error>', $e->getMessage()));
             return false;
         }
