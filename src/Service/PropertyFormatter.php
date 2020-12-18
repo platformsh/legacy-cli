@@ -164,7 +164,7 @@ class PropertyFormatter implements InputConfiguringInterface
             }
         }
 
-        if ($data !== null) {
+        if ($data === null) {
             return;
         }
         if (!is_string($data)) {
