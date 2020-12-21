@@ -134,9 +134,6 @@ class EnvironmentBranchCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $git->setSshCommand($ssh->getSshCommand());
 
         $createdNew = false;
         if ($projectRoot) {

@@ -51,10 +51,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
         $git->setDefaultRepositoryDir($projectRoot);
-        $git->setSshCommand($ssh->getSshCommand());
 
         $existsLocally = $git->branchExists($branch);
         if (!$existsLocally && !$this->api()->getEnvironment($branch, $project)) {

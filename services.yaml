@@ -62,7 +62,7 @@ services:
 
     git:
         class:     '\Platformsh\Cli\Service\Git'
-        arguments: ['@shell']
+        arguments: ['@shell', '@ssh']
 
     git_data_api:
         class:     '\Platformsh\Cli\Service\GitDataApi'

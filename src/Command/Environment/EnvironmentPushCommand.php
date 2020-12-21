@@ -151,15 +151,13 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         // Build the SSH command to use with Git.
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
         $extraSshOptions = [];
         $env = [];
         if (!$this->shouldWait($input)) {
             $extraSshOptions['SendEnv'] = 'PLATFORMSH_PUSH_NO_WAIT';
             $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
         }
-        $git->setSshCommand($ssh->getSshCommand($extraSshOptions));
+        $git->setExtraSshOptions($extraSshOptions);
 
         // Push.
         $this->stdErr->writeln(sprintf(
@@ -169,7 +167,7 @@ class EnvironmentPushCommand extends CommandBase
             $target
         ));
         try {
-            $git->execute($gitArgs, null, true, false, $env);
+            $git->execute($gitArgs, null, true, false, $env, true);
         } catch (ProcessFailedException $e) {
             /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
             $diagnostics = $this->getService('ssh_diagnostics');
