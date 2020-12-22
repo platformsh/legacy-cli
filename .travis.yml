@@ -29,6 +29,8 @@ matrix:
 
     - php: '7.4'
       env: TEST_SCRIPT=scripts/test/build-and-install.sh
+    - php: '7.4'
+      env: TEST_SCRIPT=scripts/test/offline.sh
 
     - php: '7.4'
       env: TEST_SCRIPT=scripts/test/slow.sh
