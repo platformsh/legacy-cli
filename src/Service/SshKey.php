@@ -43,6 +43,10 @@ class SshKey {
         }
         $selectedIdentity = null;
 
+        if (!$this->api->isLoggedIn()) {
+            return null;
+        }
+
         $accountKeyFingerprints = $this->listAccountKeyFingerprints();
         if (!$accountKeyFingerprints) {
             return null;
