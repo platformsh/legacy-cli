@@ -41,8 +41,8 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
         $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
 
-        // Ensure we are on the master branch.
-        $this->git->checkOut('master');
+        // Ensure we are on the main branch.
+        $this->git->checkOutNew('main');
 
         // Add required Git config before committing.
         shell_exec('git config user.email test@example.com');
@@ -95,7 +95,7 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
     public function testCheckOutNew()
     {
         $this->assertTrue($this->git->checkOutNew('new'));
-        $this->git->checkOut('master');
+        $this->git->checkOut('main');
     }
 
     /**
@@ -136,8 +136,8 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals([
             'branch1',
             'branch2',
-            'master',
-        ], $this->git->getMergedBranches('master'));
+            'main',
+        ], $this->git->getMergedBranches('main'));
     }
 
     /**
