@@ -13,7 +13,7 @@ class Git
     /** @var Shell */
     private $shell;
 
-    /** @var Ssh */
+    /** @var Ssh|null */
     private $ssh;
 
     /** @var string|null */
@@ -29,12 +29,12 @@ class Git
     private $extraSshOptions = [];
 
     /**
-     * @param Shell $shell
-     * @param Ssh   $ssh
+     * @param Shell|null $shell
+     * @param Ssh|null   $ssh
      */
-    public function __construct(Shell $shell, Ssh $ssh)
+    public function __construct(Shell $shell = null, Ssh $ssh = null)
     {
-        $this->shell = $shell;
+        $this->shell = $shell ?: new Shell();
         $this->ssh = $ssh;
     }
 
@@ -556,6 +556,9 @@ class Git
      */
     private function setupSsh()
     {
+        if (!isset($this->ssh)) {
+            throw new \BadMethodCallException('SSH service not available');
+        }
         $sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
         if (empty($sshCommand) || $sshCommand === 'ssh') {
             unset($this->env['GIT_SSH_COMMAND'], $this->env['GIT_SSH']);

@@ -3,7 +3,9 @@
 namespace Platformsh\Cli\Tests\Service;
 
 use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
+use Symfony\Component\Console\Input\ArrayInput;
 
 /**
  * @group slow
@@ -31,7 +33,10 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
             throw new \Exception("Failed to create directories.");
         }
 
-        $this->git = new Git();
+        $container = Container::instance();
+        $container->set('input', new ArrayInput([]));
+
+        $this->git = $container->get('git');
         $this->git->init($repository, true);
         $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
