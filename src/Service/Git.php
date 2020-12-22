@@ -19,8 +19,8 @@ class Git
     /** @var string|null */
     private $repositoryDir = null;
 
-    /** @var array */
-    private $env = [];
+    /** @var string|null */
+    private $sshCommand;
 
     /** @var string|null */
     private $sshCommandFile;
@@ -160,12 +160,12 @@ class Git
         }
         // Set up SSH, if the Git command might connect to a remote.
         if ($online) {
-            $this->setupSsh();
+            $env += $this->setupSshEnv();
         }
         // Run the command.
         array_unshift($args, 'git');
 
-        return $this->shell->execute($args, $dir, $mustRun, $quiet, $env + $this->env);
+        return $this->shell->execute($args, $dir, $mustRun, $quiet, $env);
     }
 
     /**
@@ -553,23 +553,28 @@ class Git
      *
      * This will use GIT_SSH_COMMAND if supported, or GIT_SSH (and a temporary
      * file) otherwise.
+     *
+     * @return array
      */
-    private function setupSsh()
+    private function setupSshEnv()
     {
         if (!isset($this->ssh)) {
             throw new \BadMethodCallException('SSH service not available');
         }
-        $sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
-        if (empty($sshCommand) || $sshCommand === 'ssh') {
-            unset($this->env['GIT_SSH_COMMAND'], $this->env['GIT_SSH']);
-        } elseif (!$this->supportsGitSshCommand()) {
-            $contents = $sshCommand . ' "$@"' . "\n";
-            if (!isset($this->env['GIT_SSH']) || \file_get_contents($this->env['GIT_SSH']) !== $contents) {
-                $this->env['GIT_SSH'] = $this->writeSshFile($sshCommand . ' "$@"' . "\n");
-            }
-        } else {
-            $this->env['GIT_SSH_COMMAND'] = $sshCommand;
+        if (!isset($this->sshCommand)) {
+            $this->sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
         }
+        if (empty($this->sshCommand) || $this->sshCommand === 'ssh') {
+            return [];
+        }
+        if (!$this->supportsGitSshCommand()) {
+            $contents = $this->sshCommand . ' "$@"' . "\n";
+            if (!isset($this->sshCommandFile) || \file_get_contents($this->sshCommandFile) !== $contents) {
+                $this->sshCommandFile = $this->writeSshFile($contents);
+            }
+            return ['GIT_SSH' => $this->sshCommandFile];
+        }
+        return ['GIT_SSH_COMMAND' => $this->sshCommand];
     }
 
     /**
@@ -592,8 +597,6 @@ class Git
         if (!chmod($tempFile, 0750)) {
             throw new \RuntimeException('Failed to make temporary SSH command file executable: ' . $tempFile);
         }
-
-        $this->sshCommandFile = $tempFile;
 
         return $tempFile;
     }

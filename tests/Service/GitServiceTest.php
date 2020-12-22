@@ -42,7 +42,7 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
         chdir($repository);
 
         // Ensure we are on the main branch.
-        $this->git->checkOutNew('main');
+        $this->git->execute(['checkout', '-b', 'main'], null, true);
 
         // Add required Git config before committing.
         shell_exec('git config user.email test@example.com');
