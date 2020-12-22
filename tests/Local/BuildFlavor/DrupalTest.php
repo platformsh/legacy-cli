@@ -96,7 +96,7 @@ class DrupalTest extends BaseBuildFlavorTest
         chdir($projectRoot);
         exec('git init');
 
-        $treeId = $this->builder->getTreeId($projectRoot);
+        $treeId = $this->builder->getTreeId($projectRoot, $this->buildSettings);
         $this->assertNotEmpty($treeId);
 
         // Build. This should create an archive.

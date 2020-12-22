@@ -149,10 +149,11 @@ class LocalBuild
      * change.
      *
      * @param string $appRoot
+     * @param array  $settings
      *
      * @return string|false
      */
-    public function getTreeId($appRoot)
+    public function getTreeId($appRoot, array $settings)
     {
         $hashes = [];
 
@@ -198,7 +199,7 @@ class LocalBuild
 
         // Include relevant build settings.
         $relevant = ['abslinks', 'copy', 'clone', 'no-cache', 'working-copy', 'lock', 'no-deps'];
-        $settings = array_intersect_key($this->settings, array_flip($relevant));
+        $settings = array_intersect_key($settings, array_flip($relevant));
         $hashes[] = serialize($settings);
 
         $hashes[] = self::BUILD_VERSION;
@@ -267,7 +268,7 @@ class LocalBuild
 
         $archive = false;
         if (empty($this->settings['no-archive']) && empty($this->settings['no-cache'])) {
-            $treeId = $this->getTreeId($appRoot);
+            $treeId = $this->getTreeId($appRoot, $this->settings);
             if ($treeId) {
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");

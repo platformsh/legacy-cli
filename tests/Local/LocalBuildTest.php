@@ -18,7 +18,9 @@ class LocalBuildTest extends \PHPUnit_Framework_TestCase
 
     public function testGetTreeId()
     {
-        $treeId = $this->localBuild->getTreeId('tests/data/apps/composer');
+        $treeId = $this->localBuild->getTreeId('tests/data/apps/composer', []);
         $this->assertEquals('2cf827fabe61e262376b0356b3aaccf7930eae4c', $treeId);
+        $treeId = $this->localBuild->getTreeId('tests/data/apps/composer', ['clone' => true]);
+        $this->assertEquals('e24740418e9efa6f4c07ad61c0119119da4aaf1c', $treeId);
     }
 }
