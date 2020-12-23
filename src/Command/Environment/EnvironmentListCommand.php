@@ -89,7 +89,7 @@ class EnvironmentListCommand extends CommandBase
             // Format the environment ID.
             $id = $environment->id;
             if ($indent) {
-                $id = str_repeat('   ', $indentAmount) . $id;
+                $id = str_repeat('  ', $indentAmount) . $id;
             }
 
             // Add an indicator for the current environment.
