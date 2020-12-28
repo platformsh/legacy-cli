@@ -59,7 +59,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             throw new InvalidArgumentException($message);
         }
 
-        if (!preg_match('#^[a-zA-Z0-9]{2,}$#', $parts[0])) {
+        if (!preg_match('#^[a-zA-Z0-9-_]{2,}$#', $parts[0])) {
             $message = sprintf('The username "<error>%s</error>" for --auth is not valid', $parts[0]);
             throw new InvalidArgumentException($message);
         }
