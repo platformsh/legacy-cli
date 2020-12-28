@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
 use Platformsh\Cli\Util\Csv;
+use Platformsh\Cli\Util\PlainFormat;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -50,7 +51,7 @@ class Table implements InputConfiguringInterface
      */
     public static function configureInput(InputDefinition $definition)
     {
-        $description = 'The output format ("table", "csv", or "tsv")';
+        $description = 'The output format ("table", "csv", "tsv", or "plain")';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');
         $definition->addOption($option);
         $description = 'Columns to display (comma-separated list, or multiple values)';
@@ -108,13 +109,17 @@ class Table implements InputConfiguringInterface
                 $this->renderCsv($rows, $header, "\t");
                 break;
 
+            case 'plain':
+                $this->renderPlain($rows, $header);
+                break;
+
             case null:
             case 'table':
                 $this->renderTable($rows, $header);
                 break;
 
             default:
-                throw new InvalidArgumentException(sprintf('Invalid format: %s', $format));
+                throw new InvalidArgumentException(sprintf('Invalid format: "%s". Supported formats: table, csv, tsv, plain', $format));
         }
     }
 
@@ -127,7 +132,7 @@ class Table implements InputConfiguringInterface
      */
     public function formatIsMachineReadable()
     {
-        return in_array($this->getFormat(), ['csv', 'tsv']);
+        return in_array($this->getFormat(), ['csv', 'tsv', 'plain']);
     }
 
     /**
@@ -228,6 +233,20 @@ class Table implements InputConfiguringInterface
         // default internal field separator (IFS) does not account for CR. So
         // the line break character is forced as LF.
         $this->output->write((new Csv($delimiter, "\n"))->format($rows));
+    }
+
+    /**
+     * Render plain, line-based output.
+     *
+     * @param array  $rows
+     * @param array  $header
+     */
+    protected function renderPlain(array $rows, array $header)
+    {
+        if (!empty($header)) {
+            array_unshift($rows, $header);
+        }
+        $this->output->write((new PlainFormat())->format($rows));
     }
 
     /**
