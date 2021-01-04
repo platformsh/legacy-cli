@@ -422,18 +422,25 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
+     * Attempts to ensures webhooks are installed for an integration.
+     *
      * @param \Platformsh\Client\Model\Integration $integration
+     *   The integration as returned in the API.
+     * @param array $creationValues
+     *   Values used to create the integration, if the integration was just
+     *   created. This is required when the integration includes a secret (an
+     *   API token or app credentials) that is hidden in its API
+     *   representation.
      */
-    protected function ensureHooks(Integration $integration)
+    protected function ensureHooks(Integration $integration, array $creationValues = [])
     {
-
-        if ($integration->type === 'github' && $integration->hasProperty('token')) {
+        if ($integration->type === 'github' && ($integration->hasProperty('token') || isset($creationValues['token']))) {
             $hooksApiUrl = sprintf('https://api.github.com/repos/%s/hooks', $integration->getProperty('repository'));
             $requestOptions = [
                 'auth' => false,
                 'headers' => [
                     'Accept' => 'application/vnd.github.v3+json',
-                    'Authorization' => 'token ' . $integration->getProperty('token'),
+                    'Authorization' => 'token ' . (isset($creationValues['token']) ? $creationValues['token'] : $integration->getProperty('token')),
                 ],
             ];
             $payload = [
@@ -446,14 +453,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 'active' => true,
             ];
             $repoName = $integration->getProperty('repository');
-        } elseif ($integration->type === 'gitlab' && $integration->hasProperty('token')) {
+        } elseif ($integration->type === 'gitlab' && ($integration->hasProperty('token') || isset($creationValues['token']))) {
             $baseUrl = rtrim($integration->getProperty('base_url'), '/');
             $hooksApiUrl = sprintf('%s/api/v4/projects/%s/hooks', $baseUrl, rawurlencode($integration->getProperty('project')));
             $requestOptions = [
                 'auth' => false,
                 'headers' => [
                     'Accept' => 'application/json',
-                    'Private-Token' => $integration->getProperty('token'),
+                    'Private-Token' => isset($creationValues['token']) ? $creationValues['token'] : $integration->getProperty('token'),
                 ],
             ];
             $payload = [
@@ -462,8 +469,8 @@ abstract class IntegrationCommandBase extends CommandBase
                 'merge_requests_events' => true,
             ];
             $repoName = $baseUrl . '/' . $integration->getProperty('project');
-        } elseif ($integration->type === 'bitbucket' && $integration->hasProperty('app_credentials')) {
-            $appCredentials = $integration->getProperty('app_credentials');
+        } elseif ($integration->type === 'bitbucket' && (isset($creationValues['app_credentials']) || $integration->hasProperty('app_credentials'))) {
+            $appCredentials = isset($creationValues['app_credentials']) ? $creationValues['app_credentials'] : $integration->getProperty('app_credentials');
             $result = $this->validateBitbucketCredentials($appCredentials);
             if ($result !== true) {
                 $this->stdErr->writeln($result);
