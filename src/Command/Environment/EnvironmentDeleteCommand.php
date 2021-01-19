@@ -182,11 +182,6 @@ EOF
         $questionHelper = $this->getService('question_helper');
         foreach ($environments as $environment) {
             $environmentId = $environment->id;
-            if ($environment->is_main) {
-                $output->writeln("The main environment cannot be deleted.");
-                $error = true;
-                continue;
-            }
             // Check that the environment does not have children.
             // @todo remove this check when Platform's behavior is fixed
             foreach ($this->api()->getEnvironments($this->getSelectedProject()) as $potentialChild) {
