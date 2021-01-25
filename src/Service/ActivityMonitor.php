@@ -198,7 +198,10 @@ class ActivityMonitor
      */
     private function canRead($stream, $microseconds) {
         $readSet = [$stream];
-        $ignore = [];
+
+        // PHP expects NULL, not an empty array, to represent no streams.
+        // See https://www.php.net/manual/en/function.stream-select.php
+        $ignore = NULL;
 
         return (bool) stream_select($readSet, $ignore, $ignore, 0, $microseconds);
     }
