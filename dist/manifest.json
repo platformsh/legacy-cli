@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "3acc45d5ea49115b385bc49b847280334ed4daab",
-        "sha256": "66dfabcaeceda58df9dfdf71c1a6110034e907c834b908298f37c5be2ccdd638",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.64.6/platform.phar",
-        "version": "3.64.6",
+        "sha1": "9ae6d4d16ab5c9347117d4b282c5809a374ac688",
+        "sha256": "21842dbd152e9c0aefbfeeafe63aca2a0739e5766d0c52734dd8a6ddd8419756",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.65.0/platform.phar",
+        "version": "3.65.0",
         "php": {
             "min": "5.5.9"
         },
@@ -309,6 +309,11 @@
                 "notes": "New features:\n\n* Add MongoDB support to the `db:size` command.\n\n* Add `--unsafe` option to the `backup:create` (`backup`) command.\n  If set, this leaves the environment running and open to connections during\n  the backup. This reduces downtime, at the risk of backing up data in an\n  inconsistent state.\n  N.B. This will only work for more recent versions of our orchestration\n  software. Upgrades are mostly taking place this week.\n\n* Add `--state` and `--result` filters to activity commands.\n  Possible states: `in_progress`, `pending`, `complete`, or `cancelled`.\n  Possible results: `success` or `failure`.\n  N.B. The `--result` filter cannot be combined with others at this time.\n\n* Add an `activity:cancel` command, which will allow cancelling pending\n  activities, and stopping crons that are in progress.\n\n* SSH error handling improvements:\n  - Recommend an SSH certificate if not present after an authentication error.\n  - Avoid making a test connection where not necessary.\n  - Check for host key authentication errors, and suggest remedies for CI scripts.\n\nOther changes:\n\n* Remove hardcoded instances of \"master\" as the default branch name.\n* Show a loading message on environments and project lists.",
                 "show from": "3.63.0",
                 "hide from": "3.64.0"
+            },
+            {
+                "notes": "New features:\n\n* Add --format=plain option for table commands. This produces TSV-like output, \n  but with no quoting or escaping, to make most output easier to process with \n  basic command-line tools such as cut and grep. Literal tabs and newlines are \n  replaced by a space.\n\nOther changes:\n\n* Rename the backup --unsafe option to --live\n  (This tones down the warning level on making such a backup)\n* Remove the restriction on deleting the main environment\n* Remove us-2 from available region examples",
+                "show from": "3.64.0",
+                "hide from": "3.65.0"
             }
         ]
     }
