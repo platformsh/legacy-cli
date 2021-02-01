@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Tests\Util;
 
 use Platformsh\Cli\Util\Csv;
+use Platformsh\Cli\Util\PlainFormat;
 
 class CsvTest extends \PHPUnit_Framework_TestCase
 {
@@ -40,6 +41,17 @@ class CsvTest extends \PHPUnit_Framework_TestCase
             . "1999\tChevy\t\"Venture \"\"Extended Edition, Very Large\"\"\"\t\t5000.00\n"
             . "1996\tJeep\tGrand Cherokee\t\"MUST SELL!\nair, moon roof, loaded\"\t4799.00";
         $actual = (new Csv("\t", "\n"))->format($this->data, false);
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testPlain()
+    {
+        $expected = "Year\tMake\tModel\tDescription\tPrice\n"
+            . "1997\tFord\tE350\tac, abs, moon\t3000.00\n"
+            . "1999\tChevy\tVenture \"Extended Edition\"\t\t4900.00\n"
+            . "1999\tChevy\tVenture \"Extended Edition, Very Large\"\t\t5000.00\n"
+            . "1996\tJeep\tGrand Cherokee\tMUST SELL! air, moon roof, loaded\t4799.00";
+        $actual = (new PlainFormat())->format($this->data, false);
         $this->assertEquals($expected, $actual);
     }
 }

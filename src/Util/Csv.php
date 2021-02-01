@@ -62,7 +62,7 @@ class Csv
      *
      * @return string
      */
-    private function formatCell($cell)
+    protected function formatCell($cell)
     {
         // Cast cell data to a string.
         $cell = (string) $cell;
