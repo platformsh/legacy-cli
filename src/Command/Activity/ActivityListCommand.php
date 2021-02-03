@@ -36,7 +36,7 @@ class ActivityListCommand extends CommandBase
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type environment.push')
              ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15')
-             ->addExample('List up to 25 incomplete activities', '--count 25 --state pending --state in_progress');
+             ->addExample('List up to 25 incomplete activities', '--limit 25 -i');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
