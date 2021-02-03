@@ -141,8 +141,15 @@ class ManifestStrategy implements StrategyInterface
     {
         $versionInfo = $this->getRemoteVersionInfo($updater);
 
+        // A relative download URL is treated as relative to the manifest URL.
+        $url = $versionInfo['url'];
+        if (strpos($url, '//') === false && strpos($this->manifestUrl, '//') !== false) {
+            $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
+            $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
+        }
+
         $context = stream_context_create(['http' => ['timeout' => $this->downloadTimeout]]);
-        $fileContents = file_get_contents($versionInfo['url'], false, $context);
+        $fileContents = file_get_contents($url, false, $context);
         if ($fileContents === false) {
             throw new HttpRequestException(sprintf('Failed to download file from URL: %s', $versionInfo['url']));
         }
