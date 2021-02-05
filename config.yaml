@@ -111,6 +111,9 @@ api:
   environments_ttl: 120
   users_ttl: 600
 
+  # The default timeout for API requests, in seconds.
+  default_timeout: 30
+
   # Disable the docker-credential-helpers credential storage.
   disable_credential_helpers: false
 

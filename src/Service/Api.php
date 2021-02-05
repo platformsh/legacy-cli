@@ -263,6 +263,7 @@ class Api
         $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->getUserAgent();
+        $connectorOptions['timeout'] = $this->config->get('api.default_timeout');
 
         if ($apiToken = $this->tokenConfig->getApiToken()) {
             $connectorOptions['api_token'] = $apiToken;
@@ -372,6 +373,7 @@ class Api
                 'debug' => $this->config->get('api.debug') ? STDERR : false,
                 'verify' => !$this->config->get('api.skip_ssl'),
                 'proxy' => $this->getProxy(),
+                'timeout' => $this->config->get('api.default_timeout'),
             ],
         ];
 

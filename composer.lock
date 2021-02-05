@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "77227c375df3662934ef6d29dd168e2a",
+    "content-hash": "923a0c791cf4e828f606a9b37b724e4a",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -730,16 +730,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "0.41.0",
+            "version": "0.41.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "e681a5ad20c695ad728fbe14f965c92eb7e6578b"
+                "reference": "5be54c7f64de23fe2ce7f2d391fed72edbf88af3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/e681a5ad20c695ad728fbe14f965c92eb7e6578b",
-                "reference": "e681a5ad20c695ad728fbe14f965c92eb7e6578b",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/5be54c7f64de23fe2ce7f2d391fed72edbf88af3",
+                "reference": "5be54c7f64de23fe2ce7f2d391fed72edbf88af3",
                 "shasum": ""
             },
             "require": {
@@ -771,9 +771,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.41.0"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.41.1"
             },
-            "time": "2020-12-12T12:52:56+00:00"
+            "time": "2021-02-05T20:42:39+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -3736,12 +3736,12 @@
             "version": "1.9.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/webmozart/assert.git",
+                "url": "https://github.com/webmozarts/assert.git",
                 "reference": "bafc69caeb4d49c39fd0779086c03a3738cbb389"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/webmozart/assert/zipball/bafc69caeb4d49c39fd0779086c03a3738cbb389",
+                "url": "https://api.github.com/repos/webmozarts/assert/zipball/bafc69caeb4d49c39fd0779086c03a3738cbb389",
                 "reference": "bafc69caeb4d49c39fd0779086c03a3738cbb389",
                 "shasum": ""
             },
@@ -3779,8 +3779,8 @@
                 "validate"
             ],
             "support": {
-                "issues": "https://github.com/webmozart/assert/issues",
-                "source": "https://github.com/webmozart/assert/tree/master"
+                "issues": "https://github.com/webmozarts/assert/issues",
+                "source": "https://github.com/webmozarts/assert/tree/1.9.1"
             },
             "time": "2020-07-08T17:02:28+00:00"
         },
