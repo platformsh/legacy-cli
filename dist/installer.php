@@ -608,15 +608,27 @@ class Installer {
     /**
      * Generates authentication headers based on the request URL.
      *
+     * At the moment this just supports github.com.
+     *
      * @param string $url
      *
      * @return string[]
      */
     private function authHeaders($url) {
-        if (\parse_url($url, PHP_URL_HOST) === 'github.com') {
+        $host = \parse_url($url, PHP_URL_HOST);
+
+        if ($host === 'github.com') {
             // Use the GITHUB_TOKEN in the environment, if available.
             if ($token = \getenv('GITHUB_TOKEN')) {
                 return ['Authorization: token ' . $token];
+            }
+
+            // Use COMPOSER_AUTH and decode it.
+            // See https://getcomposer.org/doc/06-config.md#github-oauth
+            if (($composer_auth = \getenv('COMPOSER_AUTH'))
+                && ($json = \json_decode($composer_auth, true)) !== null
+                && !empty($json['github-oauth'][$host])) {
+                return ['Authorization: token ' . $json['github-oauth'][$host]];
             }
 
             // Read the local GitHub token from the project container.
@@ -626,8 +638,8 @@ class Installer {
                 if (\is_readable($authFilename)
                     && ($contents = \file_get_contents($authFilename)) !== false
                     && ($json = \json_decode($authFilename, true)) !== null
-                    && !empty($json['github-oauth']['github.com'])) {
-                    return ['Authorization: token ' . $json['github-oauth']['github.com']];
+                    && !empty($json['github-oauth'][$host])) {
+                    return ['Authorization: token ' . $json['github-oauth'][$host]];
                 }
             }
         }
