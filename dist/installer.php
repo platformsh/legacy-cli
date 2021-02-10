@@ -221,7 +221,7 @@ class Installer {
                 $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
             }
 
-            if (!file_put_contents($this->pharName, file_get_contents($url, false, $this->getStreamContext(300)))) {
+            if (!file_put_contents($this->pharName, file_get_contents($url, false, $this->getStreamContext(300, $url)))) {
                 return TaskResult::failure('The download failed');
             }
 
@@ -352,7 +352,7 @@ class Installer {
      * @return TaskResult
      */
     private function findLatestVersion($manifestUrl) {
-        $manifest = file_get_contents($manifestUrl, false, $this->getStreamContext(15));
+        $manifest = file_get_contents($manifestUrl, false, $this->getStreamContext(15, $manifestUrl));
         if ($manifest === false) {
             return TaskResult::failure('Failed to download manifest file: ' . $manifestUrl);
         }
@@ -577,10 +577,11 @@ class Installer {
      * Constructs a stream context for downloading files.
      *
      * @param int $timeout
+     * @param string $url
      *
      * @return resource
      */
-    private function getStreamContext($timeout) {
+    private function getStreamContext($timeout, $url) {
         $opts = [
             'http' => [
                 'method' => 'GET',
@@ -597,7 +598,40 @@ class Installer {
             $opts['ssl']['verify_peer_name'] = false;
         }
 
+        if ($headers = $this->authHeaders($url)) {
+            $opts['http']['header'] = implode("\r\n", $headers);
+        }
+
         return stream_context_create($opts);
+    }
+
+    /**
+     * Generates authentication headers based on the request URL.
+     *
+     * @param string $url
+     *
+     * @return string[]
+     */
+    private function authHeaders($url) {
+        if (\parse_url($url, PHP_URL_HOST) === 'github.com') {
+            // Use the GITHUB_TOKEN in the environment, if available.
+            if ($token = \getenv('GITHUB_TOKEN')) {
+                return ['Authorization: token ' . $token];
+            }
+
+            // Read the local GitHub token from the project container.
+            // The token allows for higher rate limits but is otherwise unprivileged.
+            if (\getenv('HOME') !== false) {
+                $authFilename = \getenv('HOME') . '/.global/auth.json';
+                if (\is_readable($authFilename)
+                    && ($contents = \file_get_contents($authFilename)) !== false
+                    && ($json = \json_decode($authFilename, true)) !== null
+                    && !empty($json['github-oauth']['github.com'])) {
+                    return ['Authorization: token ' . $json['github-oauth']['github.com']];
+                }
+            }
+        }
+        return [];
     }
 
     /**
