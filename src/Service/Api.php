@@ -475,7 +475,7 @@ class Api
         }
         $proxies = [];
         foreach (['https', 'http'] as $scheme) {
-            $proxies[$scheme] = str_replace($scheme . '://', 'tcp://', getenv($scheme . '_proxy'));
+            $proxies[$scheme] = str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], getenv($scheme . '_proxy'));
         }
         $proxies = array_filter($proxies);
         if (count($proxies)) {

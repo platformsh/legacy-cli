@@ -590,7 +590,7 @@ class Installer {
             ],
         ];
         if ($proxy = $this->getProxy()) {
-            $opts['http']['proxy'] = $proxy;
+            $opts['http']['proxy'] = str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxy);
         }
         if ($this->flagEnabled('insecure')) {
             $opts['ssl']['verify_peer'] = false;
