@@ -77,7 +77,13 @@ class SelfReleaseCommand extends CommandBase
         if (getenv('GITHUB_TOKEN')) {
             $gitHubToken = getenv('GITHUB_TOKEN');
         } else {
-            $this->stdErr->writeln('The GITHUB_TOKEN environment variable must be set');
+            $this->stdErr->writeln('The GITHUB_TOKEN environment variable must be set.');
+            $this->stdErr->writeln(
+                "\nIf you have the GitHub CLI installed (gh, https://github.com/cli/cli), and if you're signed in, you can set the token by running:"
+            );
+            $this->stdErr->writeln(
+                "  export GITHUB_TOKEN=$(gh auth status --show-token 2>&1 | grep Token: | cut -d' ' -f5)"
+            );
 
             return 1;
         }
