@@ -197,6 +197,12 @@ class ActivityMonitor
      * @return bool
      */
     private function canRead($stream, $microseconds) {
+        if (PHP_MAJOR_VERSION >= 8) {
+            // Work around a bug: "Cannot cast a filtered stream on this system" which throws a ValueError in PHP 8+.
+            // See https://github.com/platformsh/platformsh-cli/issues/1027#issuecomment-779170913
+            \usleep($microseconds);
+            return true;
+        }
         $readSet = [$stream];
         $ignore = [];
 
