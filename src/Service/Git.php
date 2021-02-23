@@ -558,10 +558,7 @@ class Git
      */
     private function setupSshEnv()
     {
-        if (!isset($this->ssh)) {
-            throw new \BadMethodCallException('SSH service not available');
-        }
-        if (!isset($this->sshCommand)) {
+        if (isset($this->ssh) && !isset($this->sshCommand)) {
             $this->sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
         }
         if (empty($this->sshCommand) || $this->sshCommand === 'ssh') {
