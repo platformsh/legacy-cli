@@ -975,7 +975,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 try {
                     $worker = $deployment->getWorker($qualifiedWorkerName);
                 } catch (\InvalidArgumentException $e) {
-                    throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption);
+                    throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption . ' (in app: ' . $appOption . ')');
                 }
 
                 return $this->remoteContainer = new RemoteContainer\Worker($worker, $environment);
