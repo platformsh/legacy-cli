@@ -1639,7 +1639,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @return HostInterface
      */
-    public function selectHost(InputInterface $input, $allowLocal = true, RemoteContainer\RemoteContainerInterface $remoteContainer = null, $includeWorkers = false)
+    public function selectHost(InputInterface $input, $allowLocal = true, RemoteContainer\RemoteContainerInterface $remoteContainer = null, $includeWorkers = true)
     {
         /** @var Shell $shell */
         $shell = $this->getService('shell');
