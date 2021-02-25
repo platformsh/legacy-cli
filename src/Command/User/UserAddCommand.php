@@ -506,6 +506,9 @@ class UserAddCommand extends CommandBase
         $environments = $this->api()->getEnvironments($this->getSelectedProject());
         $progress->start(count($environments));
         foreach ($environments as $environment) {
+            if (!$environment->operationAvailable('manage-access')) {
+                continue;
+            }
             if ($access = $environment->getUser($projectAccess->id)) {
                 $environmentRoles[$environment->id] = $access->role;
             }
