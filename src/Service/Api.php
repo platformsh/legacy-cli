@@ -470,15 +470,15 @@ class Api
      *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
      */
     private function getProxies() {
-        // The proxy variables should be ignored in a non-CLI context.
-        if (PHP_SAPI !== 'cli') {
-            return [];
-        }
         $proxies = [];
-        foreach (['https', 'http'] as $scheme) {
-            $proxies[$scheme] = getenv($scheme . '_proxy');
+        if (getenv('https_proxy') !== false) {
+            $proxies['https'] = getenv('https_proxy');
         }
-        return array_filter($proxies);
+        // An environment variable prefixed by 'http_' cannot be trusted in a non-CLI (web) context.
+        if (PHP_SAPI === 'cli' && getenv('http_proxy') !== false) {
+            $proxies['http'] = getenv('http_proxy');
+        }
+        return $proxies;
     }
 
     /**
