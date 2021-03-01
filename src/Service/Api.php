@@ -372,11 +372,7 @@ class Api
                 'headers' => ['User-Agent' => $this->getUserAgent()],
                 'debug' => $this->config->get('api.debug') ? STDERR : false,
                 'verify' => !$this->config->get('api.skip_ssl'),
-                'proxy' => array_map(function($proxyUrl) {
-                    // Guzzle expects each proxy scheme to be 'tcp'.
-                    // See https://docs.guzzlephp.org/en/5.3/clients.html#proxy
-                    return \str_replace(['http://', 'https://'], ['tcp://', 'tcp://'], $proxyUrl);
-                }, $this->getProxies()),
+                'proxy' => $this->getProxies(),
                 'timeout' => $this->config->get('api.default_timeout'),
             ],
         ];
