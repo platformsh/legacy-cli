@@ -319,6 +319,7 @@ class Config
             'ACCOUNTS_API' => 'api.accounts_api_url',
             'API_URL' => 'api.base_url',
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
+            'OAUTH2_CLIENT_ID' => 'api.oauth2_client_id',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
             'CERTIFIER_URL' => 'api.certifier_url',

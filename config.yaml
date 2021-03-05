@@ -106,7 +106,6 @@ service:
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
 api:
-  oauth2_client_id: 'platform-cli'
   projects_ttl: 600
   environments_ttl: 120
   users_ttl: 600
@@ -119,6 +118,9 @@ api:
 
   # Overridden by {application.env_prefix}API_URL env var.
   base_url: 'https://api.platform.sh/'
+
+  # Overridden by {application.env_prefix}OAUTH2_CLIENT_ID env var.
+  oauth2_client_id: 'platform-cli'
 
   # Overridden by {application.env_prefix}OAUTH2_AUTH_URL env var.
   oauth2_auth_url:  'https://auth.api.platform.sh/oauth2/authorize'
