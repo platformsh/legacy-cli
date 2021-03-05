@@ -273,9 +273,9 @@ class Api
             $connectorOptions['api_token_type'] = 'access';
         }
 
-        $proxy = $this->getProxy();
-        if ($proxy !== null) {
-            $connectorOptions['proxy'] = $proxy;
+        $guzzleOptions = $this->getGuzzleOptions();
+        if (!empty($guzzleOptions['defaults']['proxy'])) {
+            $connectorOptions['proxy'] = $guzzleOptions['defaults']['proxy'];
         }
 
         // Override the OAuth 2.0 token and revoke URLs if provided.
@@ -372,7 +372,14 @@ class Api
                 'headers' => ['User-Agent' => $this->getUserAgent()],
                 'debug' => $this->config->get('api.debug') ? STDERR : false,
                 'verify' => !$this->config->get('api.skip_ssl'),
-                'proxy' => $this->getProxy(),
+                'proxy' => array_map(function($proxyUrl) {
+                    // If Guzzle is going to use PHP's built-in HTTP streams,
+                    // rather than curl, then transform the proxy scheme.
+                    if (!\extension_loaded('curl') && \ini_get('allow_url_fopen')) {
+                        return \str_replace(['http://', 'https://'], ['tcp://', 'tcp://'], $proxyUrl);
+                    }
+                    return $proxyUrl;
+                }, $this->getProxies()),
                 'timeout' => $this->config->get('api.default_timeout'),
             ],
         ];
@@ -464,25 +471,21 @@ class Api
     }
 
     /**
-     * Finds a proxy address based on the http_proxy or https_proxy environment variables.
+     * Finds proxy addresses based on the http_proxy and https_proxy environment variables.
      *
-     * @return string|array|null
+     * @return array
+     *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
      */
-    private function getProxy() {
-        // The proxy variables should be ignored in a non-CLI context.
-        if (PHP_SAPI !== 'cli') {
-            return null;
-        }
+    private function getProxies() {
         $proxies = [];
-        foreach (['https', 'http'] as $scheme) {
-            $proxies[$scheme] = str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], getenv($scheme . '_proxy'));
+        if (getenv('https_proxy') !== false) {
+            $proxies['https'] = getenv('https_proxy');
         }
-        $proxies = array_filter($proxies);
-        if (count($proxies)) {
-            return count($proxies) === 1 ? reset($proxies) : $proxies;
+        // An environment variable prefixed by 'http_' cannot be trusted in a non-CLI (web) context.
+        if (PHP_SAPI === 'cli' && getenv('http_proxy') !== false) {
+            $proxies['http'] = getenv('http_proxy');
         }
-
-        return null;
+        return $proxies;
     }
 
     /**
@@ -494,6 +497,7 @@ class Api
      */
     public function getStreamContext($timeout = 15) {
         $opts = [
+            // See https://www.php.net/manual/en/context.http.php
             'http' => [
                 'method' => 'GET',
                 'follow_location' => 0,
@@ -504,15 +508,12 @@ class Api
                 ],
             ],
         ];
-        $proxy = $this->getProxy();
-        if (is_array($proxy)) {
-            if (isset($proxy['https'])) {
-                $opts['http']['proxy'] = $proxy['https'];
-            } elseif (isset($proxy['http'])) {
-                $opts['http']['proxy'] = $proxy['http'];
-            }
-        } elseif (is_string($proxy) && $proxy !== '') {
-            $opts['http']['proxy'] = $proxy;
+
+        // The PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
+        $proxies = $this->getProxies();
+        foreach ($proxies as $scheme => $proxyUrl) {
+            $opts['http']['proxy'] = \str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyUrl);
+            break;
         }
 
         return stream_context_create($opts);
