@@ -509,7 +509,7 @@ class Api
             ],
         ];
 
-        // Unlike Guzzle, the PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
+        // The PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
         $proxies = $this->getProxies();
         foreach ($proxies as $scheme => $proxyUrl) {
             $opts['http']['proxy'] = \str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyUrl);
