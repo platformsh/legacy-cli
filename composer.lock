@@ -2258,16 +2258,16 @@
         },
         {
             "name": "drush/drush",
-            "version": "8.4.6",
+            "version": "8.4.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/drush-ops/drush.git",
-                "reference": "4e48e11d7fe858eebe6c2fad71650c977d3f8900"
+                "reference": "21d83b2dc79182f9a82964aea8fe39e0d385c7a3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/drush-ops/drush/zipball/4e48e11d7fe858eebe6c2fad71650c977d3f8900",
-                "reference": "4e48e11d7fe858eebe6c2fad71650c977d3f8900",
+                "url": "https://api.github.com/repos/drush-ops/drush/zipball/21d83b2dc79182f9a82964aea8fe39e0d385c7a3",
+                "reference": "21d83b2dc79182f9a82964aea8fe39e0d385c7a3",
                 "shasum": ""
             },
             "require": {
@@ -2372,7 +2372,7 @@
                 "forum": "http://drupal.stackexchange.com/questions/tagged/drush",
                 "irc": "irc://irc.freenode.org/drush",
                 "issues": "https://github.com/drush-ops/drush/issues",
-                "source": "https://github.com/drush-ops/drush/tree/8.4.6"
+                "source": "https://github.com/drush-ops/drush/tree/8.4.7"
             },
             "funding": [
                 {
@@ -2380,7 +2380,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-02-01T15:34:47+00:00"
+            "time": "2021-03-19T23:12:41+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -3132,16 +3132,16 @@
         },
         {
             "name": "psy/psysh",
-            "version": "v0.10.6",
+            "version": "v0.10.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "6f990c19f91729de8b31e639d6e204ea59f19cf3"
+                "reference": "a395af46999a12006213c0c8346c9445eb31640c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/6f990c19f91729de8b31e639d6e204ea59f19cf3",
-                "reference": "6f990c19f91729de8b31e639d6e204ea59f19cf3",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/a395af46999a12006213c0c8346c9445eb31640c",
+                "reference": "a395af46999a12006213c0c8346c9445eb31640c",
                 "shasum": ""
             },
             "require": {
@@ -3202,9 +3202,9 @@
             ],
             "support": {
                 "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.10.6"
+                "source": "https://github.com/bobthecow/psysh/tree/v0.10.7"
             },
-            "time": "2021-01-18T15:53:43+00:00"
+            "time": "2021-03-14T02:14:56+00:00"
         },
         {
             "name": "sebastian/comparator",
