@@ -111,6 +111,7 @@ api:
   users_ttl: 600
 
   # The default timeout for API requests, in seconds.
+  # Overridden by {application.env_prefix}DEFAULT_TIMEOUT env var.
   default_timeout: 30
 
   # Disable the docker-credential-helpers credential storage.

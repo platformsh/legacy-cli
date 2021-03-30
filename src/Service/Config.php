@@ -318,6 +318,7 @@ class Config
             'SKIP_SSL' => 'api.skip_ssl',
             'ACCOUNTS_API' => 'api.accounts_api_url',
             'API_URL' => 'api.base_url',
+            'DEFAULT_TIMEOUT' => 'api.default_timeout',
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_CLIENT_ID' => 'api.oauth2_client_id',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
