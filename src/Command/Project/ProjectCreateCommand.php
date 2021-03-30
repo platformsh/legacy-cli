@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
+use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
@@ -128,13 +129,14 @@ EOF
         }
 
         $subscription = $this->api()->getClient()
-            ->createSubscription(
-                $options['region'],
-                $options['plan'],
-                $options['title'],
-                $options['storage'] * 1024,
-                $options['environments']
-            );
+            ->createSubscription(SubscriptionOptions::fromArray([
+                'project_title' => $options['title'],
+                'project_region' => $options['region'],
+                'default_branch' => $options['default_branch'],
+                'plan' => $options['plan'],
+                'storage' => $options['storage'] * 1024,
+                'environments' => $options['environments'],
+            ]));
 
         $this->api()->clearProjectsCache();
 
@@ -328,6 +330,10 @@ EOF
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
+          ]),
+          'default_branch' => new Field('Default branch', [
+            'description' => 'The default Git branch name for the project (the production environment)',
+            'required' => false,
           ]),
         ];
     }
