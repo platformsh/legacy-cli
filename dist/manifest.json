@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "b651add00ccb2125209413ef7d7f8881a0ad53ff",
-        "sha256": "1676a299a726f38f01e277398de8270aa8a060628a9ec8a52e7d4e9cd691aa8c",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.65.4/platform.phar",
-        "version": "3.65.4",
+        "sha1": "eed491a301763993edc34efed3160ab810387ee2",
+        "sha256": "82bdd2de28fe189c83ba7b79ca1336e3c49b5d00f466018f982fff7b847c15bb",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.66.0/platform.phar",
+        "version": "3.66.0",
         "php": {
             "min": "5.5.9"
         },
@@ -314,6 +314,11 @@
                 "notes": "New features:\n\n* Add --format=plain option for table commands. This produces TSV-like output, \n  but with no quoting or escaping, to make most output easier to process with \n  basic command-line tools such as cut and grep. Literal tabs and newlines are \n  replaced by a space.\n\nOther changes:\n\n* Rename the backup --unsafe option to --live\n  (This tones down the warning level on making such a backup)\n* Remove the restriction on deleting the main environment\n* Remove us-2 from available region examples",
                 "show from": "3.64.0",
                 "hide from": "3.65.0"
+            },
+            {
+                "notes": "* Use the 'http://' scheme instead of 'solr://' for Solr service URLs.\n* Add a --default-branch option to the project:create command.\n* Make the default API request timeout configurable through an env var.\n  PLATFORMSH_CLI_DEFAULT_TIMEOUT will override the default of 30 (seconds).",
+                "show from": "3.65.0",
+                "hide from": "3.66.0"
             }
         ]
     }
