@@ -260,6 +260,7 @@ updates:
 Other customization is available via environment variables:
 
 * `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging. _Warning_: this will print all request information in the terminal, including sensitive access tokens.
+* `PLATFORMSH_CLI_DEFAULT_TIMEOUT`: the timeout (in seconds) for most individual API requests. The default is 30.
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_HOME`: override the home directory (inside which the .platformsh directory is stored)
 * `PLATFORMSH_CLI_NO_COLOR`: set to 1 to disable colors in output
