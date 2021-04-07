@@ -334,6 +334,7 @@ EOF
           'default_branch' => new Field('Default branch', [
             'description' => 'The default Git branch name for the project (the production environment)',
             'required' => false,
+            'default' => 'main',
           ]),
         ];
     }
