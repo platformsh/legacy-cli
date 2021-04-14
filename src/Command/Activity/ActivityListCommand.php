@@ -19,9 +19,16 @@ class ActivityListCommand extends CommandBase
     {
         $this
             ->setName('activity:list')
-            ->setAliases(['activities', 'act'])
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
+            ->setAliases(['activities', 'act']);
+
+        // Add the --type option, with a link to help if configured.
+        $typeDescription = 'Filter activities by type';
+        if ($this->config()->has('service.activity_type_list_url')) {
+            $typeDescription .= "\nFor a list of types see: " . $this->config()->get('service.activity_type_list_url');
+        }
+        $this->addOption('type', null, InputOption::VALUE_REQUIRED, $typeDescription);
+
+        $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled')
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
