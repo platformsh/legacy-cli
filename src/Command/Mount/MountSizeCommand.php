@@ -98,7 +98,8 @@ EOF
         $commands[] = 'cd "$' . $appDirVar . '"';
 
         foreach ($mountPaths as $mountPath) {
-            $commands[] = 'du --block-size=1 -s ' . escapeshellarg($mountPath);
+            // The lost+found directory is excluded as it won't be readable.
+            $commands[] = 'du --block-size=1 --exclude=lost+found -s ' . escapeshellarg($mountPath);
         }
         $command = 'set -e; ' . implode('; ', $commands);
 
