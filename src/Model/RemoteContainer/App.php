@@ -23,9 +23,9 @@ class App implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getSshUrl()
+    public function getSshUrl($instance = '')
     {
-        return $this->environment->getSshUrl($this->webApp->name);
+        return $this->environment->getSshUrl($this->webApp->name, $instance);
     }
 
     /**

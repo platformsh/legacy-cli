@@ -944,6 +944,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!$this->getDefinition()->hasOption('worker')) {
             $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name');
         }
+        $this->addOption('instance', 'I', InputOption::VALUE_REQUIRED, 'An instance ID');
+        return $this;
     }
 
     /**
@@ -1721,14 +1723,22 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $remoteContainer = $this->selectRemoteContainer($input, $includeWorkers);
         }
 
+        $instanceId = $input->hasOption('instance') ? $input->getOption('instance') : null;
+        if ($input->hasOption('instance') && $instanceId !== null) {
+            $instances = $this->getSelectedEnvironment()->getSshInstanceURLs($remoteContainer->getName());
+            if ((!empty($instances) || $instanceId !== '0') && !isset($instances[$instanceId])) {
+                throw new \InvalidArgumentException("Instance not found: $instanceId. Available instances: " . implode(', ', array_keys($instances)));
+            }
+        }
+
         /** @var Ssh $ssh */
         $ssh = $this->getService('ssh');
         /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
         $sshDiagnostics = $this->getService('ssh_diagnostics');
 
-        $this->debug('Selected host: ' . $remoteContainer->getSshUrl());
-
-        return new RemoteHost($remoteContainer->getSshUrl(), $ssh, $shell, $sshDiagnostics);
+        $sshUrl = $remoteContainer->getSshUrl($instanceId);
+        $this->debug('Selected host: ' . $sshUrl);
+        return new RemoteHost($sshUrl, $ssh, $shell, $sshDiagnostics);
     }
 
     /**

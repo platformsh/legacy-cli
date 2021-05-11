@@ -44,9 +44,10 @@ class MountUploadCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Mount $mountService */
         $mountService = $this->getService('mount');
         $mounts = $mountService->mountsFromConfig($container->getConfig());
+        $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $sshUrl));
 
             return 1;
         }
@@ -155,7 +156,7 @@ class MountUploadCommand extends CommandBase
         }
 
         $this->stdErr->writeln('');
-        $rsync->syncUp($container->getSshUrl(), $source, $mountPath, $rsyncOptions);
+        $rsync->syncUp($sshUrl, $source, $mountPath, $rsyncOptions);
 
         return 0;
     }

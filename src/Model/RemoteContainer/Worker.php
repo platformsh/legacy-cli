@@ -23,9 +23,9 @@ class Worker implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getSshUrl()
+    public function getSshUrl($instance = '')
     {
-        return $this->environment->getWorkerSshUrl($this->worker);
+        return $this->environment->getSshUrl($this->worker->name, $instance);
     }
 
     /**

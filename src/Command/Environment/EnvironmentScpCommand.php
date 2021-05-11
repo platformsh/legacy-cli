@@ -44,7 +44,7 @@ class EnvironmentScpCommand extends CommandBase
         $this->validateInput($input);
 
         $container = $this->selectRemoteContainer($input);
-        $sshUrl = $container->getSshUrl();
+        $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         /** @var Ssh $ssh */
         $ssh = $this->getService('ssh');
