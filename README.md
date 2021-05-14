@@ -91,6 +91,7 @@ Available commands:
   multi                                     Execute a command on multiple projects
   web                                       Open the Web UI
 activity
+  activity:cancel                           Cancel an activity
   activity:get                              View detailed information on a single activity
   activity:list (activities, act)           Get a list of activities for an environment or project
   activity:log                              Display the log for an activity
@@ -128,7 +129,7 @@ environment
   environment:activate                      Activate an environment
   environment:branch (branch)               Branch an environment
   environment:checkout (checkout)           Check out an environment
-  environment:delete                        Delete an environment
+  environment:delete (environment:deactivate) Delete an environment
   environment:drush (drush)                 Run a drush command on the remote environment
   environment:http-access (httpaccess)      Update HTTP access settings for an environment
   environment:info                          Read or set properties for an environment
@@ -139,6 +140,7 @@ environment
   environment:push (push)                   Push code to an environment
   environment:redeploy (redeploy)           Redeploy an environment
   environment:relationships (relationships) Show an environment's relationships
+  environment:scp (scp)                     Copy files to and from current environment using scp
   environment:ssh (ssh)                     SSH to the current environment
   environment:synchronize (sync)            Synchronize an environment's code and/or data from its parent
   environment:url (url)                     Get the public URLs of an environment
@@ -191,6 +193,8 @@ ssh-key
   ssh-key:add                               Add a new SSH key
   ssh-key:delete                            Delete an SSH key
   ssh-key:list (ssh-keys)                   Get a list of SSH keys in your account
+subscription
+  subscription:info                         Read or modify subscription properties
 tunnel
   tunnel:close                              Close SSH tunnels
   tunnel:info                               View relationship info for SSH tunnels

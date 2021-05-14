@@ -13,8 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SubscriptionInfoCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-
     /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
     protected $formatter;
 
