@@ -39,7 +39,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
              ->addEnvironmentOption()
              ->addWaitOptions();
         $this->addExample('Require a username and password', '--auth myname:mypassword');
-        $this->addExample('Restrict access to only one IP address', '--access deny:any --access allow:69.208.1.192');
+        $this->addExample('Restrict access to only one IP address', '--access allow:69.208.1.192 --access deny:any');
         $this->addExample('Remove the password requirement, keeping IP restrictions', '--auth 0');
         $this->addExample('Disable all HTTP access control', '--enabled 0');
     }
