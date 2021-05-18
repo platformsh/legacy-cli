@@ -321,7 +321,7 @@ class DbSizeCommand extends CommandBase
      */
     private function mysqlTablesInNeedOfOptimizing() {
         /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/
-        return 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
+        return 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND TABLE_TYPE="BASE TABLE" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
     }
 
     /**
