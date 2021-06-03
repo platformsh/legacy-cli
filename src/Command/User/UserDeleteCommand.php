@@ -63,8 +63,7 @@ class UserDeleteCommand extends CommandBase
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        $myUserId = $this->api()->getMyAccount()['id'];
-        if ($myUserId === $selectedUser->id) {
+        if ($this->api()->getMyUserId() === $selectedUser->id) {
             $this->api()->clearProjectsCache();
         }
 

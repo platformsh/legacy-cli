@@ -1733,12 +1733,21 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($newline) {
                 $this->stdErr->writeln('');
             }
-            $accountInfo = $api->getMyAccount();
-            $this->stdErr->writeln(sprintf(
-                'You are logged in as <info>%s</info> (<info>%s</info>)',
-                $accountInfo['username'],
-                $accountInfo['mail']
-            ));
+            if ($config->getWithDefault('api.auth', false)) {
+                $user = $api->getUser();
+                $this->stdErr->writeln(\sprintf(
+                    'You are logged in as <info>%s</info> (<info>%s</info>)',
+                    $user->username,
+                    $user->email
+                ));
+            } else {
+                $accountInfo = $api->getMyAccount();
+                $this->stdErr->writeln(\sprintf(
+                    'You are logged in as <info>%s</info> (<info>%s</info>)',
+                    $accountInfo['username'],
+                    $accountInfo['mail']
+                ));
+            }
         }
     }
 }

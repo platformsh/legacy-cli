@@ -73,7 +73,7 @@ class ProjectDeleteCommand extends CommandBase
         } catch (ClientException $e) {
             $response = $e->getResponse();
             if ($response !== null && $response->getStatusCode() === 403) {
-                if ($project->owner !== $this->api()->getMyAccount()['id']) {
+                if ($project->owner !== $this->api()->getMyUserId()) {
                     $this->stdErr->writeln("Only the project's owner can delete it.");
                     return 1;
                 }

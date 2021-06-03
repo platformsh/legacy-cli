@@ -50,7 +50,7 @@ class BackupCreateCommand extends CommandBase
                 $this->stdErr->writeln('The environment is not active.');
             } else {
                 try {
-                    $access = $selectedEnvironment->getUser($this->api()->getMyAccount()['id']);
+                    $access = $selectedEnvironment->getUser($this->api()->getMyUserId());
                     if ($access->role !== 'admin') {
                         $this->stdErr->writeln('You must be an administrator to create a backup.');
                     }

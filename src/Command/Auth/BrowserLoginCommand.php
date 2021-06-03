@@ -69,12 +69,22 @@ class BrowserLoginCommand extends CommandBase
             $api = $this->api();
             try {
                 $api->inLoginCheck = true;
-                $account = $api->getMyAccount(true);
 
-                $this->stdErr->writeln(sprintf('You are already logged in as <info>%s</info> (%s).',
-                    $account['username'],
-                    $account['mail']
-                ));
+                if ($this->config()->getWithDefault('api.auth', false)) {
+                    $user = $api->getUser(null, true);
+                    $this->stdErr->writeln(\sprintf(
+                        'You are already logged in as <info>%s</info> (<info>%s</info>)',
+                        $user->username,
+                        $user->email
+                    ));
+                } else {
+                    $accountInfo = $api->getMyAccount(true);
+                    $this->stdErr->writeln(\sprintf(
+                        'You are already logged in as <info>%s</info> (<info>%s</info>).',
+                        $accountInfo['username'],
+                        $accountInfo['mail']
+                    ));
+                }
 
                 if ($input->isInteractive()) {
                     /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */

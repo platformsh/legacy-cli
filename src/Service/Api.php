@@ -721,6 +721,8 @@ class Api
      *
      * @param bool $reset
      *
+     * @deprecated use getUser() if the Auth API (the config key api.auth) is enabled
+     *
      * @return array
      *   An array containing at least 'username', 'id', 'mail', and
      *   'display_name'.
@@ -734,6 +736,19 @@ class Api
         }
 
         return $info;
+    }
+
+    /**
+     * Returns the ID of the current user.
+     *
+     * @return string
+     */
+    public function getMyUserId($reset = false)
+    {
+        if ($this->config->getWithDefault('api.auth', false)) {
+            return $this->getUser(null, $reset)->id;
+        }
+        return $this->getMyAccount($reset)['id'];
     }
 
     /**
@@ -799,8 +814,12 @@ class Api
         if (!$this->config->getWithDefault('api.auth', false)) {
             throw new \BadMethodCallException('api.auth must be enabled for this method');
         }
-        $id = $id ?: $this->getMyAccount()['id']; // @todo achieve this more efficiently
-        $cacheKey = 'user:' . $id;
+        if ($id) {
+            $cacheKey = 'user:' . $id;
+        } else {
+            $id = 'me';
+            $cacheKey = sprintf('%s:me', $this->config->getSessionId());
+        }
         if ($reset || !($data = $this->cache->fetch($cacheKey))) {
             $user = $this->getClient()->getUser($id);
             if (!$user) {
@@ -1045,7 +1064,7 @@ class Api
         // If there is no token, or it has expired, make an API request, which
         // automatically obtains a token and saves it to the session.
         if (!$token || $expires < time()) {
-            $this->getMyAccount(true);
+            $this->getMyUserId(true);
             if (!$token = $session->get('accessToken')) {
                 throw new \RuntimeException('No access token found');
             }

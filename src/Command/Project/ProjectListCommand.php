@@ -158,7 +158,7 @@ class ProjectListCommand extends CommandBase
                     break;
 
                 case 'my':
-                    $ownerId = $this->api()->getMyAccount()['id'];
+                    $ownerId = $this->api()->getMyUserId();
                     $projects = array_filter($projects, function (Project $project) use ($ownerId) {
                         return $project->owner === $ownerId;
                     });

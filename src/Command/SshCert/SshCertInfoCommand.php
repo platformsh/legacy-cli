@@ -64,6 +64,6 @@ class SshCertInfoCommand extends CommandBase
     }
 
     private function isValid(Certificate $cert) {
-        return !$cert->hasExpired(0) && $cert->metadata()->getKeyId() === $this->api()->getMyAccount()['id'];
+        return !$cert->hasExpired(0) && $cert->metadata()->getKeyId() === $this->api()->getMyUserId();
     }
 }

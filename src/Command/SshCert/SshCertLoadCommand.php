@@ -36,7 +36,7 @@ class SshCertLoadCommand extends CommandBase
             && !$input->getOption('new')
             && !$input->getOption('new-key')
             && !$sshCert->hasExpired()
-            && $sshCert->metadata()->getKeyId() === $this->api()->getMyAccount()['id']) {
+            && $sshCert->metadata()->getKeyId() === $this->api()->getMyUserId()) {
             $this->stdErr->writeln('A valid SSH certificate exists');
             $this->displayCertificate($sshCert);
             $refresh = false;
