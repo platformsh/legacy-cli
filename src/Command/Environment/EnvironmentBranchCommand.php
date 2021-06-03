@@ -42,11 +42,10 @@ class EnvironmentBranchCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->envArgName = 'parent';
-        $this->validateInput($input);
-        $selectedProject = $this->getSelectedProject();
-        $parentEnvironment = $this->getSelectedEnvironment();
-
         $branchName = $input->getArgument('id');
+        $this->validateInput($input, $branchName === null);
+        $selectedProject = $this->getSelectedProject();
+
         if ($branchName === null) {
             if ($input->isInteractive()) {
                 // List environments.
@@ -59,6 +58,8 @@ class EnvironmentBranchCommand extends CommandBase
 
             return 1;
         }
+
+        $parentEnvironment = $this->getSelectedEnvironment();
 
         if ($branchName === $parentEnvironment->id) {
             $this->stdErr->writeln('Already on <comment>' . $branchName . '</comment>');
