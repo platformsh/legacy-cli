@@ -169,6 +169,7 @@ class EnvironmentInfoCommand extends CommandBase
             'parent' => 'string',
             'title' => 'string',
             'restrict_robots' => 'boolean',
+            'type' => 'string',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
