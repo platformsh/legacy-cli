@@ -730,16 +730,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "0.43.0",
+            "version": "0.44.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "5971107b8e3730dd5b1b759f7fd3ba596f539dd8"
+                "reference": "72a741a25345791ba1991da3c7521d13ecce12b3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/5971107b8e3730dd5b1b759f7fd3ba596f539dd8",
-                "reference": "5971107b8e3730dd5b1b759f7fd3ba596f539dd8",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/72a741a25345791ba1991da3c7521d13ecce12b3",
+                "reference": "72a741a25345791ba1991da3c7521d13ecce12b3",
                 "shasum": ""
             },
             "require": {
@@ -771,9 +771,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.43.0"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.44.0"
             },
-            "time": "2021-03-26T14:54:25+00:00"
+            "time": "2021-06-04T11:51:50+00:00"
         },
         {
             "name": "platformsh/console-form",
