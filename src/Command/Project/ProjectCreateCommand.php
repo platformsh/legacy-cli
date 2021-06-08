@@ -207,7 +207,25 @@ EOF
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
 
         $project = $this->api()->getProject($subscription->project_id);
-        $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+        if ($project !== false) {
+            $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+
+            // Temporary workaround for the default environment's title.
+            /** @todo remove this from API version 12 */
+            if ($project->default_branch !== 'master') {
+                try {
+                    $env = $project->getEnvironment($project->default_branch);
+                    if ($env->title === 'Master') {
+                        $prev = $env->title;
+                        $new = $project->default_branch;
+                        $this->debug(\sprintf('Updating the title of environment %s from %s to %s', $env->id, $prev, $new));
+                        $env->update(['title' => $new]);
+                    }
+                } catch (\Exception $e) {
+                    $this->debug('Error: ' . $e->getMessage());
+                }
+            }
+        }
 
         if ($setRemote && $gitRoot !== false && $project !== false) {
             $this->stdErr->writeln('');
