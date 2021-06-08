@@ -246,19 +246,24 @@ class Manager {
     private function getHelpers() {
         return [
             'wincred' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.3/docker-credential-wincred-v0.6.3-amd64.zip',
+                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-wincred-v0.6.4-amd64.zip',
                 'filename' => 'docker-credential-wincred.exe',
-                'sha256' => 'df73f7e58ec229c4250c6f13e5d39846602d18b65b0a3ec84009f5492123e5ba',
+                'sha256' => 'a4e7885d3d469b2e3c92ab72c729e35df94ed1952bc8090272107fef0652e474',
             ],
             'secretservice' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.3/docker-credential-secretservice-v0.6.3-amd64.tar.gz',
+                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-secretservice-v0.6.4-amd64.tar.gz',
                 'filename' => 'docker-credential-secretservice',
-                'sha256' => 'f1c7e07c41b432e0d9d784090d59f6e10fe783856afaa58a79fefd425e030aae',
+                'sha256' => '1bddcc1da7ea4d6f50d8e21ba3f0d2ae518c04d90553f543e683af62e9c7c9a8',
             ],
             'osxkeychain' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.3/docker-credential-osxkeychain-v0.6.3-amd64.tar.gz',
+                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-amd64.tar.gz',
                 'filename' => 'docker-credential-osxkeychain',
-                'sha256' => '5ff307ef63cafb244f19fe639b7f8d89c12753b0bb6d038c92c74614909e38fe',
+                'sha256' => '76c4088359bbbcd25b8d0ff8436086742b6184aba6380ae57d39e5513f723b74',
+            ],
+            'osxkeychain-arm' => [
+                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-arm64.tar.gz',
+                'filename' => 'docker-credential-osxkeychain',
+                'sha256' => '902e8237747aac0eca61efa1875e65aa8552b7c95fc406cf0d2aef733dda41de',
             ],
         ];
     }
@@ -269,19 +274,24 @@ class Manager {
      * @return array
      */
     private function getHelper() {
-        // The system architectures must be one supported by the packages.
-        if (!in_array(php_uname('m'), ['x86_64', 'amd64', 'AMD64'])) {
-            throw new \RuntimeException('Unable to find a credentials helper for this system architecture');
-        }
+        $arch = php_uname('m');
 
         $helpers = $this->getHelpers();
 
-        if (OsUtil::isWindows()) {
-            return $helpers['wincred'];
+        if (OsUtil::isOsX()) {
+            if ($arch === 'arm64') {
+                return $helpers['osxkeychain-arm'];
+            } elseif (\in_array($arch, ['x86_64', 'amd64', 'AMD64'])) {
+                return $helpers['osxkeychain'];
+            }
         }
 
-        if (OsUtil::isOsX()) {
-            return $helpers['osxkeychain'];
+        if (!in_array($arch, ['x86_64', 'amd64', 'AMD64'])) {
+            throw new \RuntimeException('Unable to find a credentials helper for this system architecture');
+        }
+
+        if (OsUtil::isWindows()) {
+            return $helpers['wincred'];
         }
 
         if (OsUtil::isLinux()) {
