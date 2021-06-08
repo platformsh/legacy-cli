@@ -260,9 +260,9 @@ class Manager {
                 'filename' => 'docker-credential-osxkeychain',
                 'sha256' => '76c4088359bbbcd25b8d0ff8436086742b6184aba6380ae57d39e5513f723b74',
             ],
-            'osxkeychain-arm' => [
+            'osxkeychain-arm64' => [
                 'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-arm64.tar.gz',
-                'filename' => 'docker-credential-osxkeychain',
+                'filename' => 'docker-credential-osxkeychain-arm64',
                 'sha256' => '902e8237747aac0eca61efa1875e65aa8552b7c95fc406cf0d2aef733dda41de',
             ],
         ];
@@ -280,7 +280,7 @@ class Manager {
 
         if (OsUtil::isOsX()) {
             if ($arch === 'arm64') {
-                return $helpers['osxkeychain-arm'];
+                return $helpers['osxkeychain-arm64'];
             } elseif (\in_array($arch, ['x86_64', 'amd64', 'AMD64'])) {
                 return $helpers['osxkeychain'];
             }
