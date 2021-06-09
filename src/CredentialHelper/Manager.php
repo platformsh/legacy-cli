@@ -262,7 +262,7 @@ class Manager {
             ],
             'osxkeychain-arm64' => [
                 'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-arm64.tar.gz',
-                'filename' => 'docker-credential-osxkeychain-arm64',
+                'filename' => 'docker-credential-osxkeychain',
                 'sha256' => '902e8237747aac0eca61efa1875e65aa8552b7c95fc406cf0d2aef733dda41de',
             ],
         ];
