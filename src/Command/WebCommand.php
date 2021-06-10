@@ -38,7 +38,8 @@ class WebCommand extends CommandBase
         }
 
         if ($this->hasSelectedProject()) {
-            $url = $this->getSelectedProject()->getLink('#ui');
+            $subscription = $this->api()->getClient()->getSubscription($this->getSelectedProject()->getSubscriptionId());
+            $url = $subscription->project_ui;
             if ($environmentId !== null) {
                 // Console links lack the /environments path component.
                 if ($this->config()->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.console_domain')) {
