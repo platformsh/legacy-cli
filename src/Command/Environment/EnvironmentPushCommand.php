@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -29,7 +30,8 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch')
             ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment before pushing')
             ->addOption('branch', null, InputOption::VALUE_NONE, 'DEPRECATED: alias of --activate')
-            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent (only used with --activate or --branch)');
+            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the new environment parent (only used with --activate or --branch)')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate or --branch)');
         $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
@@ -123,10 +125,19 @@ class EnvironmentPushCommand extends CommandBase
                 // If activating, determine what the environment's parent should be.
                 $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment ?: null);
 
+                // Determine the environment type.
+                $type = $input->getOption('type');
+                if ($type === null && $input->isInteractive()) {
+                    $type = $this->askEnvironmentType($project);
+                } elseif (!$project->getEnvironmentType($type)) {
+                    $this->stdErr->writeln('Environment type not found: <error>' . $type . '</error>');
+                    return 1;
+                }
+
                 // Activate the target environment. The deployment activity
                 // will queue up behind whatever other activities are created
                 // here.
-                $activities = $this->activateTarget($target, $parentId, $project);
+                $activities = $this->activateTarget($target, $parentId, $project, $type);
                 if ($activities === false) {
                     return 1;
                 }
@@ -207,10 +218,11 @@ class EnvironmentPushCommand extends CommandBase
      * @param string $target
      * @param string $parentId
      * @param Project $project
+     * @param string|null $type
      *
      * @return false|array A list of activities, or false on failure.
      */
-    private function activateTarget($target, $parentId, Project $project) {
+    private function activateTarget($target, $parentId, Project $project, $type) {
         $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
         if (!$parentEnvironment) {
             throw new \RuntimeException("Parent environment not found: $parentId");
@@ -219,10 +231,17 @@ class EnvironmentPushCommand extends CommandBase
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
         if ($targetEnvironment) {
             $activities = [];
+            $updates = [];
             if ($targetEnvironment->parent !== $parentId) {
+                $updates['parent'] = $parentId;
+            }
+            if ($type !== null && $targetEnvironment->hasProperty('type') && $targetEnvironment->getProperty('type') !== $type) {
+                $updates['type'] = $type;
+            }
+            if (!empty($updates)) {
                 $activities = array_merge(
                     $activities,
-                    $targetEnvironment->update(['parent' => $parentId])->getActivities()
+                    $targetEnvironment->update($updates)->getActivities()
                 );
             }
             $activities[] = $targetEnvironment->activate();
@@ -251,10 +270,11 @@ class EnvironmentPushCommand extends CommandBase
             return false;
         }
 
-        $activity = $parentEnvironment->branch($target, $target);
+        $activity = $parentEnvironment->branch($target, $target, true, $type);
         $this->stdErr->writeln(sprintf(
-            'Branched <info>%s</info> from parent %s',
+            'Branched <info>%s</info>%s from parent %s',
             $target,
+            $type !== null ? ' (type: ' . $type . ')' : '',
             $this->api()->getEnvironmentLabel($parentEnvironment)
         ));
         $this->debug(sprintf('Branch activity ID / state: %s / %s', $activity->id, $activity->state));
@@ -262,6 +282,36 @@ class EnvironmentPushCommand extends CommandBase
         $this->api()->clearEnvironmentsCache($project->id);
 
         return [$activity];
+    }
+
+    /**
+     * Asks the user for the environment type.
+     *
+     * @param Project $project
+     *
+     * @return string|null
+     */
+    private function askEnvironmentType(Project $project) {
+        try {
+            $types = $project->getEnvironmentTypes();
+        } catch (BadResponseException $e) {
+            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
+                $this->debug('Cannot list environment types. The project probably does not yet support them.');
+                return null;
+            }
+            throw $e;
+        }
+        $defaultId = null;
+        $ids = [];
+        foreach ($types as $type) {
+            if ($type->id === 'development') {
+                $defaultId = $type->id;
+            }
+            $ids[] = $type->id;
+        }
+        $questionHelper = $this->getService('question_helper');
+
+        return $questionHelper->askInput('Environment type', $defaultId, $ids);
     }
 
     /**
