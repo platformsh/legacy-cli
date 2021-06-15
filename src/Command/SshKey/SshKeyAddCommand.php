@@ -29,7 +29,7 @@ class SshKeyAddCommand extends CommandBase
 
         $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 
-        if ($this->config()->getWithDefault('api.auth', false)) {
+        if ($this->api()->authApiEnabled()) {
             $email = $this->api()->getUser()->email;
         } else {
             $email = $this->api()->getMyAccount()['mail'];
@@ -169,7 +169,7 @@ class SshKeyAddCommand extends CommandBase
     private function askNewKeyPath(QuestionHelper $questionHelper)
     {
         $basename = 'id_rsa-' . $this->config()->get('service.slug');
-        if ($this->config()->getWithDefault('api.auth', false)) {
+        if ($this->api()->authApiEnabled()) {
             $username = $this->api()->getUser()->username;
         } else {
             $username = $this->api()->getMyAccount()['username'];

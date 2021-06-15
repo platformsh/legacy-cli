@@ -92,7 +92,7 @@ class SessionSwitchCommand extends CommandBase {
     private function showAccountInfo()
     {
         if ($this->api()->isLoggedIn()) {
-            if ($this->config()->getWithDefault('api.auth', false)) {
+            if ($this->api()->authApiEnabled()) {
                 $user = $this->api()->getUser();
                 $this->stdErr->writeln(sprintf(
                     "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",

@@ -745,10 +745,20 @@ class Api
      */
     public function getMyUserId($reset = false)
     {
-        if ($this->config->getWithDefault('api.auth', false)) {
+        if ($this->authApiEnabled()) {
             return $this->getUser(null, $reset)->id;
         }
         return $this->getMyAccount($reset)['id'];
+    }
+
+    /**
+     * Determines if the Auth API can be used, e.g. the getUser() method.
+     *
+     * @return bool
+     */
+    public function authApiEnabled()
+    {
+        return $this->config->getWithDefault('api.auth', false) && $this->config->getWithDefault('api.base_url', '');
     }
 
     /**
@@ -800,8 +810,9 @@ class Api
     /**
      * Get user information.
      *
-     * This is from the /users API which deals with basic authentication
-     * related data.
+     * This is from the /users API which deals with basic authentication-related data.
+     *
+     * @see Api::authApiEnabled()
      *
      * @param string|null $id
      *   The user ID. Defaults to the current user.

@@ -176,7 +176,7 @@ class SshDiagnostics
 
             $this->stdErr->writeln('The SSH connection failed because access requires MFA (multi-factor authentication).');
 
-            if (!$this->config->getWithDefault('api.auth', false)) {
+            if (!$this->api->authApiEnabled()) {
                 if ($this->config->has('api.mfa_setup_url')) {
                     $this->stdErr->writeln(\sprintf(
                         'Ensure that MFA is enabled on your account. Set it up at: <comment>%s</comment>',

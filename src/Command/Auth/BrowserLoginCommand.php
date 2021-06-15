@@ -70,7 +70,7 @@ class BrowserLoginCommand extends CommandBase
             try {
                 $api->inLoginCheck = true;
 
-                if ($this->config()->getWithDefault('api.auth', false)) {
+                if ($api->authApiEnabled()) {
                     $user = $api->getUser(null, true);
                     $this->stdErr->writeln(\sprintf(
                         'You are already logged in as <info>%s</info> (<info>%s</info>)',
