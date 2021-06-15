@@ -24,10 +24,32 @@ class AuthInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $info = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $propertiesToDisplay = ['id', 'uuid', 'display_name', 'username', 'mail', 'has_key'];
+
+        if ($this->api()->authApiEnabled()) {
+            $info = $this->api()->getUser()->getProperties();
+        } else {
+            // Backwards compatibility.
+            $account = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
+            $info = [
+                'id' => $account['id'],
+                'first_name' => '',
+                'last_name' => '',
+                'email' => $account['mail'],
+                'username' => $account['username'],
+            ];
+            if (isset($account['display_name'])) {
+                $parts = \explode(' ', $account['display_name'], 2);
+                if (count($parts) === 2) {
+                    list($info['first_name'], $info['last_name']) = $parts;
+                } else {
+                    $info['last_name'] = $account['display_name'];
+                }
+            }
+        }
+
+        $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'mfa_enabled'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));
 
         $property = $input->getArgument('property');
@@ -46,14 +68,25 @@ class AuthInfoCommand extends CommandBase
 
         if ($property) {
             if (!isset($info[$property])) {
-                throw new InvalidArgumentException('Property not found: ' . $property);
+                // Backwards compatibility.
+                if ($property === 'display_name' && isset($info['first_name'], $info['last_name'])) {
+                    $this->stdErr->writeln('<options=reverse>Deprecated:</> the "display_name" property has been replaced by "first_name" and "last_name".');
+                    $info[$property] = \sprintf('%s %s', $info['first_name'], $info['last_name']);
+                } elseif ($property === 'mail' && isset($info['email'])) {
+                    $this->stdErr->writeln('<options=reverse>Deprecated:</> the "mail" property is now named "email".');
+                    $info[$property] = $info['email'];
+                } elseif ($property === 'uuid' && isset($info['id'])) {
+                    $this->stdErr->writeln('<options=reverse>Deprecated:</> the "uuid" property is now named "id".');
+                    $info[$property] = $info['id'];
+                } else {
+                    throw new InvalidArgumentException('Property not found: ' . $property);
+                }
             }
             $output->writeln($formatter->format($info[$property], $property));
 
             return 0;
         }
 
-        unset($info['uuid']);
         $values = [];
         $header = [];
         foreach ($propertiesToDisplay as $property) {
