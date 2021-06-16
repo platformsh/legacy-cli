@@ -113,6 +113,16 @@ class VariableCreateCommand extends VariableCommandBase
 
         switch ($level) {
             case 'environment':
+                // Unset visible_build and visible_runtime if they are already the API's defaults.
+                // This is to provide backwards compatibility with older API versions.
+                // @todo remove when API version 12 is everywhere
+                if (isset($values['visible_build']) && $values['visible_build'] === false) {
+                    unset($values['visible_build']);
+                }
+                if (isset($values['visible_runtime']) && $values['visible_runtime'] === true) {
+                    unset($values['visible_runtime']);
+                }
+
                 $environment = $this->getSelectedEnvironment();
                 if ($environment->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
