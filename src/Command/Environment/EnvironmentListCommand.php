@@ -6,11 +6,13 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
+use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
+use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class EnvironmentListCommand extends CommandBase
+class EnvironmentListCommand extends CommandBase implements CompletionAwareInterface
 {
 
     protected $children = [];
@@ -35,7 +37,8 @@ class EnvironmentListCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
-            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter the list by environment type(s)');
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
@@ -112,6 +115,7 @@ class EnvironmentListCommand extends CommandBase
             }
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
+            $row[] = $environment->getProperty('type', false) ?: '';
 
             $row[] = $this->formatter->format($environment->created_at, 'created_at');
             $row[] = $this->formatter->format($environment->updated_at, 'updated_at');
@@ -143,13 +147,36 @@ class EnvironmentListCommand extends CommandBase
         $progress = new ProgressMessage($output);
         $progress->showIfOutputDecorated('Loading environments...');
 
-        $environments = $this->api()->getEnvironments($this->getSelectedProject(), $refresh ? true : null);
+        $project = $this->getSelectedProject();
+        $environments = $this->api()->getEnvironments($project, $refresh ? true : null);
 
-        if ($input->getOption('no-inactive')) {
-            $environments = array_filter($environments, function ($environment) {
-                return $environment->status !== 'inactive';
-            });
+        $progress->done();
+
+        // Determine whether environment types are supported.
+        $supportsTypes = $project->operationAvailable('environment-types');
+        if (!$supportsTypes) {
+            $first = reset($environments);
+            if ($first && $first->hasProperty('type')) {
+                $supportsTypes = true;
+            }
         }
+
+        // Filter the list of environments.
+        $filters = [];
+        if ($input->getOption('no-inactive')) {
+            $filters['no-inactive'] = true;
+        }
+        if ($types = $input->getOption('type')) {
+            if (!$supportsTypes) {
+                $this->stdErr->writeln('<options=reverse>Warning:</> environment types are not yet supported on this project.');
+            }
+            if (count($types) === 1) {
+                // Split comma- or whitespace-separated values.
+                $types = preg_split('/[\s,]+/', reset($types));
+            }
+            $filters['type'] = $types;
+        }
+        $this->filterEnvironments($environments, $filters);
 
         if ($input->getOption('sort')) {
             $this->api()->sortResources($environments, $input->getOption('sort'));
@@ -158,12 +185,26 @@ class EnvironmentListCommand extends CommandBase
             $environments = array_reverse($environments, true);
         }
 
-        $progress->done();
-
         if ($input->getOption('pipe')) {
             $output->writeln(array_keys($environments));
 
-            return;
+            return 0;
+        }
+
+        // Display a message if no environments are found.
+        if (empty($environments)) {
+            if (!empty($filters)) {
+                $filtersUsed = '<comment>--'
+                    . implode('</comment>, <comment>--', array_keys($filters))
+                    . '</comment>';
+                $this->stdErr->writeln('No environments found (filters in use: ' . $filtersUsed . ').');
+            } else {
+                $this->stdErr->writeln(
+                    'No environments found.'
+                );
+            }
+
+            return 0;
         }
 
         $project = $this->getSelectedProject();
@@ -180,8 +221,12 @@ class EnvironmentListCommand extends CommandBase
 
         $tree = $this->buildEnvironmentTree($environments);
 
-        $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Created', 'Updated'];
+        $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
         $defaultColumns = ['id', 'title', 'status'];
+
+        if ($supportsTypes) {
+            $defaultColumns[] = 'type';
+        }
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -191,8 +236,7 @@ class EnvironmentListCommand extends CommandBase
 
         if ($table->formatIsMachineReadable()) {
             $table->render($this->buildEnvironmentRows($tree, false, false), $headers, $defaultColumns);
-
-            return;
+            return 0;
         }
 
         $this->stdErr->writeln("Your environments are: ");
@@ -200,7 +244,7 @@ class EnvironmentListCommand extends CommandBase
         $table->render($this->buildEnvironmentRows($tree), $headers, $defaultColumns);
 
         if (!$this->currentEnvironment) {
-            return;
+            return 0;
         }
 
         $this->stdErr->writeln("<info>*</info> - Indicates the current environment\n");
@@ -242,6 +286,8 @@ class EnvironmentListCommand extends CommandBase
                 'Sync the current environment by running <info>' . $executable . ' environment:synchronize</info>'
             );
         }
+
+        return 0;
     }
 
     /**
@@ -256,5 +302,48 @@ class EnvironmentListCommand extends CommandBase
         }
 
         return ucfirst($status);
+    }
+
+    /**
+     * Filter the list of environments.
+     *
+     * @param Environment[] &$environments
+     * @param mixed[string] $filters
+     */
+    protected function filterEnvironments(array &$environments, array $filters)
+    {
+        if (!empty($filters['no-inactive'])) {
+            $environments = array_filter($environments, function ($environment) {
+                return $environment->status !== 'inactive';
+            });
+        }
+        if (!empty($filters['type'])) {
+            $environments = array_filter($environments, function ($environment) use ($filters) {
+                return !$environment->hasProperty('type') || \in_array($environment->getProperty('type'), $filters['type']);
+            });
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function completeOptionValues($optionName, CompletionContext $context)
+    {
+        if ($optionName === 'type') {
+            // @todo fetch types from the project if known? not necessary until custom types are available
+            return ['development', 'staging', 'production'];
+        }
+        if ($optionName === 'sort') {
+            return ['id', 'title', 'status', 'name', 'machine_name', 'parent', 'created_at', 'updated_at'];
+        }
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function completeArgumentValues($argumentName, CompletionContext $context)
+    {
+        return [];
     }
 }

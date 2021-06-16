@@ -171,24 +171,26 @@ class UserAddCommand extends CommandBase
         }
 
         // Build a list of the changes that are going to be made.
-        $changes = [];
+        $changesText = [];
         if ($existingProjectAccess) {
             if ($existingProjectAccess->role !== $desiredProjectRole) {
-                $changes[] = sprintf('Project role: <error>%s</error> -> <info>%s</info>', $existingProjectAccess->role, $desiredProjectRole);
+                $changesText[] = sprintf('Project role: <error>%s</error> -> <info>%s</info>', $existingProjectAccess->role, $desiredProjectRole);
             }
         } else {
-            $changes[] = sprintf('Project role: <info>%s</info>', $desiredProjectRole);
+            $changesText[] = sprintf('Project role: <info>%s</info>', $desiredProjectRole);
         }
+        $environmentChanges = [];
         if ($desiredProjectRole !== ProjectAccess::ROLE_ADMIN) {
             foreach ($this->api()->getEnvironments($project) as $id => $environment) {
                 $new = isset($desiredEnvironmentRoles[$id]) ? $desiredEnvironmentRoles[$id] : 'none';
                 if ($existingEnvironmentRoles) {
                     $existing = isset($existingEnvironmentRoles[$id]) ? $existingEnvironmentRoles[$id] : 'none';
                     if ($existing !== $new) {
-                        $changes[] = sprintf('  Role on <info>%s</info>: <error>%s</error> -> <info>%s</info>', $id, $existing, $new);
+                        $changesText[] = sprintf('  Role on <info>%s</info>: <error>%s</error> -> <info>%s</info>', $id, $existing, $new);
+                        $environmentChanges[$id] = $new;
                     }
                 } elseif ($new !== 'none') {
-                    $changes[] = sprintf('  Role on <info>%s</info>: <info>%s</info>', $id, $new);
+                    $changesText[] = sprintf('  Role on <info>%s</info>: <info>%s</info>', $id, $new);
                 }
             }
         }
@@ -250,7 +252,7 @@ class UserAddCommand extends CommandBase
         } else {
             $this->stdErr->writeln(sprintf('Adding the user <info>%s</info> to %s:', $email, $this->api()->getProjectLabel($project)));
         }
-        foreach ($changes as $change) {
+        foreach ($changesText as $change) {
             $this->stdErr->writeln('  ' . $change);
         }
         $this->stdErr->writeln('');
@@ -313,8 +315,12 @@ class UserAddCommand extends CommandBase
 
         // Make the desired changes at the environment level.
         if ($desiredProjectRole !== ProjectAccess::ROLE_ADMIN) {
-            foreach ($this->api()->getEnvironments($project) as $environmentId => $environment) {
-                $role = isset($desiredEnvironmentRoles[$environmentId]) ? $desiredEnvironmentRoles[$environmentId] : 'none';
+            foreach ($environmentChanges as $environmentId => $role) {
+                $environment = $this->api()->getEnvironment($environmentId, $project);
+                if (!$environment) {
+                    $this->stdErr->writeln('Environment not found: <comment>' . $environmentId . '</comment>');
+                    continue;
+                }
                 $access = $environment->getUser($userId);
                 if ($role === 'none') {
                     if ($access) {

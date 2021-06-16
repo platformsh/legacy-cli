@@ -1013,13 +1013,18 @@ class Api
     {
         $id = $environment->id;
         $title = $environment->title;
+        $type = $environment->getProperty('type', false);
         $use_title = strlen($title) > 0 && $title !== $id;
+        $use_type = $type !== null && $type !== $id;
         $pattern = $use_title ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
             $pattern = $use_title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
         }
+        if ($use_type) {
+            $pattern .= $tag !== false ? ' (type: <%1$s>%4$s</%1$s>)' : ' (type: %4$s)';
+        }
 
-        return sprintf($pattern, $tag, $title, $id);
+        return sprintf($pattern, $tag, $title, $id, $type);
     }
 
     /**

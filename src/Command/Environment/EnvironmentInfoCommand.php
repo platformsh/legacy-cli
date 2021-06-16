@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
@@ -133,7 +134,19 @@ class EnvironmentInfoCommand extends CommandBase
 
             return 0;
         }
-        $result = $environment->update([$property => $value]);
+        try {
+            $result = $environment->update([$property => $value]);
+        } catch (BadResponseException $e) {
+            // Translate validation error messages.
+            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+                $detail = \json_decode((string) $body, true);
+                if (\is_array($detail) && !empty($detail['detail'][$property])) {
+                    $this->stdErr->writeln("Invalid value for <error>$property</error>: " . $detail['detail'][$property]);
+                    return 1;
+                }
+            }
+            throw $e;
+        }
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
@@ -169,6 +182,7 @@ class EnvironmentInfoCommand extends CommandBase
             'parent' => 'string',
             'title' => 'string',
             'restrict_robots' => 'boolean',
+            'type' => 'string',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;

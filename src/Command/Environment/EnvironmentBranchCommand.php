@@ -20,6 +20,7 @@ class EnvironmentBranchCommand extends CommandBase
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID (branch name) of the new environment')
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'The type of the new environment')
             ->addOption(
                 'force',
                 null,
@@ -120,15 +121,27 @@ class EnvironmentBranchCommand extends CommandBase
 
         $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
+        $newLabel = strlen($title) > 0 && $title !== $branchName
+            ? '<info>' . $title . '</info> (' . $branchName . ')'
+            : '<info>' . $branchName . '</info>';
+
+        $type = $input->getOption('type');
+        if ($type !== null) {
+            $newLabel .= ' (type: <info>' . $type . '</info>)';
+        }
+
         $this->stdErr->writeln(sprintf(
             'Creating a new environment %s, branched from %s',
-            strlen($title) > 0 && $title !== $branchName
-                ? '<info>' . $title . '</info> (' . $branchName . ')'
-                : '<info>' . $branchName . '</info>',
+            $newLabel,
             $this->api()->getEnvironmentLabel($parentEnvironment)
         ));
 
-        $activity = $parentEnvironment->branch($title, $branchName, !$input->getOption('no-clone-parent'));
+        $activity = $parentEnvironment->branch(
+            $title,
+            $branchName,
+            !$input->getOption('no-clone-parent'),
+            $type
+        );
 
         // Clear the environments cache, as branching has started.
         $this->api()->clearEnvironmentsCache($selectedProject->id);
