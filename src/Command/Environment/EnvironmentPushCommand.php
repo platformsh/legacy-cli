@@ -127,11 +127,11 @@ class EnvironmentPushCommand extends CommandBase
 
                 // Determine the environment type.
                 $type = $input->getOption('type');
-                if ($type === null && $input->isInteractive()) {
-                    $type = $this->askEnvironmentType($project);
-                } elseif (!$project->getEnvironmentType($type)) {
+                if ($type !== null && !$project->getEnvironmentType($type)) {
                     $this->stdErr->writeln('Environment type not found: <error>' . $type . '</error>');
                     return 1;
+                } elseif ($type === null && $input->isInteractive()) {
+                    $type = $this->askEnvironmentType($project);
                 }
 
                 // Activate the target environment. The deployment activity
