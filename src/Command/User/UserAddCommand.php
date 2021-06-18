@@ -232,7 +232,7 @@ class UserAddCommand extends CommandBase
         }
 
         // Exit early if there are no changes to make.
-        if (empty($changes)) {
+        if (empty($changesText)) {
             if ($provideProjectForm || $provideEnvironmentForm) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('There are no changes to make.');
