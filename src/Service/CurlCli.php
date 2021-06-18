@@ -92,6 +92,8 @@ class CurlCli implements InputConfiguringInterface {
             $commandline .= ' --silent --show-error';
         }
 
+        $commandline .= ' --fail';
+
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', str_replace($token, '[token]', $commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
