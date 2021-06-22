@@ -235,14 +235,18 @@ class Api
      */
     private function getUserAgent()
     {
-        return sprintf(
-            '%s/%s (%s; %s; PHP %s)',
-            str_replace(' ', '-', $this->config->get('application.name')),
-            $this->config->getVersion(),
-            php_uname('s'),
-            php_uname('r'),
-            PHP_VERSION
-        );
+        $template = $this->config->getWithDefault('api.user_agent', null)
+            ?: '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})';
+        $replacements = [
+            '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->config->get('application.name')),
+            '{APP_NAME}' => $this->config->get('application.name'),
+            '{APP_SLUG}' => $this->config->get('application.slug'),
+            '{VERSION}' => $this->config->getVersion(),
+            '{UNAME_S}' => \php_uname('s'),
+            '{UNAME_R}' => \php_uname('r'),
+            '{PHP_VERSION}' => PHP_VERSION,
+        ];
+        return \str_replace(\array_keys($replacements), \array_values($replacements), $template);
     }
 
     /**
