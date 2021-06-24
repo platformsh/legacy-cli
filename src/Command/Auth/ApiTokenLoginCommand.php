@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\OAuth2\ApiToken;
@@ -46,7 +45,7 @@ class ApiTokenLoginCommand extends CommandBase
             return 1;
         }
 
-        $tokenClient = new Client($this->api()->getGuzzleOptions());
+        $tokenClient = $this->api()->getExternalHttpClient();
         $clientId = $this->config()->get('api.oauth2_client_id');
         $tokenUrl = $this->config()->get('api.oauth2_token_url');
 

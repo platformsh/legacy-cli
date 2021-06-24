@@ -1092,11 +1092,27 @@ class Api
     /**
      * Get the authenticated HTTP client.
      *
+     * This will throw an exception if the user is not logged in, if there is no login event subscriber registered.
+     *
+     * @see Api::getExternalHttpClient()
+     *
      * @return ClientInterface
      */
     public function getHttpClient()
     {
         return $this->getClient()->getConnector()->getClient();
+    }
+
+    /**
+     * Get a new HTTP client instance for external APIs, without Platform.sh authentication.
+     *
+     * @see Api::getHttpClient()
+     *
+     * @return ClientInterface
+     */
+    public function getExternalHttpClient()
+    {
+        return new Client($this->getGuzzleOptions());
     }
 
     /**

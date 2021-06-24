@@ -508,7 +508,7 @@ abstract class IntegrationCommandBase extends CommandBase
             return;
         }
 
-        $client = $this->api()->getHttpClient();
+        $client = $this->api()->getExternalHttpClient();
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
@@ -687,7 +687,7 @@ abstract class IntegrationCommandBase extends CommandBase
             return $this->bitbucketAccessTokens[$credentials['key']];
         }
         $result = $this->api()
-            ->getHttpClient()
+            ->getExternalHttpClient()
             ->post('https://bitbucket.org/site/oauth2/access_token', [
                 'auth' => [$credentials['key'], $credentials['secret']],
                 'body' => [

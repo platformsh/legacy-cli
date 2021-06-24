@@ -174,7 +174,8 @@ class Identifier
         if ($cluster === false) {
             $this->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
-                $response = $this->api->getHttpClient()->head($url, [
+                $response = $this->api->getExternalHttpClient()
+                    ->head($url, [
                     'auth' => false,
                     'timeout' => 5,
                     'connect_timeout' => 5,
