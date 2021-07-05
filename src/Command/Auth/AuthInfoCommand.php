@@ -49,7 +49,7 @@ class AuthInfoCommand extends CommandBase
             }
         }
 
-        $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'mfa_enabled'];
+        $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));
 
         $property = $input->getArgument('property');
