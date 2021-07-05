@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Organization;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Client\Model\Ref\UserRef;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -38,7 +39,17 @@ class OrganizationInfoCommand extends CommandBase
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $formatter->displayData($output, $organization->getProperties(), $input->getOption('property'));
+        $data = $organization->getProperties();
+        // Convert ref objects to arrays.
+        if (isset($data['ref:users'])) {
+            foreach ($data['ref:users'] as &$item) {
+                if ($item instanceof UserRef) {
+                    $item = $item->getProperties();
+                }
+            }
+        }
+
+        $formatter->displayData($output, $data, $input->getOption('property'));
 
         return 0;
     }
