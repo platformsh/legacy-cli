@@ -30,8 +30,9 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch')
             ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment before pushing')
             ->addOption('branch', null, InputOption::VALUE_NONE, 'DEPRECATED: alias of --activate')
-            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the new environment parent (only used with --activate or --branch)')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate or --branch)');
+            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the new environment parent (only used with --activate)')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
+            ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
         $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
@@ -137,7 +138,7 @@ class EnvironmentPushCommand extends CommandBase
                 // Activate the target environment. The deployment activity
                 // will queue up behind whatever other activities are created
                 // here.
-                $activities = $this->activateTarget($target, $parentId, $project, $type);
+                $activities = $this->activateTarget($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
                 if ($activities === false) {
                     return 1;
                 }
@@ -218,11 +219,12 @@ class EnvironmentPushCommand extends CommandBase
      * @param string $target
      * @param string $parentId
      * @param Project $project
+     * @param bool $cloneParent
      * @param string|null $type
      *
      * @return false|array A list of activities, or false on failure.
      */
-    private function activateTarget($target, $parentId, Project $project, $type) {
+    private function activateTarget($target, $parentId, Project $project, $cloneParent, $type) {
         $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
         if (!$parentEnvironment) {
             throw new \RuntimeException("Parent environment not found: $parentId");
@@ -234,6 +236,9 @@ class EnvironmentPushCommand extends CommandBase
             $updates = [];
             if ($targetEnvironment->parent !== $parentId) {
                 $updates['parent'] = $parentId;
+            }
+            if (!$cloneParent && $targetEnvironment->getProperty('clone_parent_on_create', false, false)) {
+                $updates['clone_parent_on_create'] = false;
             }
             if ($type !== null && $targetEnvironment->hasProperty('type') && $targetEnvironment->getProperty('type') !== $type) {
                 $updates['type'] = $type;
@@ -270,7 +275,7 @@ class EnvironmentPushCommand extends CommandBase
             return false;
         }
 
-        $activity = $parentEnvironment->branch($target, $target, true, $type);
+        $activity = $parentEnvironment->branch($target, $target, $cloneParent, $type);
         $this->stdErr->writeln(sprintf(
             'Branched <info>%s</info>%s from parent %s',
             $target,
