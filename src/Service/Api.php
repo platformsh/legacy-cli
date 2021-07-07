@@ -17,6 +17,7 @@ use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Resource as ApiResource;
@@ -1029,6 +1030,27 @@ class Api
         }
 
         return sprintf($pattern, $tag, $title, $id, $type);
+    }
+
+    /**
+     * Returns an organization label.
+     *
+     * @param Organization $organization
+     * @param string|false $tag
+     *
+     * @return string
+     */
+    public function getOrganizationLabel(Organization $organization, $tag = 'info')
+    {
+        $name = $organization->name;
+        $label = $organization->label;
+        $use_label = strlen($label) > 0 && $label !== $name;
+        $pattern = $use_label ? '%2$s (%3$s)' : '%3$s';
+        if ($tag !== false) {
+            $pattern = $use_label ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
+        }
+
+        return sprintf($pattern, $tag, $label, $name);
     }
 
     /**

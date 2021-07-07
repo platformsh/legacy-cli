@@ -57,7 +57,8 @@ application:
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
   # section.
-  experimental_commands: []
+  experimental_commands:
+    - organization:create
 
 # Configuration for working with projects locally.
 local:
