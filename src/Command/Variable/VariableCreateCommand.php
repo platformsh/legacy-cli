@@ -83,9 +83,7 @@ class VariableCreateCommand extends VariableCommandBase
         }
 
         if (isset($values['environment'])) {
-            if (!$this->hasSelectedEnvironment()) {
-                $this->selectEnvironment($values['environment']);
-            }
+            $this->selectEnvironment($values['environment']);
             unset($values['environment']);
         }
 
