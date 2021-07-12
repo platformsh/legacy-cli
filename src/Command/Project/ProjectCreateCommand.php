@@ -112,7 +112,7 @@ EOF
 
         $estimate = $this->api()
             ->getClient()
-            ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
+            ->getSubscriptionEstimate($options['plan'], $options['storage'] * 1024, $options['environments'], 1);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
