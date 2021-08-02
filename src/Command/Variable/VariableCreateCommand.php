@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\ConsoleForm\Form;
@@ -109,6 +110,8 @@ class VariableCreateCommand extends VariableCommandBase
         $level = $values['level'];
         unset($values['level']);
 
+        $project = $this->getSelectedProject();
+
         switch ($level) {
             case 'environment':
                 // Unset visible_build and visible_runtime if they are already the API's defaults.
@@ -131,13 +134,30 @@ class VariableCreateCommand extends VariableCommandBase
 
                     return 1;
                 }
+
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the environment <info>%s</info>', $values['name'], $environment->id));
-                $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
+
+                try {
+                    $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
+                } catch (BadResponseException $e) {
+
+                    // Explain the error with visible_build on older API versions.
+                    if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && !empty($values['visible_build'])) {
+                        $info = $project->systemInformation();
+                        if (\version_compare($info->version, '12', '<')) {
+                            $this->stdErr->writeln('');
+                            $this->stdErr->writeln('This project does not yet support build-visible environment variables.');
+                            $this->stdErr->writeln(\sprintf('The project API version is <comment>%s</comment> but version 12 would be required.', $info->version));
+                            return 1;
+                        }
+                    }
+
+                    throw $e;
+                }
                 break;
 
             case 'project':
-                $project = $this->getSelectedProject();
                 if ($project->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the project %s',
