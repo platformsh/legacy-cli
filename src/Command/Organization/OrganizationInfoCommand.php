@@ -24,16 +24,29 @@ class OrganizationInfoCommand extends CommandBase
     {
         $client = $this->api()->getClient();
         $name = $input->getOption('name');
-        if (!$name) {
-            // @todo interactive selection
-            $this->stdErr->writeln('An organization <error>--name</error> is required.');
-            return 1;
+        if ($name) {
+            $organization = $client->getOrganizationByName($name);
+            if (!$organization) {
+                $this->stdErr->writeln(\sprintf('Organization not found: <error>%s</error>', $name));
+                return 1;
+            }
         }
-
-        $organization = $client->getOrganizationByName($name);
-        if (!$organization) {
-            $this->stdErr->writeln(\sprintf('Organization not found: <error>%s</error>', $name));
-            return 1;
+        else {
+            if (!$input->isInteractive() || !($organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId()))) {
+                $this->stdErr->writeln('An organization <error>--name</error> is required.');
+                return 1;
+            }
+            $this->api()->sortResources($organizations, 'name');
+            $options = [];
+            $byId = [];
+            foreach ($organizations as $organization) {
+                $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
+                $byId[$organization->id] = $organization;
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $id = $questionHelper->choose($options, 'Enter a number to choose an organization:');
+            $organization = $byId[$id];
         }
 
         /** @var PropertyFormatter $formatter */
