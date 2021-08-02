@@ -2,7 +2,9 @@
 namespace Platformsh\Cli\Command\Organization;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Ref\UserRef;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,6 +20,7 @@ class OrganizationInfoCommand extends CommandBase
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'The organization name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'A property to display');
         PropertyFormatter::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -62,7 +65,20 @@ class OrganizationInfoCommand extends CommandBase
             }
         }
 
-        $formatter->displayData($output, $data, $input->getOption('property'));
+        if ($input->getOption('property')) {
+            $formatter->displayData($output, $data, $input->getOption('property'));
+            return 0;
+        }
+
+        $headings = [];
+        $values = [];
+        foreach ($data as $key => $value) {
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+            $values[] = $formatter->format($value, $key);
+        }
+        /** @var Table $table */
+        $table = $this->getService('table');
+        $table->renderSimple($values, $headings);
 
         return 0;
     }
