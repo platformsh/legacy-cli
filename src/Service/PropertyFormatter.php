@@ -69,6 +69,11 @@ class PropertyFormatter implements InputConfiguringInterface
                 if ($property === 'ssl' && is_array($value) && isset($value['expires_on'])) {
                     $value['expires_on'] = $this->formatDate($value['expires_on']);
                 }
+                break;
+
+            case 'permissions':
+                $value = implode(', ', $value);
+                break;
         }
 
         if (!is_string($value)) {
