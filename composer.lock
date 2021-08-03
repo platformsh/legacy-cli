@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6f846a9c6f0e7060db11e4b0f1f22462",
+    "content-hash": "91f9a528f2a88440c23344b02a5d5e84",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -730,16 +730,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "0.48.0",
+            "version": "0.48.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "bd30f3ac95e2c3fe0a93c24f7c781715a4ab2852"
+                "reference": "311a084ee658dfbe2ffda2f05bec9b433a422d1b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/bd30f3ac95e2c3fe0a93c24f7c781715a4ab2852",
-                "reference": "bd30f3ac95e2c3fe0a93c24f7c781715a4ab2852",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/311a084ee658dfbe2ffda2f05bec9b433a422d1b",
+                "reference": "311a084ee658dfbe2ffda2f05bec9b433a422d1b",
                 "shasum": ""
             },
             "require": {
@@ -771,9 +771,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.48.0"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.48.1"
             },
-            "time": "2021-08-03T10:15:33+00:00"
+            "time": "2021-08-03T21:45:58+00:00"
         },
         {
             "name": "platformsh/console-form",
