@@ -165,6 +165,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Organization\OrganizationCreateCommand();
         $commands[] = new Command\Organization\OrganizationInfoCommand();
         $commands[] = new Command\Organization\OrganizationListCommand();
+        $commands[] = new Command\Organization\OrganizationSubscriptionListCommand();
         $commands[] = new Command\Organization\User\OrganizationUserAddCommand();
         $commands[] = new Command\Organization\User\OrganizationUserDeleteCommand();
         $commands[] = new Command\Organization\User\OrganizationUserGetCommand();
