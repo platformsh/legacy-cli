@@ -32,13 +32,11 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $formatter = $this->getService('property_formatter');
 
         $data = $organization->getProperties();
-        // Convert ref objects to arrays.
-        if (isset($data['ref:users'])) {
-            foreach ($data['ref:users'] as &$item) {
-                if ($item instanceof UserRef) {
-                    $item = $item->getProperties();
-                }
-            }
+
+        // Set the owner from the user reference.
+        if (isset($data['owner_id']) && isset($data['ref:users'][$data['owner_id']])) {
+            $data['owner'] = $data['ref:users'][$data['owner_id']]->getProperties();
+            unset($data['ref:users']);
         }
 
         if ($input->getOption('property')) {
