@@ -5,6 +5,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -26,6 +27,11 @@ class ProjectListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
+
+        if ($this->config()->getWithDefault('api.organizations', false)) {
+            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name');
+        }
+
         Table::configureInput($this->getDefinition());
     }
 
@@ -49,6 +55,15 @@ class ProjectListCommand extends CommandBase
         }
         if ($input->getOption('my')) {
             $filters['my'] = true;
+        }
+        if ($input->hasOption('org') && $input->getOption('org') !== null) {
+            $orgName = $input->getOption('org');
+            $organization = $this->api()->getClient()->getOrganizationByName($orgName);
+            if (!$organization) {
+                $this->stdErr->writeln(\sprintf('Organization not found: <error>%s</error>', $orgName));
+                return 1;
+            }
+            $filters['org'] = $organization;
         }
         $this->filterProjects($projects, $filters);
 
@@ -161,6 +176,13 @@ class ProjectListCommand extends CommandBase
                     $ownerId = $this->api()->getMyUserId();
                     $projects = array_filter($projects, function (Project $project) use ($ownerId) {
                         return $project->owner === $ownerId;
+                    });
+                    break;
+
+                case 'org':
+                    /** @var Organization $value */
+                    $projects = array_filter($projects, function (Project $project) use ($value) {
+                        return $project->getProperty('organization_id', false, false) === $value->id;
                     });
                     break;
             }

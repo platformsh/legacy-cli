@@ -25,7 +25,6 @@ class OrganizationCommandBase extends CommandBase
     protected function addOrganizationOptions()
     {
         $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name');
-        $this->addOption('name', null, InputOption::VALUE_REQUIRED, 'Alias of --org');
         return $this;
     }
 
@@ -54,11 +53,7 @@ class OrganizationCommandBase extends CommandBase
     {
         $client = $this->api()->getClient();
 
-        if ($this->optionsClash($input, ['name', 'org'])) {
-            throw new \InvalidArgumentException('You cannot use both the --name and --org options.');
-        }
-
-        if (($name = $input->getOption('org')) || ($name = $input->getOption('name'))) {
+        if ($name = $input->getOption('org')) {
             $organization = $client->getOrganizationByName($name);
             if (!$organization) {
                 $this->stdErr->writeln(\sprintf('Organization name not found: <error>%s</error>', $name));
