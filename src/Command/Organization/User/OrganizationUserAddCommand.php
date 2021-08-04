@@ -13,6 +13,7 @@ class OrganizationUserAddCommand extends OrganizationCommandBase
     protected function configure()
     {
         $this->setName('organization:user:add')
+            ->setDescription('Invite a user to an organization')
             ->addOrganizationOptions()
             ->addArgument('email', InputArgument::REQUIRED, 'The email address of the user')
             ->addOption('permission', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Permission(s) for the user on the organization');
