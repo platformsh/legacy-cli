@@ -13,6 +13,7 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
     protected function configure()
     {
         $this->setName('organization:user:update')
+            ->setDescription('Update an organization user')
             ->addOrganizationOptions()
             ->addArgument('email', InputArgument::REQUIRED, 'The email address of the user')
             ->addOption('permission', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Permission(s) for the user on the organization');

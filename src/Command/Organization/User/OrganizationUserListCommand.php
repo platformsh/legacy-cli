@@ -13,6 +13,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
     protected function configure()
     {
         $this->setName('organization:user:list')
+            ->setDescription('List organization users')
             ->setAliases(['organization:users'])
             ->addOrganizationOptions();
         PropertyFormatter::configureInput($this->getDefinition());
