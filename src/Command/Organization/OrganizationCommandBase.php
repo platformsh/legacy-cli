@@ -9,6 +9,14 @@ use Symfony\Component\Console\Input\InputOption;
 
 class OrganizationCommandBase extends CommandBase
 {
+    public function isEnabled()
+    {
+        if (!$this->config()->get('api.organizations')) {
+            return false;
+        }
+        return parent::isEnabled();
+    }
+
     /**
      * Adds the organization --org and --name options.
      *

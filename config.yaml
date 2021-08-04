@@ -53,12 +53,12 @@ application:
   # Disabled commands (a list of full command names).
   disabled_commands:
     - auth:password-login
+    - organization:create
 
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
   # section.
-  experimental_commands:
-    - organization:create
+  experimental_commands: []
 
 # Configuration for working with projects locally.
 local:
@@ -176,6 +176,9 @@ api:
 
   # Whether the API supports project invitations.
   invitations: true
+
+  # Whether the Organizations API is enabled.
+  organizations: true
 
   # Whether the Auth API is enabled.
   auth: true
