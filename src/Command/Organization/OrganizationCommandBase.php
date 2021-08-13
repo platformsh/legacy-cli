@@ -62,8 +62,13 @@ class OrganizationCommandBase extends CommandBase
             return $organization;
         }
 
-        if (!$input->isInteractive() || !($organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId()))) {
+        if (!$input->isInteractive()) {
             $this->stdErr->writeln('An organization <error>--name</error> is required.');
+            return null;
+        }
+        $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
+        if (!$organizations) {
+            $this->stdErr->writeln('No organizations found.');
             return null;
         }
 
