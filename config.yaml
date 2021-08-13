@@ -189,6 +189,11 @@ detection:
   git_domain: 'platform.sh'
   site_domains: ['platform.sh', 'platformsh.site']
 
+  # End of the API domain.
+  # Authentication errors (401s) are ignored while detecting the local project,
+  # if the domain does not match (e.g. development or white-label domains).
+  api_domain_suffix: 'platform.sh'
+
   # Domain of a Console instance.
   console_domain: 'console.platform.sh'
 

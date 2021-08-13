@@ -327,6 +327,7 @@ class Config
             'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
             'UPDATES_CHECK' => 'updates.check',
             'USER_AGENT' => 'api.user_agent',
+            'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
         ];
 
         foreach ($overrideMap as $var => $key) {
