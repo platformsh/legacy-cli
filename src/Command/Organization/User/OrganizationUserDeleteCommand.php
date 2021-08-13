@@ -19,9 +19,7 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$organization = $this->validateOrganizationInput($input)) {
-            return 1;
-        }
+        $organization = $this->validateOrganizationInput($input);
 
         $email = $input->getArgument('email');
 

@@ -27,9 +27,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$organization = $this->validateOrganizationInput($input)) {
-            return 1;
-        }
+        $organization = $this->validateOrganizationInput($input);
 
         if (!$organization->hasLink('members')) {
             $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api()->getOrganizationLabel($organization, 'comment') . '.');
