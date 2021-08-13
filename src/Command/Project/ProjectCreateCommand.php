@@ -30,6 +30,8 @@ class ProjectCreateCommand extends CommandBase
           ->setAliases(['create'])
           ->setDescription('Create a new project');
 
+        $this->addOrganizationOptions();
+
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
 
@@ -63,6 +65,16 @@ EOF
     {
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
+
+        // Optionally identify an organization that should own the project.
+        $organization = null;
+        if ($this->config()->getWithDefault('api.organizations', false)) {
+            try {
+                $organization = $this->validateOrganizationInput($input);
+            } catch (\RuntimeException $e) {
+                // Ignore errors from no organization being selected.
+            }
+        }
 
         // Validate the --set-remote option.
         $setRemote = (bool) $input->getOption('set-remote');
@@ -112,7 +124,7 @@ EOF
 
         $estimate = $this->api()
             ->getClient()
-            ->getSubscriptionEstimate($options['plan'], $options['storage'] * 1024, $options['environments'], 1);
+            ->getSubscriptionEstimate($options['plan'], $options['storage'] * 1024, $options['environments'], 1, null, $organization ? $organization->id : null);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
@@ -130,6 +142,7 @@ EOF
 
         $subscription = $this->api()->getClient()
             ->createSubscription(SubscriptionOptions::fromArray([
+                'organization_id' => $organization ? $organization->id : null,
                 'project_title' => $options['title'],
                 'project_region' => $options['region'],
                 'default_branch' => $options['default_branch'],

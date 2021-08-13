@@ -48,6 +48,10 @@ class OrganizationCreateCommand extends CommandBase
 
         $current = $client->listOrganizationsByOwner($this->api()->getMyUserId());
         if (\count($current) === 1 && ($currentOrg = \reset($current))) {
+            if ($currentOrg->name === $values['name']) {
+                $this->stdErr->writeln('You already own the organization: ' . $this->api()->getOrganizationLabel($currentOrg));
+                return 1;
+            }
             $this->stdErr->writeln('You currently own one organization: ' . $this->api()->getOrganizationLabel($currentOrg));
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
@@ -71,7 +75,7 @@ class OrganizationCreateCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Created organization %s', $this->api()->getOrganizationLabel($organization)));
 
-        $this->runOtherCommand('organization:info', ['--name' => $organization->name], $this->stdErr);
+        $this->runOtherCommand('organization:info', ['--org' => $organization->name], $this->stdErr);
 
         return 0;
     }

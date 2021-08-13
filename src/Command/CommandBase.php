@@ -17,6 +17,7 @@ use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
@@ -1755,5 +1756,67 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 ));
             }
         }
+    }
+
+    /**
+     * Adds the --org (-o) organization name option.
+     *
+     * @return self
+     */
+    protected function addOrganizationOptions()
+    {
+        if ($this->config()->getWithDefault('api.organizations', false)) {
+            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name');
+        }
+        return $this;
+    }
+
+    /**
+     * Returns the selected organization according to the --org option.
+     *
+     * @see CommandBase::addOrganizationOptions()
+     *
+     * @param InputInterface $input
+     *
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     *
+     * @return Organization
+     */
+    protected function validateOrganizationInput(InputInterface $input)
+    {
+        if (!$this->config()->getWithDefault('api.organizations', false)) {
+            throw new \BadMethodCallException('Organizations are not enabled');
+        }
+
+        $client = $this->api()->getClient();
+
+        if ($name = $input->getOption('org')) {
+            $organization = $client->getOrganizationByName($name);
+            if (!$organization) {
+                throw new \InvalidArgumentException('Organization name not found: ' . $name);
+            }
+            return $organization;
+        }
+
+        if (!$input->isInteractive()) {
+            throw new \RuntimeException('An organization --name is required.');
+        }
+        $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
+        if (!$organizations) {
+            throw new \RuntimeException('No organizations found.');
+        }
+
+        $this->api()->sortResources($organizations, 'name');
+        $options = [];
+        $byId = [];
+        foreach ($organizations as $organization) {
+            $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
+            $byId[$organization->id] = $organization;
+        }
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):');
+        return $byId[$id];
     }
 }
