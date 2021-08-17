@@ -298,22 +298,22 @@ class ActivityMonitor
             // which are not contained in this list must be refreshed
             // individually.
             $projectActivities = $project->getActivities(0, null, $mostRecentTimestamp ?: null);
-            foreach ($activities as &$activity) {
+            foreach ($activities as &$activityRef) {
                 $refreshed = false;
                 foreach ($projectActivities as $projectActivity) {
-                    if ($projectActivity->id === $activity->id) {
-                        $activity = $projectActivity;
+                    if ($projectActivity->id === $activityRef->id) {
+                        $activityRef = $projectActivity;
                         $refreshed = true;
                         break;
                     }
                 }
-                if (!$refreshed && !$activity->isComplete()) {
-                    $activity->refresh();
+                if (!$refreshed && !$activityRef->isComplete()) {
+                    $activityRef->refresh();
                 }
-                if ($activity->isComplete()) {
+                if ($activityRef->isComplete()) {
                     $complete++;
                 }
-                $state = $activity->state;
+                $state = $activityRef->state;
                 $states[$state] = isset($states[$state]) ? $states[$state] + 1 : 1;
             }
             $bar->advance();
