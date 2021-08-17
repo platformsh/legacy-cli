@@ -1800,7 +1800,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if (!$input->isInteractive()) {
-            throw new \RuntimeException('An organization --name is required.');
+            throw new \RuntimeException('An organization name (--org) is required.');
         }
         $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
         if (!$organizations) {
