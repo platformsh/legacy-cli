@@ -1766,7 +1766,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function addOrganizationOptions()
     {
         if ($this->config()->getWithDefault('api.organizations', false)) {
-            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name');
+            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)');
         }
         return $this;
     }
@@ -1791,16 +1791,24 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $client = $this->api()->getClient();
 
-        if ($name = $input->getOption('org')) {
-            $organization = $client->getOrganizationByName($name);
+        if ($identifier = $input->getOption('org')) {
+            // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
+            // So it's easy to distinguish one from the other.
+            /** @link https://github.com/ulid/spec */
+            if ($identifier !== \strtolower($identifier) && \preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
+                $this->debug('Detected organization ID format (ULID): ' . $identifier);
+                $organization = $client->getOrganizationById($identifier);
+            } else {
+                $organization = $client->getOrganizationByName($identifier);
+            }
             if (!$organization) {
-                throw new \InvalidArgumentException('Organization name not found: ' . $name);
+                throw new \InvalidArgumentException('Organization not found: ' . $identifier);
             }
             return $organization;
         }
 
         if (!$input->isInteractive()) {
-            throw new \RuntimeException('An organization name (--org) is required.');
+            throw new \RuntimeException('An organization name or ID (--org) is required.');
         }
         $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
         if (!$organizations) {
