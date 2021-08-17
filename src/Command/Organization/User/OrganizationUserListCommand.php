@@ -67,9 +67,9 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s org:user:add --name %s [email]</info>', $executable, $organization->name));
-            $this->stdErr->writeln(\sprintf('To update a user, run: <info>%s org:user:update --name %s [email]</info>', $executable, $organization->name));
-            $this->stdErr->writeln(\sprintf('To remove a user, run: <info>%s org:user:delete --name %s [email]</info>', $executable, $organization->name));
+            $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s org:user:add --org %s [email]</info>', $executable, $organization->name));
+            $this->stdErr->writeln(\sprintf('To update a user, run: <info>%s org:user:update --org %s [email]</info>', $executable, $organization->name));
+            $this->stdErr->writeln(\sprintf('To remove a user, run: <info>%s org:user:delete --org %s [email]</info>', $executable, $organization->name));
         }
 
         return 0;
