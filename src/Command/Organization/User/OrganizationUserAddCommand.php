@@ -38,7 +38,7 @@ class OrganizationUserAddCommand extends OrganizationCommandBase
                     if ($member->permissions != $permissions && !empty($permissions) && !$member->owner) {
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln(\sprintf(
-                            "To change the user's permissions, run:\n<comment>%s organization:user:update --name %s %s --permission %s</comment>",
+                            "To change the user's permissions, run:\n<comment>%s organization:user:update --org %s %s --permission %s</comment>",
                             $this->config()->get('application.executable'),
                             $organization->name,
                             \escapeshellarg($email),
