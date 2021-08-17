@@ -15,15 +15,13 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
         $this->setName('organization:user:update')
             ->setDescription('Update an organization user')
             ->addOrganizationOptions()
-            ->addArgument('email', InputArgument::REQUIRED, 'The email address of the user')
+            ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addOption('permission', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Permission(s) for the user on the organization');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $organization = $this->validateOrganizationInput($input);
-
-        $email = $input->getArgument('email');
 
         $permissionsOption = $input->getOption('permission');
         $permissions = false;
@@ -37,28 +35,50 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
             $permissions = $permissionsOption;
         }
 
-        $members = $organization->getMembers();
-        $member = false;
-        foreach ($members as $m) {
-            if ($info = $m->getUserInfo()) {
-                if ($info->email === $email) {
-                    $member = $m;
-                    break;
-                }
-            }
-        }
-        if (!$member) {
-            $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
+        if (empty($permissions)) {
+            $this->stdErr->writeln('At least one --permission is required.');
             return 1;
         }
 
-        $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $email, $this->api()->getOrganizationLabel($organization)));
-        $this->stdErr->writeln('');
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
-        if ($permissions === false) {
-            $this->stdErr->writeln('There are no changes to make.');
-            return 0;
+        $members = $organization->getMembers();
+        $email = $input->getArgument('email');
+        $member = false;
+        if ($email) {
+            foreach ($members as $m) {
+                if ($info = $m->getUserInfo()) {
+                    if ($info->email === $email) {
+                        $member = $m;
+                        break;
+                    }
+                }
+            }
+            if (!$member) {
+                $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
+                return 1;
+            }
+        } elseif (!$input->isInteractive()) {
+            $this->stdErr->writeln('A user email address is required.');
+            return 1;
+        } else {
+            $choices = [];
+            $byId = [];
+            foreach ($members as $m) {
+                $choices[$m->id] = $this->memberLabel($m);
+                $byId[$m->id] = $m;
+            }
+            if (!$choices) {
+                $this->stdErr->writeln('No users found.');
+                return 1;
+            }
+            $memberId = $questionHelper->choose($choices, 'Enter a number to choose a user to update:');
+            $member = $byId[$memberId];
         }
+
+        $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api()->getOrganizationLabel($organization)));
+        $this->stdErr->writeln('');
 
         if ($member->permissions == $permissions) {
             $this->stdErr->writeln(\sprintf("The user's permissions are already set to: <info>%s</info>", $this->formatPermissions($member->permissions)));
@@ -90,8 +110,6 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
 
         $this->stdErr->writeln('');
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
             return 1;
         }

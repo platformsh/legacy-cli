@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Organization;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\Organization\Member;
 
 class OrganizationCommandBase extends CommandBase
 {
@@ -12,5 +13,14 @@ class OrganizationCommandBase extends CommandBase
             return false;
         }
         return parent::isEnabled();
+    }
+
+    protected function memberLabel(Member $member)
+    {
+        if ($info = $member->getUserInfo()) {
+            return $info->email;
+        }
+
+        return $member->id;
     }
 }
