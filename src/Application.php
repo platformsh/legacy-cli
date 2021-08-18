@@ -162,9 +162,11 @@ class Application extends ParentApplication
         $commands[] = new Command\Mount\MountDownloadCommand();
         $commands[] = new Command\Mount\MountSizeCommand();
         $commands[] = new Command\Mount\MountUploadCommand();
+        $commands[] = new Command\Organization\OrganizationAddressCommand();
         $commands[] = new Command\Organization\OrganizationCreateCommand();
         $commands[] = new Command\Organization\OrganizationInfoCommand();
         $commands[] = new Command\Organization\OrganizationListCommand();
+        $commands[] = new Command\Organization\OrganizationProfileCommand();
         $commands[] = new Command\Organization\OrganizationSubscriptionListCommand();
         $commands[] = new Command\Organization\User\OrganizationUserAddCommand();
         $commands[] = new Command\Organization\User\OrganizationUserDeleteCommand();
