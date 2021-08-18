@@ -112,6 +112,10 @@ class OrganizationInfoCommand extends OrganizationCommandBase
                     $this->stdErr->writeln("Invalid value for <error>$property</error>: " . $detail['detail'][$property]);
                     return 1;
                 }
+                if (\is_array($detail) && isset($detail['detail']) && \is_string($detail['detail'])) {
+                    $this->stdErr->writeln($detail['detail']);
+                    return 1;
+                }
             }
             throw $e;
         }
