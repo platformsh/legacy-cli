@@ -1,22 +1,23 @@
 <?php
-namespace Platformsh\Cli\Command\Organization;
+namespace Platformsh\Cli\Command\Organization\Billing;
 
 use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Client\Model\Organization\Profile;
+use Platformsh\Client\Model\Organization\Address;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class OrganizationProfileCommand extends OrganizationCommandBase
+class OrganizationAddressCommand extends OrganizationCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('organization:profile')
-            ->setDescription("View or change an organization's billing profile")
+        $this->setName('organization:billing:address')
+            ->setDescription("View or change an organization's billing address")
             ->addOrganizationOptions()
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
@@ -27,7 +28,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $org = $this->validateOrganizationInput($input);
-        $profile = $org->getProfile();
+        $address = $org->getAddress();
 
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
@@ -38,7 +39,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
             $values = [];
             /** @var PropertyFormatter $formatter */
             $formatter = $this->getService('property_formatter');
-            foreach ($profile->getProperties() as $key => $value) {
+            foreach ($address->getProperties() as $key => $value) {
                 $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
                 $values[] = $formatter->format($value, $key);
             }
@@ -47,12 +48,13 @@ class OrganizationProfileCommand extends OrganizationCommandBase
             $table = $this->getService('table');
 
             if (!$table->formatIsMachineReadable()) {
-                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api()->getOrganizationLabel($org)));
+                $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api()->getOrganizationLabel($org)));
             }
 
             $table->renderSimple($values, $headings);
 
             if (!$table->formatIsMachineReadable()) {
+                $this->stdErr->writeln(\sprintf('To view the billing profile, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:profile')));
                 $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
             }
             return 0;
@@ -60,21 +62,21 @@ class OrganizationProfileCommand extends OrganizationCommandBase
 
         $value = $input->getArgument('value');
         if ($value === null) {
-            $formatter->displayData($output, $profile->getProperties(), $property);
+            $formatter->displayData($output, $address->getProperties(), $property);
             return 0;
         }
 
-        return $this->setProperty($property, $value, $profile);
+        return $this->setProperty($property, $value, $address);
     }
 
     /**
      * @param string  $property
      * @param string  $value
-     * @param Profile $profile
+     * @param Address $address
      *
      * @return int
      */
-    protected function setProperty($property, $value, Profile $profile)
+    protected function setProperty($property, $value, Address $address)
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
@@ -82,18 +84,18 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $currentValue = $profile->getProperty($property, false);
+        $currentValue = $address->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $formatter->format($profile->getProperty($property, false), $property)
+                $formatter->format($address->getProperty($property, false), $property)
             ));
 
             return 0;
         }
         try {
-            $profile->update([$property => $value]);
+            $address->update([$property => $value]);
         } catch (BadResponseException $e) {
             // Translate validation error messages.
             if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
@@ -112,7 +114,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $formatter->format($profile->$property, $property)
+            $formatter->format($address->$property, $property)
         ));
 
         return 0;
@@ -128,11 +130,16 @@ class OrganizationProfileCommand extends OrganizationCommandBase
     private function getType($property)
     {
         $writableProperties = [
-            'billing_contact' => 'string',
-            'security_contact' => 'string',
-            'vat_number' => 'string',
-            'default_catalog' => 'string',
-            'project_options_url' => 'string',
+            'country' => 'string',
+            'name_line' => 'string',
+            'premise' => 'string',
+            'sub_premise' => 'string',
+            'thoroughfare' => 'string',
+            'administrative_area' => 'string',
+            'sub_administrative_area' => 'string',
+            'locality' => 'string',
+            'dependent_locality' => 'string',
+            'postal_code' => 'string',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
