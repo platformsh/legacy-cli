@@ -130,6 +130,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
     private function getType($property)
     {
         $writableProperties = [
+            'company_name' => 'string',
             'billing_contact' => 'string',
             'security_contact' => 'string',
             'vat_number' => 'string',
