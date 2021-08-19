@@ -36,8 +36,8 @@ class UserAddCommand extends CommandBase
         $this->addWaitOptions();
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
-        $this->addExample('Add Bob as a viewer on the "master" environment, and a contributor on environments starting with "dev"', 'bob@example.com -r master:a -r dev%:c');
-        $this->addExample('Add Charlie as viewer on "master" and "staging"', 'charlie@example.com -r master:v -r staging:v');
+        $this->addExample('Add Bob as a viewer on the "production" environment type, and a contributor on "development" environments', 'bob@example.com -r production:v -r development:c');
+        $this->addExample('Add Charlie as viewer on "production" and "development"', 'charlie@example.com -r prod%:v -r dev%:v');
     }
 
     /**
@@ -50,6 +50,8 @@ class UserAddCommand extends CommandBase
             'r',
             InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             "The user's project role ('admin' or 'viewer') or environment type role (e.g. 'staging:contributor' or 'production:viewer')."
+            . "\nTo remove a user from an environment type, set the role as 'none'."
+            . "\nThe % character can be used as a wildcard for the environment type, e.g. '%:viewer' to give the user the 'viewer' role on all types."
             . "\nThe role can be abbreviated, e.g. 'production:v'."
         );
     }
