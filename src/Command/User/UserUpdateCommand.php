@@ -20,8 +20,7 @@ class UserUpdateCommand extends UserAddCommand
         $this->addProjectOption();
         $this->addWaitOptions();
 
-        $this->addExample('Make Bob an admin on the "develop" and "stage" environments', 'bob@example.com -r develop:a,stage:a');
-        $this->addExample('Make Charlie a contributor on all existing environments', 'charlie@example.com -r %:c');
-        $this->addExample('Make Damien an admin on "master" and all (existing) environments starting with "pr-"', 'damien@example.com -r master:a -r pr-%:a');
+        $this->addExample('Make Bob an admin on the "development" and "staging" environment types', 'bob@example.com -r development:a,staging:a');
+        $this->addExample('Make Charlie a contributor on all environment types', 'charlie@example.com -r %:c');
     }
 }

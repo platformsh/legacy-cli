@@ -2,13 +2,11 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class UserGetCommand extends CommandBase
 {
@@ -29,13 +27,21 @@ class UserGetCommand extends CommandBase
         $this->addOption('role', 'r', InputOption::VALUE_REQUIRED, "[Deprecated: use user:update to change a user's role(s)]");
 
         $this->addExample("View Alice's role on the project", 'alice@example.com');
-        $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
+        $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('role')) {
+            $this->stdErr->writeln('The <error>--role</error> option is no longer available for this command.');
+            $this->stdErr->writeln("To change a user's roles use the <comment>user:update</comment> command.");
+            return 1;
+        }
+        if ($input->getFirstArgument() === 'user:role') {
+            $this->stdErr->writeln('The <comment>user:role</comment> command is deprecated. Use <comment>user:get</comment> or <comment>user:update</comment> instead.');
+        }
+
         $level = $input->getOption('level');
-        $role = $input->getOption('role');
         $validLevels = ['project', 'environment', null];
         if (!in_array($level, $validLevels)) {
             $this->stdErr->writeln("Invalid level: <error>$level</error>");
@@ -67,61 +73,19 @@ class UserGetCommand extends CommandBase
             return 1;
         }
 
-        if ($input->getOption('pipe') && !$role) {
+        if ($input->getOption('pipe')) {
             $this->displayRole($projectAccess, $level, $output);
 
             return 0;
-        }
-
-        if ($level === null && $role && $this->hasSelectedEnvironment() && $input->isInteractive()) {
-            $environment = $this->getSelectedEnvironment();
-            $question = new ChoiceQuestion('What role level do you want to set to "' . $role . '"?', [
-                'project' => 'The project',
-                'environment' => sprintf('The environment (%s)', $environment->id),
-            ]);
-            $level = $questionHelper->ask($input, $output, $question);
-            $this->stdErr->writeln('');
-        } elseif ($level === null && $role) {
-            $level = 'project';
-        }
-
-        // Validate the --role option, according to the level.
-        $validRoles = $level !== 'environment'
-            ? ProjectAccess::$roles
-            : array_merge(EnvironmentAccess::$roles, ['none']);
-        if ($role && !in_array($role, $validRoles)) {
-            $this->stdErr->writeln('Invalid ' . $level .' role: ' . $role);
-
-            return 1;
         }
 
         $args = [
             'email' => $email,
             '--role' => [],
             '--project' => $project->id,
+            '--yes' => true,
         ];
-        if ($role) {
-            if ($level === 'project') {
-                $args['--role'][] = $role;
-            } elseif ($level === 'environment') {
-                $args['--role'][] = $this->getSelectedEnvironment()->id . ':' . $role;
-            }
-        } else {
-            $args['--yes'] = true;
-        }
-        $result = $this->runOtherCommand($role ? 'user:update' : 'user:add', $args, $output);
-        if ($result !== 0) {
-            return $result;
-        }
-
-        if ($input->getOption('pipe')) {
-            if ($level !== 'environment') {
-                $projectAccess->refresh();
-            }
-            $this->displayRole($projectAccess, $level, $output);
-        }
-
-        return 0;
+        return $this->runOtherCommand('user:add', $args, $output);
     }
 
     /**
