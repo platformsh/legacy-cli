@@ -38,7 +38,7 @@ class UserGetCommand extends CommandBase
             return 1;
         }
         if ($input->getFirstArgument() === 'user:role') {
-            $this->stdErr->writeln('The <comment>user:role</comment> command is deprecated. Use <comment>user:get</comment< or <comment>user:update</comment> instead.');
+            $this->stdErr->writeln('The <comment>user:role</comment> command is deprecated. Use <comment>user:get</comment> or <comment>user:update</comment> instead.');
         }
 
         $level = $input->getOption('level');
