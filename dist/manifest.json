@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "500e4d77af6fe1c72ae6733a51671f760b38f6f1",
-        "sha256": "b53a2318f32a8067a1cdce6af629b52ef6603bda2b2621f055635b8d06f1ae48",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.67.6/platform.phar",
-        "version": "3.67.6",
+        "sha1": "aaf4a0df1062050dbd18f6a337ad76be61917537",
+        "sha256": "29d45156c95ef8e531d6e8dbbb86cd4a3ac7b47b7e1d6282448319dcfa62d43b",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.68.0/platform.phar",
+        "version": "3.68.0",
         "php": {
             "min": "5.5.9"
         },
@@ -324,6 +324,11 @@
                 "notes": "New features (which depend on the upcoming API version 12):\n\n* Support build-time environment-level variables.\n* Some support for environment types (see note below):\n  - Add the type in the `environment:list` (`env`) command.\n  - Mention the type in the environment label.\n  - Add a `--type` option to the `push` command.\n  - Add a `--type` option to the `branch` command.\n  - Allow the type to be modified in the `env:info` command.\n\n> Note: user commands (such as `user:add` and `user:update`) do not yet support\nenvironment types. They will in a future version. The API is backwards\ncompatible: if your project supports environment types, and you change a user's\nrole on an environment, it will change their role on all environments of that\ntype.\n\nOther changes:\n\n* Support new `/users/me` API in the `auth:info` command.\n* Fix `user:update` to avoid recalculating environment access changes while they are made.",
                 "show from": "3.66.0",
                 "hide from": "3.67.0"
+            },
+            {
+                "notes": "New features:\n\n* Add environment types support to the user commands.\n\nOther changes:\n\n* Rework `environment:delete --merged` to not require a local Git repository.\n* Refresh the cache if a specified environment is not found in the `environment:delete` command.\n* Fix duplicates when listing multiple activity statuses.",
+                "show from": "3.67.0",
+                "hide from": "3.68.0"
             }
         ]
     }
