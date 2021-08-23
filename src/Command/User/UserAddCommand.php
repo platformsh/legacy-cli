@@ -156,7 +156,7 @@ class UserAddCommand extends CommandBase
 
             $this->stdErr->writeln(sprintf('Current role(s) of <info>%s</info> on %s:', $this->getUserLabel($existingProjectAccess), $this->api()->getProjectLabel($project)));
             $this->stdErr->writeln(sprintf('  Project role: <info>%s</info>', $existingProjectAccess->role));
-            if ($supportsEnvironmentTypes) {
+            if ($supportsEnvironmentTypes && $existingProjectAccess->role !== ProjectAccess::ROLE_ADMIN) {
                 foreach ($project->getEnvironmentTypes() as $type) {
                     $role = isset($existingEnvironmentTypeRoles[$type->id]) ? $existingEnvironmentTypeRoles[$type->id] : '[none]';
                     $this->stdErr->writeln(sprintf('    Role on type <info>%s</info>: %s', $type->id, $role));
