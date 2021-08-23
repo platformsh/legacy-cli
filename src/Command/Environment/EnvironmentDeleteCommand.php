@@ -90,11 +90,16 @@ EOF
             if ($this->hasSelectedEnvironment()) {
                 $toDelete = [$this->getSelectedEnvironment()];
             } elseif ($environmentIds = $input->getArgument('environment')) {
-                $toDelete = array_intersect_key($environments, array_flip($environmentIds));
                 $notFound = array_diff($environmentIds, array_keys($environments));
+                if (!empty($notFound)) {
+                    // Refresh the environments list if any environment is not found.
+                    $environments = $this->api()->getEnvironments($this->getSelectedProject(), true);
+                    $notFound = array_diff($environmentIds, array_keys($environments));
+                }
                 foreach ($notFound as $notFoundId) {
                     $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
                 }
+                $toDelete = array_intersect_key($environments, array_flip($environmentIds));
             }
         }
 
