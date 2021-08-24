@@ -22,7 +22,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $organization = $this->validateOrganizationInput($input);
+        $organization = $this->validateOrganizationInput($input, 'members');
 
         if (!$organization->hasLink('members')) {
             $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api()->getOrganizationLabel($organization, 'comment') . '.');

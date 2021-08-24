@@ -19,7 +19,8 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $organization = $this->validateOrganizationInput($input);
+        // The 'create-member' link shows the user has the ability to read/write members.
+        $organization = $this->validateOrganizationInput($input, 'create-member');
 
         $email = $input->getArgument('email');
 

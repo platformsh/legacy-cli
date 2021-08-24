@@ -1777,13 +1777,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @see CommandBase::addOrganizationOptions()
      *
      * @param InputInterface $input
+     * @param string $filterByLink
+     *   If no organization is specified, this filters the list of the organizations presented, by the name of a HAL
+     *   link. For example, 'create-subscription' will list organizations under which the user has the permission to
+     *   create a subscription.
      *
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      *
      * @return Organization
      */
-    protected function validateOrganizationInput(InputInterface $input)
+    protected function validateOrganizationInput(InputInterface $input, $filterByLink = '')
     {
         if (!$this->config()->getWithDefault('api.organizations', false)) {
             throw new \BadMethodCallException('Organizations are not enabled');
@@ -1819,9 +1823,16 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $options = [];
         $byId = [];
         foreach ($organizations as $organization) {
+            if ($filterByLink !== '' && !$organization->hasLink($filterByLink)) {
+                continue;
+            }
             $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
             $byId[$organization->id] = $organization;
         }
+        if (empty($options)) {
+            throw new \RuntimeException('An organization name or ID (--org) is required.');
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):');

@@ -70,7 +70,7 @@ EOF
         $organization = null;
         if ($this->config()->getWithDefault('api.organizations', false)) {
             try {
-                $organization = $this->validateOrganizationInput($input);
+                $organization = $this->validateOrganizationInput($input, 'create-subscription');
             } catch (\RuntimeException $e) {
                 // Ignore errors from no organization being selected.
             }
