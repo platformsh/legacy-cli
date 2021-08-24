@@ -27,7 +27,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $org = $this->validateOrganizationInput($input);
+        $org = $this->validateOrganizationInput($input, 'orders');
         $profile = $org->getProfile();
 
         /** @var PropertyFormatter $formatter */

@@ -27,7 +27,8 @@ class OrganizationAddressCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $org = $this->validateOrganizationInput($input);
+        // The 'orders' link depends on the billing permission.
+        $org = $this->validateOrganizationInput($input, 'orders');
         $address = $org->getAddress();
 
         /** @var PropertyFormatter $formatter */
