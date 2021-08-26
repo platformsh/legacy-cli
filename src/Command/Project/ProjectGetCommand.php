@@ -137,6 +137,11 @@ class ProjectGetCommand extends CommandBase
             $this->debug('Initializing the project');
             $localProject->mapDirectory($projectRoot, $project);
 
+            if($git->getCurrentBranch($projectRoot) != $project->default_branch) {
+                $this->debug('current branch does not match the default_branch, create it.');
+                $git->checkOutNew($project->default_branch, null, null, $projectRoot);
+            }
+
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Your project has been initialized and connected to <info>%s</info>!',
@@ -144,8 +149,9 @@ class ProjectGetCommand extends CommandBase
             ));
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
-                'Commit and push to the <info>master</info> branch of the <info>%s</info> Git remote'
+                'Commit and push to the <info>%s</info> branch of the <info>%s</info> Git remote'
                 . ', and %s will build your project automatically.',
+                $project->default_branch,
                 $this->config()->get('detection.git_remote_name'),
                 $this->config()->get('service.name')
             ));
