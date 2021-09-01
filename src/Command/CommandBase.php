@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
+use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -1782,8 +1783,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *   link. For example, 'create-subscription' will list organizations under which the user has the permission to
      *   create a subscription.
      *
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws \InvalidArgumentException if no organization is specified
+     * @throws NoOrganizationsException if the user does not have any organizations matching the filter
      *
      * @return Organization
      */
@@ -1812,11 +1813,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if (!$input->isInteractive()) {
-            throw new \RuntimeException('An organization name or ID (--org) is required.');
+            throw new \InvalidArgumentException('An organization name or ID (--org) is required.');
         }
         $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
         if (!$organizations) {
-            throw new \RuntimeException('No organizations found.');
+            throw new NoOrganizationsException('No organizations found.');
         }
 
         $this->api()->sortResources($organizations, 'name');
@@ -1830,7 +1831,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $byId[$organization->id] = $organization;
         }
         if (empty($options)) {
-            throw new \RuntimeException('An organization name or ID (--org) is required.');
+            throw new NoOrganizationsException('An organization name or ID (--org) is required.');
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
