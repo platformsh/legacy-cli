@@ -58,9 +58,10 @@ class OrganizationCreateCommand extends CommandBase
             $this->stdErr->writeln('Owning more than one organization will cause some older APIs to stop working.');
             $this->stdErr->writeln('If you have scripts that create projects automatically, they need to be updated to specify an organization ID.');
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure you want to create a new organization?', false)) {
-                return 1;
-            }
+        }
+
+        if (!$questionHelper->confirm(\sprintf('Are you sure you want to create a new organization <info>%s</info>?', $values['name']), false)) {
+            return 1;
         }
 
         try {
