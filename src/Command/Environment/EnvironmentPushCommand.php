@@ -279,7 +279,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Branched <info>%s</info>%s from parent %s',
             $target,
-            $type !== null ? ' (type: ' . $type . ')' : '',
+            $type !== null ? ' (type: <info>' . $type . '</info>)' : '',
             $this->api()->getEnvironmentLabel($parentEnvironment)
         ));
         $this->debug(sprintf('Branch activity ID / state: %s / %s', $activity->id, $activity->state));
