@@ -132,7 +132,7 @@ class ProjectGetCommand extends CommandBase
             }
 
             $this->debug('Initializing the repository');
-            $git->init($projectRoot, true);
+            $git->init($projectRoot, $project->default_branch, true);
 
             $this->debug('Initializing the project');
             $localProject->mapDirectory($projectRoot, $project);
