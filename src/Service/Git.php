@@ -151,7 +151,7 @@ class Git
      *
      * @return bool
      */
-    public function init($dir, $initial_branch='master', $mustRun = false)
+    public function init($dir, $initial_branch = '', $mustRun = false)
     {
         if (is_dir($dir . '/.git')) {
             throw new \InvalidArgumentException("Already a repository: $dir");
