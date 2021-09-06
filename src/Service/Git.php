@@ -158,7 +158,7 @@ class Git
         }
 
         $args = ['init'];
-        if ($this->supportsGitInitialBranchFlag()) {
+        if ($initial_branch !== '' && $this->supportsGitInitialBranchFlag()) {
             $args[] = "--initial-branch=$initial_branch";
         }
         return (bool) $this->execute($args, $dir, $mustRun, false);
