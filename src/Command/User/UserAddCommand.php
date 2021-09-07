@@ -6,6 +6,7 @@ use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
 use Platformsh\Client\Model\Invitation\Environment;
+use Platformsh\Client\Model\Invitation\Permission;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -361,19 +362,23 @@ class UserAddCommand extends CommandBase
         // If the user does not already exist on the project, then use the Invitations API.
         if (!$existingProjectAccess && $this->config()->getWithDefault('api.invitations', false)) {
             $this->stdErr->writeln('Inviting the user to the project...');
+            $permissions = [];
+            foreach ($desiredTypeRoles as $type => $role) {
+                $permissions[] = new Permission($type, $role);
+            }
             $environments = [];
             foreach ($desiredEnvironmentRoles as $id => $role) {
                 $environments[] = new Environment($id, $role);
             }
             try {
-                $project->inviteUserByEmail($email, $desiredProjectRole, $environments, $input->getOption('force-invite'));
+                $project->inviteUserByEmail($email, $desiredProjectRole, $environments, $input->getOption('force-invite'), $permissions);
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf('An invitation has been sent to <info>%s</info>', $email));
             } catch (AlreadyInvitedException $e) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
                 if ($questionHelper->confirm('Do you want to send this invitation anyway?')) {
-                    $project->inviteUserByEmail($email, $desiredProjectRole, $environments, true);
+                    $project->inviteUserByEmail($email, $desiredProjectRole, $environments, true, $permissions);
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf('A new invitation has been sent to <info>%s</info>', $email));
                 }
