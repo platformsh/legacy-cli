@@ -151,13 +151,17 @@ class Git
      *
      * @return bool
      */
-    public function init($dir, $mustRun = false)
+    public function init($dir, $initial_branch = '', $mustRun = false)
     {
         if (is_dir($dir . '/.git')) {
             throw new \InvalidArgumentException("Already a repository: $dir");
         }
 
-        return (bool) $this->execute(['init'], $dir, $mustRun, false);
+        $args = ['init'];
+        if ($initial_branch !== '' && $this->supportsGitInitialBranchFlag()) {
+            $args[] = "--initial-branch=$initial_branch";
+        }
+        return (bool) $this->execute($args, $dir, $mustRun, false);
     }
 
     /**
@@ -383,6 +387,14 @@ class Git
     public function supportsGitSshCommand()
     {
         return version_compare($this->getVersion(), '2.3', '>=');
+    }
+
+    /**
+     * @return bool
+     */
+    public function supportsGitInitialBranchFlag()
+    {
+        return version_compare($this->getVersion(), '2.28', '>=');
     }
 
     /**
