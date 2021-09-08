@@ -180,8 +180,9 @@ class SubscriptionInfoCommand extends CommandBase
     private function loadSubscription($id, Project $project = null)
     {
         // Attempt to load the subscription directly.
-        // This is possible if the Organizations API is disabled, or if the
-        // user has access to all subscriptions.
+        // This is possible if the user is on the project's access list, or
+        // if the Organizations API is disabled (and the user is the owner), or
+        // if the user has access to all subscriptions.
         $subscription = $this->ignore403(function () use ($id) {
             return $this->api()->getClient()->getSubscription($id);
         });
