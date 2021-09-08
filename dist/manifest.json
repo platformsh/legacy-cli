@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "aaf4a0df1062050dbd18f6a337ad76be61917537",
-        "sha256": "29d45156c95ef8e531d6e8dbbb86cd4a3ac7b47b7e1d6282448319dcfa62d43b",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.68.0/platform.phar",
-        "version": "3.68.0",
+        "sha1": "a5f034f1ec44611fc2d8bbdd4f9da3c84b36f362",
+        "sha256": "456b8c7cb80066643e5d02a3f578c354c4b7f0e0d946ef69c21000ab04de7e4b",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.69.0/platform.phar",
+        "version": "3.69.0",
         "php": {
             "min": "5.5.9"
         },
@@ -329,6 +329,11 @@
                 "notes": "New features:\n\n* Add environment types support to the user commands.\n\nOther changes:\n\n* Rework `environment:delete --merged` to not require a local Git repository.\n* Refresh the cache if a specified environment is not found in the `environment:delete` command.\n* Fix duplicates when listing multiple activity statuses.",
                 "show from": "3.67.0",
                 "hide from": "3.68.0"
+            },
+            {
+                "notes": "New features:\n\n* Add support for Organizations.\n  This is disabled by default, unless enabled in `config.yaml` (`api.organizations`)\n  or in an environment variable (`PLATFORMSH_CLI_API_ORGANIZATIONS`).\n\nOther changes:\n\n* Fix inviting a user to a project with an environment type permission.\n* When cloning an empty project via the `project:get` (`get`) command,\n  initialize with the correct default branch name, rather than `master`.\n* Remove Commands section in README.\n  This was already too long, and Organizations support adds many extra commands.",
+                "show from": "3.68.0",
+                "hide from": "3.69.0"
             }
         ]
     }
