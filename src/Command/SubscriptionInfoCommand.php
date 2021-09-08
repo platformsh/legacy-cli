@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Command;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -38,19 +40,20 @@ class SubscriptionInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $id = $input->getOption('id');
+        $project = null;
         if (empty($id)) {
             $this->validateInput($input);
             $project = $this->getSelectedProject();
             $id = $project->getSubscriptionId();
         }
 
-        $subscription = $this->api()->getClient()
-                             ->getSubscription($id);
+        $subscription = $this->loadSubscription($id, $project);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 
             return 1;
         }
+
         $this->formatter = $this->getService('property_formatter');
 
         $property = $input->getArgument('property');
@@ -164,5 +167,77 @@ class SubscriptionInfoCommand extends CommandBase
         $writableProperties = ['plan' => 'string', 'environments' => 'int', 'storage' => 'int'];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+    }
+
+    /**
+     * Loads a subscription through various APIs to see which one wins.
+     *
+     * @param string $id
+     * @param Project|null $project
+     *
+     * @return false|Subscription
+     */
+    private function loadSubscription($id, Project $project = null)
+    {
+        // Attempt to load the subscription directly.
+        // This is possible if the Organizations API is disabled, or if the
+        // user has access to all subscriptions.
+        $subscription = $this->ignore403(function () use ($id) {
+            return $this->api()->getClient()->getSubscription($id);
+        });
+        if ($subscription) {
+            $this->debug('Loaded the subscription directly');
+            return $subscription;
+        }
+
+        // Exit now if the organizations API is not available.
+        if (!$this->config()->getWithDefault('api.organizations', false)) {
+            return false;
+        }
+
+        $this->debug('Failed to load the subscription ' . $id . ' directly. Attempting to use the Organizations API.');
+
+        // Use the project's organization, if known.
+        if (isset($project)) {
+            $organizationId = $project->getProperty('organization_id', false, false);
+            if ($organizationId) {
+                $organization = $this->api()->getClient()->getOrganizationById($organizationId);
+                if ($organization && ($subscription = $organization->getSubscription($id))) {
+                    $this->debug("Loaded the subscription via the project's organization: " . $this->api()->getOrganizationLabel($organization));
+                    return $subscription;
+                }
+            }
+        }
+
+        // Load the user's organizations and try to load the subscription through each one.
+        foreach ($this->api()->getClient()->listOrganizationsWithMember($this->api()->getMyUserId()) as $organization) {
+            $subscription = $this->ignore403(function () use ($organization, $id) {
+                return $organization->getSubscription($id);
+            });
+            if ($subscription) {
+                $this->debug('Loaded the subscription through organization: ' . $this->api()->getOrganizationLabel($organization));
+                return $subscription;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Runs a function while ignoring Guzzle 403 errors.
+     *
+     * @param callable $f
+     *
+     * @return false|mixed
+     */
+    private function ignore403(callable $f)
+    {
+        try {
+            return $f();
+        } catch (BadResponseException $e) {
+            if ($e->getResponse() || $e->getResponse()->getStatusCode() === 403) {
+                return false;
+            }
+            throw $e;
+        }
     }
 }

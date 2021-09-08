@@ -6,6 +6,10 @@
 ## All environment variables are prefixed by {application.env_prefix}.
 ## The user config file is "config.yaml" in {application.user_config_dir}, under the home directory.
 ##
+## In addition to the environment variables mentioned below, all scalar values
+## at the second level can be overridden by an environment variable named like
+## {application.env_prefix}SECTION_KEY, for example PLATFORMSH_CLI_APPLICATION_NAME.
+##
 ## For the implementation see ./src/Service/Config.php
 
 # Metadata about the CLI application itself.
@@ -53,6 +57,7 @@ application:
   # Disabled commands (a list of full command names).
   disabled_commands:
     - auth:password-login
+    - organization:create
 
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
@@ -175,6 +180,9 @@ api:
 
   # Whether the API supports project invitations.
   invitations: true
+
+  # Whether the Organizations API is enabled.
+  organizations: false
 
   # Whether the Auth API is enabled.
   auth: true

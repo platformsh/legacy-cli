@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
+use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
@@ -29,6 +30,8 @@ class ProjectCreateCommand extends CommandBase
           ->setName('project:create')
           ->setAliases(['create'])
           ->setDescription('Create a new project');
+
+        $this->addOrganizationOptions();
 
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
@@ -64,6 +67,29 @@ EOF
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
 
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+
+        // Identify an organization that should own the project.
+        $organization = null;
+        if ($this->config()->getWithDefault('api.organizations', false)) {
+            try {
+                $organization = $this->validateOrganizationInput($input, 'create-subscription');
+            } catch (NoOrganizationsException $e) {
+                $this->stdErr->writeln('You do not belong to an organization where you have permission to create a subscription.');
+                if ($input->isInteractive() && $questionHelper->confirm('Do you want to create an organization now?')) {
+                    if ($this->runOtherCommand('organization:create') !== 0) {
+                        return 1;
+                    }
+                    $organization = $this->validateOrganizationInput($input, 'create-subscription');
+                } else {
+                    return 1;
+                }
+            }
+            $this->stdErr->writeln('Creating a project under the organization ' . $this->api()->getOrganizationLabel($organization));
+            $this->stdErr->writeln('');
+        }
+
         // Validate the --set-remote option.
         $setRemote = (bool) $input->getOption('set-remote');
         $projectRoot = $this->getProjectRoot();
@@ -74,9 +100,6 @@ EOF
 
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
 
         $options = $this->form->resolveOptions($input, $output, $questionHelper);
 
@@ -112,7 +135,7 @@ EOF
 
         $estimate = $this->api()
             ->getClient()
-            ->getSubscriptionEstimate($options['plan'], $options['storage'] * 1024, $options['environments'], 1);
+            ->getSubscriptionEstimate($options['plan'], $options['storage'] * 1024, $options['environments'], 1, null, $organization ? $organization->id : null);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
@@ -130,6 +153,7 @@ EOF
 
         $subscription = $this->api()->getClient()
             ->createSubscription(SubscriptionOptions::fromArray([
+                'organization_id' => $organization ? $organization->id : null,
                 'project_title' => $options['title'],
                 'project_region' => $options['region'],
                 'default_branch' => $options['default_branch'],

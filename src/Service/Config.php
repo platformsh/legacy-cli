@@ -307,7 +307,17 @@ class Config
 
     private function applyEnvironmentOverrides()
     {
-        $overrideMap = [
+        $overrideMap = [];
+        foreach ($this->config as $section => $sub_config) {
+            foreach ($sub_config as $sub_section => $value) {
+                if (\is_scalar($value)) {
+                    $varName = \strtoupper($section . '_' . $sub_section);
+                    $accessorName = $section . '.' . $sub_section;
+                    $overrideMap[$varName] = $accessorName;
+                }
+            }
+        }
+        $overrideMap = \array_merge($overrideMap, [
             'TOKEN' => 'api.token',
             'API_TOKEN' => 'api.access_token', // Deprecated
             'COPY_ON_WINDOWS' => 'local.copy_on_windows',
@@ -325,10 +335,9 @@ class Config
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
             'CERTIFIER_URL' => 'api.certifier_url',
             'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
-            'UPDATES_CHECK' => 'updates.check',
             'USER_AGENT' => 'api.user_agent',
             'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
-        ];
+        ]);
 
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);

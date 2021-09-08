@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
+use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -17,6 +18,7 @@ use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
@@ -1755,5 +1757,86 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 ));
             }
         }
+    }
+
+    /**
+     * Adds the --org (-o) organization name option.
+     *
+     * @return self
+     */
+    protected function addOrganizationOptions()
+    {
+        if ($this->config()->getWithDefault('api.organizations', false)) {
+            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)');
+        }
+        return $this;
+    }
+
+    /**
+     * Returns the selected organization according to the --org option.
+     *
+     * @see CommandBase::addOrganizationOptions()
+     *
+     * @param InputInterface $input
+     * @param string $filterByLink
+     *   If no organization is specified, this filters the list of the organizations presented, by the name of a HAL
+     *   link. For example, 'create-subscription' will list organizations under which the user has the permission to
+     *   create a subscription.
+     *
+     * @throws \InvalidArgumentException if no organization is specified
+     * @throws NoOrganizationsException if the user does not have any organizations matching the filter
+     *
+     * @return Organization
+     */
+    protected function validateOrganizationInput(InputInterface $input, $filterByLink = '')
+    {
+        if (!$this->config()->getWithDefault('api.organizations', false)) {
+            throw new \BadMethodCallException('Organizations are not enabled');
+        }
+
+        $client = $this->api()->getClient();
+
+        if ($identifier = $input->getOption('org')) {
+            // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
+            // So it's easy to distinguish one from the other.
+            /** @link https://github.com/ulid/spec */
+            if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
+                $this->debug('Detected organization ID format (ULID): ' . $identifier);
+                $organization = $client->getOrganizationById($identifier);
+            } else {
+                $organization = $client->getOrganizationByName($identifier);
+            }
+            if (!$organization) {
+                throw new \InvalidArgumentException('Organization not found: ' . $identifier);
+            }
+            return $organization;
+        }
+
+        if (!$input->isInteractive()) {
+            throw new \InvalidArgumentException('An organization name or ID (--org) is required.');
+        }
+        $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
+        if (!$organizations) {
+            throw new NoOrganizationsException('No organizations found.');
+        }
+
+        $this->api()->sortResources($organizations, 'name');
+        $options = [];
+        $byId = [];
+        foreach ($organizations as $organization) {
+            if ($filterByLink !== '' && !$organization->hasLink($filterByLink)) {
+                continue;
+            }
+            $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
+            $byId[$organization->id] = $organization;
+        }
+        if (empty($options)) {
+            throw new NoOrganizationsException('An organization name or ID (--org) is required.');
+        }
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):');
+        return $byId[$id];
     }
 }
