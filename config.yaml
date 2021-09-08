@@ -6,6 +6,10 @@
 ## All environment variables are prefixed by {application.env_prefix}.
 ## The user config file is "config.yaml" in {application.user_config_dir}, under the home directory.
 ##
+## In addition to the environment variables mentioned below, all scalar values
+## at the second level can be overridden by an environment variable named like
+## {application.env_prefix}SECTION_KEY, for example PLATFORMSH_CLI_APPLICATION_NAME.
+##
 ## For the implementation see ./src/Service/Config.php
 
 # Metadata about the CLI application itself.
