@@ -1800,7 +1800,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
             // So it's easy to distinguish one from the other.
             /** @link https://github.com/ulid/spec */
-            if ($identifier !== \strtolower($identifier) && \preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
+            if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
                 $this->debug('Detected organization ID format (ULID): ' . $identifier);
                 $organization = $client->getOrganizationById($identifier);
             } else {
