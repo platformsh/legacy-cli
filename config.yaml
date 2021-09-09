@@ -182,7 +182,7 @@ api:
   invitations: true
 
   # Whether the Organizations API is enabled.
-  organizations: false
+  organizations: true
 
   # Whether the Auth API is enabled.
   auth: true
