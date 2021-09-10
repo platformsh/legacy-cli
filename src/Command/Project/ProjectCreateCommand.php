@@ -135,7 +135,7 @@ EOF
 
         $estimate = $this->api()
             ->getClient()
-            ->getSubscriptionEstimate($options['plan'], $options['storage'] * 1024, $options['environments'], 1, null, $organization ? $organization->id : null);
+            ->getSubscriptionEstimate($options['plan'], (int) $options['storage'] * 1024, (int) $options['environments'], 1, null, $organization ? $organization->id : null);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
@@ -158,8 +158,8 @@ EOF
                 'project_region' => $options['region'],
                 'default_branch' => $options['default_branch'],
                 'plan' => $options['plan'],
-                'storage' => $options['storage'] * 1024,
-                'environments' => $options['environments'],
+                'storage' => (int) $options['storage'] * 1024,
+                'environments' => (int) $options['environments'],
             ]));
 
         $this->api()->clearProjectsCache();
