@@ -82,14 +82,20 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
             return 0;
         }
 
+        /** @var Table $table */
+        $table = $this->getService('table');
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf('Viewing the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api()->getOrganizationLabel($organization)));
+        }
+
         $headings = [];
         $values = [];
         foreach ($data as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $formatter->format($value, $key);
         }
-        /** @var Table $table */
-        $table = $this->getService('table');
+
         $table->renderSimple($values, $headings);
 
         return 0;
