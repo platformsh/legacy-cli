@@ -1833,6 +1833,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (empty($options)) {
             throw new NoOrganizationsException('An organization name or ID (--org) is required.');
         }
+        if (count($byId) === 1) {
+            /** @var Organization $organization */
+            $organization = reset($byId);
+            $this->debug(\sprintf('Selected organization %s by default', $this->api()->getOrganizationLabel($organization, false)));
+            return $organization;
+        }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

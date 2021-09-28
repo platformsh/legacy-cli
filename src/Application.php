@@ -163,6 +163,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Mount\MountSizeCommand();
         $commands[] = new Command\Mount\MountUploadCommand();
         $commands[] = new Command\Organization\OrganizationCreateCommand();
+        $commands[] = new Command\Organization\OrganizationCurlCommand();
         $commands[] = new Command\Organization\OrganizationInfoCommand();
         $commands[] = new Command\Organization\OrganizationListCommand();
         $commands[] = new Command\Organization\OrganizationSubscriptionListCommand();
