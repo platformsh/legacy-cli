@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "c7c3a2e34f3efbd64a279daa491687d126e1a7fd",
-        "sha256": "1668be03293d88d8d858ffa53bfa74dc2880da1be8f8e01e64bce4a72c7ba690",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.69.2/platform.phar",
-        "version": "3.69.2",
+        "sha1": "1a3e7db474566769cc2fb79ea31c625d239fb5c3",
+        "sha256": "42f883e988c2aa0d18650c779a8140b9aa506e5733c2d168eb579c23e8083845",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.70.0/platform.phar",
+        "version": "3.70.0",
         "php": {
             "min": "5.5.9"
         },
@@ -339,6 +339,11 @@
                 "notes": "* Enable use of the organizations API by default",
                 "show from": "3.69.0",
                 "hide from": "3.69.1"
+            },
+            {
+                "notes": "* Add org:curl hidden utility command\n* Improve labelling for org:user:get",
+                "show from": "3.69.2",
+                "hide from": "3.70.0"
             }
         ]
     }
