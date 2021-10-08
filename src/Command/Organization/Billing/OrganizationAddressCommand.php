@@ -7,6 +7,8 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Address;
+use Platformsh\Client\Model\Organization\Organization;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,13 +22,17 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             ->setDescription("View or change an organization's billing address")
             ->addOrganizationOptions()
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
-            ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
+            ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
+            ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $property = $input->getArgument('property');
+        $updates = $this->parseUpdates($input);
+
         // The 'orders' link depends on the billing permission.
         $org = $this->validateOrganizationInput($input, 'orders');
         $address = $org->getAddress();
@@ -34,91 +40,117 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
+        $result = 0;
+        if ($property !== null) {
+            if (empty($updates)) {
+                $formatter->displayData($output, $address->getProperties(), $property);
+                return $result;
+            }
+            $result = $this->setProperties($updates, $address);
+        }
+
+        if ($result === 0) {
+            $this->display($address, $org, $input);
+        }
+        return $result;
+    }
+
+    protected function display(Address $address, Organization $org, InputInterface $input)
+    {
+        /** @var Table $table */
+        $table = $this->getService('table');
+
+        $headings = [];
+        $values = [];
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+        foreach ($address->getProperties() as $key => $value) {
+            $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
+            $values[] = $formatter->format($value, $key);
+        }
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api()->getOrganizationLabel($org)));
+        }
+
+        $table->renderSimple($values, $headings);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf('To view the billing profile, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:profile')));
+            $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
+        }
+    }
+
+    protected function parseUpdates(InputInterface $input)
+    {
         $property = $input->getArgument('property');
-        if ($property === null) {
-            $headings = [];
-            $values = [];
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
-            foreach ($address->getProperties() as $key => $value) {
-                $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-                $values[] = $formatter->format($value, $key);
-            }
-
-            /** @var Table $table */
-            $table = $this->getService('table');
-
-            if (!$table->formatIsMachineReadable()) {
-                $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api()->getOrganizationLabel($org)));
-            }
-
-            $table->renderSimple($values, $headings);
-
-            if (!$table->formatIsMachineReadable()) {
-                $this->stdErr->writeln(\sprintf('To view the billing profile, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:profile')));
-                $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
-            }
-            return 0;
-        }
-
         $value = $input->getArgument('value');
-        if ($value === null) {
-            $formatter->displayData($output, $address->getProperties(), $property);
-            return 0;
+        if ($property === null || $value === null) {
+            return [];
         }
-
-        return $this->setProperty($property, $value, $address);
+        $updates[$property] = $value;
+        $properties = $input->getArgument('properties');
+        if (empty($properties)) {
+            return $updates;
+        }
+        if (count($properties) % 2 !== 0) {
+            throw new InvalidArgumentException('Invalid number of property/value pair arguments');
+        }
+        \array_unshift($properties, $value);
+        \array_unshift($properties, $property);
+        $tempPropertyName = '';
+        foreach ($properties as $arg) {
+            if ($tempPropertyName === '') {
+                $tempPropertyName = $arg;
+                continue;
+            }
+            if (isset($values[$tempPropertyName])) {
+                throw new InvalidArgumentException('Property defined twice: ' . $tempPropertyName);
+            }
+            if (!$this->validateValue($tempPropertyName, $arg)) {
+                throw new InvalidArgumentException(\sprintf('Invalid value for %s: %s', $tempPropertyName, $arg));
+            }
+            $updates[$tempPropertyName] = $arg;
+            $tempPropertyName = '';
+        }
+        return $updates;
     }
 
     /**
-     * @param string  $property
-     * @param string  $value
+     * @param array $updates
      * @param Address $address
      *
      * @return int
      */
-    protected function setProperty($property, $value, Address $address)
+    protected function setProperties(array $updates, Address $address)
     {
-        if (!$this->validateValue($property, $value)) {
-            return 1;
-        }
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
-        $currentValue = $address->getProperty($property, false);
-        if ($currentValue === $value) {
-            $this->stdErr->writeln(sprintf(
-                'Property <info>%s</info> already set as: %s',
-                $property,
-                $formatter->format($address->getProperty($property, false), $property)
-            ));
-
+        $currentValues = \array_intersect_key($address->getProperties(), $updates);
+        if ($currentValues == $updates) {
+            $this->stdErr->writeln('There are no changes to make.');
+            $this->stdErr->writeln('');
             return 0;
         }
         try {
-            $address->update([$property => $value]);
+            $this->stdErr->writeln('Updating the address with values: ' . \json_encode($updates, true, JSON_UNESCAPED_SLASHES));
+            $address->update($updates);
+            $this->stdErr->writeln('');
+            return 0;
         } catch (BadResponseException $e) {
             // Translate validation error messages.
             if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
                 $detail = \json_decode((string) $body, true);
-                if (\is_array($detail) && !empty($detail['detail'][$property])) {
-                    $this->stdErr->writeln("Invalid value for <error>$property</error>: " . $detail['detail'][$property]);
-                    return 1;
-                }
                 if (\is_array($detail) && isset($detail['detail']) && \is_string($detail['detail'])) {
                     $this->stdErr->writeln($detail['detail']);
+                    return 1;
+                } elseif (\is_array($detail) && !empty($detail)) {
+                    foreach ($detail as $errorProperty => $errorValue) {
+                        $this->stdErr->writeln("Invalid value for <error>$errorProperty</error>: " . $errorValue);
+                    }
                     return 1;
                 }
             }
             throw $e;
         }
-        $this->stdErr->writeln(sprintf(
-            'Property <info>%s</info> set to: %s',
-            $property,
-            $formatter->format($address->$property, $property)
-        ));
-
-        return 0;
     }
 
     /**
