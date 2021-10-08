@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\VersionUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -134,20 +135,10 @@ class SelfReleaseCommand extends CommandBase
             // Find a good default new version number.
             $default = null;
             $autoComplete = [];
-            if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$/', $lastVersion)) {
-                $nextPatch = preg_replace_callback('/^([0-9]+\.[0-9]+\.)([0-9]+)(\-[a-z]+)?.*$/', function (array $matches) {
-                    return $matches[1] . ($matches[2] + 1) . $matches[3];
-                }, $lastVersion);
-                $nextMinor = preg_replace_callback('/^([0-9]+\.)([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches) {
-                    return $matches[1] . ($matches[2] + 1) . '.0' . $matches[3];
-                }, $lastVersion);
-                $nextMajor = preg_replace_callback('/^([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches) {
-                    return ($matches[1] + 1) . '.0.0' . $matches[2];
-                }, $lastVersion);
-                $default = $nextPatch;
-                $autoComplete = [$nextPatch, $nextMinor, $nextMajor];
+            if ($nextVersions = (new VersionUtil())->nextVersions($lastVersion)) {
+                $default = reset($nextVersions);
+                $autoComplete = $nextVersions;
             }
-
             $newVersion = $questionHelper->askInput('New version number', $default, $autoComplete, $validateNewVersion);
         }
 
