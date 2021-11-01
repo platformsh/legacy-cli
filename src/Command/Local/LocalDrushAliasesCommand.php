@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Local;
 
 use Cocur\Slugify\Slugify;
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -118,7 +119,16 @@ class LocalDrushAliasesCommand extends CommandBase
                 // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
                 if (!$this->api()->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
                     $this->debug('Fetching deployment information for environment: ' . $environment->id);
-                    $this->api()->getCurrentDeployment($environment);
+                    try {
+                        $this->api()->getCurrentDeployment($environment);
+                    } catch (BadResponseException $e) {
+                        if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
+                            // Ignore 400 errors relating to an invalid deployment.
+                            $this->debug('The deployment is invalid: ' . $e->getMessage());
+                        } else {
+                            throw $e;
+                        }
+                    }
                 }
 
                 if ($environment->deployment_target === 'local') {
