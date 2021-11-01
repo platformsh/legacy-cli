@@ -123,7 +123,6 @@ abstract class IntegrationCommandBase extends CommandBase
                     'bitbucket_server',
                     'github',
                     'gitlab',
-                    'hipchat',
                     'webhook',
                     'health.email',
                     'health.pagerduty',
@@ -149,7 +148,6 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => [
                     'github',
                     'gitlab',
-                    'hipchat',
                     'health.slack',
                     'bitbucket_server',
                 ]],
@@ -297,14 +295,6 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
                 'description' => 'Delete branches that do not exist on the remote',
             ]),
-            'room' => new Field('HipChat room ID', [
-                'conditions' => ['type' => [
-                    'hipchat',
-                ]],
-                'validator' => 'is_numeric',
-                'optionName' => 'room',
-                'questionLine' => 'What is the HipChat room ID (numeric)?',
-            ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'health.webhook',
@@ -339,7 +329,6 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'events' => new ArrayField('Events', [
                 'conditions' => ['type' => [
-                    'hipchat',
                     'webhook',
                     'script',
                 ]],
@@ -349,7 +338,6 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'states' => new ArrayField('States', [
                 'conditions' => ['type' => [
-                    'hipchat',
                     'webhook',
                     'script',
                 ]],
@@ -361,7 +349,6 @@ abstract class IntegrationCommandBase extends CommandBase
                 'optionName' => 'environments',
                 'conditions' => ['type' => [
                     'webhook',
-                    'hipchat',
                     'script',
                 ]],
                 'default' => ['*'],
@@ -370,7 +357,6 @@ abstract class IntegrationCommandBase extends CommandBase
             'excluded_environments' => new ArrayField('Excluded environments', [
                 'conditions' => ['type' => [
                     'webhook',
-                    'hipchat',
                 ]],
                 'default' => [],
                 'description' => 'The environment IDs to exclude',

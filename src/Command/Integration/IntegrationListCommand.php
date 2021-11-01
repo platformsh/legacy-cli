@@ -96,10 +96,6 @@ class IntegrationListCommand extends IntegrationCommandBase
                 }
                 break;
 
-            case 'hipchat':
-                $summary = sprintf('Room ID: %s', $details['room']);
-                break;
-
             case 'webhook':
                 $summary = sprintf('URL: %s', $details['url']);
                 break;
