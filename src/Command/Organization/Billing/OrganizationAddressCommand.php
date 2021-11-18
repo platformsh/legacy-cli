@@ -139,7 +139,10 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             // Translate validation error messages.
             if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
                 $detail = \json_decode((string) $body, true);
-                if (\is_array($detail) && isset($detail['detail']) && \is_string($detail['detail'])) {
+                if (\is_array($detail) && isset($detail['title']) && \is_string($detail['title'])) {
+                    $this->stdErr->writeln($detail['title']);
+                    return 1;
+                } elseif (\is_array($detail) && isset($detail['detail']) && \is_string($detail['detail'])) {
                     $this->stdErr->writeln($detail['detail']);
                     return 1;
                 } elseif (\is_array($detail) && !empty($detail)) {
