@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationCreateCommand extends CommandBase
 {
+    protected $stability = 'BETA';
 
     protected function configure()
     {
