@@ -19,6 +19,16 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
     {
         $organization = $this->validateOrganizationInput($input);
 
+        $subscriptions = $organization->getSubscriptions();
+        if (!empty($subscriptions)) {
+            $this->stdErr->writeln(\sprintf('The organization %s still owns project(s), so it cannot be deleted.', $this->api()->getOrganizationLabel($organization, 'comment')));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('You would need to delete the projects or transfer them to another organization first.');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(\sprintf("To list the organization's projects, run: <info>%s</info>", $this->otherCommandExample($input, 'org:subscriptions')));
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
