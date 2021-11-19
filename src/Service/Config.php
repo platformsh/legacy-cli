@@ -476,4 +476,14 @@ class Config
 
         return $version;
     }
+
+    /**
+     * Returns whether the configuration is for the direct instance of Platform.sh and not a reseller.
+     *
+     * @return bool
+     */
+    public function isDirect()
+    {
+        return isset($this->config['service']['slug']) && $this->config['service']['slug'] === 'platformsh';
+    }
 }

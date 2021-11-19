@@ -11,6 +11,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationCreateCommand extends CommandBase
 {
+    /**
+     * The timestamp when we can stop showing a warning about legacy APIs.
+     */
+    const LEGACY_WARNING_END = 1648771200; // April 2022
+    const LEGACY_WARNING = <<<END_WARNING
+<options=bold;fg=yellow>Warning</>
+Owning more than one organization will cause some older APIs to stop working. If you have scripts that create projects automatically, they need to be updated to use the newer organization-based APIs.
+END_WARNING;
+
+
     protected $stability = 'BETA';
 
     protected function configure()
@@ -18,6 +28,18 @@ class OrganizationCreateCommand extends CommandBase
         $this->setName('organization:create')
             ->setDescription('Create a new organization');
         $this->getForm()->configureInputDefinition($this->getDefinition());
+        $serviceName = $this->config()->get('service.name');
+        $help = <<<END_HELP
+Organizations allow you to manage your $serviceName projects, users and billing. Projects are owned by organizations.
+
+You can add other users to your organization, for collaboratively managing the organization as well as its projects and billing information.
+
+Access to individual projects (API and SSH) is managed separately, for now.
+END_HELP;
+        if ($this->config()->isDirect() && time() < self::LEGACY_WARNING_END) {
+            $help .= "\n\n" . self::LEGACY_WARNING;
+        }
+        $this->setHelp(\wordwrap($help));
     }
 
     private function getForm()
@@ -49,16 +71,22 @@ class OrganizationCreateCommand extends CommandBase
 
         $current = $client->listOrganizationsByOwner($this->api()->getMyUserId());
         if (\count($current) === 1 && ($currentOrg = \reset($current))) {
+            /** @var \Platformsh\Client\Model\Organization\Organization $currentOrg */
             if ($currentOrg->name === $values['name']) {
                 $this->stdErr->writeln('You already own the organization: ' . $this->api()->getOrganizationLabel($currentOrg));
                 return 1;
             }
-            $this->stdErr->writeln('You currently own one organization: ' . $this->api()->getOrganizationLabel($currentOrg));
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
-            $this->stdErr->writeln('Owning more than one organization will cause some older APIs to stop working.');
-            $this->stdErr->writeln('If you have scripts that create projects automatically, they need to be updated to specify an organization ID.');
-            $this->stdErr->writeln('');
+            $show_legacy_warning = $this->config()->isDirect()
+                && (
+                    time() < self::LEGACY_WARNING_END
+                    || (($created = \strtotime($currentOrg->created_at)) !== false && $created < self::LEGACY_WARNING_END)
+                );
+            if ($show_legacy_warning) {
+                $this->stdErr->writeln('You currently own one organization: ' . $this->api()->getOrganizationLabel($currentOrg));
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(\wordwrap(self::LEGACY_WARNING));
+                $this->stdErr->writeln('');
+            }
         }
 
         if (!$questionHelper->confirm(\sprintf('Are you sure you want to create a new organization <info>%s</info>?', $values['name']), false)) {
