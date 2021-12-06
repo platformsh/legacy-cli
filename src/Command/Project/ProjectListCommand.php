@@ -83,21 +83,6 @@ class ProjectListCommand extends CommandBase
             return 0;
         }
 
-        // Convert old column names for backwards compatibility.
-        if ($input->hasOption('columns') && ($columns = $input->getOption('columns'))) {
-            if (count($columns) === 1) {
-                $columns = preg_split('/\s*,\s*/', $columns[0]);
-            }
-            $replace = ['host' => 'region', 'url' => 'ui_url'];
-            foreach ($replace as $old => $new) {
-                if (($pos = \array_search($old, $columns, true)) !== false) {
-                    $this->stdErr->writeln(\sprintf('<options=reverse>DEPRECATED</> The column <comment>%s</comment> has been replaced by <info>%s</info>.', $old, $new));
-                    $columns[$pos] = $new;
-                }
-            }
-            $input->setOption('columns', $columns);
-        }
-
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
@@ -118,6 +103,8 @@ class ProjectListCommand extends CommandBase
         if ($this->config()->getWithDefault('api.organizations', false)) {
             $defaultColumns[] = 'organization_name';
         }
+
+        $table->replaceDeprecatedColumns(['url' => 'ui_url', 'host' => 'region'], $input, $output);
 
         $rows = [];
         foreach ($projectStubs as $projectStub) {
