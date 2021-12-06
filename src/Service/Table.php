@@ -9,6 +9,7 @@ use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -60,6 +61,51 @@ class Table implements InputConfiguringInterface
         $description = 'Do not output the table header';
         $option = new InputOption('no-header', null, InputOption::VALUE_NONE, $description);
         $definition->addOption($option);
+    }
+
+    /**
+     * Modifies the input to replace deprecated column names, and outputs a warning for each.
+     *
+     * @param array $replacements
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return void
+     */
+    public function replaceDeprecatedColumns(array $replacements, InputInterface $input, OutputInterface $output)
+    {
+        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $columns = $this->columnsToDisplay();
+        foreach ($replacements as $old => $new) {
+            if (($pos = \array_search($old, $columns, true)) !== false) {
+                $stdErr->writeln(\sprintf('<options=reverse>DEPRECATED</> The column <comment>%s</comment> has been replaced by <info>%s</info>.', $old, $new));
+                $columns[$pos] = $new;
+            }
+        }
+        $input->setOption('columns', $columns);
+    }
+
+    /**
+     * Modifies the input to remove deprecated columns, and outputs a warning for each.
+     *
+     * @param array $remove A list of column names to remove.
+     * @param string $placeholder The name of a placeholder column to display in place of the removed one.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return void
+     */
+    public function removeDeprecatedColumns(array $remove, $placeholder, InputInterface $input, OutputInterface $output)
+    {
+        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $columns = $this->columnsToDisplay();
+        foreach ($remove as $name) {
+            if (($pos = \array_search($name, $columns, true)) !== false) {
+                $stdErr->writeln(\sprintf('<options=reverse>DEPRECATED</> The column <comment>%s</comment> has been removed.', $name));
+                $columns[$pos] = $placeholder;
+            }
+        }
+        $input->setOption('columns', $columns);
     }
 
     /**

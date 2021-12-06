@@ -6,7 +6,8 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Organization;
-use Platformsh\Client\Model\Project;
+use Platformsh\Client\Model\ProjectStub;
+use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,7 +43,7 @@ class ProjectListCommand extends CommandBase
         // Fetch the list of projects.
         $progress = new ProgressMessage($output);
         $progress->showIfOutputDecorated('Loading projects...');
-        $projects = $this->api()->getProjects($refresh ? true : null);
+        $projectStubs = $this->api()->getProjectStubs($refresh ? true : null);
         $progress->done();
 
         // Filter the list of projects.
@@ -65,19 +66,19 @@ class ProjectListCommand extends CommandBase
             }
             $filters['org'] = $organization;
         }
-        $this->filterProjects($projects, $filters);
+        $this->filterProjectStubs($projectStubs, $filters);
 
         // Sort the list of projects.
         if ($input->getOption('sort')) {
-            $this->api()->sortResources($projects, $input->getOption('sort'));
+            $this->api()->sortResources($projectStubs, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
-            $projects = array_reverse($projects, true);
+            $projectStubs = array_reverse($projectStubs, true);
         }
 
         // Display a simple list of project IDs, if --pipe is used.
         if ($input->getOption('pipe')) {
-            $output->writeln(array_keys($projects));
+            $output->writeln(\array_map(function (ProjectStub $stub) { return $stub->id; }, $projectStubs));
 
             return 0;
         }
@@ -86,26 +87,50 @@ class ProjectListCommand extends CommandBase
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
 
-        $header = ['ID', 'Title', 'URL', 'Host'];
-        $defaultColumns = ['ID', 'Title', 'URL'];
+        $header = [
+            'id' => 'ID',
+            'title' => 'Title',
+            'ui_url' => 'Web URL',
+            'region' => 'Region',
+            'region_label' => 'Region label',
+            'organization_name' => 'Organization',
+            'organization_id' => 'Organization ID',
+            'organization_label' => 'Organization label',
+            'status' => 'Status',
+            'endpoint' => 'Endpoint',
+        ];
+        $defaultColumns = ['id', 'title', 'region'];
+        if ($this->config()->getWithDefault('api.organizations', false)) {
+            $defaultColumns[] = 'organization_name';
+        }
+
+        $table->replaceDeprecatedColumns(['url' => 'ui_url', 'host' => 'region'], $input, $output);
 
         $rows = [];
-        foreach ($projects as $project) {
-            $title = $project->title ?: '[Untitled Project]';
+        foreach ($projectStubs as $projectStub) {
+            $title = $projectStub->title ?: '[Untitled Project]';
 
             // Add a warning next to the title if the project is suspended.
-            if (!$machineReadable && $project->isSuspended()) {
+            if (!$machineReadable && $projectStub->status === Subscription::STATUS_SUSPENDED) {
                 $title = sprintf(
                     '<fg=white;bg=black>%s</> <fg=yellow;bg=black>(suspended)</>',
                     $title
                 );
             }
 
+            $org_info = $projectStub->getOrganizationInfo();
+
             $rows[] = [
-                new AdaptiveTableCell($project->id, ['wrap' => false]),
-                $title,
-                $project->getLink('#ui'),
-                parse_url($project->getUri(), PHP_URL_HOST)
+                'id' => new AdaptiveTableCell($projectStub->id, ['wrap' => false]),
+                'title' => $title,
+                'ui_url' => $projectStub->getProperty('uri', false),
+                'region' => $projectStub->region,
+                'region_label' => $projectStub->region_label,
+                'organization_id' => $org_info ? $org_info->id : '',
+                'organization_name' => $org_info ? $org_info->name : '',
+                'organization_label' => $org_info ? $org_info->label : '',
+                'status' => $projectStub->status,
+                'endpoint' => $projectStub->endpoint,
             ];
         }
 
@@ -118,7 +143,7 @@ class ProjectListCommand extends CommandBase
         }
 
         // Display a message if no projects are found.
-        if (empty($projects)) {
+        if (empty($projectStubs)) {
             if (!empty($filters)) {
                 $filtersUsed = '<comment>--'
                     . implode('</comment>, <comment>--', array_keys($filters))
@@ -153,35 +178,39 @@ class ProjectListCommand extends CommandBase
     /**
      * Filter the list of projects.
      *
-     * @param Project[]     &$projects
+     * @param ProjectStub[]     &$projects
      * @param mixed[string] $filters
      */
-    protected function filterProjects(array &$projects, array $filters)
+    protected function filterProjectStubs(array &$projects, array $filters)
     {
         foreach ($filters as $filter => $value) {
             switch ($filter) {
                 case 'host':
-                    $projects = array_filter($projects, function (Project $project) use ($value) {
-                        return $value === parse_url($project->getUri(), PHP_URL_HOST);
+                    $projects = array_filter($projects, function (ProjectStub $project) use ($value) {
+                        return $value === parse_url($project->endpoint, PHP_URL_HOST);
                     });
                     break;
 
                 case 'title':
-                    $projects = array_filter($projects, function (Project $project) use ($value) {
+                    $projects = array_filter($projects, function (ProjectStub $project) use ($value) {
                         return stripos($project->title, $value) !== false;
                     });
                     break;
 
                 case 'my':
                     $ownerId = $this->api()->getMyUserId();
-                    $projects = array_filter($projects, function (Project $project) use ($ownerId) {
+                    $organizationsEnabled = $this->config()->getWithDefault('api.organizations', false);
+                    $projects = array_filter($projects, function (ProjectStub $project) use ($ownerId, $organizationsEnabled) {
+                        if ($organizationsEnabled && ($organizationInfo = $project->getOrganizationInfo()) !== null) {
+                            return $organizationInfo->owner_id === $ownerId;
+                        }
                         return $project->owner === $ownerId;
                     });
                     break;
 
                 case 'org':
                     /** @var Organization $value */
-                    $projects = array_filter($projects, function (Project $project) use ($value) {
+                    $projects = array_filter($projects, function (ProjectStub $project) use ($value) {
                         return $project->getProperty('organization_id', false, false) === $value->id;
                     });
                     break;
