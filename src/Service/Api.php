@@ -20,6 +20,7 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
+use Platformsh\Client\Model\ProjectStub;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\Model\User;
@@ -566,6 +567,37 @@ class Api
         }
 
         return $projects;
+    }
+
+    /**
+     * Returns the logged-in user's project stubs.
+     *
+     * @param bool $refresh
+     *
+     * @return ProjectStub[]
+     */
+    public function getProjectStubs($refresh = null)
+    {
+        $cacheKey = sprintf('%s:project-stubs', $this->config->getSessionId());
+        $cached = $this->cache->fetch($cacheKey);
+
+        $guzzleClient = $this->getHttpClient();
+        $apiUrl = $this->config->getWithDefault('api.base_url', '');
+
+        if ($refresh === false && !$cached) {
+            return [];
+        } elseif ($refresh || !$cached) {
+            $data = $this->getClient()->getAccountInfo($refresh);
+            $stubs = ProjectStub::wrapCollection($data, $apiUrl, $guzzleClient);
+            $cacheData = [
+                'projects' => array_map(function (ProjectStub $stub) { return $stub->getData(); }, $stubs)
+            ];
+            $this->cache->save($cacheKey, $cacheData, $this->config->get('api.projects_ttl'));
+        } else {
+            $stubs = ProjectStub::wrapCollection($cached, $apiUrl, $guzzleClient);
+        }
+
+        return $stubs;
     }
 
     /**
