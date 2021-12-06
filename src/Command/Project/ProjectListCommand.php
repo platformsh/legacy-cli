@@ -78,9 +78,7 @@ class ProjectListCommand extends CommandBase
 
         // Display a simple list of project IDs, if --pipe is used.
         if ($input->getOption('pipe')) {
-            $output->writeln(\array_filter($projectStubs, function (ProjectStub $stub) {
-                return $stub->id;
-            }));
+            $output->writeln(\array_map(function (ProjectStub $stub) { return $stub->id; }, $projectStubs));
 
             return 0;
         }
