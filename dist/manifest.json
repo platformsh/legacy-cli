@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "78264f52b184a83c9379d274576227108a75c28e",
-        "sha256": "05caf428a7bc4c9bb841e6310f3d6d3c07599bf6f128e4d28dc8f36429d1f759",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.71.0/platform.phar",
-        "version": "3.71.0",
+        "sha1": "986251a22926634bd57c818f1b03740587bdcfc8",
+        "sha256": "2cfdd6761d8770103bb27460d06fc467abffb9131bcf73bf3dbffe0fe606b4d0",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.72.0/platform.phar",
+        "version": "3.72.0",
         "php": {
             "min": "5.5.9"
         },
@@ -349,6 +349,11 @@
                 "notes": "New features:\n* Allow updates to multiple properties on organization billing addresses\n\nOther changes:\n* Add detailed help to the ssh-cert:load command\n* Update client library to fix handling of project invitation conflicts\n* Remove references to Hipchat\n* Ignore 400 errors from getCurrentDeployment() in drush-aliases command",
                 "show from": "3.70.0",
                 "hide from": "3.71.0"
+            },
+            {
+                "notes": "* Display the organization in the projects list.",
+                "show from": "3.71.0",
+                "hide from": "3.72.0"
             }
         ]
     }
