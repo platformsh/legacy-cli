@@ -139,17 +139,16 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->environment = null;
         $this->remoteContainer = null;
 
-        if ($this->config()->get('api.debug')) {
+        if ($this->config()->get('api.debug') || getenv('CLI_DEBUG')) {
             $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
         // Tune error reporting based on the output verbosity.
-        ini_set('log_errors', 0);
-        ini_set('display_errors', 0);
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            error_reporting(E_ALL);
-            ini_set('display_errors', 1);
-        } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
+        ini_set('display_errors', '0');
+        if ($output->isVerbose()) {
+            error_reporting($output->isDebug() ? E_ALL : E_ALL & ~E_DEPRECATED);
+            ini_set('display_errors', 'stderr');
+        } elseif ($output->isQuiet()) {
             error_reporting(false);
         } else {
             error_reporting(E_PARSE | E_ERROR);

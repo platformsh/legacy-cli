@@ -1,5 +1,19 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @file
+ * This is the front/entry script for the CLI.
+ */
+
+// Send errors to stderr, not stdout.
+ini_set('display_errors', 'stderr');
+
+// Avoid displaying PHP errors twice.
+ini_set('log_errors', '0');
+
+// Disable early deprecation notices, e.g. those relating to Symfony Console.
+// Deprecation-level notices may be switched back on inside the application, or with the CLI_DEBUG environment variable.
+error_reporting(getenv('CLI_DEBUG') ? E_ALL : E_ALL & ~E_DEPRECATED);
 
 if (version_compare(PHP_VERSION, '5.5.9', '<')) {
     printf("This tool requires at least PHP 5.5.9. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
