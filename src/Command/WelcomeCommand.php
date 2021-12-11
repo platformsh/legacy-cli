@@ -56,7 +56,7 @@ class WelcomeCommand extends CommandBase
     private function defaultWelcome()
     {
         // The project is not known. Show all projects.
-        $this->runOtherCommand('projects', ['--refresh' => 0]);
+        $this->runOtherCommand('projects', ['--refresh' => '0']);
     }
 
     /**
