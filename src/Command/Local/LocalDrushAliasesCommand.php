@@ -131,7 +131,7 @@ class LocalDrushAliasesCommand extends CommandBase
                     }
                 }
 
-                if ($environment->deployment_target === 'local') {
+                if (!$environment->isActive() || $environment->deployment_target === 'local') {
                     continue;
                 }
                 foreach ($apps as $app) {
