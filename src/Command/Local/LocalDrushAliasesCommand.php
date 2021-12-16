@@ -131,7 +131,8 @@ class LocalDrushAliasesCommand extends CommandBase
                     }
                 }
 
-                if ($environment->deployment_target === 'local') {
+                if (!$environment->isActive() || $environment->deployment_target === 'local') {
+                    // We are only interested in active environments with non-grid deployment targets.
                     continue;
                 }
                 foreach ($apps as $app) {
