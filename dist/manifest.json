@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "69992d4fa32c8297e1fa576e9111fae14fab8ad5",
-        "sha256": "4245cedf104247befe38ebdaa02ab4cc530a0700795a084221908df8f458bccf",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.72.1/platform.phar",
-        "version": "3.72.1",
+        "sha1": "f1b32523a060926f16a699ea83cdfc7cab3703b9",
+        "sha256": "dc36c3c3a9b4d014bbbbfa9112971ab5dc8349da5748a8c377555b9c43a08a96",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.72.2/platform.phar",
+        "version": "3.72.2",
         "php": {
             "min": "5.5.9"
         },
@@ -354,6 +354,11 @@
                 "notes": "* Display the organization in the projects list.",
                 "show from": "3.71.0",
                 "hide from": "3.72.0"
+            },
+            {
+                "notes": "* Don't generate an alias for an inactive DG2 target (#1093)",
+                "show from": "3.72.1",
+                "hide from": "3.72.2"
             }
         ]
     }
