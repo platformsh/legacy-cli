@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Project;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\ProjectStub;
@@ -34,6 +35,7 @@ class ProjectListCommand extends CommandBase
         }
 
         Table::configureInput($this->getDefinition());
+        PropertyFormatter::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -98,6 +100,7 @@ class ProjectListCommand extends CommandBase
             'organization_label' => 'Organization label',
             'status' => 'Status',
             'endpoint' => 'Endpoint',
+            'created_at' => 'Created',
         ];
         $defaultColumns = ['id', 'title', 'region'];
         if ($this->config()->getWithDefault('api.organizations', false)) {
@@ -105,6 +108,9 @@ class ProjectListCommand extends CommandBase
         }
 
         $table->replaceDeprecatedColumns(['url' => 'ui_url', 'host' => 'region'], $input, $output);
+
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
 
         $rows = [];
         foreach ($projectStubs as $projectStub) {
@@ -131,6 +137,7 @@ class ProjectListCommand extends CommandBase
                 'organization_label' => $org_info ? $org_info->label : '',
                 'status' => $projectStub->status,
                 'endpoint' => $projectStub->endpoint,
+                'created_at' => $formatter->format($projectStub->created_at, 'created_at'),
             ];
         }
 
