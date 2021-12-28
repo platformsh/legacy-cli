@@ -97,10 +97,11 @@ abstract class DomainCommandBase extends CommandBase
                 return;
             }
         }
+        // @todo standardize API error parsing if the format is ever formalized
         if ($response->getStatusCode() === 400) {
             $data = $response->json();
-            if (isset($data['detail']) && strpos($data['detail'], 'already claimed') !== false) {
-                $this->stdErr->writeln('This domain is already claimed by another service.');
+            if (isset($data['detail']['error'])) {
+                $this->stdErr->writeln($data['detail']['error']);
                 return;
             }
         }
