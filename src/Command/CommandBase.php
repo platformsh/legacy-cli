@@ -50,6 +50,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     private static $projectRoot = null;
 
+    /** @var null|string The name of the original command. */
+    private static $originalCommand;
+
     /** @var OutputInterface|null */
     protected $stdErr;
 
@@ -1384,6 +1387,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->debug('Running command: ' . $name);
 
+        // Set the original command name for comparison.
+        self::$originalCommand = $this->getName();
+
         // Give the other command an entirely new service container, because the
         // "input" and "output" parameters, and all their dependents, need to
         // change.
@@ -1402,6 +1408,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return $result;
+    }
+
+    protected function isOriginalCommand()
+    {
+        return self::$originalCommand === null || self::$originalCommand === $this->getName();
     }
 
     /**

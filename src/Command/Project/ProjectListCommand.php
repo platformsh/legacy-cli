@@ -6,12 +6,14 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\Pager\Pager;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\ProjectStub;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 
 class ProjectListCommand extends CommandBase
 {
@@ -22,13 +24,15 @@ class ProjectListCommand extends CommandBase
             ->setName('project:list')
             ->setAliases(['projects', 'pro'])
             ->setDescription('Get a list of all active projects')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. This disables pagination.')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title (case-insensitive search)')
             ->addOption('my', null, InputOption::VALUE_NONE, 'Display only the projects you own')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
-            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order');
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
+            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number (starting from 1)', '1')
+            ->addOption('count', null, InputOption::VALUE_REQUIRED, 'The number of projects to display per page. The default is based on the terminal height. Use 0 to disable pagination.');
 
         if ($this->config()->getWithDefault('api.organizations', false)) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name');
@@ -78,11 +82,46 @@ class ProjectListCommand extends CommandBase
             $projectStubs = array_reverse($projectStubs, true);
         }
 
+        // Display a message if no projects are found.
+        if (empty($projectStubs)) {
+            if (!empty($filters)) {
+                $filtersUsed = '<comment>--'
+                    . implode('</comment>, <comment>--', array_keys($filters))
+                    . '</comment>';
+                $this->stdErr->writeln('No projects found (filters in use: ' . $filtersUsed . ').');
+            } else {
+                $this->stdErr->writeln(
+                    'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
+                );
+            }
+
+            return 0;
+        }
+
         // Display a simple list of project IDs, if --pipe is used.
         if ($input->getOption('pipe')) {
             $output->writeln(\array_map(function (ProjectStub $stub) { return $stub->id; }, $projectStubs));
 
             return 0;
+        }
+
+        // Paginate the list.
+        if ($input->getOption('count') === null) {
+            // Find a default --count based on the terminal height (minimum 10).
+            // Deduct 24 lines for consistency with the welcome command.
+            $itemsPerPage = \max(10, (new Terminal())->getHeight() - 24);
+            if ($itemsPerPage > \count($projectStubs)) {
+                $itemsPerPage = \count($projectStubs);
+            }
+        } else {
+            $itemsPerPage = (int) $input->getOption('count');
+        }
+        $page = (new Pager())->page($projectStubs, (int) $input->getOption('page'), (int) $itemsPerPage);
+        /** @var ProjectStub[] $projectStubs */
+        $projectStubs = $page->items;
+        if (\count($projectStubs) === 0) {
+            $this->stdErr->writeln(\sprintf('No projects found on this page (%s)', $page->displayInfo()));
+            return 1;
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
@@ -149,34 +188,27 @@ class ProjectListCommand extends CommandBase
             return 0;
         }
 
-        // Display a message if no projects are found.
-        if (empty($projectStubs)) {
-            if (!empty($filters)) {
-                $filtersUsed = '<comment>--'
-                    . implode('</comment>, <comment>--', array_keys($filters))
-                    . '</comment>';
-                $this->stdErr->writeln('No projects found (filters in use: ' . $filtersUsed . ').');
-            } else {
-                $this->stdErr->writeln(
-                    'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
-                );
-            }
-
-            return 0;
-        }
-
         // Display the projects.
         if (empty($filters)) {
-            $this->stdErr->writeln('Your projects are: ');
+            $this->stdErr->write('Your projects are');
+            if ($page->pageCount > 1) {
+                $this->stdErr->write(\sprintf(' (%s)', $page->displayInfo()));
+            }
+            $this->stdErr->writeln(':');
         }
 
         $table->render($rows, $header, $defaultColumns);
 
-        $commandName = $this->config()->get('application.executable');
+        $executable = $this->config()->get('application.executable');
+
+        if ($page->pageCount > 1 && $itemsPerPage !== 0) {
+            $this->stdErr->writeln('List all projects by running: <info>' . $executable . ' projects --count 0</info>');
+        }
+
         $this->stdErr->writeln([
             '',
-            'Get a project by running: <info>' . $commandName . ' get [id]</info>',
-            "List a project's environments by running: <info>" . $commandName . ' environments -p [id]</info>',
+            'Get a project by running: <info>' . $executable . ' get [id]</info>',
+            "List a project's environments by running: <info>" . $executable . ' environments -p [id]</info>',
         ]);
 
         return 0;
