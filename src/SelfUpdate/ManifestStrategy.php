@@ -107,31 +107,29 @@ class ManifestStrategy implements StrategyInterface
     /**
      * Find update/upgrade notes for the new remote version.
      *
-     * @param Updater $updater
+     * @param string $currentVersion
+     * @param string $targetVersion
      *
-     * @return string|false
-     *   A string if notes are found, or false otherwise.
+     * @return array
      */
-    public function getUpdateNotes(Updater $updater)
+    public function getUpdateNotesByVersion($currentVersion, $targetVersion)
     {
-        $versionInfo = $this->getRemoteVersionInfo($updater);
-        if (empty($versionInfo['updating'])) {
-            return false;
-        }
-        $localVersion = $this->getCurrentLocalVersion($updater);
-        $items = isset($versionInfo['updating'][0]) ? $versionInfo['updating'] : [$versionInfo['updating']];
-        foreach ($items as $updating) {
-            if (!isset($updating['notes'])) {
-                continue;
-            } elseif (isset($updating['hide from']) && version_compare($localVersion, $updating['hide from'], '>=')) {
-                continue;
-            } elseif (isset($updating['show from']) && version_compare($localVersion, $updating['show from'], '<')) {
-                continue;
+        $notes = [];
+        foreach ($this->getAvailableVersions() as $version => $item) {
+            if (isset($item['notes']) && \version_compare($version, $currentVersion, '>') && \version_compare($version, $targetVersion, '<=')) {
+                if (is_array($item['notes'])) {
+                    foreach ($item['notes'] as $notesVersion => $notesString) {
+                        if (\version_compare($notesVersion, $currentVersion, '>') && \version_compare($notesVersion, $targetVersion, '<=')) {
+                            $notes[$notesVersion] = $notesString;
+                        }
+                    }
+                } else {
+                    $notes[$version] = $item['notes'];
+                }
             }
-            return $updating['notes'];
         }
-
-        return false;
+        uksort($notes, '\version_compare');
+        return $notes;
     }
 
     /**

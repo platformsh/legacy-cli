@@ -128,14 +128,19 @@ class SelfUpdater
 
         $newVersionString = $updater->getNewVersion();
 
-        if ($notes = $strategy->getUpdateNotes($updater)) {
+        if ($notes = $strategy->getUpdateNotesByVersion($currentVersion, $newVersionString)) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Update notes:', $newVersionString));
-            $this->stdErr->writeln(preg_replace('/^/m', '  ', $notes));
-            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersionString));
+            foreach ($notes as $version => $notesStr) {
+                if (\count($notes) > 1) {
+                    $this->stdErr->writeln('<comment>' . $version . '</comment>:');
+                }
+                $this->stdErr->writeln(preg_replace('/^/m', '  ', $notesStr));
+                $this->stdErr->writeln('');
+            }
         }
 
-        if (!$this->questionHelper->confirm(sprintf('Update to version %s?', $newVersionString))) {
+        if (!$this->questionHelper->confirm(sprintf('Update to version <info>%s</info>?', $newVersionString))) {
             return false;
         }
 

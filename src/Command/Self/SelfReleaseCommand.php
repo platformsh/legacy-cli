@@ -281,11 +281,14 @@ class SelfReleaseCommand extends CommandBase
         $manifestItem['url'] = $download_url;
         $manifestItem['php']['min'] = '5.5.9';
         if (!empty($changelog)) {
+            // This is left for backwards compatibility (so release notes can be shown in older versions).
             $manifestItem['updating'][] = [
                 'notes' => $changelog,
                 'show from' => $lastVersion,
                 'hide from' => $newVersion,
             ];
+            // This is the new release notes format.
+            $manifestItem['notes'][$newVersion] = $changelog;
             $this->stdErr->writeln('<info>Changes:</info>');
             $this->stdErr->writeln($changelog);
             $this->stdErr->writeln('');
