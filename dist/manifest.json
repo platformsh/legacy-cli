@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "a2f565d5a0ffd29b56a3f29dd3efd8dcc1a2974c",
-        "sha256": "7c78ec8e87705b8a9cfda58abb91ebeb9a5c6f466ed99693e2a764641b1619f6",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.73.0/platform.phar",
-        "version": "3.73.0",
+        "sha1": "ad660b4c8d32496c0a97dd95ef2b57517aed2862",
+        "sha256": "e3697a526d983ca0fd42a61b8f21b04544a6ea752eccb7dff32cea2a1ee4183f",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.73.1/platform.phar",
+        "version": "3.73.1",
         "php": {
             "min": "5.5.9"
         },
@@ -422,7 +422,8 @@
             "3.70.0": "New features:\n* Allow updates to multiple properties on organization billing addresses\n\nOther changes:\n* Add detailed help to the ssh-cert:load command\n* Update client library to fix handling of project invitation conflicts\n* Remove references to Hipchat\n* Ignore 400 errors from getCurrentDeployment() in drush-aliases command",
             "3.71.0": "* Display the organization in the projects list.",
             "3.72.1": "* Don't generate an alias for an inactive DG2 target (#1093)",
-            "3.72.0": "New features:\n\n* Add a hidden `env:curl` command to make raw requests to the current environment's API.\n* Add pagination to the `projects` (`project:list`) command.\n  Also add a new optional `created_at` column.\n* Allow unsetting the remote project in the `project:set-remote` command (`project:set-remote -`).\n\nOther changes:\n\n* Warn when an API token is set on the container.\n* Remove workaround for an older PHP pcre.jit bug (fixed since PHP 7.3.11).\n* Add delimiter to read environment variables over SSH without pollution from other messages.\n* Fix TypeError in domain:add command error handling in PHP 8+ (#1097).\n* Search the docs site directly for the `docs` command."
+            "3.72.0": "New features:\n\n* Add a hidden `env:curl` command to make raw requests to the current environment's API.\n* Add pagination to the `projects` (`project:list`) command.\n  Also add a new optional `created_at` column.\n* Allow unsetting the remote project in the `project:set-remote` command (`project:set-remote -`).\n\nOther changes:\n\n* Warn when an API token is set on the container.\n* Remove workaround for an older PHP pcre.jit bug (fixed since PHP 7.3.11).\n* Add delimiter to read environment variables over SSH without pollution from other messages.\n* Fix TypeError in domain:add command error handling in PHP 8+ (#1097).\n* Search the docs site directly for the `docs` command.",
+            "3.73.1": "* Show release notes for each version on update"
         }
     }
 ]
