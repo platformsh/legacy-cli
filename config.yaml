@@ -89,7 +89,7 @@ service:
   project_config_dir: '.platform'
   applications_config_file: '.platform/applications.yaml'
   docs_url: 'https://docs.platform.sh'
-  docs_search_url: 'https://www.google.com/search?q=site%3Adocs.platform.sh%20{{ terms }}'
+  docs_search_url: 'https://docs.platform.sh/search.html?q={{ terms }}'
   api_tokens_url: 'https://accounts.platform.sh/user/api-tokens'
   register_url: 'https://auth.api.platform.sh'
   reset_password_url: 'https://auth.api.platform.sh/reset-password'
