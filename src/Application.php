@@ -128,6 +128,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Environment\EnvironmentActivateCommand();
         $commands[] = new Command\Environment\EnvironmentBranchCommand();
         $commands[] = new Command\Environment\EnvironmentCheckoutCommand();
+        $commands[] = new Command\Environment\EnvironmentCurlCommand();
         $commands[] = new Command\Environment\EnvironmentDeleteCommand();
         $commands[] = new Command\Environment\EnvironmentDrushCommand();
         $commands[] = new Command\Environment\EnvironmentHttpAccessCommand();
