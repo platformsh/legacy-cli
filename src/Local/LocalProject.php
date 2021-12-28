@@ -50,7 +50,7 @@ class LocalProject
      * @return array|false
      *   An array containing 'id' and 'host', or false on failure.
      */
-    protected function parseGitUrl($gitUrl)
+    public function parseGitUrl($gitUrl)
     {
         $gitDomain = $this->config->get('detection.git_domain');
         $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
