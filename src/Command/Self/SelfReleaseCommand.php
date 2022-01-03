@@ -227,12 +227,12 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Confirm the release changelog.
-        $changelog = $this->getReleaseChangelog($lastTag);
+        list($changelogFilename, $changelog) = $this->getReleaseChangelog($lastTag, $tagName);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm($questionText)) {
-            $this->stdErr->writeln('Update or delete the file <comment>' . CLI_ROOT . '/release-changelog.md</comment> and re-run this command.');
+            $this->stdErr->writeln('Update or delete the file <comment>' . $changelogFilename . '</comment> and re-run this command.');
 
             return 1;
         }
@@ -395,12 +395,13 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $lastVersionTag The tag corresponding to the last version.
+     * @param string $newVersionTag The tag corresponding to the new version being released.
      *
-     * @return string
+     * @return string[] The filename and the current changelog.
      */
-    private function getReleaseChangelog($lastVersionTag)
+    private function getReleaseChangelog($lastVersionTag, $newVersionTag)
     {
-        $filename = CLI_ROOT . '/release-changelog.md';
+        $filename = CLI_ROOT . '/release-changelog-' . $newVersionTag . '.md';
         if (file_exists($filename)) {
             $mTime = filemtime($filename);
             $lastVersionDate = $this->getTagDate($lastVersionTag);
@@ -417,7 +418,7 @@ class SelfReleaseCommand extends CommandBase
             (new Filesystem())->dumpFile($filename, $changelog);
         }
 
-        return $changelog;
+        return [$filename, $changelog];
     }
 
     /**
