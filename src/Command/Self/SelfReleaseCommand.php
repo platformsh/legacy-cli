@@ -122,6 +122,8 @@ class SelfReleaseCommand extends CommandBase
             return $next;
         };
 
+        $versionUtil = new VersionUtil();
+
         $newVersion = $input->getArgument('version');
         if ($newVersion !== null) {
             $validateNewVersion($newVersion);
@@ -135,7 +137,7 @@ class SelfReleaseCommand extends CommandBase
             // Find a good default new version number.
             $default = null;
             $autoComplete = [];
-            if ($nextVersions = (new VersionUtil())->nextVersions($lastVersion)) {
+            if ($nextVersions = $versionUtil->nextVersions($lastVersion)) {
                 $default = reset($nextVersions);
                 $autoComplete = $nextVersions;
             }
@@ -199,7 +201,7 @@ class SelfReleaseCommand extends CommandBase
             if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
                 $latestItem = &$manifest[$key];
             }
-            if ($this->majorVersion($item['version']) === $this->majorVersion($newVersion)) {
+            if ($versionUtil->majorVersion($item['version']) === $versionUtil->majorVersion($newVersion)) {
                 if ($latestSameMajorItem || version_compare($item['version'], $latestSameMajorItem['version'], '>')) {
                     $latestSameMajorItem = &$manifest[$key];
                 }
@@ -282,13 +284,18 @@ class SelfReleaseCommand extends CommandBase
         $manifestItem['php']['min'] = '5.5.9';
         if (!empty($changelog)) {
             // This is left for backwards compatibility (so release notes can be shown in older versions).
-            $manifestItem['updating'][] = [
-                'notes' => $changelog,
-                'show from' => $lastVersion,
-                'hide from' => $newVersion,
-            ];
-            // This is the new release notes format.
+            // It's only shown for minor (not patch) versions.
+            if ($versionUtil->isMajorOrMinor($newVersion)) {
+                $manifestItem['updating'][] = [
+                    'notes' => $changelog,
+                    'show from' => $lastVersion,
+                    'hide from' => $newVersion,
+                ];
+            }
+
+            // This is the newer release notes format.
             $manifestItem['notes'][$newVersion] = $changelog;
+
             $this->stdErr->writeln('<info>Changes:</info>');
             $this->stdErr->writeln($changelog);
             $this->stdErr->writeln('');
@@ -351,7 +358,7 @@ class SelfReleaseCommand extends CommandBase
                 'name' => $tagName,
                 'body' => $releaseDescription,
                 'draft' => true,
-                'prerelease' => $this->isPreRelease($newVersion),
+                'prerelease' => $versionUtil->isPreRelease($newVersion),
             ],
             'debug' => $output->isDebug(),
         ]);
@@ -491,36 +498,5 @@ class SelfReleaseCommand extends CommandBase
         $changelog = trim($changelog);
 
         return $changelog;
-    }
-
-    /**
-     * Check if a version number is for a pre-release version.
-     *
-     * @param string $version
-     *
-     * @return bool
-     */
-    private function isPreRelease($version)
-    {
-        return preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?\-.+/', $version) === 1;
-    }
-
-    /**
-     * @param string $version
-     *
-     * @return int
-     */
-    private function majorVersion($version)
-    {
-        if ($dotPos = strpos($version, '.', 1)) {
-            $major = substr($version, 0, $dotPos);
-            if (is_numeric($major)) {
-                return (int) $major;
-            }
-        } elseif (is_numeric($version)) {
-            return (int) $version;
-        }
-
-        throw new \RuntimeException('Failed to find major version for: ' . $version);
     }
 }

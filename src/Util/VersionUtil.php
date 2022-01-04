@@ -26,4 +26,48 @@ class VersionUtil
         }
         return [];
     }
+
+
+    /**
+     * Check if a version number is for a pre-release version.
+     *
+     * @param string $version
+     *
+     * @return bool
+     */
+    public function isPreRelease($version)
+    {
+        return \preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?-.+/', $version) === 1;
+    }
+
+    /**
+     * Returns if a semantic version is major or minor (i.e. not a patch version).
+     *
+     * @param string $version
+     *
+     * @return bool
+     */
+    public function isMajorOrMinor($version)
+    {
+        return empty(\explode('.', $version, 3)[2]);
+    }
+
+    /**
+     * @param string $version
+     *
+     * @return int
+     */
+    public function majorVersion($version)
+    {
+        if ($dotPos = strpos($version, '.', 1)) {
+            $major = substr($version, 0, $dotPos);
+            if (is_numeric($major)) {
+                return (int) $major;
+            }
+        } elseif (is_numeric($version)) {
+            return (int) $version;
+        }
+
+        throw new \RuntimeException('Failed to find major version for: ' . $version);
+    }
 }
