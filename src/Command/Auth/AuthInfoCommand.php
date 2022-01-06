@@ -17,15 +17,24 @@ class AuthInfoCommand extends CommandBase
             ->setName('auth:info')
             ->setDescription('Display your account information')
             ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
+            ->addOption('no-auto-login', null, InputOption::VALUE_NONE, 'Skips auto login. Nothing will be output if not logged in, and the exit code will be 0, assuming no other errors.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         Table::configureInput($this->getDefinition());
+        $this->addExample('Print your user ID', 'id');
+        $this->addExample('Print your email address', 'email');
+        $this->addExample('Print your user ID (or nothing if not logged in)', 'id --no-auto-login');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
+
+        if ($input->getOption('no-auto-login') && !$this->api()->isLoggedIn()) {
+            $this->stdErr->writeln('Not logged in', OutputInterface::VERBOSITY_VERBOSE);
+            return 0;
+        }
 
         if ($this->api()->authApiEnabled()) {
             $info = $this->api()->getUser()->getProperties();
