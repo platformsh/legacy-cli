@@ -189,6 +189,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Project\Variable\ProjectVariableSetCommand();
         $commands[] = new Command\Repo\CatCommand();
         $commands[] = new Command\Repo\LsCommand();
+        $commands[] = new Command\Repo\ReadCommand();
         $commands[] = new Command\Route\RouteListCommand();
         $commands[] = new Command\Route\RouteGetCommand();
         $commands[] = new Command\Self\SelfBuildCommand();

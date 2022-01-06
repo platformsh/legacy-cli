@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Git\Blob;
 use Platformsh\Client\Model\Git\Commit;
 use Platformsh\Client\Model\Git\Tree;
 use Platformsh\Client\Model\Project;
@@ -112,7 +113,7 @@ class GitDataApi
             return new Commit($cached['data'], $cached['uri'], $client, true);
         }
         $baseUrl = Project::getProjectBaseFromUrl($environment->getUri()) . '/git/commits';
-        $commit = \Platformsh\Client\Model\Git\Commit::get($sha, $baseUrl, $client);
+        $commit = Commit::get($sha, $baseUrl, $client);
         if ($commit === false) {
             return false;
         }
@@ -171,13 +172,8 @@ class GitDataApi
         $cacheKey = implode(':', ['raw', $environment->project, $filename, $commitSha]);
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
-            // Find the file.
-            if (($tree = $this->getTree($environment, dirname($filename), $commitSha))
-                && ($blob = $tree->getBlob(basename($filename)))) {
-                $raw = $blob->getRawContent();
-            } else {
-                $raw = false;
-            }
+            $object = $this->getObject($filename, $environment, $commitSha);
+            $raw = $object ? $object->getRawContent() : false;
             $data = ['raw' => $raw];
             // Skip caching if the file is bigger than 100 KiB.
             if ($raw === false || strlen($raw) <= 102400) {
@@ -186,6 +182,47 @@ class GitDataApi
         }
 
         return $data['raw'];
+    }
+
+    /**
+     * Fetches a blob or tree object in the environment, using the Git Data API.
+     *
+     * @param string      $filename
+     * @param Environment $environment
+     * @param string|null $commitSha
+     *
+     * @throws \RuntimeException on error.
+     *
+     * @return Tree|Blob|false
+     *   The object or false if not found.
+     */
+    public function getObject($filename, Environment $environment, $commitSha = null)
+    {
+        $commitSha = $this->normalizeSha($environment, $commitSha);
+        $cacheKey = implode(':', ['obj', $environment->project, $filename, $commitSha]);
+        if ($this->cache->contains($cacheKey)) {
+            $data = $this->cache->fetch($cacheKey);
+            if (isset($data['type']) && $data['type'] === 'not_found') {
+                return false;
+            }
+            if (isset($data['data'], $data['type'], $data['uri'])) {
+                $className = $data['type'] === 'tree' ? Tree::class : Blob::class;
+                return new $className($data['data'], $data['uri'], $this->api->getHttpClient());
+            }
+        }
+        $parentTree = $this->getTree($environment, \dirname($filename), $commitSha);
+        $object = $parentTree ? $parentTree->getObject(\basename($filename)) : false;
+        if ($object) {
+            $toCache = [
+                'data' => $object->getData(),
+                'type' => $object instanceof Tree ? 'tree' : 'blob',
+                'uri' => $object->getUri(),
+            ];
+        } else {
+            $toCache = ['type' => 'not_found'];
+        }
+        $this->cache->save($cacheKey, $toCache);
+        return $object;
     }
 
     /**
