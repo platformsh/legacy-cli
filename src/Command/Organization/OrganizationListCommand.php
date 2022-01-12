@@ -45,8 +45,13 @@ class OrganizationListCommand extends OrganizationCommandBase
             $organizations = array_reverse($organizations, true);
         }
 
+        $executable = $this->config()->get('application.executable');
         if (empty($organizations)) {
             $this->stdErr->writeln('No organizations found.');
+            if ($this->config()->isCommandEnabled('organization:create')) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(\sprintf('To create a new organization, run: <info>%s org:create</info>', $executable));
+            }
             return 1;
         }
 
@@ -83,6 +88,12 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         $table->render($rows, $headers, $defaultColumns);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(\sprintf('To view or modify organization details, run: <info>%s org:info [-o organization]</info>', $executable));
+            $this->stdErr->writeln(\sprintf('To see all organization commands run: <info>%s list organization</info>', $executable));
+        }
 
         return 0;
     }
