@@ -106,6 +106,9 @@ END_HELP;
 
         $this->runOtherCommand('organization:info', ['--org' => $organization->name], $this->stdErr);
 
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln(\sprintf('To view or update the organization\'s billing address, run: <info>%s org:billing:address --org %s</info>', $this->config()->get('application.executable'), $organization->name));
+
         return 0;
     }
 }
