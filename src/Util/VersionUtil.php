@@ -41,18 +41,6 @@ class VersionUtil
     }
 
     /**
-     * Returns if a semantic version is major or minor (i.e. not a patch version).
-     *
-     * @param string $version
-     *
-     * @return bool
-     */
-    public function isMajorOrMinor($version)
-    {
-        return empty(\explode('.', $version, 3)[2]);
-    }
-
-    /**
      * @param string $version
      *
      * @return int

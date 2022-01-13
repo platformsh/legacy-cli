@@ -14,19 +14,6 @@ class VersionUtilTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['2.0.3-beta', '2.1.0-beta', '3.0.0-beta'], $util->nextVersions('2.0.2-beta'));
     }
 
-    public function testIsMajorOrMinor()
-    {
-        $util = new VersionUtil();
-        $this->assertTrue($util->isMajorOrMinor('1.0.0'));
-        $this->assertTrue($util->isMajorOrMinor('1.1.0'));
-        $this->assertTrue($util->isMajorOrMinor('10'));
-        $this->assertTrue($util->isMajorOrMinor('10.1'));
-        $this->assertFalse($util->isMajorOrMinor('1.1.0.1'));
-        $this->assertFalse($util->isMajorOrMinor('1.1.0-1'));
-        $this->assertFalse($util->isMajorOrMinor('1.1.1'));
-        $this->assertFalse($util->isMajorOrMinor('1.1.1-beta'));
-    }
-
     public function testMajorVersion()
     {
         $util = new VersionUtil();
