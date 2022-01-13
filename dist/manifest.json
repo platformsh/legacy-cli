@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "463267a06f5b2aff77c4e6c28d5ee33788a31d6e",
-        "sha256": "cc6fdbcb0631aed8d21a66a58b7cb22b95a2291624d3913dd9f4c1b8a6375d82",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.73.2/platform.phar",
-        "version": "3.73.2",
+        "sha1": "3ee88c6f25f50ce0fb2924009ac9587490be4c6f",
+        "sha256": "e85870fb2c65b05828ec73092216407646af72dad9de3e32453cff43e0c891bd",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.74.0/platform.phar",
+        "version": "3.74.0",
         "php": {
             "min": "5.5.9"
         },
@@ -430,7 +430,8 @@
             "3.72.2": "* Don't generate an alias for an inactive DG2 target (#1093)",
             "3.73.0": "New features:\n\n* Add a hidden `env:curl` command to make raw requests to the current environment's API.\n* Add pagination to the `projects` (`project:list`) command.\n  Also add a new optional `created_at` column.\n* Allow unsetting the remote project in the `project:set-remote` command (`project:set-remote -`).\n\nOther changes:\n\n* Warn when an API token is set on the container.\n* Remove workaround for an older PHP pcre.jit bug (fixed since PHP 7.3.11).\n* Add delimiter to read environment variables over SSH without pollution from other messages.\n* Fix TypeError in domain:add command error handling in PHP 8+ (#1097).\n* Search the docs site directly for the `docs` command.",
             "3.73.1": "* Show release notes for each version on update",
-            "3.73.2": "* Support \"require\" and \"repositories\" keys for PHP dependencies"
+            "3.73.2": "* Support \"require\" and \"repositories\" keys for PHP dependencies",
+            "3.74.0": "* Add `org:create` and `org:delete` commands (marked as beta/alpha for now).\n* Add `auth:info id --no-auto-login` as a convenience for scripts to check if already logged in."
         }
     }
 ]
