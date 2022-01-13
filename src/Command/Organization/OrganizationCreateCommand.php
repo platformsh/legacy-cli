@@ -3,13 +3,12 @@ namespace Platformsh\Cli\Command\Organization;
 
 use Cocur\Slugify\Slugify;
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class OrganizationCreateCommand extends CommandBase
+class OrganizationCreateCommand extends OrganizationCommandBase
 {
     /**
      * The timestamp when we can stop showing a warning about legacy APIs.
