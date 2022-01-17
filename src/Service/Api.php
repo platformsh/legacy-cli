@@ -729,6 +729,15 @@ class Api
             return $environments[$id];
         }
 
+        // Look for the environment by machine name.
+        if ($tryMachineName) {
+            foreach ($environments as $environment) {
+                if ($environment->machine_name === $id) {
+                    return $environment;
+                }
+            }
+        }
+
         // Retry directly if the environment was not found in the cache.
         if ($refresh === null) {
             if ($environment = $project->getEnvironment($id)) {
@@ -736,15 +745,6 @@ class Api
                 // of date.
                 $this->clearEnvironmentsCache($project->id);
                 return $environment;
-            }
-        }
-
-        // Look for the environment by machine name.
-        if ($tryMachineName) {
-            foreach ($environments as $environment) {
-                if ($environment->machine_name === $id) {
-                    return $environment;
-                }
             }
         }
 
