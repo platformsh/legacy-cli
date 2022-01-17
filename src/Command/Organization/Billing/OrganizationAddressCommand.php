@@ -51,7 +51,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
                 $field->set('default', $address->country);
             }
             foreach ($address->getProperties() as $key => $value) {
-                if ($value !== '' && ($field = $form->getField($key))) {
+                if ($value !== '' && $key !== 'country' && ($field = $form->getField($key))) {
                     $field->set('autoCompleterValues', [$value]);
                 }
             }
