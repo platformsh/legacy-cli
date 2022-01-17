@@ -778,16 +778,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.25",
+            "version": "v0.0.26",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "9b1a93e5e27aa1c1614ac14102a55162f69732ae"
+                "reference": "39aa4f31c70db66710baeb3fd1123c1e809ac953"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/9b1a93e5e27aa1c1614ac14102a55162f69732ae",
-                "reference": "9b1a93e5e27aa1c1614ac14102a55162f69732ae",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/39aa4f31c70db66710baeb3fd1123c1e809ac953",
+                "reference": "39aa4f31c70db66710baeb3fd1123c1e809ac953",
                 "shasum": ""
             },
             "require": {
@@ -815,9 +815,9 @@
             "description": "A lightweight Symfony Console form system.",
             "support": {
                 "issues": "https://github.com/platformsh/console-form/issues",
-                "source": "https://github.com/platformsh/console-form/tree/v0.0.25"
+                "source": "https://github.com/platformsh/console-form/tree/v0.0.26"
             },
-            "time": "2021-06-16T16:02:08+00:00"
+            "time": "2022-01-14T15:24:02+00:00"
         },
         {
             "name": "psr/container",
@@ -3812,5 +3812,5 @@
     "platform-overrides": {
         "php": "5.5.9"
     },
-    "plugin-api-version": "2.1.0"
+    "plugin-api-version": "2.2.0"
 }
