@@ -898,6 +898,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->debug('No environment specified or detected: finding a default...');
             $environment = $this->api()->getDefaultEnvironment($this->project);
             if ($environment) {
+                $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api()->getEnvironmentLabel($environment)));
                 $this->environment = $environment;
                 return;
             }
@@ -1869,7 +1870,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (count($byId) === 1) {
             /** @var Organization $organization */
             $organization = reset($byId);
-            $this->debug(\sprintf('Selected organization %s by default', $this->api()->getOrganizationLabel($organization, false)));
+            $this->stdErr->writeln(\sprintf('Selected organization: %s (by default)', $this->api()->getOrganizationLabel($organization)));
             return $organization;
         }
 
