@@ -8,9 +8,11 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Address;
 use Platformsh\Client\Model\Organization\Organization;
+use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationAddressCommand extends OrganizationCommandBase
@@ -23,13 +25,19 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             ->addOrganizationOptions()
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
-            ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs');
+            ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs')
+            ->addOption('form', null, InputOption::VALUE_NONE, 'Display a form for updating the address interactively');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('form') && !$input->isInteractive()) {
+            $this->stdErr->writeln('The --form option cannot be used non-interactively.');
+            return 1;
+        }
+
         $property = $input->getArgument('property');
         $updates = $this->parseUpdates($input);
 
@@ -37,11 +45,31 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         $org = $this->validateOrganizationInput($input, 'orders');
         $address = $org->getAddress();
 
+        if ($input->getOption('form')) {
+            $form = Form::fromArray($this->getAddressFormFields());
+            if (($address->country !== '') && ($field = $form->getField('country'))) {
+                $field->set('default', $address->country);
+            }
+            foreach ($address->getProperties() as $key => $value) {
+                if ($value !== '' && $key !== 'country' && ($field = $form->getField($key))) {
+                    $field->set('autoCompleterValues', [$value]);
+                }
+            }
+            foreach ($updates as $key => $value) {
+                if ($field = $form->getField($key)) {
+                    $field->set('default', $value);
+                }
+            }
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            $updates = $form->resolveOptions($input, $output, $questionHelper);
+        }
+
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
         $result = 0;
-        if ($property !== null) {
+        if ($property !== null || !empty($updates)) {
             if (empty($updates)) {
                 $formatter->displayData($output, $address->getProperties(), $property);
                 return $result;
@@ -76,6 +104,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         $table->renderSimple($values, $headings);
 
         if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To view the billing profile, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:profile')));
             $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
         }
