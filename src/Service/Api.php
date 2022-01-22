@@ -27,6 +27,7 @@ use Platformsh\Client\Model\User;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -265,7 +266,8 @@ class Api
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
         }
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
-        $connectorOptions['verify'] = !$this->config->get('api.skip_ssl');
+        $connectorOptions['verify'] = $this->config->get('api.skip_ssl') ? false : $this->caBundlePath();
+
         $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->getUserAgent();
@@ -297,6 +299,21 @@ class Api
         };
 
         return $connectorOptions;
+    }
+
+    /**
+     * Returns the path to the CA bundle or file detected by Composer.
+     *
+     * Composer stores the path statically, so this function can be run
+     * multiple times safely. If a system CA bundle cannot be detected,
+     * Composer will use its bundled file. It will copy the file to a
+     * temporary directory if necessary (when running inside a Phar).
+     *
+     * @return string
+     */
+    private function caBundlePath()
+    {
+        return \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath(new ConsoleLogger($this->stdErr));
     }
 
     /**
@@ -377,7 +394,7 @@ class Api
             'defaults' => [
                 'headers' => ['User-Agent' => $this->getUserAgent()],
                 'debug' => $this->config->get('api.debug') ? STDERR : false,
-                'verify' => !$this->config->get('api.skip_ssl'),
+                'verify' => $this->config->get('api.skip_ssl') ? false : $this->caBundlePath(),
                 'proxy' => array_map(function($proxyUrl) {
                     // If Guzzle is going to use PHP's built-in HTTP streams,
                     // rather than curl, then transform the proxy scheme.
@@ -517,9 +534,22 @@ class Api
 
         // The PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
         $proxies = $this->getProxies();
-        foreach ($proxies as $scheme => $proxyUrl) {
+        foreach ($proxies as $proxyUrl) {
             $opts['http']['proxy'] = \str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyUrl);
             break;
+        }
+
+        // Set up SSL options.
+        if ($this->config->get('api.skip_ssl')) {
+            $opts['ssl']['verify_peer'] = false;
+            $opts['ssl']['verify_peer_name'] = false;
+        } else {
+            $caBundlePath = $this->caBundlePath();
+            if (\is_dir($caBundlePath)) {
+                $opts['ssl']['capath'] = $caBundlePath;
+            } else {
+                $opts['ssl']['cafile'] = $caBundlePath;
+            }
         }
 
         return stream_context_create($opts);

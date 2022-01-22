@@ -20,7 +20,8 @@
         "symfony/dependency-injection": "^3.1",
         "symfony/config": "^3.1",
         "paragonie/random_compat": "^2.0",
-        "ext-json": "*"
+        "ext-json": "*",
+        "composer/ca-bundle": "^1.3"
     },
     "suggest": {
         "drush/drush": "For Drupal projects"
