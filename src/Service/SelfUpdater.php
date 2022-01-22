@@ -128,7 +128,11 @@ class SelfUpdater
 
         $newVersionString = $updater->getNewVersion();
 
-        if ($notes = $strategy->getUpdateNotesByVersion($currentVersion, $newVersionString)) {
+        // Some dev versions cannot be compared against other version numbers,
+        // so do not check for release notes in that case.
+        $currentIsDev = \strpos($currentVersion, 'dev-') === 0;
+
+        if (!$currentIsDev && ($notes = $strategy->getUpdateNotesByVersion($currentVersion, $newVersionString))) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersionString));
             foreach ($notes as $version => $notesStr) {
