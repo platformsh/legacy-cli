@@ -210,7 +210,7 @@ class SshConfig {
             'Host *',
         ]);
 
-        $manualMessage = 'To configure SSH manually, add the following lines to: <comment>' . $filename . '</comment>'
+        $manualMessage = 'To configure SSH, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
 
         if (file_exists($filename)) {
@@ -229,13 +229,16 @@ class SshConfig {
                 return false;
             }
             $creating = false;
-        } else {
+        } elseif ($this->fs->canWrite($filename)) {
             if (!$questionHelper->confirm('Do you want to create an SSH configuration file automatically?')) {
                 $this->stdErr->writeln($manualMessage);
                 return false;
             }
             $currentContents = '';
             $creating = true;
+        } else {
+            $this->stdErr->writeln($manualMessage);
+            return false;
         }
 
         $newContents = $this->getUserSshConfigChanges($currentContents, $suggestedConfig);
