@@ -12,7 +12,8 @@
     "shell-config.rc",
     "shell-config-bash.rc",
     "vendor/autoload.php",
-    "vendor/symfony/console/Resources/bin/hiddeninput.exe"
+    "vendor/symfony/console/Resources/bin/hiddeninput.exe",
+    "vendor/composer/ca-bundle/res/cacert.pem"
   ],
   "finder": [
     {
