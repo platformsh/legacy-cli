@@ -486,4 +486,84 @@ class Config
     {
         return isset($this->config['service']['slug']) && $this->config['service']['slug'] === 'platformsh';
     }
+
+    /**
+     * Returns an HTTP User Agent string representing this application.
+     *
+     * @return string
+     */
+    public function getUserAgent()
+    {
+        $template = $this->getWithDefault('api.user_agent', null)
+            ?: '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})';
+        $replacements = [
+            '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->get('application.name')),
+            '{APP_NAME}' => $this->get('application.name'),
+            '{APP_SLUG}' => $this->get('application.slug'),
+            '{VERSION}' => $this->getVersion(),
+            '{UNAME_S}' => \php_uname('s'),
+            '{UNAME_R}' => \php_uname('r'),
+            '{PHP_VERSION}' => PHP_VERSION,
+        ];
+        return \str_replace(\array_keys($replacements), \array_values($replacements), $template);
+    }
+
+    /**
+     * Finds proxy addresses based on the http_proxy and https_proxy environment variables.
+     *
+     * @return array
+     *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
+     */
+    public function getProxies() {
+        $proxies = [];
+        if (\getenv('https_proxy') !== false) {
+            $proxies['https'] = \getenv('https_proxy');
+        }
+        // An environment variable prefixed by 'http_' cannot be trusted in a non-CLI (web) context.
+        if (PHP_SAPI === 'cli' && \getenv('http_proxy') !== false) {
+            $proxies['http'] = \getenv('http_proxy');
+        }
+        return $proxies;
+    }
+
+    /**
+     * Returns an array of context options for HTTP/HTTPS streams.
+     *
+     * @param int|float|null $timeout
+     *
+     * @return array
+     */
+    public function getStreamContextOptions($timeout = null)
+    {
+        $opts = [
+            // See https://www.php.net/manual/en/context.http.php
+            'http' => [
+                'method' => 'GET',
+                'timeout' => $timeout !== null ? $timeout : $this->get('api.default_timeout'),
+                'user_agent' => $this->getUserAgent(),
+            ],
+        ];
+
+        // The PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
+        $proxies = $this->getProxies();
+        foreach ($proxies as $proxyUrl) {
+            $opts['http']['proxy'] = \str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyUrl);
+            break;
+        }
+
+        // Set up SSL options.
+        if ($this->get('api.skip_ssl')) {
+            $opts['ssl']['verify_peer'] = false;
+            $opts['ssl']['verify_peer_name'] = false;
+        } else {
+            $caBundlePath = \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath();
+            if (\is_dir($caBundlePath)) {
+                $opts['ssl']['capath'] = $caBundlePath;
+            } else {
+                $opts['ssl']['cafile'] = $caBundlePath;
+            }
+        }
+
+        return $opts;
+    }
 }

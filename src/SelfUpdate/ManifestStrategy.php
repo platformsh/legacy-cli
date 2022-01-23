@@ -39,6 +39,9 @@ class ManifestStrategy implements StrategyInterface
     /** @var bool */
     private $ignorePhpReq = false;
 
+    /** @var array */
+    private $streamContextOptions = [];
+
     /**
      * ManifestStrategy constructor.
      *
@@ -58,6 +61,14 @@ class ManifestStrategy implements StrategyInterface
         $this->manifestUrl = $manifestUrl;
         $this->allowMajor = $allowMajor;
         $this->allowUnstable = $allowUnstable;
+    }
+
+    /**
+     * @param array $opts
+     */
+    public function setStreamContextOptions(array $opts)
+    {
+        $this->streamContextOptions = $opts;
     }
 
     /**
@@ -146,8 +157,9 @@ class ManifestStrategy implements StrategyInterface
             $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
         }
 
-        $context = stream_context_create(['http' => ['timeout' => $this->downloadTimeout]]);
-        $fileContents = file_get_contents($url, false, $context);
+        $opts = $this->streamContextOptions;
+        $opts['http']['timeout'] = $this->downloadTimeout;
+        $fileContents = file_get_contents($url, false, stream_context_create($opts));
         if ($fileContents === false) {
             throw new HttpRequestException(sprintf('Failed to download file from URL: %s', $versionInfo['url']));
         }
@@ -225,8 +237,9 @@ class ManifestStrategy implements StrategyInterface
     private function getManifest()
     {
         if (!isset($this->manifest)) {
-            $context = stream_context_create(['http' => ['timeout' => $this->manifestTimeout]]);
-            $manifestContents = file_get_contents($this->manifestUrl, false, $context);
+            $opts = $this->streamContextOptions;
+            $opts['http']['timeout'] = $this->manifestTimeout;
+            $manifestContents = file_get_contents($this->manifestUrl, false, stream_context_create($opts));
             if ($manifestContents === false) {
                 throw new \RuntimeException(sprintf('Failed to download manifest: %s', $this->manifestUrl));
             }
