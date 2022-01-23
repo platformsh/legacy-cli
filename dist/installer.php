@@ -600,9 +600,103 @@ class Installer {
         if ($this->flagEnabled('insecure')) {
             $opts['ssl']['verify_peer'] = false;
             $opts['ssl']['verify_peer_name'] = false;
+        } elseif ($path = $this->getCaBundle()) {
+            if (\is_dir($path)) {
+                $opts['ssl']['capath'] = $path;
+            } else {
+                $opts['ssl']['cafile'] = $path;
+            }
         }
 
         return $opts;
+    }
+
+    /**
+     * Returns the path to the system CA bundle, if found.
+     *
+     * Adapted from composer/ca-bundle.
+     * @link https://github.com/composer/ca-bundle
+     * @see \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath()
+     *
+     * @return string|false
+     */
+    private function getCaBundle() {
+        static $path;
+        if (isset($path)) {
+            return $path;
+        }
+
+        $caBundlePaths = [];
+
+        $caBundlePaths[] = \getenv('SSL_CERT_FILE');
+        $caBundlePaths[] = \getenv('SSL_CERT_DIR');
+
+        $caBundlePaths[] = \ini_get('openssl.cafile');
+        $caBundlePaths[] = \ini_get('openssl.capath');
+
+        $otherLocations = [
+            '/etc/pki/tls/certs/ca-bundle.crt', // Fedora, RHEL, CentOS (ca-certificates package)
+            '/etc/ssl/certs/ca-certificates.crt', // Debian, Ubuntu, Gentoo, Arch Linux (ca-certificates package)
+            '/etc/ssl/ca-bundle.pem', // SUSE, openSUSE (ca-certificates package)
+            '/usr/local/share/certs/ca-root-nss.crt', // FreeBSD (ca_root_nss_package)
+            '/usr/ssl/certs/ca-bundle.crt', // Cygwin
+            '/opt/local/share/curl/curl-ca-bundle.crt', // OS X macports, curl-ca-bundle package
+            '/usr/local/share/curl/curl-ca-bundle.crt', // Default cURL CA bunde path (without --with-ca-bundle option)
+            '/usr/share/ssl/certs/ca-bundle.crt', // Really old RedHat?
+            '/etc/ssl/cert.pem', // OpenBSD
+            '/usr/local/etc/ssl/cert.pem', // FreeBSD 10.x
+            '/usr/local/etc/openssl/cert.pem', // OS X homebrew, openssl package
+            '/usr/local/etc/openssl@1.1/cert.pem', // OS X homebrew, openssl@1.1 package
+        ];
+
+        foreach ($otherLocations as $location) {
+            $otherLocations[] = \dirname($location);
+        }
+
+        $caBundlePaths = \array_filter(\array_merge($caBundlePaths, $otherLocations));
+
+        foreach ($caBundlePaths as $candidate) {
+            if ($this->caPathUsable($candidate)) {
+                return $path = $candidate;
+            }
+        }
+
+        return $path = false;
+    }
+
+    /**
+     * Returns if a CA bundle path should be used.
+     *
+     * Adapted from composer/ca-bundle.
+     * @link https://github.com/composer/ca-bundle
+     * @see \Composer\CaBundle\CaBundle::caFileUsable()
+     * @see \Composer\CaBundle\CaBundle::caDirUsable()
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    private function caPathUsable($path)
+    {
+        if (!\is_readable($path)) {
+            return false;
+        }
+        if (\is_file($path)) {
+            // Avoid openssl_x509_parse() on old PHP versions (CVE-2013-6420).
+            if (\function_exists('\\openssl_x509_parse') && PHP_VERSION_ID >= 50600) {
+                $contents = \file_get_contents($path);
+                if (!$contents || \strlen($contents) === 0) {
+                    return false;
+                }
+                $contents = \str_replace('TRUSTED CERTIFICATE', 'CERTIFICATE', $contents);
+                return $contents !== false && \openssl_x509_parse($contents);
+            }
+            return false;
+        }
+        if (\is_dir($path)) {
+            return (bool) \glob($path . '/*');
+        }
+        return false;
     }
 
     /**
