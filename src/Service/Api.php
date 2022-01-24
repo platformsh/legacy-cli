@@ -134,7 +134,7 @@ class Api
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
-        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
+        $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
