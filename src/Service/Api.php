@@ -232,27 +232,6 @@ class Api
     }
 
     /**
-     * Get an HTTP User Agent string representing this application.
-     *
-     * @return string
-     */
-    private function getUserAgent()
-    {
-        $template = $this->config->getWithDefault('api.user_agent', null)
-            ?: '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})';
-        $replacements = [
-            '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->config->get('application.name')),
-            '{APP_NAME}' => $this->config->get('application.name'),
-            '{APP_SLUG}' => $this->config->get('application.slug'),
-            '{VERSION}' => $this->config->getVersion(),
-            '{UNAME_S}' => \php_uname('s'),
-            '{UNAME_R}' => \php_uname('r'),
-            '{PHP_VERSION}' => PHP_VERSION,
-        ];
-        return \str_replace(\array_keys($replacements), \array_values($replacements), $template);
-    }
-
-    /**
      * Returns options to instantiate an API client library Connector.
      *
      * @see Connector::__construct()
@@ -270,7 +249,7 @@ class Api
 
         $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
-        $connectorOptions['user_agent'] = $this->getUserAgent();
+        $connectorOptions['user_agent'] = $this->config->getUserAgent();
         $connectorOptions['timeout'] = $this->config->get('api.default_timeout');
 
         if ($apiToken = $this->tokenConfig->getApiToken()) {
@@ -392,7 +371,7 @@ class Api
     public function getGuzzleOptions() {
         $options = [
             'defaults' => [
-                'headers' => ['User-Agent' => $this->getUserAgent()],
+                'headers' => ['User-Agent' => $this->config->getUserAgent()],
                 'debug' => $this->config->get('api.debug') ? STDERR : false,
                 'verify' => $this->config->get('api.skip_ssl') ? false : $this->caBundlePath(),
                 'proxy' => array_map(function($proxyUrl) {
@@ -402,7 +381,7 @@ class Api
                         return \str_replace(['http://', 'https://'], ['tcp://', 'tcp://'], $proxyUrl);
                     }
                     return $proxyUrl;
-                }, $this->getProxies()),
+                }, $this->config->getProxies()),
                 'timeout' => $this->config->get('api.default_timeout'),
             ],
         ];
@@ -494,24 +473,6 @@ class Api
     }
 
     /**
-     * Finds proxy addresses based on the http_proxy and https_proxy environment variables.
-     *
-     * @return array
-     *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
-     */
-    private function getProxies() {
-        $proxies = [];
-        if (getenv('https_proxy') !== false) {
-            $proxies['https'] = getenv('https_proxy');
-        }
-        // An environment variable prefixed by 'http_' cannot be trusted in a non-CLI (web) context.
-        if (PHP_SAPI === 'cli' && getenv('http_proxy') !== false) {
-            $proxies['http'] = getenv('http_proxy');
-        }
-        return $proxies;
-    }
-
-    /**
      * Constructs a stream context for using the API with stream functions.
      *
      * @param int|float $timeout
@@ -519,40 +480,12 @@ class Api
      * @return resource
      */
     public function getStreamContext($timeout = 15) {
-        $opts = [
-            // See https://www.php.net/manual/en/context.http.php
-            'http' => [
-                'method' => 'GET',
-                'follow_location' => 0,
-                'timeout' => $timeout,
-                'user_agent' => $this->getUserAgent(),
-                'header' => [
-                    'Authorization: Bearer ' . $this->getAccessToken(),
-                ],
-            ],
+        $opts = $this->config->getStreamContextOptions($timeout);
+        $opts['http']['header'] = [
+            'Authorization: Bearer ' . $this->getAccessToken(),
         ];
 
-        // The PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
-        $proxies = $this->getProxies();
-        foreach ($proxies as $proxyUrl) {
-            $opts['http']['proxy'] = \str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyUrl);
-            break;
-        }
-
-        // Set up SSL options.
-        if ($this->config->get('api.skip_ssl')) {
-            $opts['ssl']['verify_peer'] = false;
-            $opts['ssl']['verify_peer_name'] = false;
-        } else {
-            $caBundlePath = $this->caBundlePath();
-            if (\is_dir($caBundlePath)) {
-                $opts['ssl']['capath'] = $caBundlePath;
-            } else {
-                $opts['ssl']['cafile'] = $caBundlePath;
-            }
-        }
-
-        return stream_context_create($opts);
+        return \stream_context_create($opts);
     }
 
     /**

@@ -171,7 +171,7 @@ class Manager {
         }
 
         // Download from the URL.
-        $contents = file_get_contents($helper['url']);
+        $contents = file_get_contents($helper['url'], false, \stream_context_create($this->config->getStreamContextOptions(60)));
         if (!$contents) {
             throw new \RuntimeException('Failed to download credentials helper from URL: ' . $helper['url']);
         }
