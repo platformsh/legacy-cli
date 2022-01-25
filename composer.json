@@ -57,5 +57,8 @@
         "platform": {
             "php": "5.5.9"
         }
+    },
+    "scripts": {
+        "update-countries": "php scripts/update-countries.php"
     }
 }
