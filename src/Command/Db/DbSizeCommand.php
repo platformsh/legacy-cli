@@ -206,9 +206,17 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('Databases tend to need extra space for starting up and temporary storage when running large queries.');
             $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config()->get('service.project_config_dir') . '/services.yaml'));
         }
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
-        $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
+
+        if ($this->config()->getWithDefault('api.metrics', false) && isset($this->getSelectedEnvironment()->getData()['_links']['#metrics'])) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<options=bold;fg=yellow>Notice</>');
+            $this->stdErr->writeln('This environment supports the Metrics API');
+            $this->stdErr->writeln(\sprintf('You can see disk usage much more accurately by running: <info>%s disk</info>', $this->config()->get('application.executable')));
+        } else {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
+            $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
+        }
     }
 
     /**
