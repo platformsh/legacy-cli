@@ -59,9 +59,13 @@ END_HELP;
                 'description' => 'The organization country. Used as the default for the billing address.',
                 'options' => $countryList,
                 'asChoice' => false,
-                'defaultCallback' => function () {
+                'defaultCallback' => function () use ($countryList) {
                     if ($this->api()->authApiEnabled()) {
-                        return $this->api()->getUser()->country ?: null;
+                        $userCountry = $this->api()->getUser()->country;
+                        if (isset($countryList[$userCountry])) {
+                            return $countryList[$userCountry];
+                        }
+                        return $userCountry ?: null;
                     }
                     return null;
                 },

@@ -82,8 +82,19 @@ class OrganizationCommandBase extends CommandBase
     protected function normalizeCountryCode($country)
     {
         $countryList = $this->countryList();
-        if (!isset($countryList[$country]) && ($key = \array_search($country, $countryList)) !== false) {
-            return $key;
+        if (isset($countryList[$country])) {
+            return $country;
+        }
+        // Exact match.
+        if (($code = \array_search($country, $countryList)) !== false) {
+            return $code;
+        }
+        // Case-insensitive match.
+        $lower = \strtolower($country);
+        foreach ($countryList as $code => $name) {
+            if ($lower === \strtolower($name) || $lower === \strtolower($code)) {
+                return $code;
+            }
         }
         return $country;
     }
