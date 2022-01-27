@@ -22,6 +22,8 @@ class DbSizeCommand extends CommandBase
     const BYTE_TO_MEGABYTE = 1048576;
     const WASTED_SPACE_WARNING_THRESHOLD = 200;//percentage
 
+    const ESTIMATE_WARNING = 'This is an estimate of the database disk usage. The real size on disk is usually higher because of overhead.';
+
     /**
      * {@inheritDoc}
      */
@@ -29,10 +31,12 @@ class DbSizeCommand extends CommandBase
         $this->setName('db:size')
             ->setDescription('Estimate the disk usage of a database')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
-            ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).')
-            ->setHelp(
-                "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."
-            );
+            ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
+        $help = self::ESTIMATE_WARNING;
+        if ($this->config()->getWithDefault('api.metrics', false)) {
+            $help .= "\n\n" . \sprintf('To see more accurate disk usage, run: <info>%s disk</info>', $this->config()->get('application.executable'));
+        }
+        $this->setHelp($help);
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
@@ -215,7 +219,7 @@ class DbSizeCommand extends CommandBase
         } else {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
-            $this->stdErr->writeln("This is an estimate of the database's disk usage. It does not represent its real size on disk.");
+            $this->stdErr->writeln(self::ESTIMATE_WARNING);
         }
     }
 
