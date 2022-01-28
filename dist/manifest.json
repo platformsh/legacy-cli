@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "2103366a79c4a83e1028474e40fa0c69d708b20a",
-        "sha256": "b4f6658307a2a44a731dd289b87ecea9bd5ed2ba73406b7715f3dba80797394d",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.75.3/platform.phar",
-        "version": "3.75.3",
+        "sha1": "afd39d69e34ec35cb46a8b58d044a5b334ed23f4",
+        "sha256": "424335d9545178eba21e0e46b139432735f064212e328b72c815975a17d58e95",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.76.0/platform.phar",
+        "version": "3.76.0",
         "php": {
             "min": "5.5.9"
         },
@@ -435,7 +435,8 @@
             "3.75.0": "New features:\n* Add `repo:read` (`read`) command to read a file or directory in the project's\n  hosted Git repository (combining `repo:ls` and `repo:cat`).\n\nOther changes:\n* Use `composer/ca-bundle` to find a CA bundle automatically (for TLS\n  certificate verification on systems without a CA bundle configured).\n* Avoid prompting to create an SSH config file, if the file is not writable.\n* Avoid printing all release notes when upgrading from a dev version\n* Allow using the cache for finding an environment by machine name.\n* Print default environment/organization selection to STDERR.",
             "3.75.1": "* Add the bundled cacert.pem to the phar build",
             "3.75.2": "* Use Composer's CA bundle detection in additional places:\n  - the credential helper download\n  - the self-updater (`up` command)\n  - the installer script (detection only, without the fallback bundle)",
-            "3.75.3": "* Fix ConsoleLogger TypeError in Api class due to null stdErr property"
+            "3.75.3": "* Fix ConsoleLogger TypeError in Api class due to null stdErr property",
+            "3.76.0": "* Add country support to org:create and org:info commands.\n* Make the org:create and org:delete commands visible in the list."
         }
     }
 ]
