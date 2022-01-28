@@ -140,6 +140,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $writableProperties = [
             'name' => 'string',
             'label' => 'string',
+            'country' => 'string',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
@@ -158,6 +159,13 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             $this->stdErr->writeln("Property not writable: <error>$property</error>");
 
             return false;
+        }
+        if ($property === 'country') {
+            $value = $this->normalizeCountryCode($value);
+            if (!isset($this->countryList()[$value])) {
+                $this->stdErr->writeln("Unrecognized country name or code: <error>$value</error>");
+                return false;
+            }
         }
         return \settype($value, $type);
     }

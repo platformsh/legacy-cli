@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Organization;
 use Cocur\Slugify\Slugify;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Field\Field;
+use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -43,6 +44,7 @@ END_HELP;
 
     private function getForm()
     {
+        $countryList = $this->countryList();
         return Form::fromArray([
             'label' => new Field('Label', [
                 'description' => 'The full name of the organization, e.g. "ACME Inc."',
@@ -51,13 +53,35 @@ END_HELP;
                 'description' => 'The organization machine name, used for URL paths and similar purposes.',
                 'defaultCallback' => function ($values) {
                     return isset($values['label']) ? (new Slugify())->slugify($values['label']) : null;
-                }
+                },
+            ]),
+            'country' => new OptionsField('Country', [
+                'description' => 'The organization country. Used as the default for the billing address.',
+                'options' => $countryList,
+                'asChoice' => false,
+                'defaultCallback' => function () use ($countryList) {
+                    if ($this->api()->authApiEnabled()) {
+                        $userCountry = $this->api()->getUser()->country;
+                        if (isset($countryList[$userCountry])) {
+                            return $countryList[$userCountry];
+                        }
+                        return $userCountry ?: null;
+                    }
+                    return null;
+                },
+                'normalizer' => function ($value) { return $this->normalizeCountryCode($value); },
+                'validator' => function ($countryCode) use ($countryList) {
+                    return isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode";
+                },
             ]),
         ]);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Ensure login before presenting the form.
+        $client = $this->api()->getClient();
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         $form = $this->getForm();
@@ -65,8 +89,6 @@ END_HELP;
             $form->getField('label')->set('default', \ucfirst($name));
         }
         $values = $form->resolveOptions($input, $output, $questionHelper);
-
-        $client = $this->api()->getClient();
 
         $current = $client->listOrganizationsByOwner($this->api()->getMyUserId());
         if (\count($current) === 1 && ($currentOrg = \reset($current))) {
@@ -93,7 +115,7 @@ END_HELP;
         }
 
         try {
-            $organization = $client->createOrganization($values['name'], $values['label']);
+            $organization = $client->createOrganization($values['name'], $values['label'], $values['country']);
         } catch (BadResponseException $e) {
             if ($e->getResponse() && $e->getResponse()->getStatusCode() === 409) {
                 $this->stdErr->writeln(\sprintf('An organization already exists with the same name: <error>%s</error>', $values['name']));
