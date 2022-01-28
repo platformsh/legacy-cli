@@ -6,7 +6,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationDeleteCommand extends OrganizationCommandBase
 {
-    protected $stability = 'ALPHA';
 
     protected function configure()
     {
