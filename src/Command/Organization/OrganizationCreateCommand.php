@@ -17,11 +17,9 @@ class OrganizationCreateCommand extends OrganizationCommandBase
     const LEGACY_WARNING_END = 1648771200; // April 2022
     const LEGACY_WARNING = <<<END_WARNING
 <options=bold;fg=yellow>Warning</>
-Owning more than one organization will cause some older APIs to stop working. If you have scripts that create projects automatically, they need to be updated to use the newer organization-based APIs.
+Owning <options=bold>more than one</> organization will cause some older APIs to stop working.
+If you have scripts that create projects automatically, you must update them to use the newer organization-based APIs.
 END_WARNING;
-
-
-    protected $stability = 'BETA';
 
     protected function configure()
     {
@@ -39,7 +37,7 @@ END_HELP;
         if ($this->config()->isDirect() && time() < self::LEGACY_WARNING_END) {
             $help .= "\n\n" . self::LEGACY_WARNING;
         }
-        $this->setHelp(\wordwrap($help));
+        $this->setHelp($help);
     }
 
     private function getForm()
@@ -105,7 +103,7 @@ END_HELP;
             if ($show_legacy_warning) {
                 $this->stdErr->writeln('You currently own one organization: ' . $this->api()->getOrganizationLabel($currentOrg));
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(\wordwrap(self::LEGACY_WARNING));
+                $this->stdErr->writeln(self::LEGACY_WARNING);
                 $this->stdErr->writeln('');
             }
         }
