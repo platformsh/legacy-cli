@@ -22,7 +22,7 @@ if ($timestamp = getenv('CLI_BUILD_DATE', true)) {
     $pharDate = false;
 }
 
-if ($config->has('application.github_repo')) {
+if ($config->getWithDefault('application.github_repo', '')) {
     $sourceLink = 'https://github.com/' . $config->get('application.github_repo');
     $sourceLinkSpecific = $sourceLink;
     if ($branch) {
@@ -114,7 +114,7 @@ if ($config->has('application.installer_url')) {
     <?php if ($sourceLink): ?>
         <h1><a href="<?= htmlspecialchars($sourceLink) ?>"><?= htmlspecialchars($appName) ?></a></h1>
     <?php else: ?>
-        <h1>><?= htmlspecialchars($appName) ?></h1>
+        <h1><?= htmlspecialchars($appName) ?></h1>
     <?php endif; ?>
     <h2>Development build</h2>
 

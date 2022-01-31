@@ -1,4 +1,5 @@
 stages:
+  - test
   - build
   - review
   - cleanup
@@ -11,9 +12,27 @@ variables:
   PF_PARENT_ENV: 3.x
   PF_NO_CLONE_PARENT: 1 # CLI environments are stateless, so no need for data cloning
 
+quick-tests:
+  stage: test
+  image: php:7.4-cli
+  before_script:
+    - apt-get update
+    - apt-get install zip unzip git lsof -y
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php composer-setup.php
+    - mkdir -p /cache/composer/bin && chmod +x composer.phar && mv composer.phar /cache/composer/bin/composer
+  script:
+    - export PATH="/cache/composer/bin:$PATH"
+    # No Composer scripts, because Box isn't needed (and Box needs PHP 7.4).
+    - composer install --no-interaction --no-scripts
+    - scripts/test/security.sh
+    - scripts/test/unit.sh
+    - scripts/test/offline.sh
+
 build:
   stage: build
-  needs: []
+  needs:
+    - quick-tests
   image: php:7.4-cli
   before_script:
     - apt-get update
@@ -39,7 +58,8 @@ push-review-env:
   image: pjcdawkins/platformsh-cli
   script:
     - bash scripts/gitlab-ci/push-platform.sh
-  needs: []
+  needs:
+    - quick-tests
   stage: review
   artifacts:
     reports:
@@ -59,6 +79,7 @@ cleanup-review-envs:
   needs:
     - push-review-env
   stage: cleanup
+  allow_failure: true
 
 delete-review-env:
   image: pjcdawkins/platformsh-cli
