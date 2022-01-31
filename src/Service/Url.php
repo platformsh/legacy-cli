@@ -89,9 +89,16 @@ class Url implements InputConfiguringInterface
         // Open the URL.
         if ($open && ($browser = $this->getBrowser($browserOption))) {
             if (OsUtil::isWindows() && $browser === 'start') {
+                // The start command needs an extra (title) argument.
                 $command = $browser . ' "" ' . escapeshellarg($url);
             } else {
                 $command = $browser . ' ' . escapeshellarg($url);
+
+                // Suppress the browser's STDERR unless in very verbose mode.
+                // Chrome, at least, outputs alarming and unnecessary messages.
+                if (!$this->stdErr->isVeryVerbose()) {
+                    $command .= ' 2>/dev/null';
+                }
             }
             $success = $this->shell->executeSimple($command) === 0;
         }
