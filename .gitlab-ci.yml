@@ -2,8 +2,15 @@ variables:
   COMPOSER_HOME: /cache/composer
 
 build:
-  image: composer
+  image: php:7.4-cli
+  before_script:
+    - apt-get update
+    - apt-get install zip unzip
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php composer-setup.php
+    - mkdir -p /cache/composer/bin && chmod +x composer.phar && mv composer.phar /cache/composer/bin/composer
   script:
+    - export PATH="/cache/composer/bin:$PATH"
     - composer install --no-dev --no-interaction
     - |
       cd vendor-bin/box
