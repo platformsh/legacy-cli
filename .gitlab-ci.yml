@@ -1,7 +1,19 @@
+stages:
+  - build
+  - review
+  - cleanup
+
 variables:
   COMPOSER_HOME: /cache/composer
 
+  # The PF_PROJECT_ID is required.
+  # PF_PROJECT_ID:
+  PF_PARENT_ENV: 3.x
+  PF_NO_CLONE_PARENT: 1 # CLI environments are stateless, so no need for data cloning
+
 build:
+  stage: build
+  needs: []
   image: php:7.4-cli
   before_script:
     - apt-get update
@@ -22,3 +34,46 @@ build:
   artifacts:
     expose_as: 'cli-phar'
     paths: ['platform.phar']
+
+push-review-env:
+  image: pjcdawkins/platformsh-cli
+  script:
+    - bash scripts/gitlab-ci/push-platform.sh
+  needs: []
+  stage: review
+  artifacts:
+    reports:
+      dotenv: environment.env # makes PRIMARY_URL available
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    url: $PRIMARY_URL
+    auto_stop_in: 7 day
+    on_stop: delete-review-env
+  only:
+    - branches
+
+cleanup-review-envs:
+  image: pjcdawkins/platformsh-cli
+  script:
+    - bash scripts/gitlab-ci/cleanup-platform.sh
+  needs:
+    - push-review-env
+  stage: cleanup
+
+delete-review-env:
+  image: pjcdawkins/platformsh-cli
+  script:
+    - bash scripts/gitlab-ci/delete-platform.sh
+  stage: cleanup
+  when: manual
+  needs:
+    - push-review-env
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    action: stop
+  only:
+    - branches
+  except:
+    - 3.x
+    - 4.x
+    - master
