@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "afd39d69e34ec35cb46a8b58d044a5b334ed23f4",
-        "sha256": "424335d9545178eba21e0e46b139432735f064212e328b72c815975a17d58e95",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.76.0/platform.phar",
-        "version": "3.76.0",
+        "sha1": "f4c01266462ec79cb2ea5f7022d2fbf1f0e743c8",
+        "sha256": "9cf765b9b5fe8de0e75d4e2c2ec4a5f3ba83ab63546701a3d8f15d75bd0b74fc",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.76.1/platform.phar",
+        "version": "3.76.1",
         "php": {
             "min": "5.5.9"
         },
@@ -436,7 +436,8 @@
             "3.75.1": "* Add the bundled cacert.pem to the phar build",
             "3.75.2": "* Use Composer's CA bundle detection in additional places:\n  - the credential helper download\n  - the self-updater (`up` command)\n  - the installer script (detection only, without the fallback bundle)",
             "3.75.3": "* Fix ConsoleLogger TypeError in Api class due to null stdErr property",
-            "3.76.0": "* Add country support to org:create and org:info commands.\n* Make the org:create and org:delete commands visible in the list."
+            "3.76.0": "* Add country support to org:create and org:info commands.\n* Make the org:create and org:delete commands visible in the list.",
+            "3.76.1": "* Fetch organization-specific plans and regions lists when creating a project.\n  This fixes a \"Multiple organizations found\" error when the user owns more\n  than one organization.\n* Suppress browser stderr messages unless in `-vv` or debug mode."
         }
     }
 ]
