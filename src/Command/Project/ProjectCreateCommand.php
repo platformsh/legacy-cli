@@ -8,6 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
+use Platformsh\Client\Model\SetupOptions;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -18,9 +19,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectCreateCommand extends CommandBase
 {
-    /** @var Form */
-    protected $form;
-
     /**
      * {@inheritdoc}
      */
@@ -33,8 +31,7 @@ class ProjectCreateCommand extends CommandBase
 
         $this->addOrganizationOptions();
 
-        $this->form = Form::fromArray($this->getFields());
-        $this->form->configureInputDefinition($this->getDefinition());
+        Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());
 
         $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository (default)');
         $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
@@ -72,6 +69,7 @@ EOF
 
         // Identify an organization that should own the project.
         $organization = null;
+        $setupOptions = null;
         if ($this->config()->getWithDefault('api.organizations', false)) {
             try {
                 $organization = $this->validateOrganizationInput($input, 'create-subscription');
@@ -88,6 +86,8 @@ EOF
             }
             $this->stdErr->writeln('Creating a project under the organization ' . $this->api()->getOrganizationLabel($organization));
             $this->stdErr->writeln('');
+
+            $setupOptions = $organization->getSetupOptions();
         }
 
         // Validate the --set-remote option.
@@ -101,7 +101,8 @@ EOF
             return 1;
         }
 
-        $options = $this->form->resolveOptions($input, $output, $questionHelper);
+        $form = Form::fromArray($this->getFields($setupOptions));
+        $options = $form->resolveOptions($input, $output, $questionHelper);
 
         if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
             try {
@@ -273,29 +274,24 @@ EOF
      * replaced at runtime by an API call.
      *
      * @param bool $runtime
+     * @param SetupOptions|null $setupOptions
      *
      * @return array
+     *   A list of plan machine names.
      */
-    protected function getAvailablePlans($runtime = false)
+    protected function getAvailablePlans($runtime = false, SetupOptions $setupOptions = null)
     {
-        static $plans;
-        if (is_array($plans)) {
-            return $plans;
+        if (isset($setupOptions)) {
+            return $setupOptions->plans;
         }
-
         if (!$runtime) {
             return (array) $this->config()->get('service.available_plans');
         }
 
         $plans = [];
         foreach ($this->api()->getClient()->getPlans() as $plan) {
-            if ($plan->hasProperty('price', false)) {
-                $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
-            } else {
-                $plans[$plan->name] = $plan->label;
-            }
+            $plans[] = $plan->name;
         }
-
         return $plans;
     }
 
@@ -306,22 +302,27 @@ EOF
      * replaced at runtime by an API call.
      *
      * @param bool $runtime
+     * @param SetupOptions|null $setupOptions
      *
      * @return array
+     *   A list of region names.
      */
-    protected function getAvailableRegions($runtime = false)
+    protected function getAvailableRegions($runtime = false, SetupOptions $setupOptions = null)
     {
-        if ($runtime) {
+        if (isset($setupOptions)) {
+            $regions = $setupOptions->regions;
+        } elseif ($runtime) {
             $regions = [];
             foreach ($this->api()->getClient()->getRegions() as $region) {
                 if ($region->available) {
-                    $regions[$region->id] = $region->label;
+                    $regions[] = $region->id;
                 }
             }
-            \uksort($regions, [$this->api(), 'compareDomains']);
         } else {
             $regions = (array) $this->config()->get('service.available_regions');
         }
+
+        \usort($regions, [$this->api(), 'compareDomains']);
 
         return $regions;
     }
@@ -331,7 +332,7 @@ EOF
      *
      * @return Field[]
      */
-    protected function getFields()
+    protected function getFields(SetupOptions $setupOptions = null)
     {
         return [
           'title' => new Field('Project title', [
@@ -344,18 +345,18 @@ EOF
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => $this->getAvailableRegions(),
-            'optionsCallback' => function () {
-                return $this->getAvailableRegions(true);
+            'optionsCallback' => function () use ($setupOptions) {
+                return $this->getAvailableRegions(true, $setupOptions);
             },
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
-            'optionsCallback' => function () {
-                return $this->getAvailablePlans(true);
+            'optionsCallback' => function () use ($setupOptions) {
+                return $this->getAvailablePlans(true, $setupOptions);
             },
-            'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
+            'default' => in_array('development', $this->getAvailablePlans(false, $setupOptions)) ? 'development' : null,
             'allowOther' => true,
           ]),
           'environments' => new Field('Environments', [
