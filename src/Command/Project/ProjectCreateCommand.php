@@ -8,6 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Client\Model\SetupOptions;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
@@ -322,7 +323,7 @@ EOF
             $regions = (array) $this->config()->get('service.available_regions');
         }
 
-        \usort($regions, [$this->api(), 'compareDomains']);
+        \usort($regions, [Api::class, 'compareDomains']);
 
         return $regions;
     }

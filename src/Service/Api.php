@@ -1278,7 +1278,7 @@ class Api
      *
      * @return int
      */
-    public function compareDomains($regionA, $regionB)
+    public static function compareDomains($regionA, $regionB)
     {
         if (strpos($regionA, '.') && strpos($regionB, '.')) {
             $partsA = explode('.', $regionA, 2);
