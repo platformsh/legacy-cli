@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "f4c01266462ec79cb2ea5f7022d2fbf1f0e743c8",
-        "sha256": "9cf765b9b5fe8de0e75d4e2c2ec4a5f3ba83ab63546701a3d8f15d75bd0b74fc",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.76.1/platform.phar",
-        "version": "3.76.1",
+        "sha1": "8d52fbc3e5e502ca2f37fa61ded1b6308ecd03df",
+        "sha256": "6b08440d2ec17e0ed74a931723c4bf15f4039040fad751bc6d6333e73c863af8",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.76.2/platform.phar",
+        "version": "3.76.2",
         "php": {
             "min": "5.5.9"
         },
@@ -437,7 +437,8 @@
             "3.75.2": "* Use Composer's CA bundle detection in additional places:\n  - the credential helper download\n  - the self-updater (`up` command)\n  - the installer script (detection only, without the fallback bundle)",
             "3.75.3": "* Fix ConsoleLogger TypeError in Api class due to null stdErr property",
             "3.76.0": "* Add country support to org:create and org:info commands.\n* Make the org:create and org:delete commands visible in the list.",
-            "3.76.1": "* Fetch organization-specific plans and regions lists when creating a project.\n  This fixes a \"Multiple organizations found\" error when the user owns more\n  than one organization.\n* Suppress browser stderr messages unless in `-vv` or debug mode."
+            "3.76.1": "* Fetch organization-specific plans and regions lists when creating a project.\n  This fixes a \"Multiple organizations found\" error when the user owns more\n  than one organization.\n* Suppress browser stderr messages unless in `-vv` or debug mode.",
+            "3.76.2": "* Fix auto login in interactive mode  \n  Auto login was uninentionally disabled in v3.76.1 via a bug in the regions API changes."
         }
     }
 ]
