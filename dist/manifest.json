@@ -438,7 +438,7 @@
             "3.75.3": "* Fix ConsoleLogger TypeError in Api class due to null stdErr property",
             "3.76.0": "* Add country support to org:create and org:info commands.\n* Make the org:create and org:delete commands visible in the list.",
             "3.76.1": "* Fetch organization-specific plans and regions lists when creating a project.\n  This fixes a \"Multiple organizations found\" error when the user owns more\n  than one organization.\n* Suppress browser stderr messages unless in `-vv` or debug mode.",
-            "3.76.2": "* Fix auto login in interactive mode  \n  Auto login was uninentionally disabled in v3.76.1 via a bug in the regions API changes."
+            "3.76.2": "* Fix auto login in interactive mode  \n  Auto login was unintentionally disabled in v3.76.1 via a bug in the regions API changes."
         }
     }
 ]
