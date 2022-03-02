@@ -876,26 +876,30 @@ class Api
      *
      * @param ApiResource[] &$resources
      * @param string        $propertyPath
+     * @param bool          $reverse
      *
      * @return ApiResource[]
      */
-    public static function sortResources(array &$resources, $propertyPath)
+    public static function sortResources(array &$resources, $propertyPath, $reverse = false)
     {
-        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath) {
+        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath, $reverse) {
             $valueA = static::getNestedProperty($a, $propertyPath, false);
             $valueB = static::getNestedProperty($b, $propertyPath, false);
+            $cmp = 0;
 
             switch (gettype($valueA)) {
                 case 'string':
-                    return strcasecmp($valueA, $valueB);
+                    $cmp = strcasecmp($valueA, $valueB);
+                    break;
 
                 case 'integer':
                 case 'double':
                 case 'boolean':
-                    return $valueA - $valueB;
+                    $cmp = $valueA - $valueB;
+                    break;
             }
 
-            return 0;
+            return $reverse ? -$cmp : $cmp;
         });
 
         return $resources;
