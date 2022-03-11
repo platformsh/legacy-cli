@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use DateTime;
 use Platformsh\Client\Model\Activities\HasActivitiesInterface;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -63,7 +64,7 @@ class ActivityLoader
         $type = $input->hasOption('type') ? $input->getOption('type') : null;
         $result = $input->hasOption('result') ? $input->getOption('result') : null;
         $startsAt = null;
-        if ($input->hasOption('start') && $input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
+        if ($input->hasOption('start') && $input->getOption('start') && !($startsAt = new DateTime($input->getOption('start')))) {
             $this->stdErr->writeln('Invalid --start date: <error>' . $input->getOption('start') . '</error>');
             return [];
         }
@@ -109,7 +110,7 @@ class ActivityLoader
 
         while ($limit === null || count($activities) < $limit) {
             if ($activity = end($activities)) {
-                $startsAt = strtotime($activity->created_at);
+                $startsAt = new DateTime($activity->created_at);
             }
             $nextActivities = $apiResource->getActivities($limit ? $limit - count($activities) : 0, $type, $startsAt, $state, $result);
             $new = false;
