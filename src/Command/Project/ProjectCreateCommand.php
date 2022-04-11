@@ -9,6 +9,7 @@ use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
@@ -305,27 +306,63 @@ EOF
      * @param bool $runtime
      * @param SetupOptions|null $setupOptions
      *
-     * @return array
-     *   A list of region names.
+     * @return array<string, string>
+     *   A list of region names, mapped to option names.
      */
     protected function getAvailableRegions($runtime = false, SetupOptions $setupOptions = null)
     {
+        $regions = $runtime ? $this->api()->getClient()->getRegions() : [];
         if (isset($setupOptions)) {
-            $regions = $setupOptions->regions;
+            $available = $setupOptions->regions;
         } elseif ($runtime) {
-            $regions = [];
-            foreach ($this->api()->getClient()->getRegions() as $region) {
+            $available = [];
+            foreach ($regions as $region) {
                 if ($region->available) {
-                    $regions[] = $region->id;
+                    $available[] = $region->id;
                 }
             }
         } else {
-            $regions = (array) $this->config()->get('service.available_regions');
+            $available = (array) $this->config()->get('service.available_regions');
         }
 
-        \usort($regions, [Api::class, 'compareDomains']);
+        \usort($available, [Api::class, 'compareDomains']);
 
-        return $regions;
+        $options = [];
+        foreach ($available as $id) {
+            foreach ($regions as $region) {
+                if ($region->id === $id) {
+                    $options[$id] = $this->regionInfo($region);
+                    continue 2;
+                }
+            }
+            $options[$id] = $id;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Outputs a short description of a region, including its location and carbon intensity.
+     *
+     * @param Region $region
+     *
+     * @return string
+     */
+    private function regionInfo(Region $region)
+    {
+        if (!empty($region->datacenter['location'])) {
+            $info = $region->datacenter['location'];
+        } else {
+            $info = $region->id;
+        }
+        if (!empty($region->provider['name'])) {
+            $info .= \sprintf(' (<fg=cyan>%s</>)', $region->provider['name']);
+        }
+        if (!empty($region->environmental_impact['carbon_intensity'])) {
+            $info .= \sprintf(' [<fg=green>%s</> gC02eq/kWh]', $region->environmental_impact['carbon_intensity']);
+        }
+
+        return $info;
     }
 
     /**
