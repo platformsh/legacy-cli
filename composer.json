@@ -56,6 +56,9 @@
     "config": {
         "platform": {
             "php": "5.5.9"
+        },
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
         }
     },
     "scripts": {
