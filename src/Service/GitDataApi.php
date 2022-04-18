@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Blob;
 use Platformsh\Client\Model\Git\Commit;
@@ -141,17 +142,28 @@ class GitDataApi
     private function normalizeSha(Environment $environment, $sha = null)
     {
         if ($sha === null) {
-            return $environment->head_commit;
+            return $this->getHeadSha($environment);
         }
         if (strpos($sha, 'HEAD') === 0) {
-            if ($environment->head_commit === null) {
-                return null;
-            }
-
-            $sha = $environment->head_commit . substr($sha, 4);
+            $sha = $this->getHeadSha($environment) . substr($sha, 4);
         }
 
         return $sha;
+    }
+
+    /**
+     * Returns the HEAD commit of an environment.
+     *
+     * @param Environment $environment
+     *
+     * @return string
+     */
+    private function getHeadSha(Environment $environment)
+    {
+        if ($environment->head_commit === null) {
+            throw new EnvironmentStateException('No commit(s) found. The environment is empty.', $environment);
+        }
+        return $environment->head_commit;
     }
 
     /**
