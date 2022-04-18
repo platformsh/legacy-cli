@@ -47,7 +47,7 @@ class SubscriptionInfoCommand extends CommandBase
             $id = $project->getSubscriptionId();
         }
 
-        $subscription = $this->loadSubscription($id, $project);
+        $subscription = $this->loadSubscription($id, $project, $input->getArgument('value') !== null);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 
@@ -174,29 +174,32 @@ class SubscriptionInfoCommand extends CommandBase
      *
      * @param string $id
      * @param Project|null $project
+     * @param bool $forWrite
      *
      * @return false|Subscription
      */
-    private function loadSubscription($id, Project $project = null)
+    private function loadSubscription($id, Project $project = null, $forWrite = false)
     {
+        $organizations_enabled = $this->config()->getWithDefault('api.organizations', false);
+        if (!$organizations_enabled) {
+            // Always load the subscription directly if the Organizations API
+            // is not enabled.
+            return $this->api()->getClient()->getSubscription($id);
+        }
+
         // Attempt to load the subscription directly.
         // This is possible if the user is on the project's access list, or
-        // if the Organizations API is disabled (and the user is the owner), or
         // if the user has access to all subscriptions.
-        $subscription = $this->ignore403(function () use ($id) {
-            return $this->api()->getClient()->getSubscription($id);
-        });
-        if ($subscription) {
-            $this->debug('Loaded the subscription directly');
-            return $subscription;
+        // However, while this legacy API works for reading, it won't always work for writing.
+        if (!$forWrite) {
+            $subscription = $this->ignore403(function () use ($id) {
+                return $this->api()->getClient()->getSubscription($id);
+            });
+            if ($subscription) {
+                $this->debug('Loaded the subscription directly');
+                return $subscription;
+            }
         }
-
-        // Exit now if the organizations API is not available.
-        if (!$this->config()->getWithDefault('api.organizations', false)) {
-            return false;
-        }
-
-        $this->debug('Failed to load the subscription ' . $id . ' directly. Attempting to use the Organizations API.');
 
         // Use the project's organization, if known.
         if (isset($project)) {
