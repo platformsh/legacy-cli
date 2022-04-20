@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "08c42673a97ee88a9c912ca3acdbca476eba3be8",
-        "sha256": "9cf3b8beb3bbeaee3de2bbd56394089812ff660749bd1d7d32886e8385338872",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.77.0/platform.phar",
-        "version": "3.77.0",
+        "sha1": "736edbe03e487e4c789feee504ba5bf2f6155127",
+        "sha256": "d846ac32c648c299649754b93c7d18de047298021da6216055cde934f885835a",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.78.0/platform.phar",
+        "version": "3.78.0",
         "php": {
             "min": "5.5.9"
         },
@@ -439,7 +439,8 @@
             "3.76.0": "* Add country support to org:create and org:info commands.\n* Make the org:create and org:delete commands visible in the list.",
             "3.76.1": "* Fetch organization-specific plans and regions lists when creating a project.\n  This fixes a \"Multiple organizations found\" error when the user owns more\n  than one organization.\n* Suppress browser stderr messages unless in `-vv` or debug mode.",
             "3.76.2": "* Fix auto login in interactive mode  \n  Auto login was unintentionally disabled in v3.76.1 via a bug in the regions API changes.",
-            "3.77.0": "### `backup:list` (`backups`) command changes\n\nThis command now uses the backups API for listing backups, rather than the\nactivities API. The result is that deleted backups will no longer be listed\n(avoiding confusion), and the output changes slightly.\n\nOld version example:\n\n    +---------------------------+----------------+----------+----------+---------+\n    | Created                   | Backup name    | Progress | State    | Result  |\n    +---------------------------+----------------+----------+----------+---------+\n    | 2022-02-01T00:00:00+00:00 | abcdefgh123456 | 100%     | complete | success |\n    +---------------------------+----------------+----------+----------+---------+\n\nNew version example:\n\n    +---------------------------+----------------+-------------+\n    | Created                   | Backup ID      | Restorable  |\n    +---------------------------+----------------+-------------+\n    | 2022-02-01T00:00:00+00:00 | abcdefgh123456 | true        |\n    +---------------------------+----------------+-------------+\n\nNew available `--columns` names: `created_at`, `id`, `restorable`, `expires_at`, `commit_id`, `index`, `safe`\n\nDeprecated options (which no longer have an effect): `--limit`, `--start`\nDeprecated column names (which no longer show data): `progress`, `state`, `result`"
+            "3.77.0": "### `backup:list` (`backups`) command changes\n\nThis command now uses the backups API for listing backups, rather than the\nactivities API. The result is that deleted backups will no longer be listed\n(avoiding confusion), and the output changes slightly.\n\nOld version example:\n\n    +---------------------------+----------------+----------+----------+---------+\n    | Created                   | Backup name    | Progress | State    | Result  |\n    +---------------------------+----------------+----------+----------+---------+\n    | 2022-02-01T00:00:00+00:00 | abcdefgh123456 | 100%     | complete | success |\n    +---------------------------+----------------+----------+----------+---------+\n\nNew version example:\n\n    +---------------------------+----------------+-------------+\n    | Created                   | Backup ID      | Restorable  |\n    +---------------------------+----------------+-------------+\n    | 2022-02-01T00:00:00+00:00 | abcdefgh123456 | true        |\n    +---------------------------+----------------+-------------+\n\nNew available `--columns` names: `created_at`, `id`, `restorable`, `expires_at`, `commit_id`, `index`, `safe`\n\nDeprecated options (which no longer have an effect): `--limit`, `--start`\nDeprecated column names (which no longer show data): `progress`, `state`, `result`",
+            "3.78.0": "New features:\n\n* Display some more information about regions in the project:create command, \n  including the datacenter's location, provider and carbon intensity.\n* Improve environment:delete command:\n  - Add --type and --exclude-type options\n  - Include environment(s) when --inactive or --merged are specified\n  - Split the environment value by commas, in the 'environment' argument\n  - Make the reason for environments being found clearer\n  - Handle all environment statuses\n\nOther changes:\n\n* Improve error for empty environments in repo: commands.\n* Use the organizations API more consistently in the subscription:info command.\n* Sort the result in the backup:list (backups) command."
         }
     }
 ]
