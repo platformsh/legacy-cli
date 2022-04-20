@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\NoOrganizationsException;
@@ -1304,8 +1305,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 );
             }
             $argument = $input->getArgument($this->envArgName);
-            if (is_array($argument) && count($argument) == 1) {
-                $argument = $argument[0];
+            if (is_array($argument)) {
+                $argument = ArrayArgument::split($argument);
+                if (count($argument) === 1) {
+                    $argument = $argument[0];
+                }
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');

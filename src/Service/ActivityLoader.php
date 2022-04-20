@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Client\Model\Activities\HasActivitiesInterface;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -46,10 +47,7 @@ class ActivityLoader
     public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null, $state = [], $withOperation = '')
     {
         if ($state === [] && $input->hasOption('state')) {
-            $state = $input->getOption('state');
-            if (\count($state) === 1) {
-                $state = \array_filter(\preg_split('/[,\s]+/', \reset($state)), '\\strlen');
-            }
+            $state = ArrayArgument::getOption($input, 'state');
             if ($input->getOption('incomplete')) {
                 if ($state && $state != [Activity::STATE_IN_PROGRESS, Activity::STATE_PENDING]) {
                     $this->stdErr->writeln('The <comment>--incomplete</comment> option implies <comment>--state in_progress,pending</comment>');
