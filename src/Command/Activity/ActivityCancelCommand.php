@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Activity;
 
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityCancelCommand extends CommandBase
+class ActivityCancelCommand extends ActivityCommandBase
 {
     /**
      * {@inheritdoc}
@@ -24,7 +24,8 @@ class ActivityCancelCommand extends CommandBase
             ->setName('activity:cancel')
             ->setDescription('Cancel an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent cancellable activity.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity)')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         $this->addProjectOption()
             ->addEnvironmentOption();
@@ -59,9 +60,6 @@ class ActivityCancelCommand extends CommandBase
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
-            if ($activities === false) {
-                return 1;
-            }
             $activities = \array_filter($activities, function (Activity $activity) {
                 return $activity->operationAvailable('cancel');
             });

@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -13,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityGetCommand extends CommandBase
+class ActivityGetCommand extends ActivityCommandBase
 {
     /**
      * {@inheritdoc}
@@ -25,7 +24,8 @@ class ActivityGetCommand extends CommandBase
             ->setDescription('View detailed information on a single activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity)')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
@@ -67,9 +67,6 @@ class ActivityGetCommand extends CommandBase
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 1);
-            if ($activities === false) {
-                return 1;
-            }
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {

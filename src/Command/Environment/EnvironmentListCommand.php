@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
@@ -38,7 +39,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter the list by environment type(s)');
+            ->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter the list by environment type(s).' . "\n" . ArrayArgument::SPLIT_HELP);
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }
@@ -166,13 +167,9 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         if ($input->getOption('no-inactive')) {
             $filters['no-inactive'] = true;
         }
-        if ($types = $input->getOption('type')) {
+        if ($types = ArrayArgument::getOption($input, 'type')) {
             if (!$supportsTypes) {
                 $this->stdErr->writeln('<options=reverse>Warning:</> environment types are not yet supported on this project.');
-            }
-            if (count($types) === 1) {
-                // Split comma- or whitespace-separated values.
-                $types = preg_split('/[\s,]+/', reset($types));
             }
             $filters['type'] = $types;
         }

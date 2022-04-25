@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -11,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityListCommand extends CommandBase
+class ActivityListCommand extends ActivityCommandBase
 {
     /**
      * {@inheritdoc}
@@ -25,9 +24,10 @@ class ActivityListCommand extends CommandBase
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';
         if ($this->config()->has('service.activity_type_list_url')) {
-            $typeDescription .= "\nFor a list of types see: " . $this->config()->get('service.activity_type_list_url');
+            $typeDescription .= "\nFor a list of types see: <info>" . $this->config()->get('service.activity_type_list_url') . '</info>';
         }
-        $this->addOption('type', null, InputOption::VALUE_REQUIRED, $typeDescription);
+        $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $typeDescription . "\n" . ArrayArgument::SPLIT_HELP);
+        $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude activities by type.' . "\n" . ArrayArgument::SPLIT_HELP);
 
         $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
@@ -64,9 +64,7 @@ class ActivityListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
         $loader = $this->getService('activity_loader');
         $activities = $loader->loadFromInput($apiResource, $input);
-        if ($activities === false) {
-            return 1;
-        } elseif ($activities === []) {
+        if ($activities === []) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
@@ -77,7 +75,7 @@ class ActivityListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $headers = ['ID', 'Created', 'Completed', 'Description', 'Progress', 'State', 'Result', 'Environment(s)'];
+        $headers = ['ID', 'Created', 'Completed', 'Description', 'Type', 'Progress', 'State', 'Result', 'Environment(s)'];
         $defaultColumns = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
 
         if (!$environmentSpecific) {
@@ -91,6 +89,7 @@ class ActivityListCommand extends CommandBase
                 $formatter->format($activity['created_at'], 'created_at'),
                 $formatter->format($activity['completed_at'], 'completed_at'),
                 ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
+                new AdaptiveTableCell($activity->type, ['wrap' => false]),
                 $activity->getCompletionPercent() . '%',
                 ActivityMonitor::formatState($activity->state),
                 ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),

@@ -42,8 +42,7 @@ class ActivityLoader
      * @param array $state Define the states to return, regardless of input.
      * @param string $withOperation Filters the resulting activities to those with the specified operation available.
      *
-     * @return \Platformsh\Client\Model\Activity[]|false
-     *   False if an error occurred, an array of activities otherwise.
+     * @return \Platformsh\Client\Model\Activity[]
      */
     public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null, $state = [], $withOperation = '')
     {
@@ -59,14 +58,31 @@ class ActivityLoader
         if ($limit === null) {
             $limit = $input->hasOption('limit') ? $input->getOption('limit') : null;
         }
-        $type = $input->hasOption('type') ? $input->getOption('type') : null;
+        $availableTypes = self::getAvailableTypes();
+        $includeTypes = $input->hasOption('type') ? ArrayArgument::getOption($input, 'type') : [];
+        $excludeTypes = $input->hasOption('exclude-type') ? ArrayArgument::getOption($input, 'exclude-type') : [];
+        $types = [];
+        foreach ($includeTypes as $includeType) {
+            if (!\in_array($includeType, $availableTypes, true)) {
+                $this->stdErr->writeln('Unrecognized activity type: <comment>' . $includeType . '</comment>');
+            }
+            if (\in_array($includeType, $excludeTypes, true)) {
+                $this->stdErr->writeln('The <comment>--exclude-type</comment> and <comment>--type</comment> options conflict.');
+            }
+            $types[] = $includeType;
+        }
+        if (empty($types) && !empty($excludeTypes)) {
+            $types = \array_filter($availableTypes, function ($type) use ($excludeTypes) {
+                return !\in_array($type, $excludeTypes, true);
+            });
+        }
         $result = $input->hasOption('result') ? $input->getOption('result') : null;
         $startsAt = null;
         if ($input->hasOption('start') && $input->getOption('start') && !($startsAt = new DateTime($input->getOption('start')))) {
             $this->stdErr->writeln('Invalid --start date: <error>' . $input->getOption('start') . '</error>');
             return [];
         }
-        $activities = $this->load($apiResource, $limit, $type, $startsAt, $state, $result);
+        $activities = $this->load($apiResource, $limit, $types, $startsAt, $state, $result);
         if ($withOperation) {
             $activities = array_filter($activities, function (Activity $activity) use ($withOperation) {
                return $activity->operationAvailable($withOperation);
@@ -80,7 +96,7 @@ class ActivityLoader
      *
      * @param HasActivitiesInterface    $apiResource
      * @param int|null    $limit
-     * @param string|null $type
+     * @param string[] $types
      * @param int|null    $startsAt
      * @param string|string[]|null    $state
      * @param string|string[]|null    $result
@@ -89,10 +105,10 @@ class ActivityLoader
      *
      * @return \Platformsh\Client\Model\Activity[]
      */
-    public function load(HasActivitiesInterface $apiResource, $limit = null, $type = null, $startsAt = null, $state = null, $result = null, callable $stopCondition = null)
+    public function load(HasActivitiesInterface $apiResource, $limit = null, array $types = [], $startsAt = null, $state = null, $result = null, callable $stopCondition = null)
     {
         $progress = new ProgressBar($this->getProgressOutput());
-        $progress->setMessage($type === 'environment.backup' ? 'Loading backups...' : 'Loading activities...');
+        $progress->setMessage($types === ['environment.backup'] ? 'Loading backups...' : 'Loading activities...');
         $progress->setFormat($limit === null ? '%message% %current%' : '%message% %current%/%max%');
         $progress->start($limit);
 
@@ -101,7 +117,7 @@ class ActivityLoader
             if ($activity = end($activities)) {
                 $startsAt = new DateTime($activity->created_at);
             }
-            $nextActivities = $apiResource->getActivities($limit ? $limit - count($activities) : 0, $type, $startsAt, $state, $result);
+            $nextActivities = $apiResource->getActivities($limit ? $limit - count($activities) : 0, $types, $startsAt, $state, $result);
             $new = false;
             foreach ($nextActivities as $activity) {
                 if (!isset($activities[$activity->id])) {
@@ -121,5 +137,67 @@ class ActivityLoader
         $progress->clear();
 
         return array_values($activities);
+    }
+
+    /**
+     * Returns all the available options for the activity 'type' filter.
+     *
+     * @todo generate or fetch this from the API, when supported
+     *
+     * @return string[]
+     */
+    public static function getAvailableTypes()
+    {
+        return [
+            'project.modify.title',
+            'project.create',
+            'project.domain.create',
+            'project.domain.delete',
+            'project.domain.update',
+            'project.variable.create',
+            'project.variable.delete',
+            'project.variable.update',
+            'environment.access.add',
+            'environment.access.remove',
+            'environment_type.access.create',
+            'environment_type.access.delete',
+            'environment_type.access.update',
+            'environment.backup',
+            'environment.restore',
+            'environment.backup.delete',
+            'environment.push',
+            'environment.branch',
+            'environment.activate',
+            'environment.initialize',
+            'environment.deactivate',
+            'environment.synchronize',
+            'environment.merge',
+            'environment.redeploy',
+            'environment.delete',
+            'environment.route.create',
+            'environment.route.delete',
+            'environment.route.update',
+            'environment.variable.create',
+            'environment.variable.delete',
+            'environment.variable.update',
+            'environment.update.http_access',
+            'environment.update.smtp',
+            'environment.update.restrict_robots',
+            'environment.subscription.update',
+            'environment.cron',
+            'environment.source-operation',
+            'environment.certificate.renewal',
+            'integration.bitbucket.fetch',
+            'integration.bitbucket.register_hooks',
+            'integration.bitbucket_server.fetch',
+            'integration.bitbucket_server.register_hooks',
+            'integration.github.fetch',
+            'integration.gitlab.fetch',
+            'integration.health.email',
+            'integration.health.pagerduty',
+            'integration.health.slack',
+            'integration.webhook',
+            'integration.script',
+        ];
     }
 }

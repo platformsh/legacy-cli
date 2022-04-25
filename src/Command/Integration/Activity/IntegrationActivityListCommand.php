@@ -24,7 +24,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->setName('integration:activity:list')
             ->setAliases(['i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
@@ -49,20 +50,10 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        $startsAt = null;
-        if ($input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
-            $this->stdErr->writeln('Invalid date: <error>' . $input->getOption('start') . '</error>');
-            return 1;
-        }
-
-        $limit = (int) $input->getOption('limit');
-
-        $type = $input->getOption('type');
-
         /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
         $loader = $this->getService('activity_loader');
-        $activities = $loader->load($integration, $limit, $type, $startsAt, $input->getOption('state'), $input->getOption('result'));
-        if (!$activities) {
+        $activities = $loader->loadFromInput($integration, $input);
+        if ($activities === []) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
@@ -73,8 +64,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $headers = ['ID', 'Created', 'Completed', 'Description', 'State', 'Result'];
-        $defaultColumns = ['ID', 'Created', 'Description', 'State', 'Result'];
+        $headers = ['ID', 'Created', 'Completed', 'Description', 'Type', 'State', 'Result'];
+        $defaultColumns = ['ID', 'Created', 'Description', 'Type', 'State', 'Result'];
 
         $rows = [];
         foreach ($activities as $activity) {
@@ -83,6 +74,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 $formatter->format($activity['created_at'], 'created_at'),
                 $formatter->format($activity['completed_at'], 'completed_at'),
                 ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
+                new AdaptiveTableCell($activity->type, ['wrap' => false]),
                 ActivityMonitor::formatState($activity->state),
                 ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
             ];

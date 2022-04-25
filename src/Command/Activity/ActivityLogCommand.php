@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -11,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityLogCommand extends CommandBase
+class ActivityLogCommand extends ActivityCommandBase
 {
     /**
      * {@inheritdoc}
@@ -30,7 +29,8 @@ class ActivityLogCommand extends CommandBase
                 3
             )
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity)')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
@@ -71,9 +71,6 @@ class ActivityLogCommand extends CommandBase
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 1);
-            if ($activities === false) {
-                return 1;
-            }
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
