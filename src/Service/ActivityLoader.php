@@ -91,21 +91,12 @@ class ActivityLoader
      */
     public function load(HasActivitiesInterface $apiResource, $limit = null, $type = null, $startsAt = null, $state = null, $result = null, callable $stopCondition = null)
     {
-        /** @var \Platformsh\Client\Model\Environment|\Platformsh\Client\Model\Project $apiResource */
-        $activities = $apiResource->getActivities($limit ?: 0, $type, $startsAt, $state, $result);
         $progress = new ProgressBar($this->getProgressOutput());
         $progress->setMessage($type === 'environment.backup' ? 'Loading backups...' : 'Loading activities...');
-        $progress->setFormat($limit === null ? '%message% %current%' : '%message% %current% (max: %max%)');
+        $progress->setFormat($limit === null ? '%message% %current%' : '%message% %current%/%max%');
         $progress->start($limit);
 
-        // Index the array by the activity ID for deduplication.
-        $indexed = [];
-        foreach ($activities as $activity) {
-            $indexed[$activity->id] = $activity;
-        }
-        $activities = $indexed;
-        unset($indexed);
-
+        $activities = [];
         while ($limit === null || count($activities) < $limit) {
             if ($activity = end($activities)) {
                 $startsAt = new DateTime($activity->created_at);
