@@ -24,8 +24,8 @@ class ActivityCancelCommand extends ActivityCommandBase
             ->setName('activity:cancel')
             ->setDescription('Cancel an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent cancellable activity.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_REQUIRED, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         $this->addProjectOption()
             ->addEnvironmentOption();
