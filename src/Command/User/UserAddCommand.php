@@ -810,7 +810,7 @@ class UserAddCommand extends CommandBase
             $role = $this->validateEnvironmentRole($role);
             // Match environment IDs by wildcard.
             if (strpos($id, '%') !== false) {
-                $pattern = '/^' . str_replace('%', '.*', preg_quote($id)) . '$/';
+                $pattern = '/^' . str_replace('%', '.*', preg_quote($id, '/')) . '$/';
                 $matched = preg_grep($pattern, array_keys($environments));
                 if (empty($matched)) {
                     throw new InvalidArgumentException('No environment IDs match: ' . $id);
@@ -856,7 +856,7 @@ class UserAddCommand extends CommandBase
             $role = $this->validateEnvironmentRole($role);
             // Match type IDs by wildcard.
             if (strpos($id, '%') !== false) {
-                $pattern = '/^' . str_replace('%', '.*', preg_quote($id)) . '$/';
+                $pattern = '/^' . str_replace('%', '.*', preg_quote($id, '/')) . '$/';
                 $matched = preg_grep($pattern, $typeIds);
                 if (empty($matched)) {
                     throw new InvalidArgumentException('No environment type IDs match: ' . $id);

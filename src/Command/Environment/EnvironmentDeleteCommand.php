@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,7 +61,8 @@ EOF
         }
         if ($specifiedEnvironmentIds) {
             $anythingSpecified = true;
-            $specifiedEnvironmentIds = $this->findEnvironmentIDsByWildcards($environments, $specifiedEnvironmentIds);
+            $allIds = \array_map(function (Environment $e) { return $e->id; }, $environments);
+            $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             if (!empty($notFound)) {
                 // Refresh the environments list if any environment is not found.
@@ -146,7 +148,8 @@ EOF
         // Exclude environment ID(s) specified in --exclude.
         $excludeIds = ArrayArgument::getOption($input, 'exclude');
         if (!empty($excludeIds)) {
-            $resolved = $this->findEnvironmentIdsByWildcards($selectedEnvironments, $excludeIds);
+            $selectedIds = \array_map(function (Environment $e) { return $e->id; }, $selectedEnvironments);
+            $resolved = Wildcard::select($selectedIds, $excludeIds);
             if (count($resolved)) {
                 $selectedEnvironments = \array_filter($selectedEnvironments, function (Environment $e) use ($resolved) {
                     return !\in_array($e->id, $resolved, true);
@@ -232,25 +235,6 @@ EOF
         $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
 
         return $success ? 0 : 1;
-    }
-
-    /**
-     * Finds environments in a list matching a list of ID wildcards.
-     *
-     * @param Environment[] $environments
-     * @param string[] $wildcards
-     *
-     * @return string[]
-     */
-    private function findEnvironmentIDsByWildcards(array $environments, $wildcards)
-    {
-        $ids = \array_map(function (Environment $e) { return $e->id; }, $environments);
-        $found = [];
-        foreach ($wildcards as $wildcard) {
-            $pattern = '/^' . str_replace('%', '.*', preg_quote($wildcard)) . '$/';
-            $found = array_merge($found, \preg_grep($pattern, $ids));
-        }
-        return \array_unique($found);
     }
 
     /**
