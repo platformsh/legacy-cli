@@ -48,7 +48,7 @@ class ActivityLoader
     {
         if ($state === [] && $input->hasOption('state')) {
             $state = ArrayArgument::getOption($input, 'state');
-            if ($input->getOption('incomplete')) {
+            if ($input->hasOption('incomplete') && $input->getOption('incomplete')) {
                 if ($state && $state != [Activity::STATE_IN_PROGRESS, Activity::STATE_PENDING]) {
                     $this->stdErr->writeln('The <comment>--incomplete</comment> option implies <comment>--state in_progress,pending</comment>');
                 }

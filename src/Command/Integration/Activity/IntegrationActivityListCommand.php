@@ -30,6 +30,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
             ->setDescription('Get a list of activities for an integration');
         $this->setHiddenAliases(['integration:activities']);
         Table::configureInput($this->getDefinition());
