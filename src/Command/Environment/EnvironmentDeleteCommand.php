@@ -54,6 +54,15 @@ EOF
         $selectedEnvironments = [];
         $anythingSpecified = false;
 
+        // Use the current environment (if it's not production).
+        if ($current = $this->getCurrentEnvironment($this->getSelectedProject())) {
+            if ($current->getProperty('type', false, false) !== 'production') {
+                $this->stdErr->writeln('Current environment selected: '. $this->api()->getEnvironmentLabel($current));
+                $this->stdErr->writeln('');
+                $selectedEnvironments = \array_merge($selectedEnvironments, [$current]);
+            }
+        }
+
         // Add the environment(s) specified in the arguments or options.
         $specifiedEnvironmentIds = ArrayArgument::getArgument($input, 'environment');
         if ($input->getOption('environment')) {
@@ -73,7 +82,7 @@ EOF
                 $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
             }
             $specifiedEnvironments = array_intersect_key($environments, array_flip($specifiedEnvironmentIds));
-            $this->stdErr->writeln(count($specifiedEnvironments) . ' environment(s) found by ID.');
+            $this->stdErr->writeln(count($specifiedEnvironments) . ' environment(s) found by ID');
             $this->stdErr->writeln('');
             $selectedEnvironments = array_merge($selectedEnvironments, $specifiedEnvironments);
         }
@@ -127,13 +136,6 @@ EOF
             $selectedEnvironments = array_merge($selectedEnvironments, $withTypes);
         }
 
-        // Use the current environment (if it's not production).
-        if ($current = $this->getCurrentEnvironment($this->getSelectedProject())) {
-            if ($current->getProperty('type', false, false) !== 'production') {
-                $selectedEnvironments = \array_merge($selectedEnvironments, [$current]);
-            }
-        }
-
         // Exclude environment type(s) specified in --exclude-type.
         $excludeTypes = ArrayArgument::getOption($input, 'exclude-type');
         $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes) {
@@ -160,7 +162,7 @@ EOF
         }
 
         if (count($selectedEnvironments)) {
-            $this->stdErr->writeln('Selected environment(s): <comment>' . implode('</comment>, <comment>', \array_map(function(Environment $e) { return $e->id; }, $selectedEnvironments)) . '</comment>');
+            $this->stdErr->writeln('Selected environment(s): ' . $this->listEnvironments($selectedEnvironments));
             $this->stdErr->writeln('');
         }
 
@@ -235,6 +237,18 @@ EOF
         $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
 
         return $success ? 0 : 1;
+    }
+
+    /**
+     * @param Environment[] $environments
+     *
+     * @return string
+     */
+    private function listEnvironments(array $environments)
+    {
+        $uniqueIds = \array_unique(\array_map(function(Environment $e) { return $e->id; }, $environments));
+        natcasesort($uniqueIds);
+        return '<comment>' . implode('</comment>, <comment>', $uniqueIds) . '</comment>';
     }
 
     /**
