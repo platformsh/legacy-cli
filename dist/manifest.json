@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "264722b4b5fca63e81516a28451bc86f27465b15",
-        "sha256": "55f6f4622b9ef12f4bd947850cb0a807fbd4008b1122d4ef4a1a83dfa0971276",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.1/platform.phar",
-        "version": "3.79.1",
+        "sha1": "60d0316ba5e45c86a5e9c77b175cc3f2691b8e67",
+        "sha256": "49318c296808e02e9c720f0319485d9c410d381dbffe0b695349633387100972",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.2/platform.phar",
+        "version": "3.79.2",
         "php": {
             "min": "5.5.9"
         },
@@ -442,7 +442,8 @@
             "3.77.0": "### `backup:list` (`backups`) command changes\n\nThis command now uses the backups API for listing backups, rather than the\nactivities API. The result is that deleted backups will no longer be listed\n(avoiding confusion), and the output changes slightly.\n\nOld version example:\n\n    +---------------------------+----------------+----------+----------+---------+\n    | Created                   | Backup name    | Progress | State    | Result  |\n    +---------------------------+----------------+----------+----------+---------+\n    | 2022-02-01T00:00:00+00:00 | abcdefgh123456 | 100%     | complete | success |\n    +---------------------------+----------------+----------+----------+---------+\n\nNew version example:\n\n    +---------------------------+----------------+-------------+\n    | Created                   | Backup ID      | Restorable  |\n    +---------------------------+----------------+-------------+\n    | 2022-02-01T00:00:00+00:00 | abcdefgh123456 | true        |\n    +---------------------------+----------------+-------------+\n\nNew available `--columns` names: `created_at`, `id`, `restorable`, `expires_at`, `commit_id`, `index`, `safe`\n\nDeprecated options (which no longer have an effect): `--limit`, `--start`\nDeprecated column names (which no longer show data): `progress`, `state`, `result`",
             "3.78.0": "New features:\n\n* Display some more information about regions in the project:create command, \n  including the datacenter's location, provider and carbon intensity.\n* Improve environment:delete command:\n  - Add --type and --exclude-type options\n  - Include environment(s) when --inactive or --merged are specified\n  - Split the environment value by commas, in the 'environment' argument\n  - Make the reason for environments being found clearer\n  - Handle all environment statuses\n\nOther changes:\n\n* Improve error for empty environments in repo: commands.\n* Use the organizations API more consistently in the subscription:info command.\n* Sort the result in the backup:list (backups) command.",
             "3.79.0": "New features:\n\n* Add an `--exclude-type` option when listing activities, and support multiple\n  types in `--type`.\n\nOther changes:\n\n* Fix too many API calls in `backup:restore` command when finding a backup by name\n* Fix activity pagination skipping items created at the same second (add microseconds support).",
-            "3.79.1": "* Fix error in activity commands: \"The value of option --type is not an array\""
+            "3.79.1": "* Fix error in activity commands: \"The value of option --type is not an array\"",
+            "3.79.2": "* Fix 'The \"incomplete\" option does not exist' in the integration:activities command"
         }
     }
 ]
