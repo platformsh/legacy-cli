@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\TransferException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\Client\Model\Project;
+use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Platformsh\ConsoleForm\Field\ArrayField;
 use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\EmailAddressField;
@@ -75,6 +76,27 @@ abstract class IntegrationCommandBase extends CommandBase
         }
 
         return $this->form;
+    }
+
+    /**
+     * @param ConditionalFieldException $e
+     *
+     * @return int
+     */
+    protected function handleConditionalFieldException(ConditionalFieldException $e)
+    {
+        $previousValues = $e->getPreviousValues();
+        $field = $e->getField();
+        $conditions = $field->getConditions();
+        if (isset($previousValues['type']) && isset($conditions['type']) && !in_array($previousValues['type'], (array) $conditions['type'])) {
+            $this->stdErr->writeln(\sprintf(
+                'The option <error>--%s</error> cannot be used with the integration type <comment>%s</comment>.',
+                $field->getOptionName(),
+                $previousValues['type']
+            ));
+            return 1;
+        }
+        throw $e;
     }
 
     /**
