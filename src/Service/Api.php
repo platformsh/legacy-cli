@@ -23,6 +23,7 @@ use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\ProjectStub;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
+use Platformsh\Client\Model\Subscription;
 use Platformsh\Client\Model\User;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\SessionInterface;
@@ -1308,6 +1309,91 @@ class Api
         }
         foreach ($this->getEnvironments($project) as $env) {
             return $env->hasProperty('type', false);
+        }
+        return false;
+    }
+
+    /**
+     * Loads a subscription through various APIs to see which one wins.
+     *
+     * @param string $id
+     * @param Project|null $project
+     * @param bool $forWrite
+     *
+     * @throws \GuzzleHttp\Exception\RequestException
+     *
+     * @return false|Subscription
+     *   The subscription or false if not found.
+     */
+    public function loadSubscription($id, Project $project = null, $forWrite = true)
+    {
+        $organizations_enabled = $this->config->getWithDefault('api.organizations', false);
+        if (!$organizations_enabled) {
+            // Always load the subscription directly if the Organizations API
+            // is not enabled.
+            return $this->getClient()->getSubscription($id);
+        }
+
+        // Attempt to load the subscription directly.
+        // This is possible if the user is on the project's access list, or
+        // if the user has access to all subscriptions.
+        // However, while this legacy API works for reading, it won't always work for writing.
+        if (!$forWrite) {
+            try {
+                $subscription = $this->getClient()->getSubscription($id);
+            } catch (BadResponseException $e) {
+                if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                    throw $e;
+                }
+                $subscription = false;
+            }
+            if ($subscription) {
+                $this->stdErr->writeln('Loaded the subscription directly', OutputInterface::VERBOSITY_DEBUG);
+                return $subscription;
+            }
+        }
+
+        // Use the project's organization, if known.
+        $organizationId = null;
+        if (isset($project) && $project->hasProperty('organization_id')) {
+            $organizationId = $project->getProperty('organization_id', false, false);
+        }
+        if (empty($organizationId)) {
+            foreach ($this->getProjectStubs() as $projectStub) {
+                if ($projectStub->subscription_id === $id && (!isset($project) || $project->id === $projectStub->id)) {
+                    $organizationId = $projectStub->getProperty('organization_id', false, false);
+                    break;
+                }
+            }
+        }
+        if (!empty($organizationId) && ($organization = $this->getClient()->getOrganizationById($organizationId))) {
+            if ($subscription = $organization->getSubscription($id)) {
+                $this->stdErr->writeln("Loaded the subscription via the project's organization: " . $this->getOrganizationLabel($organization), OutputInterface::VERBOSITY_DEBUG);
+                return $subscription;
+            }
+        }
+
+        // Load the user's organizations and try to load the subscription through each one.
+        /** @var BadResponseException[] $exceptions */
+        $exceptions = [];
+        foreach ($this->getClient()->listOrganizationsWithMember($this->getMyUserId()) as $organization) {
+            try {
+                $subscription = $organization->getSubscription($id);
+                if ($subscription) {
+                    $this->stdErr->writeln("Loaded the subscription through organization: " . $this->getOrganizationLabel($organization), OutputInterface::VERBOSITY_DEBUG);
+                    return $subscription;
+                }
+            } catch (BadResponseException $e) {
+                if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                    throw $e;
+                }
+                $exceptions[] = $e;
+            }
+        }
+        // Throw a 403 exception if the subscription could not be loaded as a
+        // result of permission errors.
+        foreach ($exceptions as $exception) {
+            throw $exception;
         }
         return false;
     }

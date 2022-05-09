@@ -31,7 +31,16 @@ class ProjectDeleteCommand extends CommandBase
             $input->setOption('project', $projectId);
         }
         $this->validateInput($input);
+
         $project = $this->getSelectedProject();
+        $subscriptionId = $project->getSubscriptionId();
+        $subscription = $this->api()->loadSubscription($subscriptionId, $project);
+        if (!$subscription) {
+            $this->stdErr->writeln('Subscription not found: <error>' . $subscriptionId . '</error>');
+            $this->stdErr->writeln('Unable to delete the project.');
+            return 1;
+        }
+        // TODO check for a HAL 'delete' link on the subscription?
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -60,19 +69,11 @@ class ProjectDeleteCommand extends CommandBase
             }
         }
 
-        $client = $this->api()->getClient();
-        $subscriptionId = $project->getSubscriptionId();
-
         try {
-            $subscription = $client->getSubscription($subscriptionId);
-            if (!$subscription) {
-                throw new \RuntimeException('Subscription not found: ' . $subscriptionId);
-            }
-
             $subscription->delete();
         } catch (ClientException $e) {
             $response = $e->getResponse();
-            if ($response !== null && $response->getStatusCode() === 403) {
+            if ($response !== null && $response->getStatusCode() === 403 && !$this->config()->getWithDefault('api.organizations', false)) {
                 if ($project->owner !== $this->api()->getMyUserId()) {
                     $this->stdErr->writeln("Only the project's owner can delete it.");
                     return 1;

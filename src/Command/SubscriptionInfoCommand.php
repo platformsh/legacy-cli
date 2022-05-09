@@ -47,7 +47,7 @@ class SubscriptionInfoCommand extends CommandBase
             $id = $project->getSubscriptionId();
         }
 
-        $subscription = $this->loadSubscription($id, $project, $input->getArgument('value') !== null);
+        $subscription = $this->api()->loadSubscription($id, $project, $input->getArgument('value') !== null);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 
@@ -167,81 +167,5 @@ class SubscriptionInfoCommand extends CommandBase
         $writableProperties = ['plan' => 'string', 'environments' => 'int', 'storage' => 'int'];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
-    }
-
-    /**
-     * Loads a subscription through various APIs to see which one wins.
-     *
-     * @param string $id
-     * @param Project|null $project
-     * @param bool $forWrite
-     *
-     * @return false|Subscription
-     */
-    private function loadSubscription($id, Project $project = null, $forWrite = false)
-    {
-        $organizations_enabled = $this->config()->getWithDefault('api.organizations', false);
-        if (!$organizations_enabled) {
-            // Always load the subscription directly if the Organizations API
-            // is not enabled.
-            return $this->api()->getClient()->getSubscription($id);
-        }
-
-        // Attempt to load the subscription directly.
-        // This is possible if the user is on the project's access list, or
-        // if the user has access to all subscriptions.
-        // However, while this legacy API works for reading, it won't always work for writing.
-        if (!$forWrite) {
-            $subscription = $this->ignore403(function () use ($id) {
-                return $this->api()->getClient()->getSubscription($id);
-            });
-            if ($subscription) {
-                $this->debug('Loaded the subscription directly');
-                return $subscription;
-            }
-        }
-
-        // Use the project's organization, if known.
-        if (isset($project)) {
-            $organizationId = $project->getProperty('organization_id', false, false);
-            if ($organizationId) {
-                $organization = $this->api()->getClient()->getOrganizationById($organizationId);
-                if ($organization && ($subscription = $organization->getSubscription($id))) {
-                    $this->debug("Loaded the subscription via the project's organization: " . $this->api()->getOrganizationLabel($organization));
-                    return $subscription;
-                }
-            }
-        }
-
-        // Load the user's organizations and try to load the subscription through each one.
-        foreach ($this->api()->getClient()->listOrganizationsWithMember($this->api()->getMyUserId()) as $organization) {
-            $subscription = $this->ignore403(function () use ($organization, $id) {
-                return $organization->getSubscription($id);
-            });
-            if ($subscription) {
-                $this->debug('Loaded the subscription through organization: ' . $this->api()->getOrganizationLabel($organization));
-                return $subscription;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Runs a function while ignoring Guzzle 403 errors.
-     *
-     * @param callable $f
-     *
-     * @return false|mixed
-     */
-    private function ignore403(callable $f)
-    {
-        try {
-            return $f();
-        } catch (BadResponseException $e) {
-            if ($e->getResponse() || $e->getResponse()->getStatusCode() === 403) {
-                return false;
-            }
-            throw $e;
-        }
     }
 }
