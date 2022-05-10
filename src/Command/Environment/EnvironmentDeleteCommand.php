@@ -52,7 +52,7 @@ EOF
 
         /** @var Environment[] $selectedEnvironments */
         $selectedEnvironments = [];
-        $anythingSpecified = false;
+        $error = false;
 
         // Use the current environment (if it's not production).
         if ($current = $this->getCurrentEnvironment($this->getSelectedProject())) {
@@ -69,7 +69,6 @@ EOF
             $specifiedEnvironmentIds = array_merge([$input->getOption('environment')], $specifiedEnvironmentIds);
         }
         if ($specifiedEnvironmentIds) {
-            $anythingSpecified = true;
             $allIds = \array_map(function (Environment $e) { return $e->id; }, $environments);
             $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
@@ -80,6 +79,7 @@ EOF
             }
             foreach ($notFound as $notFoundId) {
                 $this->stdErr->writeln("Environment not found: <error>$notFoundId</error>");
+                $error = true;
             }
             $specifiedEnvironments = array_intersect_key($environments, array_flip($specifiedEnvironmentIds));
             $this->stdErr->writeln(count($specifiedEnvironments) . ' environment(s) found by ID');
@@ -89,7 +89,6 @@ EOF
 
         // Gather inactive environments.
         if ($input->getOption('inactive')) {
-            $anythingSpecified = true;
             if ($input->getOption('no-delete-branch')) {
                 $this->stdErr->writeln('The option --no-delete-branch cannot be combined with --inactive.');
 
@@ -109,7 +108,6 @@ EOF
 
         // Gather merged environments.
         if ($input->getOption('merged')) {
-            $anythingSpecified = true;
             $merged = [];
             foreach ($environments as $environment) {
                 $merge_info = $environment->getProperty('merge_info', false) ?: [];
@@ -124,7 +122,6 @@ EOF
 
         // Gather environments with the specified --type (can be multiple).
         if ($types = ArrayArgument::getOption($input, 'type')) {
-            $anythingSpecified = true;
             $withTypes = [];
             foreach ($environments as $environment) {
                 if ($environment->hasProperty('type') && \in_array($environment->getProperty('type'), $types)) {
@@ -170,7 +167,6 @@ EOF
         $this->api()->sortResources($selectedEnvironments, 'id');
         $toDeleteBranch = [];
         $toDeactivate = [];
-        $error = false;
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         foreach ($selectedEnvironments as $environment) {
@@ -231,7 +227,7 @@ EOF
             }
             $this->stdErr->writeln('No environment(s) to delete.');
 
-            return $error || $anythingSpecified ? 1 : 0;
+            return $error ? 1 : 0;
         }
 
         $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
