@@ -103,6 +103,12 @@ local:
   # Configure the Drush executable to use (defaults to 'drush').
   drush_executable: null
 
+pagination:
+
+    # Whether pagination is enabled.
+    # Currently, this only applies to the projects (project:list) command.
+    enabled: true
+
 updates:
   # Whether to check for automatic updates.
   check: true

@@ -200,6 +200,12 @@ detection:
   # Domain of a Console instance.
   console_domain: 'console.platform.sh'
 
+pagination:
+
+  # Whether pagination is enabled.
+  # Currently, this only applies to the projects (project:list) command.
+  enabled: true
+
 # Automatic updates.
 # This can be overridden in the user config file.
 updates:

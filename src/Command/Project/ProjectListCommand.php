@@ -106,15 +106,17 @@ class ProjectListCommand extends CommandBase
         }
 
         // Paginate the list.
-        if ($input->getOption('count') === null) {
+        if (!$this->config()->getWithDefault('pagination.enabled', true)) {
+            $itemsPerPage = 0;
+        } elseif ($input->getOption('count') !== null) {
+            $itemsPerPage = (int)$input->getOption('count');
+        } else {
             // Find a default --count based on the terminal height (minimum 10).
             // Deduct 24 lines for consistency with the welcome command.
             $itemsPerPage = \max(10, (new Terminal())->getHeight() - 24);
             if ($itemsPerPage > \count($projectStubs)) {
                 $itemsPerPage = \count($projectStubs);
             }
-        } else {
-            $itemsPerPage = (int) $input->getOption('count');
         }
         $page = (new Pager())->page($projectStubs, (int) $input->getOption('page'), (int) $itemsPerPage);
         /** @var ProjectStub[] $projectStubs */
