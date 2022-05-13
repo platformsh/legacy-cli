@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3282e816542aaf4eb190ce32337e5854",
+    "content-hash": "ce46d7dfb6ec5285160ba4248841ada6",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -778,16 +778,16 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.26",
+            "version": "v0.0.29",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "39aa4f31c70db66710baeb3fd1123c1e809ac953"
+                "reference": "67f046343000718f92d4d181147aa53abd6a2419"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/39aa4f31c70db66710baeb3fd1123c1e809ac953",
-                "reference": "39aa4f31c70db66710baeb3fd1123c1e809ac953",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/67f046343000718f92d4d181147aa53abd6a2419",
+                "reference": "67f046343000718f92d4d181147aa53abd6a2419",
                 "shasum": ""
             },
             "require": {
@@ -815,9 +815,9 @@
             "description": "A lightweight Symfony Console form system.",
             "support": {
                 "issues": "https://github.com/platformsh/console-form/issues",
-                "source": "https://github.com/platformsh/console-form/tree/v0.0.26"
+                "source": "https://github.com/platformsh/console-form/tree/v0.0.29"
             },
-            "time": "2022-01-14T15:24:02+00:00"
+            "time": "2022-05-11T12:31:03+00:00"
         },
         {
             "name": "psr/container",
