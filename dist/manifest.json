@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "b89eb7f3e0ed174cfd8c2ef8e60607fb42119241",
-        "sha256": "0a9e7e968f8c7f816f750d14f1c2b5757078c5bad401108a6e4709668794b576",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.4/platform.phar",
-        "version": "3.79.4",
+        "sha1": "2db3e508ad8b8debaa507ba4bd931319119d1146",
+        "sha256": "2b9ca65d52bb9d57b66fe081d9f92dd76e3b85cfeae5e532feeea162a50b54d4",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.5/platform.phar",
+        "version": "3.79.5",
         "php": {
             "min": "5.5.9"
         },
@@ -445,7 +445,8 @@
             "3.79.1": "* Fix error in activity commands: \"The value of option --type is not an array\"",
             "3.79.2": "* Fix 'The \"incomplete\" option does not exist' in the integration:activities command",
             "3.79.3": "* Fix organization support in the `project:delete` command.\n  Removes the now inaccurate advice, \"Only the project's owner can delete it\".\n* Fix wildcard matching for environment IDs that contain a slash (`/`).\n  Affected commands: `environment:delete` and `user:add`.\n* Print the current environment in the `environment:delete` command.",
-            "3.79.4": "* Handle the \"cancelled\" state in the `activity:log` command.\n* Allow manual override of the region ID in the `project:create` command.\n* Always use the API gateway URL (\"external API proxy\") when configured.\n* Error when a conditional field is used in the wrong context.\n  For example, when the `--fetch-branches` option is used with the `webhook`\n  integration type, previously it would have been silently ignored, now it\n  will fail with an error message.\n  Affected commands:\n  `integration:add`, `integration:update`, `variable:create`, `variable:update`\n* Allow pagination to be disabled in the `project:list` (`projects`) command.\n  Pagination for this command can be disabled using an environment variable:\n\n        export PLATFORMSH_CLI_PAGINATION_ENABLED=0\n\n    or by adding the following to `$HOME/.platformsh/config.yaml`:\n\n        pagination:\n          enabled: false\n* Return a 0 exit code from `environment:delete` if no error occurred."
+            "3.79.4": "* Handle the \"cancelled\" state in the `activity:log` command.\n* Allow manual override of the region ID in the `project:create` command.\n* Always use the API gateway URL (\"external API proxy\") when configured.\n* Error when a conditional field is used in the wrong context.\n  For example, when the `--fetch-branches` option is used with the `webhook`\n  integration type, previously it would have been silently ignored, now it\n  will fail with an error message.\n  Affected commands:\n  `integration:add`, `integration:update`, `variable:create`, `variable:update`\n* Allow pagination to be disabled in the `project:list` (`projects`) command.\n  Pagination for this command can be disabled using an environment variable:\n\n        export PLATFORMSH_CLI_PAGINATION_ENABLED=0\n\n    or by adding the following to `$HOME/.platformsh/config.yaml`:\n\n        pagination:\n          enabled: false\n* Return a 0 exit code from `environment:delete` if no error occurred.",
+            "3.79.5": "* Fix: \"pagination\" section in config.yaml could not override the default\n* Fix potentially not using the cache when a project hostname is known\n* Fix \"Call to a member function setApiUrl() on bool\""
         }
     }
 ]
