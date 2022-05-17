@@ -580,7 +580,13 @@ class Api
         $projects = $this->getProjects($refresh);
         if (isset($projects[$id])) {
             if ($host === null || stripos(parse_url($projects[$id]->getUri(), PHP_URL_HOST), $host) !== false) {
-                return $projects[$id];
+                $project = $projects[$id];
+                $apiUrl = $this->config->getWithDefault('api.base_url', '');
+                if ($apiUrl) {
+                    $project->setApiUrl($apiUrl);
+                }
+
+                return $project;
             }
         }
 
@@ -605,10 +611,10 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
-            $apiUrl = $this->config->getWithDefault('api.base_url', '');
-            if ($apiUrl) {
-                $project->setApiUrl($apiUrl);
-            }
+        }
+        $apiUrl = $this->config->getWithDefault('api.base_url', '');
+        if ($apiUrl) {
+            $project->setApiUrl($apiUrl);
         }
 
         return $project;
