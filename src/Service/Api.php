@@ -605,6 +605,8 @@ class Api
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
                 $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
+            } else {
+                return false;
             }
         } else {
             $guzzleClient = $this->getHttpClient();
