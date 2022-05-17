@@ -18,6 +18,8 @@ class Activity {
     {
         if ($activity->isComplete()) {
             $end = strtotime($activity->completed_at);
+        } elseif ($activity->state === ApiActivity::STATE_CANCELLED && $activity->hasProperty('cancelled_at')) {
+            $end = strtotime($activity->getProperty('cancelled_at'));
         } elseif (!empty($activity->started_at)) {
             $now = $now === null ? time() : $now;
             $end = $now;

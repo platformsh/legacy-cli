@@ -84,7 +84,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
 
         /** @var ActivityMonitor $monitor */
         $monitor = $this->getService('activity_monitor');
-        if (!$this->runningViaMulti && !$activity->isComplete()) {
+        if (!$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $monitor->waitAndLog($activity, 3, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
