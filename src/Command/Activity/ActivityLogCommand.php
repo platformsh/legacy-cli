@@ -102,7 +102,7 @@ class ActivityLogCommand extends ActivityCommandBase
 
         /** @var ActivityMonitor $monitor */
         $monitor = $this->getService('activity_monitor');
-        if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
+        if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $monitor->waitAndLog($activity, $refresh, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in

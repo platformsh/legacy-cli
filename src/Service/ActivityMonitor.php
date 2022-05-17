@@ -107,7 +107,7 @@ class ActivityMonitor
         // Read the log while waiting for the activity to complete.
         $lastRefresh = microtime(true);
         $buffer = '';
-        while (!feof($logStream) || !$activity->isComplete()) {
+        while (!feof($logStream) && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             // If $pollInterval has passed, or if there is nothing else left
             // to do, then refresh the activity.
             if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
@@ -153,13 +153,17 @@ class ActivityMonitor
         $stdErr->writeln('');
 
         // Display the success or failure messages.
-        switch ($activity['result']) {
+        switch ($activity->result) {
             case Activity::RESULT_SUCCESS:
                 $stdErr->writeln("Activity <info>{$activity->id}</info> succeeded");
                 return true;
 
             case Activity::RESULT_FAILURE:
-                $stdErr->writeln("Activity <error>{$activity->id}</error> failed");
+                if ($activity->state === Activity::STATE_CANCELLED) {
+                    $stdErr->writeln("The activity <error>{$activity->id}</error> was cancelled");
+                } else {
+                    $stdErr->writeln("Activity <error>{$activity->id}</error> failed");
+                }
                 return false;
         }
 
@@ -287,13 +291,13 @@ class ActivityMonitor
             $mostRecentTimestamp = $created > $mostRecentTimestamp ? $created : $mostRecentTimestamp;
         }
 
-        // Wait for the activities to complete, polling (refreshing) all of them
-        // with a 1 second delay.
-        $complete = 0;
-        while ($complete < $count) {
+        // Wait for the activities to be completed or cancelled, polling
+        // (refreshing) all of them with a one-second delay.
+        $done = 0;
+        while ($done < $count) {
             sleep(1);
             $states = [];
-            $complete = 0;
+            $done = 0;
             // Get a list of activities on the project. Any of our activities
             // which are not contained in this list must be refreshed
             // individually.
@@ -307,11 +311,11 @@ class ActivityMonitor
                         break;
                     }
                 }
-                if (!$refreshed && !$activityRef->isComplete()) {
+                if (!$refreshed && !$activityRef->isComplete() && $activityRef->state !== Activity::STATE_CANCELLED) {
                     $activityRef->refresh();
                 }
-                if ($activityRef->isComplete()) {
-                    $complete++;
+                if ($activityRef->isComplete() || $activityRef->state === Activity::STATE_CANCELLED) {
+                    $done++;
                 }
                 $state = $activityRef->state;
                 $states[$state] = isset($states[$state]) ? $states[$state] + 1 : 1;
