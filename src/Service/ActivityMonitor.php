@@ -107,7 +107,7 @@ class ActivityMonitor
         // Read the log while waiting for the activity to complete.
         $lastRefresh = microtime(true);
         $buffer = '';
-        while (!feof($logStream) && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
+        while (!feof($logStream) || (!$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED)) {
             // If $pollInterval has passed, or if there is nothing else left
             // to do, then refresh the activity.
             if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
@@ -166,6 +166,8 @@ class ActivityMonitor
                 }
                 return false;
         }
+
+        $stdErr->writeln("The log for activity <info>{$activity->id}</info> finished with an unknown result");
 
         return false;
     }
