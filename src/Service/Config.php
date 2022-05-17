@@ -397,6 +397,7 @@ class Config
             'application.writable_user_dir' => 'application.writable_user_dir',
             'application.date_format' => 'application.date_format',
             'application.timezone' => 'application.timezone',
+            'pagination' => 'pagination',
         ];
 
         $userConfig = $this->getUserConfig();
