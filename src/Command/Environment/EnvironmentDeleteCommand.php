@@ -50,7 +50,11 @@ EOF
 
         $environments = $this->api()->getEnvironments($this->getSelectedProject());
 
-        /** @var Environment[] $selectedEnvironments */
+        /**
+         * A list of selected environments, keyed by ID to avoid duplication.
+         *
+         * @var array<string, Environment> $selectedEnvironments
+         */
         $selectedEnvironments = [];
         $error = false;
 
@@ -59,7 +63,7 @@ EOF
             if ($current->getProperty('type', false, false) !== 'production') {
                 $this->stdErr->writeln('Current environment selected: '. $this->api()->getEnvironmentLabel($current));
                 $this->stdErr->writeln('');
-                $selectedEnvironments = \array_merge($selectedEnvironments, [$current]);
+                $selectedEnvironments[$current->id] = $current;
             }
         }
 
@@ -84,7 +88,9 @@ EOF
             $specifiedEnvironments = array_intersect_key($environments, array_flip($specifiedEnvironmentIds));
             $this->stdErr->writeln(count($specifiedEnvironments) . ' environment(s) found by ID');
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $specifiedEnvironments);
+            foreach ($specifiedEnvironments as $specifiedEnvironment) {
+                $selectedEnvironments[$specifiedEnvironment->id] = $specifiedEnvironment;
+            }
         }
 
         // Gather inactive environments.
@@ -103,7 +109,9 @@ EOF
             );
             $this->stdErr->writeln(count($inactive) . ' inactive environment(s) found.');
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $inactive);
+            foreach ($inactive as $inactiveEnv) {
+                $selectedEnvironments[$inactiveEnv->id] = $inactiveEnv;
+            }
         }
 
         // Gather merged environments.
@@ -112,12 +120,11 @@ EOF
             foreach ($environments as $environment) {
                 $merge_info = $environment->getProperty('merge_info', false) ?: [];
                 if (isset($environment->parent, $merge_info['commits_ahead'], $merge_info['parent_ref']) && $merge_info['commits_ahead'] === 0) {
-                    $merged[$environment->id] = $environment;
+                    $selectedEnvironments[$environment->id] = $merged[$environment->id] = $environment;
                 }
             }
             $this->stdErr->writeln(count($merged) . ' merged environment(s) found.');
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $merged);
         }
 
         // Gather environments with the specified --type (can be multiple).
@@ -125,12 +132,11 @@ EOF
             $withTypes = [];
             foreach ($environments as $environment) {
                 if ($environment->hasProperty('type') && \in_array($environment->getProperty('type'), $types)) {
-                    $withTypes[$environment->id] = $environment;
+                    $selectedEnvironments[$environment->id] = $withTypes[$environment->id] = $environment;
                 }
             }
             $this->stdErr->writeln(count($withTypes) . ' environment(s) found matching type(s): ' . implode(', ', $types));
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $withTypes);
         }
 
         // Exclude environment type(s) specified in --exclude-type.
@@ -147,12 +153,9 @@ EOF
         // Exclude environment ID(s) specified in --exclude.
         $excludeIds = ArrayArgument::getOption($input, 'exclude');
         if (!empty($excludeIds)) {
-            $selectedIds = \array_map(function (Environment $e) { return $e->id; }, $selectedEnvironments);
-            $resolved = Wildcard::select($selectedIds, $excludeIds);
+            $resolved = Wildcard::select(\array_keys($selectedEnvironments), $excludeIds);
             if (count($resolved)) {
-                $selectedEnvironments = \array_filter($selectedEnvironments, function (Environment $e) use ($resolved) {
-                    return !\in_array($e->id, $resolved, true);
-                });
+                $selectedEnvironments = \array_intersect_key($selectedEnvironments, \array_flip($resolved));
                 $this->stdErr->writeln(count($resolved) . ' environment(s) excluded by ID.');
                 $this->stdErr->writeln('');
             }
