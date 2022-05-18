@@ -309,11 +309,13 @@ class Config
     {
         $overrideMap = [];
         foreach ($this->config as $section => $sub_config) {
-            foreach ($sub_config as $sub_section => $value) {
-                if (\is_scalar($value)) {
-                    $varName = \strtoupper($section . '_' . $sub_section);
-                    $accessorName = $section . '.' . $sub_section;
-                    $overrideMap[$varName] = $accessorName;
+            if (\is_array($sub_config)) {
+                foreach ($sub_config as $sub_section => $value) {
+                    if (\is_scalar($value) || $value === null) {
+                        $varName = \strtoupper($section . '_' . $sub_section);
+                        $accessorName = $section . '.' . $sub_section;
+                        $overrideMap[$varName] = $accessorName;
+                    }
                 }
             }
         }
