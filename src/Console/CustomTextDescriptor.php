@@ -93,7 +93,7 @@ class CustomTextDescriptor extends TextDescriptor
             $width = $this->getColumnWidth($description->getCommands());
 
             foreach ($description->getCommands() as $command) {
-                $this->writeText(sprintf("%-${width}s %s", $command->getName(), $command->getDescription()), $options);
+                $this->writeText(sprintf("%-{$width}s %s", $command->getName(), $command->getDescription()), $options);
                 $this->writeText("\n");
             }
         } else {
@@ -145,7 +145,7 @@ class CustomTextDescriptor extends TextDescriptor
                     $this->writeText("\n");
                     $this->writeText(
                         sprintf(
-                            "  %-${width}s %s",
+                            "  %-{$width}s %s",
                             "<info>$name</info>" . $this->formatAliases($aliases),
                             $command->getDescription()
                         ),
