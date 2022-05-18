@@ -57,15 +57,7 @@ EOF
          */
         $selectedEnvironments = [];
         $error = false;
-
-        // Use the current environment (if it's not production).
-        if ($current = $this->getCurrentEnvironment($this->getSelectedProject())) {
-            if ($current->getProperty('type', false, false) !== 'production') {
-                $this->stdErr->writeln('Current environment selected: '. $this->api()->getEnvironmentLabel($current));
-                $this->stdErr->writeln('');
-                $selectedEnvironments[$current->id] = $current;
-            }
-        }
+        $anythingSpecified = false;
 
         // Add the environment(s) specified in the arguments or options.
         $specifiedEnvironmentIds = ArrayArgument::getArgument($input, 'environment');
@@ -73,6 +65,7 @@ EOF
             $specifiedEnvironmentIds = array_merge([$input->getOption('environment')], $specifiedEnvironmentIds);
         }
         if ($specifiedEnvironmentIds) {
+            $anythingSpecified = true;
             $allIds = \array_map(function (Environment $e) { return $e->id; }, $environments);
             $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
@@ -95,6 +88,7 @@ EOF
 
         // Gather inactive environments.
         if ($input->getOption('inactive')) {
+            $anythingSpecified = true;
             if ($input->getOption('no-delete-branch')) {
                 $this->stdErr->writeln('The option --no-delete-branch cannot be combined with --inactive.');
 
@@ -116,6 +110,7 @@ EOF
 
         // Gather merged environments.
         if ($input->getOption('merged')) {
+            $anythingSpecified = true;
             $merged = [];
             foreach ($environments as $environment) {
                 $merge_info = $environment->getProperty('merge_info', false) ?: [];
@@ -129,6 +124,7 @@ EOF
 
         // Gather environments with the specified --type (can be multiple).
         if ($types = ArrayArgument::getOption($input, 'type')) {
+            $anythingSpecified = true;
             $withTypes = [];
             foreach ($environments as $environment) {
                 if ($environment->hasProperty('type') && \in_array($environment->getProperty('type'), $types)) {
@@ -137,6 +133,17 @@ EOF
             }
             $this->stdErr->writeln(count($withTypes) . ' environment(s) found matching type(s): ' . implode(', ', $types));
             $this->stdErr->writeln('');
+        }
+
+        // Add the current environment, if it's not production, and if nothing is previously specified.
+        if (!$anythingSpecified && empty($selectedEnvironments)) {
+            if ($current = $this->getCurrentEnvironment($this->getSelectedProject())) {
+                if ($current->getProperty('type', false, false) !== 'production') {
+                    $this->stdErr->writeln('Current environment: '. $this->api()->getEnvironmentLabel($current));
+                    $this->stdErr->writeln('');
+                    $selectedEnvironments[$current->id] = $current;
+                }
+            }
         }
 
         // Exclude environment type(s) specified in --exclude-type.
@@ -247,7 +254,7 @@ EOF
     {
         $uniqueIds = \array_unique(\array_map(function(Environment $e) { return $e->id; }, $environments));
         natcasesort($uniqueIds);
-        return '<comment>' . implode('</comment>, <comment>', $uniqueIds) . '</comment>';
+        return '<info>' . implode('</info>, <info>', $uniqueIds) . '</info>';
     }
 
     /**
