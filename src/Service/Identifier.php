@@ -49,7 +49,7 @@ class Identifier
     public function identify($url)
     {
         $result = $this->parseProjectId($url);
-        if (empty($result['projectId']) && strpos($url, '.') !== false) {
+        if (empty($result['projectId']) && strpos($url, '.') !== false && $this->config->getWithDefault('detection.use_site_headers', true)) {
             $result = $this->identifyFromHeaders($url);
         }
         if (empty($result['projectId'])) {
@@ -123,9 +123,11 @@ class Identifier
 
         if ($this->config->has('detection.console_domain')
             && $host === $this->config->get('detection.console_domain')
-            && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)) {
+            && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)
+            // Console uses /-/ to distinguish sub-paths and identifiers.
+            && $matches[1] !== '-') {
             $result['projectId'] = $matches[1];
-            if (isset($matches[3])) {
+            if (isset($matches[3]) && $matches[3] !== '-') {
                 $result['environmentId'] = rawurldecode($matches[3]);
             }
 
