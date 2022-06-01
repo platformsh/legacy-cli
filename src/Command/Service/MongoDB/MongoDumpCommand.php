@@ -71,6 +71,15 @@ class MongoDumpCommand extends CommandBase
 
         $gzip = $input->getOption('gzip');
 
+        $envPrefix = $this->config->get('service.env_prefix');
+        $host = $this->selectHost($input, getenv($envPrefix . 'RELATIONSHIPS') !== false);
+
+        if ($host instanceof RemoteHost) {
+            $appName = $this->selectApp($input);
+        } else {
+            $appName = getenv($envPrefix . 'APPLICATION_NAME');
+        }
+
         $dumpFile = false;
 
         if (!$input->getOption('stdout')) {

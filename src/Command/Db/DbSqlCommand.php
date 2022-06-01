@@ -8,7 +8,6 @@ use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Util\OsUtil;
@@ -26,22 +25,13 @@ class DbSqlCommand extends CommandBase
     private $questionHelper;
     private $relationships;
     private $selector;
-    private $shell;
     private $ssh;
 
-    public function __construct(
-        Api $api,
-        QuestionHelper $questionHelper,
-        Relationships $relationships,
-        Selector $selector,
-        Shell $shell,
-        Ssh $ssh
-    ) {
+    public function __construct(Api $api, QuestionHelper $questionHelper, Relationships $relationships, Selector $selector, Ssh $ssh) {
         $this->api = $api;
         $this->questionHelper = $questionHelper;
         $this->relationships = $relationships;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }
@@ -123,7 +113,7 @@ class DbSqlCommand extends CommandBase
                         $choices[$schema] .= ' (default)';
                     }
                 }
-                $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $default . ' (default)', true);
+                $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
                 $schema = $schema === '(none)' ? '' : $schema;
             }
         }

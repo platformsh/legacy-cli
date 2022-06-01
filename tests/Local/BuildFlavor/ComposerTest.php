@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Platformsh\Cli\Tests\BuildFlavor;
+namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 /**
  * @group slow

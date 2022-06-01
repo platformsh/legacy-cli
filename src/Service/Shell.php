@@ -77,6 +77,7 @@ class Shell
      * @param bool         $quiet
      * @param array        $env
      * @param int|null     $timeout
+     * @param string|null  $input
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If $mustRun is enabled and the command fails.
@@ -85,16 +86,13 @@ class Shell
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
      */
-    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600)
+    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
     {
-        $process = new Process($args, null, null, null, $timeout);
-
-        // Avoid adding 'exec' to every command. It is not needed in this
-        // context as we do not need to send signals to the process. Also it
-        // causes compatibility issues, at least with the shell built-in command
-        // 'command' on  Travis containers.
-        // See https://github.com/symfony/symfony/issues/23495
-        $process->setCommandLine($process->getCommandLine());
+        if (is_string($args)) {
+            $process = Process::fromShellCommandline($args, null, null, $input, $timeout);
+        } else {
+            $process = new Process($args, null, null, $input, $timeout);
+        }
 
         if ($timeout === null) {
             set_time_limit(0);
@@ -105,17 +103,34 @@ class Shell
             OutputInterface::VERBOSITY_VERBOSE
         );
 
+        $blankLine = false;
+
+        if (!empty($input) && is_string($input)) {
+            $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input), OutputInterface::VERBOSITY_VERBOSE);
+            $blankLine = true;
+        }
+
         if (!empty($env)) {
             $this->showEnvMessage($env);
+            $blankLine = true;
             $process->setEnv($env + $this->getParentEnv());
         }
 
         if ($dir && is_dir($dir)) {
             $process->setWorkingDirectory($dir);
             $this->showWorkingDirMessage($dir);
+            $blankLine = true;
+        }
+
+        // Conditional blank line just to aid debugging.
+        if ($blankLine) {
+            $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
         }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
+
+        // Another blank line after the command output ends.
+        $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
 
         return is_int($result) ? $result === 0 : $result;
     }
@@ -161,8 +176,7 @@ class Shell
             return $_ENV;
         }
 
-        // If $_ENV is empty, then we can only use a whitelist of all the
-        // variables that we might want to use.
+        // If $_ENV is empty, then guess all the variables that we might want to use.
         $candidates = [
             'TERM',
             'TERM_SESSION_ID',
@@ -203,8 +217,14 @@ class Shell
     protected function runProcess(Process $process, $mustRun = false, $quiet = true)
     {
         try {
-            $process->mustRun($quiet ? null : function ($type, $buffer) {
-                $output = $type === Process::ERR ? $this->stdErr : $this->output;
+            $process->mustRun(function ($type, $buffer) use ($quiet) {
+                $output = $type === Process::ERR ? $this->output : $this->stdErr;
+                if ($quiet) {
+                    // Always show stderr output in debug mode.
+                    if ($type !== Process::ERR || !$output->isDebug()) {
+                        return;
+                    }
+                }
                 $output->write(preg_replace('/^/m', '  ', $buffer));
             });
         } catch (ProcessFailedException $e) {
@@ -239,11 +259,22 @@ class Shell
             if (is_executable($command)) {
                 $result[$command] = $command;
             } else {
-                $args = ['command', '-v', $command];
                 if (OsUtil::isWindows()) {
-                    $args = ['where', $command];
+                    $commands = [['where', $command], ['which', $command]];
+                } else {
+                    $commands = [['command', '-v', $command], ['which', $command]];
                 }
-                $result[$command] = $this->execute($args, null, false, true);
+                foreach ($commands as $key => $args) {
+                    try {
+                        $result[$command] = $this->execute($args);
+                    } catch (ProcessFailedException $e) {
+                        $result[$command] = false;
+                        if ($this->exceptionMeansCommandDoesNotExist($e)) {
+                            continue;
+                        }
+                    }
+                    break;
+                }
                 if ($result[$command] === false && $noticeOnError) {
                     trigger_error(sprintf("Failed to find command via: %s", implode(' ', $args)), E_USER_NOTICE);
                 }
@@ -251,6 +282,29 @@ class Shell
         }
 
         return $result[$command];
+    }
+
+    /**
+     * Tests a process exception to see if it means the command does not exist.
+     *
+     * @param ProcessFailedException $e
+     *
+     * @return bool
+     */
+    public function exceptionMeansCommandDoesNotExist(ProcessFailedException $e) {
+        $process = $e->getProcess();
+        if ($process->getExitCode() === 127) {
+            return true;
+        }
+        if (DIRECTORY_SEPARATOR === '\\') {
+            if ($process->isOutputDisabled()) {
+                return true;
+            }
+            if (\stripos($process->getErrorOutput(), 'is not recognized as an internal or external command')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

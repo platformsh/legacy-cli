@@ -6,8 +6,11 @@ namespace Platformsh\Cli\Command\Mount;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Helper\Helper;
@@ -21,23 +24,23 @@ class MountSizeCommand extends CommandBase
 
     private $config;
     private $mountService;
+    private $remoteEnvVars;
     private $selector;
-    private $shell;
     private $ssh;
     private $table;
 
     public function __construct(
         Config $config,
         Mount $mountService,
+        RemoteEnvVars $remoteEnvVars,
         Selector $selector,
-        Shell $shell,
         Ssh $ssh,
         Table $table
     ) {
         $this->config = $config;
         $this->mountService = $mountService;
+        $this->remoteEnvVars = $remoteEnvVars;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         $this->table = $table;
         parent::__construct();
@@ -75,16 +78,24 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $container = $this->selector->getSelection($input)->getRemoteContainer();
-        $mounts = $container->getMounts();
+        $host = $this->selector->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
+        if ($host instanceof LocalHost) {
+            $config = (new AppConfig($this->remoteEnvVars->getArrayEnvVar('APPLICATION', $host)));
+            $mounts = $this->mountService->mountsFromConfig($config);
+        } else {
+            $selection = $this->selector->getSelection($input);
+            $container = $selection->getRemoteContainer();
+            $mounts = $this->mountService->mountsFromConfig($container->getConfig());
+        }
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $host->getLabel()));
 
             return 1;
         }
 
-        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts of the %s <info>%s</info>...', $container->getType(), $container->getName()));
+        $this->stdErr->writeln(sprintf('Checking disk usage for all mounts on <info>%s</info>...', $host->getLabel()));
+        $this->stdErr->writeln('');
 
         // Get a list of the mount paths (and normalize them as relative paths,
         // relative to the application directory).
@@ -105,25 +116,26 @@ EOF
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
-        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs';
+
+        // The 'df' command uses '-x' to exclude a bunch of irrelevant
+        // filesystem types. Currently mounts appear to use 'ext4', but that
+        // may not always be the case.
+        $commands[] = 'df -P -B1 -a -x squashfs -x tmpfs -x sysfs -x proc -x devpts -x rpc_pipefs -x cgroup -x fake-sysfs';
+
         $commands[] = 'echo';
         $commands[] = 'cd "$' . $appDirVar . '"';
 
         foreach ($mountPaths as $mountPath) {
-            $commands[] = 'du --block-size=1 -s ' . escapeshellarg($mountPath);
+            // The lost+found directory is excluded as it won't be readable.
+            $commands[] = 'du --block-size=1 --exclude=lost+found -s ' . escapeshellarg($mountPath);
         }
         $command = 'set -e; ' . implode('; ', $commands);
 
         // Connect to the application via SSH and run the commands.
-        $sshArgs = [
-            'ssh',
-            $container->getSshUrl(),
-        ];
-        $sshArgs = array_merge($sshArgs, $this->ssh->getSshArgs());
-        $result = $this->shell->execute(array_merge($sshArgs, [$command]), null, true);
+        $result = $host->runCommand($command);
 
         // Separate the commands' output.
-        list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
+        [$appDir, $dfOutput, $duOutput] = explode("\n\n", $result, 3);
 
         // Parse the output.
         $volumeInfo = $this->parseDf($dfOutput, $appDir, $mountPaths);
@@ -165,6 +177,18 @@ EOF
 
         $this->table->render($rows, $header);
 
+        if (!$this->table->formatIsMachineReadable()) {
+            if (count($volumeInfo) === 1 && count($mountPaths) > 1) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('All the mounts share the same disk.');
+            }
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'To increase the available space, edit the <info>disk</info> key in the <info>%s</info> file.',
+                $this->config->get('service.app_config_file')
+            ));
+        }
+
         return 0;
     }
 
@@ -182,11 +206,11 @@ EOF
     private function getDfColumn($line, $columnName)
     {
         $columnPatterns = [
-            'filesystem' => '#^(.+?)(\s+[0-9])#',
-            'total' => '#([0-9]+)\s+[0-9]+\s+[0-9]+\s+[0-9]+%\s+#',
-            'used' => '#([0-9]+)\s+[0-9]+\s+[0-9]+%\s+#',
-            'available' => '#([0-9]+)\s+[0-9]+%\s+#',
-            'path' => '#%\s+(/.+)$#',
+            'filesystem' => '/^(.+?)(\s+[0-9])/',
+            'total' => '/([0-9]+)\s+[0-9]+\s+[0-9]+\s+([0-9]+%|-)\s+/',
+            'used' => '/([0-9]+)\s+[0-9]+\s+([0-9]+%|-)\s+/',
+            'available' => '/([0-9]+)\s+([0-9]+%|-)\s+/',
+            'path' => '/\s(?:[0-9]+%|-)\s+(\/.+)$/',
         ];
         if (!isset($columnPatterns[$columnName])) {
             throw new \InvalidArgumentException("Invalid df column: $columnName");
@@ -260,7 +284,7 @@ EOF
             if (!isset($duOutputSplit[$i])) {
                 throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
             }
-            list($mountSizes[$mountPath],) = explode("\t", $duOutputSplit[$i], 2);
+            [$mountSizes[$mountPath],] = explode("\t", $duOutputSplit[$i], 2);
         }
 
         return $mountSizes;

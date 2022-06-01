@@ -58,14 +58,19 @@ class WebCommand extends CommandBase
             $environmentId = $environment->id;
         }
 
-        $url = $project->getLink('#ui');
-        if ($environmentId !== null) {
-            // New (alpha) UI links lack the /environments path component.
-            if ($this->config->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config->get('detection.console_domain')) {
-                $url .= '/' . rawurlencode($environmentId);
-            } else {
-                $url .= '/environments/' . rawurlencode($environmentId);
+        if ($selection->hasProject()) {
+            $subscription = $this->api->getClient()->getSubscription($selection->getProject()->getSubscriptionId());
+            $url = $subscription->project_ui;
+            if ($environmentId !== null) {
+                // Console links lack the /environments path component.
+                if ($this->config->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config->get('detection.console_domain')) {
+                    $url .= '/' . rawurlencode($environmentId);
+                } else {
+                    $url .= '/environments/' . rawurlencode($environmentId);
+                }
             }
+        } else {
+            $url = $this->config->getWithDefault('service.console_url', $this->config->get('service.accounts_url'));
         }
 
         $this->urlService->openUrl($url);

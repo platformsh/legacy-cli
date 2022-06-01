@@ -1,0 +1,9 @@
+# Snippet test
+
+echo "Hello world"
+
+# BEGIN Test snippet
+Example snippet contents
+# END
+
+echo "Goodbye"

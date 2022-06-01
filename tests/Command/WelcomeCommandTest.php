@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests\Command\App;
+namespace Platformsh\Cli\Tests\Command;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Tests\CommandRunner;

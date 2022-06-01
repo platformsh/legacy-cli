@@ -11,30 +11,46 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Config
 {
-    private static $config = [];
 
-    private $env = [];
-
-    private $userConfig = null;
+    private $config;
+    private $defaultsFile;
+    private $env;
 
     private $fs;
-
     private $version;
+    private $homeDir;
 
     /**
      * @param array|null  $env
      * @param string|null $defaultsFile
-     * @param bool        $reset
      */
-    public function __construct(array $env = null, ?string $defaultsFile = null, bool $reset = false)
+    public function __construct(array $env = null, string $defaultsFile = null)
     {
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
-        if (empty(self::$config) || $reset) {
-            $defaultsFile = $defaultsFile ?: CLI_ROOT . '/config/config.yaml';
-            self::$config = $this->loadConfigFromFile($defaultsFile);
-            $this->applyUserConfigOverrides();
-            $this->applyEnvironmentOverrides();
+        $this->defaultsFile = $defaultsFile ?: CLI_ROOT . '/config/config.yaml';
+        $this->config = $this->loadConfigFromFile($this->defaultsFile);
+
+        // Load the session ID from a file.
+        $sessionIdFile = $this->getSessionIdFile();
+        if (\file_exists($sessionIdFile)) {
+            $id = \file_get_contents($sessionIdFile);
+            if ($id !== false) {
+                try {
+                    $this->validateSessionId(\trim($id));
+                } catch (\InvalidArgumentException $e) {
+                    throw new \InvalidArgumentException('Invalid session ID in file: ' . $sessionIdFile);
+                }
+                $this->config['api']['session_id'] = \trim($id);
+            }
+        }
+
+        $this->applyUserConfigOverrides();
+        $this->applyEnvironmentOverrides();
+
+        // Validate the session ID.
+        if (isset($this->config['api']['session_id'])) {
+            $this->validateSessionId($this->config['api']['session_id']);
         }
     }
 
@@ -59,7 +75,7 @@ class Config
      */
     public function has(string $name, bool $notNull = true): bool
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
 
         return $exists && (!$notNull || $value !== null);
     }
@@ -75,7 +91,7 @@ class Config
      */
     public function get(string $name)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             throw new \RuntimeException('Configuration not defined: ' . $name);
         }
@@ -93,12 +109,45 @@ class Config
      */
     public function getWithDefault(string $name, $default)
     {
-        $value = NestedArrayUtil::getNestedArrayValue(self::$config, explode('.', $name), $exists);
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             return $default;
         }
 
         return $value;
+    }
+
+    /**
+     * Returns the user's home directory.
+     *
+     * @param bool $reset Reset the static cache.
+     *
+     * @return string The absolute path to the user's home directory
+     */
+    public function getHomeDirectory($reset = false)
+    {
+        if (!$reset && isset($this->homeDir)) {
+            return $this->homeDir;
+        }
+        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
+        $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
+        foreach ($envVars as $envVar) {
+            $value = getenv($envVar);
+            if (array_key_exists($envVar, $this->env)) {
+                $value = $this->env[$envVar];
+            }
+            if (is_string($value) && $value !== '') {
+                if (!is_dir($value)) {
+                    throw new \RuntimeException(
+                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
+                    );
+                }
+                $this->homeDir = realpath($value) ?: $value;
+                return $this->homeDir;
+            }
+        }
+
+        throw new \RuntimeException(sprintf('Could not determine home directory. Set the %s environment variable.', $prefix . 'HOME'));
     }
 
     /**
@@ -113,59 +162,121 @@ class Config
     {
         $path = $this->get('application.user_config_dir');
 
-        return $absolute ? $this->fs()->getHomeDirectory() . '/' . $path : $path;
+        return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
     }
 
-    /**
-     * @return \Platformsh\Cli\Service\Filesystem
-     */
     private function fs(): Filesystem
     {
-        return $this->fs ?: new Filesystem();
+        if (!isset($this->fs)) {
+            $this->fs = new Filesystem();
+        }
+        return $this->fs;
     }
 
-    /**
-     * @return string
-     */
     public function getWritableUserDir(): string
     {
-        $configDir = $this->getUserConfigDir();
+        $path = $this->get('application.writable_user_dir');
+        $configDir = $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path;
 
         // If the config directory is not writable (e.g. if we are on a
         // Platform.sh environment), use a temporary directory instead.
         if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
-            return sys_get_temp_dir() . '/' . $this->get('application.tmp_sub_dir');
+            return sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->get('application.tmp_sub_dir');
         }
 
         return $configDir;
     }
 
+    public function getSessionDir(bool $subDir = false): string
+    {
+        $sessionDir = $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
+        if ($subDir) {
+            return $sessionDir . DIRECTORY_SEPARATOR . $this->getSessionIdSlug();
+        }
+
+        return $sessionDir;
+    }
+
+    public function getSessionId(): string
+    {
+        return $this->get('api.session_id') ?: 'default';
+    }
+
+    public function getSessionIdSlug(string $prefix = 'sess-cli-'): string
+    {
+        return $prefix . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
+    }
+
     /**
+     * Sets a new session ID.
+     *
+     * @param string $id
+     * @param bool   $persist
+     */
+    public function setSessionId($id, $persist = false)
+    {
+        $this->config['api']['session_id'] = $id;
+        if ($persist) {
+            $filename = $this->getSessionIdFile();
+            if ($id === 'default') {
+                $this->fs()->remove($filename);
+            } else {
+                $this->fs()->writeFile($filename, $id, false);
+            }
+        }
+    }
+
+    /**
+     * Returns whether the session ID was set via the environment.
+     *
+     * This means that the session:switch command cannot be used.
+     *
+     * @return bool
+     */
+    public function isSessionIdFromEnv()
+    {
+        return $this->getEnv('SESSION_ID') === $this->config['api']['session_id'];
+    }
+
+    /**
+     * Returns the path to a file where the session ID is saved.
+     *
      * @return string
      */
-    public function getSessionDir()
+    private function getSessionIdFile()
     {
-        return $this->getWritableUserDir() . '/.session';
+        return $this->getWritableUserDir() . DIRECTORY_SEPARATOR . 'session-id';
     }
 
     /**
-     * Override a config value.
+     * Validates a user-provided session ID.
      *
-     * @param string $name
-     * @param mixed  $value
-     *
-     * @internal Used for tests etc.
+     * @param string $id
      */
-    public function override($name, $value)
+    public function validateSessionId($id)
     {
-        NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $name), $value);
+        if (strpos($id, 'api-token-') === 0 || !\preg_match('@^[a-z0-9_-]+$@i', $id)) {
+            throw new \InvalidArgumentException('Invalid session ID: ' . $id);
+        }
     }
 
     /**
-     * @param string $filename
+     * Returns a new Config instance with overridden values.
      *
-     * @return array
+     * @param array $overrides
+     *
+     * @return self
      */
+    public function withOverrides(array $overrides)
+    {
+        $config = new self($this->env, $this->defaultsFile);
+        foreach ($overrides as $key => $value) {
+            NestedArrayUtil::setNestedArrayValue($config->config, explode('.', $key), $value);
+        }
+
+        return $config;
+    }
+
     private function loadConfigFromFile(string $filename): array
     {
         $contents = file_get_contents($filename);
@@ -178,7 +289,19 @@ class Config
 
     private function applyEnvironmentOverrides(): void
     {
-        $overrideMap = [
+        $overrideMap = [];
+        foreach ($this->config as $section => $sub_config) {
+            if (is_array($sub_config)) {
+                foreach ($sub_config as $sub_section => $value) {
+                    if (\is_scalar($value) || $value === null) {
+                        $varName = \strtoupper($section . '_' . $sub_section);
+                        $accessorName = $section . '.' . $sub_section;
+                        $overrideMap[$varName] = $accessorName;
+                    }
+                }
+            }
+        }
+        $overrideMap = \array_merge($overrideMap, [
             'TOKEN' => 'api.token',
             'API_TOKEN' => 'api.access_token', // Deprecated
             'COPY_ON_WINDOWS' => 'local.copy_on_windows',
@@ -188,14 +311,28 @@ class Config
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',
             'ACCOUNTS_API' => 'api.accounts_api_url',
-            'UPDATES_CHECK' => 'updates.check',
-        ];
+            'API_URL' => 'api.base_url',
+            'DEFAULT_TIMEOUT' => 'api.default_timeout',
+            'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
+            'OAUTH2_CLIENT_ID' => 'api.oauth2_client_id',
+            'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
+            'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
+            'CERTIFIER_URL' => 'api.certifier_url',
+            'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
+            'USER_AGENT' => 'api.user_agent',
+            'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
+        ]);
 
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);
             if ($value !== false) {
-                NestedArrayUtil::setNestedArrayValue(self::$config, explode('.', $key), $value, true);
+                NestedArrayUtil::setNestedArrayValue($this->config, explode('.', $key), $value, true);
             }
+        }
+
+        // Special case: replace the list api.ssh_domain_wildcards with the value of {PREFIX}SSH_DOMAIN_WILDCARD.
+        if (($value = $this->getEnv('SSH_DOMAIN_WILDCARD')) !== false) {
+            $this->config['api']['ssh_domain_wildcards'] = [$value];
         }
     }
 
@@ -210,7 +347,7 @@ class Config
      */
     private function getEnv(string $name)
     {
-        $prefix = isset(self::$config['application']['env_prefix']) ? self::$config['application']['env_prefix'] : '';
+        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
             return $this->env[$prefix . $name];
         }
@@ -218,25 +355,19 @@ class Config
         return getenv($prefix . $name);
     }
 
-    /**
-     * @return array
-     */
     public function getUserConfig(): array
     {
-        if (!isset($this->userConfig)) {
-            $this->userConfig = [];
-            $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
-            if (file_exists($userConfigFile)) {
-                $this->userConfig = $this->loadConfigFromFile($userConfigFile);
-            }
+        $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+        if (file_exists($userConfigFile)) {
+            return $this->loadConfigFromFile($userConfigFile);
         }
 
-        return $this->userConfig;
+        return [];
     }
 
     private function applyUserConfigOverrides(): void
     {
-        // A whitelist of allowed overrides.
+        // A list of allowed overrides.
         $overrideMap = [
             'api' => 'api',
             'local.copy_on_windows' => 'local.copy_on_windows',
@@ -244,6 +375,7 @@ class Config
             'experimental' => 'experimental',
             'updates' => 'updates',
             'application.login_method' => 'application.login_method',
+            'application.writable_user_dir' => 'application.writable_user_dir',
             'application.date_format' => 'application.date_format',
             'application.timezone' => 'application.timezone',
         ];
@@ -254,14 +386,14 @@ class Config
                 $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
                 if ($exists) {
                     $configParents = explode('.', $configKey);
-                    $default = NestedArrayUtil::getNestedArrayValue(self::$config, $configParents, $defaultExists);
+                    $default = NestedArrayUtil::getNestedArrayValue($this->config, $configParents, $defaultExists);
                     if ($defaultExists && is_array($default)) {
                         if (!is_array($value)) {
                             continue;
                         }
                         $value = array_replace_recursive($default, $value);
                     }
-                    NestedArrayUtil::setNestedArrayValue(self::$config, $configParents, $value, true);
+                    NestedArrayUtil::setNestedArrayValue($this->config, $configParents, $value, true);
                 }
             }
         }
@@ -276,7 +408,7 @@ class Config
      */
     public function isExperimentEnabled(string $name): bool
     {
-        return !empty(self::$config['experimental']['all_experiments']) || !empty(self::$config['experimental'][$name]);
+        return !empty($this->config['experimental']['all_experiments']) || !empty($this->config['experimental'][$name]);
     }
 
     /**
@@ -288,16 +420,16 @@ class Config
      */
     public function isCommandEnabled(string $name): bool
     {
-        if (!empty(self::$config['application']['disabled_commands'])
-            && in_array($name, self::$config['application']['disabled_commands'])) {
+        if (!empty($this->config['application']['disabled_commands'])
+            && in_array($name, $this->config['application']['disabled_commands'])) {
             return false;
         }
-        if (!empty(self::$config['application']['experimental_commands'])
-            && in_array($name, self::$config['application']['experimental_commands'])) {
-            return !empty(self::$config['experimental']['all_experiments'])
+        if (!empty($this->config['application']['experimental_commands'])
+            && in_array($name, $this->config['application']['experimental_commands'])) {
+            return !empty($this->config['experimental']['all_experiments'])
                 || (
-                    !empty(self::$config['experimental']['enable_commands'])
-                    && in_array($name, self::$config['experimental']['enable_commands'])
+                    !empty($this->config['experimental']['enable_commands'])
+                    && in_array($name, $this->config['experimental']['enable_commands'])
                 );
         }
 
@@ -324,5 +456,95 @@ class Config
         $this->version = $version;
 
         return $version;
+    }
+
+    /**
+     * Returns whether the configuration is for the direct instance of Platform.sh and not a reseller.
+     *
+     * @return bool
+     */
+    public function isDirect()
+    {
+        return isset($this->config['service']['slug']) && $this->config['service']['slug'] === 'platformsh';
+    }
+
+    /**
+     * Returns an HTTP User Agent string representing this application.
+     *
+     * @return string
+     */
+    public function getUserAgent()
+    {
+        $template = $this->getWithDefault('api.user_agent', null)
+            ?: '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})';
+        $replacements = [
+            '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->get('application.name')),
+            '{APP_NAME}' => $this->get('application.name'),
+            '{APP_SLUG}' => $this->get('application.slug'),
+            '{VERSION}' => $this->getVersion(),
+            '{UNAME_S}' => \php_uname('s'),
+            '{UNAME_R}' => \php_uname('r'),
+            '{PHP_VERSION}' => PHP_VERSION,
+        ];
+        return \str_replace(\array_keys($replacements), \array_values($replacements), $template);
+    }
+
+    /**
+     * Finds proxy addresses based on the http_proxy and https_proxy environment variables.
+     *
+     * @return array
+     *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
+     */
+    public function getProxies() {
+        $proxies = [];
+        if (\getenv('https_proxy') !== false) {
+            $proxies['https'] = \getenv('https_proxy');
+        }
+        // An environment variable prefixed by 'http_' cannot be trusted in a non-CLI (web) context.
+        if (PHP_SAPI === 'cli' && \getenv('http_proxy') !== false) {
+            $proxies['http'] = \getenv('http_proxy');
+        }
+        return $proxies;
+    }
+
+    /**
+     * Returns an array of context options for HTTP/HTTPS streams.
+     *
+     * @param int|float|null $timeout
+     *
+     * @return array
+     */
+    public function getStreamContextOptions($timeout = null)
+    {
+        $opts = [
+            // See https://www.php.net/manual/en/context.http.php
+            'http' => [
+                'method' => 'GET',
+                'timeout' => $timeout !== null ? $timeout : $this->get('api.default_timeout'),
+                'user_agent' => $this->getUserAgent(),
+            ],
+        ];
+
+        // The PHP stream context only accepts a single proxy option, under the schemes 'tcp' or 'ssl'.
+        $proxies = $this->getProxies();
+        foreach ($proxies as $proxyUrl) {
+            $opts['http']['proxy'] = \str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxyUrl);
+            break;
+        }
+
+        // Set up SSL options.
+        if ($this->get('api.skip_ssl')) {
+            $opts['ssl']['verify_peer'] = false;
+            $opts['ssl']['verify_peer_name'] = false;
+        } else {
+            $caBundlePath = \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath();
+            if (\is_dir($caBundlePath)) {
+                $opts['ssl']['capath'] = $caBundlePath;
+            } else {
+                $opts['ssl']['cafile'] = $caBundlePath;
+            }
+        }
+
+        return $opts;
     }
 }

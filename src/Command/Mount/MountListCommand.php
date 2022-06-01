@@ -4,9 +4,13 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,19 +21,25 @@ class MountListCommand extends CommandBase
 
     protected static $defaultName = 'mount:list';
 
+    private $config;
     private $formatter;
     private $mountService;
+    private $remoteEnvVars;
     private $selector;
     private $table;
 
     public function __construct(
+        Config $config,
+        RemoteEnvVars $remoteEnvVars,
         PropertyFormatter $formatter,
         Mount $mountService,
         Selector $selector,
         Table $table
     ) {
+        $this->config = $config;
         $this->formatter = $formatter;
         $this->mountService = $mountService;
+        $this->remoteEnvVars = $remoteEnvVars;
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
@@ -54,17 +64,21 @@ class MountListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $selection = $this->selector->getSelection($input);
-
-        $container = $this->selector->getSelection($input)->getRemoteContainer();
-        $mounts = $container->getMounts();
+        $host = $this->selector->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
+        if ($host instanceof LocalHost) {
+            $config = (new AppConfig($this->remoteEnvVars->getArrayEnvVar('APPLICATION', $host)));
+            $mounts = $this->mountService->mountsFromConfig($config);
+        } else {
+            $selection = $this->selector->getSelection($input);
+            $container = $selection->getRemoteContainer();
+            $mounts = $this->mountService->mountsFromConfig($container->getConfig());
+        }
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $host->getLabel()));
 
             return 1;
         }
-        $mounts = $this->mountService->normalizeMounts($mounts);
 
         if ($input->getOption('paths')) {
             $output->writeln(array_keys($mounts));
@@ -81,12 +95,7 @@ class MountListCommand extends CommandBase
             ];
         }
 
-        $this->stdErr->writeln(sprintf(
-            'Mounts in the %s <info>%s</info> (environment <info>%s</info>):',
-            $container->getType(),
-            $container->getName(),
-            $selection->getEnvironment()->id
-        ));
+        $this->stdErr->writeln(sprintf('Mounts on <info>%s</info>:', $host->getLabel()));
         $this->table->render($rows, $header);
 
         return 0;

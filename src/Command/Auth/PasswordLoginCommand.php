@@ -8,7 +8,7 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Login;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Oauth2\Client\Exception\TfaRequiredException;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,33 +18,29 @@ use Symfony\Component\Console\Question\Question;
 class PasswordLoginCommand extends CommandBase
 {
     protected static $defaultName = 'auth:password-login';
+    protected $stability = 'deprecated';
+    protected $hiddenInList = true;
 
     private $api;
     private $cache;
     private $config;
-    private $filesystem;
+    private $login;
     private $questionHelper;
 
-    public function __construct(
-        Api $api,
-        CacheProvider $cache,
-        Config $config,
-        Filesystem $filesystem,
-        QuestionHelper $questionHelper
-    )
+    public function __construct(Api $api, CacheProvider $cache, Config $config, Login $login, QuestionHelper $questionHelper)
     {
         $this->api = $api;
         $this->cache = $cache;
         $this->config = $config;
-        $this->filesystem = $filesystem;
+        $this->login = $login;
         $this->questionHelper = $questionHelper;
         parent::__construct();
     }
 
+
     protected function configure()
     {
         $service = $this->config->get('service.name');
-        $accountsUrl = $this->config->get('service.accounts_url');
         $executable = $this->config->get('application.executable');
 
         if ($this->config->get('application.login_method') === 'password') {
@@ -55,14 +51,12 @@ class PasswordLoginCommand extends CommandBase
         $this->setDescription('Log in to ' . $service . ' using a username and password');
 
         $help = 'Use this command to log in to your ' . $service . ' account in the terminal.'
-            . "\n\nYou can create an account at:\n    <info>" . $accountsUrl . '</info>'
+            . "\n\nYou can create an account at:\n    <info>" . $this->config->get('service.register_url') . '</info>'
             . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
-            . $accountsUrl . '/user/password</info>'
+            . $this->config->get('service.reset_password_url') . '</info>'
             . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
-            . $executable . ' auth:browser-login</info>';
-        if ($aHelp = $this->api->getApiTokenHelp()) {
-            $help .= "\n\n" . $aHelp;
-        }
+            . $executable . ' auth:browser-login</info>'
+            . "\n\n" . $this->login->getNonInteractiveAuthHelp();
         $this->setHelp($help);
     }
 
@@ -73,30 +67,25 @@ class PasswordLoginCommand extends CommandBase
             return 1;
         }
         if (!$input->isInteractive()) {
-            $this->stdErr->writeln('Non-interactive login is not supported.');
-            if ($aHelp = $this->api->getApiTokenHelp('comment')) {
-                $this->stdErr->writeln("\n" . $aHelp);
-            }
+            $this->stdErr->writeln('Non-interactive use of this command is not supported.');
+            $this->stdErr->writeln("\n" . $this->login->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
 
         $this->stdErr->writeln(
             'Please log in using your <info>' . $this->config->get('service.name') . '</info> account.'
         );
+
         $this->stdErr->writeln('');
+        $this->stdErr->writeln('<fg=yellow;options=bold,reverse>Warning: </><fg=yellow;options=reverse>This command is deprecated.</>');
+        $this->stdErr->writeln(sprintf('Password login will soon be removed in the %s API.', $this->config->get('service.name')));
+        $this->stdErr->writeln('');
+
         $this->configureAccount($input, $this->stdErr);
 
         $this->cache->flushAll();
 
-        $info = $this->api->getClient(false, true)->getAccountInfo();
-        if (isset($info['username'], $info['mail'])) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                'You are logged in as <info>%s</info> (%s).',
-                $info['username'],
-                $info['mail']
-            ));
-        }
+        $this->login->finalize();
 
         return 0;
     }
@@ -150,7 +139,6 @@ class PasswordLoginCommand extends CommandBase
             $question->setMaxAttempts(5);
             $this->questionHelper->ask($input, $output, $question);
         }
-        /** @noinspection PhpRedundantCatchClauseInspection */
         catch (IdentityProviderException $e) {
             $output->writeln([
                 '',

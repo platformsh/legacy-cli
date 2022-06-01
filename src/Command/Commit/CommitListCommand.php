@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Commit;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -96,7 +97,10 @@ class CommitListCommand extends CommandBase
         $rows = [];
         foreach ($commits as $commit) {
             $row = [];
-            $row[] = $this->propertyFormatter->format($commit->author['date'], 'author.date');
+            $row[] = new AdaptiveTableCell(
+                $this->propertyFormatter->format($commit->author['date'], 'author.date'),
+                ['wrap' => false]
+            );
             $row[] = $commit->sha;
             $row[] = $commit->author['name'];
             $row[] = $this->summarize($commit->message);

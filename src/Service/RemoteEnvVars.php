@@ -47,14 +47,43 @@ class RemoteEnvVars
         if ($host instanceof LocalHost) {
             return getenv($varName) !== false ? getenv($varName) : '';
         }
-        $cacheKey = 'env-' . $host->getCacheKey() . '-' . $varName;
-        $cached = $this->cache->fetch($cacheKey);
-        if ($refresh || $cached === false) {
-            $cached = $host->runCommand('echo "$' . $varName . '"');
-            $this->cache->save($cacheKey, $cached, $ttl);
+        // We ssh to the environment and 'echo' the variable, and read stdout.
+        // Sometimes a program in the environment will print errors or other
+        // messages to stdout. To avoid the value being polluted by these
+        // messages, we also 'echo' beginning and ending delimiters, and
+        // extract the result from between them.
+        $begin = '_BEGIN_ENV_VAR_';
+        $end = '_END_ENV_VAR_';
+        $cacheKey = 'env-' . $host->getCacheKey() . '--' . $varName;
+        $value = $this->cache->fetch($cacheKey);
+        if ($refresh || $value === false) {
+            $output = $host->runCommand(\sprintf('echo -n \'%s\'"$%s"\'%s\'', $begin, $varName, $end));
+            $value = $this->extractResult($output, $begin, $end);
+            $this->cache->save($cacheKey, $value, $ttl);
         }
 
-        return $cached ?: '';
+        return $value ?: '';
+    }
+
+    /**
+     * Extracts a result from 'echo' output between beginning and ending delimiters.
+     *
+     * @param string $output
+     * @param string $begin
+     * @param string $end
+     *
+     * @return string
+     */
+    private function extractResult($output, $begin, $end)
+    {
+        $first = \strpos($output, $begin);
+        $last = \strrpos($output, $end, $first);
+        if ($first === false || $last === false) {
+            return $output;
+        }
+        $offset = $first + \strlen($begin);
+        $length = $last - $first - \strlen($begin);
+        return \substr($output, $offset, $length);
     }
 
     /**

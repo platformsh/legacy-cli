@@ -3,33 +3,14 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationListCommand extends CommandBase
+class IntegrationListCommand extends IntegrationCommandBase
 {
     protected static $defaultName = 'integration:list';
-
-    private $config;
-    private $selector;
-    private $table;
-
-    public function __construct(
-        Config $config,
-        Selector $selector,
-        Table $table
-    ) {
-        $this->config = $config;
-        $this->selector = $selector;
-        $this->table = $table;
-        parent::__construct();
-    }
 
     /**
      * {@inheritdoc}
@@ -68,12 +49,14 @@ class IntegrationListCommand extends CommandBase
 
         $this->table->render($rows, $header);
 
-        $executable = $this->config->get('application.executable');
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
-        $this->stdErr->writeln('');
-        $this->stdErr->writeln('Add a new integration with: <info>' . $executable . ' integration:add</info>');
-        $this->stdErr->writeln('Delete an integration with: <info>' . $executable . ' integration:delete [id]</info>');
+        if (!$this->table->formatIsMachineReadable()) {
+            $executable = $this->config->get('application.executable');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('Add a new integration with: <info>' . $executable . ' integration:add</info>');
+            $this->stdErr->writeln('Delete an integration with: <info>' . $executable . ' integration:delete [id]</info>');
+        }
 
         return 0;
     }
@@ -113,16 +96,15 @@ class IntegrationListCommand extends CommandBase
                 }
                 break;
 
-            case 'hipchat':
-                $summary = sprintf('Room ID: %s', $details['room']);
-                break;
-
             case 'webhook':
                 $summary = sprintf('URL: %s', $details['url']);
                 break;
 
             case 'health.email':
-                $summary = sprintf("From: %s\nTo: %s", $details['from_address'], implode(', ', $details['recipients']));
+                $summary = 'To: ' . implode(', ', $details['recipients']);
+                if (!empty($details['from_address'])) {
+                    $summary = 'From: ' . $details['from_address'] . "\n" . $summary;
+                }
                 break;
 
             case 'health.slack':
@@ -131,6 +113,11 @@ class IntegrationListCommand extends CommandBase
 
             case 'health.pagerduty':
                 $summary = sprintf('Routing key: %s', $details['routing_key']);
+                break;
+
+            case 'script':
+                // Replace tabs with spaces so that table cell width is consistent.
+                $summary = "Script:\n" . \substr(\str_replace("\t", '  ', $details['script']), 0, 300);
                 break;
 
             default:

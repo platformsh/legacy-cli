@@ -73,14 +73,15 @@ class UserDeleteCommand extends CommandBase
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if ($this->activityService->shouldWait($input)) {
+        if (!$result->getActivities()) {
+            $this->activityService->redeployWarning();
+        } elseif ($this->activityService->shouldWait($input)) {
             $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        $myUserId = $this->api->getMyAccount()['id'];
-        if ($myUserId === $selectedUser->id) {
+        if ($this->api->getMyUserId() === $selectedUser->id) {
             $this->api->clearProjectsCache();
         }
 

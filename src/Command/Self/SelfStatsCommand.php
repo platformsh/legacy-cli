@@ -38,7 +38,8 @@ class SelfStatsCommand extends CommandBase
     protected function configure()
     {
         $this->setDescription('View stats on GitHub package downloads')
-            ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1);
+            ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Results per page (max: 100)', 20);
         $this->setHidden(true);
         $this->table->configureInput($this->getDefinition());
         $this->formatter->configureInput($this->getDefinition());
@@ -65,7 +66,7 @@ class SelfStatsCommand extends CommandBase
                 ],
                 'query' => [
                     'page' => (int) $input->getOption('page'),
-                    'per_page' => 20,
+                    'per_page' => (int) $input->getOption('count'),
                 ],
             ]);
         $releases = \GuzzleHttp\json_decode($response->getBody()->getContents(), true);

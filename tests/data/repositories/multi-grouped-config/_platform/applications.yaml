@@ -1,0 +1,12 @@
+-
+  name: static1
+  source:
+    root: 'static1'
+-
+  name: static2
+  source:
+    root: 'static2+3'
+-
+  name: static3
+  source:
+    root: 'static2+3'

@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
@@ -78,7 +77,9 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        $apps = LocalApplication::getApplications($projectRoot);
+        /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
+        $finder = $this->getService('app_finder');
+        $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
             $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;

@@ -6,6 +6,7 @@ namespace Platformsh\Cli\Command\Project;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
@@ -18,11 +19,13 @@ class ProjectDeleteCommand extends CommandBase
     protected static $defaultName = 'project:delete';
 
     private $api;
+    private $config;
     private $questionHelper;
     private $selector;
 
-    public function __construct(Api $api, QuestionHelper $questionHelper, Selector $selector) {
+    public function __construct(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) {
         $this->api = $api;
+        $this->config = $config;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
@@ -46,6 +49,15 @@ class ProjectDeleteCommand extends CommandBase
             $input->setOption('project', $projectId);
         }
         $project = $this->selector->getSelection($input)->getProject();
+
+        $subscriptionId = $project->getSubscriptionId();
+        $subscription = $this->api->loadSubscription($subscriptionId, $project);
+        if (!$subscription) {
+            $this->stdErr->writeln('Subscription not found: <error>' . $subscriptionId . '</error>');
+            $this->stdErr->writeln('Unable to delete the project.');
+            return 1;
+        }
+        // TODO check for a HAL 'delete' link on the subscription?
 
         $confirmQuestionLines = [
             'You are about to delete the project:',
@@ -71,18 +83,11 @@ class ProjectDeleteCommand extends CommandBase
             }
         }
 
-        $subscriptionId = $project->getSubscriptionId();
-        $subscription = $this->api->getClient()->getSubscription($subscriptionId);
-        if (!$subscription) {
-            throw new \RuntimeException('Subscription not found: ' . $subscriptionId);
-        }
-
         try {
             $subscription->delete();
         } catch (ClientException $e) {
-            $response = $e->getResponse();
-            if ($response !== null && $response->getStatusCode() === 403) {
-                if ($project->owner !== $this->api->getMyAccount()['id']) {
+            if ($e->getResponse()->getStatusCode() === 403 && !$this->config->getWithDefault('api.organizations', false)) {
+                if ($project->owner !== $this->api->getMyUserId()) {
                     $this->stdErr->writeln("Only the project's owner can delete it.");
                     return 1;
                 }

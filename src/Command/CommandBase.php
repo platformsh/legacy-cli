@@ -153,5 +153,4 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         return false;
     }
-
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Cli\Service\Config;
@@ -13,6 +14,7 @@ use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Rsync;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Model\RemoteContainer\App;
+use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,25 +28,31 @@ class MountDownloadCommand extends CommandBase
 
     private $config;
     private $filesystem;
+    private $finder;
     private $mountService;
     private $questionHelper;
     private $rsync;
     private $selector;
+    private $ssh;
 
     public function __construct(
         Config $config,
         Filesystem $filesystem,
+        ApplicationFinder $finder,
         Mount $mountService,
         QuestionHelper $questionHelper,
         Rsync $rsync,
-        Selector $selector
+        Selector $selector,
+        Ssh $ssh
     ) {
         $this->config = $config;
         $this->filesystem = $filesystem;
+        $this->finder = $finder;
         $this->mountService = $mountService;
         $this->questionHelper = $questionHelper;
         $this->rsync = $rsync;
         $this->selector = $selector;
+        $this->ssh = $ssh;
         parent::__construct();
     }
 
@@ -63,7 +71,8 @@ class MountDownloadCommand extends CommandBase
             ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to include in the download (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
-        $this->selector->addAllOptions($this->getDefinition(), false);
+        $this->selector->addAllOptions($this->getDefinition());
+        $this->ssh->configureInput($this->getDefinition());
     }
 
     /**
@@ -72,10 +81,10 @@ class MountDownloadCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $container = $this->selector->getSelection($input)->getRemoteContainer();
-        $mounts = $container->getMounts();
+        $mounts = $this->mountService->mountsFromConfig($container->getConfig());
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
 
             return 1;
         }
@@ -226,8 +235,9 @@ class MountDownloadCommand extends CommandBase
             }
         }
 
-        $sharedMounts = $this->mountService->getSharedFileMounts($container->getMounts());
-        if (isset($sharedMounts[$mountPath]) && $container instanceof App) {
+        $mounts = $this->mountService->mountsFromConfig($container->getConfig());
+        $sharedMounts = $this->mountService->getSharedFileMounts($mounts);
+        if (isset($sharedMounts[$mountPath])) {
             $sharedDir = $this->getSharedDir($container);
             if ($sharedDir !== null && file_exists($sharedDir . '/' . $sharedMounts[$mountPath])) {
                 return $sharedDir . '/' . $sharedMounts[$mountPath];
@@ -245,7 +255,7 @@ class MountDownloadCommand extends CommandBase
         if (!isset($this->localApps)) {
             $this->localApps = [];
             if ($projectRoot = $this->selector->getProjectRoot()) {
-                $this->localApps = LocalApplication::getApplications($projectRoot, $this->config);
+                $this->localApps = $this->finder->findApplications($projectRoot);
             }
         }
 

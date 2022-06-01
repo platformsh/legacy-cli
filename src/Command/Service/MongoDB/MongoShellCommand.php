@@ -73,13 +73,10 @@ class MongoShellCommand extends CommandBase
 
         if ($input->getOption('eval')) {
             $command .= ' --eval ' . OsUtil::escapePosixShellArg($input->getOption('eval'));
-        };
-
-        $sshOptions = [];
+        }
 
         if (!$output->isVerbose()) {
             $command .= ' --quiet';
-            $sshOptions['LogLevel'] = 'QUIET';
         } elseif ($output->isDebug()) {
             $command .= ' --verbose';
         }

@@ -17,6 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableEnableCommand extends CommandBase
 {
     protected static $defaultName = 'variable:enable';
+    protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     private $activityService;
     private $selector;
@@ -40,12 +42,16 @@ class VariableEnableCommand extends CommandBase
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
             ->setDescription('Enable a disabled environment-level variable');
-        $this->setHidden(true);
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->activityService->configureInput($definition);
+
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use: <info>variable:update --enabled false [variable]</info>"
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

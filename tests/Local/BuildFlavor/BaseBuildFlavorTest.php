@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Platformsh\Cli\Tests\BuildFlavor;
+namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Application;
@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -16,6 +17,9 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 abstract class BaseBuildFlavorTest extends TestCase
 {
     use HasTempDirTrait;
+
+    /** @var Container */
+    private static $container;
 
     /** @var \Symfony\Component\Console\Output\OutputInterface */
     protected static $output;
@@ -33,12 +37,20 @@ abstract class BaseBuildFlavorTest extends TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
-        self::$config = new CliConfig();
+        $container = Container::instance();
+        $container->set('input', new ArrayInput([]));
 
-        // We rename the app config file to avoid confusion when building the
-        // CLI itself on platform.sh
-        self::$config->override('service.app_config_file', '_platform.app.yaml');
+        self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
+        $container->set('output', self::$output);
+
+        self::$config = (new CliConfig())->withOverrides([
+            // We rename the app config file to avoid confusion when building the
+            // CLI itself on platform.sh
+            'service.app_config_file' => '_platform.app.yaml',
+        ]);
+        $container->set('config', self::$config);
+
+        self::$container = $container;
     }
 
     /**
@@ -46,7 +58,7 @@ abstract class BaseBuildFlavorTest extends TestCase
      */
     public function setUp()
     {
-        $this->builder = new LocalBuild(self::$config, self::$output);
+        $this->builder = self::$container->get('local.build');
         $this->tempDirSetUp();
     }
 

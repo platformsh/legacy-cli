@@ -4,11 +4,11 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,21 +19,21 @@ class EnvironmentSshCommand extends CommandBase
 {
     protected static $defaultName = 'environment:ssh';
 
-    private $api;
     private $config;
+    private $diagnostics;
     private $selector;
     private $shell;
     private $ssh;
 
     public function __construct(
-        Api $api,
         Config $config,
         Selector $selector,
         Shell $shell,
-        Ssh $ssh
+        Ssh $ssh,
+        SshDiagnostics $sshDiagnostics
     ) {
-        $this->api = $api;
         $this->config = $config;
+        $this->diagnostics = $sshDiagnostics;
         $this->selector = $selector;
         $this->shell = $shell;
         $this->ssh = $ssh;
@@ -91,15 +91,18 @@ class EnvironmentSshCommand extends CommandBase
         }
 
         $sshOptions = [];
-        $command = $this->ssh->getSshCommand($sshOptions);
         if ($this->isTerminal(STDIN)) {
-            $command .= ' -t';
+            $sshOptions['RequestTTY'] = 'force';
         }
-        $command .= ' ' . escapeshellarg($sshUrl);
-        if ($remoteCommand) {
-            $command .= ' ' . escapeshellarg($remoteCommand);
+        $command = $this->ssh->getSshCommand($sshOptions, $sshUrl, $remoteCommand);
+
+        $start = \time();
+
+        $exitCode = $this->shell->executeSimple($command);
+        if ($exitCode !== 0) {
+            $this->diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
         }
 
-        return $this->shell->executeSimple($command);
+        return $exitCode;
     }
 }

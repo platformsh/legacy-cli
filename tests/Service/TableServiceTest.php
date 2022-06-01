@@ -1,6 +1,6 @@
 <?php
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Table;

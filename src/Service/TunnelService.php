@@ -18,7 +18,7 @@ class TunnelService
 
     private $config;
     private $localProject;
-    private $output;
+    private $relationships;
     private $state;
     private $stdErr;
 
@@ -26,11 +26,12 @@ class TunnelService
         Config $config,
         LocalProject $localProject,
         OutputInterface $output,
+        Relationships $relationships,
         State $state
     ) {
         $this->config = $config;
         $this->localProject = $localProject;
-        $this->output = $output;
+        $this->relationships = $relationships;
         $this->state = $state;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
@@ -48,7 +49,7 @@ class TunnelService
      *
      * @param array $tunnel
      *
-     * @return bool|array
+     * @return false|array
      */
     public function isTunnelOpen(array $tunnel)
     {
@@ -178,7 +179,7 @@ class TunnelService
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
-            return new StreamOutput($logResource);
+            return new StreamOutput($logResource, OutputInterface::VERBOSITY_VERBOSE);
         }
 
         return false;
@@ -198,6 +199,22 @@ class TunnelService
             $tunnel['relationship'],
             $tunnel['serviceKey'],
         ]);
+    }
+
+    /**
+     * @param array $tunnel
+     * @param array $service
+     *
+     * @return string
+     */
+    public function getTunnelUrl(array $tunnel, array $service)
+    {
+        $localService = array_merge($service, array_intersect_key([
+            'host' => self::LOCAL_IP,
+            'port' => $tunnel['localPort'],
+        ], $service));
+
+        return $this->relationships->buildUrl($localService);
     }
 
     /**

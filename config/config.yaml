@@ -1,6 +1,21 @@
+## CLI configuration
+##
+## Some keys can be overridden by environment variables and/or in the user config file.
+## See comments on each key.
+##
+## All environment variables are prefixed by {application.env_prefix}.
+## The user config file is "config.yaml" in {application.user_config_dir}, under the home directory.
+##
+## In addition to the environment variables mentioned below, all scalar values
+## at the second level can be overridden by an environment variable named like
+## {application.env_prefix}SECTION_KEY, for example PLATFORMSH_CLI_APPLICATION_NAME.
+##
+## For the implementation see ./src/Service/Config.php
+
 # Metadata about the CLI application itself.
 application:
   name: 'Platform.sh CLI'
+  slug: 'platformsh-cli'
 
   # The version number is displayed in 'platform --version' and other places.
   #
@@ -13,13 +28,18 @@ application:
   installer_url: 'https://platform.sh/cli/installer'
   manifest_url: 'https://platform.sh/cli/manifest.json'
   user_config_dir: '.platformsh'
-  user_state_file: '.platformsh/state.json'
+  user_state_file: 'state.json'
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
   github_repo: 'platformsh/platformsh-cli'
-  release_branch: 'master'
+  release_branch: '3.x'
 
-  # The default interactive login method: either 'browser' or 'password'.
+  # A directory (relative to the home directory) where the CLI can write
+  # user-specific files, for storing state, logs, credentials, etc.
+  # This can be overridden in the user config file.
+  writable_user_dir: '.platformsh'
+
+  # The default interactive login method: either 'browser' or 'api-token'.
   # This can be overridden in the user config file.
   login_method: browser
 
@@ -35,7 +55,8 @@ application:
   date_format: c
 
   # Disabled commands (a list of full command names).
-  disabled_commands: []
+  disabled_commands:
+    - auth:password-login
 
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
@@ -60,19 +81,25 @@ local:
 # Details about the cloud service that the CLI works with.
 service:
   name: 'Platform.sh'
+  slug: 'platformsh'
   env_prefix: 'PLATFORM_'
   header_prefix: 'X-Platform'
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
+  applications_config_file: '.platform/applications.yaml'
   docs_url: 'https://docs.platform.sh'
-  docs_search_url: 'https://www.google.com/search?q=site%3Adocs.platform.sh%20{{ terms }}'
-  accounts_url: 'https://accounts.platform.sh'
+  docs_search_url: 'https://docs.platform.sh/search.html?q={{ terms }}'
+  api_tokens_url: 'https://accounts.platform.sh/user/api-tokens'
+  register_url: 'https://auth.api.platform.sh'
+  reset_password_url: 'https://auth.api.platform.sh/reset-password'
+  mfa_setup_url: ~
+  console_url: 'https://console.platform.sh'
   pricing_url: 'https://platform.sh/pricing'
-  default_from_address: 'noreply@platform.sh'
   api_token_help_url: 'https://docs.platform.sh/gettingstarted/cli/api-tokens.html'
+  activity_type_list_url: 'https://docs.platform.sh/integrations/activity/reference.html#type'
   available_regions:
     - eu-2.platform.sh
-    - us-2.platform.sh
+    - us-3.platform.sh
     - au.platform.sh
     - ca-1.platform.sh
   available_plans:
@@ -84,13 +111,42 @@ service:
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
 api:
-  oauth2_client_id: 'platform-cli'
-  projects_ttl: 3600
-  environments_ttl: 600
-  users_ttl: 3600
+  projects_ttl: 600
+  environments_ttl: 120
+  users_ttl: 600
 
-  # Overridden by {application.env_prefix}ACCOUNTS_API env var.
-  accounts_api_url: 'https://accounts.platform.sh/api/platform/'
+  # The default timeout for API requests, in seconds.
+  # Overridden by {application.env_prefix}DEFAULT_TIMEOUT env var.
+  default_timeout: 30
+
+  # The User-Agent header sent in API requests, as a template. Possible replacement values are:
+  #   {APP_NAME}: the CLI application.name
+  #   {APP_SLUG}: the CLI application.slug
+  #   {APP_NAME_DASH}: the CLI application.name, with spaces replaced by dashes
+  #   {VERSION}: the CLI application.version
+  #   {UNAME_S}: the result of php_uname('s') (operating system name)
+  #   {UNAME_R}: the result of php_uname('r') (operating system version)
+  #   {PHP_VERSION}: the PHP version
+  # Overridden by {application.env_prefix}USER_AGENT env var.
+  user_agent: ~
+
+  # Disable the docker-credential-helpers credential storage.
+  disable_credential_helpers: false
+
+  # Overridden by {application.env_prefix}API_URL env var.
+  base_url: 'https://api.platform.sh/'
+
+  # Overridden by {application.env_prefix}OAUTH2_CLIENT_ID env var.
+  oauth2_client_id: 'platform-cli'
+
+  # Overridden by {application.env_prefix}OAUTH2_AUTH_URL env var.
+  oauth2_auth_url:  'https://auth.api.platform.sh/oauth2/authorize'
+
+  # Overridden by {application.env_prefix}OAUTH2_TOKEN_URL env var.
+  oauth2_token_url:  'https://auth.api.platform.sh/oauth2/token'
+
+  # Overridden by {application.env_prefix}OAUTH2_REVOKE_URL env var.
+  oauth2_revoke_url:  'https://auth.api.platform.sh/oauth2/revoke'
 
   # Overridden by {application.env_prefix}DEBUG env var.
   debug: false
@@ -104,11 +160,42 @@ api:
   # Overridden by {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
+  # Certifier API URL.
+  # Overridden by {application.env_prefix}CERTIFIER_URL env var.
+  certifier_url: 'https://ssh.api.platform.sh'
+
+  # Wildcard domains for SSH configuration.
+  # This is also used to detect whether to run diagnostics on an SSH connection error.
+  # Can be replaced by a single value using the {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
+  ssh_domain_wildcards: ['*.platform.sh']
+
+  # Whether auto-generated SSH certificate identities should be added to the SSH agent.
+  # Enabling this may be useful for those who use agent forwarding.
+  add_to_ssh_agent: false
+
+  # Whether to auto-load an SSH certificate on login and SSH commands.
+  # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
+  auto_load_ssh_cert: true
+
+  # Whether the API supports project invitations.
+  invitations: true
+
+  # Whether the Organizations API is enabled.
+  organizations: true
+
+  # Whether the Auth API is enabled.
+  auth: true
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh'
   site_domains: ['platform.sh', 'platformsh.site']
+
+  # End of the API domain.
+  # Authentication errors (401s) are ignored while detecting the local project,
+  # if the domain does not match (e.g. development or white-label domains).
+  api_domain_suffix: 'platform.sh'
 
   # Domain of a Console instance.
   console_domain: 'console.platform.sh'

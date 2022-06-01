@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Event;
 
 use Platformsh\Client\Model\Project;
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class EnvironmentsChangedEvent extends Event
 {

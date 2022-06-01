@@ -18,6 +18,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableGetCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:get';
+    protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     private $table;
     private $selector;
@@ -43,10 +45,12 @@ class ProjectVariableGetCommand extends CommandBase
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for a project');
-        $this->setHidden(true);
         $this->selector->addProjectOption($this->getDefinition());
         $this->table->configureInput($this->getDefinition());
-        $this->addExample('View the variable "example"', 'example');
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>"
+        );
         $this->setHiddenAliases(['project:variable:list']);
     }
 

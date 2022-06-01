@@ -86,7 +86,7 @@ class QuestionHelper extends BaseQuestionHelper
             return key($items);
         }
         $itemList = array_values($items);
-        $defaultKey = $default !== null ? array_search($default, $itemList, true) : null;
+        $defaultKey = $default !== null && isset($items[$default]) ? array_search($items[$default], $itemList, true) : null;
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
 
@@ -128,7 +128,7 @@ class QuestionHelper extends BaseQuestionHelper
     public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null)
     {
         if ($default !== null) {
-            $questionText .= ' <question>[' . $default . ']</question>';
+            $questionText .= ' (default: <question>' . $default . '</question>)';
         }
         $questionText .= ': ';
         $question = new Question($questionText, $default);

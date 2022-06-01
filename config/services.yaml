@@ -16,10 +16,12 @@ services:
     Platformsh\Cli\Service\:
         resource: '../src/Service/*'
 
-    # A couple of services are not inside the \Platformsh\Cli\Service namespace.
+    # A few services are not inside the \Platformsh\Cli\Service namespace.
+    Platformsh\Cli\Local\ApplicationFinder: {}
     Platformsh\Cli\Local\LocalBuild: {}
     Platformsh\Cli\Local\LocalProject:
         public: true
+    Platformsh\Cli\SshCert\Certifier: {}
 
     # A couple of other services have to be public.
     Platformsh\Cli\Service\LegacyMigration:
@@ -29,7 +31,7 @@ services:
 
     # Configure the cache service, which is created via a factory.
     Doctrine\Common\Cache\CacheProvider:
-        factory:   'Platformsh\Cli\Service\CacheFactory:createCacheProvider'
+        factory:   'Platformsh\Cli\Service\CacheFactory::createCacheProvider'
         arguments: ['@Platformsh\Cli\Service\Config']
 
     # Configure synthetic services, which are created and set after the

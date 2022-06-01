@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityListCommand extends CommandBase
+class ActivityListCommand extends ActivityCommandBase
 {
     protected static $defaultName = 'activity:list';
 
@@ -52,11 +52,22 @@ class ActivityListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['activities', 'act'])
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter activities by type')
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
+        $this->setAliases(['activities', 'act']);
+
+        // Add the --type option, with a link to help if configured.
+        $typeDescription = 'Filter activities by type';
+        if ($this->config->has('service.activity_type_list_url')) {
+            $typeDescription .= "\nFor a list of types see: <info>" . $this->config->get('service.activity_type_list_url') . '</info>';
+        }
+        $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $typeDescription . "\n" . ArrayArgument::SPLIT_HELP);
+        $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude activities by type.' . "\n" . ArrayArgument::SPLIT_HELP);
+
+        $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check activities on all environments')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments')
             ->setDescription('Get a list of activities for an environment or project');
 
         $definition = $this->getDefinition();
@@ -68,7 +79,8 @@ class ActivityListCommand extends CommandBase
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type environment.push')
-             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15');
+             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15')
+             ->addExample('List up to 25 incomplete activities', '--limit 25 -i');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -95,15 +107,15 @@ class ActivityListCommand extends CommandBase
 
         $type = $input->getOption('type');
 
-        $activities = $this->activityLoader->load($apiResource, $limit, $type, $startsAt);
+        $activities = $this->activityLoader->loadFromInput($apiResource, $input);
         if (!$activities) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
         }
 
-        $headers = ['ID', 'Created', 'Completed', 'Description', 'Progress', 'State', 'Result', 'Environment(s)'];
-        $defaultColumns = ['ID', 'Created', 'Description', 'State', 'Result'];
+        $headers = ['ID', 'Created', 'Completed', 'Description', 'Type', 'Progress', 'State', 'Result', 'Environment(s)'];
+        $defaultColumns = ['ID', 'Created', 'Description', 'Type', 'State', 'Result'];
 
         if (!$environmentSpecific) {
             $defaultColumns[] = 'Environment(s)';

@@ -2,5 +2,6 @@
 /vendor-bin/*/vendor
 /*.phar
 .idea/
-/release-changelog.md
+/release-changelog*.md
 /config/cache
+/local-php-security-checker

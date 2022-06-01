@@ -6,11 +6,9 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\ConnectionFailedException;
-use Platformsh\Cli\Exception\HttpException;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\PermissionDeniedException;
 use Platformsh\Client\Exception\EnvironmentStateException;
@@ -39,7 +37,7 @@ class EventSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * React to any console exceptions.
+     * React to any console errors or exceptions.
      *
      * @param \Symfony\Component\Console\Event\ConsoleErrorEvent $event
      */
@@ -55,47 +53,39 @@ class EventSubscriber implements EventSubscriberInterface
             $event->setError(new ConnectionFailedException(
                 "Failed to connect to host: " . $request->getUri()->getHost()
                 . " \nPlease check your Internet connection.",
-                $request
+                $error
             ));
             $event->stopPropagation();
-        }
-
-        // Create a friendlier message for the OAuth2 "Invalid refresh token"
-        // error.
-        $loginCommand = sprintf('%s login', $this->config->get('application.executable'));
-        if ($error instanceof IdentityProviderException) {
-            if (strpos($error->getMessage(), 'Invalid refresh token') !== false) {
-                $event->setError(new LoginRequiredException(
-                    "Invalid refresh token. \nPlease log in again by running: $loginCommand"
-                ));
-                $event->stopPropagation();
-            }
         }
 
         // Handle Guzzle exceptions, i.e. HTTP 4xx or 5xx errors.
         if (($error instanceof ClientException || $error instanceof ServerException)
             && ($response = $error->getResponse())) {
-            $request = $error->getRequest();
-            $response->getBody()->seek(0);
-            $isOauth2 = stripos(implode(';', $request->getHeader('Authorization')), 'Bearer') !== false;
+            $json = (array) json_decode($response->getBody()->__toString(), true);
 
-            if ($response->getStatusCode() === 401 && $isOauth2) {
+            // Create a friendlier message for the OAuth2 "Invalid refresh token"
+            // error.
+            if ($response->getStatusCode() === 400
+                && isset($json['error_description'])
+                && $json['error_description'] === 'Invalid refresh token') {
+                $event->setError(new LoginRequiredException(
+                    'Invalid refresh token.',
+                    $this->config,
+                    $error
+                ));
+                $event->stopPropagation();
+            } elseif ($response->getStatusCode() === 401) {
                 $event->setError(new LoginRequiredException(
                     'Unauthorized.',
-                    $request,
-                    $response,
-                    $this->config
+                    $this->config,
+                    $error
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 403 && $isOauth2) {
+            } elseif ($response->getStatusCode() === 403) {
                 $event->setError(new PermissionDeniedException(
                     "Permission denied. Check your project or environment permissions.",
-                    $request,
-                    $response
+                    $error
                 ));
-                $event->stopPropagation();
-            } else {
-                $event->setError(new HttpException(null, $request, $response));
                 $event->stopPropagation();
             }
         }

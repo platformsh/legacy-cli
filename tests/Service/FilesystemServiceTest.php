@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 
 class FilesystemServiceTest extends TestCase
 {
@@ -33,16 +34,6 @@ class FilesystemServiceTest extends TestCase
         $this->assertFileExists($tempDir . '/test-file');
         $this->assertFileExists($tempDir . '/test-dir/test-file');
         $this->assertFileExists($tempDir . '/test-nesting/1/2/3/test-file');
-    }
-
-    /**
-     * Test FilesystemHelper::getHomeDirectory().
-     */
-    public function testGetHomeDirectory()
-    {
-        $homeDir = $this->fs->getHomeDirectory();
-        $this->assertNotEmpty($homeDir, 'Home directory returned');
-        $this->assertNotEmpty(realpath($homeDir), 'Home directory exists');
     }
 
     /**
@@ -145,7 +136,7 @@ class FilesystemServiceTest extends TestCase
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
 
-        // Test with a blacklist.
+        // Test with a list of excluded files.
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
         $this->fs->symlinkAll($testSource, $testDestination, true, false, ['test-file']);
@@ -156,19 +147,32 @@ class FilesystemServiceTest extends TestCase
 
     public function testCanWrite()
     {
+        \umask(0002);
+
         $testDir = $this->createTempSubDir();
-        touch($testDir . '/test-file');
-        $this->assertTrue($this->fs->canWrite($testDir . '/test-file'));
+        if (touch($testDir . '/test-file')) {
+            $this->assertTrue($this->fs->canWrite($testDir . '/test-file'));
+        } else {
+            $this->markTestIncomplete('Failed to create file: ' . $testDir . '/test-file');
+        }
+
         chmod($testDir . '/test-file', 0500);
-        $this->assertFalse($this->fs->canWrite($testDir . '/test-file'));
-        mkdir($testDir . '/test-dir', 0700);
-        $this->assertTrue($this->fs->canWrite($testDir . '/test-dir'));
-        $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1'));
-        $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1/2/3'));
-        mkdir($testDir . '/test-ro-dir', 0500);
-        $this->assertFalse(is_writable($testDir . '/test-ro-dir'));
-        $this->assertFalse($this->fs->canWrite($testDir . '/test-ro-dir'));
-        $this->assertFalse($this->fs->canWrite($testDir . '/test-ro-dir/1'));
+        $this->assertEquals(\is_writable($testDir . '/test-file'), $this->fs->canWrite($testDir . '/test-file'));
+
+        if (mkdir($testDir . '/test-dir', 0700)) {
+            $this->assertTrue($this->fs->canWrite($testDir . '/test-dir'));
+            $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1'));
+            $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1/2/3'));
+        } else {
+            $this->markTestIncomplete('Failed to create directory: ' . $testDir . '/test-dir');
+        }
+
+        if (mkdir($testDir . '/test-ro-dir', 0500)) {
+            $this->assertEquals(is_writable($testDir . '/test-ro-dir'), $this->fs->canWrite($testDir . '/test-ro-dir'));
+            $this->assertEquals(is_writable($testDir . '/test-ro-dir'), $this->fs->canWrite($testDir . '/test-ro-dir/1'));
+        } else {
+            $this->markTestIncomplete('Failed to create directory: ' . $testDir . '/test-ro-dir');
+        }
     }
 
     /**

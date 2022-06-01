@@ -4,11 +4,13 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -55,11 +57,20 @@ class UserGetCommand extends CommandBase
         $this->setHiddenAliases(['user:role']);
 
         $this->addExample("View Alice's role on the project", 'alice@example.com');
-        $this->addExample("View Alice's role on the environment", 'alice@example.com --level environment');
+        $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('role')) {
+            $this->stdErr->writeln('The <error>--role</error> option is no longer available for this command.');
+            $this->stdErr->writeln("To change a user's roles use the <comment>user:update</comment> command.");
+            return 1;
+        }
+        if ($input->getFirstArgument() === 'user:role') {
+            $this->stdErr->writeln('The <comment>user:role</comment> command is deprecated. Use <comment>user:get</comment> or <comment>user:update</comment> instead.');
+        }
+
         $level = $input->getOption('level');
         $validLevels = ['project', 'environment', null];
         if (!in_array($level, $validLevels)) {
@@ -88,13 +99,7 @@ class UserGetCommand extends CommandBase
         }
 
         if ($input->getOption('pipe')) {
-            if ($level !== 'environment') {
-                $currentRole = $projectAccess->role;
-            } else {
-                $access = $selection->getEnvironment()->getUser($projectAccess->id);
-                $currentRole = $access ? $access->role : 'none';
-            }
-            $output->writeln($currentRole);
+            $this->displayRole($projectAccess, $level, $output, $selection);
 
             return 0;
         }
@@ -105,6 +110,23 @@ class UserGetCommand extends CommandBase
             '--yes' => true,
         ];
 
-        return $this->subCommandRunner->run('user:add', $args);
+        return $this->subCommandRunner->run('user:add', $args, $output);
+    }
+
+    /**
+     * @param \Platformsh\Client\Model\ProjectAccess $projectAccess
+     * @param string $level
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param Selection $selection
+     */
+    private function displayRole(ProjectAccess $projectAccess, $level, OutputInterface $output, Selection $selection)
+    {
+        if ($level !== 'environment') {
+            $currentRole = $projectAccess ? $projectAccess->role : 'none';
+        } else {
+            $access = $selection->getEnvironment()->getUser($projectAccess->id);
+            $currentRole = $access ? $access->role : 'none';
+        }
+        $output->writeln($currentRole);
     }
 }

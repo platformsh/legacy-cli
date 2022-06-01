@@ -110,7 +110,7 @@ class VariableDeleteCommand extends CommandBase
         $this->stdErr->writeln("Deleted variable <info>$variableName</info>");
 
         $success = true;
-        if (!$result->countActivities()) {
+        if (!$result->countActivities() || $level === 'project') {
             $this->activityService->redeployWarning();
         } elseif ($this->activityService->shouldWait($input)) {
             $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());

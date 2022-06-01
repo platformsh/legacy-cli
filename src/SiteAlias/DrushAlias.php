@@ -188,7 +188,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
                     continue;
                 }
 
-                $aliasName = $environment->id;
+                $aliasName = str_replace('.', '-', $environment->id);
                 if (count($apps) > 1) {
                     $aliasName .= '--' . $appId;
                 }
@@ -280,11 +280,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      */
     private function getAutoRemoveKey()
     {
-        return preg_replace(
-                '/[^a-z-]+/',
-                '-',
-                str_replace('.', '', strtolower($this->config->get('application.name')))
-            ) . '-auto-remove';
+        return $this->config->get('application.slug') . '-auto-remove';
     }
 
     /**

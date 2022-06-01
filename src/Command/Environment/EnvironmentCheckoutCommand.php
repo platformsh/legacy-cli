@@ -84,7 +84,6 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         $this->git->setDefaultRepositoryDir($projectRoot);
-        $this->git->setSshCommand($this->ssh->getSshCommand());
 
         $existsLocally = $this->git->branchExists($branch);
         if (!$existsLocally && !$this->api->getEnvironment($branch, $project)) {
@@ -163,7 +162,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
         if (!count($environmentList)) {
             $this->stdErr->writeln(sprintf(
-                'Use <info>%s branch</info> to create an environment.',
+                'To create a new environment, run: <info>%s branch [new-branch]</info>',
                 $this->config->get('application.executable')
             ));
 

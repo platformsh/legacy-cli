@@ -32,7 +32,7 @@ class PropertyFormatter implements InputConfiguringInterface
      */
     public function format($value, ?string $property = null): string
     {
-        if ($value === null) {
+        if ($value === null && $property !== 'parent') {
             return '';
         }
 
@@ -70,6 +70,11 @@ class PropertyFormatter implements InputConfiguringInterface
                 if ($property === 'ssl' && is_array($value) && isset($value['expires_on'])) {
                     $value['expires_on'] = $this->formatDate($value['expires_on']);
                 }
+                break;
+
+            case 'permissions':
+                $value = implode(', ', $value);
+                break;
         }
 
         if ($value === null) {
@@ -88,13 +93,14 @@ class PropertyFormatter implements InputConfiguringInterface
      */
     public function configureInput(InputDefinition $definition): void
     {
+        static $config;
+        $config = $config ?: new Config();
         $definition->addOption(new InputOption(
             'date-fmt',
             null,
             InputOption::VALUE_REQUIRED,
             'The date format (as a PHP date format string)',
-            // @todo refactor so this can be non-static and use injected config
-            (new Config())->getWithDefault('application.date_format', 'c')
+            $config->getWithDefault('application.date_format', 'c')
         ));
     }
 
@@ -103,7 +109,7 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @return string|null
      */
-    protected function formatDate(string $value): ?string
+    protected function formatDate($value)
     {
         $format = null;
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {
@@ -168,7 +174,8 @@ class PropertyFormatter implements InputConfiguringInterface
 
         if ($data === null) {
             return;
-        } elseif (!is_string($data)) {
+        }
+        if (!is_string($data)) {
             $output->write(Yaml::dump($data, 5, 4, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
         } else {
             $output->write($this->format($data, $key));

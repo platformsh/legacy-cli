@@ -3,36 +3,41 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Client\Model\Activity;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityLogCommand extends CommandBase
+class ActivityLogCommand extends ActivityCommandBase
 {
     protected static $defaultName = 'activity:log';
 
     private $activityService;
     private $api;
+    private $config;
+    private $loader;
     private $selector;
     private $propertyFormatter;
 
     public function __construct(
+        ActivityLoader $activityLoader,
         ActivityService $activityService,
         Api $api,
+        Config $config,
         Selector $selector,
         PropertyFormatter $formatter
     ) {
+        $this->loader = $activityLoader;
         $this->activityService = $activityService;
         $this->api = $api;
+        $this->config = $config;
         $this->selector = $selector;
         $this->propertyFormatter = $formatter;
         parent::__construct();
@@ -43,16 +48,23 @@ class ActivityLogCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
-            ->addOption(
+        $this->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.');
+        $this->addOption(
                 'refresh',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Log refresh interval (seconds). Set to 0 to disable refreshing.',
-                1
+                'Activity refresh interval (seconds). Set to 0 to disable refreshing.',
+                3
             )
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
+            ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
+                'Include only incomplete activities (when selecting a default activity).'
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)')
             ->setDescription('Display the log for an activity');
 
         $definition = $this->getDefinition();
@@ -68,29 +80,20 @@ class ActivityLogCommand extends CommandBase
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
+            $apiResource = $selection->getEnvironment();
+        } else {
+            $apiResource = $selection->getProject();
+        }
+
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $selection->getProject()
-                             ->getActivity($id);
+            $activity = $apiResource->getActivity($id);
             if (!$activity) {
-                $activities = $selection->getEnvironment()
-                    ->getActivities(0, $input->getOption('type'));
-                $activity = $this->api->matchPartialId($id, $activities, 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
-
-                    return 1;
-                }
+                $activity = $this->api->matchPartialId($id, $this->loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
             }
         } else {
-            if ($selection->hasEnvironment() && !$input->getOption('all')) {
-                $activities = $selection->getEnvironment()
-                    ->getActivities(1, $input->getOption('type'));
-            } else {
-                $activities = $selection->getProject()
-                    ->getActivities(1, $input->getOption('type'));
-            }
-            /** @var Activity $activity */
+            $activities = $this->loader->loadFromInput($apiResource, $input, 1);
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No activities found');
@@ -101,6 +104,7 @@ class ActivityLogCommand extends CommandBase
 
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
+            sprintf('<info>Type: </info>%s', $activity->type),
             sprintf('<info>Description: </info>%s', $this->activityService->getFormattedDescription($activity)),
             sprintf('<info>Created: </info>%s', $this->propertyFormatter->format($activity->created_at, 'created_at')),
             sprintf('<info>State: </info>%s', $this->activityService->formatState($activity->state)),
@@ -108,40 +112,23 @@ class ActivityLogCommand extends CommandBase
         ]);
 
         $refresh = $input->getOption('refresh');
+        $timestamps = $input->getOption('timestamps');
+        if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
+            $timestamps = $input->getOption('date-fmt');
+        } elseif ($timestamps) {
+            $timestamps = $this->config->getWithDefault('application.date_format', 'c');
+        }
+
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete()) {
-            $progressOutput = $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
-            $bar = new ProgressBar($progressOutput);
-            $bar->setPlaceholderFormatterDefinition('state', function () use ($activity) {
-                return $this->activityService->formatState($activity->state);
-            });
-            $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
-            $bar->start();
-
-            $activity->wait(
-                function () use ($bar) {
-                    $bar->advance();
-                },
-                function ($log) use ($output, $bar, $progressOutput) {
-                    // Clear the progress bar and ensure the current line is flushed.
-                    $bar->clear();
-                    $progressOutput->write($progressOutput->isDecorated() ? "\n\033[1A" : "\n");
-
-                    // Display the new log output.
-                    $output->write($log);
-
-                    // Display the progress bar again.
-                    $bar->advance();
-                },
-                $refresh
-            );
-            $bar->clear();
+            $this->activityService->waitAndLog($activity, $refresh, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
             $this->api->clearEnvironmentsCache($activity->project);
         } else {
-            $output->writeln($activity->log);
+            $items = $activity->readLog();
+            $output->write($this->activityService->formatLog($items, $timestamps));
         }
 
         return 0;

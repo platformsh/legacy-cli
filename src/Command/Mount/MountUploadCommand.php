@@ -4,13 +4,14 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Mount;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Rsync;
 use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,25 +24,31 @@ class MountUploadCommand extends CommandBase
 
     private $config;
     private $filesystem;
+    private $finder;
     private $mountService;
     private $questionHelper;
     private $rsync;
     private $selector;
+    private $ssh;
 
     public function __construct(
         Config $config,
         Filesystem $filesystem,
+        ApplicationFinder $finder,
         Mount $mountService,
         QuestionHelper $questionHelper,
         Rsync $rsync,
-        Selector $selector
+        Selector $selector,
+        Ssh $ssh
     ) {
         $this->config = $config;
         $this->filesystem = $filesystem;
+        $this->finder = $finder;
         $this->mountService = $mountService;
         $this->questionHelper = $questionHelper;
         $this->rsync = $rsync;
         $this->selector = $selector;
+        $this->ssh = $ssh;
         parent::__construct();
     }
 
@@ -59,6 +66,7 @@ class MountUploadCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $this->selector->addAllOptions($this->getDefinition(), true);
+        $this->ssh->configureInput($this->getDefinition());
     }
 
     /**
@@ -67,29 +75,30 @@ class MountUploadCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $container = $this->selector->getSelection($input)->getRemoteContainer();
-        $mounts = $container->getMounts();
+        $mounts = $this->mountService->mountsFromConfig($container->getConfig());
 
         if (empty($mounts)) {
-            $this->stdErr->writeln(sprintf('The %s "%s" doesn\'t define any mounts.', $container->getType(), $container->getName()));
+            $this->stdErr->writeln(sprintf('No mounts found on host: <info>%s</info>', $container->getSshUrl()));
 
             return 1;
         }
+
         $mounts = $this->mountService->normalizeMounts($mounts);
 
         if ($input->getOption('mount')) {
             $mountPath = $this->mountService->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
-            $options = [];
+            $mountOptions = [];
             foreach ($mounts as $path => $definition) {
                 if ($definition['source'] === 'local') {
-                    $options[$path] = sprintf('<question>%s</question>', $path);
+                    $mountOptions[$path] = sprintf('<question>%s</question>', $path);
                 } else {
-                    $options[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
+                    $mountOptions[$path] = sprintf('<question>%s</question>: %s', $path, $definition['source']);
                 }
             }
 
             $mountPath = $this->questionHelper->choose(
-                $options,
+                $mountOptions,
                 'Enter a number to choose a mount to upload to:'
             );
         } else {
@@ -110,7 +119,7 @@ class MountUploadCommand extends CommandBase
                 }
             }
 
-            $applications = LocalApplication::getApplications($projectRoot, $this->config);
+            $applications = $this->finder->findApplications($projectRoot);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
                 if ($candidateApp->getName() === $container->getName()) {

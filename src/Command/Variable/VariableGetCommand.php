@@ -4,13 +4,15 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\VariableService;
+use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,26 +23,26 @@ class VariableGetCommand extends CommandBase
 {
     protected static $defaultName = 'variable:get';
 
-    private $activityService;
     private $config;
     private $formatter;
+    private $questionHelper;
     private $selector;
     private $subCommandRunner;
     private $table;
     private $variableService;
 
     public function __construct(
-        ActivityService $activityService,
         Config $config,
         PropertyFormatter $formatter,
+        QuestionHelper $questionHelper,
         Selector $selector,
         Table $table,
         SubCommandRunner $subCommandRunner,
         VariableService $variableService
     ) {
-        $this->activityService = $activityService;
         $this->config = $config;
         $this->formatter = $formatter;
+        $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         $this->subCommandRunner = $subCommandRunner;
         $this->table = $table;
@@ -70,18 +72,24 @@ class VariableGetCommand extends CommandBase
         $selection = $this->selector->getSelection($input, $level === VariableService::LEVEL_PROJECT);
 
         $name = $input->getArgument('name');
-        if (!$name) {
+        if ($name) {
+            $variable = $this->variableService->getExistingVariable($name, $level);
+            if (!$variable) {
+                return 1;
+            }
+        } elseif ($input->isInteractive()) {
+            $variable = $this->chooseVariable($level, $selection);
+            if (!$variable) {
+                $this->stdErr->writeln('No variables found');
+                return 1;
+            }
+        } else {
             return $this->subCommandRunner->run('variable:list', array_filter([
                 '--level' => $level,
                 '--project' => $selection->getProject()->id,
                 '--environment' => $selection->hasEnvironment() ? $selection->getEnvironment()->id : null,
                 '--format' => $input->getOption('format'),
             ]));
-        }
-
-        $variable = $this->variableService->getExistingVariable($selection, $name, $level);
-        if (!$variable) {
-            return 1;
         }
 
         if ($variable instanceof EnvironmentLevelVariable && !$variable->is_enabled) {
@@ -93,10 +101,29 @@ class VariableGetCommand extends CommandBase
             ));
         }
 
+        if ($input->getOption('pipe')) {
+            if (!$variable->hasProperty('value')) {
+                if ($variable->is_sensitive) {
+                    $this->stdErr->writeln('The variable is sensitive, so its value cannot be read.');
+                } else {
+                    $this->stdErr->writeln('No variable value found.');
+                }
+                return 1;
+            }
+            $output->writeln($variable->value);
+
+            return 0;
+        }
+
         $properties = $variable->getProperties();
         $properties['level'] = $this->variableService->getVariableLevel($variable);
 
         if ($property = $input->getOption('property')) {
+            if ($property === 'value' && !isset($properties['value']) && $variable->is_sensitive) {
+                $this->stdErr->writeln('The variable is sensitive, so its value cannot be read.');
+                return 1;
+            }
+
             $this->formatter->displayData($output, $properties, $property);
 
             return 0;
@@ -120,5 +147,32 @@ class VariableGetCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    /**
+     * @param string|null $level
+     * @param Selection $selection
+     *
+     * @return ProjectLevelVariable|EnvironmentLevelVariable|false
+     */
+    private function chooseVariable($level, Selection $selection) {
+        $variables = [];
+        if ($level === 'project' || $level === null) {
+            $variables = array_merge($variables, $selection->getProject()->getVariables());
+        }
+        if ($level === 'environment' || $level === null) {
+            $variables = array_merge($variables, $selection->getEnvironment()->getVariables());
+        }
+        if (empty($variables)) {
+            return false;
+        }
+        $options = [];
+        foreach ($variables as $key => $variable) {
+            $options[$key] = $variable->name;
+        }
+        asort($options);
+        $key = $this->questionHelper->choose($options, 'Enter a number to choose a variable:');
+
+        return $variables[$key];
     }
 }

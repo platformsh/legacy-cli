@@ -22,23 +22,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableService
 {
-    const LEVEL_PROJECT = 'project';
-    const LEVEL_ENVIRONMENT = 'environment';
+    public const LEVEL_PROJECT = 'project';
+    public const LEVEL_ENVIRONMENT = 'environment';
 
-    private $api;
     private $config;
     private $formatter;
     private $stdErr;
     private $table;
 
     public function __construct(
-        Api $api,
         Config $config,
         OutputInterface $output,
         PropertyFormatter $formatter,
         Table $table
     ) {
-        $this->api = $api;
         $this->config = $config;
         $this->formatter = $formatter;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
@@ -254,17 +251,17 @@ class VariableService
         ]);
         $fields['visible_build'] = new BooleanField('Visible at build time', [
             'optionName' => 'visible-build',
-            'conditions' => [
-                'level' => self::LEVEL_PROJECT,
-            ],
             'description' => 'Whether the variable should be visible at build time',
             'questionLine' => 'Should the variable be available at build time?',
+            'defaultCallback' => function (array $values) {
+                // Variables that are visible at build-time will affect the
+                // build cache, so it is good to minimise the number of them.
+                // This defaults to true for project-level variables, false otherwise.
+                return isset($values['level']) && $values['level'] === self::LEVEL_PROJECT;
+            },
         ]);
         $fields['visible_runtime'] = new BooleanField('Visible at runtime', [
             'optionName' => 'visible-runtime',
-            'conditions' => [
-                'level' => self::LEVEL_PROJECT,
-            ],
             'description' => 'Whether the variable should be visible at runtime',
             'questionLine' => 'Should the variable be available at runtime?',
         ]);

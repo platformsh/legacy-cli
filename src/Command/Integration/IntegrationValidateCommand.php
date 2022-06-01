@@ -1,37 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
-use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\IntegrationService;
-use Platformsh\Cli\Service\QuestionHelper;
-use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class IntegrationValidateCommand extends CommandBase
+class IntegrationValidateCommand extends IntegrationCommandBase
 {
     public static $defaultName = 'integration:validate';
-
-    private $api;
-    private $integrationService;
-    private $questionHelper;
-    private $selector;
-
-    public function __construct(
-        Api $api,
-        IntegrationService $integrationService,
-        QuestionHelper $questionHelper,
-        Selector $selector
-    ) {
-        $this->api = $api;
-        $this->integrationService = $integrationService;
-        $this->questionHelper = $questionHelper;
-        $this->selector = $selector;
-        parent::__construct();
-    }
 
     /**
      * {@inheritdoc}
@@ -60,33 +37,9 @@ EOF
     {
         $project = $this->selector->getSelection($input)->getProject();
 
-        $id = $input->getArgument('id');
-        if (!$id && !$input->isInteractive()) {
-            $this->stdErr->writeln('An integration ID is required.');
-
-            return 1;
-        } elseif (!$id) {
-            $integrations = $project->getIntegrations();
-            if (empty($integrations)) {
-                $this->stdErr->writeln('No integrations found.');
-
-                return 1;
-            }
-            $choices = [];
-            foreach ($integrations as $integration) {
-                $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
-            }
-            $id = $this->questionHelper->choose($choices, 'Enter a number to choose an integration:');
-        }
-
-        $integration = $project->getIntegration($id);
+        $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
-            try {
-                $integration = $this->api->matchPartialId($id, $project->getIntegrations(), 'Integration');
-            } catch (\InvalidArgumentException $e) {
-                $this->stdErr->writeln($e->getMessage());
-                return 1;
-            }
+            return 1;
         }
 
         $this->stdErr->writeln(sprintf(
@@ -110,7 +63,7 @@ EOF
 
         $this->stdErr->writeln('');
 
-        $this->integrationService->listValidationErrors($errors, $output);
+        $this->listValidationErrors($errors, $output);
 
         // The exit code for an invalid integration (see the command help).
         return 4;

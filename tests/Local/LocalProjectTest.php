@@ -1,11 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Local;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Tests\HasTempDirTrait;
 
 class LocalProjectTest extends TestCase
 {
@@ -19,7 +20,7 @@ class LocalProjectTest extends TestCase
         mkdir("$testDir/1/2/3/4/5", 0755, true);
 
         $expectedRoot = "$testDir/1";
-        $config = new Config(null, null, true);
+        $config = new Config();
         $this->assertTrue($config->has('local.project_config_legacy'));
         touch("$expectedRoot/" . $config->get('local.project_config_legacy'));
 

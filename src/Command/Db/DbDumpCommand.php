@@ -12,7 +12,6 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
@@ -32,7 +31,6 @@ class DbDumpCommand extends CommandBase
     private $questionHelper;
     private $relationships;
     private $selector;
-    private $shell;
     private $ssh;
 
     public function __construct(
@@ -43,7 +41,6 @@ class DbDumpCommand extends CommandBase
         QuestionHelper $questionHelper,
         Relationships $relationships,
         Selector $selector,
-        Shell $shell,
         Ssh $ssh
     ) {
         $this->api = $api;
@@ -53,7 +50,6 @@ class DbDumpCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->relationships = $relationships;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }
@@ -140,7 +136,7 @@ class DbDumpCommand extends CommandBase
                     $choices[$schema] .= ' (default)';
                 }
             }
-            $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'] ? $database['path'] . ' (default)' : null, true);
+            $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path']);
             if (empty($schema)) {
                 $this->stdErr->writeln('The --schema is required.');
                 if (!empty($schemas)) {

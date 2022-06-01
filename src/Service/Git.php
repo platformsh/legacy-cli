@@ -4,33 +4,39 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 /**
  * Helper class which runs Git CLI commands and interprets the results.
  */
 class Git
 {
+    /** @var Shell */
+    private $shell;
+
+    /** @var Ssh|null */
+    private $ssh;
 
     /** @var string|null */
     private $repositoryDir = null;
 
-    /** @var Shell */
-    private $shellHelper;
-
-    /** @var array */
-    private $env = [];
+    /** @var string|null */
+    private $sshCommand;
 
     /** @var string|null */
     private $sshCommandFile;
 
+    /** @var array */
+    private $extraSshOptions = [];
+
     /**
-     * Constructor.
-     *
-     * @param Shell|null $shellHelper
+     * @param Shell|null $shell
+     * @param Ssh|null   $ssh
      */
-    public function __construct(Shell $shellHelper = null)
+    public function __construct(Shell $shell = null, Ssh $ssh = null)
     {
-        $this->shellHelper = $shellHelper ?: new Shell();
+        $this->shell = $shell ?: new Shell();
+        $this->ssh = $ssh;
     }
 
     /**
@@ -60,8 +66,12 @@ class Git
      */
     public function ensureInstalled(): void
     {
-        if (!$this->shellHelper->commandExists('git')) {
-            throw new DependencyMissingException('Git must be installed');
+        try {
+            $this->execute(['--version'], null, true);
+        } catch (ProcessFailedException $e) {
+            if ($this->shell->exceptionMeansCommandDoesNotExist($e)) {
+                throw new DependencyMissingException('Git must be installed', $e);
+            }
         }
     }
 
@@ -96,33 +106,6 @@ class Git
     }
 
     /**
-     * Get a list of branches merged with a specific ref.
-     *
-     * @param string $ref
-     * @param bool   $remote
-     * @param string|null $dir
-     * @param bool   $mustRun
-     *
-     * @return string[]
-     */
-    public function getMergedBranches(string $ref = 'HEAD', bool $remote = false, ?string $dir = null, bool $mustRun = false): array
-    {
-        $args = ['branch', '--list', '--no-column', '--no-color', '--merged', $ref];
-        if ($remote) {
-            $args[] = '--remote';
-        }
-        $mergedBranches = $this->execute($args, $dir, $mustRun);
-        $array = array_map(
-            function ($element) {
-                return trim($element, ' *');
-            },
-            explode("\n", $mergedBranches)
-        );
-
-        return $array;
-    }
-
-    /**
      * Execute a Git command.
      *
      * @param string[]          $args
@@ -135,6 +118,7 @@ class Git
      * @param bool              $quiet
      *   Suppress command output.
      * @param array             $env
+     * @param bool              $online
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the command fails and $mustRun is enabled.
@@ -143,16 +127,20 @@ class Git
      *   The command output, true if there is no output, or false if the command
      *   fails.
      */
-    public function execute(array $args, $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [])
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $online = false)
     {
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
             $dir = $dir ?: $this->repositoryDir;
         }
+        // Set up SSH, if the Git command might connect to a remote.
+        if ($online) {
+            $env += $this->setupSshEnv();
+        }
         // Run the command.
         array_unshift($args, 'git');
 
-        return $this->shellHelper->execute($args, $dir, $mustRun, $quiet, $env + $this->env);
+        return $this->shell->execute($args, $dir, $mustRun, $quiet, $env);
     }
 
     /**
@@ -164,13 +152,17 @@ class Git
      *
      * @return bool
      */
-    public function init(string $dir, bool $mustRun = false): bool
+    public function init($dir, $initial_branch = '', $mustRun = false)
     {
         if (is_dir($dir . '/.git')) {
             throw new \InvalidArgumentException("Already a repository: $dir");
         }
 
-        return (bool) $this->execute(['init'], $dir, $mustRun, false);
+        $args = ['init'];
+        if ($initial_branch !== '' && $this->supportsGitInitialBranchFlag()) {
+            $args[] = "--initial-branch=$initial_branch";
+        }
+        return (bool) $this->execute($args, $dir, $mustRun, false);
     }
 
     /**
@@ -194,7 +186,7 @@ class Git
         if ($ref !== null) {
             $args[] = $ref;
         }
-        $result = $this->execute($args, false, true);
+        $result = $this->execute($args, false, true, true, [], true);
 
         return !is_bool($result) && strlen($result) > 0;
     }
@@ -237,7 +229,7 @@ class Git
     public function remoteBranchExists(string $remote, string $branchName, ?string $dir = null, bool $mustRun = false): bool
     {
         $args = ['ls-remote', $remote, $branchName];
-        $result = $this->execute($args, $dir, $mustRun);
+        $result = $this->execute($args, $dir, $mustRun, true, [], true);
 
         return is_string($result) && strlen(trim($result));
     }
@@ -263,7 +255,7 @@ class Git
             $args[] = $upstream;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false);
+        return (bool) $this->execute($args, $dir, $mustRun, false, [], true);
     }
 
     /**
@@ -283,7 +275,30 @@ class Git
             $args[] = $branch;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false);
+        return (bool) $this->execute($args, $dir, $mustRun, false, [], true);
+    }
+
+    /**
+     * Pull a ref from a repository.
+     *
+     * @param string $repository A remote repository name or URL.
+     * @param string $ref
+     * @param string|null $dir
+     * @param bool $mustRun
+     * @param bool $quiet
+     *
+     * @return bool
+     */
+    public function pull($repository = null, $ref = null, $dir = null, $mustRun = true, $quiet = false) {
+        $args = ['pull'];
+        if ($repository !== null) {
+            $args[] = $repository;
+        }
+        if ($ref !== null) {
+            $args[] = $ref;
+        }
+
+        return (bool) $this->execute($args, $dir, $mustRun, $quiet, [], true);
     }
 
     /**
@@ -378,7 +393,15 @@ class Git
     /**
      * @return bool
      */
-    public function supportsShallowClone(): bool
+    public function supportsGitInitialBranchFlag()
+    {
+        return version_compare($this->getVersion(), '2.28', '>=');
+    }
+
+    /**
+     * @return bool
+     */
+    public function supportsShallowClone()
     {
         return version_compare($this->getVersion(), '1.9', '>=');
     }
@@ -406,20 +429,46 @@ class Git
             $args[] = $destination;
         }
 
-        return (bool) $this->execute($args, false, $mustRun, false);
+        return (bool) $this->execute($args, false, $mustRun, false, [], true);
     }
 
     /**
-     * Find the root of a directory in a Git repository.
+     * Find the root directory of a Git repository.
+     *
+     * Uses PHP rather than the Git CLI.
      *
      * @param string|null $dir
+     *   The starting directory (defaults to the current working directory).
      * @param bool        $mustRun
+     *   Causes an exception to be thrown if the directory is not a repository.
      *
      * @return string|false
      */
     public function getRoot(?string $dir = null, bool $mustRun = false)
     {
-        return $this->execute(['rev-parse', '--show-toplevel'], $dir, $mustRun);
+        $dir = $dir ?: getcwd();
+        if ($dir === false) {
+            return false;
+        }
+
+        $current = $dir;
+        while (true) {
+            if (is_dir($current . '/.git')) {
+                return realpath($current) ?: $current;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current || $parent === '.') {
+                break;
+            }
+            $current = $parent;
+        }
+
+        if ($mustRun) {
+            throw new \RuntimeException('Not a git repository');
+        }
+
+        return false;
     }
 
     /**
@@ -477,24 +526,39 @@ class Git
     }
 
     /**
-     * Set the SSH command for Git to use.
+     * Sets extra options to pass to the underlying SSH command.
+     *
+     * @param array $options
+     */
+    public function setExtraSshOptions(array $options)
+    {
+        $this->extraSshOptions = $options;
+    }
+
+    /**
+     * Initializes SSH environment variables for Git.
      *
      * This will use GIT_SSH_COMMAND if supported, or GIT_SSH (and a temporary
      * file) otherwise.
      *
-     * @param string|null $sshCommand
-     *   The complete SSH command. An empty string or null will use Git's
-     *   default.
+     * @return array
      */
-    public function setSshCommand(?string $sshCommand): void
+    private function setupSshEnv()
     {
-        if (empty($sshCommand) || $sshCommand === 'ssh') {
-            unset($this->env['GIT_SSH_COMMAND'], $this->env['GIT_SSH']);
-        } elseif (!$this->supportsGitSshCommand()) {
-            $this->env['GIT_SSH'] = $this->writeSshFile($sshCommand . ' "$@"' . "\n");
-        } else {
-            $this->env['GIT_SSH_COMMAND'] = $sshCommand;
+        if (isset($this->ssh) && !isset($this->sshCommand)) {
+            $this->sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
         }
+        if (empty($this->sshCommand) || $this->sshCommand === 'ssh') {
+            return [];
+        }
+        if (!$this->supportsGitSshCommand()) {
+            $contents = $this->sshCommand . ' "$@"' . "\n";
+            if (!isset($this->sshCommandFile) || \file_get_contents($this->sshCommandFile) !== $contents) {
+                $this->sshCommandFile = $this->writeSshFile($contents);
+            }
+            return ['GIT_SSH' => $this->sshCommandFile];
+        }
+        return ['GIT_SSH_COMMAND' => $this->sshCommand];
     }
 
     /**
@@ -504,7 +568,7 @@ class Git
      *
      * @return string
      */
-    public function writeSshFile(string $sshCommand): string
+    private function writeSshFile($sshCommand)
     {
         $tempDir = sys_get_temp_dir();
         $tempFile = tempnam($tempDir, 'cli-git-ssh');
@@ -517,8 +581,6 @@ class Git
         if (!chmod($tempFile, 0750)) {
             throw new \RuntimeException('Failed to make temporary SSH command file executable: ' . $tempFile);
         }
-
-        $this->sshCommandFile = $tempFile;
 
         return $tempFile;
     }

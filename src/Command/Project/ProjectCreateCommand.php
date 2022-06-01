@@ -3,12 +3,22 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Project;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Exception\NoOrganizationsException;
+use Platformsh\Cli\Exception\ProjectNotFoundException;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Client\Model\Region;
+use Platformsh\Client\Model\SetupOptions;
+use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
@@ -25,16 +35,28 @@ class ProjectCreateCommand extends CommandBase
 
     private $api;
     private $config;
+    private $git;
+    private $localProject;
     private $questionHelper;
+    private $selector;
+    private $subCommandRunner;
 
     public function __construct(
         Api $api,
         Config $config,
-        QuestionHelper $questionHelper
+        Git $git,
+        LocalProject $localProject,
+        QuestionHelper $questionHelper,
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
     ) {
         $this->api = $api;
         $this->config = $config;
+        $this->git = $git;
+        $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
 
@@ -46,8 +68,12 @@ class ProjectCreateCommand extends CommandBase
         $this->setAliases(['create'])
           ->setDescription('Create a new project');
 
-        $this->form = Form::fromArray($this->getFields());
-        $this->form->configureInputDefinition($this->getDefinition());
+        $this->selector->addOrganizationOptions($this->getDefinition());
+
+        Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());
+
+        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository (default)');
+        $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
@@ -74,11 +100,76 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $options = $this->form->resolveOptions($input, $output, $this->questionHelper);
+        // Identify an organization that should own the project.
+        $organization = null;
+        $setupOptions = null;
+        if ($this->config->getWithDefault('api.organizations', false)) {
+            try {
+                $organization = $this->selector->selectOrganization($input, 'create-subscription');
+            } catch (NoOrganizationsException $e) {
+                $this->stdErr->writeln('You do not belong to an organization where you have permission to create a subscription.');
+                if ($input->isInteractive() && $this->config->isCommandEnabled('organization:create') && $this->questionHelper->confirm('Do you want to create an organization now?')) {
+                    if ($this->subCommandRunner->run('organization:create') !== 0) {
+                        return 1;
+                    }
+                    $organization = $this->selector->selectOrganization($input, 'create-subscription');
+                } else {
+                    return 1;
+                }
+            }
+            $this->stdErr->writeln('Creating a project under the organization ' . $this->api->getOrganizationLabel($organization));
+            $this->stdErr->writeln('');
+
+            $setupOptions = $organization->getSetupOptions();
+        }
+
+        // Validate the --set-remote option.
+        $setRemote = (bool) $input->getOption('set-remote');
+        $projectRoot = $this->selector->getProjectRoot();
+        $gitRoot = $projectRoot !== false ? $projectRoot : $this->git->getRoot();
+        if ($setRemote && $gitRoot === false) {
+            $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository.');
+            $this->stdErr->writeln('Use <info>git init<info> to create a repository.');
+
+            return 1;
+        }
+
+        $form = Form::fromArray($this->getFields($setupOptions));
+        $options = $form->resolveOptions($input, $output, $this->questionHelper);
+
+        if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
+            try {
+                $currentProject = $this->selector->getCurrentProject();
+            } catch (ProjectNotFoundException $e) {
+                $currentProject = false;
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                    $currentProject = false;
+                } else {
+                    throw $e;
+                }
+            }
+
+            $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
+            if ($currentProject) {
+                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api->getProjectLabel($currentProject)));
+            }
+            $this->stdErr->writeln('');
+
+            if ($setRemote) {
+                $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository.', $options['title']));
+            } else {
+                $setRemote = $this->questionHelper->confirm(sprintf(
+                    'Set the new project <info>%s</info> as the remote for this repository?',
+                    $options['title'])
+                );
+            }
+            $this->stdErr->writeln('');
+        }
 
         $estimate = $this->api
             ->getClient()
-            ->getSubscriptionEstimate($options['plan'], $options['storage'], $options['environments'], 1);
+            ->getSubscriptionEstimate($options['plan'], (int) $options['storage'] * 1024, (int) $options['environments'], 1, null, $organization ? $organization->id : null);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
@@ -94,14 +185,17 @@ EOF
             return 1;
         }
 
+
         $subscription = $this->api->getClient()
-            ->createSubscription(
-                $options['region'],
-                $options['plan'],
-                $options['title'],
-                $options['storage'] * 1024,
-                $options['environments']
-            );
+            ->createSubscription(SubscriptionOptions::fromArray([
+                'organization_id' => $organization ? $organization->id : null,
+                'project_title' => $options['title'],
+                'project_region' => $options['region'],
+                'default_branch' => $options['default_branch'],
+                'plan' => $options['plan'],
+                'storage' => (int) $options['storage'] * 1024,
+                'environments' => (int) $options['environments'],
+            ]));
 
         $this->api->clearProjectsCache();
 
@@ -170,6 +264,37 @@ EOF
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
+
+        $project = $this->api->getProject($subscription->project_id);
+        if ($project !== false) {
+            $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+
+            // Temporary workaround for the default environment's title.
+            /** @todo remove this from API version 12 */
+            if ($project->default_branch !== 'master') {
+                try {
+                    $env = $project->getEnvironment($project->default_branch);
+                    if ($env->title === 'Master') {
+                        $prev = $env->title;
+                        $new = $project->default_branch;
+                        $this->debug(\sprintf('Updating the title of environment %s from %s to %s', $env->id, $prev, $new));
+                        $env->update(['title' => $new]);
+                    }
+                } catch (\Exception $e) {
+                    $this->debug('Error: ' . $e->getMessage());
+                }
+            }
+        }
+
+        if ($setRemote && $gitRoot !== false && $project !== false) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf(
+                'Setting the remote project for this repository to: %s',
+                $this->api->getProjectLabel($project)
+            ));
+            $this->localProject->mapDirectory($gitRoot, $project);
+        }
+
         return 0;
     }
 
@@ -180,29 +305,24 @@ EOF
      * replaced at runtime by an API call.
      *
      * @param bool $runtime
+     * @param SetupOptions|null $setupOptions
      *
      * @return array
+     *   A list of plan machine names.
      */
-    protected function getAvailablePlans($runtime = false)
+    protected function getAvailablePlans($runtime = false, SetupOptions $setupOptions = null)
     {
-        static $plans;
-        if (is_array($plans)) {
-            return $plans;
+        if (isset($setupOptions)) {
+            return $setupOptions->plans;
         }
-
         if (!$runtime) {
             return (array) $this->config->get('service.available_plans');
         }
 
         $plans = [];
         foreach ($this->api->getClient()->getPlans() as $plan) {
-            if ($plan->hasProperty('price', false)) {
-                $plans[$plan->name] = sprintf('%s (%s)', $plan->label, $plan->price->__toString());
-            } else {
-                $plans[$plan->name] = $plan->label;
-            }
+            $plans[] = $plan->name;
         }
-
         return $plans;
     }
 
@@ -213,23 +333,65 @@ EOF
      * replaced at runtime by an API call.
      *
      * @param bool $runtime
+     * @param SetupOptions|null $setupOptions
      *
-     * @return array
+     * @return array<string, string>
+     *   A list of region names, mapped to option names.
      */
-    protected function getAvailableRegions($runtime = false)
+    protected function getAvailableRegions($runtime = false, SetupOptions $setupOptions = null)
     {
-        if ($runtime) {
-            $regions = [];
-            foreach ($this->api->getClient()->getRegions() as $region) {
+        $regions = $runtime ? $this->api->getClient()->getRegions() : [];
+        if (isset($setupOptions)) {
+            $available = $setupOptions->regions;
+        } elseif ($runtime) {
+            $available = [];
+            foreach ($regions as $region) {
                 if ($region->available) {
-                    $regions[$region->id] = $region->label;
+                    $available[] = $region->id;
                 }
             }
         } else {
-            $regions = (array) $this->config->get('service.available_regions');
+            $available = (array) $this->config->get('service.available_regions');
         }
 
-        return $regions;
+        \usort($available, [Api::class, 'compareDomains']);
+
+        $options = [];
+        foreach ($available as $id) {
+            foreach ($regions as $region) {
+                if ($region->id === $id) {
+                    $options[$id] = $this->regionInfo($region);
+                    continue 2;
+                }
+            }
+            $options[$id] = $id;
+        }
+
+        return $options;
+    }
+
+    /**
+     * Outputs a short description of a region, including its location and carbon intensity.
+     *
+     * @param Region $region
+     *
+     * @return string
+     */
+    private function regionInfo(Region $region)
+    {
+        if (!empty($region->datacenter['location'])) {
+            $info = $region->datacenter['location'];
+        } else {
+            $info = $region->id;
+        }
+        if (!empty($region->provider['name'])) {
+            $info .= \sprintf(' (<fg=cyan>%s</>)', $region->provider['name']);
+        }
+        if (!empty($region->environmental_impact['carbon_intensity'])) {
+            $info .= \sprintf(' [<fg=green>%s</> gC02eq/kWh]', $region->environmental_impact['carbon_intensity']);
+        }
+
+        return $info;
     }
 
     /**
@@ -237,7 +399,7 @@ EOF
      *
      * @return Field[]
      */
-    protected function getFields()
+    protected function getFields(SetupOptions $setupOptions = null)
     {
         return [
           'title' => new Field('Project title', [
@@ -250,18 +412,18 @@ EOF
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'options' => $this->getAvailableRegions(),
-            'optionsCallback' => function () {
-                return $this->getAvailableRegions(true);
+            'optionsCallback' => function () use ($setupOptions) {
+                return $this->getAvailableRegions(true, $setupOptions);
             },
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
             'options' => $this->getAvailablePlans(),
-            'optionsCallback' => function () {
-                return $this->getAvailablePlans(true);
+            'optionsCallback' => function () use ($setupOptions) {
+                return $this->getAvailablePlans(true, $setupOptions);
             },
-            'default' => in_array('development', $this->getAvailablePlans()) ? 'development' : null,
+            'default' => in_array('development', $this->getAvailablePlans(false, $setupOptions)) ? 'development' : null,
             'allowOther' => true,
           ]),
           'environments' => new Field('Environments', [
@@ -278,6 +440,11 @@ EOF
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
+          ]),
+          'default_branch' => new Field('Default branch', [
+            'description' => 'The default Git branch name for the project (the production environment)',
+            'required' => false,
+            'default' => 'main',
           ]),
         ];
     }

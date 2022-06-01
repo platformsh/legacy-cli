@@ -46,7 +46,7 @@ class RouteGetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('View a resolved route')
+        $this->setDescription('View detailed information about a route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'A route ID to select')
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Select the primary route')
@@ -113,11 +113,12 @@ class RouteGetCommand extends CommandBase
         $originalUrl = $input->getArgument('route');
         if (!$selectedRoute && ($originalUrl === null || $originalUrl === '')) {
             if (!$input->isInteractive()) {
-                $this->stdErr->writeln('You must specify a route via the <comment>route</comment> argument or <comment>--id</comment> option.');
+                $this->stdErr->writeln('You must specify a route via the <comment>route</comment> argument, the <comment>--id</comment> option, or the <comment>--primary</comment> option.');
 
                 return 1;
             }
             $items = [];
+            $default = null;
             foreach ($routes as $route) {
                 $originalUrl = $route->original_url;
                 $items[$originalUrl] = $originalUrl;
@@ -125,11 +126,11 @@ class RouteGetCommand extends CommandBase
                     $items[$originalUrl] .= ' (<info>' . $route->id . '</info>)';
                 }
                 if ($route->primary) {
+                    $default = $originalUrl;
                     $items[$originalUrl] .= ' - <info>primary</info>';
                 }
             }
-            uksort($items, [$this->api, 'urlSort']);
-            $originalUrl = $this->questionHelper->choose($items, 'Enter a number to choose a route:');
+            $originalUrl = $this->questionHelper->choose($items, 'Enter a number to choose a route:', $default);
         }
 
         if (!$selectedRoute && $originalUrl !== null && $originalUrl !== '') {

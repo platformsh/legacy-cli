@@ -1,0 +1,12 @@
+name: build-deps-python
+type: python:3.7
+build:
+  flavor: none
+dependencies:
+  python:
+    pipenv: '*'
+hooks:
+  build: |
+    set -xe
+    command -v pipenv
+    pipenv --version

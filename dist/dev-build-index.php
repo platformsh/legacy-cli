@@ -22,7 +22,7 @@ if ($timestamp = getenv('CLI_BUILD_DATE', true)) {
     $pharDate = false;
 }
 
-if ($config->has('application.github_repo')) {
+if ($config->getWithDefault('application.github_repo', '')) {
     $sourceLink = 'https://github.com/' . $config->get('application.github_repo');
     $sourceLinkSpecific = $sourceLink;
     if ($branch) {
@@ -40,9 +40,17 @@ if ($config->has('application.github_repo')) {
 $baseUrl = 'https://' . $_SERVER['HTTP_HOST'];
 $installScript = sprintf(
     'curl -sfS %s | php -- --dev --manifest %s',
-    escapeshellarg($baseUrl . '/installer'),
-    escapeshellarg($baseUrl . '/manifest.json'),
+    $baseUrl . '/installer',
+    $baseUrl . '/manifest.json',
 );
+
+$revertScript = '';
+if ($config->has('application.installer_url')) {
+    $revertScript = sprintf(
+        'curl -sfS %s | php',
+        $config->get('application.installer_url')
+    );
+}
 
 ?>
 <!DOCTYPE html>
@@ -72,18 +80,27 @@ $installScript = sprintf(
         }
 
         body {
-            margin: 3em;
+            max-width: 40em;
+            margin: 3em auto;
         }
 
         p {
-            max-width: 40em;
-            margin: 1em auto;
             word-break: break-all;
         }
 
         img {
             display: block;
             margin: 10px auto;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+        .code-block {
+            display: inline-block;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #fff;
         }
     </style>
 </head>
@@ -97,7 +114,7 @@ $installScript = sprintf(
     <?php if ($sourceLink): ?>
         <h1><a href="<?= htmlspecialchars($sourceLink) ?>"><?= htmlspecialchars($appName) ?></a></h1>
     <?php else: ?>
-        <h1>><?= htmlspecialchars($appName) ?></h1>
+        <h1><?= htmlspecialchars($appName) ?></h1>
     <?php endif; ?>
     <h2>Development build</h2>
 
@@ -132,10 +149,17 @@ $installScript = sprintf(
         </p>
     <?php endif; ?>
     <?php if ($installScript): ?>
+        <h3>Testing instructions</h3>
         <p>
-            Install with:<br/>
-            <code><?= htmlspecialchars($installScript) ?></code>
+            Install this version with:<br/>
+            <code class="code-block"><?= htmlspecialchars($installScript) ?></code>
         </p>
+        <?php if ($revertScript): ?>
+        <p>
+            Install the stable version again with:<br/>
+            <code class="code-block"><?= htmlspecialchars($revertScript) ?></code>
+        </p>
+        <?php endif; ?>
     <?php endif; ?>
 
 </body>

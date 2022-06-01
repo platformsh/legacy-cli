@@ -119,11 +119,11 @@ class VariableUpdateCommand extends CommandBase
         $this->variableService->displayVariable($variable);
 
         $success = true;
-        if (!$result->countActivities()) {
+
+        if (!$result->countActivities() || $level === VariableService::LEVEL_PROJECT) {
             $this->activityService->redeployWarning();
         } elseif ($this->activityService->shouldWait($input)) {
-            $success = $this->activityService
-                ->waitMultiple($result->getActivities(), $selection->getProject());
+            $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

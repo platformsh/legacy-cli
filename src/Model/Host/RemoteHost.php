@@ -2,8 +2,10 @@
 
 namespace Platformsh\Cli\Model\Host;
 
+use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Util\OsUtil;
 
 class RemoteHost implements HostInterface
@@ -12,12 +14,14 @@ class RemoteHost implements HostInterface
     private $sshService;
     private $shell;
     private $extraSshArgs = [];
+    private $sshDiagnostics;
 
-    public function __construct($sshUrl, Ssh $sshService, Shell $shell)
+    public function __construct($sshUrl, Ssh $sshService, Shell $shell, SshDiagnostics $sshDiagnostics)
     {
         $this->sshUrl = $sshUrl;
         $this->sshService = $sshService;
         $this->shell = $shell;
+        $this->sshDiagnostics = $sshDiagnostics;
     }
 
     /**
@@ -39,16 +43,14 @@ class RemoteHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function runCommand($command, $mustRun = true, $quiet = true)
+    public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
     {
-        if (is_array($command)) {
-            $args = array_merge(['ssh'], $this->extraSshArgs, $this->sshService->getSshArgs());
-            $args[] = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $command));
-
-            return $this->shell->execute($args, null, $mustRun, $quiet);
+        try {
+            return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, [], 3600, $input);
+        } catch (ProcessFailedException $e) {
+            $this->sshDiagnostics->diagnoseFailure($this->sshUrl, $e->getProcess());
+            throw new ProcessFailedException($e->getProcess(), false);
         }
-
-        return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet);
     }
 
     /**
@@ -61,7 +63,7 @@ class RemoteHost implements HostInterface
     private function wrapCommandLine($commandLine)
     {
         return $this->sshService->getSshCommand()
-            . ($this->extraSshArgs ? ' ' . implode(' ', array_map('escapeshellarg', $this->extraSshArgs)) : '')
+            . ($this->extraSshArgs ? ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $this->extraSshArgs)) : '')
             . ' ' . escapeshellarg($this->sshUrl)
             . ' ' . escapeshellarg($commandLine);
     }
@@ -71,7 +73,10 @@ class RemoteHost implements HostInterface
      */
     public function runCommandDirect($commandLine, $append = '')
     {
-        return $this->shell->executeSimple($this->wrapCommandLine($commandLine) . $append);
+        $start = \time();
+        $exitCode = $this->shell->executeSimple($this->wrapCommandLine($commandLine) . $append);
+        $this->sshDiagnostics->diagnoseFailureWithTest($this->sshUrl, $start, $exitCode);
+        return $exitCode;
     }
 
     /**

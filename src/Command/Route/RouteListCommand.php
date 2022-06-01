@@ -13,6 +13,7 @@ use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class RouteListCommand extends CommandBase
@@ -44,7 +45,8 @@ class RouteListCommand extends CommandBase
     {
         $this->setAliases(['routes'])
             ->setDescription('List all routes for an environment')
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID');
+            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);
 
         $definition = $this->getDefinition();
@@ -66,7 +68,7 @@ class RouteListCommand extends CommandBase
             $routes = Route::fromVariables($decoded);
             $fromEnv = true;
         } else {
-            $this->debug('Reading routes from the API');
+            $this->debug('Reading routes from the deployments API');
             $selection = $this->selector->getSelection($input);
             $routes = Route::fromEnvironmentApi($selection->getEnvironment()->getRoutes());
             $fromEnv = false;
@@ -77,14 +79,21 @@ class RouteListCommand extends CommandBase
             return 0;
         }
 
-        $header = ['Route', 'Type', 'To'];
+        $header = [
+            'route' => 'Route',
+            'type' => 'Type',
+            'to' => 'To',
+            'url' => 'URL',
+        ];
+        $defaultColumns = ['route', 'type', 'to'];
         $rows = [];
         foreach ($routes as $route) {
-            $rows[] = [
-                new AdaptiveTableCell($route->original_url, ['wrap' => false]),
-                $route->type,
-                $route->type == 'upstream' ? $route->upstream : $route->to,
-            ];
+            $row = [];
+            $row['route'] = new AdaptiveTableCell($route->original_url, ['wrap' => false]);
+            $row['type'] = $route->type;
+            $row['to'] = $route->type == 'upstream' ? $route->upstream : $route->to;
+            $row['url'] = $route->url;
+            $rows[] = $row;
         }
 
 
@@ -101,7 +110,7 @@ class RouteListCommand extends CommandBase
             }
         }
 
-        $this->table->render($rows, $header);
+        $this->table->render($rows, $header, $defaultColumns);
 
         if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

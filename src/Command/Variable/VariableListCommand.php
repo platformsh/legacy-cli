@@ -94,25 +94,37 @@ class VariableListCommand extends CommandBase
             }
         }
 
+        $header = [
+            'name' => 'Name',
+            'level' => 'Level',
+            'value' => 'Value',
+            'is_enabled' => 'Enabled',
+        ];
         $rows = [];
 
         /** @var \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable $variable */
         foreach ($variables as $variable) {
             $row = [];
-            $row[] = $variable->name;
-            $row[] = new AdaptiveTableCell($this->variableService->getVariableLevel($variable), ['wrap' => false]);
+            $row['name'] = $variable->name;
+            $row['level'] = new AdaptiveTableCell($this->variableService->getVariableLevel($variable), ['wrap' => false]);
 
             // Handle sensitive variables' value (it isn't exposed in the API).
             if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
-                $row[] = $this->table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
+                $row['value'] = $this->table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
             } else {
-                $row[] = $variable->value;
+                $row['value'] = $variable->value;
+            }
+
+            if ($variable->hasProperty('is_enabled')) {
+                $row['is_enabled'] = $variable->is_enabled ? 'true' : 'false';
+            } else {
+                $row['is_enabled'] = '';
             }
 
             $rows[] = $row;
         }
 
-        $this->table->render($rows, ['Name', 'Level', 'Value']);
+        $this->table->render($rows, $header);
 
         if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

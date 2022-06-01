@@ -34,7 +34,18 @@ class Composer extends DependencyManagerBase
         }
         $composerJson = $path . '/composer.json';
         $contents = file_exists($composerJson) ? file_get_contents($composerJson) : null;
-        $newContents = json_encode(['require' => $dependencies]);
+        $config = [];
+        if (isset($dependencies['require']) || isset($dependencies['repositories'])) {
+            if (isset($dependencies['require'])) {
+                $config['require'] = $dependencies['require'];
+            }
+            if (isset($dependencies['repositories'])) {
+                $config['repositories'] = $dependencies['repositories'];
+            }
+        } else {
+            $config['require'] = $dependencies;
+        }
+        $newContents = \json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if ($contents !== $newContents) {
             file_put_contents($composerJson, $newContents);
             if (file_exists($path . '/composer.lock')) {

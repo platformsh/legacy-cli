@@ -7,7 +7,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -22,20 +21,17 @@ class EnvironmentInitCommand extends CommandBase
     private $api;
     private $activityService;
     private $config;
-    private $questionHelper;
     private $selector;
 
     public function __construct(
         Api $api,
         ActivityService $activityService,
         Config $config,
-        QuestionHelper $questionHelper,
         Selector $selector
     ) {
         $this->api = $api;
         $this->activityService = $activityService;
         $this->config = $config;
-        $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
     }
@@ -55,7 +51,7 @@ class EnvironmentInitCommand extends CommandBase
         $this->activityService->configureInput($definition);
 
         if ($this->config->get('service.name') === 'Platform.sh') {
-            $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh/template-golang');
+            $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh-templates/golang');
         }
     }
 
@@ -69,10 +65,7 @@ class EnvironmentInitCommand extends CommandBase
         if ($selection->hasEnvironment()) {
             $environment = $selection->getEnvironment();
         } else {
-            $environment = $this->api->getEnvironment(
-                $this->api->getDefaultEnvironmentId($this->api->getEnvironments($project)),
-                $project
-            );
+            $environment = $this->api->getDefaultEnvironment($project);
             if (!$environment) {
                 throw new InvalidArgumentException('No environment selected');
             }
@@ -105,9 +98,7 @@ class EnvironmentInitCommand extends CommandBase
         // Summarize this action with a message.
         $message = 'Initializing project ';
         $message .= $this->api->getProjectLabel($project);
-        if ($environment->id !== 'master') {
-            $message .= ', environment ' . $this->api->getEnvironmentLabel($environment);
-        }
+        $message .= ', environment ' . $this->api->getEnvironmentLabel($environment);
         if ($input->getOption('profile')) {
             $message .= ' with profile <info>' . $profile . '</info> (' . $url . ')';
         } else {

@@ -11,6 +11,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\VariableService;
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\ConsoleForm\Form;
@@ -155,8 +156,20 @@ class VariableCreateCommand extends CommandBase
         $level = $values['level'];
         unset($values['level']);
 
+        $project = $selection->getProject();
+
         switch ($level) {
             case 'environment':
+                // Unset visible_build and visible_runtime if they are already the API's defaults.
+                // This is to provide backwards compatibility with older API versions.
+                // @todo remove when API version 12 is everywhere
+                if (isset($values['visible_build']) && $values['visible_build'] === false) {
+                    unset($values['visible_build']);
+                }
+                if (isset($values['visible_runtime']) && $values['visible_runtime'] === true) {
+                    unset($values['visible_runtime']);
+                }
+
                 $environment = $selection->getEnvironment();
                 if ($environment->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
@@ -167,13 +180,29 @@ class VariableCreateCommand extends CommandBase
 
                     return 1;
                 }
+
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the environment <info>%s</info>', $values['name'], $environment->id));
-                $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api->getHttpClient());
+
+                try {
+                    $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api->getHttpClient());
+                } catch (BadResponseException $e) {
+                    // Explain the error with visible_build on older API versions.
+                    if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && !empty($values['visible_build'])) {
+                        $info = $project->systemInformation();
+                        if (\version_compare($info->version, '12', '<')) {
+                            $this->stdErr->writeln('');
+                            $this->stdErr->writeln('This project does not yet support build-visible environment variables.');
+                            $this->stdErr->writeln(\sprintf('The project API version is <comment>%s</comment> but version 12 would be required.', $info->version));
+                            return 1;
+                        }
+                    }
+
+                    throw $e;
+                }
                 break;
 
             case 'project':
-                $project = $selection->getProject();
                 if ($project->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the project %s',
@@ -186,7 +215,7 @@ class VariableCreateCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the project %s',
                     $values['name'],
-                    $this->api->getProjectLabel($project, 'info')
+                    $this->api->getProjectLabel($project)
                 ));
 
                 $result = ProjectLevelVariable::create($values, $project->getUri() . '/variables', $this->api->getHttpClient());
@@ -199,10 +228,10 @@ class VariableCreateCommand extends CommandBase
         $this->variableService->displayVariable($result->getEntity());
 
         $success = true;
-        if (!$result->countActivities()) {
+        if (!$result->countActivities() || $level === 'project') {
             $this->activityService->redeployWarning();
         } elseif ($this->activityService->shouldWait($input)) {
-            $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
+            $success = $this->activityService->waitMultiple($result->getActivities(), $project);
         }
 
         return $success ? 0 : 1;

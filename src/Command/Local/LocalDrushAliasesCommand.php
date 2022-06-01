@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Local;
 
 use Cocur\Slugify\Slugify;
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -111,7 +112,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
         $aliases = $drush->getAliases($current_group);
         $new_group = ltrim($input->getOption('group'), '@');
-        if (empty($aliases) && !$new_group && $project && $current_group === $project->id) {
+        if (empty($aliases) && !$new_group && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
         }
 
@@ -136,16 +137,27 @@ class LocalDrushAliasesCommand extends CommandBase
             // Attempt to find the absolute application root directory for
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
+
             foreach ($environments as $environment) {
 
                 // Cache the environment's deployment information.
                 // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
                 if (!$this->api->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
                     $this->debug('Fetching deployment information for environment: ' . $environment->id);
-                    $this->api->getCurrentDeployment($environment);
+                    try {
+                        $this->api->getCurrentDeployment($environment);
+                    } catch (BadResponseException $e) {
+                        if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
+                            // Ignore 400 errors relating to an invalid deployment.
+                            $this->debug('The deployment is invalid: ' . $e->getMessage());
+                        } else {
+                            throw $e;
+                        }
+                    }
                 }
 
-                if ($environment->deployment_target === 'local') {
+                if (!$environment->isActive() || $environment->deployment_target === 'local') {
+                    // We are only interested in active environments with non-grid deployment targets.
                     continue;
                 }
                 foreach ($apps as $app) {

@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
-use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\ProcessManager;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Service\TunnelService;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,7 +19,7 @@ class TunnelSingleCommand extends CommandBase
 {
     protected static $defaultName = 'tunnel:single';
 
-    private $config;
+    private $api;
     private $questionHelper;
     private $relationshipsService;
     private $selector;
@@ -27,14 +27,14 @@ class TunnelSingleCommand extends CommandBase
     private $tunnelService;
 
     public function __construct(
-        Config $config,
+        Api $api,
         QuestionHelper $questionHelper,
         Relationships $relationshipsService,
         Selector $selector,
         Ssh $ssh,
         TunnelService $tunnelService
     ) {
-        $this->config = $config;
+        $this->api = $api;
         $this->questionHelper = $questionHelper;
         $this->relationshipsService = $relationshipsService;
         $this->selector = $selector;
@@ -49,7 +49,8 @@ class TunnelSingleCommand extends CommandBase
     protected function configure()
     {
         $this->setDescription('Open a single SSH tunnel to an app relationship')
-            ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');
+            ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port')
+            ->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);
@@ -80,13 +81,13 @@ class TunnelSingleCommand extends CommandBase
             return 1;
         }
 
-        if ($environment->id === 'master') {
+        if ($environment->is_main) {
             $confirmText = sprintf(
                 'Are you sure you want to open an SSH tunnel to'
                 . ' the relationship <comment>%s</comment> on the'
-                . ' <comment>%s</comment> (production) environment?',
+                . ' environment <comment>%s</comment>?',
                 $service['_relationship_name'],
-                $environment->id
+                $this->api->getEnvironmentLabel($environment, false)
             );
             if (!$this->questionHelper->confirm($confirmText, false)) {
                 return 1;
@@ -94,7 +95,12 @@ class TunnelSingleCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
-        $sshArgs = $this->ssh->getSshArgs();
+        $sshOptions = [];
+        if ($input->getOption('gateway-ports')) {
+            $sshOptions['GatewayPorts'] = 'yes';
+        }
+
+        $sshArgs = $this->ssh->getSshArgs($sshOptions);
 
         $remoteHost = $service['host'];
         $remotePort = $service['port'];
@@ -131,9 +137,9 @@ class TunnelSingleCommand extends CommandBase
 
         if ($openTunnelInfo = $this->tunnelService->isTunnelOpen($tunnel)) {
             $this->stdErr->writeln(sprintf(
-                'A tunnel is already open for the relationship <info>%s</info> (on port %s)',
+                'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
                 $relationshipString,
-                $openTunnelInfo['localPort']
+                $this->tunnelService->getTunnelUrl($openTunnelInfo, $service)
             ));
 
             return 1;
@@ -161,38 +167,18 @@ class TunnelSingleCommand extends CommandBase
         $tunnel['pid'] = $pid;
         $this->tunnelService->addTunnelInfo($tunnel);
 
-        $this->stdErr->writeln('');
-
-        $this->stdErr->writeln(sprintf(
-            'SSH tunnel opened on port %s to relationship: <info>%s</info>',
-            $tunnel['localPort'],
-            $relationshipString
-        ));
-
-        $localService = array_merge($service, array_intersect_key([
-            'host' => TunnelService::LOCAL_IP,
-            'port' => $tunnel['localPort'],
-        ], $service));
-        $info = [
-            'username' => 'Username',
-            'password' => 'Password',
-            'scheme' => 'Scheme',
-            'host' => 'Host',
-            'port' => 'Port',
-            'path' => 'Path',
-        ];
-        foreach ($info as $key => $category) {
-            if (isset($localService[$key])) {
-                $this->stdErr->writeln(sprintf('  <info>%s</info>: %s', $category, $localService[$key]));
-            }
-        }
-
-        $this->stdErr->writeln('');
-
-        if (isset($localService['scheme']) && in_array($localService['scheme'], ['http', 'https'], true)) {
-            $this->stdErr->writeln(sprintf('URL: <info>%s</info>', $this->getServiceUrl($localService)));
+        if ($output->isVerbose()) {
+            // Just an extra line for separation from the process manager's log.
             $this->stdErr->writeln('');
         }
+
+        $this->stdErr->writeln(sprintf(
+            'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
+            $relationshipString,
+            $this->tunnelService->getTunnelUrl($tunnel, $service)
+        ));
+
+        $this->stdErr->writeln('');
 
         $this->stdErr->writeln('Quitting this command (with Ctrl+C or equivalent) will close the tunnel.');
 
@@ -201,24 +187,5 @@ class TunnelSingleCommand extends CommandBase
         $processManager->monitor($this->stdErr);
 
         return $process->isSuccessful() ? 0 : 1;
-    }
-
-    /**
-     * Build a URL to a service.
-     *
-     * @param array $service
-     *
-     * @return string
-     */
-    private function getServiceUrl(array $service)
-    {
-        $map = ['username' => 'user', 'password' => 'pass'];
-        $urlParts = [];
-        foreach ($service as $key => $value) {
-            $newKey = isset($map[$key]) ? $map[$key] : $key;
-            $urlParts[$newKey] = $value;
-        }
-
-        return Uri::fromParts($urlParts);
     }
 }

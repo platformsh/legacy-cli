@@ -13,7 +13,6 @@ class AutoLoginListener
     private $commandDispatcher;
     private $config;
     private $input;
-    private $output;
     private $stdErr;
     private $questionHelper;
     private $urlService;
@@ -29,7 +28,6 @@ class AutoLoginListener
         $this->commandDispatcher = $commandDispatcher;
         $this->config = $config;
         $this->input = $input;
-        $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
         $this->questionHelper = $questionHelper;
         $this->urlService = $urlService;

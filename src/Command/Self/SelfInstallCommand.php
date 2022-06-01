@@ -7,8 +7,11 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Cli\Util\Snippeter;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -20,6 +23,7 @@ class SelfInstallCommand extends CommandBase
 
     private $config;
     private $fs;
+    private $shell;
     private $questionHelper;
     private $subCommandRunner;
 
@@ -27,11 +31,13 @@ class SelfInstallCommand extends CommandBase
         Config $config,
         Filesystem $fs,
         QuestionHelper $questionHelper,
+        Shell $shell,
         SubCommandRunner $subCommandRunner
     ) {
         $this->config = $config;
         $this->fs = $fs;
         $this->questionHelper = $questionHelper;
+        $this->shell = $shell;
         $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
     }
@@ -54,17 +60,17 @@ EOT
         $configDir = $this->config->getUserConfigDir();
 
         $this->stdErr->write('Copying resource files...');
-        $rcFiles = [
-            'resources/shell-config.rc',
-            'resources/shell-config-bash.rc',
+        $requiredFiles = [
+            'shell-config.rc',
+            'shell-config-bash.rc',
         ];
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         try {
-            foreach ($rcFiles as $rcFile) {
-                if (($rcContents = file_get_contents(CLI_ROOT . '/' . $rcFile)) === false) {
-                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $rcFile));
+            foreach ($requiredFiles as $requiredFile) {
+                if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $requiredFile)) === false) {
+                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $requiredFile));
                 }
-                $fs->dumpFile($configDir . '/' . $rcFile, $rcContents);
+                $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
             }
         } catch (\Exception $e) {
             $this->stdErr->writeln('');
@@ -75,6 +81,33 @@ EOT
         }
         $this->stdErr->writeln(' <info>done</info>');
         $this->stdErr->writeln('');
+
+        if (OsUtil::isWindows()) {
+            $this->stdErr->write('Creating .bat executable...');
+            $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
+            $binTarget = $this->config->get('application.executable');
+            $batDestination = $binDir . DIRECTORY_SEPARATOR . $this->config->get('application.executable') . '.bat';
+            $fs->dumpFile($batDestination, $this->generateBatContents($binTarget));
+            $this->stdErr->writeln(' <info>done</info>');
+            $this->stdErr->writeln('');
+        }
+
+        $manager = new Manager($this->config);
+        if ($manager->isSupported()) {
+            $this->stdErr->write('Installing credential helper...');
+            if ($manager->isInstalled()) {
+                $this->stdErr->writeln(' <info>done</info> (already installed)');
+            } else {
+                try {
+                    $manager->install();
+                    $this->stdErr->writeln(' <info>done</info>');
+                } catch (\Exception $e) {
+                    $this->stdErr->writeln(' <comment>failed</comment>');
+                    $this->stdErr->writeln($this->indentAndWrap($e->getMessage()));
+                }
+            }
+            $this->stdErr->writeln('');
+        }
 
         $shellType = $input->getOption('shell-type');
         if ($shellType === null && getenv('SHELL') !== false) {
@@ -102,7 +135,9 @@ EOT
             // autocompletion probably isn't needed at all, as we are in the
             // context of some kind of automated build. So ignore the error.
             if (!$this->isTerminal(STDOUT)) {
-                $this->stdErr->writeln(' <info>skipped</info>');
+                $this->stdErr->writeln(' <info>skipped</info> (not a terminal)');
+            } elseif ($shellType === null) {
+                $this->stdErr->writeln(' <info>skipped</info> (unsupported shell)');
             }
             // Otherwise, print the error and continue. The user probably
             // wants to know what went wrong, but autocompletion is still not
@@ -133,6 +168,37 @@ EOT
             $shellConfigFile = $this->findShellConfigFile($shellType);
         }
 
+        // Windows command prompt (non-Bash) behavior.
+        if ($shellConfigFile === false && OsUtil::isWindows()) {
+            $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
+            if ($this->inPath($binDir)) {
+                $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, false));
+
+                return 0;
+            }
+
+            // Attempt to add to the PATH automatically using "setx".
+            $path = getenv('Path', true);
+            $pathParts = $path !== false ? array_unique(array_filter(explode(';', $path))) : [];
+            if ($path !== false && !empty($pathParts)) {
+                $newPath = implode(';', $pathParts) . ';' . $binDir;
+                $setPathCommand = 'setx PATH ' . OsUtil::escapeShellArg($newPath);
+                if ($this->shell->execute($setPathCommand, null, false, true, [], 10) !== false) {
+                    $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, true));
+
+                    return 0;
+                }
+            }
+
+            $this->stdErr->writeln(sprintf(
+                'To set up the CLI, add this directory to your Path environment variable:'
+            ));
+            $this->stdErr->writeln(sprintf('<info>%s</info>', $binDir));
+            $this->stdErr->writeln('Then open a new terminal to continue.');
+
+            return 1;
+        }
+
         $currentShellConfig = '';
 
         if ($shellConfigFile !== false) {
@@ -148,8 +214,8 @@ EOT
         }
 
         $configDirRelative = $this->config->getUserConfigDir(false);
-        $rcDestination = $configDirRelative . '/' . 'shell-config.rc';
-        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->fs->getHomeDirectory()) . '}';
+        $rcDestination = $configDirRelative . DIRECTORY_SEPARATOR . 'shell-config.rc';
+        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',
             '"$HOME/"' . escapeshellarg($configDirRelative . '/bin')
@@ -181,15 +247,11 @@ EOT
         }
 
         $appName = (string) $this->config->get('application.name');
-        $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration';
-        $end = '# END SNIPPET';
+        $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration' . PHP_EOL;
+        $end = ' # END SNIPPET';
+        $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
 
         if ($shellConfigFile === false || !$modify) {
-            $suggestedShellConfig = PHP_EOL
-                . $begin
-                . PHP_EOL
-                . $suggestedShellConfig
-                . ' ' . $end;
             if ($shellConfigFile !== false) {
                 $this->stdErr->writeln(sprintf(
                     'To set up the CLI, add the following lines to: <comment>%s</comment>',
@@ -201,45 +263,11 @@ EOT
                 );
             }
 
-            $this->stdErr->writeln($suggestedShellConfig);
+            $this->stdErr->writeln($begin . $suggestedShellConfig . $end);
             return 1;
         }
 
-        // Look for the position of the $begin string in the current config.
-        $beginPos = strpos($currentShellConfig, $begin);
-
-        // Otherwise, look for a line that loosely matches the $begin string.
-        if ($beginPos === false) {
-            $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
-            if (preg_match($beginPattern, $currentShellConfig, $matches, PREG_OFFSET_CAPTURE)) {
-                $beginPos = $matches[0][1];
-            }
-        }
-
-        // Find the snippet's end: the first occurrence of $end after $begin.
-        $endPos = false;
-        if ($beginPos !== false) {
-            $endPos = strpos($currentShellConfig, $end, $beginPos);
-        }
-
-        // If an existing snippet has been found, update it. Otherwise, add a
-        // new snippet to the end of the file.
-        if ($beginPos !== false && $endPos !== false && $endPos > $beginPos) {
-            $newShellConfig = substr_replace(
-                $currentShellConfig,
-                $begin . PHP_EOL . $suggestedShellConfig . ' ' . $end,
-                $beginPos,
-                $endPos + strlen($end) - $beginPos
-            );
-        } else {
-            $newShellConfig = rtrim($currentShellConfig, PHP_EOL);
-            if (strlen($newShellConfig)) {
-                $newShellConfig .= PHP_EOL . PHP_EOL;
-            }
-            $newShellConfig .= $begin
-                . PHP_EOL . $suggestedShellConfig . ' ' . $end
-                . PHP_EOL;
-        }
+        $newShellConfig = (new Snippeter())->updateSnippet($currentShellConfig, $suggestedShellConfig, $begin, $end, $beginPattern);
 
         if (file_exists($shellConfigFile)) {
             copy($shellConfigFile, $shellConfigFile . '.cli.bak');
@@ -265,15 +293,20 @@ EOT
     /**
      * @param string $shellConfigFile
      * @param string $binDir
+     * @param bool|null $inPath
+     * @param bool $newTerminal
      *
      * @return string[]
      */
-    private function getRunAdvice($shellConfigFile, $binDir)
+    private function getRunAdvice($shellConfigFile, $binDir, $inPath = null, $newTerminal = false)
     {
         $advice = [
-            sprintf('To use the %s, run:', $this->config->get('application.name'))
+            sprintf('To use the %s,%s run:', $this->config->get('application.name'), $newTerminal ? ' open a new terminal, and' : '')
         ];
-        if (!$this->inPath($binDir)) {
+        if ($inPath === null) {
+            $inPath = $this->inPath($binDir);
+        }
+        if (!$inPath) {
             $sourceAdvice = sprintf('    <info>source %s</info>', $this->formatSourceArg($shellConfigFile));
             $sourceAdvice .= ' # (make sure your shell does this by default)';
             $advice[] = $sourceAdvice;
@@ -298,7 +331,7 @@ EOT
             return false;
         }
 
-        return in_array($realpath, explode(':', $PATH));
+        return in_array($realpath, explode(OsUtil::isWindows() ? ';' : ':', $PATH));
     }
 
     /**
@@ -317,7 +350,7 @@ EOT
         // Replace the home directory with ~, if not on Windows.
         if (DIRECTORY_SEPARATOR !== '\\') {
             $realpath = realpath($filename);
-            $homeDir = Filesystem::getHomeDirectory();
+            $homeDir = $this->config->getHomeDirectory();
             if ($realpath && strpos($realpath, $homeDir) === 0) {
                 $arg = '~/' . ltrim(substr($realpath, strlen($homeDir)), '/');
             }
@@ -346,7 +379,7 @@ EOT
         if (getcwd() === dirname($filename)) {
             return basename($filename);
         }
-        $homeDir = Filesystem::getHomeDirectory();
+        $homeDir = $this->config->getHomeDirectory();
         if (strpos($filename, $homeDir) === 0) {
             return str_replace($homeDir, '~', $filename);
         }
@@ -368,10 +401,11 @@ EOT
         $envPrefix = $this->config->get('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT') !== false
             && getenv($envPrefix . 'APP_DIR') !== false
-            && getenv($envPrefix . 'APP_DIR') === Filesystem::getHomeDirectory()) {
+            && getenv($envPrefix . 'APP_DIR') === $this->config->getHomeDirectory()) {
             return getenv($envPrefix . 'APP_DIR') . '/.environment';
         }
 
+        // Default to Bash filenames.
         $candidates = [
             '.bashrc',
             '.bash_profile',
@@ -385,12 +419,13 @@ EOT
             ];
         }
 
+        // Use .zshrc on ZSH.
         if ($shellType === 'zsh' || (empty($shellType) && getenv('ZSH'))) {
-            array_unshift($candidates, '.zshrc');
-            array_unshift($candidates, '.zprofile');
+            $candidates = ['.zshrc'];
         }
 
-        $homeDir = Filesystem::getHomeDirectory();
+        // Pick the first of the candidate files that already exists.
+        $homeDir = $this->config->getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
                 $this->debug('Found existing config file: ' . $homeDir . DIRECTORY_SEPARATOR . $candidate);
@@ -399,10 +434,13 @@ EOT
             }
         }
 
-        // If none of the files exist (yet), and we are on Bash, and the home
-        // directory is writable, then use ~/.bashrc or ~/.bash_profile on
-        // OS X.
-        if (is_writable($homeDir) && $shellType === 'bash') {
+        if (!is_writable($homeDir)) {
+            return false;
+        }
+
+        // If none of the files exist (yet), and the home directory is writable,
+        // then create a new file based on the shell type.
+        if ($shellType === 'bash') {
             if (OsUtil::isOsX()) {
                 $this->debug('OS X: defaulting to ~/.bash_profile');
 
@@ -411,6 +449,10 @@ EOT
             $this->debug('Defaulting to ~/.bashrc');
 
             return $homeDir . DIRECTORY_SEPARATOR . '.bashrc';
+        } elseif ($shellType === 'zsh') {
+            $this->debug('Defaulting to ~/.zshrc');
+
+            return $homeDir . DIRECTORY_SEPARATOR . '.zshrc';
         }
 
         return false;
@@ -431,5 +473,20 @@ EOT
         $wrapped = wordwrap($str, $width - $indent, PHP_EOL);
 
         return $spaces . preg_replace('/\r\n|\r|\n/', '$0' . $spaces, $wrapped);
+    }
+
+    /**
+     * Generates a .bat file for Windows compatibility.
+     *
+     * @param string $binTarget
+     *
+     * @return string
+     */
+    private function generateBatContents($binTarget)
+    {
+        return "@ECHO OFF\r\n".
+            "setlocal DISABLEDELAYEDEXPANSION\r\n".
+            "SET BIN_TARGET=%~dp0/" . trim(OsUtil::escapeShellArg($binTarget), '"\'') . "\r\n".
+            "php \"%BIN_TARGET%\" %*\r\n";
     }
 }

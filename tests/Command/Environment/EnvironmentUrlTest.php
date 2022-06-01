@@ -58,10 +58,21 @@ class EnvironmentUrlTest extends TestCase
         $this->assertContains('Command not found: nonexistent', $result->getErrorOutput());
         $this->assertContains("https://example.com\n", $result->getOutput());
 
+<<<<<<< HEAD
         $result = (new CommandRunner())->run('environment:url', [
             '--browser', 'nonexistent',
         ], ['DISPLAY' => 'none', 'PLATFORMSH_CLI_DEBUG' => '1']);
         $this->assertContains('no display found', $result->getErrorOutput());
         $this->assertContains("https://example.com\n", $result->getOutput());
+=======
+        $display = getenv('DISPLAY');
+        putenv('DISPLAY=none');
+        $result = $this->runCommand([
+            '--browser' => 'nonexistent',
+        ], OutputInterface::VERBOSITY_DEBUG);
+        $this->assertContains('no display found', $result);
+        $this->assertContains("https://example.com\n", $result);
+        putenv('DISPLAY=' . $display);
+>>>>>>> 06915848
     }
 }

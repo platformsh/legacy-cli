@@ -64,19 +64,20 @@ class SubscriptionInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $id = $input->getOption('id');
+        $project = null;
         if (empty($id)) {
             $selection = $this->selector->getSelection($input);
             $project = $selection->getProject();
             $id = $project->getSubscriptionId();
         }
 
-        $subscription = $this->api->getClient()
-                             ->getSubscription($id);
+        $subscription = $this->api->loadSubscription($id, $project, $input->getArgument('value') !== null);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 
             return 1;
         }
+
         $property = $input->getArgument('property');
 
         if (!$property) {

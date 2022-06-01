@@ -1,10 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Platformsh\Cli\Tests;
+namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Tests\Container;
+use Platformsh\Cli\Tests\HasTempDirTrait;
+use Symfony\Component\Console\Input\ArrayInput;
 
 /**
  * @group slow
@@ -32,13 +35,16 @@ class GitServiceTest extends TestCase
             throw new \Exception("Failed to create directories.");
         }
 
-        $this->git = new Git();
+        $container = Container::instance();
+        $container->set('input', new ArrayInput([]));
+
+        $this->git = $container->get('git');
         $this->git->init($repository, true);
         $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
 
-        // Ensure we are on the master branch.
-        $this->git->checkOut('master');
+        // Ensure we are on the main branch.
+        $this->git->execute(['checkout', '-b', 'main'], null, true);
 
         // Add required Git config before committing.
         shell_exec('git config user.email test@example.com');
@@ -55,12 +61,19 @@ class GitServiceTest extends TestCase
      */
     public function testGetRoot()
     {
-        $this->assertFalse($this->git->getRoot($this->tempDir));
+        // Test a real repository.
         $repositoryDir = $this->getRepositoryDir();
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir));
         mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir . '/1/2/3/4/5'));
+<<<<<<< HEAD
         $this->expectExceptionMessage('Not a git repository');
+=======
+
+        // Test a non-repository.
+        $this->assertFalse($this->git->getRoot($this->tempDir));
+        $this->setExpectedException('Exception', 'Not a git repository');
+>>>>>>> 06915848
         $this->git->getRoot($this->tempDir, true);
     }
 
@@ -80,7 +93,7 @@ class GitServiceTest extends TestCase
     public function testCheckOutNew()
     {
         $this->assertTrue($this->git->checkOutNew('new'));
-        $this->git->checkOut('master');
+        $this->git->checkOut('main');
     }
 
     /**
@@ -109,20 +122,6 @@ class GitServiceTest extends TestCase
     {
         $this->git->checkOutNew('test');
         $this->assertEquals('test', $this->git->getCurrentBranch());
-    }
-
-    /**
-     * Test GitHelper::getMergedBranches().
-     */
-    public function testGetMergedBranches()
-    {
-        $this->git->checkOutNew('branch1');
-        $this->git->checkOutNew('branch2');
-        $this->assertEquals([
-            'branch1',
-            'branch2',
-            'master',
-        ], $this->git->getMergedBranches('master'));
     }
 
     /**

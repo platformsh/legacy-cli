@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\Selection;
+use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
@@ -12,6 +13,7 @@ use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -21,7 +23,7 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Service allowing the user to select the current project, environment and app.
+ * Service allowing the user to select the current project, environment, app, and organization.
  */
 class Selector
 {
@@ -458,7 +460,7 @@ class Selector
         // ID.
         $upstream = $this->git->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
-            list(, $potentialEnvironment) = explode('/', $upstream, 2);
+            [, $potentialEnvironment] = explode('/', $upstream, 2);
             $environment = $this->api->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
                 $this->debug('Selected environment ' . $this->api->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
@@ -536,18 +538,22 @@ class Selector
     }
 
     /**
-     * Add all selection options (project, environment and app).
+     * Add all standard selection options (project, environment and app).
      *
      * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
-     * @param bool                                             $includeWorkers
+     * @param bool $includeWorkers
+     * @param bool $includeOrganizations
      */
-    public function addAllOptions(InputDefinition $inputDefinition, $includeWorkers = false)
+    public function addAllOptions(InputDefinition $inputDefinition, bool $includeWorkers = false, bool $includeOrganizations = false)
     {
         $this->addProjectOption($inputDefinition);
         $this->addEnvironmentOption($inputDefinition);
         $this->addAppOption($inputDefinition);
         if ($includeWorkers) {
             $inputDefinition->addOption(new InputOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name'));
+        }
+        if ($includeOrganizations) {
+            $this->addOrganizationOptions($inputDefinition);
         }
     }
 
@@ -669,7 +675,7 @@ class Selector
         }
         if ($includeWorkers) {
             foreach ($deployment->workers as $worker) {
-                list($appPart, ) = explode('--', $worker->name, 2);
+                [$appPart, ] = explode('--', $worker->name, 2);
                 if (in_array($appPart, $appNames, true)) {
                     $choices[$worker->name] = $worker->name;
                 }
@@ -713,5 +719,87 @@ class Selector
         }
 
         return new RemoteContainer\App($deployment->getWebApp($choice), $environment);
+    }
+
+    /**
+     * Adds the --org (-o) organization name option.
+     */
+    public function addOrganizationOptions(InputDefinition $definition)
+    {
+        if ($this->config->getWithDefault('api.organizations', false)) {
+            $definition->addOption(new InputOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)'));
+        }
+    }
+
+    /**
+     * Returns the selected organization according to the --org option.
+     *
+     * @see Selector::addOrganizationOptions()
+     *
+     * @param InputInterface $input
+     * @param string $filterByLink
+     *   If no organization is specified, this filters the list of the organizations presented, by the name of a HAL
+     *   link. For example, 'create-subscription' will list organizations under which the user has the permission to
+     *   create a subscription.
+     *
+     * @throws \InvalidArgumentException if no organization is specified
+     * @throws NoOrganizationsException if the user does not have any organizations matching the filter
+     *
+     * @return Organization
+     */
+    public function selectOrganization(InputInterface $input, string $filterByLink = ''): Organization
+    {
+        if (!$this->config->getWithDefault('api.organizations', false)) {
+            throw new \BadMethodCallException('Organizations are not enabled');
+        }
+
+        $client = $this->api->getClient();
+
+        if ($identifier = $input->getOption('org')) {
+            // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
+            // So it's easy to distinguish one from the other.
+            /** @link https://github.com/ulid/spec */
+            if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
+                $this->debug('Detected organization ID format (ULID): ' . $identifier);
+                $organization = $client->getOrganizationById($identifier);
+            } else {
+                $organization = $client->getOrganizationByName($identifier);
+            }
+            if (!$organization) {
+                throw new \InvalidArgumentException('Organization not found: ' . $identifier);
+            }
+            return $organization;
+        }
+
+        if (!$input->isInteractive()) {
+            throw new \InvalidArgumentException('An organization name or ID (--org) is required.');
+        }
+        $organizations = $client->listOrganizationsWithMember($this->api->getMyUserId());
+        if (!$organizations) {
+            throw new NoOrganizationsException('No organizations found.');
+        }
+
+        $this->api->sortResources($organizations, 'name');
+        $options = [];
+        $byId = [];
+        foreach ($organizations as $organization) {
+            if ($filterByLink !== '' && !$organization->hasLink($filterByLink)) {
+                continue;
+            }
+            $options[$organization->id] = $this->api->getOrganizationLabel($organization, false);
+            $byId[$organization->id] = $organization;
+        }
+        if (empty($options)) {
+            throw new NoOrganizationsException('An organization name or ID (--org) is required.');
+        }
+        if (count($byId) === 1) {
+            /** @var Organization $organization */
+            $organization = reset($byId);
+            $this->stdErr->writeln(\sprintf('Selected organization: %s (by default)', $this->api->getOrganizationLabel($organization)));
+            return $organization;
+        }
+
+        $id = $this->questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):');
+        return $byId[$id];
     }
 }

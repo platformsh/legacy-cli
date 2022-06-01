@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityService;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
@@ -19,18 +18,11 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
 {
     protected static $defaultName = 'environment:synchronize';
 
-    private $api;
     private $activityService;
     private $questionHelper;
     private $selector;
 
-    public function __construct(
-        Api $api,
-        ActivityService $activityService,
-        QuestionHelper $questionHelper,
-        Selector $selector
-    ) {
-        $this->api = $api;
+    public function __construct(ActivityService $activityService, QuestionHelper $questionHelper, Selector $selector) {
         $this->activityService = $activityService;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
@@ -149,11 +141,7 @@ EOT
 
         $activity = $selectedEnvironment->synchronize($syncData, $syncCode, $rebase);
         if ($this->activityService->shouldWait($input)) {
-            $success = $this->activityService->waitAndLog(
-                $activity,
-                "Synchronization complete",
-                "Synchronization failed"
-            );
+            $success = $this->activityService->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Platformsh\Cli\Tests\BuildFlavor;
+namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Filesystem;
 
@@ -97,7 +97,7 @@ class DrupalTest extends BaseBuildFlavorTest
         chdir($projectRoot);
         exec('git init');
 
-        $treeId = $this->builder->getTreeId($projectRoot);
+        $treeId = $this->builder->getTreeId($projectRoot, $this->buildSettings);
         $this->assertNotEmpty($treeId);
 
         // Build. This should create an archive.

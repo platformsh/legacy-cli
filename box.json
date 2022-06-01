@@ -9,12 +9,13 @@
   "files": [
     "constants.php",
     "vendor/autoload.php",
-    "vendor/symfony/console/Resources/bin/hiddeninput.exe"
+    "vendor/symfony/console/Resources/bin/hiddeninput.exe",
+    "vendor/composer/ca-bundle/res/cacert.pem"
   ],
   "finder": [
     {
       "in": "vendor",
-      "name": "*.php",
+      "name": "*.php*",
       "exclude": [
         "phpunit",
         "Tests",

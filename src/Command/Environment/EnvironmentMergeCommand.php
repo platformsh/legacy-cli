@@ -92,11 +92,7 @@ class EnvironmentMergeCommand extends CommandBase
 
         $activity = $selectedEnvironment->merge();
         if ($this->activityService->shouldWait($input)) {
-            $success = $this->activityService->waitAndLog(
-                $activity,
-                'Merge complete',
-                'Merge failed'
-            );
+            $success = $this->activityService->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }

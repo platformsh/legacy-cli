@@ -5,11 +5,8 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
@@ -23,29 +20,15 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 {
     protected static $defaultName = 'environment:logs';
 
-    private $api;
     private $cache;
-    private $config;
     private $questionHelper;
     private $selector;
-    private $shell;
     private $ssh;
 
-    public function __construct(
-        Api $api,
-        CacheProvider $cache,
-        Config $config,
-        QuestionHelper $questionHelper,
-        Selector $selector,
-        Shell $shell,
-        Ssh $ssh
-    ) {
-        $this->api = $api;
+    public function __construct(CacheProvider $cache, QuestionHelper $questionHelper, Selector $selector, Ssh $ssh) {
         $this->cache = $cache;
-        $this->config = $config;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }
@@ -76,14 +59,15 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
-        $container = $this->selector->getSelection($input)->getRemoteContainer();
-        $sshUrl = $container->getSshUrl();
+        $selection = $this->selector->getSelection($input);
+        $container = $selection->getRemoteContainer();
+        $host = $selection->getHost();
 
         $logDir = '/var/log';
 
         // Special handling for Platform.sh Enterprise (Integrated UI)
         // environments.
-        if (preg_match('/^ent-.*?platform\.sh$/', $sshUrl)) {
+        if (preg_match('/^ent-.*?platform\.sh$/', $container->getSshUrl())) {
             $logDir = '/var/log/platform/"$USER"';
             $this->debug('Detected Platform.sh Enterprise environment: using log directory: ' . $logDir);
         }
@@ -100,9 +84,9 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             return 1;
         } else {
             // Read the list of files from the environment.
-            $cacheKey = sprintf('log-files:%s', $sshUrl);
+            $cacheKey = sprintf('log-files:%s', $host->getCacheKey());
             if (!$result = $this->cache->fetch($cacheKey)) {
-                $result = $this->shell->execute(['ssh', $sshUrl, 'ls -1 ' . $logDir . '/*.log']);
+                $result = $host->runCommand('ls -1 ' . $logDir . '/*.log');
 
                 // Cache the list for 1 day.
                 $this->cache->save($cacheKey, $result, 86400);
@@ -127,11 +111,9 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $command .= ' -f';
         }
 
-        $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $sshUrl, $logFilename));
+        $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $host->getLabel(), $logFilename));
 
-        $sshCommand = sprintf('ssh -C %s %s', escapeshellarg($sshUrl), escapeshellarg($command));
-
-        return $this->shell->executeSimple($sshCommand);
+        return $host->runCommandDirect($command);
     }
 
     /**

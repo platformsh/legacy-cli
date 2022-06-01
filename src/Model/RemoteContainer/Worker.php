@@ -39,24 +39,7 @@ class Worker implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getType()
-    {
-        return 'worker';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getConfig() {
         return new AppConfig($this->worker->getProperties());
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMounts() {
-        $config = $this->getConfig()->getNormalized();
-
-        return !empty($config['mounts']) ? $config['mounts'] : [];
     }
 }

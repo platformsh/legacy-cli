@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\SshKey;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Selector;
@@ -19,17 +20,20 @@ class WelcomeCommand extends CommandBase
     private $config;
     private $subCommandRunner;
     private $selector;
+    private $sshKey;
 
     public function __construct(
         Api $api,
         Config $config,
         SubCommandRunner $subCommandRunner,
-        Selector $selector
+        Selector $selector,
+        SshKey $sshKey
     ) {
         $this->api = $api;
         $this->config = $config;
         $this->subCommandRunner = $subCommandRunner;
         $this->selector = $selector;
+        $this->sshKey = $sshKey;
         parent::__construct();
     }
 
@@ -56,11 +60,19 @@ class WelcomeCommand extends CommandBase
 
         $executable = $this->config->get('application.executable');
 
-        if ($this->api->isLoggedIn()) {
-            $this->stdErr->writeln("Manage your SSH keys by running <info>$executable ssh-keys</info>\n");
+        $this->api->showSessionInfo(false);
+
+        if ($this->api->isLoggedIn() && !$this->config->get('api.auto_load_ssh_cert')) {
+            if (!$this->sshKey->hasLocalKey()) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln("To add an SSH key, run: <info>$executable ssh-key:add</info>");
+            }
         }
 
+        $this->stdErr->writeln('');
         $this->stdErr->writeln("To view all commands, run: <info>$executable list</info>");
+
+        return 0;
     }
 
     /**
@@ -87,7 +99,6 @@ class WelcomeCommand extends CommandBase
 
         // Show the environments.
         $this->subCommandRunner->run('environments', [
-            '--refresh' => 0,
             '--project' => $project->id,
         ]);
         $executable = $this->config->get('application.executable');
@@ -105,9 +116,7 @@ class WelcomeCommand extends CommandBase
             $messages = [];
             $messages[] = '<comment>This project is suspended.</comment>';
             if ($project->owner === $this->api->getMyAccount()['id']) {
-                $messages[] = '<comment>Update your payment details to re-activate it: '
-                    . $this->config->get('service.accounts_url')
-                    . '</comment>';
+                $messages[] = '<comment>Update your payment details to re-activate it</comment>';
             }
             $messages[] = '';
             $this->stdErr->writeln($messages);
@@ -155,10 +164,10 @@ class WelcomeCommand extends CommandBase
             }
         }
 
-        $this->stdErr->writeln('');
         $examples = [];
         if (getenv($envPrefix . 'APPLICATION')) {
             $examples[] = "To view application config, run: <info>$executable app:config</info>";
+            $examples[] = "To view mounts, run: <info>$executable mounts</info>";
         }
         if (getenv($envPrefix . 'RELATIONSHIPS')) {
             $examples[] = "To view relationships, run: <info>$executable relationships</info>";
@@ -170,10 +179,10 @@ class WelcomeCommand extends CommandBase
             $examples[] = "To view variables, run: <info>$executable decode \${$envPrefix}VARIABLES</info>";
         }
         if (!empty($examples)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Local environment commands:');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(preg_replace('/^/m', '  ', implode("\n", $examples)));
-            $this->stdErr->writeln('');
         }
     }
 }

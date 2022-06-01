@@ -18,6 +18,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableSetCommand extends CommandBase
 {
     protected static $defaultName = 'variable:set';
+    protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     private $activityService;
     private $selector;
@@ -40,16 +42,16 @@ class VariableSetCommand extends CommandBase
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')
             ->setDescription('Set a variable for an environment');
-        $this->setHidden(true);
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->activityService->configureInput($definition);
 
-        $this->addExample('Set the variable "example" to the string "123"', 'example 123');
-        $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
-        $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -102,8 +104,9 @@ class VariableSetCommand extends CommandBase
      */
     protected function validateJson($string)
     {
-        $null = json_decode($string) === null;
-
-        return !$null || ($null && $string === 'null');
+        if ($string === 'null') {
+            return true;
+        }
+        return \json_decode($string) !== null;
     }
 }

@@ -26,20 +26,17 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
     private $questionHelper;
     private $relationships;
     private $selector;
-    private $shell;
     private $ssh;
 
     public function __construct(
         QuestionHelper $questionHelper,
         Relationships $relationships,
         Selector $selector,
-        Shell $shell,
         Ssh $ssh
     ) {
         $this->questionHelper = $questionHelper;
         $this->relationships = $relationships;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }
@@ -130,11 +127,19 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 
         $command = 'mongo '
             . $this->relationships->getDbCommandArgs('mongo', $service)
-            . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js);
+            . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js)
+            . ' 2>/dev/null';
 
         $result = $host->runCommand($command);
         if (!is_string($result)) {
             return [];
+        }
+
+        // Handle log messages that mongo prints to stdout.
+        // https://jira.mongodb.org/browse/SERVER-23810
+        // Hopefully the end of the output is a JavaScript array.
+        if (substr($result, -1) === ']' && substr(trim($result), 0, 1) !== '[' && ($openPos = strrpos($result, "\n[")) !== false) {
+            $result = substr($result, $openPos);
         }
 
         $collections = json_decode($result, true) ?: [];

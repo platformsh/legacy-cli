@@ -121,6 +121,8 @@ class AdaptiveTable extends Table
                 continue;
             }
             foreach ($row as $column => &$cell) {
+                // Replace Windows line endings, because Symfony's buildTableRows() does not respect them.
+                $cell = \str_replace("\r\n", "\n", $cell);
                 $cellWidth = $this->getCellWidth($cell);
                 if ($cellWidth <= $maxColumnWidths[$column]) {
                     continue;
@@ -345,7 +347,7 @@ class AdaptiveTable extends Table
         $paddingQuantity = $columnCount * 2;
 
         return $this->maxTableWidth
-            - $verticalBorderQuantity * strlen($style->getVerticalBorderChar())
+            - $verticalBorderQuantity * strlen($style->getBorderChars()[1])
             - $paddingQuantity * strlen($style->getPaddingChar());
     }
 

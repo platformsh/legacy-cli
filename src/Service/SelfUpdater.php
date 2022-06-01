@@ -121,6 +121,7 @@ class SelfUpdater
         $updater = new Updater($localPhar, false);
         $strategy = new ManifestStrategy(ltrim($currentVersion, 'v'), $manifestUrl, $this->allowMajor, $this->allowUnstable);
         $strategy->setManifestTimeout($this->timeout);
+        $strategy->setStreamContextOptions($this->config->getStreamContextOptions());
         $updater->setStrategyObject($strategy);
 
         if (!$updater->hasUpdate()) {
@@ -130,14 +131,23 @@ class SelfUpdater
 
         $newVersionString = $updater->getNewVersion();
 
-        if ($notes = $strategy->getUpdateNotes($updater)) {
+        // Some dev versions cannot be compared against other version numbers,
+        // so do not check for release notes in that case.
+        $currentIsDev = \strpos($currentVersion, 'dev-') === 0;
+
+        if (!$currentIsDev && ($notes = $strategy->getUpdateNotesByVersion($currentVersion, $newVersionString))) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Update notes:', $newVersionString));
-            $this->stdErr->writeln(preg_replace('/^/m', '  ', $notes));
-            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('Version <info>%s</info> is available. Release notes:', $newVersionString));
+            foreach ($notes as $version => $notesStr) {
+                if (\count($notes) > 1) {
+                    $this->stdErr->writeln('<comment>' . $version . '</comment>:');
+                }
+                $this->stdErr->writeln(preg_replace('/^/m', '  ', $notesStr));
+                $this->stdErr->writeln('');
+            }
         }
 
-        if (!$this->questionHelper->confirm(sprintf('Update to version %s?', $newVersionString))) {
+        if (!$this->questionHelper->confirm(sprintf('Update to version <info>%s</info>?', $newVersionString))) {
             return false;
         }
 

@@ -5,6 +5,8 @@ application:
   phar: 'mock.phar'
   env_prefix: 'MOCK_CLI_'
   user_config_dir: 'mock-cli-user-config'
+  writable_user_dir: 'mock-cli-user-config'
+  user_state_file: 'state.json'
 
 service:
   name: 'Mock Service'

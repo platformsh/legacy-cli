@@ -1,22 +1,23 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @file
+ * This is the front/entry script for the CLI.
+ */
+
+// Send errors to stderr, not stdout.
+ini_set('display_errors', 'stderr');
+
+// Avoid displaying PHP errors twice.
+ini_set('log_errors', '0');
+
+// Disable early deprecation notices, e.g. those relating to Symfony Console.
+// Deprecation-level notices may be switched back on inside the application, or with the CLI_DEBUG environment variable.
+error_reporting(getenv('CLI_DEBUG') ? E_ALL : E_ALL & ~E_DEPRECATED);
 
 if (version_compare(PHP_VERSION, '7.1.3', '<')) {
     printf("This tool requires at least PHP 7.1.3. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
     exit(1);
-}
-
-// Disable PCRE JIT compilation in commands using pcntl_fork(), to work around
-// a PHP bug in versions >= 7.3. This needs to happen before any runtime code.
-// See: https://bugs.php.net/bug.php?id=77260
-if (isset($GLOBALS['argv'][1])
-    && version_compare(PHP_VERSION, '7.3', '>=')
-    && ini_get('pcre.jit') == 1
-    && extension_loaded('pcntl')) {
-    $command = $GLOBALS['argv'][1];
-    if (strpos($command, ':') !== false && preg_match('/^(t|ser)[a-z]*\:(o|sta)[a-z]*$/', $command)) {
-        ini_set('pcre.jit', 0);
-    }
 }
 
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {

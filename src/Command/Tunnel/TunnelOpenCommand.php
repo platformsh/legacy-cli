@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
@@ -12,12 +13,14 @@ use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Service\TunnelService;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelOpenCommand extends CommandBase
 {
     protected static $defaultName = 'tunnel:open';
 
+    private $api;
     private $config;
     private $questionHelper;
     private $relationshipsService;
@@ -26,6 +29,7 @@ class TunnelOpenCommand extends CommandBase
     private $tunnelService;
 
     public function __construct(
+        Api $api,
         Config $config,
         QuestionHelper $questionHelper,
         Relationships $relationshipsService,
@@ -33,6 +37,7 @@ class TunnelOpenCommand extends CommandBase
         Ssh $ssh,
         TunnelService $tunnelService
     ) {
+        $this->api = $api;
         $this->config = $config;
         $this->questionHelper = $questionHelper;
         $this->relationshipsService = $relationshipsService;
@@ -48,6 +53,7 @@ class TunnelOpenCommand extends CommandBase
     protected function configure()
     {
         $this->setDescription("Open SSH tunnels to an app's relationships");
+        $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);
@@ -81,27 +87,41 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->checkSupport();
+        $requiredExtensions = ['pcntl', 'posix'];
+        $missingExtensions = [];
+        foreach ($requiredExtensions as $requiredExtension) {
+            if (!extension_loaded($requiredExtension)) {
+                $missingExtensions[] = $requiredExtension;
+                $this->stdErr->writeln(sprintf('The <error>%s</error> PHP extension is required.', $requiredExtension));
+            }
+        }
+        if (!empty($missingExtensions)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('The alternative <info>tunnel:single</info> command does not require these extensions.');
+
+            return 1;
+        }
+
         $selection = $this->selector->getSelection($input);
         $project = $selection->getProject();
         $environment = $selection->getEnvironment();
 
-        if ($environment->id === 'master') {
-            $confirmText = 'Are you sure you want to open SSH tunnel(s) to the'
-                . ' <comment>master</comment> (production) environment?';
-            if (!$this->questionHelper->confirm($confirmText, false)) {
-                return 1;
-            }
-            $this->stdErr->writeln('');
-        }
-
-        $appName = $selection->getAppName();
-        $sshUrl = $environment->getSshUrl($appName);
+        $container = $selection->getRemoteContainer();
+        $appName = $container->getName();
+        $sshUrl = $container->getSshUrl();
 
         $relationships = $this->relationshipsService->getRelationships($selection->getHost());
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
+        }
+
+        if ($environment->is_main) {
+            $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api->getEnvironmentLabel($environment, 'comment'));
+            if (!$this->questionHelper->confirm($confirmText, false)) {
+                return 1;
+            }
+            $this->stdErr->writeln('');
         }
 
         $logFile = $this->config->getWritableUserDir() . '/tunnels.log';
@@ -110,7 +130,12 @@ EOF
             return 1;
         }
 
-        $sshArgs = $this->ssh->getSshArgs();
+        $sshOptions = [];
+        if ($input->getOption('gateway-ports')) {
+            $sshOptions['GatewayPorts'] = 'yes';
+        }
+
+        $sshArgs = $this->ssh->getSshArgs($sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
 
@@ -142,9 +167,9 @@ EOF
 
                 if ($openTunnelInfo = $this->tunnelService->isTunnelOpen($tunnel)) {
                     $this->stdErr->writeln(sprintf(
-                        'A tunnel is already open on port %s for the relationship: <info>%s</info>',
-                        $openTunnelInfo['localPort'],
-                        $relationshipString
+                        'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
+                        $relationshipString,
+                        $this->tunnelService->getTunnelUrl($openTunnelInfo, $service)
                     ));
                     continue;
                 }
@@ -183,15 +208,17 @@ EOF
                 $this->tunnelService->addTunnelInfo($tunnel);
 
                 $this->stdErr->writeln(sprintf(
-                    'SSH tunnel opened on port <info>%s</info> to relationship: <info>%s</info>',
-                    $tunnel['localPort'],
-                    $relationshipString
+                    'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
+                    $relationshipString,
+                    $this->tunnelService->getTunnelUrl($tunnel, $service)
                 ));
+
                 $processIds[] = $pid;
             }
         }
 
         if (count($processIds)) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln("Logs are written to: $logFile");
         }
 
@@ -214,18 +241,5 @@ EOF
         $processManager->monitor($log);
 
         return 0;
-    }
-
-    private function checkSupport()
-    {
-        $messages = [];
-        foreach (['pcntl', 'posix'] as $extension) {
-            if (!extension_loaded($extension)) {
-                $messages[] = sprintf('The "%s" extension is required.', $extension);
-            }
-        }
-        if (count($messages)) {
-            throw new \RuntimeException(implode("\n", $messages));
-        }
     }
 }

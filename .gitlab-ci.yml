@@ -1,0 +1,100 @@
+stages:
+  - test
+  - build
+  - review
+  - cleanup
+
+variables:
+  COMPOSER_HOME: /cache/composer
+
+  # The PF_PROJECT_ID is required.
+  # PF_PROJECT_ID:
+  PF_PARENT_ENV: 3.x
+  PF_NO_CLONE_PARENT: 1 # CLI environments are stateless, so no need for data cloning
+
+quick-tests:
+  stage: test
+  image: php:7.4-cli
+  before_script:
+    - apt-get update
+    - apt-get install zip unzip git lsof -y
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php composer-setup.php
+    - mkdir -p /cache/composer/bin && chmod +x composer.phar && mv composer.phar /cache/composer/bin/composer
+  script:
+    - export PATH="/cache/composer/bin:$PATH"
+    # No Composer scripts, because Box isn't needed (and Box needs PHP 7.4).
+    - composer install --no-interaction --no-scripts
+    - scripts/test/security.sh
+    - scripts/test/unit.sh
+    - scripts/test/offline.sh
+
+build:
+  stage: build
+  needs:
+    - quick-tests
+  image: php:7.4-cli
+  before_script:
+    - apt-get update
+    - apt-get install zip unzip
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php composer-setup.php
+    - mkdir -p /cache/composer/bin && chmod +x composer.phar && mv composer.phar /cache/composer/bin/composer
+  script:
+    - export PATH="/cache/composer/bin:$PATH"
+    - composer install --no-dev --no-interaction
+    - |
+      cd vendor-bin/box
+      composer install --no-interaction
+      cd -
+      mkdir -p vendor/bin
+      ln -s "$(realpath vendor-bin/box/vendor/bin/box)" vendor/bin/box
+    - ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_REF_NAME"-"$CI_COMMIT_SHORT_SHA" --output platform.phar
+  artifacts:
+    expose_as: 'cli-phar'
+    paths: ['platform.phar']
+
+push-review-env:
+  image: pjcdawkins/platformsh-cli
+  script:
+    - bash scripts/gitlab-ci/push-platform.sh
+  needs:
+    - quick-tests
+  stage: review
+  artifacts:
+    reports:
+      dotenv: environment.env # makes PRIMARY_URL available
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    url: $PRIMARY_URL
+    auto_stop_in: 7 day
+    on_stop: delete-review-env
+  only:
+    - branches
+
+cleanup-review-envs:
+  image: pjcdawkins/platformsh-cli
+  script:
+    - bash scripts/gitlab-ci/cleanup-platform.sh
+  needs:
+    - push-review-env
+  stage: cleanup
+  allow_failure: true
+
+delete-review-env:
+  image: pjcdawkins/platformsh-cli
+  script:
+    - bash scripts/gitlab-ci/delete-platform.sh
+  stage: cleanup
+  when: manual
+  needs:
+    - push-review-env
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+    action: stop
+  only:
+    - branches
+  except:
+    - 3.x
+    - 4.x
+    - master

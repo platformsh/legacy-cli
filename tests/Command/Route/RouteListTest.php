@@ -13,17 +13,21 @@ class RouteListTest extends TestCase
     private $mockRoutes;
 
     public function setUp() {
+<<<<<<< HEAD
         $this->mockRoutes = base64_encode(json_encode([
+=======
+        $mockRoutes = base64_encode(json_encode([
+            'http://example.com' => [
+                'type' => 'redirect',
+                'to' => 'https://{default}',
+                'original_url' => 'http://{default}',
+            ],
+>>>>>>> 06915848
             'https://example.com' => [
                 'primary' => true,
                 'type' => 'upstream',
                 'upstream' => 'app:http',
                 'original_url' => 'https://{default}',
-            ],
-            'http://example.com' => [
-                'type' => 'redirect',
-                'to' => 'https://{default}',
-                'original_url' => 'http://{default}',
             ],
         ]));
     }

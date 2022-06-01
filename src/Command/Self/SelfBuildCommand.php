@@ -63,8 +63,11 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Service\Filesystem $fs */
+        $fs = $this->getService('fs');
+
         $outputFilename = $input->getOption('output');
-        if ($outputFilename && !is_writable(dirname($outputFilename))) {
+        if ($outputFilename && !$fs->canWrite($outputFilename)) {
             $this->stdErr->writeln("Not writable: <error>$outputFilename</error>");
             return 1;
         }
@@ -89,6 +92,10 @@ class SelfBuildCommand extends CommandBase
             $version = $this->questionHelper->askInput('Version', $version);
         }
         $boxConfig['replacements']['version-placeholder'] = $version;
+
+        if (!$this->checkInstallerFile()) {
+            return 1;
+        }
 
         if ($outputFilename) {
             $boxConfig['output'] = $this->filesystem->makePathAbsolute($outputFilename);
@@ -152,9 +159,9 @@ class SelfBuildCommand extends CommandBase
             $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
             $boxConfig = array_merge($originalConfig, $boxConfig);
             $boxConfig['base-path'] = CLI_ROOT;
-            $filename = tempnam(sys_get_temp_dir(), 'cli-box-');
-            file_put_contents($filename, json_encode($boxConfig));
-            $boxArgs[] = '--config=' . $filename;
+            $tmpJson = tempnam(sys_get_temp_dir(), 'cli-box-');
+            file_put_contents($tmpJson, json_encode($boxConfig));
+            $boxArgs[] = '--config=' . $tmpJson;
         }
 
         $this->stdErr->writeln('Building Phar package using Box');
@@ -187,5 +194,47 @@ class SelfBuildCommand extends CommandBase
         ]);
 
         return 0;
+    }
+
+    /**
+     * Ensure the installer.php file has config that matches config.yaml.
+     *
+     * @return bool
+     */
+    private function checkInstallerFile()
+    {
+        $installerFile = CLI_ROOT . '/dist/installer.php';
+        $installerContents = \file_get_contents($installerFile);
+        if ($installerContents === false) {
+            $this->stdErr->writeln('Failed to read installer file: <error>' . $installerFile . '</error>');
+            return false;
+        }
+        $start = "/* START_CONFIG */";
+        $end = "/* END_CONFIG */";
+        $startPos = \strpos($installerContents, $start) + \strlen($start);
+        $endPos = \strpos($installerContents, $end);
+        if ($startPos === false || $endPos === false || $endPos < $startPos) {
+            $this->stdErr->writeln('Failed to locate config in installer file: <error>' . $installerFile . '</error>');
+            return false;
+        }
+        $newConfig = \var_export([
+            'envPrefix' => $this->config()->get('application.env_prefix'),
+            'manifestUrl' => $this->config()->get('application.manifest_url'),
+            'configDir' => $this->config()->get('application.user_config_dir'),
+            'executable' => $this->config()->get('application.executable'),
+            'cliName' => $this->config()->get('application.name'),
+            'userAgent' => $this->config()->get('application.slug'),
+        ], true);
+        $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
+        if ($newContents !== $installerContents) {
+            $this->stdErr->writeln('Modifying installer file to match config');
+            if (!\file_put_contents($installerFile, $newContents)) {
+                $this->stdErr->writeln('Failed to write to installer file: <error>' . $installerFile . '</error>');
+                return false;
+            }
+        } else {
+            $this->stdErr->writeln('Verified installer file');
+        }
+        return true;
     }
 }

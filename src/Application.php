@@ -43,6 +43,9 @@ class Application extends ParentApplication
     /** @var array|null */
     private $aliasCache;
 
+    /** @var string */
+    private $envPrefix;
+
     /**
      * {@inheritdoc}
      */
@@ -50,7 +53,8 @@ class Application extends ParentApplication
     {
         // Initialize configuration (from config.yaml).
         $this->config = $config ?: new Config();
-        parent::__construct($this->config->get('application.name'));
+        $this->envPrefix = $this->config->get('application.env_prefix');
+        parent::__construct($this->config->get('application.name'), $this->config->getVersion());
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
@@ -194,8 +198,8 @@ class Application extends ParentApplication
             new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
             new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages'),
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
-            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to all prompts; disable interaction'),
-            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to all prompts'),
+            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to any yes/no questions; disable interaction'),
+            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to any yes/no questions; disable interaction'),
         ]);
     }
 
@@ -243,8 +247,10 @@ class Application extends ParentApplication
 
         parent::configureIO($input, $output);
 
-        // Set the input to non-interactive if the yes or no options are used.
-        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])) {
+        // Set the input to non-interactive if the yes or no options are used,
+        // or if the PLATFORMSH_CLI_NO_INTERACTION variable is not empty.
+        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])
+          || getenv($this->envPrefix . 'NO_INTERACTION')) {
             $input->setInteractive(false);
         }
 
@@ -258,12 +264,12 @@ class Application extends ParentApplication
         } elseif (getenv('NO_COLOR')
             || getenv('CLICOLOR_FORCE') === '0'
             || getenv('TERM') === 'dumb'
-            || getenv($this->config->get('application.env_prefix') . 'NO_COLOR')) {
+            || getenv($this->envPrefix . 'NO_COLOR')) {
             $output->setDecorated(false);
         }
 
         // The api.debug config option triggers debug-level output.
-        if ($this->config->get('api.debug')) {
+        if ($this->config->get('api.debug') || getenv($this->envPrefix . 'DEBUG')) {
             $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
@@ -274,7 +280,7 @@ class Application extends ParentApplication
             error_reporting(E_ALL);
             ini_set('display_errors', '1');
         } elseif ($output->getVerbosity() === OutputInterface::VERBOSITY_QUIET) {
-            error_reporting(false);
+            error_reporting(0);
         } else {
             error_reporting(E_PARSE | E_ERROR);
         }

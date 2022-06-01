@@ -17,6 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableSetCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:set';
+    protected $hiddenInList = true;
+    protected $stability = 'deprecated';
 
     private $activityService;
     private $selector;
@@ -42,13 +44,12 @@ class ProjectVariableSetCommand extends CommandBase
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')
             ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
             ->setDescription('Set a variable for a project');
-        $this->setHidden(true);
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
-        $this->addExample('Set the variable "example" to the string "123"', 'example 123');
-        $this->addExample('Set the variable "example" to the Boolean TRUE', 'example --json true');
-        $this->addExample('Set the variable "example" to a list of values', 'example --json \'["value1", "value2"]\'');
-        $this->addExample('Set the variable "example" to the string "abc", but only at build time', 'example abc --no-visible-runtime');
+        $this->setHelp(
+            'This command is deprecated and will be removed in a future version.'
+            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -76,19 +77,14 @@ class ProjectVariableSetCommand extends CommandBase
         }
 
         // Set the variable to a new value.
-        $result = $selection->getProject()
+        $selection->getProject()
                        ->setVariable($variableName, $variableValue, $json, !$suppressBuild, !$suppressRuntime);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
-        $success = true;
-        if (!$result->countActivities()) {
-            $this->activityService->redeployWarning();
-        } elseif ($this->activityService->shouldWait($input)) {
-            $success = $this->activityService->waitMultiple($result->getActivities(), $selection->getProject());
-        }
+        $this->activityService->redeployWarning();
 
-        return $success ? 0 : 1;
+        return 0;
     }
 
     /**
@@ -98,8 +94,9 @@ class ProjectVariableSetCommand extends CommandBase
      */
     protected function validateJson($string)
     {
-        $null = json_decode($string) === null;
-
-        return !$null || ($null && $string === 'null');
+        if ($string === 'null') {
+            return true;
+        }
+        return \json_decode($string) !== null;
     }
 }

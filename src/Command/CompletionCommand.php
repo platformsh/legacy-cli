@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Selector;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
@@ -164,7 +164,17 @@ class CompletionCommand extends ParentCompletionCommand
                 'service:mongo:restore',
                 'archive',
                 Completion::TYPE_ARGUMENT
-            )
+            ),
+            new Completion\ShellPathCompletion(
+                'integration:add',
+                'file',
+                Completion::TYPE_OPTION
+            ),
+            new Completion\ShellPathCompletion(
+                'integration:update',
+                'file',
+                Completion::TYPE_OPTION
+            ),
         ]);
 
         try {
@@ -215,14 +225,15 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $apps = [];
         if ($projectRoot = $this->selector->getProjectRoot()) {
-            foreach (LocalApplication::getApplications($projectRoot) as $app) {
+            $finder = new ApplicationFinder();
+            foreach ($finder->findApplications($projectRoot) as $app) {
                 $name = $app->getName();
                 if ($name !== null) {
                     $apps[] = $name;
                 }
             }
         } elseif ($project = $this->getProject()) {
-            if ($environment = $this->api->getEnvironment('master', $project, false)) {
+            if ($environment = $this->api->getDefaultEnvironment($project, false)) {
                 $apps = array_keys($environment->getSshUrls());
             }
         }

@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Console\Selection;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
@@ -17,11 +17,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityGetCommand extends CommandBase
+class ActivityGetCommand extends ActivityCommandBase
 {
     protected static $defaultName = 'activity:get';
+    protected static $defaultDescription = 'View detailed information on a single activity';
 
     private $activityService;
+    private $loader;
     private $selector;
     private $table;
     private $formatter;
@@ -30,6 +32,7 @@ class ActivityGetCommand extends CommandBase
 
     public function __construct(
         ActivityService $activityService,
+        ActivityLoader $activityLoader,
         Api $api,
         Config $config,
         PropertyFormatter $formatter,
@@ -37,6 +40,7 @@ class ActivityGetCommand extends CommandBase
         Table $table
     ) {
         $this->activityService = $activityService;
+        $this->loader = $activityLoader;
         $this->api = $api;
         $this->config = $config;
         $this->formatter = $formatter;
@@ -51,10 +55,15 @@ class ActivityGetCommand extends CommandBase
     protected function configure()
     {
         $this->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Filter recent activities by type')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
-            ->setDescription('View detailed information on a single activity');
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
+                'Include only incomplete activities (when selecting a default activity).'
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
@@ -70,19 +79,20 @@ class ActivityGetCommand extends CommandBase
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
+            $apiResource = $selection->getEnvironment();
+        } else {
+            $apiResource = $selection->getProject();
+        }
+
         $id = $input->getArgument('id');
         if ($id) {
             $activity = $selection->getProject()->getActivity($id);
             if (!$activity) {
-                $activity = $this->api->matchPartialId($id, $this->getActivities($selection, $input), 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
-
-                    return 1;
-                }
+                $activity = $this->api->matchPartialId($id, $this->loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
             }
         } else {
-            $activities = $this->getActivities($selection, $input, 1);
+            $activities = $this->loader->loadFromInput($apiResource, $input, 1);
             /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
@@ -96,16 +106,11 @@ class ActivityGetCommand extends CommandBase
 
         if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
             $properties['description'] = $this->activityService->getFormattedDescription($activity, true);
-        } else {
-            $properties['description'] = $this->activityService->getFormattedDescription($activity, false);
-            if ($input->getOption('property')) {
-                $properties['description_html'] = $activity->description;
-            }
         }
 
         // Add the fake "duration" property.
         if (!isset($properties['duration'])) {
-            $properties['duration'] = $this->getDuration($activity);
+            $properties['duration'] = (new \Platformsh\Cli\Model\Activity())->getDuration($activity);
         }
 
         if ($property = $input->getOption('property')) {
@@ -113,11 +118,12 @@ class ActivityGetCommand extends CommandBase
             return 0;
         }
 
+        // The activity "log" property is going to be removed.
         unset($properties['payload'], $properties['log']);
 
         $this->stdErr->writeln(
-            'These properties have been omitted for brevity: <comment>payload</comment> and <comment>log</comment>.'
-            . ' You can still view them with the -P (--property) option.',
+            'The <comment>payload</comment> property has been omitted for brevity.'
+            . ' You can still view it with the -P (--property) option.',
             OutputInterface::VERBOSITY_VERBOSE
         );
 
@@ -145,48 +151,5 @@ class ActivityGetCommand extends CommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * Get activities on the project or environment.
-     *
-     * @param Selection                                       $selection
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param int                                             $limit
-     *
-     * @return \Platformsh\Client\Model\Activity[]
-     */
-    private function getActivities(Selection $selection, InputInterface $input, int $limit = 0): array
-    {
-        if ($selection->hasEnvironment() && !$input->getOption('all')) {
-            return $selection->getEnvironment()
-                ->getActivities($limit, $input->getOption('type'));
-        }
-
-        return $selection->getProject()
-            ->getActivities($limit, $input->getOption('type'));
-    }
-
-    /**
-     * Calculates the duration of an activity, whether complete or not.
-     *
-     * @param \Platformsh\Client\Model\Activity $activity
-     * @param int|null                          $now
-     *
-     * @return int|null
-     */
-    private function getDuration(Activity $activity, ?int $now = null): ?int
-    {
-        if ($activity->isComplete()) {
-            $end = strtotime($activity->completed_at);
-        } elseif (!empty($activity->started_at)) {
-            $now = $now === null ? time() : $now;
-            $end = $now;
-        } else {
-            $end = strtotime($activity->updated_at);
-        }
-        $start = !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
-
-        return $end !== false && $start !== false && $end - $start > 0 ? $end - $start : null;
     }
 }

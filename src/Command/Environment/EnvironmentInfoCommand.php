@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Environment;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityService;
@@ -64,7 +65,8 @@ class EnvironmentInfoCommand extends CommandBase
              ->addExample('Show the date the environment was created', 'created_at')
              ->addExample('Enable email sending', 'enable_smtp true')
              ->addExample('Change the environment title', 'title "New feature"')
-             ->addExample("Change the environment's parent branch", 'parent sprint-2');
+             ->addExample("Change the environment's parent branch", 'parent sprint-2')
+             ->addExample("Unset the environment's parent branch", 'parent -');
         $this->setHiddenAliases(['environment:metadata']);
     }
 
@@ -133,11 +135,18 @@ class EnvironmentInfoCommand extends CommandBase
         if (!$this->validateValue($property, $value, $environment, $project)) {
             return 1;
         }
+
+        // @todo refactor normalizing the value according to the property (this is a mess)
         $type = $this->getType($property);
         if ($type === 'boolean' && $value === 'false') {
             $value = false;
         }
-        settype($value, $type);
+        if ($property === 'parent' && $value === '-') {
+            $value = null;
+        } else {
+            settype($value, $type);
+        }
+
         $currentValue = $environment->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
@@ -148,7 +157,19 @@ class EnvironmentInfoCommand extends CommandBase
 
             return 0;
         }
-        $result = $environment->update([$property => $value]);
+        try {
+            $result = $environment->update([$property => $value]);
+        } catch (BadResponseException $e) {
+            // Translate validation error messages.
+            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+                $detail = \json_decode((string) $body, true);
+                if (\is_array($detail) && !empty($detail['detail'][$property])) {
+                    $this->stdErr->writeln("Invalid value for <error>$property</error>: " . $detail['detail'][$property]);
+                    return 1;
+                }
+            }
+            throw $e;
+        }
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
@@ -182,6 +203,7 @@ class EnvironmentInfoCommand extends CommandBase
             'parent' => 'string',
             'title' => 'string',
             'restrict_robots' => 'boolean',
+            'type' => 'string',
         ];
 
         return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
@@ -207,10 +229,10 @@ class EnvironmentInfoCommand extends CommandBase
         $message = '';
         switch ($property) {
             case 'parent':
-                if ($environment->id === 'master') {
-                    $message = "The master environment cannot have a parent";
-                    $valid = false;
-                } elseif ($value === $environment->id) {
+                if ($value === '-') {
+                    break;
+                }
+                if ($value === $environment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
                 } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $project)) {

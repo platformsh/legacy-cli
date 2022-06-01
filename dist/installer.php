@@ -21,6 +21,7 @@
  *      --max VERSION          Max version to install (not recommended).
  *      --manifest URL         A manifest JSON file URL (use for testing).
  *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
+ *      --insecure             Disable TLS verification (not recommended).
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
@@ -47,26 +48,53 @@ if (!$isCliInclude) {
 }
 
 class Installer {
+    private $envPrefix;
     private $manifestUrl;
     private $configDir;
     private $executable;
     private $cliName;
+    private $userAgent;
     private $pharName;
     private $argv;
 
     public function __construct(array $args = []) {
         $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
 
-        if (getenv('PLATFORMSH_CLI_MANIFEST_URL') !== false) {
-            $this->manifestUrl = getenv('PLATFORMSH_CLI_MANIFEST_URL');
+        // This config is automatically replaced by the self:build command,
+        // to match the values in config.yaml.
+        $config = /* START_CONFIG */array (
+  'envPrefix' => 'PLATFORMSH_CLI_',
+  'manifestUrl' => 'https://platform.sh/cli/manifest.json',
+  'configDir' => '.platformsh',
+  'executable' => 'platform',
+  'cliName' => 'Platform.sh CLI',
+  'userAgent' => 'platformsh-cli',
+)/* END_CONFIG */;
+
+        $required = ['envPrefix', 'manifestUrl', 'configDir', 'executable', 'cliName'];
+        if ($missing = \array_diff($required, \array_keys($config))) {
+            throw new \InvalidArgumentException('Missing required config key(s): ' . \implode(', ', $missing));
+        }
+
+        foreach ($config as $key => $value) {
+            if (\property_exists($this, $key)) {
+                $this->{$key} = $value;
+            }
+        }
+
+        if (getenv($this->envPrefix . 'MANIFEST_URL') !== false) {
+            $this->manifestUrl = getenv($this->envPrefix . 'MANIFEST_URL');
         } elseif ($manifestOption = $this->getOption('manifest')) {
             $this->manifestUrl = $manifestOption;
-        } else {
-            $this->manifestUrl = 'https://platform.sh/cli/manifest.json';
         }
-        $this->configDir = '.platformsh';
-        $this->executable = 'platform';
-        $this->cliName = 'Platform.sh CLI';
+
+        $this->userAgent = sprintf(
+            '%s-installer (%s; %s; PHP %s)',
+            $this->userAgent ?: 'cli',
+            php_uname('s'),
+            php_uname('r'),
+            PHP_VERSION
+        );
         $this->pharName = $this->executable . '.phar';
     }
 
@@ -83,23 +111,9 @@ class Installer {
         // Run environment checks.
         $this->output(PHP_EOL . "Environment check", 'heading');
 
-        // Check that the JSON extension is installed (needed in this script).
-        $this->check(
-            'The "json" PHP extension is installed.',
-            'The "json" PHP extension is required.',
-            function () {
-                return extension_loaded('json');
-            }
-        );
-
-        // Check that the Phar extension is installed (needed in this script).
-        $this->check(
-            'The "phar" PHP extension is installed.',
-            'The "phar" PHP extension is required.',
-            function () {
-                return extension_loaded('phar');
-            }
-        );
+        // Check that the JSON and Phar extensions are installed (needed in this script).
+        $this->checkExtension('json');
+        $this->checkExtension('phar');
 
         // Check that Git is installed.
         $this->check(
@@ -117,19 +131,18 @@ class Installer {
             false
         );
 
-        $required_extensions = [
-            'openssl',
-            'pcre',
-        ];
-        foreach ($required_extensions as $extension) {
-            $this->check(
-                'The "' . $extension . '" PHP extension is installed.',
-                'The "' . $extension . '" PHP extension is required.',
-                function () use ($extension) {
-                    return extension_loaded($extension);
-                }
-            );
-        }
+        // Check other required extensions.
+        $this->checkExtension('openssl');
+        $this->checkExtension('pcre');
+
+        // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
+        $this->check(
+            'One or both of the "mbstring" or "iconv" PHP extensions is installed.',
+            'One or both of the "mbstring" or "iconv" PHP extensions is required.',
+            function () {
+                return \extension_loaded('mbstring') || \extension_loaded('iconv');
+            }
+        );
 
         $this->check(
             'The "curl" PHP extension is installed.',
@@ -159,11 +172,11 @@ class Installer {
                 'The "phar" stream wrapper is allowed by Suhosin.',
                 'The "phar" stream wrapper is blocked by Suhosin.',
                 function () {
-                    $white = ini_get('suhosin.executor.include.whitelist');
-                    $black = ini_get('suhosin.executor.include.blacklist');
+                    $allowed = ini_get('suhosin.executor.include.whitelist');
+                    $blocked = ini_get('suhosin.executor.include.blacklist');
 
-                    if ((false === stripos($white, 'phar'))
-                        || (false !== stripos($black, 'phar'))
+                    if ((false === stripos($allowed, 'phar'))
+                        || (false !== stripos($blocked, 'phar'))
                     ) {
                         return false;
                     }
@@ -208,8 +221,13 @@ class Installer {
                 $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
             }
 
-            if (!file_put_contents($this->pharName, file_get_contents($url))) {
+            $opts = $this->getStreamContextOpts(300);
+            $contents = \file_get_contents($this->getAuthenticatedRedirect($url), false, \stream_context_create($opts));
+            if ($contents === false) {
                 return TaskResult::failure('The download failed');
+            }
+            if (!file_put_contents($this->pharName, $contents)) {
+                return TaskResult::failure('Failed to write to file: ' . $this->pharName);
             }
 
             return TaskResult::success();
@@ -251,12 +269,12 @@ class Installer {
 
         if ($homeDir = $this->getHomeDirectory()) {
             $pharPath = $this->performTask('Moving the Phar to your home directory', function () use ($pharPath, $homeDir) {
-                $binDir = $homeDir . '/' . $this->configDir . '/bin';
+                $binDir = $homeDir . DIRECTORY_SEPARATOR . $this->configDir . DIRECTORY_SEPARATOR . 'bin';
                 if (!is_dir($binDir) && !mkdir($binDir, 0700, true)) {
                     return TaskResult::failure('Failed to create directory: ' . $binDir);
                 }
 
-                $destination = $binDir . '/' . $this->executable;
+                $destination = $binDir . DIRECTORY_SEPARATOR . $this->executable;
                 if (!rename($pharPath, $destination)) {
                     return TaskResult::failure('Failed to move the Phar to: ' . $destination);
                 }
@@ -273,6 +291,48 @@ class Installer {
     }
 
     /**
+     * Checks if a required PHP extension is installed.
+     *
+     * This attempts to give configuration advice if the extension exists but
+     * is not yet enabled.
+     *
+     * @param string $extension
+     */
+    private function checkExtension($extension) {
+        if (\extension_loaded($extension)) {
+            $this->output('  [*] The "' . $extension . '" PHP extension is installed.', 'success');
+            return;
+        }
+        $this->output('  [X] The ' . $extension . ' PHP extension is required.', 'error');
+        $extFilename = DIRECTORY_SEPARATOR === '\\' ? 'php_' . $extension . '.dll' : $extension . '.so';
+        $extDirs = [
+            PHP_EXTENSION_DIR,
+            dirname(PHP_BINARY) . DIRECTORY_SEPARATOR . 'ext',
+        ];
+        foreach ($extDirs as $dir) {
+            $extPath = $dir . DIRECTORY_SEPARATOR . $extFilename;
+            if (!\file_exists($extPath)) {
+                continue;
+            }
+            $this->output("The extension already exists at: $extPath");
+            if (!empty(PHP_CONFIG_FILE_SCAN_DIR) && \is_dir(PHP_CONFIG_FILE_SCAN_DIR)) {
+                $this->output(
+                    "\nTo enable it, create a file named: " . PHP_CONFIG_FILE_SCAN_DIR . DIRECTORY_SEPARATOR . "$extension.ini"
+                    . "\ncontaining this line:"
+                    . "\nextension=$extPath"
+                );
+            } else {
+                $this->output(
+                    "\nTo enable it, edit your php.ini configuration file and add the line:"
+                    . "\nextension=$extPath"
+                );
+            }
+            break;
+        }
+        exit(1);
+    }
+
+    /**
      * Runs the 'self:install' command.
      *
      * @param string $pharPath The path of the Phar executable.
@@ -286,7 +346,7 @@ class Installer {
         }
         putenv('CLICOLOR_FORCE=' . ($this->terminalSupportsAnsi() ? '1' : '0'));
 
-        return $this->runCommand($command);
+        return $this->runCommand($command, true);
     }
 
     /**
@@ -297,7 +357,7 @@ class Installer {
      * @return TaskResult
      */
     private function findLatestVersion($manifestUrl) {
-        $manifest = file_get_contents($manifestUrl);
+        $manifest = file_get_contents($manifestUrl, false, \stream_context_create($this->getStreamContextOpts(15)));
         if ($manifest === false) {
             return TaskResult::failure('Failed to download manifest file: ' . $manifestUrl);
         }
@@ -351,11 +411,14 @@ class Installer {
     }
 
     /**
-     * @param string $cmd
+     * Runs a shell command.
      *
-     * @return int
+     * @param string $cmd
+     * @param bool $forceStdout Whether to redirect all stderr output to stdout.
+     *
+     * @return int The command's exit code.
      */
-    private function runCommand($cmd) {
+    private function runCommand($cmd, $forceStdout = false) {
         /*
          * Set up the STDIN, STDOUT and STDERR constants.
          *
@@ -374,7 +437,7 @@ class Installer {
             define('STDERR', fopen('php://stderr', 'w'));
         }
 
-        $process = proc_open($cmd, [STDIN, STDOUT, STDERR], $pipes);
+        $process = proc_open($cmd, [STDIN, STDOUT, $forceStdout ? STDOUT : STDERR], $pipes);
 
         return proc_close($process);
     }
@@ -448,11 +511,9 @@ class Installer {
      * @return string
      */
     private function getOption($name) {
-        $value = '';
         foreach ($this->argv as $key => $arg) {
             if (strpos($arg, '--' . $name . '=') === 0) {
-                $value = substr($arg, strlen('--' . $name . '='));
-                break;
+                return substr($arg, strlen('--' . $name . '='));
             }
             $next = isset($this->argv[$key + 1]) && substr($this->argv[$key + 1], 0, 1) !== '-'
                 ? $this->argv[$key + 1]
@@ -461,12 +522,11 @@ class Installer {
                 if ($next === '') {
                     throw new \InvalidArgumentException('Option --' . $name . ' requires a value');
                 }
-                $value = $next;
-                break;
+                return $next;
             }
         }
 
-        return $value;
+        return '';
     }
 
     /**
@@ -505,17 +565,234 @@ class Installer {
      *   The user's home directory as an absolute path, or false on failure.
      */
     private function getHomeDirectory() {
-        if ($home = getenv('HOME')) {
-            return $home;
+        $vars = [$this->envPrefix . 'HOME', 'HOME', 'USERPROFILE'];
+        foreach ($vars as $var) {
+            if ($home = getenv($var)) {
+                return realpath($home) ?: $home;
+            }
         }
-        elseif ($userProfile = getenv('USERPROFILE')) {
-            return $userProfile;
-        }
-        elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+        if (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
             return $_SERVER['HOMEDRIVE'] . $_SERVER['HOMEPATH'];
         }
 
         return false;
+    }
+
+    /**
+     * Constructs stream context options for downloading files.
+     *
+     * @param int $timeout
+     *
+     * @return array
+     */
+    private function getStreamContextOpts($timeout) {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'follow_location' => 1,
+                'timeout' => $timeout,
+                'user_agent' => $this->userAgent,
+            ],
+        ];
+        if ($proxy = $this->getProxy()) {
+            $opts['http']['proxy'] = str_replace(['http://', 'https://'], ['tcp://', 'ssl://'], $proxy);
+        }
+        if ($this->flagEnabled('insecure')) {
+            $opts['ssl']['verify_peer'] = false;
+            $opts['ssl']['verify_peer_name'] = false;
+        } elseif ($path = $this->getCaBundle()) {
+            if (\is_dir($path)) {
+                $opts['ssl']['capath'] = $path;
+            } else {
+                $opts['ssl']['cafile'] = $path;
+            }
+        }
+
+        return $opts;
+    }
+
+    /**
+     * Returns the path to the system CA bundle, if found.
+     *
+     * Adapted from composer/ca-bundle.
+     * @link https://github.com/composer/ca-bundle
+     * @see \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath()
+     *
+     * @return string|false
+     */
+    private function getCaBundle() {
+        static $path;
+        if (isset($path)) {
+            return $path;
+        }
+
+        $caBundlePaths = [];
+
+        $caBundlePaths[] = \getenv('SSL_CERT_FILE');
+        $caBundlePaths[] = \getenv('SSL_CERT_DIR');
+
+        $caBundlePaths[] = \ini_get('openssl.cafile');
+        $caBundlePaths[] = \ini_get('openssl.capath');
+
+        $otherLocations = [
+            '/etc/pki/tls/certs/ca-bundle.crt', // Fedora, RHEL, CentOS (ca-certificates package)
+            '/etc/ssl/certs/ca-certificates.crt', // Debian, Ubuntu, Gentoo, Arch Linux (ca-certificates package)
+            '/etc/ssl/ca-bundle.pem', // SUSE, openSUSE (ca-certificates package)
+            '/usr/local/share/certs/ca-root-nss.crt', // FreeBSD (ca_root_nss_package)
+            '/usr/ssl/certs/ca-bundle.crt', // Cygwin
+            '/opt/local/share/curl/curl-ca-bundle.crt', // OS X macports, curl-ca-bundle package
+            '/usr/local/share/curl/curl-ca-bundle.crt', // Default cURL CA bunde path (without --with-ca-bundle option)
+            '/usr/share/ssl/certs/ca-bundle.crt', // Really old RedHat?
+            '/etc/ssl/cert.pem', // OpenBSD
+            '/usr/local/etc/ssl/cert.pem', // FreeBSD 10.x
+            '/usr/local/etc/openssl/cert.pem', // OS X homebrew, openssl package
+            '/usr/local/etc/openssl@1.1/cert.pem', // OS X homebrew, openssl@1.1 package
+        ];
+
+        foreach ($otherLocations as $location) {
+            $otherLocations[] = \dirname($location);
+        }
+
+        $caBundlePaths = \array_filter(\array_merge($caBundlePaths, $otherLocations));
+
+        foreach ($caBundlePaths as $candidate) {
+            if ($this->caPathUsable($candidate)) {
+                return $path = $candidate;
+            }
+        }
+
+        return $path = false;
+    }
+
+    /**
+     * Returns if a CA bundle path should be used.
+     *
+     * Adapted from composer/ca-bundle.
+     * @link https://github.com/composer/ca-bundle
+     * @see \Composer\CaBundle\CaBundle::caFileUsable()
+     * @see \Composer\CaBundle\CaBundle::caDirUsable()
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    private function caPathUsable($path)
+    {
+        if (!\is_readable($path)) {
+            return false;
+        }
+        if (\is_file($path)) {
+            // Avoid openssl_x509_parse() on old PHP versions (CVE-2013-6420).
+            if (\function_exists('\\openssl_x509_parse') && PHP_VERSION_ID >= 50600) {
+                $contents = \file_get_contents($path);
+                if (!$contents || \strlen($contents) === 0) {
+                    return false;
+                }
+                $contents = \str_replace('TRUSTED CERTIFICATE', 'CERTIFICATE', $contents);
+                return $contents !== false && \openssl_x509_parse($contents);
+            }
+            return false;
+        }
+        if (\is_dir($path)) {
+            return (bool) \glob($path . '/*');
+        }
+        return false;
+    }
+
+    /**
+     * If possible, this converts a URL to an authenticated redirect.
+     *
+     * This only affects GitHub for now.
+     *
+     * @param string $url
+     *
+     * @return string
+     *   An authenticated redirection URL, if possible. Otherwise the original URL is returned.
+     */
+    private function getAuthenticatedRedirect($url) {
+        if (\strpos($url, '//github.com') === false) {
+            return $url;
+        }
+        $headers = $this->authHeaders($url);
+        if (!$headers) {
+            return $url;
+        }
+        $opts = $this->getStreamContextOpts(300);
+        $opts['http']['header'] = implode("\r\n", $headers);
+        $opts['http']['follow_location'] = 0;
+        $opts['http']['ignore_errors'] = true;
+        \file_get_contents($url, false, \stream_context_create($opts));
+        // Check for a 301 or 302 response.
+        $headers = isset($http_response_header) ? $http_response_header : [];
+        if (isset($headers[0]) && \strpos($headers[0], ' 30') !== false) {
+            foreach ($headers as $header) {
+                // Read the Location header.
+                if (\stripos($header, 'Location: ') === 0) {
+                    return \trim(\substr($header, 10));
+                }
+            }
+        }
+        return $url;
+    }
+
+    /**
+     * Generates authentication headers based on the request URL.
+     *
+     * At the moment this just supports github.com.
+     *
+     * @param string $url
+     *
+     * @return string[]
+     */
+    private function authHeaders($url) {
+        $host = \parse_url($url, PHP_URL_HOST);
+
+        if ($host === 'github.com') {
+            // Use the GITHUB_TOKEN in the environment, if available.
+            if ($token = \getenv('GITHUB_TOKEN')) {
+                return ['Authorization: token ' . $token];
+            }
+
+            // Use COMPOSER_AUTH and decode it.
+            // See https://getcomposer.org/doc/06-config.md#github-oauth
+            if (($composer_auth = \getenv('COMPOSER_AUTH'))
+                && ($json = \json_decode($composer_auth, true)) !== null
+                && !empty($json['github-oauth'][$host])) {
+                return ['Authorization: token ' . $json['github-oauth'][$host]];
+            }
+
+            // Read the local GitHub token from the project container.
+            // The token allows for higher rate limits but is otherwise unprivileged.
+            if (\getenv('HOME') !== false) {
+                $authFilename = \getenv('HOME') . '/.global/auth.json';
+                if (\is_readable($authFilename)
+                    && ($contents = \file_get_contents($authFilename)) !== false
+                    && ($json = \json_decode($authFilename, true)) !== null
+                    && !empty($json['github-oauth'][$host])) {
+                    return ['Authorization: token ' . $json['github-oauth'][$host]];
+                }
+            }
+        }
+        return [];
+    }
+
+    /**
+     * Finds a proxy address based on the https_proxy or http_proxy environment variable.
+     *
+     * @return string|null
+     */
+    private function getProxy() {
+        // The proxy variables should be ignored in a non-CLI context.
+        // This check has probably already been run, but it's important.
+        if (PHP_SAPI !== 'cli') {
+            return null;
+        }
+        foreach (['https', 'http'] as $scheme) {
+            if ($proxy = getenv($scheme . '_proxy')) {
+                return $proxy;
+            }
+        }
+        return null;
     }
 }
 

@@ -11,6 +11,7 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Util\VersionUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -46,7 +47,7 @@ class SelfReleaseCommand extends CommandBase
     protected function configure()
     {
         $defaultRepo = $this->config->getWithDefault('application.github_repo', null);
-        $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'master');
+        $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'main');
 
         $this->setDescription('Build and release a new version')
             ->addArgument('version', InputArgument::OPTIONAL, 'The new version number')
@@ -80,7 +81,6 @@ class SelfReleaseCommand extends CommandBase
         $releaseBranch = $input->getOption('release-branch');
         if ($this->git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
             $this->stdErr->writeln('You must be on the ' . $releaseBranch . ' branch to make a release.');
-            $this->stdErr->writeln('Check out master, or use the --release-branch option to override this.');
 
             return 1;
         }
@@ -102,7 +102,13 @@ class SelfReleaseCommand extends CommandBase
         if (getenv('GITHUB_TOKEN')) {
             $gitHubToken = getenv('GITHUB_TOKEN');
         } else {
-            $this->stdErr->writeln('The GITHUB_TOKEN environment variable must be set');
+            $this->stdErr->writeln('The GITHUB_TOKEN environment variable must be set.');
+            $this->stdErr->writeln(
+                "\nIf you have the GitHub CLI installed (gh, https://github.com/cli/cli), and if you're signed in, you can set the token by running:"
+            );
+            $this->stdErr->writeln(
+                "  export GITHUB_TOKEN=$(gh auth status --show-token 2>&1 | grep Token: | cut -d' ' -f5)"
+            );
 
             return 1;
         }
@@ -140,6 +146,8 @@ class SelfReleaseCommand extends CommandBase
             return $next;
         };
 
+        $versionUtil = new VersionUtil();
+
         $newVersion = $input->getArgument('version');
         if ($newVersion !== null) {
             $validateNewVersion($newVersion);
@@ -153,20 +161,10 @@ class SelfReleaseCommand extends CommandBase
             // Find a good default new version number.
             $default = null;
             $autoComplete = [];
-            if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+(\-.+)?$/', $lastVersion)) {
-                $nextPatch = preg_replace_callback('/^([0-9]+\.[0-9]+\.)([0-9]+)(\-[a-z]+)?.*$/', function (array $matches): string {
-                    return $matches[1] . ($matches[2] + 1) . $matches[3];
-                }, $lastVersion);
-                $nextMinor = preg_replace_callback('/^([0-9]+\.)([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches): string {
-                    return $matches[1] . ($matches[2] + 1) . '.0' . $matches[3];
-                }, $lastVersion);
-                $nextMajor = preg_replace_callback('/^([0-9]+)\.[^\-]+(\-[a-z]+)?.*$/', function (array $matches): string {
-                    return ($matches[1] + 1) . '.0.0' . $matches[2];
-                }, $lastVersion);
-                $default = $nextPatch;
-                $autoComplete = [$nextPatch, $nextMinor, $nextMajor];
+            if ($nextVersions = $versionUtil->nextVersions($lastVersion)) {
+                $default = reset($nextVersions);
+                $autoComplete = $nextVersions;
             }
-
             $newVersion = $this->questionHelper->askInput('New version number', $default, $autoComplete, $validateNewVersion);
         }
 
@@ -224,7 +222,7 @@ class SelfReleaseCommand extends CommandBase
             if ($latestItem === null || version_compare($item['version'], $latestItem['version'], '>')) {
                 $latestItem = &$manifest[$key];
             }
-            if ($this->majorVersion($item['version']) === $this->majorVersion($newVersion)) {
+            if ($versionUtil->majorVersion($item['version']) === $versionUtil->majorVersion($newVersion)) {
                 if ($latestSameMajorItem || version_compare($item['version'], $latestSameMajorItem['version'], '>')) {
                     $latestSameMajorItem = &$manifest[$key];
                 }
@@ -252,10 +250,10 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Confirm the release changelog.
-        $changelog = $this->getReleaseChangelog($lastTag);
+        list($changelogFilename, $changelog) = $this->getReleaseChangelog($lastTag, $tagName);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         if (!$this->questionHelper->confirm($questionText)) {
-            $this->stdErr->writeln('Update or delete the file <comment>' . CLI_ROOT . '/release-changelog.md</comment> and re-run this command.');
+            $this->stdErr->writeln('Update or delete the file <comment>' . $changelogFilename . '</comment> and re-run this command.');
 
             return 1;
         }
@@ -304,11 +302,9 @@ class SelfReleaseCommand extends CommandBase
         $manifestItem['url'] = $download_url;
         $manifestItem['php']['min'] = '7.1.3';
         if (!empty($changelog)) {
-            $manifestItem['updating'][] = [
-                'notes' => $changelog,
-                'show from' => $lastVersion,
-                'hide from' => $newVersion,
-            ];
+            // This is the newer release notes format.
+            $manifestItem['notes'][$newVersion] = $changelog;
+
             $this->stdErr->writeln('<info>Changes:</info>');
             $this->stdErr->writeln($changelog);
             $this->stdErr->writeln('');
@@ -371,7 +367,7 @@ class SelfReleaseCommand extends CommandBase
                 'name' => $tagName,
                 'body' => $releaseDescription,
                 'draft' => true,
-                'prerelease' => $this->isPreRelease($newVersion),
+                'prerelease' => $versionUtil->isPreRelease($newVersion),
             ],
             'debug' => $output->isDebug(),
         ]);
@@ -415,12 +411,13 @@ class SelfReleaseCommand extends CommandBase
 
     /**
      * @param string $lastVersionTag The tag corresponding to the last version.
+     * @param string $newVersionTag The tag corresponding to the new version being released.
      *
-     * @return string
+     * @return string[] The filename and the current changelog.
      */
-    private function getReleaseChangelog(string $lastVersionTag): string
+    private function getReleaseChangelog($lastVersionTag, $newVersionTag)
     {
-        $filename = CLI_ROOT . '/release-changelog.md';
+        $filename = CLI_ROOT . '/release-changelog-' . $newVersionTag . '.md';
         if (file_exists($filename)) {
             $mTime = filemtime($filename);
             $lastVersionDate = $this->getTagDate($lastVersionTag);
@@ -437,7 +434,7 @@ class SelfReleaseCommand extends CommandBase
             (new Filesystem())->dumpFile($filename, $changelog);
         }
 
-        return $changelog;
+        return [$filename, $changelog];
     }
 
     /**
@@ -504,36 +501,5 @@ class SelfReleaseCommand extends CommandBase
         $changelog = trim($changelog);
 
         return $changelog;
-    }
-
-    /**
-     * Check if a version number is for a pre-release version.
-     *
-     * @param string $version
-     *
-     * @return bool
-     */
-    private function isPreRelease(string $version): bool
-    {
-        return preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?\-.+/', $version) === 1;
-    }
-
-    /**
-     * @param string $version
-     *
-     * @return int
-     */
-    private function majorVersion($version)
-    {
-        if ($dotPos = strpos($version, '.', 1)) {
-            $major = substr($version, 0, $dotPos);
-            if (is_numeric($major)) {
-                return (int) $major;
-            }
-        } elseif (is_numeric($version)) {
-            return (int) $version;
-        }
-
-        throw new \RuntimeException('Failed to find major version for: ' . $version);
     }
 }
