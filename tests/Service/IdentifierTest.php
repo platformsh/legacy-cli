@@ -13,7 +13,7 @@ class IdentifierTest extends TestCase
     /** @var Identifier */
     private $identifier;
 
-    public function setUp()
+    public function setUp(): void
     {
         $container = Container::instance();
         $this->identifier = $container->get(Identifier::class);

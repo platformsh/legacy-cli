@@ -13,13 +13,13 @@ class CredentialHelperTest extends TestCase
     private $manager;
     private $storage;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->manager = new Manager(new Config());
         $this->storage = new SessionStorage($this->manager, 'CLI Test');
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $this->storage->deleteAll();
     }

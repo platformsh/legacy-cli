@@ -31,7 +31,7 @@ class DrushServiceTest extends TestCase
     /**
      * @{inheritdoc}
      */
-    public function setUp()
+    public function setUp(): void
     {
         $config = (new Config())->withOverrides(['service.app_config_file' => '_platform.app.yaml']);
         $this->drush = new Drush($config);

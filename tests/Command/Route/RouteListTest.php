@@ -12,7 +12,7 @@ class RouteListTest extends TestCase
 {
     private $mockRoutes;
 
-    public function setUp() {
+    public function setUp(): void {
         $this->mockRoutes = base64_encode(json_encode([
             'http://example.com' => [
                 'type' => 'redirect',

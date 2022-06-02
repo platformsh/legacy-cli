@@ -37,7 +37,7 @@ abstract class BaseBuildFlavorTest extends TestCase
     /**
      * {@inheritdoc}
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         $container = Container::instance();
         self::$container = $container;
@@ -48,7 +48,7 @@ abstract class BaseBuildFlavorTest extends TestCase
     /**
      * {@inheritdoc}
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->builder = self::$container->get(LocalBuild::class);
         $this->tempDirSetUp();

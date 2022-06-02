@@ -21,11 +21,11 @@ class WelcomeCommandTest extends TestCase
                 'PLATFORMSH_CLI_SESSION_ID' => 'test' . rand(100, 999),
             ]);
 
-        $this->assertContains(
+        $this->assertStringContainsString(
             'Project ID: test-project',
             $result->getErrorOutput()
         );
-        $this->assertContains(
+        $this->assertStringContainsString(
             'Local environment commands',
             $result->getErrorOutput()
         );

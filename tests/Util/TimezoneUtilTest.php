@@ -12,7 +12,7 @@ class TimezoneUtilTest extends TestCase
     private $originalIni;
     private $originalEnv;
 
-    public function setUp()
+    public function setUp(): void
     {
         // Reset to PHP defaults.
         $this->originalIni = ini_get('date.timezone');
@@ -23,7 +23,7 @@ class TimezoneUtilTest extends TestCase
         putenv('TZ=');
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         // Reset to original settings.
         ini_set('date.timezone', $this->originalIni);

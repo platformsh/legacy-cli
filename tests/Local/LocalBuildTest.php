@@ -12,7 +12,7 @@ class LocalBuildTest extends TestCase
 {
     private $localBuild;
 
-    public function setUp() {
+    public function setUp(): void {
         $container = Container::instance();
         /** @var \Platformsh\Cli\Local\LocalBuild localBuild */
         $this->localBuild = $container->get(LocalBuild::class);

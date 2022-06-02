@@ -28,7 +28,7 @@ class GitServiceTest extends TestCase
      *
      * @throws \Exception
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->tempDirSetUp();
         $repository = $this->getRepositoryDir();

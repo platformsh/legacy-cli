@@ -12,7 +12,7 @@ class RouteGetTest extends TestCase
 {
     private $mockRoutes;
 
-    public function setUp() {
+    public function setUp(): void {
         $this->mockRoutes = base64_encode(json_encode([
             'https://example.com' => [
                 'primary' => true,

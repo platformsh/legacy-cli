@@ -9,7 +9,7 @@ use Platformsh\Cli\Tests\Container;
 class SshDiagnosticsTest extends TestCase {
     private $sd;
 
-    public function setUp() {
+    public function setUp(): void {
         $container = Container::instance();
         /** @var SshDiagnostics $this->sd */
         $this->sd = $container->get(SshDiagnostics::class);

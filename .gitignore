@@ -5,3 +5,4 @@
 /release-changelog*.md
 /config/cache
 /local-php-security-checker
+/.phpunit.result.cache
