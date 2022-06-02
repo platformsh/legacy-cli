@@ -63,11 +63,8 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
-
         $outputFilename = $input->getOption('output');
-        if ($outputFilename && !$fs->canWrite($outputFilename)) {
+        if ($outputFilename && !$this->filesystem->canWrite($outputFilename)) {
             $this->stdErr->writeln("Not writable: <error>$outputFilename</error>");
             return 1;
         }
@@ -218,12 +215,12 @@ class SelfBuildCommand extends CommandBase
             return false;
         }
         $newConfig = \var_export([
-            'envPrefix' => $this->config()->get('application.env_prefix'),
-            'manifestUrl' => $this->config()->get('application.manifest_url'),
-            'configDir' => $this->config()->get('application.user_config_dir'),
-            'executable' => $this->config()->get('application.executable'),
-            'cliName' => $this->config()->get('application.name'),
-            'userAgent' => $this->config()->get('application.slug'),
+            'envPrefix' => $this->config->get('application.env_prefix'),
+            'manifestUrl' => $this->config->get('application.manifest_url'),
+            'configDir' => $this->config->get('application.user_config_dir'),
+            'executable' => $this->config->get('application.executable'),
+            'cliName' => $this->config->get('application.name'),
+            'userAgent' => $this->config->get('application.slug'),
         ], true);
         $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
         if ($newContents !== $installerContents) {
