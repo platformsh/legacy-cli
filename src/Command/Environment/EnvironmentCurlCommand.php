@@ -3,37 +3,38 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentCurlCommand extends CommandBase
 {
+    protected static $defaultName = 'environment:curl';
+    protected static $defaultDescription = "Run a cURL request on an environment's API";
+
     protected $hiddenInList = true;
+
+    private $curl;
+    private $selector;
+
+    public function __construct(CurlCli $curlCli, Selector $selector) {
+        $this->curl = $curlCli;
+        $this->selector = $selector;
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('environment:curl')
-            ->setDescription("Run an authenticated cURL request on an environment's API");
-
-        CurlCli::configureInput($this->getDefinition());
-
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->curl->configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input);
+        $url = $selection->getEnvironment()->getUri();
 
-        // Initialize the API service so that it gets CommandBase's event listeners
-        // (allowing for auto login).
-        $this->api();
-
-        $url = $this->getSelectedEnvironment()->getUri();
-
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
-
-        return $curl->run($url, $input, $output);
+        return $this->curl->run($url, $input, $output);
     }
 }

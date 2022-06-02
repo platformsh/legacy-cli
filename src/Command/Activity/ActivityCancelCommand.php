@@ -4,9 +4,12 @@ namespace Platformsh\Cli\Command\Activity;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityLoader;
-use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,51 +18,71 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityCancelCommand extends ActivityCommandBase
 {
+    protected static $defaultName = 'activity:cancel';
+    protected static $defaultDescription = 'Cancel an activity';
+
+    private $activityService;
+    private $api;
+    private $config;
+    private $formatter;
+    private $loader;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(
+        ActivityLoader $loader,
+        ActivityService $activityService,
+        Api $api,
+        Config $config,
+        PropertyFormatter $formatter,
+        QuestionHelper $questionHelper,
+        Selector $selector
+    )
+    {
+        $this->activityService = $activityService;
+        $this->api = $api;
+        $this->config = $config;
+        $this->loader = $loader;
+        $this->formatter = $formatter;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct();
+    }
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
         $this
-            ->setName('activity:cancel')
-            ->setDescription('Cancel an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent cancellable activity.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 
-        /** @var ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $executable = $this->config->get('application.executable');
 
-        $executable = $this->config()->get('application.executable');
-
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-            $apiResource = $this->getSelectedEnvironment();
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
+            $apiResource = $selection->getEnvironment();
         } else {
-            $apiResource = $this->getSelectedProject();
+            $apiResource = $selection->getProject();
         }
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $this->getSelectedProject()
-                ->getActivity($id);
+            $activity = $selection->getProject()->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
-
-                    return 1;
-                }
+                $activity = $this->api->matchPartialId($id, $this->loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
             }
         } else {
-            $activities = $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
+            $activities = $this->loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
             $activities = \array_filter($activities, function (Activity $activity) {
                 return $activity->operationAvailable('cancel');
             });
@@ -72,29 +95,25 @@ class ActivityCancelCommand extends ActivityCommandBase
                 return 1;
             }
             $choices = [];
-            /** @var QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
             $byId = [];
-            $this->api()->sortResources($activities, 'created_at');
+            $this->api->sortResources($activities, 'created_at');
             foreach ($activities as $activity) {
                 $byId[$activity->id] = $activity;
                 $choices[$activity->id] = \sprintf(
                     '%s: %s (%s)',
-                    $formatter->formatDate($activity->created_at),
-                    ActivityMonitor::getFormattedDescription($activity),
-                    ActivityMonitor::formatState($activity->state)
+                    $this->formatter->formatDate($activity->created_at),
+                    $this->activityService->getFormattedDescription($activity),
+                    $this->activityService->formatState($activity->state)
                 );
             }
-            $id = $questionHelper->choose($choices, 'Enter a number to choose an activity to cancel:', key($choices), true);
+            $id = $this->questionHelper->choose($choices, 'Enter a number to choose an activity to cancel:', key($choices), true);
             $activity = $byId[$id];
         }
 
         $this->stdErr->writeln(sprintf(
             'Cancelling the activity <info>%s</info> (%s)...',
             $activity->id,
-            ActivityMonitor::getFormattedDescription($activity)
+            $this->activityService->getFormattedDescription($activity)
         ));
 
         try {

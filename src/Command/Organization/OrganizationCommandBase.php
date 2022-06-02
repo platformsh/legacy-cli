@@ -3,26 +3,25 @@
 namespace Platformsh\Cli\Command\Organization;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\Model\Organization\Member;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Input\InputInterface;
 
 class OrganizationCommandBase extends CommandBase
 {
+
+    private $config;
+
+    public function __construct(Config $config) {
+        $this->config = $config;
+        parent::__construct();
+    }
+
     public function isEnabled()
     {
-        if (!$this->config()->getWithDefault('api.organizations', false)) {
+        if (!$this->config->getWithDefault('api.organizations', false)) {
             return false;
         }
         return parent::isEnabled();
-    }
-
-    protected function memberLabel(Member $member)
-    {
-        if ($info = $member->getUserInfo()) {
-            return $info->email;
-        }
-
-        return $member->id;
     }
 
     /**
@@ -38,10 +37,10 @@ class OrganizationCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function otherCommandExample(InputInterface $input, $commandName, $otherArgs = '')
+    protected function otherCommandExample(InputInterface $input, string $commandName, string $otherArgs = ''): string
     {
         $args = [
-            $this->config()->get('application.executable'),
+            $this->config->get('application.executable'),
             $commandName,
         ];
         if ($input->hasOption('org') && $input->getOption('org')) {
@@ -51,51 +50,5 @@ class OrganizationCommandBase extends CommandBase
             $args[] = $otherArgs;
         }
         return \implode(' ', $args);
-    }
-
-    /**
-     * Returns a list of countries, keyed by 2-letter country code.
-     *
-     * @return array
-     */
-    protected function countryList()
-    {
-        static $data;
-        if (isset($data)) {
-            return $data;
-        }
-        $filename = CLI_ROOT . '/resources/cldr/countries.json';
-        $data = \json_decode((string) \file_get_contents($filename), true);
-        if (!$data) {
-            throw new \RuntimeException('Failed to read CLDR file: ' . $filename);
-        }
-        return $data;
-    }
-
-    /**
-     * Normalizes a given country, transforming it into a country code, if possible.
-     *
-     * @param string $country
-     *
-     * @return string
-     */
-    protected function normalizeCountryCode($country)
-    {
-        $countryList = $this->countryList();
-        if (isset($countryList[$country])) {
-            return $country;
-        }
-        // Exact match.
-        if (($code = \array_search($country, $countryList)) !== false) {
-            return $code;
-        }
-        // Case-insensitive match.
-        $lower = \strtolower($country);
-        foreach ($countryList as $code => $name) {
-            if ($lower === \strtolower($name) || $lower === \strtolower($code)) {
-                return $code;
-            }
-        }
-        return $country;
     }
 }

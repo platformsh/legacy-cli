@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectCurlCommand extends CommandBase
 {
     protected static $defaultName = 'project:curl';
+    protected static $defaultDescription = "Run a cURL request on a project's API";
 
     private $curl;
     private $selector;
@@ -24,9 +25,6 @@ class ProjectCurlCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('project:curl')
-            ->setDescription("Run a cURL request on a project's API");
-
         $this->curl->configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
 

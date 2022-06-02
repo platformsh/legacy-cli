@@ -17,14 +17,16 @@ class SshConfig {
     private $sshKey;
     private $certifier;
     private $openSshVersion;
+    private $questionHelper;
 
-    public function __construct(Config $config, Filesystem $fs, OutputInterface $output, SshKey $sshKey, Certifier $certifier)
+    public function __construct(Config $config, Filesystem $fs, OutputInterface $output, SshKey $sshKey, Certifier $certifier, QuestionHelper $questionHelper)
     {
         $this->config = $config;
         $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $this->sshKey = $sshKey;
         $this->certifier = $certifier;
+        $this->questionHelper = $questionHelper;
     }
 
     /**
@@ -187,11 +189,9 @@ class SshConfig {
     /**
      * Adds configuration to the user's global SSH config file (~/.ssh/config).
      *
-     * @param QuestionHelper $questionHelper
-     *
      * @return bool
      */
-    public function addUserSshConfig(QuestionHelper $questionHelper)
+    public function addUserSshConfig()
     {
         if (!$this->supportsInclude()) {
             return false;
@@ -224,13 +224,13 @@ class SshConfig {
                 return true;
             }
             $this->stdErr->writeln('Checking SSH configuration file: <info>' . $filename . '</info>');
-            if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
+            if (!$this->questionHelper->confirm('Do you want to update the file automatically?')) {
                 $this->stdErr->writeln($manualMessage);
                 return false;
             }
             $creating = false;
         } elseif ($this->fs->canWrite($filename)) {
-            if (!$questionHelper->confirm('Do you want to create an SSH configuration file automatically?')) {
+            if (!$this->questionHelper->confirm('Do you want to create an SSH configuration file automatically?')) {
                 $this->stdErr->writeln($manualMessage);
                 return false;
             }

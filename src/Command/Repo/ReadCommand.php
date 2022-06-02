@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\GitDataApi;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Client\Model\Git\Tree;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,19 +14,36 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ReadCommand extends CommandBase
 {
+    protected static $defaultName = 'repo:read';
+    protected static $defaultDescription = 'Read a directory or file in the project repository';
+
+    private $gitDataApi;
+    private $selector;
+    private $subCommandRunner;
+
+    public function __construct(
+        GitDataApi $gitDataApi,
+        Selector $selector,
+        SubCommandRunner $subCommandRunner
+    ) {
+        $this->gitDataApi = $gitDataApi;
+        $this->selector = $selector;
+        $this->subCommandRunner = $subCommandRunner;
+        parent::__construct();
+    }
+
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
         $this
-            ->setName('repo:read')
             ->setAliases(['read'])
-            ->setDescription('Read a directory or file in the project repository')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')
             ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -32,13 +51,11 @@ class ReadCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, false, true);
+        $environment = $selection->getEnvironment();
 
         $path = $input->getArgument('path');
-        /** @var GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
-        $object = $gitData->getObject($path, $environment, $input->getOption('commit'));
+        $object = $this->gitDataApi->getObject($path, $environment, $input->getOption('commit'));
         if ($object === false) {
             $this->stdErr->writeln(sprintf('File or directory not found: <error>%s</error>', $path));
 
@@ -49,11 +66,11 @@ class ReadCommand extends CommandBase
         } else {
             $cmd = 'repo:cat';
         }
-        return $this->runOtherCommand($cmd, \array_filter([
+        return $this->subCommandRunner->run($cmd, \array_filter([
             'path' => $path,
             '--commit' => $input->getOption('commit'),
-            '--project' => $this->getSelectedProject()->id,
-            '--environment' => $this->getSelectedEnvironment()->id,
+            '--project' => $selection->getProject()->id,
+            '--environment' => $selection->getEnvironment()->id,
         ]));
     }
 }

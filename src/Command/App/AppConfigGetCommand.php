@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
@@ -12,7 +11,6 @@ use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class AppConfigGetCommand extends CommandBase

@@ -3,8 +3,6 @@ namespace Platformsh\Cli\Command\Integration\Activity;
 
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
-use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,29 +11,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationActivityGetCommand extends IntegrationCommandBase
 {
+    protected static $defaultName = 'integration:activity:get';
+    protected static $defaultDescription = 'View detailed information on a single integration activity';
+
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
         $this
-            ->setName('integration:activity:get')
             ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
-            ->setDescription('View detailed information on a single integration activity');
-        $this->addProjectOption();
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view');
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
-        Table::configureInput($this->getDefinition());
-        PropertyFormatter::configureInput($this->getDefinition());
+        $this->table->configureInput($this->getDefinition());
+        $this->formatter->configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
-
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('integration'), $input->isInteractive());
         if (!$integration) {
@@ -46,12 +43,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         if ($id) {
             $activity = $project->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $integration->getActivities(), 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Integration activity not found: <error>$id</error>");
-
-                    return 1;
-                }
+                $activity = $this->api->matchPartialId($id, $integration->getActivities(), 'Activity');
             }
         } else {
             $activities = $integration->getActivities();
@@ -64,15 +56,10 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             }
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $properties = $activity->getProperties();
 
-        if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
-            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
+        if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
+            $properties['description'] = $this->activityService->getFormattedDescription($activity, true);
         } else {
             $properties['description'] = $activity->description;
         }
@@ -83,7 +70,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         }
 
         if ($property = $input->getOption('property')) {
-            $formatter->displayData($output, $properties, $property);
+            $this->formatter->displayData($output, $properties, $property);
             return 0;
         }
 
@@ -101,13 +88,13 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         $rows = [];
         foreach ($properties as $property => $value) {
             $header[] = $property;
-            $rows[] = $formatter->format($value, $property);
+            $rows[] = $this->formatter->format($value, $property);
         }
 
-        $table->renderSimple($rows, $header);
+        $this->table->renderSimple($rows, $header);
 
-        if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+        if (!$this->table->formatIsMachineReadable()) {
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for this activity, run: <info>%s integration:activity:log %s %s</info>',

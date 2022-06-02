@@ -2,6 +2,9 @@
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,21 +13,38 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupCreateCommand extends CommandBase
 {
 
+    protected static $defaultName = 'backup:create';
+    protected static $defaultDescription = 'Make a backup of an environment';
+
+    private $api;
+    private $activityService;
+    private $selector;
+
+    public function __construct(
+        Api $api,
+        ActivityService $activityService,
+        Selector $selector
+    ) {
+        $this->api = $api;
+        $this->activityService = $activityService;
+        $this->selector = $selector;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this
-            ->setName('backup:create')
             ->setAliases(['backup'])
-            ->setDescription('Make a backup of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('live', null, InputOption::VALUE_NONE,
                 'Live backup: do not stop the environment.'
                 . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
                 . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.'
             );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $definition = $this->getDefinition();
+        $this->selector->addProjectOption($definition);
+        $this->selector->addEnvironmentOption($definition);
+        $this->activityService->configureInput($definition);
         $this->addOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
         $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
         $this->addExample('Make a backup of the current environment');
@@ -34,10 +54,11 @@ class BackupCreateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['unsafe']);
-        $this->validateInput($input);
+        // TODO
+        //$this->warnAboutDeprecatedOptions(['unsafe']);
+        $selection = $this->selector->getSelection($input);
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
         if (!$selectedEnvironment->operationAvailable('backup', true)) {
             $this->stdErr->writeln(
@@ -50,7 +71,7 @@ class BackupCreateCommand extends CommandBase
                 $this->stdErr->writeln('The environment is not active.');
             } else {
                 try {
-                    $access = $selectedEnvironment->getUser($this->api()->getMyUserId());
+                    $access = $selectedEnvironment->getUser($this->api->getMyUserId());
                     if ($access->role !== 'admin') {
                         $this->stdErr->writeln('You must be an administrator to create a backup.');
                     }
@@ -72,7 +93,7 @@ class BackupCreateCommand extends CommandBase
             $this->stdErr->writeln("Creating a backup of <info>$environmentId</info>");
         }
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityService->shouldWait($input)) {
             // Strongly recommend using --no-wait in a cron job.
             if (!$this->isTerminal(STDIN)) {
                 $this->stdErr->writeln(
@@ -80,9 +101,7 @@ class BackupCreateCommand extends CommandBase
                 );
             }
 
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $this->activityService->waitAndLog($activity);
             if (!$success) {
                 return 1;
             }

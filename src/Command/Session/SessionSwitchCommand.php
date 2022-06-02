@@ -1,21 +1,42 @@
 <?php
+declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Session;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\SshConfig;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SessionSwitchCommand extends CommandBase {
+
+    protected static $defaultName = 'session:switch';
+    protected static $defaultDescription = 'Switch between sessions';
+
     protected $hiddenInList = true;
     protected $stability = 'beta';
 
+    protected $api;
+    protected $config;
+    protected $questionHelper;
+    protected $sshConfig;
+
+    public function __construct(Api $api, Config $config, QuestionHelper $questionHelper, SshConfig $sshConfig)
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+        $this->sshConfig = $sshConfig;
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this->setName('session:switch')
-            ->setDescription('Switch between sessions')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The new session ID');
+        $this->addArgument('id', InputArgument::OPTIONAL, 'The new session ID');
         $this->setHelp(
             'Multiple session IDs allow you to be logged into multiple accounts at the same time.'
             . "\n\nThe default ID is \"default\"."
@@ -26,10 +47,9 @@ class SessionSwitchCommand extends CommandBase {
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $config = $this->config();
-        $previousId = $config->getSessionId();
+        $previousId = $this->config->getSessionId();
 
-        $envVar = $config->get('application.env_prefix') . 'SESSION_ID';
+        $envVar = $this->config->get('application.env_prefix') . 'SESSION_ID';
         if (getenv($envVar) !== false) {
             $this->stdErr->writeln(sprintf('The session ID is set via the environment variable %s.', $envVar));
             $this->stdErr->writeln('It cannot be changed using this command.');
@@ -42,19 +62,17 @@ class SessionSwitchCommand extends CommandBase {
                 $this->stdErr->writeln('The new session ID is required');
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $autocomplete = \array_merge(['default' => ''], \array_flip($this->api()->listSessionIds()));
+            $autocomplete = \array_merge(['default' => ''], \array_flip($this->api->listSessionIds()));
             unset($autocomplete[$previousId]);
             $default = count($autocomplete) === 1 ? key($autocomplete) : false;
             $this->stdErr->writeln('The current session ID is: <info>' . $previousId . '</info>');
             $this->stdErr->writeln('');
-            $newId = $questionHelper->askInput('Enter a new session ID', $default ?: null, \array_keys($autocomplete), function ($sessionId) {
+            $newId = $this->questionHelper->askInput('Enter a new session ID', $default ?: null, \array_keys($autocomplete), function ($sessionId) {
                 if (empty($sessionId)) {
                     throw new \RuntimeException('The session ID cannot be empty');
                 }
                 try {
-                    $this->config()->validateSessionId($sessionId);
+                    $this->config->validateSessionId($sessionId);
                 } catch (\InvalidArgumentException $e) {
                     throw new \RuntimeException($e->getMessage());
                 }
@@ -70,19 +88,17 @@ class SessionSwitchCommand extends CommandBase {
             return 0;
         }
 
-        $config->setSessionId($newId, true);
+        $this->config->setSessionId($newId, true);
 
         // Reset the API service.
-        $this->api()->getClient(false, true);
+        $this->api->getClient(false, true);
 
         // Set up SSH config.
-        if ($this->api()->isLoggedIn()) {
-            /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-            $sshConfig = $this->getService('ssh_config');
-            $sshConfig->configureSessionSsh();
+        if ($this->api->isLoggedIn()) {
+            $this->sshConfig->configureSessionSsh();
         }
 
-        $this->stdErr->writeln(sprintf('Session ID changed from <info>%s</info> to <info>%s</info>', $previousId, $config->getSessionId()));
+        $this->stdErr->writeln(sprintf('Session ID changed from <info>%s</info> to <info>%s</info>', $previousId, $this->config->getSessionId()));
 
         $this->showAccountInfo();
 
@@ -91,16 +107,16 @@ class SessionSwitchCommand extends CommandBase {
 
     private function showAccountInfo()
     {
-        if ($this->api()->isLoggedIn()) {
-            if ($this->api()->authApiEnabled()) {
-                $user = $this->api()->getUser();
+        if ($this->api->isLoggedIn()) {
+            if ($this->api->authApiEnabled()) {
+                $user = $this->api->getUser();
                 $this->stdErr->writeln(sprintf(
                     "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
                     $user->username,
                     $user->email
                 ));
             } else {
-                $info = $this->api()->getMyAccount();
+                $info = $this->api->getMyAccount();
                 $this->stdErr->writeln(sprintf(
                     "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
                     $info['username'],
@@ -109,6 +125,6 @@ class SessionSwitchCommand extends CommandBase {
             }
             return;
         }
-        $this->stdErr->writeln(sprintf("\nTo log in, run: <info>%s login</info>", $this->config()->get('application.executable')));
+        $this->stdErr->writeln(sprintf("\nTo log in, run: <info>%s login</info>", $this->config->get('application.executable')));
     }
 }

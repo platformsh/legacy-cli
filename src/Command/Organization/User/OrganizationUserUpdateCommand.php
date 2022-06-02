@@ -3,6 +3,11 @@
 namespace Platformsh\Cli\Command\Organization\User;
 
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Client\Model\Organization\Member;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,19 +15,33 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationUserUpdateCommand extends OrganizationCommandBase
 {
+    protected static $defaultName = 'organization:user:update';
+    protected static $defaultDescription = 'Update an organization user';
+
+    private $api;
+    private $questionHelper;
+    private $selector;
+
+    public function __construct(Config $config, Api $api, QuestionHelper $questionHelper, Selector $selector)
+    {
+        $this->api = $api;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+        parent::__construct($config);
+    }
+
+
     protected function configure()
     {
-        $this->setName('organization:user:update')
-            ->setDescription('Update an organization user')
-            ->addOrganizationOptions()
-            ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addOption('permission', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Permission(s) for the user on the organization');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // The 'create-member' link shows the user has the ability to read/write members.
-        $organization = $this->validateOrganizationInput($input, 'create-member');
+        $organization = $this->selector->selectOrganization($input, 'create-member');
 
         $permissionsOption = $input->getOption('permission');
         $permissions = false;
@@ -40,9 +59,6 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
             $this->stdErr->writeln('At least one --permission is required.');
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
 
         $members = $organization->getMembers();
         $email = $input->getArgument('email');
@@ -74,11 +90,11 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
                 $this->stdErr->writeln('No users found.');
                 return 1;
             }
-            $memberId = $questionHelper->choose($choices, 'Enter a number to choose a user to update:');
+            $memberId = $this->questionHelper->choose($choices, 'Enter a number to choose a user to update:');
             $member = $byId[$memberId];
         }
 
-        $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api()->getOrganizationLabel($organization)));
+        $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api->getOrganizationLabel($organization)));
         $this->stdErr->writeln('');
 
         if ($member->permissions == $permissions) {
@@ -111,7 +127,7 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
 
         $this->stdErr->writeln('');
 
-        if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to make these changes?')) {
             return 1;
         }
 
@@ -126,5 +142,14 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
     protected function formatPermissions(array $permissions)
     {
         return $permissions ? \implode(', ', $permissions) : '[none]';
+    }
+
+    protected function memberLabel(Member $member)
+    {
+        if ($info = $member->getUserInfo()) {
+            return $info->email;
+        }
+
+        return $member->id;
     }
 }

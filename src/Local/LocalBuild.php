@@ -189,7 +189,7 @@ class LocalBuild
         }
         if (is_array($others)) {
             $count = 0;
-            foreach (explode("\n", $others) as $filename) {
+            foreach ($others as $filename) {
                 if ($count > 5000) {
                     return false;
                 }

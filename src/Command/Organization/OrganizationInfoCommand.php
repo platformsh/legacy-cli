@@ -3,7 +3,10 @@ namespace Platformsh\Cli\Command\Organization;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\CountryService;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Organization;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,16 +15,30 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationInfoCommand extends OrganizationCommandBase
 {
+    protected static $defaultName = 'organization:info';
+    protected static $defaultDescription = 'View or change organization details';
+
+    private $countryService;
+    private $formatter;
+    private $selector;
+    private $table;
+
+    public function __construct(Config $config, CountryService $countryService, PropertyFormatter $formatter, Selector $selector, Table $table)
+    {
+        $this->countryService = $countryService;
+        $this->formatter = $formatter;
+        $this->selector = $selector;
+        $this->table = $table;
+        parent::__construct($config);
+    }
 
     protected function configure()
     {
-        $this->setName('organization:info')
-            ->setDescription('View or change organization details')
-            ->addOrganizationOptions()
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
-        PropertyFormatter::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
+        $this->formatter->configureInput($this->getDefinition());
+        $this->table->configureInput($this->getDefinition());
         $this->addExample('View the organization "acme"', '--org acme')
             ->addExample("Show the organization's label", '--org acme label')
             ->addExample('Change the organization label', '--org acme label "ACME Inc."');
@@ -29,10 +46,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $organization = $this->validateOrganizationInput($input);
-
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $organization = $this->selector->selectOrganization($input);
 
         $property = $input->getArgument('property');
         if ($property === null) {
@@ -42,7 +56,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
 
         $value = $input->getArgument('value');
         if ($value === null) {
-            $formatter->displayData($output, $this->getProperties($organization), $property);
+            $this->formatter->displayData($output, $this->getProperties($organization), $property);
             return 0;
         }
 
@@ -66,15 +80,11 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     {
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
         foreach ($this->getProperties($organization) as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->formatter->format($value, $key);
         }
-        /** @var Table $table */
-        $table = $this->getService('table');
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
     }
 
     /**
@@ -89,15 +99,13 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
 
         $currentValue = $organization->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $formatter->format($organization->getProperty($property, false), $property)
+                $this->formatter->format($organization->getProperty($property, false), $property)
             ));
 
             return 0;
@@ -122,7 +130,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $formatter->format($organization->$property, $property)
+            $this->formatter->format($organization->$property, $property)
         ));
 
         return 0;
@@ -161,8 +169,8 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             return false;
         }
         if ($property === 'country') {
-            $value = $this->normalizeCountryCode($value);
-            if (!isset($this->countryList()[$value])) {
+            $value = $this->countryService->countryToCode($value);
+            if (!isset($this->countryService->list()[$value])) {
                 $this->stdErr->writeln("Unrecognized country name or code: <error>$value</error>");
                 return false;
             }

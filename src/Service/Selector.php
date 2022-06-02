@@ -312,7 +312,7 @@ class Selector
 
         if ($required && $input->isInteractive()) {
             $this->debug('No environment specified: offering a choice...');
-            return $this->offerEnvironmentChoice($input, $this->api->getEnvironments($project));
+            return $this->offerEnvironmentChoice($input, $project);
         }
 
         if ($required) {
@@ -360,20 +360,21 @@ class Selector
      * Offers a choice of environments.
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param Environment[]                                   $environments
+     * @param Project $project
      *
      * @return Environment
      */
-    private function offerEnvironmentChoice(InputInterface $input, array $environments)
+    private function offerEnvironmentChoice(InputInterface $input, Project $project)
     {
         if (!$input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
         }
 
-        $default = $this->api->getDefaultEnvironmentId($environments);
+        $default = $this->api->getDefaultEnvironment($project)->id;
 
         // Build and sort a list of options (environment IDs).
-        $ids = array_keys($environments);
+        $environments = $this->api->getEnvironments($project);
+        $ids = array_map(function (Environment $environment) { return $environment->id; }, $environments);
         sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
         $id = $this->questionHelper->askInput('Environment ID', $default, $ids, function ($value) use ($environments) {

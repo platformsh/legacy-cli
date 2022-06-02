@@ -64,7 +64,8 @@ class MountListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $host = $this->selector->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
+        $host = $this->selector->getSelection($input, false, getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
+            ->getHost();
         if ($host instanceof LocalHost) {
             $config = (new AppConfig($this->remoteEnvVars->getArrayEnvVar('APPLICATION', $host)));
             $mounts = $this->mountService->mountsFromConfig($config);

@@ -11,7 +11,6 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Helper\Helper;
@@ -28,7 +27,6 @@ class MongoDumpCommand extends CommandBase
     private $questionHelper;
     private $relationships;
     private $selector;
-    private $shell;
     private $ssh;
 
     public function __construct(
@@ -37,7 +35,6 @@ class MongoDumpCommand extends CommandBase
         QuestionHelper $questionHelper,
         Relationships $relationships,
         Selector $selector,
-        Shell $shell,
         Ssh $ssh
     ) {
         $this->config = $config;
@@ -45,7 +42,6 @@ class MongoDumpCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->relationships = $relationships;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }
@@ -70,15 +66,6 @@ class MongoDumpCommand extends CommandBase
         $projectRoot = $this->selector->getProjectRoot();
 
         $gzip = $input->getOption('gzip');
-
-        $envPrefix = $this->config->get('service.env_prefix');
-        $host = $this->selectHost($input, getenv($envPrefix . 'RELATIONSHIPS') !== false);
-
-        if ($host instanceof RemoteHost) {
-            $appName = $this->selectApp($input);
-        } else {
-            $appName = getenv($envPrefix . 'APPLICATION_NAME');
-        }
 
         $dumpFile = false;
 

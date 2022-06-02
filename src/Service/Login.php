@@ -56,7 +56,7 @@ class Login
 
         // Write SSH configuration.
         if ($this->sshConfig->configureSessionSsh()) {
-            $this->sshConfig->addUserSshConfig($this->questionHelper);
+            $this->sshConfig->addUserSshConfig();
         }
 
         // Show user account info.

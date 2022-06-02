@@ -8,7 +8,6 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Ssh;
@@ -78,7 +77,8 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $host = $this->selector->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
+        $host = $this->selector->getSelection($input, false, getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
+            ->getHost();
         if ($host instanceof LocalHost) {
             $config = (new AppConfig($this->remoteEnvVars->getArrayEnvVar('APPLICATION', $host)));
             $mounts = $this->mountService->mountsFromConfig($config);
@@ -167,9 +167,9 @@ EOF
                 $row['available'] = $info['available'];
             } else {
                 $row['sizes'] = implode("\n", array_map([Helper::class, 'formatMemory'], $mountUsage));
-                $row['max'] = Helper::formatMemory($info['total']);
-                $row['used'] = Helper::formatMemory($info['used']);
-                $row['available'] = Helper::formatMemory($info['available']);
+                $row['max'] = Helper::formatMemory((int) $info['total']);
+                $row['used'] = Helper::formatMemory((int) $info['used']);
+                $row['available'] = Helper::formatMemory((int) $info['available']);
             }
             $row['percent_used'] = round($info['percent_used'], 1) . '%';
             $rows[] = $row;

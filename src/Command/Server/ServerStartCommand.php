@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
@@ -20,23 +20,24 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ServerStartCommand extends ServerCommandBase
 {
     protected static $defaultName = 'server:start';
+    protected static $defaultDescription = 'Run PHP web server(s) for the local project';
 
     private $config;
+    private $finder;
     private $localProject;
-    private $questionHelper;
     private $subCommandRunner;
     private $urlService;
 
     public function __construct(
+        ApplicationFinder $finder,
         Config $config,
         LocalProject $localProject,
-        QuestionHelper $questionHelper,
         SubCommandRunner $subCommandRunner,
         Url $url
     ) {
         $this->config = $config;
+        $this->finder = $finder;
         $this->localProject = $localProject;
-        $this->questionHelper = $questionHelper;
         $this->subCommandRunner = $subCommandRunner;
         $this->urlService = $url;
         parent::__construct($config, $localProject);
@@ -44,8 +45,7 @@ class ServerStartCommand extends ServerCommandBase
 
     protected function configure()
     {
-        $this->setDescription('Run PHP web server(s) for the local project')
-          ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
+        $this->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
           ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config->get('local.local_dir') . '/server.log')
@@ -77,9 +77,7 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-        $finder = $this->getService('app_finder');
-        $apps = $finder->findApplications($projectRoot);
+        $apps = $this->finder->findApplications($projectRoot);
         if (!count($apps)) {
             $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;

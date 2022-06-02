@@ -5,9 +5,6 @@ namespace Platformsh\Cli\Command\Integration\Activity;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Cli\Service\ActivityMonitor;
-use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,13 +12,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
+    protected static $defaultName = 'integration:activity:list';
+    protected static $defaultDescription = 'List activities for an integration';
+
     protected function configure()
     {
         $this
-            ->setName('integration:activity:list')
             ->setAliases(['i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
@@ -30,40 +26,32 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
-            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
-            ->setDescription('Get a list of activities for an integration');
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities');
         $this->setHiddenAliases(['integration:activities']);
-        Table::configureInput($this->getDefinition());
-        PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->table->configureInput($this->getDefinition());
+        $this->formatter->configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
-
-        $project = $this->getSelectedProject();
+        // TODO
+        //$this->warnAboutDeprecatedOptions(['environment']);
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
-        $activities = $loader->loadFromInput($integration, $input);
+        $activities = $this->loader->loadFromInput($integration, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
 
         $headers = ['ID', 'Created', 'Completed', 'Description', 'Type', 'State', 'Result'];
         $defaultColumns = ['ID', 'Created', 'Description', 'Type', 'State', 'Result'];
@@ -72,28 +60,28 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         foreach ($activities as $activity) {
             $rows[] = [
                 new AdaptiveTableCell($activity->id, ['wrap' => false]),
-                $formatter->format($activity['created_at'], 'created_at'),
-                $formatter->format($activity['completed_at'], 'completed_at'),
-                ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
+                $this->formatter->format($activity['created_at'], 'created_at'),
+                $this->formatter->format($activity['completed_at'], 'completed_at'),
+                $this->activityService->getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
                 new AdaptiveTableCell($activity->type, ['wrap' => false]),
-                ActivityMonitor::formatState($activity->state),
-                ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
+                $this->activityService->formatState($activity->state),
+                $this->activityService->formatResult($activity->result, !$this->table->formatIsMachineReadable()),
             ];
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Activities on the project %s, integration <info>%s</info> (%s):',
-                $this->api()->getProjectLabel($project),
+                $this->api->getProjectLabel($project),
                 $integration->id,
                 $integration->type
             ));
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $this->table->render($rows, $headers, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+        if (!$this->table->formatIsMachineReadable()) {
+            $executable = $this->config->get('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;

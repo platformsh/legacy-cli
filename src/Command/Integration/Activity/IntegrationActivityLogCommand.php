@@ -2,8 +2,6 @@
 namespace Platformsh\Cli\Command\Integration\Activity;
 
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
-use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,28 +10,26 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationActivityLogCommand extends IntegrationCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
+    protected static $defaultName = 'integration:activity:log';
+    protected static $defaultDescription = 'Display the log for an integration activity';
+
     protected function configure()
     {
         $this
-            ->setName('integration:activity:log')
             ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
-            ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->setDescription('Display the log for an integration activity');
-        PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+            ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message');
+        $this->formatter->configureInput($this->getDefinition());
+        $this->activityService->configureInput($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
-
-        $project = $this->getSelectedProject();
+        // TODO
+        // $this->warnAboutDeprecatedOptions(['environment']);
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('integration'), $input->isInteractive());
         if (!$integration) {
@@ -44,12 +40,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
         if ($id) {
             $activity = $project->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $integration->getActivities(), 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Integration activity not found: <error>$id</error>");
-
-                    return 1;
-                }
+                $activity = $this->api->matchPartialId($id, $integration->getActivities(), 'Activity');
             }
         } else {
             $activities = $integration->getActivities();
@@ -62,16 +53,13 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $this->stdErr->writeln([
             sprintf('<info>Integration ID: </info>%s', $integration->id),
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Type: </info>%s', $activity->type),
-            sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
-            sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
-            sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),
+            sprintf('<info>Description: </info>%s', $this->activityService->getFormattedDescription($activity)),
+            sprintf('<info>Created: </info>%s', $this->formatter->format($activity->created_at, 'created_at')),
+            sprintf('<info>State: </info>%s', $this->activityService->formatState($activity->state)),
             '<info>Log: </info>',
         ]);
 
@@ -79,21 +67,19 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
         if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
             $timestamps = $input->getOption('date-fmt');
         } elseif ($timestamps) {
-            $timestamps = $this->config()->getWithDefault('application.date_format', 'c');
+            $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
 
-        /** @var ActivityMonitor $monitor */
-        $monitor = $this->getService('activity_monitor');
         if (!$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
-            $monitor->waitAndLog($activity, 3, $timestamps, false, $output);
+            $this->activityService->waitAndLog($activity, 3, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
-            $this->api()->clearEnvironmentsCache($activity->project);
+            $this->api->clearEnvironmentsCache($activity->project);
         } else {
             $items = $activity->readLog();
-            $output->write($monitor->formatLog($items, $timestamps));
+            $output->write($this->activityService->formatLog($items, $timestamps));
         }
 
         return 0;

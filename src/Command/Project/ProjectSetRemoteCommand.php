@@ -10,7 +10,6 @@ use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
-use Platformsh\Cli\Service\Identifier;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -26,8 +25,8 @@ class ProjectSetRemoteCommand extends CommandBase
 
     private $api;
     private $config;
+    private $filesystem;
     private $git;
-    private $identifier;
     private $localProject;
     private $questionHelper;
     private $selector;
@@ -35,16 +34,16 @@ class ProjectSetRemoteCommand extends CommandBase
     public function __construct(
         Api $api,
         Config $config,
+        \Platformsh\Cli\Service\Filesystem $filesystem,
         Git $git,
-        Identifier $identifier,
         LocalProject $localProject,
         QuestionHelper $questionHelper,
         Selector $selector
     ) {
         $this->api = $api;
         $this->config = $config;
+        $this->filesystem = $filesystem;
         $this->git = $git;
-        $this->identifier = $identifier;
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
@@ -108,7 +107,7 @@ class ProjectSetRemoteCommand extends CommandBase
             $this->stdErr->writeln('Unsetting the remote project for this repository');
             $this->stdErr->writeln('');
             if ($configFilename) {
-                $this->stdErr->writeln(sprintf('This config file will be deleted: <comment>%s</comment>', $fs->formatPathForDisplay($configFilename)));
+                $this->stdErr->writeln(sprintf('This config file will be deleted: <comment>%s</comment>', $this->filesystem->formatPathForDisplay($configFilename)));
             }
             if ($gitRemotes) {
                 $this->stdErr->writeln(sprintf('These Git remote(s) will be deleted: <comment>%s</comment>', \implode(', ', \array_keys($gitRemotes))));

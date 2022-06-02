@@ -6,7 +6,6 @@ namespace Platformsh\Cli\Command\SshKey;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\SshConfig;
@@ -160,7 +159,7 @@ class SshKeyAddCommand extends CommandBase
         }
 
         if ($this->sshConfig->configureSessionSsh()) {
-            $this->sshConfig->addUserSshConfig($this->questionHelper);
+            $this->sshConfig->addUserSshConfig();
         }
 
         return 0;

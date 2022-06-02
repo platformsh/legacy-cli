@@ -86,16 +86,7 @@ class ActivityListCommand extends ActivityCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all'));
-
         $project = $selection->getProject();
-
-        $startsAt = null;
-        if ($input->getOption('start') && !($startsAt = strtotime($input->getOption('start')))) {
-            $this->stdErr->writeln('Invalid date: <error>' . $input->getOption('start') . '</error>');
-            return 1;
-        }
-
-        $limit = (int) $input->getOption('limit');
 
         if ($selection->hasEnvironment() && !$input->getOption('all')) {
             $environmentSpecific = true;
@@ -104,8 +95,6 @@ class ActivityListCommand extends ActivityCommandBase
             $environmentSpecific = false;
             $apiResource = $project;
         }
-
-        $type = $input->getOption('type');
 
         $activities = $this->activityLoader->loadFromInput($apiResource, $input);
         if (!$activities) {

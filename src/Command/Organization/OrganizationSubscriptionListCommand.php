@@ -1,12 +1,29 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 {
+    protected static $defaultName = 'organization:subscription:list';
+    protected static $defaultDescription = 'List subscriptions within an organization';
+
+    private $api;
+    private $selector;
+    private $table;
+
+    public function __construct(Config $config, Api $api, Selector $selector, Table $table)
+    {
+        $this->api = $api;
+        $this->selector = $selector;
+        $this->table = $table;
+        parent::__construct($config);
+    }
 
     /**
      * {@inheritdoc}
@@ -15,9 +32,9 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
     {
         $this->setName('organization:subscription:list')
             ->setAliases(['organization:subscriptions'])
-            ->setDescription('List subscriptions within an organization')
-            ->addOrganizationOptions();
-        Table::configureInput($this->getDefinition());
+            ->setDescription('List subscriptions within an organization');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->table->configureInput($this->getDefinition());
     }
 
     /**
@@ -25,12 +42,12 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $organization = $this->validateOrganizationInput($input);
+        $organization = $this->selector->selectOrganization($input);
 
         $subscriptions = $organization->getSubscriptions();
 
         if (empty($subscriptions)) {
-            $this->stdErr->writeln(\sprintf('No subscriptions were found belonging to the organization %s.', $this->api()->getOrganizationLabel($organization, 'error')));
+            $this->stdErr->writeln(\sprintf('No subscriptions were found belonging to the organization %s.', $this->api->getOrganizationLabel($organization, 'error')));
             return 1;
         }
 
@@ -50,14 +67,12 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
 
-        if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api()->getOrganizationLabel($organization)));
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api->getOrganizationLabel($organization)));
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $this->table->render($rows, $headers, $defaultColumns);
 
         return 0;
     }

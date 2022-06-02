@@ -9,7 +9,6 @@ use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;

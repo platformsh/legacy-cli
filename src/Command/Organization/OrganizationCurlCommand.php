@@ -1,32 +1,44 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
-use GuzzleHttp\Url;
+use GuzzleHttp\Psr7\Uri;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\CurlCli;
+use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationCurlCommand extends OrganizationCommandBase
 {
+    protected static $defaultName = 'organization:curl';
+    protected static $defaultDescription = "Run an authenticated cURL request on an organization's API";
     protected $hiddenInList = true;
+
+    private $config;
+    private $curlCli;
+    private $selector;
+
+    public function __construct(Config $config, CurlCli $curlCli, Selector $selector)
+    {
+        $this->config = $config;
+        $this->curlCli = $curlCli;
+        $this->selector = $selector;
+        parent::__construct($config);
+    }
 
     protected function configure()
     {
-        $this->setName('organization:curl')
-            ->setDescription("Run an authenticated cURL request on an organization's API")
-            ->addOrganizationOptions();
-        CurlCli::configureInput($this->getDefinition());
+        $this->curlCli->configureInput($this->getDefinition());
+        $this->selector->addOrganizationOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $organization = $this->validateOrganizationInput($input);
+        $organization = $this->selector->selectOrganization($input);
 
-        $apiUrl = Url::fromString($this->config()->get('api.base_url'));
-        $absoluteUrl = $apiUrl->combine($organization->getUri())->__toString();
+        $apiUrl = new Uri($this->config->get('api.base_url'));
+        $absoluteUrl = $apiUrl->withPath((new Uri($organization->getUri()))->getPath());
 
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
-        return $curl->run($absoluteUrl, $input, $output);
+        return $this->curlCli->run($absoluteUrl, $input, $output);
     }
 }

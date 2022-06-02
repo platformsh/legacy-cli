@@ -2,6 +2,9 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,7 +13,28 @@ use Symfony\Component\Process\Process;
 
 class EnvironmentXdebugCommand extends CommandBase
 {
-    const SOCKET_PATH = '/run/xdebug-tunnel.sock';
+    public const SOCKET_PATH = '/run/xdebug-tunnel.sock';
+
+    protected static $defaultName = 'environment:xdebug';
+    protected static $defaultDescription = 'Open a tunnel to Xdebug on the environment';
+
+    private $config;
+    private $finder;
+    private $selector;
+    private $ssh;
+
+    public function __construct(
+        ApplicationFinder $finder,
+        Config $config,
+        Selector $selector,
+        Ssh $ssh
+    ) {
+        $this->config = $config;
+        $this->finder = $finder;
+        $this->selector = $selector;
+        $this->ssh = $ssh;
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -18,21 +42,17 @@ class EnvironmentXdebugCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:xdebug')
             ->setAliases(['xdebug'])
-            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000)
-            ->setDescription('Open a tunnel to Xdebug on the environment');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addRemoteContainerOptions();
-        Ssh::configureInput($this->getDefinition());
+            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
+        $this->selector->addAllOptions($this->getDefinition());
+        $this->ssh->configureInput($this->getDefinition());
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
     }
 
     public function isHidden()
     {
         // Hide this command in the list if the project is not PHP.
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if ($projectRoot) {
             try {
                 return !$this->isPhp($projectRoot);
@@ -56,9 +76,7 @@ class EnvironmentXdebugCommand extends CommandBase
         static $isPhp;
         if (!isset($isPhp)) {
             $isPhp = false;
-            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-            $finder = $this->getService('app_finder');
-            foreach ($finder->findApplications($directory) as $app) {
+            foreach ($this->finder->findApplications($directory) as $app) {
                 $type = $app->getType();
                 if ($type === 'php' || strpos($type, 'php:') === 0) {
                     $isPhp = true;
@@ -72,10 +90,9 @@ class EnvironmentXdebugCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
-        $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
 
-        $container = $this->selectRemoteContainer($input);
+        $container = $selection->getRemoteContainer();
         $sshUrl = $container->getSshUrl();
 
         $config = $container->getConfig()->getNormalized();
@@ -86,7 +103,7 @@ class EnvironmentXdebugCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('To use Xdebug your project must have an <comment>idekey</comment> value set.');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
+            $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config->get('service.app_config_file')));
             $this->stdErr->writeln(
                 "\n<comment># ...\n"
                 . "runtime:\n"
@@ -97,12 +114,8 @@ class EnvironmentXdebugCommand extends CommandBase
             return 1;
         }
 
-
-        /** @var Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
         // The socket is removed to prevent 'file already exists' errors.
-        $commandCleanup = $ssh->getSshCommand();
+        $commandCleanup = $this->ssh->getSshCommand();
         $commandCleanup .= ' ' . escapeshellarg($sshUrl) . ' rm -f ' . escapeshellarg(self::SOCKET_PATH);
         $this->debug("Cleanup command: " . $commandCleanup);
         $process = Process::fromShellCommandline($commandCleanup);
@@ -117,7 +130,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $sshOptions['ExitOnForwardFailure'] = 'yes';
 
         $listenAddress = '127.0.0.1:' . $port;
-        $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
+        $commandTunnel = $this->ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
         $commandTunnel .= ' ' . escapeshellarg($sshUrl);
         $this->debug("Tunnel command: " . $commandTunnel);
         $process = Process::fromShellCommandline($commandTunnel);

@@ -1,7 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -9,19 +10,31 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationListCommand extends OrganizationCommandBase
 {
+    protected static $defaultName = 'organization:list';
+    protected static $defaultDescription = 'List organizations';
+
+    private $api;
+    private $config;
+    private $table;
+
+    public function __construct(Api $api, Config $config, Table $table)
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->table = $table;
+        parent::__construct($config);
+    }
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->setName('organization:list')
-            ->setAliases(['orgs', 'organizations'])
-            ->setDescription('List organizations')
+        $this->setAliases(['orgs', 'organizations'])
             ->addOption('my', null, InputOption::VALUE_NONE, 'List only the organizations you own')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'An organization property to sort by')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order');
-        Table::configureInput($this->getDefinition());
+        $this->table->configureInput($this->getDefinition());
     }
 
     /**
@@ -29,8 +42,8 @@ class OrganizationListCommand extends OrganizationCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $client = $this->api()->getClient();
-        $userId = $this->api()->getMyUserId();
+        $client = $this->api->getClient();
+        $userId = $this->api->getMyUserId();
 
         if ($input->getOption('my')) {
             $organizations = $client->listOrganizationsByOwner($userId);
@@ -39,16 +52,16 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         if ($sortBy = $input->getOption('sort')) {
-            $this->api()->sortResources($organizations, $sortBy);
+            $this->api->sortResources($organizations, $sortBy);
         }
         if ($input->getOption('reverse')) {
             $organizations = array_reverse($organizations, true);
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         if (empty($organizations)) {
             $this->stdErr->writeln('No organizations found.');
-            if ($this->config()->isCommandEnabled('organization:create')) {
+            if ($this->config->isCommandEnabled('organization:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To create a new organization, run: <info>%s org:create</info>', $executable));
             }
@@ -76,10 +89,7 @@ class OrganizationListCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($input->getOption('my')) {
                 $this->stdErr->writeln('Organizations you own:');
             } else {
@@ -87,9 +97,9 @@ class OrganizationListCommand extends OrganizationCommandBase
             }
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $this->table->render($rows, $headers, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To view or modify organization details, run: <info>%s org:info [-o organization]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To see all organization commands run: <info>%s list organization</info>', $executable));

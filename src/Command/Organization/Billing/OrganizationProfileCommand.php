@@ -4,7 +4,10 @@ namespace Platformsh\Cli\Command\Organization\Billing;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Profile;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,47 +16,60 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationProfileCommand extends OrganizationCommandBase
 {
+    protected static $defaultName = 'organization:billing:profile';
+    protected static $defaultDescription = "View or change an organization's billing profile";
+
+    private $api;
+    private $formatter;
+    private $selector;
+    private $table;
+
+    public function __construct(
+        Api $api,
+        Config $config,
+        PropertyFormatter $formatter,
+        Selector $selector,
+        Table $table
+    )
+    {
+        $this->api = $api;
+        $this->formatter = $formatter;
+        $this->selector = $selector;
+        $this->table = $table;
+        parent::__construct($config);
+    }
 
     protected function configure()
     {
-        $this->setName('organization:billing:profile')
-            ->setDescription("View or change an organization's billing profile")
-            ->addOrganizationOptions()
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
-        PropertyFormatter::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
+        $this->formatter->configureInput($this->getDefinition());
+        $this->table->configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $org = $this->validateOrganizationInput($input, 'orders');
+        // The 'orders' link depends on the billing permission.
+        $org = $this->selector->selectOrganization($input, 'orders');
         $profile = $org->getProfile();
-
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
 
         $property = $input->getArgument('property');
         if ($property === null) {
             $headings = [];
             $values = [];
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
             foreach ($profile->getProperties() as $key => $value) {
                 $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-                $values[] = $formatter->format($value, $key);
+                $values[] = $this->formatter->format($value, $key);
             }
 
-            /** @var Table $table */
-            $table = $this->getService('table');
-
-            if (!$table->formatIsMachineReadable()) {
-                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api()->getOrganizationLabel($org)));
+            if (!$this->table->formatIsMachineReadable()) {
+                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api->getOrganizationLabel($org)));
             }
 
-            $table->renderSimple($values, $headings);
+            $this->table->renderSimple($values, $headings);
 
-            if (!$table->formatIsMachineReadable()) {
+            if (!$this->table->formatIsMachineReadable()) {
                 $this->stdErr->writeln(\sprintf('To view the billing address, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:address')));
                 $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
             }
@@ -62,7 +78,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
 
         $value = $input->getArgument('value');
         if ($value === null) {
-            $formatter->displayData($output, $profile->getProperties(), $property);
+            $this->formatter->displayData($output, $profile->getProperties(), $property);
             return 0;
         }
 
@@ -81,15 +97,13 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
 
         $currentValue = $profile->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $formatter->format($profile->getProperty($property, false), $property)
+                $this->formatter->format($profile->getProperty($property, false), $property)
             ));
 
             return 0;
@@ -114,7 +128,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $formatter->format($profile->$property, $property)
+            $this->formatter->format($profile->$property, $property)
         ));
 
         return 0;

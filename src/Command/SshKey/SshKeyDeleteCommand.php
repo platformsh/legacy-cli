@@ -6,6 +6,7 @@ namespace Platformsh\Cli\Command\SshKey;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\SshConfig;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -13,25 +14,23 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SshKeyDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'ssh-key:delete';
+    protected static $defaultDescription = 'Delete an SSH key';
 
     private $api;
     private $config;
+    private $sshConfig;
 
-    public function __construct(Api $api, Config $config)
+    public function __construct(Api $api, Config $config, SshConfig $sshConfig)
     {
         $this->api = $api;
         $this->config = $config;
+        $this->sshConfig = $sshConfig;
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this->setDescription('Delete an SSH key')
-            ->addArgument(
-                'id',
-                InputArgument::OPTIONAL,
-                'The ID of the SSH key to delete'
-            );
+        $this->addArgument('id', InputArgument::OPTIONAL, 'The ID of the SSH key to delete');
         $this->addExample('Delete the key 123', '123');
     }
 
@@ -65,14 +64,12 @@ class SshKeyDeleteCommand extends CommandBase
 
         // Reset and warm the SSH keys cache.
         try {
-            $this->api()->getSshKeys(true);
+            $this->api->getSshKeys(true);
         } catch (\Exception $e) {
             // Suppress exceptions; we do not need the result of this call.
         }
 
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
-        $sshConfig->configureSessionSsh();
+        $this->sshConfig->configureSessionSsh();
 
         return 0;
     }

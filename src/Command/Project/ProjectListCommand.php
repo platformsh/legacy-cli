@@ -127,7 +127,7 @@ class ProjectListCommand extends CommandBase
         }
 
         // Paginate the list.
-        if (!$this->config()->getWithDefault('pagination.enabled', true)) {
+        if (!$this->config->getWithDefault('pagination.enabled', true)) {
             $itemsPerPage = 0;
         } elseif ($input->getOption('count') !== null) {
             $itemsPerPage = (int)$input->getOption('count');

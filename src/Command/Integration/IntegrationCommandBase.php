@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Psr7\Request;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityService;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -34,6 +35,7 @@ abstract class IntegrationCommandBase extends CommandBase
     protected $api;
     protected $config;
     protected $formatter;
+    protected $loader;
     protected $localProject;
     protected $selector;
     protected $questionHelper;
@@ -47,6 +49,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
     public function __construct(
         ActivityService $activityService,
+        ActivityLoader $activityLoader,
         Api $api,
         Config $config,
         LocalProject $localProject,
@@ -59,6 +62,7 @@ abstract class IntegrationCommandBase extends CommandBase
         $this->api = $api;
         $this->config = $config;
         $this->formatter = $formatter;
+        $this->loader = $activityLoader;
         $this->localProject = $localProject;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;

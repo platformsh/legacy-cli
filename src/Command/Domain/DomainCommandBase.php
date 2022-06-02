@@ -101,7 +101,7 @@ abstract class DomainCommandBase extends CommandBase
         }
         // @todo standardize API error parsing if the format is ever formalized
         if ($response->getStatusCode() === 400) {
-            $data = $response->json();
+            $data = \json_decode((string) $response->getBody(), true);
             if (isset($data['detail']['error'])) {
                 $this->stdErr->writeln($data['detail']['error']);
                 return;

@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Command\Tunnel;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;

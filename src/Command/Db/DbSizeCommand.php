@@ -7,11 +7,9 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
@@ -113,8 +111,8 @@ class DbSizeCommand extends CommandBase
 
         $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
         $values = [
-            'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
-            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
+            'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory((int) $allocatedDisk),
+            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory((int) $estimatedUsage),
             'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
         ];
 
@@ -276,9 +274,7 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getMongoDbCommand(array $database) {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-        $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
+        $dbUrl = $this->relationships->getDbCommandArgs('mongo', $database);
 
         return sprintf(
             'mongo %s --quiet --eval %s',
