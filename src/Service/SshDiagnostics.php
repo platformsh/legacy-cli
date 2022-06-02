@@ -96,7 +96,7 @@ class SshDiagnostics
     private function testConnection($uri)
     {
         $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
-        $process = new Process($this->ssh->getSshCommand([], $uri, 'exit'));
+        $process = Process::fromShellCommandline($this->ssh->getSshCommand([], $uri, 'exit'));
         $process->run();
         $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
         return $process;

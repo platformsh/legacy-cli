@@ -409,7 +409,7 @@ class SshConfig {
             return $this->openSshVersion;
         }
         $this->openSshVersion = false;
-        $process = new Process('ssh -V');
+        $process = new Process(['ssh', '-V']);
         $process->run();
         $errorOutput = $process->getErrorOutput();
         if (!$process->isSuccessful()) {

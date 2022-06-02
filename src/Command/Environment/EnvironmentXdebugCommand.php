@@ -105,7 +105,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $commandCleanup = $ssh->getSshCommand();
         $commandCleanup .= ' ' . escapeshellarg($sshUrl) . ' rm -f ' . escapeshellarg(self::SOCKET_PATH);
         $this->debug("Cleanup command: " . $commandCleanup);
-        $process = new Process($commandCleanup);
+        $process = Process::fromShellCommandline($commandCleanup);
         $process->run();
 
         $this->stdErr->writeln("Opening a local tunnel for Xdebug.");
@@ -120,7 +120,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
         $commandTunnel .= ' ' . escapeshellarg($sshUrl);
         $this->debug("Tunnel command: " . $commandTunnel);
-        $process = new Process($commandTunnel);
+        $process = Process::fromShellCommandline($commandTunnel);
         $process->setTimeout(null);
         $process->start();
 
