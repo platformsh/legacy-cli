@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Application;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
@@ -13,6 +14,7 @@ use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class BaseBuildFlavorTest extends TestCase
 {
@@ -38,19 +40,9 @@ abstract class BaseBuildFlavorTest extends TestCase
     public static function setUpBeforeClass()
     {
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
-
-        self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
-        $container->set('output', self::$output);
-
-        self::$config = (new CliConfig())->withOverrides([
-            // We rename the app config file to avoid confusion when building the
-            // CLI itself on platform.sh
-            'service.app_config_file' => '_platform.app.yaml',
-        ]);
-        $container->set('config', self::$config);
-
         self::$container = $container;
+        self::$config = $container->get(Config::class);
+        self::$output = $container->get(OutputInterface::class);
     }
 
     /**
@@ -58,7 +50,7 @@ abstract class BaseBuildFlavorTest extends TestCase
      */
     public function setUp()
     {
-        $this->builder = self::$container->get('local.build');
+        $this->builder = self::$container->get(LocalBuild::class);
         $this->tempDirSetUp();
     }
 

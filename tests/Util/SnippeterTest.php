@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\Snippeter;
 
-class SnippeterTest extends \PHPUnit_Framework_TestCase
+class SnippeterTest extends TestCase
 {
     private $begin;
     private $end;

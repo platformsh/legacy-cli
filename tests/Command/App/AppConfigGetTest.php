@@ -20,19 +20,19 @@ class AppConfigGetTest extends TestCase
         $this->assertEquals(
             'app',
             (new Parser)->parse((new CommandRunner())->run('app:config-get', [
-                '--property', 'name',
+                '--property', 'name', '-v'
             ], $env)->getOutput())
         );
         $this->assertEquals(
             [],
             (new Parser)->parse((new CommandRunner())->run('app:config-get', [
-                '--property', 'mounts',
+                '--property', 'mounts', '-v'
             ], $env)->getOutput())
         );
         $this->assertEquals(
             '',
             (new Parser)->parse((new CommandRunner())->run('app:config-get', [
-                '--property', 'blank',
+                '--property', 'blank', '-v'
             ], $env)->getOutput())
         );
     }

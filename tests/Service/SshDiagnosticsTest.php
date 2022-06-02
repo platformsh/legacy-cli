@@ -2,22 +2,17 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
-use Platformsh\Cli\Service\Config;
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Tests\Container;
-use Symfony\Component\Console\Input\ArrayInput;
 
-class SshDiagnosticsTest extends \PHPUnit_Framework_TestCase {
+class SshDiagnosticsTest extends TestCase {
     private $sd;
 
     public function setUp() {
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
-        $container->set('config', (new Config())->withOverrides([
-            'api.ssh_domain_wildcards' => ['*.ssh.example.com'],
-        ]));
         /** @var SshDiagnostics $this->sd */
-        $this->sd = $container->get('ssh_diagnostics');
+        $this->sd = $container->get(SshDiagnostics::class);
     }
 
     public function testGetHost()

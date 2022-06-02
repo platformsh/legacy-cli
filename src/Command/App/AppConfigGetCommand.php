@@ -12,20 +12,19 @@ use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class AppConfigGetCommand extends CommandBase
 {
     protected static $defaultName = 'app:config-get';
 
-    private $api;
     private $config;
     private $selector;
     private $formatter;
 
-    public function __construct(Api $api, Config $config, Selector $selector, PropertyFormatter $formatter)
+    public function __construct(Config $config, Selector $selector, PropertyFormatter $formatter)
     {
-        $this->api = $api;
         $this->config = $config;
         $this->selector = $selector;
         $this->formatter = $formatter;
@@ -64,5 +63,7 @@ class AppConfigGetCommand extends CommandBase
         }
 
         $this->formatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
+
+        return 0;
     }
 }

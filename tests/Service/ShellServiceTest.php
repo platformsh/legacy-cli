@@ -5,6 +5,8 @@ namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Shell;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class ShellServiceTest extends TestCase
 {
@@ -14,7 +16,7 @@ class ShellServiceTest extends TestCase
      */
     public function testExecute()
     {
-        $shell = new Shell();
+        $shell = new Shell(new ConsoleOutput(OutputInterface::VERBOSITY_DEBUG));
 
         // Find a command that will work on all platforms.
         $workingCommand = strpos(PHP_OS, 'WIN') !== false ? 'help' : 'pwd';

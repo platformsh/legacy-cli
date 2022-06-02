@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\Wildcard;
 
-class WildcardTest extends \PHPUnit_Framework_TestCase
+class WildcardTest extends TestCase
 {
     public function testSelect()
     {
@@ -24,7 +25,7 @@ class WildcardTest extends \PHPUnit_Framework_TestCase
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($subjects, $wildcards, $result) = $case;
+            [$subjects, $wildcards, $result] = $case;
             $this->assertEquals($result, Wildcard::select($subjects, $wildcards), "Case $i");
         }
     }

@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Service;
 
-use GuzzleHttp\Query;
+use GuzzleHttp\Psr7\Query;
+use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Util\OsUtil;
@@ -140,7 +141,7 @@ class Relationships implements InputConfiguringInterface
         }
 
         if (strpos($identifier, '.') !== false) {
-            list($name, $key) = explode('.', $identifier, 2);
+            [$name, $key] = explode('.', $identifier, 2);
         } else {
             $name = $identifier;
             $key = 0;
@@ -153,7 +154,7 @@ class Relationships implements InputConfiguringInterface
         if (!isset($relationship['service'])) {
             $appConfig = $this->envVarService->getArrayEnvVar('APPLICATION', $host);
             if (!empty($appConfig['relationships'][$name]) && is_string($appConfig['relationships'][$name])) {
-                list($serviceName, ) = explode(':', $appConfig['relationships'][$name], 2);
+                [$serviceName, ] = explode(':', $appConfig['relationships'][$name], 2);
                 $relationship['service'] = $serviceName;
             }
         }
@@ -341,13 +342,17 @@ class Relationships implements InputConfiguringInterface
         // The 'query' is expected to be a string.
         if (isset($parts['query']) && is_array($parts['query'])) {
             unset($parts['query']['is_master']);
-            $parts['query'] = (new Query($parts['query']))->__toString();
+            $parts['query'] = Query::build($parts['query']);
         }
 
         if (isset($parts['scheme']) && $parts['scheme'] === 'solr') {
             $parts['scheme'] = 'http';
         }
 
-        return \GuzzleHttp\Url::buildUrl($parts);
+        if (isset($parts['path']) && $parts['path'][0] !== '/') {
+            $parts['path'] = '/' . $parts['path'];
+        }
+
+        return Uri::fromParts($parts)->__toString();
     }
 }

@@ -14,7 +14,7 @@ class WelcomeCommandTest extends TestCase
         chdir('/');
 
         $result = (new CommandRunner())
-            ->run('welcome', [], [
+            ->run('welcome', ['-v'], [
                 'PLATFORM_PROJECT' => 'test-project',
                 'PLATFORM_BRANCH' => 'test-environment',
                 'PLATFORM_ROUTES' => base64_encode(json_encode([])),

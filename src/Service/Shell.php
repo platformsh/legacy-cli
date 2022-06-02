@@ -92,6 +92,7 @@ class Shell
             $process = Process::fromShellCommandline($args, null, null, $input, $timeout);
         } else {
             $process = new Process($args, null, null, $input, $timeout);
+            $process->getCommandLine();
         }
 
         if ($timeout === null) {
@@ -260,13 +261,13 @@ class Shell
                 $result[$command] = $command;
             } else {
                 if (OsUtil::isWindows()) {
-                    $commands = [['where', $command], ['which', $command]];
+                    $commands = ['where ' . OsUtil::escapeShellArg($command), 'which ' . OsUtil::escapeShellArg($command)];
                 } else {
-                    $commands = [['command', '-v', $command], ['which', $command]];
+                    $commands = ['command -v ' . OsUtil::escapeShellArg($command), 'which ' . OsUtil::escapeShellArg($command)];
                 }
-                foreach ($commands as $key => $args) {
+                foreach ($commands as $findCommand) {
                     try {
-                        $result[$command] = $this->execute($args);
+                        $result[$command] = $this->execute($findCommand);
                     } catch (ProcessFailedException $e) {
                         $result[$command] = false;
                         if ($this->exceptionMeansCommandDoesNotExist($e)) {
@@ -276,7 +277,7 @@ class Shell
                     break;
                 }
                 if ($result[$command] === false && $noticeOnError) {
-                    trigger_error(sprintf("Failed to find command via: %s", implode(' ', $args)), E_USER_NOTICE);
+                    trigger_error(sprintf("Failed to find command via: %s", $findCommand), E_USER_NOTICE);
                 }
             }
         }

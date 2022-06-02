@@ -2,11 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Local;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Local\ApplicationFinder;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
 
-class ApplicationFinderTest extends \PHPUnit_Framework_TestCase
+class ApplicationFinderTest extends TestCase
 {
     private $finder;
 

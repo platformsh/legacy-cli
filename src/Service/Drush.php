@@ -14,6 +14,7 @@ use Platformsh\Cli\SiteAlias\DrushYaml;
 use Platformsh\Cli\SiteAlias\SiteAliasTypeInterface;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Drush
 {
@@ -64,7 +65,7 @@ class Drush
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
         $this->localProject = $localProject ?: new LocalProject();
-        $this->api = $api ?: new Api($this->config);
+        $this->api = $api ?: new Api(new ConsoleOutput(), $this->config, CacheFactory::createCacheProvider($this->config), new TokenConfig($this->config));
         $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 

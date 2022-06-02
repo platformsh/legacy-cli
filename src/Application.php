@@ -127,9 +127,7 @@ class Application extends ParentApplication
         if (!isset($this->container)) {
             if (file_exists($cacheFile) && !getenv('PLATFORMSH_CLI_DEBUG') && !$recompile) {
                 // Load the cached container.
-                /** @noinspection PhpIncludeInspection */
                 require_once $cacheFile;
-                /** @noinspection PhpUndefinedClassInspection */
                 $this->container = new \ProjectServiceContainer();
             } else {
                 // Compile a new container.

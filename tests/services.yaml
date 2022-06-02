@@ -1,0 +1,36 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: false
+        # Use public services for the sake of tests
+        public: true
+
+    # Set up all classes in src/Service as services automatically.
+    Platformsh\Cli\Service\:
+        resource: '../src/Service/*'
+
+    # Make Config synthetic so it can be overridden.
+    Platformsh\Cli\Service\Config:
+      synthetic: true
+
+    # A few services are not inside the \Platformsh\Cli\Service namespace.
+    Platformsh\Cli\Local\ApplicationFinder: {}
+    Platformsh\Cli\Local\LocalBuild: {}
+    Platformsh\Cli\Local\LocalProject:
+        public: true
+    Platformsh\Cli\SshCert\Certifier: {}
+
+    Platformsh\Cli\Service\LegacyMigration: {}
+    Platformsh\Cli\Service\SelfUpdateChecker: {}
+
+    # Configure the cache service, which is created via a factory.
+    Doctrine\Common\Cache\CacheProvider:
+        factory:   'Platformsh\Cli\Service\CacheFactory::createCacheProvider'
+        arguments: ['@Platformsh\Cli\Service\Config']
+
+    Platformsh\Cli\Application:
+        synthetic: true
+    Symfony\Component\Console\Output\OutputInterface:
+        synthetic: true
+    Symfony\Component\Console\Input\InputInterface:
+        synthetic: true

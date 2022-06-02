@@ -8,10 +8,12 @@ use Platformsh\Cli\Model\Host\RemoteHost;
 class HostFactory {
     private $shell;
     private $ssh;
+    private $sshDiagnostics;
 
-    public function __construct(Shell $shell, Ssh $ssh) {
+    public function __construct(Shell $shell, Ssh $ssh, SshDiagnostics $sshDiagnostics) {
         $this->shell = $shell;
         $this->ssh = $ssh;
+        $this->sshDiagnostics = $sshDiagnostics;
     }
 
     public function local() {
@@ -19,6 +21,6 @@ class HostFactory {
     }
 
     public function remote(string $sshUrl) {
-        return new RemoteHost($sshUrl, $this->ssh, $this->shell);
+        return new RemoteHost($sshUrl, $this->ssh, $this->shell, $this->sshDiagnostics);
     }
 }

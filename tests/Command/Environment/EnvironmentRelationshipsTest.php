@@ -47,15 +47,10 @@ class EnvironmentRelationshipsTest extends TestCase
 
     public function testGetRelationshipUrl() {
         $this->assertEquals(
-<<<<<<< HEAD
-            'mysql://main:123@database.internal:3306/main?is_master=1',
-            $this->runCommand(['-P', 'database.0.url'])
-=======
             'mysql://main:123@database.internal:3306/main',
             rtrim($this->runCommand([
-                '--property' => 'database.0.url',
+                '--property', 'database.0.url',
             ]), "\n")
->>>>>>> 06915848
         );
     }
 }

@@ -8,6 +8,7 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputInterface;
 
 /**
  * @group slow
@@ -36,9 +37,9 @@ class GitServiceTest extends TestCase
         }
 
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
+        $container->set(InputInterface::class, new ArrayInput([]));
 
-        $this->git = $container->get('git');
+        $this->git = $container->get(Git::class);
         $this->git->init($repository, true);
         $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
@@ -66,14 +67,10 @@ class GitServiceTest extends TestCase
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir));
         mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir . '/1/2/3/4/5'));
-<<<<<<< HEAD
-        $this->expectExceptionMessage('Not a git repository');
-=======
 
         // Test a non-repository.
         $this->assertFalse($this->git->getRoot($this->tempDir));
-        $this->setExpectedException('Exception', 'Not a git repository');
->>>>>>> 06915848
+        $this->expectExceptionMessage('Not a git repository');
         $this->git->getRoot($this->tempDir, true);
     }
 

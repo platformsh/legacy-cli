@@ -2,16 +2,17 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Tests\Container;
 
-class RemoteEnvVarsTest extends \PHPUnit_Framework_TestCase {
+class RemoteEnvVarsTest extends TestCase {
     /** @var RemoteEnvVars */
     private $service;
 
     public function setUp() {
         $container = Container::instance();
-        $this->service = $container->get('remote_env_vars');
+        $this->service = $container->get(RemoteEnvVars::class);
     }
 
     public function testExtractResult()
@@ -27,7 +28,7 @@ class RemoteEnvVarsTest extends \PHPUnit_Framework_TestCase {
             ["\n--BEGIN--\n\t", "\n\t-END-\n\t\n", "\n\tPAYLOAD\t\n", "\$ # before\n", "\n\$ # after\n"],
         ];
         foreach ($cases as $case) {
-            list($begin, $end, $payload, $before, $after) = $case;
+            [$begin, $end, $payload, $before, $after] = $case;
             $this->assertEquals($payload, $method->invoke($this->service, $before . $begin . $payload . $end . $after, $begin, $end));
         }
     }

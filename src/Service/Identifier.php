@@ -12,7 +12,6 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Identifier
@@ -22,21 +21,12 @@ class Identifier
     private $stdErr;
     private $cache;
 
-    /**
-     * Constructor.
-     *
-     * @param \Platformsh\Cli\Service\Config|null $config
-     * @param \Platformsh\Cli\Service\Api|null $api
-     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
-     * @param CacheProvider|null $cache
-     */
-    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null, CacheProvider $cache = null)
+    public function __construct(Config $config, Api $api, OutputInterface $output, CacheProvider $cache)
     {
-        $this->config = $config ?: new Config();
-        $this->api = $api ?: new Api();
-        $output = $output ?: new NullOutput();
+        $this->config = $config;
+        $this->api = $api;
         $this->stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
-        $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+        $this->cache = $cache;
     }
 
     /**

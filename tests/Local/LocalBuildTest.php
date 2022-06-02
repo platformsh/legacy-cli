@@ -3,13 +3,10 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Tests\Local;
 
-<<<<<<< HEAD
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Local\LocalBuild;
-=======
 use Platformsh\Cli\Tests\Container;
 use Symfony\Component\Console\Input\ArrayInput;
->>>>>>> 06915848
 
 class LocalBuildTest extends TestCase
 {
@@ -17,9 +14,8 @@ class LocalBuildTest extends TestCase
 
     public function setUp() {
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
         /** @var \Platformsh\Cli\Local\LocalBuild localBuild */
-        $this->localBuild = $container->get('local.build');
+        $this->localBuild = $container->get(LocalBuild::class);
     }
 
     public function testGetTreeId()

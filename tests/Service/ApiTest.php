@@ -2,12 +2,16 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Tests\Container;
 
-class ApiTest extends \PHPUnit_Framework_TestCase
+class ApiTest extends TestCase
 {
     public function testCompareDomains() {
-        $api = new Api();
+        $container = Container::instance();
+        /** @var Api $api */
+        $api = $container->get(Api::class);
         $arr = [
             'region-1.fxample.com',
             'region-4.example.com',
