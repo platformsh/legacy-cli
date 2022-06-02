@@ -6,7 +6,7 @@
         "php": ">=7.2.5",
         "doctrine/cache": "^1.7",
         "platformsh/console-form": ">=0.0.29 <2.0",
-        "platformsh/client": "^2.1",
+        "platformsh/client": "^2.6@beta",
         "symfony/console": "^5.4",
         "symfony/yaml": "^5.4",
         "symfony/finder": "^5.4",

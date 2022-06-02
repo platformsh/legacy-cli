@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2ba89fbabd442de429f44dd3587a51b6",
+    "content-hash": "000e955bd225e227fb529625a1900ac2",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -574,6 +574,68 @@
             "time": "2022-03-20T21:55:58+00:00"
         },
         {
+            "name": "khill/php-duration",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kevinkhill/php-duration.git",
+                "reference": "dcb222fd0c9eb459676c9eef6fb9f9d2baf749b1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kevinkhill/php-duration/zipball/dcb222fd0c9eb459676c9eef6fb9f9d2baf749b1",
+                "reference": "dcb222fd0c9eb459676c9eef6fb9f9d2baf749b1",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "require-dev": {
+                "doctrine/instantiator": "1.0.4",
+                "phpstan/phpstan": "^0.12.81",
+                "phpunit/phpunit": "~4.8|~5.0",
+                "satooshi/php-coveralls": "~1.0",
+                "symfony/config": "~2.0",
+                "symfony/console": "~2.0",
+                "symfony/filesystem": "~2.0",
+                "symfony/stopwatch": "~2.0",
+                "symfony/yaml": "~2.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Khill\\Duration\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Kevin Hill",
+                    "email": "kevinkhill@gmail.com",
+                    "role": "Creator"
+                },
+                {
+                    "name": "Duration Community",
+                    "homepage": "https://github.com/kevinkhill/php-duration/contributors"
+                }
+            ],
+            "description": "Converts between colon formatted time, human-readable time and seconds",
+            "keywords": [
+                "convert",
+                "duration",
+                "seconds",
+                "time"
+            ],
+            "support": {
+                "issues": "https://github.com/kevinkhill/php-duration/issues",
+                "source": "https://github.com/kevinkhill/php-duration/tree/1.1.0"
+            },
+            "time": "2021-03-17T11:34:55+00:00"
+        },
+        {
             "name": "league/oauth2-client",
             "version": "2.6.1",
             "source": {
@@ -825,23 +887,24 @@
         },
         {
             "name": "platformsh/client",
-            "version": "2.5.1",
+            "version": "2.6.0-beta1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "a8744d8a4dedff4a22c47d714045885005c32624"
+                "reference": "7765b6cd25f67485f5cac48c34b166deb313ab4c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/a8744d8a4dedff4a22c47d714045885005c32624",
-                "reference": "a8744d8a4dedff4a22c47d714045885005c32624",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/7765b6cd25f67485f5cac48c34b166deb313ab4c",
+                "reference": "7765b6cd25f67485f5cac48c34b166deb313ab4c",
                 "shasum": ""
             },
             "require": {
                 "cocur/slugify": "^3.0",
                 "ext-json": "*",
                 "guzzlehttp/guzzle": "^6.3 || ^7.0",
-                "php": ">=7.1.0",
+                "khill/php-duration": "^1.1",
+                "php": ">=7.2.5",
                 "platformsh/oauth2": ">=0.0.3 <2"
             },
             "require-dev": {
@@ -865,9 +928,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/2.5.1"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/2.6.0-beta1"
             },
-            "time": "2021-10-20T20:22:39+00:00"
+            "time": "2022-06-02T08:50:05+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -4530,7 +4593,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "platformsh/client": 10
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
