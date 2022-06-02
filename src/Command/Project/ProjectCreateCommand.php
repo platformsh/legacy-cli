@@ -415,6 +415,7 @@ EOF
             'optionsCallback' => function () use ($setupOptions) {
                 return $this->getAvailableRegions(true, $setupOptions);
             },
+            'allowOther' => true,
           ]),
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',

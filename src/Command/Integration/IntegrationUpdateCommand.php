@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -54,6 +55,9 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
             $field->onChange($values);
             if (!$form->includeField($field, $values)) {
+                if ($field->getValueFromInput($input, false) !== null) {
+                    return $this->handleConditionalFieldException(new ConditionalFieldException('--' . $field->getOptionName() . ' is not applicable', $field, $values));
+                }
                 continue;
             }
             $value = $field->getValueFromInput($input, false);

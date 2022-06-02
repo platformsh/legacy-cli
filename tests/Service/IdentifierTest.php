@@ -3,14 +3,16 @@
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Identifier;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 
 class IdentifierTest extends TestCase
 {
 
     public function testIdentify()
     {
-        $identifier = new Identifier();
+        $identifier = new Identifier((new Config())->withOverrides(['detection.use_site_headers' => false]));
 
         $url = 'https://master-4jkbdba6zde2i.eu-2.platformsh.site';
         $expected = [
@@ -78,7 +80,7 @@ class IdentifierTest extends TestCase
 
     public function testIdentifyWithEnvironmentIdOf0()
     {
-        $identifier = new Identifier();
+        $identifier = new Identifier((new Config())->withOverrides(['detection.use_site_headers' => false]));
 
         $url = 'https://eu-2.platform.sh/projects/4jkbdba6zde2i/environments/0';
         $expected = [
@@ -97,5 +99,22 @@ class IdentifierTest extends TestCase
             'appId' => null,
         ];
         $this->assertEquals($expected, $identifier->identify($url));
+    }
+
+    public function testIdentifyWithHyphenPaths()
+    {
+        $identifier = new Identifier((new Config())->withOverrides(['detection.use_site_headers' => false]));
+
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i/abc/xyz';
+        $expected = ['projectId' => '4jkbdba6zde2i', 'environmentId' => 'abc', 'host' => null, 'appId' => null];
+        $this->assertEquals($expected, $identifier->identify($url));
+
+        $url = 'https://console.platform.sh/foo/4jkbdba6zde2i/-/xyz';
+        $expected = ['projectId' => '4jkbdba6zde2i', 'environmentId' => null, 'host' => null, 'appId' => null];
+        $this->assertEquals($expected, $identifier->identify($url));
+
+        $url = 'https://console.platform.sh/foo/-/xyz';
+        $this->setExpectedException(InvalidArgumentException::class);
+        $identifier->identify($url);
     }
 }

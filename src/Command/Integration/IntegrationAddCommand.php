@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Integration;
+use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -39,8 +40,11 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $selection = $this->selector->getSelection($input);
         $project = $selection->getProject();
 
-        $values = $this->getForm()
-                       ->resolveOptions($input, $this->stdErr, $this->questionHelper);
+        try {
+            $values = $this->getForm()->resolveOptions($input, $this->stdErr, $this->questionHelper);
+        } catch (ConditionalFieldException $e) {
+            return $this->handleConditionalFieldException($e);
+        }
 
         // Validate credentials for new Bitbucket integrations.
         if (isset($values['type']) && $values['type'] === 'bitbucket' && isset($values['app_credentials'])) {

@@ -603,10 +603,13 @@ class Api
         // Find the project in the user's main project list. This uses a
         // separate cache.
         $projects = $this->getProjects($refresh);
-        if (isset($projects[$id])) {
-            if ($host === null || stripos(parse_url($projects[$id]->getUri(), PHP_URL_HOST), $host) !== false) {
-                return $projects[$id];
+        if (isset($projects[$id]) && !$this->hostConflicts($projects[$id], $host)) {
+            $project = $projects[$id];
+            if ($apiUrl = $this->config->getWithDefault('api.base_url', '')) {
+                $project->setApiUrl($apiUrl);
             }
+
+            return $project;
         }
 
         // Find the project directly.
@@ -624,19 +627,41 @@ class Api
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
                 $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
+            } else {
+                return false;
             }
         } else {
             $guzzleClient = $this->getHttpClient();
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
-            $apiUrl = $this->config->getWithDefault('api.base_url', '');
-            if ($apiUrl) {
-                $project->setApiUrl($apiUrl);
-            }
+        }
+        $apiUrl = $this->config->getWithDefault('api.base_url', '');
+        if ($apiUrl) {
+            $project->setApiUrl($apiUrl);
         }
 
         return $project;
+    }
+
+    /**
+     * Checks whether a project matches the given hostname.
+     *
+     * Used to validate whether a project cached against an ID has a
+     * conflicting hostname (IDs can be the same on different hosts).
+     *
+     * @param Project $project
+     * @param string|null $host
+     *
+     * @return bool
+     */
+    private function hostConflicts(Project $project, $host)
+    {
+        if ($host !== null && $project->hasProperty('endpoint', false)) {
+            $projectHost = \parse_url($project->getProperty('endpoint', true, false), PHP_URL_HOST);
+            return \stripos($projectHost, $host) === false;
+        }
+        return false;
     }
 
     /**

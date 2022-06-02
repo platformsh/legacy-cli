@@ -14,6 +14,7 @@ use Platformsh\Cli\Service\VariableService;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
+use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -114,7 +115,23 @@ class VariableCreateCommand extends CommandBase
             return 1;
         }
 
-        $values = $this->form->resolveOptions($input, $output, $this->questionHelper);
+        try {
+            $values = $this->form->resolveOptions($input, $output, $this->questionHelper);
+        } catch (ConditionalFieldException $e) {
+            $previousValues = $e->getPreviousValues();
+            $field = $e->getField();
+            $conditions = $field->getConditions();
+            if (isset($previousValues['level']) && isset($conditions['level']) && is_string($conditions['level']) && $previousValues['level'] !== $conditions['level']) {
+                $this->stdErr->writeln(\sprintf(
+                    'The option <error>--%s</error> can only be used for variables at the <comment>%s</comment> level, not at the <comment>%s</comment> level.',
+                    $field->getOptionName(),
+                    $conditions['level'],
+                    $previousValues['level']
+                ));
+                return 1;
+            }
+            throw $e;
+        }
 
         if (isset($values['prefix']) && isset($values['name'])) {
             if ($values['prefix'] !== 'none') {
