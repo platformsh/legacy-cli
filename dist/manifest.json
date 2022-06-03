@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "36898b8def2215174cf02e021d29e8b93bd6d3f5",
-        "sha256": "cfe3b0ae7c3a2929fe7ddc51ed4619084c52924c3c6055826cd7c03da44a4d66",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.7/platform.phar",
-        "version": "3.79.7",
+        "sha1": "3007ca5bb22bb2902aec005ceb36321cbadcdaaf",
+        "sha256": "049047a2c133711e3a008766ee46b39297fe7e711be82bdb240bec9643440ff4",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.8/platform.phar",
+        "version": "3.79.8",
         "php": {
             "min": "5.5.9"
         },
@@ -448,7 +448,8 @@
             "3.79.4": "* Handle the \"cancelled\" state in the `activity:log` command.\n* Allow manual override of the region ID in the `project:create` command.\n* Always use the API gateway URL (\"external API proxy\") when configured.\n* Error when a conditional field is used in the wrong context.\n  For example, when the `--fetch-branches` option is used with the `webhook`\n  integration type, previously it would have been silently ignored, now it\n  will fail with an error message.\n  Affected commands:\n  `integration:add`, `integration:update`, `variable:create`, `variable:update`\n* Allow pagination to be disabled in the `project:list` (`projects`) command.\n  Pagination for this command can be disabled using an environment variable:\n\n        export PLATFORMSH_CLI_PAGINATION_ENABLED=0\n\n    or by adding the following to `$HOME/.platformsh/config.yaml`:\n\n        pagination:\n          enabled: false\n* Return a 0 exit code from `environment:delete` if no error occurred.",
             "3.79.5": "* Fix: \"pagination\" section in config.yaml could not override the default\n* Fix potentially not using the cache when a project hostname is known\n* Fix \"Call to a member function setApiUrl() on bool\"",
             "3.79.6": "* Update client to fix SSH URL problem introduced in v3.79.4.",
-            "3.79.7": "* Fix an additional bug introduced in v3.79.4: the activity log ending abruptly\n  without refreshing the activity state.\n* Avoid errors caused by invalid config when processing environment variables."
+            "3.79.7": "* Fix an additional bug introduced in v3.79.4: the activity log ending abruptly\n  without refreshing the activity state.\n* Avoid errors caused by invalid config when processing environment variables.",
+            "3.79.8": "* Add --if-exists to pg_dump, in the db:dump command, so that PostgreSQL dump\n  files can be restored without errors on an empty database.\n* Avoid matching \"-\" as an environment ID when parsing a Console URL.\n* Fix legacy region detection in the backup:restore command, preventing\n  accidental restore to the wrong environment on such regions."
         }
     }
 ]
