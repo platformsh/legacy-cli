@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Console;
 class AnimationFrame
 {
     private $content;
-    private $duration = 500000;
+    private $duration;
 
     public function __construct($content, $duration = 50000)
     {

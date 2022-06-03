@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Integration\Activity;
 
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
-use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;

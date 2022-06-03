@@ -67,7 +67,7 @@ class LsCommand extends CommandBase
 
             return 3;
         }
-        if ($tree == false) {
+        if (!$tree) {
             $this->stdErr->writeln(sprintf('Directory not found: <error>%s</error>', $input->getArgument('path')));
 
             return 2;

@@ -7,6 +7,7 @@ use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Selector;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
+use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
 class CompletionCommand extends ParentCompletionCommand
@@ -40,140 +41,140 @@ class CompletionCommand extends ParentCompletionCommand
 
         $this->handler->addHandlers([
             new Completion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'project',
-                Completion::TYPE_OPTION,
+                CompletionInterface::TYPE_OPTION,
                 $projectIds
             ),
             new Completion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'project',
-                Completion::TYPE_ARGUMENT,
+                CompletionInterface::TYPE_ARGUMENT,
                 $projectIds
             ),
             new Completion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'environment',
-                Completion::TYPE_ARGUMENT,
+                CompletionInterface::TYPE_ARGUMENT,
                 [$this, 'getEnvironments']
             ),
             new Completion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'environment',
-                Completion::TYPE_OPTION,
+                CompletionInterface::TYPE_OPTION,
                 [$this, 'getEnvironments']
             ),
             new Completion(
                 'environment:branch',
                 'parent',
-                Completion::TYPE_ARGUMENT,
+                CompletionInterface::TYPE_ARGUMENT,
                 [$this, 'getEnvironments']
             ),
             new Completion(
                 'environment:checkout',
                 'id',
-                Completion::TYPE_ARGUMENT,
+                CompletionInterface::TYPE_ARGUMENT,
                 [$this, 'getEnvironmentsForCheckout']
             ),
             new Completion(
                 'user:role',
                 'email',
-                Completion::TYPE_ARGUMENT,
+                CompletionInterface::TYPE_ARGUMENT,
                 [$this, 'getUserEmails']
             ),
             new Completion(
                 'user:role',
                 'level',
-                Completion::TYPE_OPTION,
+                CompletionInterface::TYPE_OPTION,
                 ['project', 'environment']
             ),
             new Completion(
                 'user:delete',
                 'email',
-                Completion::TYPE_ARGUMENT,
+                CompletionInterface::TYPE_ARGUMENT,
                 [$this, 'getUserEmails']
             ),
             new Completion\ShellPathCompletion(
                 'ssh-key:add',
                 'path',
-                Completion::TYPE_ARGUMENT
+                CompletionInterface::TYPE_ARGUMENT
             ),
             new Completion\ShellPathCompletion(
                 'domain:add',
                 'cert',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'domain:add',
                 'key',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'domain:add',
                 'chain',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'local:build',
                 'source',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'local:build',
                 'destination',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'environment:sql-dump',
                 'file',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'local:init',
                 'directory',
-                Completion::TYPE_ARGUMENT
+                CompletionInterface::TYPE_ARGUMENT
             ),
             new Completion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'app',
-                Completion::TYPE_OPTION,
+                CompletionInterface::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
             new Completion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'app',
-                Completion::TYPE_OPTION,
+                CompletionInterface::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
             new Completion\ShellPathCompletion(
-                Completion::ALL_COMMANDS,
+                CompletionInterface::ALL_COMMANDS,
                 'identity-file',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'server:run',
                 'log',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'server:start',
                 'log',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'service:mongo:restore',
                 'archive',
-                Completion::TYPE_ARGUMENT
+                CompletionInterface::TYPE_ARGUMENT
             ),
             new Completion\ShellPathCompletion(
                 'integration:add',
                 'file',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
             new Completion\ShellPathCompletion(
                 'integration:update',
                 'file',
-                Completion::TYPE_OPTION
+                CompletionInterface::TYPE_OPTION
             ),
         ]);
 
@@ -313,7 +314,7 @@ class CompletionCommand extends ParentCompletionCommand
      */
     protected function getProjectIdFromCommandLine($commandLine)
     {
-        if (preg_match('/\W(\-\-project|\-p|get) ?=? ?[\'"]?([0-9a-z]+)[\'"]?/', $commandLine, $matches)) {
+        if (preg_match('/\W(--project|-p|get) ?=? ?[\'"]?([0-9a-z]+)[\'"]?/', $commandLine, $matches)) {
             return $matches[2];
         }
 

@@ -11,7 +11,6 @@ class Login
     private $api;
     private $certifier;
     private $config;
-    private $questionHelper;
     private $sshConfig;
     private $stdErr;
 
@@ -20,14 +19,12 @@ class Login
         Certifier $certifier,
         Config $config,
         OutputInterface $output,
-        QuestionHelper $questionHelper,
         SshConfig $sshConfig
     )
     {
         $this->api = $api;
         $this->certifier = $certifier;
         $this->config = $config;
-        $this->questionHelper = $questionHelper;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $this->sshConfig = $sshConfig;
     }

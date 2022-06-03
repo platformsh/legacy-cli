@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -17,18 +16,15 @@ class SelfStatsCommand extends CommandBase
 {
     protected static $defaultName = 'self:stats';
 
-    private $api;
     private $config;
     private $formatter;
     private $table;
 
     public function __construct(
-        Api $api,
         Config $config,
         PropertyFormatter $formatter,
         Table $table
     ) {
-        $this->api = $api;
         $this->config = $config;
         $this->formatter = $formatter;
         $this->table = $table;

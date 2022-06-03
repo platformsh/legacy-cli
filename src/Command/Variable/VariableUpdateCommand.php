@@ -5,9 +5,6 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\ActivityService;
-use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\VariableService;
 use Platformsh\ConsoleForm\Form;
@@ -23,24 +20,15 @@ class VariableUpdateCommand extends CommandBase
     protected static $defaultName = 'variable:update';
 
     private $activityService;
-    private $api;
-    private $config;
-    private $questionHelper;
     private $selector;
     private $variableService;
 
     public function __construct(
         ActivityService $activityService,
-        Api $api,
-        Config $config,
-        QuestionHelper $questionHelper,
         Selector $selector,
         VariableService $variableService
     ) {
         $this->activityService = $activityService;
-        $this->api = $api;
-        $this->config = $config;
-        $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         $this->variableService = $variableService;
         parent::__construct();

@@ -6,7 +6,6 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -20,18 +19,15 @@ class MongoRestoreCommand extends CommandBase
 
     private $relationships;
     private $selector;
-    private $shell;
     private $ssh;
 
     public function __construct(
         Relationships $relationships,
         Selector $selector,
-        Shell $shell,
         Ssh $ssh
     ) {
         $this->relationships = $relationships;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }

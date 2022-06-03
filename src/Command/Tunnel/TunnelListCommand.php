@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\TunnelService;
@@ -18,20 +17,17 @@ class TunnelListCommand extends CommandBase
     protected static $defaultName = 'tunnel:list';
 
     private $config;
-    private $formatter;
     private $selector;
     private $table;
     private $tunnelService;
 
     public function __construct(
         Config $config,
-        PropertyFormatter $formatter,
         Selector $selector,
         Table $table,
         TunnelService $tunnelService
     ) {
         $this->config = $config;
-        $this->formatter = $formatter;
         $this->selector = $selector;
         $this->table = $table;
         $this->tunnelService = $tunnelService;

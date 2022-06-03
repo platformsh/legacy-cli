@@ -190,9 +190,7 @@ EOT
                 }
             }
 
-            $this->stdErr->writeln(sprintf(
-                'To set up the CLI, add this directory to your Path environment variable:'
-            ));
+            $this->stdErr->writeln('To set up the CLI, add this directory to your Path environment variable:');
             $this->stdErr->writeln(sprintf('<info>%s</info>', $binDir));
             $this->stdErr->writeln('Then open a new terminal to continue.');
 

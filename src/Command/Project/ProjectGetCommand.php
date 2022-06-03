@@ -157,9 +157,7 @@ class ProjectGetCommand extends CommandBase
                 || $this->git->remoteRefExists($gitUrl);
         } catch (ProcessFailedException $e) {
             // The ls-remote command failed.
-            $this->stdErr->writeln(sprintf(
-                'Failed to connect to the Git repository: <error>' . $gitUrl . '</error>'
-            ));
+            $this->stdErr->writeln('Failed to connect to the Git repository: <error>' . $gitUrl . '</error>');
 
             $this->suggestSshRemedies($gitUrl, $e->getProcess());
 

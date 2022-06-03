@@ -83,7 +83,7 @@ class Relationships implements InputConfiguringInterface
             if (!empty($schemes)) {
                 $stdErr->writeln(sprintf('No relationships found matching scheme(s): <error>%s</error>.', implode(', ', $schemes)));
             } else {
-                $stdErr->writeln(sprintf('No relationships found'));
+                $stdErr->writeln('No relationships found');
             }
             return false;
         }

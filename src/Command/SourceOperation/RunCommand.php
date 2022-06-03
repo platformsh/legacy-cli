@@ -6,7 +6,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\Variable;
 use Platformsh\Cli\Service\ActivityService;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Selector;
 use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -20,16 +19,13 @@ class RunCommand extends CommandBase
     protected $stability = 'BETA';
 
     private $activityService;
-    private $api;
     private $selector;
 
     public function __construct(
         ActivityService $activityService,
-        Api $api,
         Selector $selector
     ) {
         $this->activityService = $activityService;
-        $this->api = $api;
         $this->selector = $selector;
         parent::__construct();
     }

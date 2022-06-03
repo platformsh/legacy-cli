@@ -7,7 +7,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\Selector;
 use Symfony\Component\Console\Input\InputArgument;
@@ -19,20 +18,17 @@ class EnvironmentSetRemoteCommand extends CommandBase
     protected static $defaultName = 'environment:set-remote';
 
     private $api;
-    private $config;
     private $git;
     private $localProject;
     private $selector;
 
     public function __construct(
         Api $api,
-        Config $config,
         Git $git,
         LocalProject $localProject,
         Selector $selector
     ) {
         $this->api = $api;
-        $this->config = $config;
         $this->git = $git;
         $this->localProject = $localProject;
         $this->selector = $selector;

@@ -208,7 +208,7 @@ class CustomTextDescriptor extends TextDescriptor
         foreach ($commands as $command) {
             $aliasesString = $this->formatAliases($command->getAliases());
             $commandWidth = strlen($command->getName()) + strlen($aliasesString);
-            $width = $commandWidth > $width ? $commandWidth : $width;
+            $width = max($commandWidth, $width);
         }
 
         // Limit to a maximum.

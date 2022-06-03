@@ -7,10 +7,8 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
@@ -23,25 +21,19 @@ class EnvironmentDrushCommand extends CommandBase
     protected static $defaultName = 'environment:drush';
 
     private $api;
-    private $config;
     private $remoteEnvVars;
     private $selector;
-    private $shell;
     private $ssh;
 
     public function __construct(
         Api $api,
-        Config $config,
         RemoteEnvVars $remoteEnvVars,
         Selector $selector,
-        Shell $shell,
         Ssh $ssh
     ) {
         $this->api = $api;
-        $this->config = $config;
         $this->remoteEnvVars = $remoteEnvVars;
         $this->selector = $selector;
-        $this->shell = $shell;
         $this->ssh = $ssh;
         parent::__construct();
     }

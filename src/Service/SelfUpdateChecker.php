@@ -111,7 +111,6 @@ class SelfUpdateChecker
             if ($newMajorVersion === $currentMajorVersion
                 && $this->input instanceof ArgvInput
                 && is_executable($pharFilename)) {
-                /** @noinspection PhpUndefinedMethodInspection */
                 $originalCommand = $this->input->__toString();
                 $questionText = "\n"
                     . 'Original command: <info>' . $originalCommand . '</info>'
