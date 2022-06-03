@@ -99,9 +99,10 @@ class BackupRestoreCommand extends CommandBase
 
         // Do not allow restoring with --target on legacy regions: it can
         // overwrite the wrong branch. This is a (hopefully) temporary measure.
+        $region = $this->getSelectedProject()->region;
         if ((!$targetEnvironment || $targetEnvironment->id !== $environment->id)
-            && preg_match('#https://(eu|us)\.[pm]#', $this->getSelectedProject()->getUri())) {
-            $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region.');
+            && \preg_match('#^(eu|us|bc)\.[pm]#', $region)) {
+            $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region: <comment>' . $region . '</comment>');
             $this->stdErr->writeln('Please contact support.');
 
             return 1;
