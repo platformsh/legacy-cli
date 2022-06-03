@@ -218,7 +218,7 @@ class DbDumpCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --no-owner --clean --blobs ' . $this->relationships->getDbCommandArgs('pg_dump', $database, $schema);
+                $dumpCommand = 'pg_dump --no-owner --if-exists --clean --blobs ' . $this->relationships->getDbCommandArgs('pg_dump', $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }

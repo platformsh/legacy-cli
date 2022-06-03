@@ -11,15 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
-    /**
-     * The timestamp when we can stop showing a warning about legacy APIs.
-     */
-    const LEGACY_WARNING_END = 1648771200; // April 2022
-    const LEGACY_WARNING = <<<END_WARNING
-<options=bold;fg=yellow>Warning</>
-Owning <options=bold>more than one</> organization will cause some older APIs to stop working.
-If you have scripts that create projects automatically, you must update them to use the newer organization-based APIs.
-END_WARNING;
 
     protected function configure()
     {
@@ -34,9 +25,6 @@ You can add other users to your organization, for collaboratively managing the o
 
 Access to individual projects (API and SSH) is managed separately, for now.
 END_HELP;
-        if ($this->config()->isDirect() && time() < self::LEGACY_WARNING_END) {
-            $help .= "\n\n" . self::LEGACY_WARNING;
-        }
         $this->setHelp($help);
     }
 
@@ -87,26 +75,6 @@ END_HELP;
             $form->getField('label')->set('default', \ucfirst($name));
         }
         $values = $form->resolveOptions($input, $output, $questionHelper);
-
-        $current = $client->listOrganizationsByOwner($this->api()->getMyUserId());
-        if (\count($current) === 1 && ($currentOrg = \reset($current))) {
-            /** @var \Platformsh\Client\Model\Organization\Organization $currentOrg */
-            if ($currentOrg->name === $values['name']) {
-                $this->stdErr->writeln('You already own the organization: ' . $this->api()->getOrganizationLabel($currentOrg));
-                return 1;
-            }
-            $show_legacy_warning = $this->config()->isDirect()
-                && (
-                    time() < self::LEGACY_WARNING_END
-                    || (($created = \strtotime($currentOrg->created_at)) !== false && $created < self::LEGACY_WARNING_END)
-                );
-            if ($show_legacy_warning) {
-                $this->stdErr->writeln('You currently own one organization: ' . $this->api()->getOrganizationLabel($currentOrg));
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln(self::LEGACY_WARNING);
-                $this->stdErr->writeln('');
-            }
-        }
 
         if (!$questionHelper->confirm(\sprintf('Are you sure you want to create a new organization <info>%s</info>?', $values['name']), false)) {
             return 1;
