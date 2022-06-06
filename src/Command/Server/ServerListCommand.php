@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ServerListCommand extends ServerCommandBase
 {
-    protected static $defaultName = 'server:list';
+    protected static $defaultName = 'server:list|servers';
 
     private $localProject;
     private $table;
@@ -30,8 +30,7 @@ class ServerListCommand extends ServerCommandBase
 
     protected function configure()
     {
-        $this->setAliases(['servers'])
-          ->setDescription('List running local project web server(s)')
+        $this->setDescription('List running local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'List all servers');
         $this->table->configureInput($this->getDefinition());
     }

@@ -12,8 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class BackupCreateCommand extends CommandBase
 {
-
-    protected static $defaultName = 'backup:create';
+    protected static $defaultName = 'backup:create|backup';
     protected static $defaultDescription = 'Make a backup of an environment';
 
     private $api;
@@ -29,13 +28,12 @@ class BackupCreateCommand extends CommandBase
         $this->activityService = $activityService;
         $this->selector = $selector;
         parent::__construct();
+        $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
     }
 
     protected function configure()
     {
-        $this
-            ->setAliases(['backup'])
-            ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
+        $this->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('live', null, InputOption::VALUE_NONE,
                 'Live backup: do not stop the environment.'
                 . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
@@ -46,7 +44,6 @@ class BackupCreateCommand extends CommandBase
         $this->selector->addEnvironmentOption($definition);
         $this->activityService->configureInput($definition);
         $this->addOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
-        $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
         $this->addExample('Make a backup of the current environment');
         $this->addExample('Request a backup (and exit quickly)', '--no-wait');
         $this->addExample('Make a backup avoiding downtime (but risking inconsistency)', '--live');

@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoShellCommand extends CommandBase
 {
-    protected static $defaultName = 'service:mongo:shell';
+    protected static $defaultName = 'service:mongo:shell|mongo';
 
     private $relationships;
     private $selector;
@@ -34,7 +34,6 @@ class MongoShellCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['mongo']);
         $this->setDescription('Use the MongoDB shell');
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
 

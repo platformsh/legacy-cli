@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationUserListCommand extends OrganizationCommandBase
 {
-    protected static $defaultName = 'organization:user:list';
+    protected static $defaultName = 'organization:user:list|organization:users';
     protected static $defaultDescription = 'List users in an organization';
 
     private $api;
@@ -32,7 +32,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
 
     protected function configure()
     {
-        $this->setAliases(['organization:users']);
         $this->selector->addOrganizationOptions($this->getDefinition());
         $this->formatter->configureInput($this->getDefinition());
         $this->table->configureInput($this->getDefinition());

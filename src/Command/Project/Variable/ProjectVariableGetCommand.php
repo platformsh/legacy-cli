@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ProjectVariableGetCommand extends CommandBase
 {
-    protected static $defaultName = 'project:variable:get';
+    protected static $defaultName = 'project:variable:get|project-variables|pvget';
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -34,6 +34,7 @@ class ProjectVariableGetCommand extends CommandBase
         $this->selector = $selector;
         $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
+        $this->setHiddenAliases(['project:variable:list']);
     }
 
     /**
@@ -41,8 +42,7 @@ class ProjectVariableGetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['project-variables', 'pvget'])
-            ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
+        $this->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
             ->setDescription('View variable(s) for a project');
         $this->selector->addProjectOption($this->getDefinition());
@@ -51,7 +51,6 @@ class ProjectVariableGetCommand extends CommandBase
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>"
         );
-        $this->setHiddenAliases(['project:variable:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

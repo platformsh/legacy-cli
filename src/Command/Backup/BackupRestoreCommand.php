@@ -38,6 +38,7 @@ class BackupRestoreCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
+        $this->setHiddenAliases(['environment:restore', 'snapshot:restore']);
     }
 
     protected function configure()
@@ -51,8 +52,6 @@ class BackupRestoreCommand extends CommandBase
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->activityService->configureInput($definition);
-
-        $this->setHiddenAliases(['environment:restore', 'snapshot:restore']);
 
         $this->addExample('Restore the most recent backup');
         $this->addExample('Restore a specific backup', '92c9a4b2aa75422efb3d');

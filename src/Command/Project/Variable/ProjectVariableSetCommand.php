@@ -16,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ProjectVariableSetCommand extends CommandBase
 {
-    protected static $defaultName = 'project:variable:set';
+    protected static $defaultName = 'project:variable:set|pvset';
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -37,8 +37,7 @@ class ProjectVariableSetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['pvset'])
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')

@@ -40,13 +40,13 @@ class SelfInstallCommand extends CommandBase
         $this->shell = $shell;
         $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
+        $this->setHiddenAliases(['local:install']);
     }
 
     protected function configure()
     {
         $this->setDescription('Install or update CLI configuration files')
              ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
-        $this->setHiddenAliases(['local:install']);
         $cliName = $this->config->get('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},

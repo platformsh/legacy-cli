@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected static $defaultName = 'environment:logs';
+    protected static $defaultName = 'environment:logs|log';
 
     private $cache;
     private $questionHelper;
@@ -31,17 +31,15 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->selector = $selector;
         $this->ssh = $ssh;
         parent::__construct();
+        $this->setHiddenAliases(['logs']);
     }
 
     protected function configure()
     {
-        $this->setAliases(['log'])
-            ->setDescription("Read an environment's logs")
+        $this->setDescription("Read an environment's logs")
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
-
-        $this->setHiddenAliases(['logs']);
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition, true);

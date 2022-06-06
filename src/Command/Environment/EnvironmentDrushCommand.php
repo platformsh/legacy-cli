@@ -18,7 +18,7 @@ use Symfony\Component\Console\Terminal;
 
 class EnvironmentDrushCommand extends CommandBase
 {
-    protected static $defaultName = 'environment:drush';
+    protected static $defaultName = 'environment:drush|drush';
 
     private $api;
     private $remoteEnvVars;
@@ -40,8 +40,7 @@ class EnvironmentDrushCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['drush'])
-            ->setDescription('Run a drush command on the remote environment')
+        $this->setDescription('Run a drush command on the remote environment')
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
 
         $definition = $this->getDefinition();

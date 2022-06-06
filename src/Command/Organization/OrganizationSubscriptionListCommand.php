@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 {
-    protected static $defaultName = 'organization:subscription:list';
+    protected static $defaultName = 'organization:subscription:list|organization:subscriptions';
     protected static $defaultDescription = 'List subscriptions within an organization';
 
     private $api;
@@ -30,9 +30,6 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
      */
     protected function configure()
     {
-        $this->setName('organization:subscription:list')
-            ->setAliases(['organization:subscriptions'])
-            ->setDescription('List subscriptions within an organization');
         $this->selector->addOrganizationOptions($this->getDefinition());
         $this->table->configureInput($this->getDefinition());
     }

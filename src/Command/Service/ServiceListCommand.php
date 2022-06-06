@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ServiceListCommand extends CommandBase
 {
-    protected static $defaultName = 'service:list';
+    protected static $defaultName = 'service:list|services';
 
     private $api;
     private $config;
@@ -40,8 +40,7 @@ class ServiceListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['services'])
-            ->setDescription('List services in the project')
+        $this->setDescription('List services in the project')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();

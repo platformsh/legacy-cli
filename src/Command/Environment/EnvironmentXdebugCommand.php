@@ -15,7 +15,7 @@ class EnvironmentXdebugCommand extends CommandBase
 {
     public const SOCKET_PATH = '/run/xdebug-tunnel.sock';
 
-    protected static $defaultName = 'environment:xdebug';
+    protected static $defaultName = 'environment:xdebug|xdebug';
     protected static $defaultDescription = 'Open a tunnel to Xdebug on the environment';
 
     private $config;
@@ -41,9 +41,7 @@ class EnvironmentXdebugCommand extends CommandBase
      */
     protected function configure()
     {
-        $this
-            ->setAliases(['xdebug'])
-            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
+        $this->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
         $this->selector->addAllOptions($this->getDefinition());
         $this->ssh->configureInput($this->getDefinition());
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');

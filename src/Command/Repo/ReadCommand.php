@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ReadCommand extends CommandBase
 {
-    protected static $defaultName = 'repo:read';
+    protected static $defaultName = 'repo:read|read';
     protected static $defaultDescription = 'Read a directory or file in the project repository';
 
     private $gitDataApi;
@@ -38,9 +38,7 @@ class ReadCommand extends CommandBase
      */
     protected function configure()
     {
-        $this
-            ->setAliases(['read'])
-            ->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')
+        $this->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')
             ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());

@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class BackupListCommand extends CommandBase
 {
-    protected static $defaultName = 'backup:list';
+    protected static $defaultName = 'backup:list|backups';
     protected static $defaultDescription = 'List available backups of an environment';
 
     private $api;
@@ -32,20 +32,18 @@ class BackupListCommand extends CommandBase
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
+        $this->setHiddenAliases(['snapshots', 'snapshot:list']);
     }
 
     protected function configure()
     {
-        $this
-            ->setAliases(['backups'])
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused')
+        $this->addOption('limit', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused')
             ->addOption('start', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused');
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->table->configureInput($definition);
         $this->formatter->configureInput($definition);
-        $this->setHiddenAliases(['snapshots', 'snapshot:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

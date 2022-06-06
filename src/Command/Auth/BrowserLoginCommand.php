@@ -44,6 +44,10 @@ class BrowserLoginCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->url = $url;
         parent::__construct();
+
+        if ($this->config->get('application.login_method') === 'browser') {
+            $this->setAliases(['login']);
+        }
     }
 
     protected function configure()
@@ -51,10 +55,6 @@ class BrowserLoginCommand extends CommandBase
         $service = $this->config->get('service.name');
         $applicationName = $this->config->get('application.name');
         $executable = $this->config->get('application.executable');
-
-        if ($this->config->get('application.login_method') === 'browser') {
-            $this->setAliases(['login']);
-        }
 
         $this->setDescription('Log in to ' . $service . ' via a browser')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');

@@ -5,6 +5,15 @@ namespace Platformsh\Cli\Command\Integration\Activity;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\ActivityService;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Selector;
+use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,14 +21,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
-    protected static $defaultName = 'integration:activity:list';
+    protected static $defaultName = 'integration:activity:list|i:act|integration:activities';
     protected static $defaultDescription = 'List activities for an integration';
 
     protected function configure()
     {
-        $this
-            ->setAliases(['i:act'])
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
+        $this->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
@@ -27,7 +34,6 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities');
-        $this->setHiddenAliases(['integration:activities']);
         $this->table->configureInput($this->getDefinition());
         $this->formatter->configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());

@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityListCommand extends ActivityCommandBase
 {
-    protected static $defaultName = 'activity:list';
+    protected static $defaultName = 'activity:list|activities|act';
 
     private $activityLoader;
     private $activityService;
@@ -52,8 +52,6 @@ class ActivityListCommand extends ActivityCommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['activities', 'act']);
-
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';
         if ($this->config->has('service.activity_type_list_url')) {

@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshKeyListCommand extends CommandBase
 {
-    protected static $defaultName = 'ssh-key:list';
+    protected static $defaultName = 'ssh-key:list|ssh-keys';
 
     private $api;
     private $config;
@@ -31,8 +31,7 @@ class SshKeyListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['ssh-keys'])
-            ->setDescription('Get a list of SSH keys in your account');
+        $this->setDescription('Get a list of SSH keys in your account');
         $this->table->configureInput($this->getDefinition());
     }
 

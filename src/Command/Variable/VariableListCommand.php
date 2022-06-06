@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableListCommand extends CommandBase
 {
-    protected static $defaultName = 'variable:list';
+    protected static $defaultName = 'variable:list|variables|var';
 
     private $api;
     private $config;
@@ -43,8 +43,7 @@ class VariableListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['variables', 'var'])
-            ->setDescription('List variables');
+        $this->setDescription('List variables');
 
         $definition = $this->getDefinition();
         $this->variableService->addLevelOption($definition);

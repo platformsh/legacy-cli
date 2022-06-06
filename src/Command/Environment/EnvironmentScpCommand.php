@@ -16,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentScpCommand extends CommandBase
 {
-    protected static $defaultName = 'environment:scp';
+    protected static $defaultName = 'environment:scp|scp';
     protected static $defaultDescription = 'Copy files to and from the current environment using scp';
 
     private $diagnostics;
@@ -42,9 +42,7 @@ class EnvironmentScpCommand extends CommandBase
      */
     protected function configure()
     {
-        $this
-            ->setAliases(['scp'])
-            ->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
+        $this->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
             ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories');
         $this->selector->addAllOptions($this->getDefinition());
         $this->ssh->configureInput($this->getDefinition());

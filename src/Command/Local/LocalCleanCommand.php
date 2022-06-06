@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalCleanCommand extends CommandBase
 {
-    protected static $defaultName = 'local:clean';
+    protected static $defaultName = 'local:clean|clean';
 
     private $localBuild;
     private $localProject;
@@ -29,8 +29,7 @@ class LocalCleanCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['clean'])
-            ->setDescription('Remove old project builds')
+        $this->setDescription('Remove old project builds')
             ->addOption(
                 'keep',
                 null,

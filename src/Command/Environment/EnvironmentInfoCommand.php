@@ -41,6 +41,7 @@ class EnvironmentInfoCommand extends CommandBase
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
+        $this->setHiddenAliases(['environment:metadata']);
     }
 
     /**
@@ -67,7 +68,6 @@ class EnvironmentInfoCommand extends CommandBase
              ->addExample('Change the environment title', 'title "New feature"')
              ->addExample("Change the environment's parent branch", 'parent sprint-2')
              ->addExample("Unset the environment's parent branch", 'parent -');
-        $this->setHiddenAliases(['environment:metadata']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -19,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentBranchCommand extends CommandBase
 {
-    protected static $defaultName = 'environment:branch';
+    protected static $defaultName = 'environment:branch|branch';
 
     private $activityService;
     private $api;
@@ -53,8 +53,7 @@ class EnvironmentBranchCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['branch'])
-            ->setDescription('Branch an environment')
+        $this->setDescription('Branch an environment')
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID (branch name) of the new environment')
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')

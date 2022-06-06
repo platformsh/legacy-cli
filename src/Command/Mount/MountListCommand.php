@@ -19,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MountListCommand extends CommandBase
 {
 
-    protected static $defaultName = 'mount:list';
+    protected static $defaultName = 'mount:list|mounts';
 
     private $config;
     private $formatter;
@@ -50,8 +50,7 @@ class MountListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['mounts'])
-            ->setDescription('Get a list of mounts')
+        $this->setDescription('Get a list of mounts')
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 

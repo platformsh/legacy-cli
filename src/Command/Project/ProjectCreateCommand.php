@@ -31,7 +31,7 @@ class ProjectCreateCommand extends CommandBase
     /** @var Form */
     protected $form;
 
-    protected static $defaultName = 'project:create';
+    protected static $defaultName = 'project:create|create';
 
     private $api;
     private $config;
@@ -65,8 +65,7 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['create'])
-          ->setDescription('Create a new project');
+        $this->setDescription('Create a new project');
 
         $this->selector->addOrganizationOptions($this->getDefinition());
 

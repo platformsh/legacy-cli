@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LocalDirCommand extends CommandBase
 {
-    protected static $defaultName = 'local:dir';
+    protected static $defaultName = 'local:dir|dir';
 
     private $config;
     private $localProject;
@@ -27,8 +27,7 @@ class LocalDirCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['dir'])
-            ->setDescription('Find the local project root')
+        $this->setDescription('Find the local project root')
             ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }
 

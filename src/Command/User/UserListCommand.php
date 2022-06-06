@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class UserListCommand extends CommandBase
 {
 
-    protected static $defaultName = 'user:list';
+    protected static $defaultName = 'user:list|users';
 
     private $api;
     private $config;
@@ -36,8 +36,7 @@ class UserListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['users'])
-            ->setDescription('List project users');
+        $this->setDescription('List project users');
         $this->table->configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
     }

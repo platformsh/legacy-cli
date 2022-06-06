@@ -35,6 +35,11 @@ class PasswordLoginCommand extends CommandBase
         $this->login = $login;
         $this->questionHelper = $questionHelper;
         parent::__construct();
+
+        if ($this->config->get('application.login_method') === 'password') {
+            $this->setAliases(['login']);
+            $this->setHiddenAliases(['auth:login']);
+        }
     }
 
 
@@ -43,11 +48,6 @@ class PasswordLoginCommand extends CommandBase
         $service = $this->config->get('service.name');
         $executable = $this->config->get('application.executable');
 
-        if ($this->config->get('application.login_method') === 'password') {
-            $this->setAliases(['login']);
-        }
-
-        $this->setHiddenAliases(['auth:login']);
         $this->setDescription('Log in to ' . $service . ' using a username and password');
 
         $help = 'Use this command to log in to your ' . $service . ' account in the terminal.'

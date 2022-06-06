@@ -14,7 +14,6 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
-use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -39,9 +38,6 @@ class Application extends ParentApplication
 
     /** @var \Symfony\Component\DependencyInjection\Container */
     private $container;
-
-    /** @var array|null */
-    private $aliasCache;
 
     /** @var string */
     private $envPrefix;
@@ -94,7 +90,6 @@ class Application extends ParentApplication
      */
     public function warmCaches(): void {
         $this->container(true);
-        $this->loadAliasCache(true);
     }
 
     /**
@@ -153,35 +148,6 @@ class Application extends ParentApplication
         }
 
         return $this->container;
-    }
-
-    /**
-     * Loads a cache of aliases mapped to command names.
-     *
-     * @param bool $rebuild
-     *
-     * @return array
-     */
-    private function loadAliasCache(bool $rebuild = false): array {
-        if ($rebuild || !isset($this->aliasCache)) {
-            $this->aliasCache = [];
-            $cacheFile = __DIR__ . '/../config/cache/aliases.json';
-            if ($rebuild || !file_exists($cacheFile)) {
-                /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
-                $loader = $this->container()->get('console.command_loader');
-                foreach ($loader->getNames() as $commandName) {
-                    $command = $loader->get($commandName);
-                    foreach ($command->getAliases() as $alias) {
-                        $this->aliasCache[$alias] = $command->getName();
-                    }
-                }
-                file_put_contents($cacheFile, json_encode($this->aliasCache, JSON_PRETTY_PRINT));
-            } elseif (file_exists($cacheFile)) {
-                $this->aliasCache = (array) json_decode(file_get_contents($cacheFile), true);
-            }
-        }
-
-        return $this->aliasCache;
     }
 
     /**
@@ -370,34 +336,6 @@ class Application extends ParentApplication
                 $this->currentCommand->getName()
             ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function find($name)
-    {
-        try {
-            return parent::find($name);
-        } catch (CommandNotFoundException $e) {
-            // Because commands are lazy-loaded, only their full names are
-            // known to the parent find() method. The alias cache allows
-            // finding commands by their alias, without instantiating them.
-            $aliasCache = $this->loadAliasCache();
-            if (isset($aliasCache[$name]) && $aliasCache[$name] !== $name){
-                return $this->get($aliasCache[$name]);
-            }
-
-            // If a command is not found, fully load all commands so that
-            // dynamic names or aliases (if any) can be checked.
-            /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
-            $loader = $this->container()->get('console.command_loader');
-            foreach ($loader->getNames() as $commandName) {
-                $this->add($loader->get($commandName));
-            }
-
-            return parent::find($name);
         }
     }
 }

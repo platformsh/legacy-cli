@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentMergeCommand extends CommandBase
 {
-    protected static $defaultName = 'environment:merge';
+    protected static $defaultName = 'environment:merge|merge';
 
     private $api;
     private $activityService;
@@ -36,8 +36,7 @@ class EnvironmentMergeCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['merge'])
-            ->setDescription('Merge an environment')
+        $this->setDescription('Merge an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
 
         $definition = $this->getDefinition();

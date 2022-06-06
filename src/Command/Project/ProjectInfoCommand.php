@@ -39,6 +39,7 @@ class ProjectInfoCommand extends CommandBase
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
+        $this->setHiddenAliases(['project:metadata']);
     }
 
     /**
@@ -60,7 +61,6 @@ class ProjectInfoCommand extends CommandBase
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
-        $this->setHiddenAliases(['project:metadata']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

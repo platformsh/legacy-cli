@@ -16,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected static $defaultName = 'environment:synchronize';
+    protected static $defaultName = 'environment:synchronize|sync';
 
     private $activityService;
     private $questionHelper;
@@ -31,8 +31,7 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
 
     protected function configure()
     {
-        $this->setAliases(['sync'])
-            ->setDescription("Synchronize an environment's code and/or data from its parent")
+        $this->setDescription("Synchronize an environment's code and/or data from its parent")
             ->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both')
             ->addOption('rebase', null, InputOption::VALUE_NONE, 'Synchronize code by rebasing instead of merging');
 

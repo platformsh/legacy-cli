@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class VariableSetCommand extends CommandBase
 {
-    protected static $defaultName = 'variable:set';
+    protected static $defaultName = 'variable:set|vset';
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -36,8 +36,7 @@ class VariableSetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['vset'])
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')

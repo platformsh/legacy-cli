@@ -21,7 +21,7 @@ use Symfony\Component\Console\Terminal;
 
 class ProjectListCommand extends CommandBase
 {
-    protected static $defaultName = 'project:list';
+    protected static $defaultName = 'project:list|projects|pro';
 
     private $api;
     private $config;
@@ -43,8 +43,7 @@ class ProjectListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['projects', 'pro'])
-            ->setDescription('Get a list of all active projects')
+        $this->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. This disables pagination.')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title (case-insensitive search)')

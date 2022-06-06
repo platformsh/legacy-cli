@@ -21,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableGetCommand extends CommandBase
 {
-    protected static $defaultName = 'variable:get';
+    protected static $defaultName = 'variable:get|vget';
 
     private $config;
     private $formatter;
@@ -55,8 +55,7 @@ class VariableGetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['vget'])
-            ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
+        $this->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property')
             ->setDescription('View a variable');
         $this->variableService->addLevelOption($this->getDefinition());

@@ -39,16 +39,16 @@ class ApiTokenLoginCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->tokenConfig = $tokenConfig;
         parent::__construct();
+
+        if ($this->config->get('application.login_method') === 'api-token') {
+            $this->setAliases(['login']);
+        }
     }
 
     protected function configure()
     {
         $service = $this->config->get('service.name');
         $executable = $this->config->get('application.executable');
-
-        if ($this->config->get('application.login_method') === 'api-token') {
-            $this->setAliases(['login']);
-        }
 
         $this->setDescription('Log in to ' . $service . ' using an API token');
 

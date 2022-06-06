@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MongoRestoreCommand extends CommandBase
 {
-    protected static $defaultName = 'service:mongo:restore';
+    protected static $defaultName = 'service:mongo:restore|mongorestore';
 
     private $relationships;
     private $selector;
@@ -34,7 +34,6 @@ class MongoRestoreCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['mongorestore']);
         $this->setDescription('Restore a binary archive dump of data into MongoDB');
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
 

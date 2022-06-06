@@ -52,6 +52,7 @@ class DbDumpCommand extends CommandBase
         $this->selector = $selector;
         $this->ssh = $ssh;
         parent::__construct();
+        $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
     }
 
     protected function configure()
@@ -73,7 +74,6 @@ class DbDumpCommand extends CommandBase
         $this->relationships->configureInput($definition);
         $this->ssh->configureInput($definition);
 
-        $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
         $this->addExample('Create an SQL dump file');
         $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
     }

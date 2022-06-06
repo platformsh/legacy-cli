@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfUpdateCommand extends CommandBase
 {
-    protected static $defaultName = 'self:update';
+    protected static $defaultName = 'self:update|self-update|up';
 
     private $config;
     private $updater;
@@ -22,18 +22,17 @@ class SelfUpdateCommand extends CommandBase
         $this->config = $config;
         $this->updater = $updater;
         parent::__construct();
+        $this->setHiddenAliases(['update']);
     }
 
     protected function configure()
     {
-        $this->setAliases(['self-update'])
-            ->setDescription('Update the CLI to the latest version')
+        $this->setDescription('Update the CLI to the latest version')
             ->addOption('no-major', null, InputOption::VALUE_NONE, 'Only update between minor or patch versions')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
             ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version')
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'A timeout for the version check', 30);
-        $this->setHiddenAliases(['up', 'update']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

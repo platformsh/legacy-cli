@@ -31,7 +31,7 @@ class ProjectGetCommand extends CommandBase
 {
     protected $projectRoot;
 
-    protected static $defaultName = 'project:get';
+    protected static $defaultName = 'project:get|get';
 
     private $api;
     private $config;
@@ -74,8 +74,7 @@ class ProjectGetCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['get'])
-            ->setDescription('Clone a project locally')
+        $this->setDescription('Clone a project locally')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
             ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to the project default, or the first available environment")

@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RouteListCommand extends CommandBase
 {
-    protected static $defaultName = 'route:list';
+    protected static $defaultName = 'route:list|routes';
 
     private $api;
     private $config;
@@ -36,6 +36,7 @@ class RouteListCommand extends CommandBase
         $this->selector = $selector;
         $this->table = $table;
         parent::__construct();
+        $this->setHiddenAliases(['environment:routes']);
     }
 
     /**
@@ -43,11 +44,9 @@ class RouteListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['routes'])
-            ->setDescription('List all routes for an environment')
+        $this->setDescription('List all routes for an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
-        $this->setHiddenAliases(['environment:routes']);
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

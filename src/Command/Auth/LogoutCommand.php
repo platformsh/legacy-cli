@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class LogoutCommand extends CommandBase
 {
-    protected static $defaultName = 'auth:logout';
+    protected static $defaultName = 'auth:logout|logout';
 
     private $api;
     private $config;
@@ -33,8 +33,7 @@ class LogoutCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['logout'])
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')
+        $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')
             ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions')
             ->setDescription('Log out of ' . $this->config->get('service.name'));
     }

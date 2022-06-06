@@ -21,6 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'environment:delete';
+    protected static $defaultDescription = 'Delete an environment';
 
     private $api;
     private $activityService;
@@ -41,13 +42,12 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct();
+        $this->setHiddenAliases(['environment:deactivate']);
     }
 
     protected function configure()
     {
-        $this->setDescription('Delete an environment')
-            ->setHiddenAliases(['environment:deactivate'])
-            ->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\nThe % character may be used as a wildcard." . "\n" . ArrayArgument::SPLIT_HELP)
+        $this->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\nThe % character may be used as a wildcard." . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es)')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete the remote Git branch(es)')
             ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')

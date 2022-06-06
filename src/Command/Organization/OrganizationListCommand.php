@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationListCommand extends OrganizationCommandBase
 {
-    protected static $defaultName = 'organization:list';
+    protected static $defaultName = 'organization:list|orgs|organizations';
     protected static $defaultDescription = 'List organizations';
 
     private $api;
@@ -30,8 +30,7 @@ class OrganizationListCommand extends OrganizationCommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['orgs', 'organizations'])
-            ->addOption('my', null, InputOption::VALUE_NONE, 'List only the organizations you own')
+        $this->addOption('my', null, InputOption::VALUE_NONE, 'List only the organizations you own')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'An organization property to sort by')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order');
         $this->table->configureInput($this->getDefinition());

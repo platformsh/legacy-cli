@@ -19,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DbSqlCommand extends CommandBase
 {
-    protected static $defaultName = 'db:sql';
+    protected static $defaultName = 'db:sql|sql';
 
     private $api;
     private $questionHelper;
@@ -34,12 +34,12 @@ class DbSqlCommand extends CommandBase
         $this->selector = $selector;
         $this->ssh = $ssh;
         parent::__construct();
+        $this->setHiddenAliases(['environment:sql']);
     }
 
     protected function configure()
     {
-        $this->setAliases(['sql'])
-            ->setDescription('Run SQL on the remote database')
+        $this->setDescription('Run SQL on the remote database')
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output')
             ->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');
@@ -52,7 +52,6 @@ class DbSqlCommand extends CommandBase
         $this->addExample('Open an SQL console on the remote database');
         $this->addExample('View tables on the remote database', "'SHOW TABLES'");
         $this->addExample('Import a dump file into the remote database', '< dump.sql');
-        $this->setHiddenAliases(['environment:sql']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

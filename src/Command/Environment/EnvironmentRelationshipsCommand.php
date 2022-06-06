@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRelationshipsCommand extends CommandBase
 {
-    protected static $defaultName = 'environment:relationships';
+    protected static $defaultName = 'environment:relationships|relationships';
 
     private $formatter;
     private $relationships;
@@ -35,8 +35,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setAliases(['relationships'])
-            ->setDescription('Show an environment\'s relationships')
+        $this->setDescription('Show an environment\'s relationships')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the relationships');

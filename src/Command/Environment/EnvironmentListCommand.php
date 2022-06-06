@@ -22,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentListCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected static $defaultName = 'environment:list';
+    protected static $defaultName = 'environment:list|environments|env';
 
     private $api;
     private $config;
@@ -59,8 +59,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      */
     protected function configure()
     {
-        $this->setAliases(['environments', 'env'])
-            ->setDescription('Get a list of environments')
+        $this->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)

@@ -39,6 +39,9 @@ class UserGetCommand extends CommandBase
         $this->selector = $selector;
         $this->subCommandRunner = $subCommandRunner;
         parent::__construct();
+
+        // Backwards compatibility.
+        $this->setHiddenAliases(['user:role']);
     }
 
     protected function configure()
@@ -52,9 +55,6 @@ class UserGetCommand extends CommandBase
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
         $this->activityService->configureInput($definition);
-
-        // Backwards compatibility.
-        $this->setHiddenAliases(['user:role']);
 
         $this->addExample("View Alice's role on the project", 'alice@example.com');
         $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment');

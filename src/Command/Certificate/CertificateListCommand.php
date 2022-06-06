@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateListCommand extends CommandBase
 {
 
-    protected static $defaultName = 'certificate:list';
+    protected static $defaultName = 'certificate:list|certificates|certs';
 
     private $api;
     private $config;
@@ -42,8 +42,7 @@ class CertificateListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['certificates', 'certs'])
-            ->setDescription('List project certificates');
+        $this->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
         $this->addOption('exclude-domain', null, InputOption::VALUE_REQUIRED, 'Exclude certificates, matching by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');

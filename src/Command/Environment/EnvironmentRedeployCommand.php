@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentRedeployCommand extends CommandBase
 {
-    protected static $defaultName = 'environment:redeploy';
+    protected static $defaultName = 'environment:redeploy|redeploy';
 
     private $api;
     private $activityService;
@@ -36,8 +36,7 @@ class EnvironmentRedeployCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setAliases(['redeploy'])
-            ->setDescription('Redeploy an environment');
+        $this->setDescription('Redeploy an environment');
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->selector->addEnvironmentOption($definition);
