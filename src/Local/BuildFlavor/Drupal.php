@@ -54,7 +54,7 @@ class Drupal extends BuildFlavorBase
                ->depth($depth)
                ->name('index.php');
         foreach ($finder as $file) {
-            $f = fopen($file->getPath(), 'r');
+            $f = fopen($file->getPathname(), 'r');
             $beginning = fread($f, 3178);
             fclose($f);
             if (strpos($beginning, 'Drupal') !== false) {
