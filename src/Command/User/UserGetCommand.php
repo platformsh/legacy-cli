@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class UserGetCommand extends CommandBase
 {
     protected static $defaultName = 'user:get';
+    protected static $defaultDescription = "View a user's role(s)";
 
     private $activityService;
     private $api;
@@ -46,8 +47,7 @@ class UserGetCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription("View a user's role(s)")
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
+        $this->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout');
 

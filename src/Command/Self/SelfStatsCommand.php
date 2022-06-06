@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfStatsCommand extends CommandBase
 {
     protected static $defaultName = 'self:stats';
+    protected static $defaultDescription = 'View stats on GitHub package downloads';
 
     private $config;
     private $formatter;
@@ -33,8 +34,7 @@ class SelfStatsCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('View stats on GitHub package downloads')
-            ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
+        $this->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Results per page (max: 100)', 20);
         $this->setHidden(true);
         $this->table->configureInput($this->getDefinition());

@@ -17,6 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableSetCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:set|pvset';
+    protected static $defaultDescription = 'Set a variable for a project';
+
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -41,8 +43,7 @@ class ProjectVariableSetCommand extends CommandBase
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')
-            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
-            ->setDescription('Set a variable for a project');
+            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime');
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
         $this->setHelp(

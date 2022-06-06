@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfInstallCommand extends CommandBase
 {
     protected static $defaultName = 'self:install';
+    protected static $defaultDescription = 'Install or update CLI configuration files';
 
     private $config;
     private $fs;
@@ -45,8 +46,7 @@ class SelfInstallCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Install or update CLI configuration files')
-             ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
+        $this->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
         $cliName = $this->config->get('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},

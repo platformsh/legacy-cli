@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainAddCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:add';
+    protected static $defaultDescription = 'Add a new domain to the project';
 
     private $activityService;
     private $selector;
@@ -28,7 +29,6 @@ class DomainAddCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());

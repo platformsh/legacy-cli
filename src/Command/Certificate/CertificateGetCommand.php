@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateGetCommand extends CommandBase
 {
     protected static $defaultName = 'certificate:get';
+    protected static $defaultDescription = 'View a certificate';
 
     private $api;
     private $selector;
@@ -30,8 +31,7 @@ class CertificateGetCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('View a certificate')
-            ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)')
+        $this->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to view');
 
         $definition = $this->getDefinition();

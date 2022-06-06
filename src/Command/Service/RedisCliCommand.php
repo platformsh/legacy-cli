@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RedisCliCommand extends CommandBase
 {
     protected static $defaultName = 'service:redis-cli|redis';
+    protected static $defaultDescription = 'Access the Redis CLI';
 
     private $relationships;
     private $selector;
@@ -34,7 +35,6 @@ class RedisCliCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Access the Redis CLI');
         $this->addArgument('args', InputArgument::OPTIONAL, 'Arguments to add to the Redis command');
 
         $definition = $this->getDefinition();

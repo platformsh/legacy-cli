@@ -27,6 +27,7 @@ class VariableCreateCommand extends CommandBase
     private $form;
 
     protected static $defaultName = 'variable:create';
+    protected static $defaultDescription = 'Create a variable';
 
     private $activityService;
     private $api;
@@ -57,8 +58,7 @@ class VariableCreateCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Create a variable')
-            ->addArgument('name', InputArgument::OPTIONAL, 'The variable name');
+        $this->addArgument('name', InputArgument::OPTIONAL, 'The variable name');
         $this->form = Form::fromArray($this->variableService->getFields());
 
         $definition = $this->getDefinition();

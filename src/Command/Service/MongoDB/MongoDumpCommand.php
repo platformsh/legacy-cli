@@ -21,6 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MongoDumpCommand extends CommandBase
 {
     protected static $defaultName = 'service:mongo:dump|mongodump';
+    protected static $defaultDescription = 'Create a binary archive dump of data from MongoDB';
 
     private $config;
     private $git;
@@ -48,7 +49,6 @@ class MongoDumpCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Create a binary archive dump of data from MongoDB');
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to dump');
         $this->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip');
         $this->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');

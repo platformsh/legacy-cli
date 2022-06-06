@@ -18,6 +18,7 @@ use Symfony\Component\Console\Question\Question;
 class PasswordLoginCommand extends CommandBase
 {
     protected static $defaultName = 'auth:password-login';
+    protected static $defaultDescription = 'Log in using a password';
     protected $stability = 'deprecated';
     protected $hiddenInList = true;
 
@@ -40,8 +41,9 @@ class PasswordLoginCommand extends CommandBase
             $this->setAliases(['login']);
             $this->setHiddenAliases(['auth:login']);
         }
-    }
 
+        $this->setHidden(true);
+    }
 
     protected function configure()
     {

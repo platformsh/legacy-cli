@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RouteGetCommand extends CommandBase
 {
     protected static $defaultName = 'route:get';
+    protected static $defaultDescription = 'View detailed information about a route';
 
     private $api;
     private $config;
@@ -46,8 +47,7 @@ class RouteGetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('View detailed information about a route')
-            ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
+        $this->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'A route ID to select')
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Select the primary route')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')

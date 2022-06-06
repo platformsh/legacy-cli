@@ -11,14 +11,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationListCommand extends IntegrationCommandBase
 {
     protected static $defaultName = 'integration:list|integrations';
+    protected static $defaultDescription = 'View a list of project integration(s)';
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->setDescription('View a list of project integration(s)');
-
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);
         $this->table->configureInput($definition);

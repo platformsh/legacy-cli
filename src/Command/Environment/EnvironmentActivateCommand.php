@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentActivateCommand extends CommandBase
 {
     protected static $defaultName = 'environment:activate';
+    protected static $defaultDescription = 'Activate an environment';
 
     private $api;
     private $activityService;
@@ -39,8 +40,7 @@ class EnvironmentActivateCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Activate an environment')
-            ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
+        $this->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
         $definition = $this->getDefinition();

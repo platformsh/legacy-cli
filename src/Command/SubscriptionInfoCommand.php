@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SubscriptionInfoCommand extends CommandBase
 {
     protected static $defaultName = 'subscription:info';
+    protected static $defaultDescription = 'Read or modify subscription properties';
 
     private $api;
     private $formatter;
@@ -47,8 +48,7 @@ class SubscriptionInfoCommand extends CommandBase
     {
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
-            ->setDescription('Read or modify subscription properties');
+            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID');
         $this->setHidden(true);
 
         $definition = $this->getDefinition();

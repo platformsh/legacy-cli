@@ -15,7 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CatCommand extends CommandBase
 {
-    protected static $defaultName = 'repo:cat'; // 🐱
+    protected static $defaultName = 'repo:cat';
+    protected static $defaultDescription = 'Read a file in the project repository'; // 🐱
 
     private $config;
     private $gitDataApi;
@@ -37,8 +38,7 @@ class CatCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Read a file in the project repository')
-            ->addArgument('path', InputArgument::REQUIRED, 'The path to the file')
+        $this->addArgument('path', InputArgument::REQUIRED, 'The path to the file')
             ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
 
         $definition = $this->getDefinition();

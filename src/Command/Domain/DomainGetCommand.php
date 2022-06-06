@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainGetCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:get';
+    protected static $defaultDescription = 'Show detailed information for a domain';
 
     private $api;
     private $config;
@@ -47,8 +48,7 @@ class DomainGetCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Show detailed information for a domain')
-            ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
+        $this->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
 
         $definition = $this->getDefinition();

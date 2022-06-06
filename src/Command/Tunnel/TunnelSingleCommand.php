@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TunnelSingleCommand extends CommandBase
 {
     protected static $defaultName = 'tunnel:single';
+    protected static $defaultDescription = 'Open a single SSH tunnel to an app relationship';
 
     private $api;
     private $questionHelper;
@@ -47,8 +48,7 @@ class TunnelSingleCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Open a single SSH tunnel to an app relationship')
-            ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port')
+        $this->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port')
             ->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
 
         $definition = $this->getDefinition();

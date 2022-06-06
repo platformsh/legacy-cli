@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ActivityLogCommand extends ActivityCommandBase
 {
     protected static $defaultName = 'activity:log';
+    protected static $defaultDescription = 'Display the log for an activity';
 
     private $activityService;
     private $api;
@@ -65,8 +66,7 @@ class ActivityLogCommand extends ActivityCommandBase
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
                 'Include only incomplete activities (when selecting a default activity).'
                 . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)')
-            ->setDescription('Display the log for an activity');
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

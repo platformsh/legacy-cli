@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WelcomeCommand extends CommandBase
 {
     protected static $defaultName = 'welcome';
+    protected static $defaultDescription = 'Welcome';
 
     private $api;
     private $config;
@@ -35,11 +36,11 @@ class WelcomeCommand extends CommandBase
         $this->selector = $selector;
         $this->sshKey = $sshKey;
         parent::__construct();
+        $this->setDescription('Welcome to ' . $this->config->get('service.name'));
     }
 
     protected function configure()
     {
-        $this->setDescription('Welcome to ' . $this->config->get('service.name'));
         $this->setHidden(true);
     }
 

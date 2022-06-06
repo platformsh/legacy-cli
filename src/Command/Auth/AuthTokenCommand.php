@@ -21,14 +21,14 @@ class AuthTokenCommand extends CommandBase
         $this->config = $config;
         $this->api = $api;
         parent::__construct();
+        $this->setDescription(sprintf(
+            'Obtain an OAuth 2 access token for requests to %s APIs',
+            $this->config->get('service.name')
+        ));
     }
 
     protected function configure()
     {
-        $this->setDescription(sprintf(
-                'Obtain an OAuth 2 access token for requests to %s APIs',
-                $this->config->get('service.name')
-            ));
         $this->setHidden(true);
     }
 

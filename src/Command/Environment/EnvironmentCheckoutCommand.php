@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentCheckoutCommand extends CommandBase
 {
     protected static $defaultName = 'environment:checkout|checkout';
+    protected static $defaultDescription = 'Check out an environment';
 
     private $api;
     private $config;
@@ -50,8 +51,7 @@ class EnvironmentCheckoutCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Check out an environment')
-            ->addArgument(
+        $this->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
                 'The ID of the environment to check out. For example: "sprint2"'

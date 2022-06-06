@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TunnelCloseCommand extends CommandBase
 {
     protected static $defaultName = 'tunnel:close';
+    protected static $defaultDescription = 'Close SSH tunnels';
 
     private $questionHelper;
     private $selector;
@@ -32,8 +33,7 @@ class TunnelCloseCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Close SSH tunnels')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Close all tunnels');
+        $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Close all tunnels');
         $this->selector->addAllOptions($this->getDefinition());
     }
 

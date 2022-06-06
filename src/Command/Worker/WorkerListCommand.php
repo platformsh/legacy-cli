@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WorkerListCommand extends CommandBase
 {
     protected static $defaultName = 'worker:list|workers';
+    protected static $defaultDescription = 'Get a list of all deployed workers';
 
     private $api;
     private $config;
@@ -44,8 +45,7 @@ class WorkerListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Get a list of all deployed workers')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
+        $this->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

@@ -38,5 +38,6 @@ class ListCommand extends ParentListCommand
                 'all' => $input->getOption('all'),
             ]
         );
+        return 0;
     }
 }

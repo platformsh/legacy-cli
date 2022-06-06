@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'variable:delete';
+    protected static $defaultDescription = 'Delete a variable';
 
     private $activityService;
     private $api;
@@ -44,8 +45,7 @@ class VariableDeleteCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
-            ->setDescription('Delete a variable');
+        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name');
 
         $definition = $this->getDefinition();
         $this->variableService->addLevelOption($definition);

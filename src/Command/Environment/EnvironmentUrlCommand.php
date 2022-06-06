@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentUrlCommand extends CommandBase
 {
     protected static $defaultName = 'environment:url|url';
+    protected static $defaultDescription = 'Get the public URLs of an environment';
 
     private $api;
     private $config;
@@ -42,8 +43,7 @@ class EnvironmentUrlCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Get the public URLs of an environment')
-            ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
+        $this->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LegacyMigrateCommand extends CommandBase
 {
     protected static $defaultName = 'legacy-migrate';
+    protected static $defaultDescription = 'Migrate from the legacy file structure';
 
     private $config;
     private $localProject;
@@ -29,8 +30,7 @@ class LegacyMigrateCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Migrate from the legacy file structure')
-            ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
+        $this->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
         $cliName = $this->config->get('application.name');
         $localDir = $this->config->get('local.local_dir');
         $this->setHelp(<<<EOF

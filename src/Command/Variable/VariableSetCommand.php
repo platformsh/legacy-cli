@@ -18,6 +18,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableSetCommand extends CommandBase
 {
     protected static $defaultName = 'variable:set|vset';
+    protected static $defaultDescription = 'Set a variable for an environment';
+
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -39,8 +41,7 @@ class VariableSetCommand extends CommandBase
         $this->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
-            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')
-            ->setDescription('Set a variable for an environment');
+            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

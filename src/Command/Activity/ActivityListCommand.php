@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ActivityListCommand extends ActivityCommandBase
 {
     protected static $defaultName = 'activity:list|activities|act';
+    protected static $defaultDescription = 'Get a list of activities for an environment or project';
 
     private $activityLoader;
     private $activityService;
@@ -65,8 +66,7 @@ class ActivityListCommand extends ActivityCommandBase
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments')
-            ->setDescription('Get a list of activities for an environment or project');
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

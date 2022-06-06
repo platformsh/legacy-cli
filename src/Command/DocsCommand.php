@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DocsCommand extends CommandBase
 {
     protected static $defaultName = 'docs';
+    protected static $defaultDescription = 'Open the online documentation';
 
     private $config;
     private $urlService;
@@ -27,8 +28,7 @@ class DocsCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Open the online documentation')
-            ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
+        $this->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
         $this->urlService->configureInput($this->getDefinition());
     }

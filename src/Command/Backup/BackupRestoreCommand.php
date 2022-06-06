@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupRestoreCommand extends CommandBase
 {
     protected static $defaultName = 'snapshot:restore';
+    protected static $defaultDescription = 'Restore an environment backup';
 
     private $activityService;
     private $api;
@@ -43,8 +44,7 @@ class BackupRestoreCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Restore an environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
+        $this->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment');
 

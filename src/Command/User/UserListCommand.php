@@ -15,6 +15,7 @@ class UserListCommand extends CommandBase
 {
 
     protected static $defaultName = 'user:list|users';
+    protected static $defaultDescription = 'List project users';
 
     private $api;
     private $config;
@@ -36,7 +37,6 @@ class UserListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('List project users');
         $this->table->configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
     }

@@ -20,6 +20,7 @@ class MountListCommand extends CommandBase
 {
 
     protected static $defaultName = 'mount:list|mounts';
+    protected static $defaultDescription = 'Get a list of mounts';
 
     private $config;
     private $formatter;
@@ -50,8 +51,7 @@ class MountListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Get a list of mounts')
-            ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
+        $this->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $this->selector->addAllOptions($this->getDefinition(), true);

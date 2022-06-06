@@ -16,6 +16,7 @@ class UserDeleteCommand extends CommandBase
 {
 
     protected static $defaultName = 'user:delete';
+    protected static $defaultDescription = 'Delete a user from the project';
 
     private $activityService;
     private $api;
@@ -37,8 +38,7 @@ class UserDeleteCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Delete a user from the project')
-            ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
+        $this->addArgument('email', InputArgument::REQUIRED, "The user's email address");
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
         $this->addExample('Delete Alice from the project', 'alice@example.com');

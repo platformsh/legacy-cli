@@ -23,6 +23,7 @@ class DbSizeCommand extends CommandBase
 {
 
     protected static $defaultName = 'db:size';
+    protected static $defaultDescription = 'Estimate the disk usage of a database';
 
     const RED_WARNING_THRESHOLD = 90;//percentage
     const YELLOW_WARNING_THRESHOLD = 80;//percentage
@@ -60,8 +61,7 @@ class DbSizeCommand extends CommandBase
      * {@inheritDoc}
      */
     protected function configure() {
-        $this->setDescription('Estimate the disk usage of a database')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).')
             ->setHelp(
                 "This is an estimate of the database disk usage. The real size on disk is usually a bit higher because of overhead."

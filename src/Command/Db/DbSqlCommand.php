@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSqlCommand extends CommandBase
 {
     protected static $defaultName = 'db:sql|sql';
+    protected static $defaultDescription = 'Run SQL on the remote database';
 
     private $api;
     private $questionHelper;
@@ -39,8 +40,7 @@ class DbSqlCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Run SQL on the remote database')
-            ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
+        $this->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output')
             ->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');
 

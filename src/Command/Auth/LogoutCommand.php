@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LogoutCommand extends CommandBase
 {
     protected static $defaultName = 'auth:logout|logout';
+    protected static $defaultDescription = 'Log out';
 
     private $api;
     private $config;
@@ -29,13 +30,14 @@ class LogoutCommand extends CommandBase
         $this->config = $config;
         $this->sshConfig = $sshConfig;
         parent::__construct();
+
+        $this->setDescription('Log out of ' . $this->config->get('service.name'));
     }
 
     protected function configure()
     {
         $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')
-            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions')
-            ->setDescription('Log out of ' . $this->config->get('service.name'));
+            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

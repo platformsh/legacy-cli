@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectInfoCommand extends CommandBase
 {
     protected static $defaultName = 'project:info';
+    protected static $defaultDescription = 'Read or set properties for a project';
 
     private $activityService;
     private $api;
@@ -49,8 +50,7 @@ class ProjectInfoCommand extends CommandBase
     {
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-            ->setDescription('Read or set properties for a project');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();
         $this->formatter->configureInput($definition);

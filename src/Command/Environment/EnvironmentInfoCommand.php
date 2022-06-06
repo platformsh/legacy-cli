@@ -21,6 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentInfoCommand extends CommandBase
 {
     protected static $defaultName = 'environment:info';
+    protected static $defaultDescription = 'Read or set properties for an environment';
 
     private $activityService;
     private $api;
@@ -51,8 +52,7 @@ class EnvironmentInfoCommand extends CommandBase
     {
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-            ->setDescription('Read or set properties for an environment');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();
         $this->formatter->configureInput($definition);

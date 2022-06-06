@@ -9,11 +9,11 @@ use Symfony\Component\Console\Input\InputArgument;
 class UserUpdateCommand extends UserAddCommand
 {
     protected static $defaultName = 'user:update';
+    protected static $defaultDescription = 'Update user role(s) on a project';
 
     protected function configure()
     {
-        $this->setDescription('Update user role(s) on a project')
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
+        $this->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
         $this->selector->addProjectOption($this->getDefinition());

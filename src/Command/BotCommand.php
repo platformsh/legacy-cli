@@ -20,12 +20,12 @@ class BotCommand extends Command
     {
         $this->config = $config;
         parent::__construct();
+        $this->setDescription('The ' . $this->config->get('service.name') . ' Bot');
     }
 
     protected function configure()
     {
-        $this->setDescription('The ' . $this->config->get('service.name') . ' Bot')
-            ->addOption('party', null, InputOption::VALUE_NONE)
+        $this->addOption('party', null, InputOption::VALUE_NONE)
             ->addOption('parrot', null, InputOption::VALUE_NONE)
             ->setHidden(true);
     }

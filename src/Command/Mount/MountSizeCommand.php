@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MountSizeCommand extends CommandBase
 {
     protected static $defaultName = 'mount:size';
+    protected static $defaultDescription = 'Check the disk usage of mounts';
 
     private $config;
     private $mountService;
@@ -50,8 +51,7 @@ class MountSizeCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Check the disk usage of mounts')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();

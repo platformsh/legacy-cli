@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectVariableGetCommand extends CommandBase
 {
     protected static $defaultName = 'project:variable:get|project-variables|pvget';
+    protected static $defaultDescription = 'View variable(s) for a project';
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -43,8 +44,7 @@ class ProjectVariableGetCommand extends CommandBase
     protected function configure()
     {
         $this->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
-            ->setDescription('View variable(s) for a project');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)');
         $this->selector->addProjectOption($this->getDefinition());
         $this->table->configureInput($this->getDefinition());
         $this->setHelp(

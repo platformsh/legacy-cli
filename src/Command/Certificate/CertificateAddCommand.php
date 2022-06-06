@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateAddCommand extends CommandBase
 {
     protected static $defaultName = 'certificate:add';
+    protected static $defaultDescription = 'Add an SSL certificate to the project';
 
     private $selector;
     private $activityService;
@@ -27,8 +28,7 @@ class CertificateAddCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Add an SSL certificate to the project')
-            ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file')
+        $this->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the certificate private key file')
             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file');
         $this->selector->addProjectOption($this->getDefinition());

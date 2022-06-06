@@ -32,6 +32,7 @@ class ProjectCreateCommand extends CommandBase
     protected $form;
 
     protected static $defaultName = 'project:create|create';
+    protected static $defaultDescription = 'Create a new project';
 
     private $api;
     private $config;
@@ -65,8 +66,6 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Create a new project');
-
         $this->selector->addOrganizationOptions($this->getDefinition());
 
         Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());

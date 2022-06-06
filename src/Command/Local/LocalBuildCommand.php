@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalBuildCommand extends CommandBase
 {
     protected static $defaultName = 'local:build|build';
+    protected static $defaultDescription = 'Build the current project locally';
 
     private $config;
     private $questionHelper;
@@ -44,7 +45,6 @@ class LocalBuildCommand extends CommandBase
     protected function configure()
     {
         $this->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
-            ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
                 'a',

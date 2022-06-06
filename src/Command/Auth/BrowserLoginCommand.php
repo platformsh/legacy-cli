@@ -24,6 +24,7 @@ use Symfony\Component\Process\Process;
 class BrowserLoginCommand extends CommandBase
 {
     protected static $defaultName = 'auth:browser-login';
+    protected static $defaultDescription = 'Log in via a browser';
 
     private $api;
     private $config;
@@ -52,12 +53,10 @@ class BrowserLoginCommand extends CommandBase
 
     protected function configure()
     {
-        $service = $this->config->get('service.name');
         $applicationName = $this->config->get('application.name');
         $executable = $this->config->get('application.executable');
 
-        $this->setDescription('Log in to ' . $service . ' via a browser')
-            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
+        $this->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
         $this->url->configureInput($this->getDefinition());
 
         $help = 'Use this command to log in to the ' . $applicationName . ' using a web browser.'

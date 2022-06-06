@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'certificate:delete';
+    protected static $defaultDescription = 'Delete a certificate from the project';
 
     private $activityService;
     private $api;
@@ -40,8 +41,7 @@ class CertificateDeleteCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Delete a certificate from the project')
-            ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
+        $this->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
     }

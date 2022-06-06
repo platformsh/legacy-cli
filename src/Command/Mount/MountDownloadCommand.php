@@ -25,6 +25,7 @@ class MountDownloadCommand extends CommandBase
     private $localApps;
 
     protected static $defaultName = 'mount:download';
+    protected static $defaultDescription = 'Download files from a mount, using rsync';
 
     private $config;
     private $filesystem;
@@ -61,8 +62,7 @@ class MountDownloadCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Download files from a mount, using rsync')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Download from all mounts')
+        $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Download from all mounts')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded. If --all is used, the mount path will be appended')
             ->addOption('source-path', null, InputOption::VALUE_NONE, "Use the mount's source path (rather than the mount path) as a subdirectory of the target, when --all is used")

@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalDirCommand extends CommandBase
 {
     protected static $defaultName = 'local:dir|dir';
+    protected static $defaultDescription = 'Find the local project root';
 
     private $config;
     private $localProject;
@@ -27,8 +28,7 @@ class LocalDirCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Find the local project root')
-            ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
+        $this->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

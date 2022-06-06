@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WebCommand extends CommandBase
 {
     protected static $defaultName = 'web';
+    protected static $defaultDescription = 'Open the Web UI';
 
     private $api;
     private $config;
@@ -34,8 +35,6 @@ class WebCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Open the Web UI');
-
         $definition = $this->getDefinition();
         $this->urlService->configureInput($definition);
         $this->selector->addProjectOption($definition);

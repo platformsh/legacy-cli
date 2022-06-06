@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentInitCommand extends CommandBase
 {
     protected static $defaultName = 'environment:init';
+    protected static $defaultDescription = 'Initialize an environment from a public Git repository';
 
     private $api;
     private $activityService;
@@ -41,7 +42,6 @@ class EnvironmentInitCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Initialize an environment from a public Git repository');
         $this->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
 

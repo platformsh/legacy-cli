@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'project:delete';
+    protected static $defaultDescription = 'Delete a project';
 
     private $api;
     private $config;
@@ -33,8 +34,7 @@ class ProjectDeleteCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Delete a project')
-            ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
+        $this->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->selector->addProjectOption($this->getDefinition());
     }
 

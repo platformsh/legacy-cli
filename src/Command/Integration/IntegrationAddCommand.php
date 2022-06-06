@@ -12,14 +12,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationAddCommand extends IntegrationCommandBase
 {
     protected static $defaultName = 'integration:add';
+    protected static $defaultDescription = 'Add an integration to the project';
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->setDescription('Add an integration to the project');
-
         $definition = $this->getDefinition();
         $this->getForm()->configureInputDefinition($definition);
         $this->selector->addProjectOption($definition);

@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LsCommand extends CommandBase
 {
     protected static $defaultName = 'repo:ls';
+    protected static $defaultDescription = 'List files in the project repository';
 
     private $config;
     private $gitDataApi;
@@ -37,8 +38,7 @@ class LsCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('List files in the project repository')
-            ->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')
+        $this->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')
             ->addOption('directories', 'd', InputOption::VALUE_NONE, 'Show directories only')
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
             ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"')

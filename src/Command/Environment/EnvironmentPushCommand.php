@@ -28,6 +28,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentPushCommand extends CommandBase
 {
     protected static $defaultName = 'environment:push|push';
+    protected static $defaultDescription = 'Push code to an environment';
 
     private $api;
     private $activityService;
@@ -67,8 +68,7 @@ class EnvironmentPushCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Push code to an environment')
-            ->addArgument('source', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
+        $this->addArgument('source', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')

@@ -18,6 +18,7 @@ class VariableUpdateCommand extends CommandBase
     private $form;
 
     protected static $defaultName = 'variable:update';
+    protected static $defaultDescription = 'Update a variable';
 
     private $activityService;
     private $selector;
@@ -39,8 +40,7 @@ class VariableUpdateCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Update a variable')
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
+        $this->addArgument('name', InputArgument::REQUIRED, 'The variable name');
 
         $fields = $this->variableService->getFields();
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);

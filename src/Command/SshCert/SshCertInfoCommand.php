@@ -36,7 +36,6 @@ class SshCertInfoCommand extends CommandBase
     {
         $this
             ->setName('ssh-cert:info')
-            ->setDescription('Display information about the current SSH certificate')
             ->addOption('no-refresh', null, InputOption::VALUE_NONE, 'Do not refresh the certificate if it is invalid')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to display');
         $this->formatter->configureInput($this->getDefinition());

@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectClearBuildCacheCommand extends CommandBase
 {
     protected static $defaultName = 'project:clear-build-cache';
+    protected static $defaultDescription = "Clear a project's build cache";
 
     private $api;
     private $selector;
@@ -24,7 +25,6 @@ class ProjectClearBuildCacheCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription("Clear a project's build cache");
         $this->selector->addProjectOption($this->getDefinition());
     }
 

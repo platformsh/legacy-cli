@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TunnelListCommand extends CommandBase
 {
     protected static $defaultName = 'tunnel:list|tunnels';
+    protected static $defaultDescription = 'List SSH tunnels';
 
     private $config;
     private $selector;
@@ -36,8 +37,7 @@ class TunnelListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('List SSH tunnels')
-          ->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');
+        $this->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition);

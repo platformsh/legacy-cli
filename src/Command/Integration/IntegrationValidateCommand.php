@@ -8,16 +8,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationValidateCommand extends IntegrationCommandBase
 {
-    public static $defaultName = 'integration:validate';
+    protected static $defaultName = 'integration:validate';
+    protected static $defaultDescription = 'Validate an existing integration';
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->setDescription('Validate an existing integration');
+        $this->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');
         $this->selector->addProjectOption($this->getDefinition());
         $this->setHelp(<<<EOF
 This command allows you to check whether an integration is valid.

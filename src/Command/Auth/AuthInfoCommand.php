@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AuthInfoCommand extends CommandBase
 {
     protected static $defaultName = 'auth:info';
+    protected static $defaultDescription = 'Display your account information';
 
     private $api;
     private $config;
@@ -34,8 +35,7 @@ class AuthInfoCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Display your account information')
-            ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
             ->addOption('no-auto-login', null, InputOption::VALUE_NONE, 'Skips auto login. Nothing will be output if not logged in, and the exit code will be 0, assuming no other errors.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');

@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentSshCommand extends CommandBase
 {
     protected static $defaultName = 'environment:ssh|ssh';
+    protected static $defaultDescription = 'SSH to an environment';
 
     private $config;
     private $diagnostics;
@@ -47,8 +48,7 @@ class EnvironmentSshCommand extends CommandBase
     {
         $this->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to run on the environment.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
-            ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
-            ->setDescription('SSH to the current environment');
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).');
 
         $definition = $this->getDefinition();
         $this->selector->addAllOptions($definition, true);

@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentHttpAccessCommand extends CommandBase
 {
     protected static $defaultName = 'environment:http-access|httpaccess';
+    protected static $defaultDescription = 'Update HTTP access settings for an environment';
 
     private $activityService;
     private $api;
@@ -39,8 +40,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
     protected function configure()
     {
         parent::configure();
-        $this->setDescription('Update HTTP access settings for an environment')
-            ->addOption(
+        $this->addOption(
                 'access',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,

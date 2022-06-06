@@ -24,6 +24,7 @@ use Symfony\Component\Yaml\Yaml;
 class LocalDrushAliasesCommand extends CommandBase
 {
     protected static $defaultName = 'local:drush-aliases|drush-aliases';
+    protected static $defaultDescription = "Find the project's Drush aliases";
 
     private $api;
     private $drush;
@@ -60,7 +61,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
-            ->setDescription('Find the project\'s Drush aliases');
+            ->setDescription();
         $this->addExample('Change the alias group to @example', '-g example');
     }
 

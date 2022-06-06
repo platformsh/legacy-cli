@@ -32,6 +32,7 @@ class ProjectGetCommand extends CommandBase
     protected $projectRoot;
 
     protected static $defaultName = 'project:get|get';
+    protected static $defaultDescription = 'Clone a project locally';
 
     private $api;
     private $config;
@@ -74,8 +75,7 @@ class ProjectGetCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Clone a project locally')
-            ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
+        $this->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
             ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to the project default, or the first available environment")
             ->addOption('depth', null, InputOption::VALUE_REQUIRED, 'Create a shallow clone: limit the number of commits in the history')

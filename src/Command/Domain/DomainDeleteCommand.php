@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'domain:delete';
+    protected static $defaultDescription = 'Delete a domain from the project';
 
     private $activityService;
     private $selector;
@@ -32,8 +33,7 @@ class DomainDeleteCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Delete a domain from the project')
-            ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
+        $this->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
         $this->addExample('Delete the domain example.com', 'example.com');

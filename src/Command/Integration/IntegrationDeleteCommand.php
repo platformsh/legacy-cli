@@ -10,14 +10,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationDeleteCommand extends IntegrationCommandBase
 {
     protected static $defaultName = 'integration:delete';
+    protected static $defaultDescription = 'Delete an integration from a project';
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->addArgument('id', InputArgument::REQUIRED, 'The integration ID. Leave blank to choose from a list.')
-            ->setDescription('Delete an integration from a project');
+        $this->addArgument('id', InputArgument::REQUIRED, 'The integration ID. Leave blank to choose from a list.');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

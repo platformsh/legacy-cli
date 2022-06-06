@@ -23,6 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbDumpCommand extends CommandBase
 {
     protected static $defaultName = 'db:dump';
+    protected static $defaultDescription = 'Create a local dump of the remote database';
 
     private $api;
     private $config;
@@ -57,7 +58,6 @@ class DbDumpCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Create a local dump of the remote database');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')

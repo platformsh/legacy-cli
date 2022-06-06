@@ -18,16 +18,16 @@ class DecodeCommand extends CommandBase
     public function __construct(Config $config) {
         $this->config = $config;
         parent::__construct();
+        $envPrefix = $this->config->get('service.env_prefix');
+        $this->setDescription(sprintf('Decode an encoded string such as %sVARIABLES', $envPrefix));
     }
 
     protected function configure()
     {
-        $envPrefix = $this->config->get('service.env_prefix');
-
         $this->addArgument('value', InputArgument::REQUIRED, 'The variable value to decode')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the variable')
-            ->setDescription(sprintf('Decode an encoded string such as %sVARIABLES', $envPrefix));
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the variable');
 
+        $envPrefix = $this->config->get('service.env_prefix');
         $this->addExample(
             sprintf('View "foo" in %sVARIABLES', $envPrefix),
             sprintf('"$%sVARIABLES" -P foo', $envPrefix)

@@ -17,6 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableDisableCommand extends CommandBase
 {
     protected static $defaultName = 'variable:disable';
+    protected static $defaultDescription = 'Disable an enabled environment-level variable';
+
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
 
@@ -40,8 +42,7 @@ class VariableDisableCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
-            ->setDescription('Disable an enabled environment-level variable');
+        $this->addArgument('name', InputArgument::REQUIRED, 'The name of the variable');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

@@ -20,6 +20,7 @@ class SshKeyAddCommand extends CommandBase
     const DEFAULT_BASENAME = 'id_rsa';
 
     protected static $defaultName = 'ssh-key:add';
+    protected static $defaultDescription = 'Add a new SSH key';
 
     private $api;
     private $config;
@@ -47,8 +48,7 @@ class SshKeyAddCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Add a new SSH key')
-            ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
+        $this->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
         $this->addExample('Add an existing public key', '~/.ssh/id_rsa.pub');
     }

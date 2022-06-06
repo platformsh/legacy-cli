@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AppListCommand extends CommandBase
 {
     protected static $defaultName = 'app:list|apps';
+    protected static $defaultDescription = 'List apps in the project';
 
     private $api;
     private $config;
@@ -39,8 +40,7 @@ class AppListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('List apps in the project')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
+        $this->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

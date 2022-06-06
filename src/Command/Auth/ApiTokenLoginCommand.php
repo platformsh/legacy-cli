@@ -43,14 +43,15 @@ class ApiTokenLoginCommand extends CommandBase
         if ($this->config->get('application.login_method') === 'api-token') {
             $this->setAliases(['login']);
         }
+
+        $service = $this->config->get('service.name');
+        $this->setDescription('Log in to ' . $service . ' using an API token');
     }
 
     protected function configure()
     {
         $service = $this->config->get('service.name');
         $executable = $this->config->get('application.executable');
-
-        $this->setDescription('Log in to ' . $service . ' using an API token');
 
         $help = 'Use this command to log in to your ' . $service . ' account using an API token.'
             . "\n\nYou can create an account at:\n    <info>" . $this->config->get('service.register_url') . '</info>'

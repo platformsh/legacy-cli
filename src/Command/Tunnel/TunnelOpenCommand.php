@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TunnelOpenCommand extends CommandBase
 {
     protected static $defaultName = 'tunnel:open';
+    protected static $defaultDescription = "Open SSH tunnels to an app's relationships";
 
     private $api;
     private $config;
@@ -52,7 +53,6 @@ class TunnelOpenCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription("Open SSH tunnels to an app's relationships");
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
 
         $definition = $this->getDefinition();

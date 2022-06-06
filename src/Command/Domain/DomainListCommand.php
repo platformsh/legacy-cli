@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainListCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:list|domains';
+    protected static $defaultDescription = 'Get a list of all domains';
 
     private $api;
     private $config;
@@ -43,8 +44,6 @@ class DomainListCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Get a list of all domains');
-
         $definition = $this->getDefinition();
         $this->table->configureInput($definition);
         $this->selector->addProjectOption($definition);

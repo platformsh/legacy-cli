@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentSetRemoteCommand extends CommandBase
 {
     protected static $defaultName = 'environment:set-remote';
+    protected static $defaultDescription = 'Set the remote environment to map to a branch';
 
     private $api;
     private $git;
@@ -37,8 +38,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Set the remote environment to map to a branch')
-            ->addArgument(
+        $this->addArgument(
                 'environment',
                 InputArgument::REQUIRED,
                 'The environment machine name. Set to 0 to remove the mapping for a branch'

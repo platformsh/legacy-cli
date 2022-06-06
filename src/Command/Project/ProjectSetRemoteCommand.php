@@ -22,6 +22,7 @@ use Symfony\Component\Filesystem\Filesystem;
 class ProjectSetRemoteCommand extends CommandBase
 {
     protected static $defaultName = 'project:set-remote';
+    protected static $defaultDescription = 'Set the remote project for the current Git repository';
 
     private $api;
     private $config;
@@ -52,8 +53,7 @@ class ProjectSetRemoteCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Set the remote project for the current Git repository')
-            ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
+        $this->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->addExample('Set the remote project for this repository to "abcdef123456"', 'abcdef123456');
         $this->addExample('Unset the remote project for this repository', '-');
     }

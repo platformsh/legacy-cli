@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationGetCommand extends IntegrationCommandBase
 {
     protected static $defaultName = 'integration:get';
+    protected static $defaultDescription = 'View details of an integration';
 
     /**
      * {@inheritdoc}
@@ -18,8 +19,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view')
-            ->setDescription('View details of an integration');
+            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view');
 
         $definition = $this->getDefinition();
         $this->selector->addProjectOption($definition);

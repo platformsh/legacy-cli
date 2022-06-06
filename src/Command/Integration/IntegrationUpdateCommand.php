@@ -12,14 +12,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationUpdateCommand extends IntegrationCommandBase
 {
     protected static $defaultName = 'integration:update';
+    protected static $defaultDescription = 'Update an integration';
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update')
-            ->setDescription('Update an integration');
+        $this->addArgument('id', InputArgument::REQUIRED, 'The ID of the integration to update');
 
         $definition = $this->getDefinition();
         $form = $this->getForm();

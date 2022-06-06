@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RunCommand extends CommandBase
 {
     protected static $defaultName = 'source-operation:run';
+    protected static $defaultDescription = 'Run a source operation';
     protected $stability = 'BETA';
 
     private $activityService;
@@ -32,8 +33,7 @@ class RunCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Run a source operation')
-            ->addArgument('operation', InputArgument::REQUIRED, 'The operation name')
+        $this->addArgument('operation', InputArgument::REQUIRED, 'The operation name')
             ->addOption('variable', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'A variable to set during the operation, in the format <info>type:name=value</info>');
 
         $definition = $this->getDefinition();

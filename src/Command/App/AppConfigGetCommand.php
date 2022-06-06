@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AppConfigGetCommand extends CommandBase
 {
     protected static $defaultName = 'app:config-get';
+    protected static $defaultDescription = 'View the configuration of an app';
 
     private $config;
     private $selector;
@@ -34,8 +35,7 @@ class AppConfigGetCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setDescription('View the configuration of an app')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
+        $this->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->selector->addAllOptions($this->getDefinition());
     }

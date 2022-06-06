@@ -28,6 +28,7 @@ use Symfony\Component\Console\Question\Question;
 class UserAddCommand extends CommandBase
 {
     protected static $defaultName = 'user:add';
+    protected static $defaultDescription = 'Add a user to the project';
 
     protected $activityService;
     protected $selector;
@@ -53,8 +54,7 @@ class UserAddCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setDescription('Add a user to the project')
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
+        $this->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
         if ($this->config->getWithDefault('api.invitations', false)) {
             $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
         }

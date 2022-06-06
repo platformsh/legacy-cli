@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainUpdateCommand extends DomainCommandBase
 {
     protected static $defaultName = 'domain:update';
+    protected static $defaultDescription = 'Update a domain';
 
     private $activityService;
     private $selector;
@@ -27,7 +28,6 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this->setDescription('Update a domain');
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->activityService->configureInput($this->getDefinition());
