@@ -43,7 +43,7 @@ class EnvironmentRedeployCommand extends CommandBase
         $this->activityService->configureInput($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $environment = $this->selector->getSelection($input)->getEnvironment();
 

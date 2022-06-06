@@ -70,7 +70,7 @@ class EnvironmentInfoCommand extends CommandBase
              ->addExample("Unset the environment's parent branch", 'parent -');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $environment = $selection->getEnvironment();

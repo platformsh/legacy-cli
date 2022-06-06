@@ -62,7 +62,7 @@ class ProjectListCommand extends CommandBase
         $this->formatter->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 

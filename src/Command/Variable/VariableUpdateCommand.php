@@ -54,7 +54,7 @@ class VariableUpdateCommand extends CommandBase
         $this->activityService->configureInput($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->variableService->getRequestedLevel($input);
         $selection = $this->selector->getSelection($input, $level === VariableService::LEVEL_PROJECT);

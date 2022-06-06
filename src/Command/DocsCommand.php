@@ -33,7 +33,7 @@ class DocsCommand extends CommandBase
         $this->urlService->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($searchArguments = $input->getArgument('search')) {
             $query = $this->getSearchQuery($searchArguments);
@@ -43,6 +43,8 @@ class DocsCommand extends CommandBase
         }
 
         $this->urlService->openUrl($url);
+
+        return 0;
     }
 
     /**

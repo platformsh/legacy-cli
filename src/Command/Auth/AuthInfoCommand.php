@@ -47,7 +47,7 @@ class AuthInfoCommand extends CommandBase
         $this->addExample('Print your user ID (or nothing if not logged in)', 'id --no-auto-login');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('no-auto-login') && !$this->api->isLoggedIn()) {
             $this->stdErr->writeln('Not logged in', OutputInterface::VERBOSITY_VERBOSE);

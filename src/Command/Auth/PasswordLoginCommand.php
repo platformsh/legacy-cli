@@ -62,7 +62,7 @@ class PasswordLoginCommand extends CommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->api->hasApiToken()) {
             $this->stdErr->writeln('Cannot log in: an API token is set');

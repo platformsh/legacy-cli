@@ -42,7 +42,7 @@ class DomainDeleteCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->selector->getSelection($input)->getProject();
 

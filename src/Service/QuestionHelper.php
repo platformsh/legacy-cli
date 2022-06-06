@@ -77,7 +77,7 @@ class QuestionHelper extends BaseQuestionHelper
      *
      * @throws \RuntimeException on failure
      *
-     * @return mixed
+     * @return int|string|null
      *   The chosen item (as a key in $items).
      */
     public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null, $skipOnOne = true)
@@ -117,10 +117,10 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Ask a simple question which requires input.
      *
-     * @param string   $questionText
-     * @param mixed    $default
-     * @param array    $autoCompleterValues
-     * @param callable $validator
+     * @param string $questionText
+     * @param mixed $default
+     * @param array $autoCompleterValues
+     * @param callable|null $validator
      *
      * @return string
      *   The user's answer.

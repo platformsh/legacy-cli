@@ -30,7 +30,7 @@ class EnvironmentCurlCommand extends CommandBase
         $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $url = $selection->getEnvironment()->getUri();

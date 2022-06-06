@@ -51,7 +51,7 @@ class ProjectVariableDeleteCommand extends CommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         return $this->subCommandRunner->run('variable:delete', [
             'name' => $input->getArgument('name'),

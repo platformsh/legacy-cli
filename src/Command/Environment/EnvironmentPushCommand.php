@@ -92,7 +92,7 @@ class EnvironmentPushCommand extends CommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $projectRoot = $this->selector->getProjectRoot();

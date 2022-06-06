@@ -178,11 +178,11 @@ class Drush
      *
      * @param string[] $args
      *   Command arguments (everything after 'drush').
-     * @param string   $dir
+     * @param string|null $dir
      *   The working directory.
-     * @param bool     $mustRun
+     * @param bool $mustRun
      *   Enable exceptions if the command fails.
-     * @param bool     $quiet
+     * @param bool $quiet
      *   Suppress command output.
      *
      * @return string|bool
@@ -318,10 +318,10 @@ class Drush
     /**
      * Create Drush aliases for the provided project and environments.
      *
-     * @param Project       $project      The project
-     * @param string        $projectRoot  The project root
+     * @param Project $project The project
+     * @param string $projectRoot The project root
      * @param Environment[] $environments The environments
-     * @param string        $original     The original group name
+     * @param string|null $original The original group name
      *
      * @return bool True on success, false on failure.
      */

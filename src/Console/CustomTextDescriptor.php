@@ -160,9 +160,6 @@ class CustomTextDescriptor extends TextDescriptor
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function writeText($content, array $options = [])
     {
         $this->write(

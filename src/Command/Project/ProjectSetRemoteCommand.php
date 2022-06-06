@@ -58,7 +58,7 @@ class ProjectSetRemoteCommand extends CommandBase
         $this->addExample('Unset the remote project for this repository', '-');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectId = $input->getArgument('project');
         $unset = false;

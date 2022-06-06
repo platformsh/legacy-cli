@@ -757,7 +757,7 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @param array $credentials
      *
-     * @return string|TRUE
+     * @return true|string
      */
     protected function validateBitbucketCredentials(array $credentials)
     {

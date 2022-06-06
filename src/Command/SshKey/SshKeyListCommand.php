@@ -35,7 +35,7 @@ class SshKeyListCommand extends CommandBase
         $this->table->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $keys = $this->api->getSshKeys();
 

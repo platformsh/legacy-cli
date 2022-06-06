@@ -32,7 +32,7 @@ class ApiCurlCommand extends CommandBase
         $this->curlCli->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $url = $this->config->get('api.base_url');
         return $this->curlCli->run($url, $input, $output);

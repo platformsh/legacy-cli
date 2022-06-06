@@ -25,8 +25,8 @@ class PropertyFormatter implements InputConfiguringInterface
     }
 
     /**
-     * @param mixed  $value
-     * @param string $property
+     * @param mixed $value
+     * @param string|null $property
      *
      * @return string
      */

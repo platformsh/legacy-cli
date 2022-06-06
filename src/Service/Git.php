@@ -91,9 +91,9 @@ class Git
     /**
      * Get the current branch name.
      *
-     * @param string $dir
+     * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool   $mustRun
+     * @param bool $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return string|false
@@ -169,11 +169,8 @@ class Git
      * Check whether a remote repository exists.
      *
      * @param string $url
-     * @param string $ref
-     * @param bool   $heads Whether to limit to heads only.
-     *
-     * @throws \Symfony\Component\Process\Exception\RuntimeException
-     *   If the Git command fails.
+     * @param string|null $ref
+     * @param bool $heads Whether to limit to heads only.
      *
      * @return bool
      */
@@ -196,9 +193,9 @@ class Git
      *
      * @param string $branchName
      *   The branch name.
-     * @param string $dir
+     * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool   $mustRun
+     * @param bool $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return bool
@@ -324,12 +321,12 @@ class Git
     /**
      * Get the upstream for a branch.
      *
-     * @param string      $branch
+     * @param string|null $branch
      *   The name of the branch to get the upstream for. Defaults to the current
      *   branch.
      * @param string|null $dir
      *   The path to a Git repository.
-     * @param bool        $mustRun
+     * @param bool $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return string|false
@@ -413,11 +410,11 @@ class Git
      *
      * @param string $url
      *   The Git repository URL.
-     * @param string $destination
+     * @param string|null $destination
      *   A directory name to clone into.
-     * @param array  $args
+     * @param array $args
      *   Extra arguments for the Git command.
-     * @param bool   $mustRun
+     * @param bool $mustRun
      *   Enable exceptions if the Git command fails.
      *
      * @return bool

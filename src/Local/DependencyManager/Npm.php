@@ -19,9 +19,9 @@ class Npm extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths($path)
     {
-        return [$prefix . '/node_modules/.bin'];
+        return [$path . '/node_modules/.bin'];
     }
 
     /**

@@ -69,7 +69,7 @@ class Relationships implements InputConfiguringInterface
         // Filter to find services matching the schemes.
         if (!empty($schemes)) {
             $relationships = array_filter($relationships, function (array $relationship) use ($schemes) {
-                foreach ($relationship as $key => $service) {
+                foreach ($relationship as $service) {
                     if (isset($service['scheme']) && in_array($service['scheme'], $schemes, true)) {
                         return true;
                     }

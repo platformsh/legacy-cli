@@ -128,6 +128,13 @@ class Api
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
+    public function withConfigOverrides(array $overrides): self
+    {
+        $api = clone $this;
+        $api->config = $api->config->withOverrides($overrides);
+        return $api;
+    }
+
     /**
      * Sets up listeners (called by the DI container).
      *

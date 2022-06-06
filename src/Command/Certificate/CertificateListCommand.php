@@ -60,7 +60,7 @@ class CertificateListCommand extends CommandBase
         $this->addExample('Output a list of domains covered by valid certificates', '--pipe-domains --no-expired');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->selector->getSelection($input)->getProject();
 

@@ -62,7 +62,7 @@ class ApiTokenLoginCommand extends CommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->api->hasApiToken(false)) {
             $this->stdErr->writeln('An API token is already set via config');

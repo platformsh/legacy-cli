@@ -74,7 +74,7 @@ class SelfReleaseCommand extends CommandBase
      *
      * @throws \Exception
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->git->setDefaultRepositoryDir(CLI_ROOT);
 

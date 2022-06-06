@@ -38,7 +38,7 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
             ->addOption('permission', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Permission(s) for the user on the organization');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // The 'create-member' link shows the user has the ability to read/write members.
         $organization = $this->selector->selectOrganization($input, 'create-member');

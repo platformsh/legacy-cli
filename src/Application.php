@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli;
 
+use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Command\WelcomeCommand;
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Local\LocalProject;
@@ -42,9 +43,6 @@ class Application extends ParentApplication
     /** @var string */
     private $envPrefix;
 
-    /**
-     * {@inheritdoc}
-     */
     public function __construct(Config $config = null)
     {
         // Initialize configuration (from config.yaml).
@@ -74,7 +72,9 @@ class Application extends ParentApplication
 
         // Set up an event subscriber, which will listen for Console events.
         $dispatcher = new EventDispatcher();
-        $dispatcher->addSubscriber(new EventSubscriber($this->config));
+        /** @var CacheProvider $cache */
+        $cache = $this->container()->get(CacheProvider::class);
+        $dispatcher->addSubscriber(new EventSubscriber($cache, $this->config));
         $this->setDispatcher($dispatcher);
     }
 
@@ -313,14 +313,11 @@ class Application extends ParentApplication
         return $this->currentCommand;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function renderException(\Exception $e, OutputInterface $output)
+    public function renderThrowable(\Throwable $e, OutputInterface $output): void
     {
         $output->writeln('', OutputInterface::VERBOSITY_QUIET);
 
-        $this->doRenderException($e, $output);
+        $this->doRenderThrowable($e, $output);
 
         if (isset($this->currentCommand)
             && $this->currentCommand->getName() !== 'welcome'

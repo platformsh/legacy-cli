@@ -32,7 +32,7 @@ class AuthTokenCommand extends CommandBase
         $this->setHidden(true);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->stdErr->writeln(
             '<comment>Keep access tokens secret. Using this command is not recommended.</comment>'

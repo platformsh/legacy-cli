@@ -61,7 +61,7 @@ class RouteGetCommand extends CommandBase
         $this->addExample('View the URL to the https://{default}/ route', "'https://{default}/' -P url");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');

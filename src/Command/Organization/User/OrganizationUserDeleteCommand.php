@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Organization\User;
 
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Selector;
@@ -15,11 +16,13 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
     protected static $defaultName = 'organization:user:delete';
     protected static $defaultDescription = 'Remove a user from an organization';
 
+    private $api;
     private $questionHelper;
     private $selector;
 
-    public function __construct(Config $config, QuestionHelper $questionHelper, Selector $selector)
+    public function __construct(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector)
     {
+        $this->api = $api;
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
         parent::__construct($config);
@@ -31,7 +34,7 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
         $this->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // The 'create-member' link shows the user has the ability to read/write members.
         $organization = $this->selector->selectOrganization($input, 'create-member');

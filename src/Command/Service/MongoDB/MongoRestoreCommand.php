@@ -43,7 +43,7 @@ class MongoRestoreCommand extends CommandBase
         $this->selector->addAllOptions($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $streams = [STDIN];
         if (!stream_select($streams, $write, $except, 0)) {

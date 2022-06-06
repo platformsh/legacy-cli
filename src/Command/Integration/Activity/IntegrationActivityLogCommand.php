@@ -24,7 +24,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // TODO
         // $this->warnAboutDeprecatedOptions(['environment']);

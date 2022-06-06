@@ -54,7 +54,7 @@ class RouteListCommand extends CommandBase
         $this->table->configureInput($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');

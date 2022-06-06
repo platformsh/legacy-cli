@@ -40,7 +40,7 @@ class ServerStopCommand extends ServerCommandBase
         return parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->localProject->getProjectRoot();
         $all = $input->getOption('all');

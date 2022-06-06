@@ -63,7 +63,7 @@ class ProjectInfoCommand extends CommandBase
              ->addExample("Change the project's title", 'title "My project"');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->selector->getSelection($input)->getProject();
 

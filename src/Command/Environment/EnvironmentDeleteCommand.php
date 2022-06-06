@@ -75,7 +75,7 @@ EOF
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
 
@@ -128,7 +128,6 @@ EOF
             $inactive = array_filter(
                 $environments,
                 function ($environment) {
-                    /** @var Environment $environment */
                     return $environment->status == 'inactive';
                 }
             );

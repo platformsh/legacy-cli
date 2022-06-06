@@ -22,9 +22,6 @@ class HelpCommand extends ParentHelpCommand
 
     protected $command;
 
-    /**
-     * @inheritdoc
-     */
     public function setCommand(Command $command)
     {
         $this->command = $command;
@@ -33,7 +30,7 @@ class HelpCommand extends ParentHelpCommand
     /**
      * @inheritdoc
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (null === $this->command) {
             $this->command = $this->getApplication()
@@ -55,5 +52,7 @@ class HelpCommand extends ParentHelpCommand
         );
 
         $this->command = null;
+
+        return 0;
     }
 }

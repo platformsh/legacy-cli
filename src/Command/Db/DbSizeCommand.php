@@ -77,7 +77,7 @@ class DbSizeCommand extends CommandBase
     /**
      * {@inheritDoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output) {
+    protected function execute(InputInterface $input, OutputInterface $output): int {
         $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar(), true);
 
         $host = $selection->getHost();
@@ -374,7 +374,7 @@ class DbSizeCommand extends CommandBase
      * @param HostInterface $host
      * @param array         $database
      *
-     * @return int Estimated usage in bytes
+     * @return float Estimated usage in bytes
      */
     private function getPgSqlUsage(HostInterface $host, array $database) {
         return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
@@ -390,7 +390,7 @@ class DbSizeCommand extends CommandBase
      * @param HostInterface $host
      * @param array         $database
      *
-     * @return int Estimated usage in bytes
+     * @return float Estimated usage in bytes
      */
     private function getMySqlUsage(HostInterface $host, array $database) {
         $this->debug('Getting MySQL usage...');

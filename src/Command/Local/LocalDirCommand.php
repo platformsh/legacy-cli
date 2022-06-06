@@ -31,7 +31,7 @@ class LocalDirCommand extends CommandBase
         $this->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->localProject->getProjectRoot();
         if (!$projectRoot) {

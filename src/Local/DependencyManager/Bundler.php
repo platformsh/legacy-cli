@@ -18,9 +18,9 @@ class Bundler extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths($path)
     {
-        return [$prefix . '/bin'];
+        return [$path . '/bin'];
     }
 
     /**

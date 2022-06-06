@@ -63,7 +63,7 @@ class ActivityCancelCommand extends ActivityCommandBase
         $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 

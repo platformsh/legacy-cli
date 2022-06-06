@@ -54,7 +54,7 @@ class CatCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $environment = $this->selector->getSelection($input)->getEnvironment();
         $path = $input->getArgument('path');

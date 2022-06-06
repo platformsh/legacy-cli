@@ -39,7 +39,7 @@ class OrganizationListCommand extends OrganizationCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $client = $this->api->getClient();
         $userId = $this->api->getMyUserId();

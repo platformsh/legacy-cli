@@ -44,7 +44,7 @@ class UserDeleteCommand extends CommandBase
         $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->selector->getSelection($input)->getProject();
 

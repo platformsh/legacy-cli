@@ -81,7 +81,7 @@ class ActivityListCommand extends ActivityCommandBase
              ->addExample('List up to 25 incomplete activities', '--limit 25 -i');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all'));
         $project = $selection->getProject();

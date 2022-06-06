@@ -53,7 +53,7 @@ class ServerRunCommand extends ServerCommandBase
         $this->urlService->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->localProject->getProjectRoot();
         if (!$projectRoot) {

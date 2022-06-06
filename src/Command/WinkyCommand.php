@@ -17,13 +17,13 @@ class WinkyCommand extends CommandBase
 
     public function __construct(Config $config) { $this->config = $config; parent::__construct(); }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $winky = new Winky($output, $this->config->get('service.name'));
 
         if (!$output->isDecorated()) {
             $winky->render();
-            return;
+            return 0;
         }
 
         while (true) {

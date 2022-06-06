@@ -52,7 +52,7 @@ class LsCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $environment = $this->selector->getSelection($input)->getEnvironment();
         try {

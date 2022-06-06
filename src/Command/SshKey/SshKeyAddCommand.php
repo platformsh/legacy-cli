@@ -53,7 +53,7 @@ class SshKeyAddCommand extends CommandBase
         $this->addExample('Add an existing public key', '~/.ssh/id_rsa.pub');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 

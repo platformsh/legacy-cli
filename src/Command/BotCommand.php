@@ -30,7 +30,7 @@ class BotCommand extends Command
             ->setHidden(true);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $dir = CLI_ROOT . '/resources/bot';
         $signature = $this->config->get('service.name');
@@ -63,7 +63,7 @@ class BotCommand extends Command
 
         if (!$output->isDecorated()) {
             $animation->render();
-            return;
+            return 0;
         }
 
         // Stay positive: return code 0 when the user quits.

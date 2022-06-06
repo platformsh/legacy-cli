@@ -55,7 +55,7 @@ class VariableDisableCommand extends CommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         return $this->subCommandRunner->run('variable:update', [
             'name' => $input->getArgument('name'),

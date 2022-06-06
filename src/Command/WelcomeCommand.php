@@ -44,7 +44,7 @@ class WelcomeCommand extends CommandBase
         $this->setHidden(true);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->stdErr->writeln("Welcome to " . $this->config->get('service.name') . "!\n");
 

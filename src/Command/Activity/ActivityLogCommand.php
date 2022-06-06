@@ -77,7 +77,7 @@ class ActivityLogCommand extends ActivityCommandBase
             ->addExample('Display the log for the last activity on the current project', '--all');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 

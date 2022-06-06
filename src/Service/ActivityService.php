@@ -428,15 +428,15 @@ class ActivityService implements InputConfiguringInterface
      *
      * Add both the --no-wait and --wait options.
      */
-    public function configureInput(InputDefinition $inputDefinition): void
+    public function configureInput(InputDefinition $definition): void
     {
         $description = 'Wait for the operation to complete';
         if (!$this->detectRunningInHook()) {
             $description = 'Wait for the operation to complete (default)';
         }
 
-        $inputDefinition->addOption(new InputOption('no-wait', 'W', InputOption::VALUE_NONE, 'Do not wait for the operation to complete'));
-        $inputDefinition->addOption(new InputOption('wait', null, InputOption::VALUE_NONE, $description));
+        $definition->addOption(new InputOption('no-wait', 'W', InputOption::VALUE_NONE, 'Do not wait for the operation to complete'));
+        $definition->addOption(new InputOption('wait', null, InputOption::VALUE_NONE, $description));
     }
 
     /**

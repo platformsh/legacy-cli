@@ -37,7 +37,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         $this->table->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->selector->selectOrganization($input, 'members');
 

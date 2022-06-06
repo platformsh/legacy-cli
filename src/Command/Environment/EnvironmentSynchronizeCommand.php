@@ -53,7 +53,7 @@ EOT
         $this->addExample('Synchronize code and data from the parent environment', 'code data');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
 
@@ -164,7 +164,7 @@ EOT
     /**
      * {@inheritdoc}
      */
-    public function completeOptionValues($argumentName, CompletionContext $context)
+    public function completeOptionValues($optionName, CompletionContext $context)
     {
         return [];
     }

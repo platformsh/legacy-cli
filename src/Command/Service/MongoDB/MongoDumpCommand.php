@@ -59,7 +59,7 @@ class MongoDumpCommand extends CommandBase
         $this->selector->addAllOptions($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
         $projectRoot = $this->selector->getProjectRoot();

@@ -39,7 +39,7 @@ class YamlParser
      * @throws \Platformsh\Cli\Exception\InvalidConfigException if the config is invalid
      * @throws ParseException if the config could not be parsed
      *
-     * @return mixed
+     * @return array|string|TaggedValue
      */
     public function parseContent($content, $filename)
     {

@@ -60,8 +60,7 @@ class LocalDrushAliasesCommand extends CommandBase
     {
         $this->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
-            ->setDescription();
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).');
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
@@ -76,7 +75,7 @@ class LocalDrushAliasesCommand extends CommandBase
         return parent::isHidden();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->localProject->getProjectRoot();
         $project = $this->selector->getCurrentProject();

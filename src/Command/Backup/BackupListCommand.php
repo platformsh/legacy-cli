@@ -46,7 +46,7 @@ class BackupListCommand extends CommandBase
         $this->formatter->configureInput($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // TODO
         //$this->warnAboutDeprecatedOptions(['start']);

@@ -52,7 +52,7 @@ class TunnelListCommand extends CommandBase
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $tunnels = $this->tunnelService->getTunnelInfo();
         $allTunnelsCount = count($tunnels);

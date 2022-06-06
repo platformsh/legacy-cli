@@ -116,7 +116,7 @@ class AdaptiveTable extends Table
      */
     protected function adaptCells(array $rows, array $maxColumnWidths)
     {
-        foreach ($rows as $rowNum => &$row) {
+        foreach ($rows as &$row) {
             if ($row instanceof TableSeparator) {
                 continue;
             }

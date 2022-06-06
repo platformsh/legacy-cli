@@ -60,7 +60,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $commandLine = $input->getArgument('cmd');
         $commandArgs = explode(' ', $commandLine);
@@ -115,7 +115,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                 if (!$continue) {
                     throw $e;
                 }
-                $this->getApplication()->renderException($e, $this->stdErr);
+                $this->getApplication()->renderThrowable($e, $this->stdErr);
                 $success = false;
             }
         }

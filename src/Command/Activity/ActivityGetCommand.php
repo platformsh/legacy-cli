@@ -75,7 +75,7 @@ class ActivityGetCommand extends ActivityCommandBase
         $this->addExample('Find the duration (in seconds) of the last activity', '-P duration');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, $input->getOption('all') || $input->getArgument('id'));
 

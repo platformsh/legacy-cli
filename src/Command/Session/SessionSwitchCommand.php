@@ -45,7 +45,7 @@ class SessionSwitchCommand extends CommandBase {
         $this->addExample('Change to the default session', 'default');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $previousId = $this->config->getSessionId();
 

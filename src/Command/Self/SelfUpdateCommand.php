@@ -35,7 +35,7 @@ class SelfUpdateCommand extends CommandBase
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'A timeout for the version check', 30);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $manifestUrl = $input->getOption('manifest') ?: $this->config->get('application.manifest_url');
         $currentVersion = $input->getOption('current-version') ?: $this->config->getVersion();
@@ -55,9 +55,6 @@ class SelfUpdateCommand extends CommandBase
         exit(0);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function checkUpdates()
     {
         // Don't check for updates automatically when running self-update.

@@ -34,7 +34,7 @@ class SshKeyDeleteCommand extends CommandBase
         $this->addExample('Delete the key 123', '123');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $id = $input->getArgument('id');
         if (empty($id) || !is_numeric($id)) {

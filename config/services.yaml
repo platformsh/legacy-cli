@@ -31,6 +31,7 @@ services:
 
     # Configure the cache service, which is created via a factory.
     Doctrine\Common\Cache\CacheProvider:
+        public: true
         factory:   'Platformsh\Cli\Service\CacheFactory::createCacheProvider'
         arguments: ['@Platformsh\Cli\Service\Config']
 

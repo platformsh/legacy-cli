@@ -78,7 +78,7 @@ class DbDumpCommand extends CommandBase
         $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
 
@@ -319,13 +319,13 @@ class DbDumpCommand extends CommandBase
     /**
      * Get the default dump filename.
      *
-     * @param Environment $environment
+     * @param Environment|null $environment
      * @param string|null $dbServiceName
      * @param string|null $schema
-     * @param array       $includedTables
-     * @param array       $excludedTables
-     * @param bool        $schemaOnly
-     * @param bool        $gzip
+     * @param array $includedTables
+     * @param array $excludedTables
+     * @param bool $schemaOnly
+     * @param bool $gzip
      *
      * @return string
      */

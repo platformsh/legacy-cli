@@ -49,7 +49,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $this->addExample("View the 'main' environment's database port", 'main --property database.0.port');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, false, $this->relationships->hasLocalEnvVar());
         $relationships = $this->relationships->getRelationships($selection->getHost(), $input->getOption('refresh'));

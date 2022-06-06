@@ -254,7 +254,7 @@ class LocalApplication
     /**
      * Check whether the whole app should be moved into the document root.
      *
-     * @return string
+     * @return bool
      */
     public function shouldMoveToRoot()
     {

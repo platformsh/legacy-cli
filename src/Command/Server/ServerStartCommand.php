@@ -58,7 +58,7 @@ class ServerStartCommand extends ServerCommandBase
         return ProcessManager::supported() && parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->localProject->getProjectRoot();
         if (!$projectRoot) {

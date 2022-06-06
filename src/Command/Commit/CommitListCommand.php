@@ -65,7 +65,7 @@ class CommitListCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $environment = $selection->getEnvironment();
@@ -122,7 +122,6 @@ class CommitListCommand extends CommandBase
      */
     private function loadCommitList(Environment $environment, Commit $startCommit, int $limit = 10): array
     {
-        /** @var Commit[] $commits */
         $commits = [$startCommit];
         if (!count($startCommit->parents) || $limit === 1) {
             return $commits;

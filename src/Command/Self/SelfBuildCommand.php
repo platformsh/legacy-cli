@@ -55,7 +55,7 @@ class SelfBuildCommand extends CommandBase
         return !extension_loaded('Phar') || !\Phar::running(false);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!file_exists(CLI_ROOT . '/vendor')) {
             $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');
@@ -208,12 +208,13 @@ class SelfBuildCommand extends CommandBase
         }
         $start = "/* START_CONFIG */";
         $end = "/* END_CONFIG */";
-        $startPos = \strpos($installerContents, $start) + \strlen($start);
+        $startPos = \strpos($installerContents, $start);
         $endPos = \strpos($installerContents, $end);
         if ($startPos === false || $endPos === false || $endPos < $startPos) {
             $this->stdErr->writeln('Failed to locate config in installer file: <error>' . $installerFile . '</error>');
             return false;
         }
+        $startPos += \strlen($start);
         $newConfig = \var_export([
             'envPrefix' => $this->config->get('application.env_prefix'),
             'manifestUrl' => $this->config->get('application.manifest_url'),

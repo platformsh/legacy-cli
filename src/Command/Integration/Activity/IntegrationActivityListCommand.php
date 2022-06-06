@@ -5,15 +5,6 @@ namespace Platformsh\Cli\Command\Integration\Activity;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Service\ActivityLoader;
-use Platformsh\Cli\Service\ActivityService;
-use Platformsh\Cli\Service\Api;
-use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Service\QuestionHelper;
-use Platformsh\Cli\Service\Selector;
-use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -40,7 +31,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // TODO
         //$this->warnAboutDeprecatedOptions(['environment']);

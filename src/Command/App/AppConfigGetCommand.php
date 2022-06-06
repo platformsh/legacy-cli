@@ -43,7 +43,7 @@ class AppConfigGetCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_APPLICATION.
         $prefix = $this->config->get('service.env_prefix');

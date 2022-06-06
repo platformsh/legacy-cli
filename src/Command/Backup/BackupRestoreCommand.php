@@ -57,7 +57,7 @@ class BackupRestoreCommand extends CommandBase
         $this->addExample('Restore a specific backup', '92c9a4b2aa75422efb3d');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $environment = $selection->getEnvironment();

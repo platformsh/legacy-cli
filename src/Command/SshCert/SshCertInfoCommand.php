@@ -41,7 +41,7 @@ class SshCertInfoCommand extends CommandBase
         $this->formatter->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $cert = $this->certifier->getExistingCertificate();
         if (!$cert || !$this->isValid($cert)) {

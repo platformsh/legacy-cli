@@ -52,7 +52,7 @@ class EnvironmentScpCommand extends CommandBase
         $this->addExample('Copy files inside subdirectory dump/ to remote mount var/files', "-r dump/* remote:var/logs");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $files = $input->getArgument('files');
         if (!$files) {

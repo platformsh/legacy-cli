@@ -51,7 +51,7 @@ class SelfStatsCommand extends CommandBase
      *
      * @throws \GuzzleHttp\Exception\GuzzleException if the request fails
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $repo = $this->config->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));

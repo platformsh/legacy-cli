@@ -54,7 +54,7 @@ class DbSqlCommand extends CommandBase
         $this->addExample('Import a dump file into the remote database', '< dump.sql');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!$input->getArgument('query') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The query argument is required when running via "multi"');

@@ -61,7 +61,7 @@ class SubscriptionInfoCommand extends CommandBase
              ->addExample('View the storage limit (in MiB)', 'storage');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $id = $input->getOption('id');
         $project = null;

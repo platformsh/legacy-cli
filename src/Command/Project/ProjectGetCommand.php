@@ -87,7 +87,7 @@ class ProjectGetCommand extends CommandBase
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Validate input options and arguments.
         $this->validateDepth($input);

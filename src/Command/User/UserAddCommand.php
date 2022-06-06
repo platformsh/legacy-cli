@@ -84,7 +84,7 @@ class UserAddCommand extends CommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $project = $selection->getProject();

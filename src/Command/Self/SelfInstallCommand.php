@@ -55,7 +55,7 @@ EOT
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $configDir = $this->config->getUserConfigDir();
 

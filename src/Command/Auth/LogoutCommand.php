@@ -40,7 +40,7 @@ class LogoutCommand extends CommandBase
             ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // API tokens set via the environment or the config file cannot be
         // removed using this command.
@@ -62,8 +62,7 @@ class LogoutCommand extends CommandBase
             }
             $this->stdErr->writeln('');
             foreach ($other as $sessionId) {
-                $api = new Api($this->config->withOverrides(['api.session_id' => $sessionId]), null, $output);
-                $api->logout();
+                $this->api->withConfigOverrides(['api.session_id' => $sessionId])->logout();
                 $this->stdErr->writeln(sprintf('Logged out from session: <info>%s</info>', $sessionId));
             }
             $this->stdErr->writeln('');

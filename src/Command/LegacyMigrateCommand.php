@@ -49,7 +49,7 @@ EOF
         return $this->localProject->getLegacyProjectRoot() ? false : true;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $legacyRoot = $this->localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {

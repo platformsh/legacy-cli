@@ -51,7 +51,7 @@ class VariableListCommand extends CommandBase
         $this->selector->addEnvironmentOption($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->variableService->getRequestedLevel($input);
 

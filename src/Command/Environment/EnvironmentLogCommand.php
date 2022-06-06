@@ -51,7 +51,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->addExample('Read the last 500 lines of the cron log', 'cron --lines 500');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('tail') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');

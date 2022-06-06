@@ -20,9 +20,10 @@ class ClearCacheCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->cache->flushAll();
         $this->stdErr->writeln('All caches have been cleared');
+        return 0;
     }
 }

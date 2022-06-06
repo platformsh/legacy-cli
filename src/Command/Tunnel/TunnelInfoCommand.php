@@ -51,13 +51,13 @@ class TunnelInfoCommand extends CommandBase
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
         $tunnels = $this->tunnelService->getTunnelInfo();
 
         $relationships = [];
-        foreach ($this->tunnelService->filterTunnels($tunnels, $selection) as $key => $tunnel) {
+        foreach ($this->tunnelService->filterTunnels($tunnels, $selection) as $tunnel) {
             $service = $tunnel['service'];
 
             // Overwrite the service's address with the local tunnel details.

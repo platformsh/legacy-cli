@@ -217,7 +217,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      * This will be 'shared' for a single-application project, or
      * 'shared/<appName>' when there are multiple applications.
      *
-     * @return string|false
+     * @return string
      */
     protected function getSharedDir()
     {

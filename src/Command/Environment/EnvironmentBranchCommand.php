@@ -78,7 +78,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->selector->setEnvArgName('parent');
         $branchName = $input->getArgument('id');

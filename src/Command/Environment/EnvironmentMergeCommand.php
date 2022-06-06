@@ -50,7 +50,7 @@ class EnvironmentMergeCommand extends CommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selectedEnvironment = $this->selector->getSelection($input)->getEnvironment();
         $environmentId = $selectedEnvironment->id;

@@ -48,7 +48,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $this->table->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // The 'orders' link depends on the billing permission.
         $org = $this->selector->selectOrganization($input, 'orders');

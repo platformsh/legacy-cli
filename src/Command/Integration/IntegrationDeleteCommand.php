@@ -24,7 +24,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
         $this->activityService->configureInput($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->selector->getSelection($input)->getProject();
 

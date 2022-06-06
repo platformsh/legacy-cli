@@ -35,7 +35,7 @@ class ServerListCommand extends ServerCommandBase
         $this->table->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $servers = $this->getServerInfo();
         if (!$servers) {

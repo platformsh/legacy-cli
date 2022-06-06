@@ -122,9 +122,9 @@ class LocalProject
      *
      * @param string $file
      *   The filename to look for.
-     * @param string $startDir
+     * @param null $startDir
      *   An absolute path to a directory to start in.
-     * @param callable $callback
+     * @param callable|null $callback
      *   A callback to validate the directory when found. Accepts one argument
      *   (the directory path). Return true to use the directory, or false to
      *   continue traversing upwards.

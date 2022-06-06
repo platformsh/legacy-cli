@@ -60,7 +60,7 @@ class UserGetCommand extends CommandBase
         $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('role')) {
             $this->stdErr->writeln('The <error>--role</error> option is no longer available for this command.');

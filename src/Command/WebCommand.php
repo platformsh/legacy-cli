@@ -41,7 +41,7 @@ class WebCommand extends CommandBase
         $this->selector->addEnvironmentOption($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // If an environment ID has been specified but not found, then use
         // the specified ID anyway. This allows building a URL when an
@@ -73,5 +73,7 @@ class WebCommand extends CommandBase
         }
 
         $this->urlService->openUrl($url);
+
+        return 0;
     }
 }

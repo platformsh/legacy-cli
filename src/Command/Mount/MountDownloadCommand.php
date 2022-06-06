@@ -78,7 +78,7 @@ class MountDownloadCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $container = $this->selector->getSelection($input)->getRemoteContainer();
         $mounts = $this->mountService->mountsFromConfig($container->getConfig());

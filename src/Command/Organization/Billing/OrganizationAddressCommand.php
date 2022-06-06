@@ -51,7 +51,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         $this->table->configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $property = $input->getArgument('property');
         $updates = $this->parseUpdates($input);

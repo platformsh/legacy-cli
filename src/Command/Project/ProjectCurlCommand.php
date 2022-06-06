@@ -31,7 +31,7 @@ class ProjectCurlCommand extends CommandBase
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->selector->getSelection($input)->getProject();
         $url = $project->getUri();

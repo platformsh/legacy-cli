@@ -50,7 +50,7 @@ class MongoShellCommand extends CommandBase
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->runningViaMulti) {
             throw new \RuntimeException('The mongo-shell command cannot run via multi');

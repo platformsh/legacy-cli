@@ -68,7 +68,7 @@ class VariableCreateCommand extends CommandBase
         $this->activityService->configureInput($definition);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, true);
 

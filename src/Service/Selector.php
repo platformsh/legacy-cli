@@ -426,10 +426,11 @@ class Selector
     /**
      * Get the current environment if the user is in a project directory.
      *
-     * @param Project $expectedProject The expected project.
+     * @param Project|null $expectedProject The expected project.
      * @param bool|null $refresh Whether to refresh the environments or projects
      *                           cache.
      *
+     * @throws \Exception
      * @return Environment|false The current environment.
      */
     public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)

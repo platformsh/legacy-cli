@@ -75,7 +75,7 @@ EOF
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $host = $this->selector->getSelection($input, false, getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
             ->getHost();

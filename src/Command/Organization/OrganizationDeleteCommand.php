@@ -30,7 +30,7 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
         $this->selector->addOrganizationOptions($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->selector->selectOrganization($input);
 
