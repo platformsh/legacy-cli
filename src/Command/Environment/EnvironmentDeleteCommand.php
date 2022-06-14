@@ -18,18 +18,20 @@ class EnvironmentDeleteCommand extends CommandBase
         $this
             ->setName('environment:delete')
             ->setHiddenAliases(['environment:deactivate'])
-            ->setDescription('Delete an environment')
+            ->setDescription('Delete one or more environments')
             ->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\nThe % character may be used as a wildcard." . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es)')
-            ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete the remote Git branch(es)')
-            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which to delete' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete Git branch(es) (inactive environments)')
+            ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete Git branch(es) (inactive environments)')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Delete all environments of a type (adding to any others selected)' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('only-type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only delete environment(s) of a specific type' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) not to delete.\nThe % character may be used as a wildcard.\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP);
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments (adding to any others selected')
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
+        $this->addExample('Delete the currently checked out environment');
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with their parent', '--merged');
@@ -135,21 +137,27 @@ EOF
             $this->stdErr->writeln('');
         }
 
-        // Add the current environment, if it's not production, and if nothing is previously specified.
-        if (!$anythingSpecified && empty($selectedEnvironments)) {
-            if ($current = $this->getCurrentEnvironment($this->getSelectedProject())) {
-                if ($current->getProperty('type', false, false) !== 'production') {
-                    $this->stdErr->writeln('Current environment: '. $this->api()->getEnvironmentLabel($current));
-                    $this->stdErr->writeln('');
-                    $selectedEnvironments[$current->id] = $current;
-                }
-            }
+        // Add the current environment if nothing is otherwise specified.
+        if (!$anythingSpecified
+            && empty($selectedEnvironments)
+            && ($current = $this->getCurrentEnvironment($this->getSelectedProject()))) {
+            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api()->getEnvironmentLabel($current));
+            $this->stdErr->writeln('');
+            $selectedEnvironments[$current->id] = $current;
         }
 
-        // Exclude environment type(s) specified in --exclude-type.
+        // Exclude environment type(s) specified via --exclude-type or --only-type.
         $excludeTypes = ArrayArgument::getOption($input, 'exclude-type');
-        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes) {
-            return !($environment->hasProperty('type', false) && \in_array($environment->getProperty('type', true, false), $excludeTypes, true));
+        $onlyTypes = ArrayArgument::getOption($input, 'only-type');
+        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes, $onlyTypes) {
+            $type = $environment->getProperty('type', false, false);
+            if ($type !== null && \in_array($type, $excludeTypes, true)) {
+                return false;
+            }
+            if (!empty($onlyTypes) && ($type === null || !\in_array($type, $onlyTypes, true))) {
+                return false;
+            }
+            return true;
         });
         if (($numExcluded = count($selectedEnvironments) - count($filtered)) > 0) {
             $this->stdErr->writeln($numExcluded . ' environment(s) excluded by type.');
@@ -236,6 +244,9 @@ EOF
                 $this->stdErr->writeln('');
             }
             $this->stdErr->writeln('No environment(s) to delete.');
+            if (!$anythingSpecified) {
+                $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config()->get('application.executable')));
+            }
 
             return $error ? 1 : 0;
         }
