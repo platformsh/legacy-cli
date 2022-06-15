@@ -18,7 +18,6 @@ class WelcomeCommandTest extends TestCase
                 'PLATFORM_PROJECT' => 'test-project',
                 'PLATFORM_BRANCH' => 'test-environment',
                 'PLATFORM_ROUTES' => base64_encode(json_encode([])),
-                'PLATFORMSH_CLI_SESSION_ID' => 'test' . rand(100, 999),
             ]);
 
         $this->assertStringContainsString(

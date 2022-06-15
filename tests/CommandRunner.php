@@ -20,7 +20,15 @@ class CommandRunner
             throw new \RuntimeException('Cannot find executable');
         }
         $args = array_merge([$path, $commandName], $args);
-        $process = new Process($args, null, $env + \getenv());
+
+        // Ensure the CLI is not logged in during the test.
+        $env += [
+            'PLATFORMSH_CLI_NO_INTERACTION' => '1',
+            'PLATFORMSH_CLI_SESSION_ID' => 'test' . rand(100, 999),
+            'PLATFORMSH_CLI_TOKEN' => '',
+        ] + \getenv();
+
+        $process = new Process($args, null, $env);
         $process->run();
         $exitCode = $process->getExitCode();
         if (!$allowFailure && $exitCode !== 0) {
