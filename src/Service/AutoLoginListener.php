@@ -57,9 +57,9 @@ class AutoLoginListener
                     return;
                 }
             }
-        } elseif ($method === 'password') {
+        } elseif ($method === 'api-token') {
             $exitCode = $this->commandDispatcher
-                ->run('auth:password-login');
+                ->run('auth:api-token-login');
             $this->stdErr->writeln('');
             if ($exitCode === 0) {
                 return;

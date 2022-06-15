@@ -55,8 +55,7 @@ application:
   date_format: c
 
   # Disabled commands (a list of full command names).
-  disabled_commands:
-    - auth:password-login
+  disabled_commands: []
 
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
