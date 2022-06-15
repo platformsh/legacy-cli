@@ -25,7 +25,6 @@ quick-tests:
     - export PATH="/cache/composer/bin:$PATH"
     # No Composer scripts, because Box isn't needed (and Box needs PHP 7.4).
     - composer install --no-interaction --no-scripts
-    - scripts/test/security.sh
     - scripts/test/unit.sh
     - scripts/test/offline.sh
 
