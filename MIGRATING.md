@@ -6,7 +6,7 @@ A few may be, particularly those writing or maintaining scripts or snippets.
 
 ### PHP version
 
-The minimum PHP version has increased from 5.5.9 to 7.1.0.
+The minimum PHP version has increased from 5.5.9 to 7.2.5.
 
 ### Property display
 

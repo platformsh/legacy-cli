@@ -15,8 +15,8 @@ ini_set('log_errors', '0');
 // Deprecation-level notices may be switched back on inside the application, or with the CLI_DEBUG environment variable.
 error_reporting(getenv('CLI_DEBUG') ? E_ALL : E_ALL & ~E_DEPRECATED);
 
-if (version_compare(PHP_VERSION, '7.1.3', '<')) {
-    printf("This tool requires at least PHP 7.1.3. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
+if (version_compare(PHP_VERSION, '7.2.5', '<')) {
+    printf("This tool requires at least PHP 7.2.5. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
     exit(1);
 }
 
