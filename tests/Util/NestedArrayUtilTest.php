@@ -10,7 +10,7 @@ class NestedArrayUtilTest extends TestCase
 {
     protected $testArray = [];
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->testArray = [
             'a' => [
@@ -37,9 +37,9 @@ class NestedArrayUtilTest extends TestCase
     public function testSetValue()
     {
         NestedArrayUtil::setNestedArrayValue($this->testArray, ['a', 'foo'], 'bar');
-        $this->assertEquals($this->testArray['a']['foo'], 'bar');
+        $this->assertEquals('bar', $this->testArray['a']['foo']);
         NestedArrayUtil::setNestedArrayValue($this->testArray, ['c', 2, 3], 'test');
-        $this->assertEquals($this->testArray['c'][2][3], 'test');
+        $this->assertEquals('test', $this->testArray['c'][2][3]);
     }
 
     public function testKeyExists()
@@ -55,7 +55,7 @@ class NestedArrayUtilTest extends TestCase
      *
      * @return mixed
      */
-    private function getValue($property)
+    private function getValue(string $property)
     {
         return NestedArrayUtil::getNestedArrayValue($this->testArray, explode('.', $property));
     }

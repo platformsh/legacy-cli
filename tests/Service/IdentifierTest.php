@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Identifier;
 use Platformsh\Cli\Tests\Container;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -13,7 +12,7 @@ class IdentifierTest extends TestCase
     /** @var Identifier */
     private $identifier;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $container = Container::instance();
         $this->identifier = $container->get(Identifier::class);

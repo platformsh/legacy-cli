@@ -28,7 +28,7 @@ class GitServiceTest extends TestCase
      *
      * @throws \Exception
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->tempDirSetUp();
         $repository = $this->getRepositoryDir();
@@ -79,7 +79,7 @@ class GitServiceTest extends TestCase
      *
      * @return string
      */
-    protected function getRepositoryDir()
+    protected function getRepositoryDir(): string
     {
         return $this->tempDir . '/repo';
     }

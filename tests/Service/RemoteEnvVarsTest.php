@@ -10,7 +10,7 @@ class RemoteEnvVarsTest extends TestCase {
     /** @var RemoteEnvVars */
     private $service;
 
-    public function setUp(): void {
+    protected function setUp(): void {
         $container = Container::instance();
         $this->service = $container->get(RemoteEnvVars::class);
     }

@@ -12,7 +12,7 @@ class EnvironmentRelationshipsTest extends TestCase
 {
     private $mockRelationships;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->mockRelationships = base64_encode(json_encode([
             'database' => [
@@ -32,7 +32,8 @@ class EnvironmentRelationshipsTest extends TestCase
         parent::__construct();
     }
 
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string
+    {
         $result = (new CommandRunner())
             ->run('relationships', $args, ['PLATFORM_RELATIONSHIPS' => $this->mockRelationships]);
 

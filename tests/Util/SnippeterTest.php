@@ -12,7 +12,7 @@ class SnippeterTest extends TestCase
     private $snippet;
     private $dataDir;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->begin = '# BEGIN Test snippet' . PHP_EOL;
         $this->end = PHP_EOL . '# END';

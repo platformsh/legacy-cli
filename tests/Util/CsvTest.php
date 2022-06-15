@@ -10,7 +10,7 @@ class CsvTest extends TestCase
 {
     private $data = [];
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         // Data from a Wikipedia example.
         // https://en.wikipedia.org/wiki/Comma-separated_values

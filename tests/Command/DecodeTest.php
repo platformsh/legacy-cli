@@ -13,7 +13,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
  */
 class DecodeTest extends TestCase
 {
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string
+    {
         $output = new BufferedOutput();
         (new DecodeCommand(new Config()))
             ->run(new ArrayInput($args), $output);

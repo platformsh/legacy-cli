@@ -10,7 +10,7 @@ use Platformsh\Cli\Tests\CommandRunner;
  */
 class EnvironmentUrlTest extends TestCase
 {
-    public function setUp(): void {
+    protected function setUp(): void {
         $mockRoutes = base64_encode(json_encode([
             'https://example.com' => [
                 'primary' => true,
@@ -27,7 +27,7 @@ class EnvironmentUrlTest extends TestCase
         putenv('PLATFORM_ROUTES=' . $mockRoutes);
     }
 
-    public function tearDown(): void {
+    protected function tearDown(): void {
         putenv('PLATFORM_ROUTES=');
     }
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Application;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
@@ -12,8 +11,6 @@ use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class BaseBuildFlavorTest extends TestCase
@@ -23,7 +20,7 @@ abstract class BaseBuildFlavorTest extends TestCase
     /** @var Container */
     private static $container;
 
-    /** @var \Symfony\Component\Console\Output\OutputInterface */
+    /** @var OutputInterface */
     protected static $output;
 
     /** @var CliConfig */
@@ -48,7 +45,7 @@ abstract class BaseBuildFlavorTest extends TestCase
     /**
      * {@inheritdoc}
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->builder = self::$container->get(LocalBuild::class);
         $this->tempDirSetUp();
@@ -62,13 +59,13 @@ abstract class BaseBuildFlavorTest extends TestCase
      *   be copied into a dummy project.
      * @param array  $buildSettings
      *   An array of custom build settings.
-     * @param bool   $expectedResult
+     * @param bool $expectedResult
      *   The expected build result.
      *
      * @return string
      *   The project root for the dummy project.
      */
-    protected function assertBuildSucceeds($sourceDir, array $buildSettings = [], $expectedResult = true)
+    protected function assertBuildSucceeds(string $sourceDir, array $buildSettings = [], bool $expectedResult = true): string
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
@@ -83,7 +80,7 @@ abstract class BaseBuildFlavorTest extends TestCase
      *
      * @return string
      */
-    protected function createDummyProject($sourceDir)
+    protected function createDummyProject(string $sourceDir): string
     {
         if (!is_dir($sourceDir)) {
             throw new \InvalidArgumentException("Not a directory: $sourceDir");

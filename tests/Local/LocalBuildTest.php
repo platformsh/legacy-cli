@@ -6,15 +6,14 @@ namespace Platformsh\Cli\Tests\Local;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Tests\Container;
-use Symfony\Component\Console\Input\ArrayInput;
 
 class LocalBuildTest extends TestCase
 {
     private $localBuild;
 
-    public function setUp(): void {
+    protected function setUp(): void {
         $container = Container::instance();
-        /** @var \Platformsh\Cli\Local\LocalBuild localBuild */
+        /** @var LocalBuild localBuild */
         $this->localBuild = $container->get(LocalBuild::class);
     }
 

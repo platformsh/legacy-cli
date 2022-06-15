@@ -54,7 +54,6 @@ class DependenciesTest extends BaseBuildFlavorTest
             } catch (\RuntimeException $e) {
                 if (\getenv('TRAVIS') && strpos($e->getMessage(), 'The command failed') !== false && strpos($e->getMessage(), 'pip install') !== false) {
                     $this->markTestSkipped('Installing python dependencies is known to fail on Travis');
-                    return;
                 }
                 throw $e;
             }

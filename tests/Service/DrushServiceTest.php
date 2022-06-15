@@ -31,7 +31,7 @@ class DrushServiceTest extends TestCase
     /**
      * @{inheritdoc}
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         $config = (new Config())->withOverrides(['service.app_config_file' => '_platform.app.yaml']);
         $this->drush = new Drush($config);
@@ -115,7 +115,7 @@ class DrushServiceTest extends TestCase
         $this->assertArrayHasKey('_local', $aliases);
 
         $apps = $this->drush->getDrupalApps($projectRoot);
-        $this->assertEquals(1, count($apps));
+        $this->assertCount(1, $apps);
     }
 
     public function testCreateAliasesMultiDrupal()
@@ -133,7 +133,7 @@ class DrushServiceTest extends TestCase
         $this->drush->setHomeDir($homeDir);
 
         $apps = $this->drush->getDrupalApps($projectRoot);
-        $this->assertEquals(2, count($apps));
+        $this->assertCount(2, $apps);
 
         // Check that aliases are created.
         $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);

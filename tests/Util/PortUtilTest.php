@@ -29,7 +29,7 @@ class PortUtilTest extends TestCase
     public function testGetPortDoesNotReturnUnsafePort()
     {
         $util = new PortUtil();
-        $this->assertNotEquals($util->getPort(2049), 2049);
+        $this->assertNotEquals(2049, $util->getPort(2049));
     }
 
     public function testGetPortReturnsValidPort()

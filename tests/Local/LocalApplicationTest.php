@@ -16,7 +16,7 @@ class LocalApplicationTest extends TestCase
 
     private $config;
 
-    public function setUp(): void {
+    protected function setUp(): void {
         $this->config = (new Config())->withOverrides([
             'service.app_config_file' => '_platform.app.yaml',
             'service.applications_config_file' =>  '_platform/applications.yaml',

@@ -10,7 +10,7 @@ use Platformsh\Cli\Installer\VersionResolver;
 class InstallerTest extends TestCase
 {
 
-    public function setUp(): void {
+    protected function setUp(): void {
         require_once CLI_ROOT . '/dist/installer.php';
     }
 

@@ -20,7 +20,7 @@ trait HasTempDirTrait
      *
      * @return string
      */
-    protected function createTempDir($parentDir, $prefix = '')
+    protected function createTempDir(string $parentDir, string $prefix = ''): string
     {
         if (!($tempDir = tempnam($parentDir, $prefix))
           || !unlink($tempDir)
@@ -36,7 +36,7 @@ trait HasTempDirTrait
      *
      * @return string
      */
-    protected function createTempSubDir($prefix = '')
+    protected function createTempSubDir(string $prefix = ''): string
     {
         $this->tempDirSetUp();
 

@@ -10,7 +10,7 @@ class ApplicationFinderTest extends TestCase
 {
     private $finder;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $config = (new Config())->withOverrides([
             'service.app_config_file' => '_platform.app.yaml',

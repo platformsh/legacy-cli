@@ -12,7 +12,7 @@ class CommandRunner
      * @param array    $env
      * @param bool     $allowFailure
      *
-     * @return \Platformsh\Cli\Tests\CommandResult
+     * @return CommandResult
      */
     public function run(string $commandName, array $args = [], array $env = [], bool $allowFailure = false): CommandResult {
         $path = realpath(__DIR__ . '/../bin/platform');

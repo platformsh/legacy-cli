@@ -16,7 +16,7 @@ class Container
 {
     private static $container;
 
-    public static function instance()
+    public static function instance(): ContainerBuilder
     {
         if (isset(self::$container)) {
             return self::$container;

@@ -43,7 +43,7 @@ class AdaptiveTableTest extends TestCase
      * @param string $input
      * @param int[]  $maxLengths
      */
-    private function assertWrappedWithDecoration($input, array $maxLengths = [5, 8, 13, 21, 34, 55, 89])
+    private function assertWrappedWithDecoration(string $input, array $maxLengths = [5, 8, 13, 21, 34, 55, 89])
     {
         $o = new BufferedOutput();
         $f = $o->getFormatter();
