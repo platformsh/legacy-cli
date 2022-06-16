@@ -40,15 +40,15 @@ class DrushServiceTest extends TestCase
         $this->project = new Project([
             'id' => 'test',
             'title' => 'Test project title',
-        ], null, null, true);
+        ], 'https://127.0.0.1:30011/projects/test', null, true);
         $this->environments[] = new Environment([
-            'id' => 'master',
-            'title' => 'master',
+            'id' => 'main',
+            'title' => 'main',
             '_links' => [
                 'public-url' => ['href' => 'http://example.com'],
                 'ssh' => ['href' => 'ssh://user@example.com'],
             ],
-        ], null, null, true);
+        ], 'https://127.0.0.1:30011/projects/test/environments/main', null, true);
 
         $this->tempDirSetUp();
     }
@@ -73,16 +73,16 @@ class DrushServiceTest extends TestCase
         $this->assertTrue($result);
         $this->assertFileExists("$homeDir/.drush/site-aliases/test.aliases.drushrc.php");
 
-        // Check that aliases exist for the 'master' and local environments.
+        // Check that aliases exist for the 'main' and local environments.
         $aliases = [];
         include_once "$homeDir/.drush/site-aliases/test.aliases.drushrc.php";
-        $this->assertArrayHasKey('master', $aliases);
+        $this->assertArrayHasKey('main', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
 
         // Check that YAML aliases exist.
         $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
         $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
-        $this->assertArrayHasKey('master', $aliases);
+        $this->assertArrayHasKey('main', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
     }
 
@@ -105,13 +105,13 @@ class DrushServiceTest extends TestCase
         $this->assertTrue($result);
         $this->assertFileExists("$homeDir/.drush/site-aliases/test.aliases.drushrc.php");
 
-        // Check that aliases exist for the 'master' and local environments.
+        // Check that aliases exist for the 'main' and local environments.
         $aliases = [];
         include_once "$homeDir/.drush/site-aliases/test.aliases.drushrc.php";
 
         // The aliases are the same as for single apps, because there's only one
         // Drupal application defined.
-        $this->assertArrayHasKey('master', $aliases);
+        $this->assertArrayHasKey('main', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
 
         $apps = $this->drush->getDrupalApps($projectRoot);
@@ -140,21 +140,21 @@ class DrushServiceTest extends TestCase
         $this->assertTrue($result);
         $this->assertFileExists("$homeDir/.drush/site-aliases/test.aliases.drushrc.php");
 
-        // Check that aliases exist for the 'master' and local environments.
+        // Check that aliases exist for the 'main' and local environments.
         $aliases = [];
         include_once "$homeDir/.drush/site-aliases/test.aliases.drushrc.php";
 
-        $this->assertArrayHasKey('master--drupal1', $aliases);
+        $this->assertArrayHasKey('main--drupal1', $aliases);
         $this->assertArrayHasKey('_local--drupal1', $aliases);
-        $this->assertArrayHasKey('master--drupal2', $aliases);
+        $this->assertArrayHasKey('main--drupal2', $aliases);
         $this->assertArrayHasKey('_local--drupal2', $aliases);
 
         // Check that YAML aliases exist.
         $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
         $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
-        $this->assertArrayHasKey('master--drupal1', $aliases);
+        $this->assertArrayHasKey('main--drupal1', $aliases);
         $this->assertArrayHasKey('_local--drupal1', $aliases);
-        $this->assertArrayHasKey('master--drupal2', $aliases);
+        $this->assertArrayHasKey('main--drupal2', $aliases);
         $this->assertArrayHasKey('_local--drupal2', $aliases);
     }
 

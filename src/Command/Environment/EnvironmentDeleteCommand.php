@@ -21,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentDeleteCommand extends CommandBase
 {
     protected static $defaultName = 'environment:delete';
-    protected static $defaultDescription = 'Delete an environment';
+    protected static $defaultDescription = 'Delete one or more environments';
 
     private $api;
     private $activityService;
@@ -50,20 +50,23 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\nThe % character may be used as a wildcard." . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete the remote Git branch(es)')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete the remote Git branch(es)')
-            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments')
-            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which to delete' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Delete all environments of a type (adding to any others selected)' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('only-type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only delete environment(s) of a specific type' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) not to delete.\nThe % character may be used as a wildcard.\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP);
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments (adding to any others selected')
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)');
 
         $definition = $this->getDefinition();
         $this->selector->addEnvironmentOption($definition);
         $this->selector->addProjectOption($definition);
         $this->activityService->configureInput($definition);
 
+        $this->addExample('Delete the currently checked out environment');
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with their parent', '--merged');
+
         $service = $this->config->get('service.name');
         $this->setHelp(<<<EOF
 When a {$service} environment is deleted, it will become "inactive": it will
@@ -81,18 +84,15 @@ EOF
 
         $environments = $this->api->getEnvironments($selection->getProject());
 
-        /** @var Environment[] $selectedEnvironments */
+        /**
+         * A list of selected environments, keyed by ID to avoid duplication.
+         *
+         * @var array<string, Environment> $selectedEnvironments
+         */
         $selectedEnvironments = [];
         $error = false;
 
-        // Use the current environment (if it's not production).
-        if ($current = $this->selector->getCurrentEnvironment($selection->getProject())) {
-            if ($current->getProperty('type', false, false) !== 'production') {
-                $this->stdErr->writeln('Current environment selected: '. $this->api->getEnvironmentLabel($current));
-                $this->stdErr->writeln('');
-                $selectedEnvironments = \array_merge($selectedEnvironments, [$current]);
-            }
-        }
+        $anythingSpecified = false;
 
         // Add the environment(s) specified in the arguments or options.
         $specifiedEnvironmentIds = ArrayArgument::getArgument($input, 'environment');
@@ -100,6 +100,7 @@ EOF
             $specifiedEnvironmentIds = array_merge([$input->getOption('environment')], $specifiedEnvironmentIds);
         }
         if ($specifiedEnvironmentIds) {
+            $anythingSpecified = true;
             $allIds = \array_map(function (Environment $e) { return $e->id; }, $environments);
             $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
@@ -115,11 +116,14 @@ EOF
             $specifiedEnvironments = array_intersect_key($environments, array_flip($specifiedEnvironmentIds));
             $this->stdErr->writeln(count($specifiedEnvironments) . ' environment(s) found by ID');
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $specifiedEnvironments);
+            foreach ($specifiedEnvironments as $specifiedEnvironment) {
+                $selectedEnvironments[$specifiedEnvironment->id] = $specifiedEnvironment;
+            }
         }
 
         // Gather inactive environments.
         if ($input->getOption('inactive')) {
+            $anythingSpecified = true;
             if ($input->getOption('no-delete-branch')) {
                 $this->stdErr->writeln('The option --no-delete-branch cannot be combined with --inactive.');
 
@@ -133,41 +137,59 @@ EOF
             );
             $this->stdErr->writeln(count($inactive) . ' inactive environment(s) found.');
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $inactive);
+            foreach ($inactive as $inactiveEnv) {
+                $selectedEnvironments[$inactiveEnv->id] = $inactiveEnv;
+            }
         }
 
         // Gather merged environments.
         if ($input->getOption('merged')) {
+            $anythingSpecified = true;
             $merged = [];
             foreach ($environments as $environment) {
                 $merge_info = $environment->getProperty('merge_info', false) ?: [];
                 if (isset($environment->parent, $merge_info['commits_ahead'], $merge_info['parent_ref']) && $merge_info['commits_ahead'] === 0) {
-                    $merged[$environment->id] = $environment;
+                    $selectedEnvironments[$environment->id] = $merged[$environment->id] = $environment;
                 }
             }
             $this->stdErr->writeln(count($merged) . ' merged environment(s) found.');
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $merged);
         }
 
         // Gather environments with the specified --type (can be multiple).
         if ($types = ArrayArgument::getOption($input, 'type')) {
+            $anythingSpecified = true;
             $withTypes = [];
             foreach ($environments as $environment) {
                 if ($environment->hasProperty('type') && \in_array($environment->getProperty('type'), $types)) {
-                    $withTypes[$environment->id] = $environment;
+                    $selectedEnvironments[$environment->id] = $withTypes[$environment->id] = $environment;
                 }
             }
             $this->stdErr->writeln(count($withTypes) . ' environment(s) found matching type(s): ' . implode(', ', $types));
             $this->stdErr->writeln('');
-            $selectedEnvironments = array_merge($selectedEnvironments, $withTypes);
         }
 
+        // Add the current environment if nothing is otherwise specified.
+        if (!$anythingSpecified
+            && empty($selectedEnvironments)
+            && ($current = $this->selector->getCurrentEnvironment($selection->getProject()))) {
+            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api->getEnvironmentLabel($current));
+            $this->stdErr->writeln('');
+            $selectedEnvironments[$current->id] = $current;
+        }
 
-        // Exclude environment type(s) specified in --exclude-type.
+        // Exclude environment type(s) specified via --exclude-type or --only-type.
         $excludeTypes = ArrayArgument::getOption($input, 'exclude-type');
-        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes) {
-            return !($environment->hasProperty('type', false) && \in_array($environment->getProperty('type', true, false), $excludeTypes, true));
+        $onlyTypes = ArrayArgument::getOption($input, 'only-type');
+        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes, $onlyTypes) {
+            $type = $environment->getProperty('type', false, false);
+            if ($type !== null && \in_array($type, $excludeTypes, true)) {
+                return false;
+            }
+            if (!empty($onlyTypes) && ($type === null || !\in_array($type, $onlyTypes, true))) {
+                return false;
+            }
+            return true;
         });
         if (($numExcluded = count($selectedEnvironments) - count($filtered)) > 0) {
             $this->stdErr->writeln($numExcluded . ' environment(s) excluded by type.');
@@ -178,12 +200,9 @@ EOF
         // Exclude environment ID(s) specified in --exclude.
         $excludeIds = ArrayArgument::getOption($input, 'exclude');
         if (!empty($excludeIds)) {
-            $selectedIds = \array_map(function (Environment $e) { return $e->id; }, $selectedEnvironments);
-            $resolved = Wildcard::select($selectedIds, $excludeIds);
+            $resolved = Wildcard::select(\array_keys($selectedEnvironments), $excludeIds);
             if (count($resolved)) {
-                $selectedEnvironments = \array_filter($selectedEnvironments, function (Environment $e) use ($resolved) {
-                    return !\in_array($e->id, $resolved, true);
-                });
+                $selectedEnvironments = \array_intersect_key($selectedEnvironments, \array_flip($resolved));
                 $this->stdErr->writeln(count($resolved) . ' environment(s) excluded by ID.');
                 $this->stdErr->writeln('');
             }
@@ -255,6 +274,9 @@ EOF
                 $this->stdErr->writeln('');
             }
             $this->stdErr->writeln('No environment(s) to delete.');
+            if (!$anythingSpecified) {
+                $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config->get('application.executable')));
+            }
 
             return $error ? 1 : 0;
         }
@@ -273,7 +295,7 @@ EOF
     {
         $uniqueIds = \array_unique(\array_map(function(Environment $e) { return $e->id; }, $environments));
         natcasesort($uniqueIds);
-        return '<comment>' . implode('</comment>, <comment>', $uniqueIds) . '</comment>';
+        return '<info>' . implode('</info>, <info>', $uniqueIds) . '</info>';
     }
 
     /**
