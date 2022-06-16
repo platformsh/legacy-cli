@@ -328,9 +328,10 @@ abstract class IntegrationCommandBase extends CommandBase
             'shared_key' => new Field('Shared key', [
                 'conditions' => ['type' => [
                     'health.webhook',
+                    'webhook',
                 ]],
                 'description' => 'Webhook: the JWS shared secret key',
-                'questionLine' => 'Enter the JWS shared secret key, for validating webhook requests',
+                'questionLine' => 'Optionally, enter a JWS shared secret key, for validating webhook requests',
                 'required' => false,
             ]),
             'script' => new FileField('Script file', [
