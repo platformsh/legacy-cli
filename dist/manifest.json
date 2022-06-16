@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "3007ca5bb22bb2902aec005ceb36321cbadcdaaf",
-        "sha256": "049047a2c133711e3a008766ee46b39297fe7e711be82bdb240bec9643440ff4",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.79.8/platform.phar",
-        "version": "3.79.8",
+        "sha1": "70e3a36038aa6b16656e6b6e87a76bb0a05ada30",
+        "sha256": "7510e922f598532560a4fffd435449441d83090a298ceb394b0988aaf22253a5",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.80.0/platform.phar",
+        "version": "3.80.0",
         "php": {
             "min": "5.5.9"
         },
@@ -449,7 +449,8 @@
             "3.79.5": "* Fix: \"pagination\" section in config.yaml could not override the default\n* Fix potentially not using the cache when a project hostname is known\n* Fix \"Call to a member function setApiUrl() on bool\"",
             "3.79.6": "* Update client to fix SSH URL problem introduced in v3.79.4.",
             "3.79.7": "* Fix an additional bug introduced in v3.79.4: the activity log ending abruptly\n  without refreshing the activity state.\n* Avoid errors caused by invalid config when processing environment variables.",
-            "3.79.8": "* Add --if-exists to pg_dump, in the db:dump command, so that PostgreSQL dump\n  files can be restored without errors on an empty database.\n* Avoid matching \"-\" as an environment ID when parsing a Console URL.\n* Fix legacy region detection in the backup:restore command, preventing\n  accidental restore to the wrong environment on such regions."
+            "3.79.8": "* Add --if-exists to pg_dump, in the db:dump command, so that PostgreSQL dump\n  files can be restored without errors on an empty database.\n* Avoid matching \"-\" as an environment ID when parsing a Console URL.\n* Fix legacy region detection in the backup:restore command, preventing\n  accidental restore to the wrong environment on such regions.",
+            "3.80.0": "* Support the `--shared-key` option for `webhook` as well as `health.webhook`\n  integrations.\n* Fix SSL chain validation for files containing multiple certificates.\n* Improvements to the `environment:delete` command:\n  - Only select the current environment if nothing else is specified.\n    This may change behavior for existing scripts if they expect the\n    currently checked-out environment to be always selected for deletion.\n  - Avoid asking twice about deleting the same environment.\n  - Add an `--only-type` option, to enforce only deleting environments of\n    one or more types, e.g.\n\n        platform env:delete --merged --only-type development"
         }
     }
 ]
