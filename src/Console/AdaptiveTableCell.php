@@ -30,4 +30,22 @@ class AdaptiveTableCell extends TableCell
     {
         return $this->wrap;
     }
+
+    /**
+     * Create a new cell object based on this, with a new value.
+     *
+     * @param string $value
+     *
+     * @return static
+     */
+    public function withValue($value)
+    {
+        $options = [
+            'colspan' => $this->getColspan(),
+            'rowspan' => $this->getRowspan(),
+            'wrap' => $this->canWrap(),
+        ];
+
+        return new static($value, $options);
+    }
 }

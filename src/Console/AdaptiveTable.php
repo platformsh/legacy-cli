@@ -115,16 +115,33 @@ class AdaptiveTable extends Table
      */
     protected function adaptCells(array $rows, array $maxColumnWidths)
     {
-        foreach ($rows as $rowNum => &$row) {
+        foreach ($rows as &$row) {
             if ($row instanceof TableSeparator) {
                 continue;
             }
             foreach ($row as $column => &$cell) {
+                $contents = $cell instanceof TableCell ? $cell->__toString() : $cell;
                 // Replace Windows line endings, because Symfony's buildTableRows() does not respect them.
-                $cell = \str_replace("\r\n", "\n", $cell);
+                if (\strpos($contents, "\r\n") !== false) {
+                    $contents = \str_replace("\r\n", "\n", $contents);
+                    if ($cell instanceof AdaptiveTableCell) {
+                        $cell = $cell->withValue($contents);
+                    } elseif (\is_string($cell)) {
+                        $cell = $contents;
+                    }
+                }
                 $cellWidth = $this->getCellWidth($cell);
-                if ($cellWidth > $maxColumnWidths[$column]) {
-                    $cell = $this->wrapCell($cell, $maxColumnWidths[$column]);
+                if ($cellWidth <= $maxColumnWidths[$column]) {
+                    continue;
+                }
+                $wrapped = $this->wrapCell($contents, $maxColumnWidths[$column]);
+                if ($cell instanceof TableCell) {
+                    $cell = new TableCell($wrapped, [
+                        'colspan' => $cell->getColspan(),
+                        'rowspan' => $cell->getRowspan(),
+                    ]);
+                } elseif (is_string($cell)) {
+                    $cell = $wrapped;
                 }
             }
         }
@@ -302,7 +319,7 @@ class AdaptiveTable extends Table
         asort($originalColumnWidths, SORT_NUMERIC);
         foreach ($originalColumnWidths as $column => $columnWidth) {
             $columnRatio = ($maxContentWidth / $totalWidth) * $columnWidth;
-            $maxColumnWidth = round($columnRatio);
+            $maxColumnWidth = (int) round($columnRatio);
 
             // Do not change the width of columns which are already narrower
             // than the minimum.
@@ -351,7 +368,7 @@ class AdaptiveTable extends Table
     private function getCellWidth($cell)
     {
         $lineWidths = [0];
-        foreach (explode(PHP_EOL, $cell) as $line) {
+        foreach (explode(PHP_EOL, (string) $cell) as $line) {
             $lineWidths[] = Helper::strlenWithoutDecoration($this->outputCopy->getFormatter(), $line);
         }
         $cellWidth = max($lineWidths);
