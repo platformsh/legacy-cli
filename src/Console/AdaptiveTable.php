@@ -121,21 +121,26 @@ class AdaptiveTable extends Table
                 continue;
             }
             foreach ($row as $column => &$cell) {
+                $contents = $cell instanceof TableCell ? $cell->__toString() : $cell;
                 // Replace Windows line endings, because Symfony's buildTableRows() does not respect them.
-                $cell = \str_replace("\r\n", "\n", $cell);
+                if (\strpos($contents, "\r\n") !== false) {
+                    $contents = \str_replace("\r\n", "\n", $contents);
+                    if ($cell instanceof AdaptiveTableCell) {
+                        $cell = $cell->withValue($contents);
+                    } elseif (\is_string($cell)) {
+                        $cell = $contents;
+                    }
+                }
                 $cellWidth = $this->getCellWidth($cell);
                 if ($cellWidth <= $maxColumnWidths[$column]) {
                     continue;
                 }
-                $contents = $cell instanceof TableCell ? $cell->__toString() : $cell;
                 $wrapped = $this->wrapCell($contents, $maxColumnWidths[$column]);
                 if ($cell instanceof TableCell) {
                     $cell = new TableCell($wrapped, [
                         'colspan' => $cell->getColspan(),
                         'rowspan' => $cell->getRowspan(),
                     ]);
-                } elseif ($cell instanceof AdaptiveTableCell) {
-                    $cell = $cell->withValue($wrapped);
                 } elseif (is_string($cell)) {
                     $cell = $wrapped;
                 }
