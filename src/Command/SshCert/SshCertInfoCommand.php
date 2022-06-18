@@ -53,8 +53,8 @@ class SshCertInfoCommand extends CommandBase
             'key_filename' => $cert->privateKeyFilename(),
             'key_id' => $cert->metadata()->getKeyId(),
             'key_type' => $cert->metadata()->getKeyType(),
-            'valid_after' => $formatter->formatDate($cert->metadata()->getValidAfter()),
-            'valid_before' => $formatter->formatDate($cert->metadata()->getValidBefore()),
+            'valid_after' => $formatter->formatUnixTimestamp($cert->metadata()->getValidAfter()),
+            'valid_before' => $formatter->formatUnixTimestamp($cert->metadata()->getValidBefore()),
             'extensions' => $cert->metadata()->getExtensions(),
         ];
 

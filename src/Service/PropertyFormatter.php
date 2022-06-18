@@ -102,20 +102,27 @@ class PropertyFormatter implements InputConfiguringInterface
     }
 
     /**
+     * Returns the configured date format.
+     *
+     * @return string
+     */
+    private function dateFormat()
+    {
+        if (isset($this->input) && $this->input->hasOption('date-fmt')) {
+            return $this->input->getOption('date-fmt');
+        }
+        return $this->config->getWithDefault('application.date_format', 'c');
+    }
+
+    /**
+     * Formats a string datetime.
+     *
      * @param string $value
      *
      * @return string|null
      */
     public function formatDate($value)
     {
-        $format = null;
-        if (isset($this->input) && $this->input->hasOption('date-fmt')) {
-            $format = $this->input->getOption('date-fmt');
-        }
-        if ($format === null) {
-            $format = $this->config->getWithDefault('application.date_format', 'c');
-        }
-
         // Workaround for the ssl.expires_on date, which is currently a
         // timestamp in milliseconds.
         if (substr($value, -3) === '000' && strlen($value) === 13) {
@@ -124,7 +131,19 @@ class PropertyFormatter implements InputConfiguringInterface
 
         $timestamp = is_numeric($value) ? $value : strtotime($value);
 
-        return $timestamp === false ? null : date($format, $timestamp);
+        return $timestamp === false ? null : date($this->dateFormat(), $timestamp);
+    }
+
+    /**
+     * Formats a UNIX timestamp.
+     *
+     * @param int $value
+     *
+     * @return string
+     */
+    public function formatUnixTimestamp($value)
+    {
+        return date($this->dateFormat(), $value);
     }
 
     /**
