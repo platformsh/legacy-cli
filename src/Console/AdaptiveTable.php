@@ -163,7 +163,7 @@ class AdaptiveTable extends Table
         // Account for left-indented cells.
         if (strpos($contents, ' ') === 0) {
             $trimmed = ltrim($contents, ' ');
-            $indent = Helper::strlen($contents) - Helper::strlen($trimmed);
+            $indent = Helper::width($contents) - Helper::width($trimmed);
 
             return str_repeat(' ', $indent) . $this->wrapWithDecoration($trimmed, $width - $indent);
         }
@@ -370,7 +370,7 @@ class AdaptiveTable extends Table
     {
         $lineWidths = [0];
         foreach (explode(PHP_EOL, (string) $cell) as $line) {
-            $lineWidths[] = Helper::strlenWithoutDecoration($this->outputCopy->getFormatter(), $line);
+            $lineWidths[] = Helper::width(Helper::removeDecoration($this->outputCopy->getFormatter(), $line));
         }
         $cellWidth = max($lineWidths);
         if ($cell instanceof TableCell && $cell->getColspan() > 1) {
