@@ -159,38 +159,6 @@ class Api
     }
 
     /**
-     * Get the cache object.
-     *
-     * @return \Doctrine\Common\Cache\CacheProvider
-     */
-    public function getCache(): CacheProvider
-    {
-        return $this->cache;
-    }
-
-    /**
-     * Load an API token from a file.
-     *
-     * @param string $filename
-     *   A filename, either relative to the user config directory, or absolute.
-     *
-     * @return string
-     */
-    protected function loadTokenFromFile(string $filename): string
-    {
-        if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
-            $filename = $this->config->getUserConfigDir() . '/' . $filename;
-        }
-
-        $content = file_get_contents($filename);
-        if ($content === false) {
-            throw new \RuntimeException('Failed to read file: ' . $filename);
-        }
-
-        return trim($content);
-    }
-
-    /**
      * Returns whether the CLI is authenticating using an API token.
      *
      * @param bool $includeStored
