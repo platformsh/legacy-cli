@@ -216,7 +216,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      * This will be 'shared' for a single-application project, or
      * 'shared/<appName>' when there are multiple applications.
      *
-     * @return string|false
+     * @return string
      */
     protected function getSharedDir()
     {
@@ -313,9 +313,6 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     protected function processSharedFileMounts()
     {
         $sharedDir = $this->getSharedDir();
-        if ($sharedDir === false) {
-            return;
-        }
 
         // If the build directory is a symlink, then skip, so that we don't risk
         // modifying the user's repository.

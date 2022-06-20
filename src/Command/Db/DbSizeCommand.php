@@ -330,7 +330,7 @@ class DbSizeCommand extends CommandBase
      * @param HostInterface $host
      * @param array         $database
      *
-     * @return int Estimated usage in bytes.
+     * @return float Estimated usage in bytes.
      */
     private function getEstimatedUsage(HostInterface $host, array $database) {
         switch($database['scheme']) {
@@ -349,7 +349,7 @@ class DbSizeCommand extends CommandBase
      * @param HostInterface $host
      * @param array         $database
      *
-     * @return int Estimated usage in bytes
+     * @return float Estimated usage in bytes
      */
     private function getPgSqlUsage(HostInterface $host, array $database) {
         return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
@@ -365,7 +365,7 @@ class DbSizeCommand extends CommandBase
      * @param HostInterface $host
      * @param array         $database
      *
-     * @return int Estimated usage in bytes
+     * @return float Estimated usage in bytes
      */
     private function getMySqlUsage(HostInterface $host, array $database) {
         $this->debug('Getting MySQL usage...');
@@ -402,10 +402,8 @@ class DbSizeCommand extends CommandBase
      */
     private function formatPercentage($percentage, $machineReadable) {
         if ($machineReadable) {
-            return round($percentage);
-        }
-
-        if ($percentage > self::RED_WARNING_THRESHOLD) {
+            $format = '%d';
+        } elseif ($percentage > self::RED_WARNING_THRESHOLD) {
             $format = '<options=bold;fg=red>~ %d%%</>';
         } elseif ($percentage > self::YELLOW_WARNING_THRESHOLD) {
             $format = '<options=bold;fg=yellow>~ %d%%</>';

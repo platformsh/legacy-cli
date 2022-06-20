@@ -43,7 +43,7 @@ class ArrayArgument
     /**
      * Splits the first value, by commas or whitespace, if there is only one.
      *
-     * @param []string $args
+     * @param string[] $args
      *
      * @return array
      */

@@ -5,7 +5,6 @@ use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -55,7 +54,6 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             }
         } else {
             $activities = $integration->getActivities();
-            /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No integration activities found');

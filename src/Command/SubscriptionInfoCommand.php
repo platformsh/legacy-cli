@@ -2,11 +2,9 @@
 
 namespace Platformsh\Cli\Command;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;

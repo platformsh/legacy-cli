@@ -67,7 +67,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
-        $this->postProcessValues($newValues, $integration);
+        $newValues = $this->postProcessValues($newValues, $integration);
 
         // Check if anything changed.
         foreach ($integration->getProperties() as $key => $currentValue) {
@@ -79,7 +79,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             }
         }
 
-        if (!$newValues) {
+        if (empty($newValues)) {
             $this->stdErr->writeln('No changed values were provided to update.');
             $this->ensureHooks($integration);
             $this->stdErr->writeln('');

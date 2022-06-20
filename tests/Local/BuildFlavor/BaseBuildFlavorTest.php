@@ -8,6 +8,7 @@ use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
@@ -15,7 +16,7 @@ abstract class BaseBuildFlavorTest extends \PHPUnit_Framework_TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Container */
+    /** @var ContainerInterface */
     private static $container;
 
     /** @var \Symfony\Component\Console\Output\OutputInterface */

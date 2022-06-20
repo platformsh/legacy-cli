@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class LocalBuildTest extends \PHPUnit_Framework_TestCase
 {
+    /** @var LocalBuild|null */
     private $localBuild;
 
     public function setUp() {
