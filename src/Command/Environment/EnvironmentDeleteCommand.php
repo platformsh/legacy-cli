@@ -202,7 +202,7 @@ EOF
         if (!empty($excludeIds)) {
             $resolved = Wildcard::select(\array_keys($selectedEnvironments), $excludeIds);
             if (count($resolved)) {
-                $selectedEnvironments = \array_intersect_key($selectedEnvironments, \array_flip($resolved));
+                $selectedEnvironments = \array_diff_key($selectedEnvironments, \array_flip($resolved));
                 $this->stdErr->writeln(count($resolved) . ' environment(s) excluded by ID.');
                 $this->stdErr->writeln('');
             }

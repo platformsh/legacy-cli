@@ -80,6 +80,8 @@ cleanup-review-envs:
     - push-review-env
   stage: cleanup
   allow_failure: true
+  only:
+    - branches
 
 delete-review-env:
   image: pjcdawkins/platformsh-cli

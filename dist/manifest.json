@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "70e3a36038aa6b16656e6b6e87a76bb0a05ada30",
-        "sha256": "7510e922f598532560a4fffd435449441d83090a298ceb394b0988aaf22253a5",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.80.0/platform.phar",
-        "version": "3.80.0",
+        "sha1": "7b9d92fbac910af63461848c3a59de6e53bf5801",
+        "sha256": "4faad688860fc95eb43280c2a592015a3df8489d7588d6839a14e9f5242b6933",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.80.1/platform.phar",
+        "version": "3.80.1",
         "php": {
             "min": "5.5.9"
         },
@@ -450,7 +450,8 @@
             "3.79.6": "* Update client to fix SSH URL problem introduced in v3.79.4.",
             "3.79.7": "* Fix an additional bug introduced in v3.79.4: the activity log ending abruptly\n  without refreshing the activity state.\n* Avoid errors caused by invalid config when processing environment variables.",
             "3.79.8": "* Add --if-exists to pg_dump, in the db:dump command, so that PostgreSQL dump\n  files can be restored without errors on an empty database.\n* Avoid matching \"-\" as an environment ID when parsing a Console URL.\n* Fix legacy region detection in the backup:restore command, preventing\n  accidental restore to the wrong environment on such regions.",
-            "3.80.0": "* Support the `--shared-key` option for `webhook` as well as `health.webhook`\n  integrations.\n* Fix SSL chain validation for files containing multiple certificates.\n* Improvements to the `environment:delete` command:\n  - Only select the current environment if nothing else is specified.\n    This may change behavior for existing scripts if they expect the\n    currently checked-out environment to be always selected for deletion.\n  - Avoid asking twice about deleting the same environment.\n  - Add an `--only-type` option, to enforce only deleting environments of\n    one or more types, e.g.\n\n        platform env:delete --merged --only-type development"
+            "3.80.0": "* Support the `--shared-key` option for `webhook` as well as `health.webhook`\n  integrations.\n* Fix SSL chain validation for files containing multiple certificates.\n* Improvements to the `environment:delete` command:\n  - Only select the current environment if nothing else is specified.\n    This may change behavior for existing scripts if they expect the\n    currently checked-out environment to be always selected for deletion.\n  - Avoid asking twice about deleting the same environment.\n  - Add an `--only-type` option, to enforce only deleting environments of\n    one or more types, e.g.\n\n        platform env:delete --merged --only-type development",
+            "3.80.1": "* Fix inverted --exclude in the environment:delete command\n  (a bug introduced in v3.80.0)"
         }
     }
 ]
