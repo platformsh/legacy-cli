@@ -99,7 +99,7 @@ class ProjectGetCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Filesystem $fs */
         $fs = $this->getService('fs');
-        $projectRootRelative = $fs->makePathRelative($projectRoot, getcwd());
+        $projectRootFormatted = $fs->formatPathForDisplay($projectRoot);
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
@@ -124,7 +124,7 @@ class ProjectGetCommand extends CommandBase
         // If the remote repository doesn't exist, then locally we need to
         // create the folder, run git init, and attach the remote.
         if (!$repoExists) {
-            $this->stdErr->writeln('Creating project directory: <info>' . $projectRootRelative . '</info>');
+            $this->stdErr->writeln('Creating project directory: <info>' . $projectRootFormatted . '</info>');
             if (mkdir($projectRoot) === false) {
                 $this->stdErr->writeln('Failed to create the project directory.');
 
@@ -199,7 +199,7 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'The project <info>%s</info> was successfully downloaded to: <info>%s</info>',
             $projectLabel,
-            $projectRootRelative
+            $projectRootFormatted
         ));
 
         // Return early if there is no code in the repository.
@@ -235,7 +235,7 @@ class ProjectGetCommand extends CommandBase
                 "\nYou can build the project with: "
                 . "\n    cd %s"
                 . "\n    %s build",
-                $projectRootRelative,
+                $projectRootFormatted,
                 $this->config()->get('application.executable')
             ));
         }
