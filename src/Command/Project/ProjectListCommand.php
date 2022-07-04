@@ -7,7 +7,6 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Pager\Pager;
-use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\ProjectStub;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputInterface;
