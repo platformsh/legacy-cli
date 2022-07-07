@@ -78,9 +78,8 @@ class ActivityLoader
         }
         $result = $input->hasOption('result') ? $input->getOption('result') : null;
         $startsAt = null;
-        if ($input->hasOption('start') && $input->getOption('start') && !($startsAt = new DateTime($input->getOption('start')))) {
-            $this->stdErr->writeln('Invalid --start date: <error>' . $input->getOption('start') . '</error>');
-            return [];
+        if ($input->hasOption('start') && $input->getOption('start')) {
+            $startsAt = new DateTime($input->getOption('start'));
         }
         $activities = $this->load($apiResource, $limit, $types, $startsAt, $state, $result);
         if ($withOperation) {
@@ -97,7 +96,7 @@ class ActivityLoader
      * @param HasActivitiesInterface    $apiResource
      * @param int|null    $limit
      * @param string[] $types
-     * @param int|null    $startsAt
+     * @param int|DateTime|null    $startsAt
      * @param string|string[]|null    $state
      * @param string|string[]|null    $result
      * @param callable|null $stopCondition

@@ -324,7 +324,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      * Filter the list of environments.
      *
      * @param Environment[] &$environments
-     * @param mixed[string] $filters
+     * @param array<string, mixed> $filters
      */
     protected function filterEnvironments(array &$environments, array $filters)
     {

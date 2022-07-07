@@ -57,11 +57,9 @@ class CustomTextDescriptor extends TextDescriptor
         $this->writeText(' ' . $command->getSynopsis(), $options);
         $this->writeText("\n");
 
-        if ($definition = $command->getNativeDefinition()) {
-            $this->writeText("\n");
-            $this->describeInputDefinition($definition, $options);
-            $this->writeText("\n");
-        }
+        $this->writeText("\n");
+        $this->describeInputDefinition($command->getNativeDefinition(), $options);
+        $this->writeText("\n");
 
         $help = $command->getProcessedHelp();
         if ($help && $help !== $description) {

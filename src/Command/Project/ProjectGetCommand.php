@@ -146,7 +146,7 @@ class ProjectGetCommand extends CommandBase
         $projectRoot = $this->chooseDirectory($project, $input);
         $gitUrl = $project->getGitUrl();
 
-        $projectRootRelative = $this->filesystem->makePathRelative($projectRoot, getcwd());
+        $projectRootFormatted = $this->filesystem->formatPathForDisplay($projectRoot);
 
         $this->git->ensureInstalled();
 
@@ -166,7 +166,7 @@ class ProjectGetCommand extends CommandBase
         // If the remote repository doesn't exist, then locally we need to
         // create the folder, run git init, and attach the remote.
         if (!$repoExists) {
-            $this->stdErr->writeln('Creating project directory: <info>' . $projectRootRelative . '</info>');
+            $this->stdErr->writeln('Creating project directory: <info>' . $projectRootFormatted . '</info>');
             if (mkdir($projectRoot) === false) {
                 $this->stdErr->writeln('Failed to create the project directory.');
 
@@ -240,7 +240,7 @@ class ProjectGetCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'The project <info>%s</info> was successfully downloaded to: <info>%s</info>',
             $projectLabel,
-            $projectRootRelative
+            $projectRootFormatted
         ));
 
         // Change to the project directory.
@@ -281,7 +281,7 @@ class ProjectGetCommand extends CommandBase
                 "\nYou can build the project with: "
                 . "\n    cd %s"
                 . "\n    %s build",
-                $projectRootRelative,
+                $projectRootFormatted,
                 $this->config->get('application.executable')
             ));
         }

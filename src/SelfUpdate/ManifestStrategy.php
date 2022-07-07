@@ -14,10 +14,10 @@ class ManifestStrategy implements StrategyInterface
     /** @var string */
     private $manifestUrl;
 
-    /** @var array */
+    /** @var array|null */
     private $manifest;
 
-    /** @var array */
+    /** @var array|null */
     private $availableVersions;
 
     /** @var string */
@@ -141,7 +141,7 @@ class ManifestStrategy implements StrategyInterface
                 }
             }
         }
-        uksort($notes, '\version_compare');
+        uksort($notes, function ($a, $b) { return \version_compare($a, $b); });
         return $notes;
     }
 

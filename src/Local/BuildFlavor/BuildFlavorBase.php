@@ -314,9 +314,6 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     protected function processSharedFileMounts()
     {
         $sharedDir = $this->getSharedDir();
-        if ($sharedDir === false) {
-            return;
-        }
 
         // If the build directory is a symlink, then skip, so that we don't risk
         // modifying the user's repository.

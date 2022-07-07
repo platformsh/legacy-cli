@@ -119,7 +119,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
                 $tempPropertyName = $arg;
                 continue;
             }
-            if (isset($values[$tempPropertyName])) {
+            if (isset($updates[$tempPropertyName])) {
                 throw new InvalidArgumentException('Property defined twice: ' . $tempPropertyName);
             }
             if (!$this->validateValue($tempPropertyName, $arg)) {
@@ -146,7 +146,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             return 0;
         }
         try {
-            $this->stdErr->writeln('Updating the address with values: ' . \json_encode($updates, true, JSON_UNESCAPED_SLASHES));
+            $this->stdErr->writeln('Updating the address with values: ' . \json_encode($updates, JSON_UNESCAPED_SLASHES));
             $address->update($updates);
             $this->stdErr->writeln('');
             return 0;

@@ -12,12 +12,13 @@ use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 use Symfony\Component\Console\Output\OutputInterface;
+use Psr\Container\ContainerInterface;
 
 abstract class BaseBuildFlavorTest extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Container */
+    /** @var ContainerInterface */
     private static $container;
 
     /** @var OutputInterface */

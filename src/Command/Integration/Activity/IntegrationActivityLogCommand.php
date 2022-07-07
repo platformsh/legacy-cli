@@ -44,7 +44,6 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             }
         } else {
             $activities = $integration->getActivities();
-            /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No integration activities found');

@@ -51,10 +51,8 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("\n\n");
         }
 
-        if ($command->getNativeDefinition()) {
-            $this->describeInputDefinition($command->getNativeDefinition());
-            $this->write("\n\n");
-        }
+        $this->describeInputDefinition($command->getNativeDefinition());
+        $this->write("\n\n");
 
         if ($command instanceof CommandBase && ($examples = $command->getExamples())) {
             $this->write('## Examples');

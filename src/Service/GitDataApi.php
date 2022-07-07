@@ -48,7 +48,7 @@ class GitDataApi
                     $parents[] = 1;
                 }
             } elseif ($sign === '^') {
-                $parents[] = intval($number);
+                $parents[] = $number;
             }
         }
 
@@ -66,9 +66,6 @@ class GitDataApi
     public function getCommit(Environment $environment, $sha = null)
     {
         $sha = $this->normalizeSha($environment, $sha);
-        if ($sha === null) {
-            return false;
-        }
 
         $parents = $this->parseParents($sha);
         $sha = preg_replace('/[\^~].*$/', '', $sha);
@@ -78,9 +75,6 @@ class GitDataApi
 
         // Get the first commit.
         $commit = $this->getCommitByShaHash($environment, $sha);
-        if (!$commit) {
-            return false;
-        }
 
         // Fetch parent commits recursively.
         while ($commit !== false && count($parents)) {

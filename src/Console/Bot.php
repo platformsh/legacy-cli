@@ -22,7 +22,7 @@ class Bot extends Animation
 
         $indent = '    ';
         if (strlen($signature) > 0) {
-            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - floor(strlen($signature) / 2));
+            $signatureIndent = str_repeat(' ', intval(strlen($indent) + 5 - floor(strlen($signature) / 2)));
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 

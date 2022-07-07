@@ -122,7 +122,7 @@ class UserGetCommand extends CommandBase
     private function displayRole(ProjectAccess $projectAccess, $level, OutputInterface $output, Selection $selection)
     {
         if ($level !== 'environment') {
-            $currentRole = $projectAccess ? $projectAccess->role : 'none';
+            $currentRole = $projectAccess->role;
         } else {
             $access = $selection->getEnvironment()->getUser($projectAccess->id);
             $currentRole = $access ? $access->role : 'none';

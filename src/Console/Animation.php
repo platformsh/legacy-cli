@@ -19,7 +19,7 @@ class Animation
 
     /**
      * @param OutputInterface $output
-     * @param string[]        $frames
+     * @param array<string|AnimationFrame> $frames
      *    The frames to display. Like any animation, this works best if the
      *    frames are all the same size.
      * @param int             $interval
@@ -29,13 +29,9 @@ class Animation
     {
         $this->output = $output;
         $this->interval = $interval;
-
-        foreach ($frames as &$frame) {
-            if (is_string($frame)) {
-                $frame = new AnimationFrame($frame, $interval);
-            }
-        }
-        $this->frames = $frames;
+        $this->frames = \array_map(function ($frame) use ($interval) {
+            return \is_string($frame) ? new AnimationFrame($frame, $interval) : $frame;
+        }, $frames);
     }
 
     /**

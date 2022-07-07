@@ -11,7 +11,6 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Pager\Pager;
-use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\ProjectStub;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputInterface;
@@ -55,7 +54,7 @@ class ProjectListCommand extends CommandBase
             ->addOption('count', null, InputOption::VALUE_REQUIRED, 'The number of projects to display per page. The default is based on the terminal height. Use 0 to disable pagination.');
 
         if ($this->config->getWithDefault('api.organizations', false)) {
-            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name');
+            $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name or ID');
         }
 
         $this->table->configureInput($this->getDefinition());
@@ -84,13 +83,7 @@ class ProjectListCommand extends CommandBase
             $filters['my'] = true;
         }
         if ($input->hasOption('org') && $input->getOption('org') !== null) {
-            $orgName = $input->getOption('org');
-            $organization = $this->api->getClient()->getOrganizationByName($orgName);
-            if (!$organization) {
-                $this->stdErr->writeln(\sprintf('Organization not found: <error>%s</error>', $orgName));
-                return 1;
-            }
-            $filters['org'] = $organization;
+            $filters['org'] = $input->getOption('org');
         }
         $this->filterProjectStubs($projectStubs, $filters);
 
@@ -180,7 +173,7 @@ class ProjectListCommand extends CommandBase
                 );
             }
 
-            $org_info = $projectStub->getOrganizationInfo();
+            $orgInfo = $projectStub->getOrganizationInfo();
 
             $rows[] = [
                 'id' => new AdaptiveTableCell($projectStub->id, ['wrap' => false]),
@@ -188,9 +181,9 @@ class ProjectListCommand extends CommandBase
                 'ui_url' => $projectStub->getProperty('uri', false),
                 'region' => $projectStub->region,
                 'region_label' => $projectStub->region_label,
-                'organization_id' => $org_info ? $org_info->id : '',
-                'organization_name' => $org_info ? $org_info->name : '',
-                'organization_label' => $org_info ? $org_info->label : '',
+                'organization_id' => $orgInfo ? $orgInfo->id : '',
+                'organization_name' => $orgInfo ? $orgInfo->name : '',
+                'organization_label' => $orgInfo ? $orgInfo->label : '',
                 'status' => $projectStub->status,
                 'endpoint' => $projectStub->endpoint,
                 'created_at' => $this->formatter->format($projectStub->created_at, 'created_at'),
@@ -235,7 +228,7 @@ class ProjectListCommand extends CommandBase
      * Filter the list of projects.
      *
      * @param ProjectStub[]     &$projects
-     * @param mixed[string] $filters
+     * @param array<string, mixed> $filters
      */
     protected function filterProjectStubs(array &$projects, array $filters)
     {
@@ -257,17 +250,21 @@ class ProjectListCommand extends CommandBase
                     $ownerId = $this->api->getMyUserId();
                     $organizationsEnabled = $this->config->getWithDefault('api.organizations', false);
                     $projects = array_filter($projects, function (ProjectStub $project) use ($ownerId, $organizationsEnabled) {
-                        if ($organizationsEnabled && ($organizationInfo = $project->getOrganizationInfo()) !== null) {
-                            return $organizationInfo->owner_id === $ownerId;
+                        if ($organizationsEnabled && ($orgInfo = $project->getOrganizationInfo()) !== null) {
+                            return $orgInfo->owner_id === $ownerId;
                         }
                         return $project->owner === $ownerId;
                     });
                     break;
 
                 case 'org':
-                    /** @var Organization $value */
-                    $projects = array_filter($projects, function (ProjectStub $project) use ($value) {
-                        return $project->getProperty('organization_id', false, false) === $value->id;
+                    // The value is an organization name or ID.
+                    $isID = \preg_match('#^[\dA-HJKMNP-TV-Z]{26}$#', $value) === 1;
+                    $projects = \array_filter($projects, function (ProjectStub $projectStub) use ($value, $isID) {
+                        if ($orgInfo = $projectStub->getOrganizationInfo()) {
+                            return $isID ? $orgInfo->id === $value : $orgInfo->name === $value;
+                        }
+                        return false;
                     });
                     break;
             }

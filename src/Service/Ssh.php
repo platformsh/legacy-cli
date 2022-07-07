@@ -78,7 +78,7 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an array of SSH options, based on the input options.
      *
-     * @return string[] An array of SSH options.
+     * @return array<string, string|string[]> An array of SSH options.
      */
     protected function getSshOptions()
     {

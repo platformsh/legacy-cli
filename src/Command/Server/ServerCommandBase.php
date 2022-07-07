@@ -98,7 +98,7 @@ abstract class ServerCommandBase extends CommandBase
 
         list($hostname, $port) = explode(':', $address);
 
-        return PortUtil::isPortInUse($port, $hostname);
+        return PortUtil::isPortInUse((int) $port, $hostname);
     }
 
     /**

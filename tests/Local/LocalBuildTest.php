@@ -9,6 +9,7 @@ use Platformsh\Cli\Tests\Container;
 
 class LocalBuildTest extends TestCase
 {
+    /** @var LocalBuild|null */
     private $localBuild;
 
     protected function setUp(): void {

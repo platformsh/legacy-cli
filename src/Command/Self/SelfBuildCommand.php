@@ -96,12 +96,11 @@ class SelfBuildCommand extends CommandBase
 
         if ($outputFilename) {
             $boxConfig['output'] = $this->filesystem->makePathAbsolute($outputFilename);
-            $phar = $boxConfig['output'];
         } else {
             // Default output: cli-VERSION.phar in the current directory.
             $boxConfig['output'] = getcwd() . '/cli-' . $version . '.phar';
-            $phar = $boxConfig['output'];
         }
+        $phar = $boxConfig['output'];
         if ($keyFilename) {
             $boxConfig['key'] = realpath($keyFilename);
         }
@@ -152,14 +151,12 @@ class SelfBuildCommand extends CommandBase
         }
 
         // Create a temporary box.json file for this build.
-        if (!empty($boxConfig)) {
-            $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
-            $boxConfig = array_merge($originalConfig, $boxConfig);
-            $boxConfig['base-path'] = CLI_ROOT;
-            $tmpJson = tempnam(sys_get_temp_dir(), 'cli-box-');
-            file_put_contents($tmpJson, json_encode($boxConfig));
-            $boxArgs[] = '--config=' . $tmpJson;
-        }
+        $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
+        $boxConfig = array_merge($originalConfig, $boxConfig);
+        $boxConfig['base-path'] = CLI_ROOT;
+        $tmpJson = tempnam(sys_get_temp_dir(), 'cli-box-');
+        file_put_contents($tmpJson, json_encode($boxConfig));
+        $boxArgs[] = '--config=' . $tmpJson;
 
         $this->stdErr->writeln('Building Phar package using Box');
         $result = $this->shell->execute($boxArgs, CLI_ROOT, false, true);
