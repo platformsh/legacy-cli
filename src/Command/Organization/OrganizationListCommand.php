@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;

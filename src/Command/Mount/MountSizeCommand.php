@@ -231,9 +231,9 @@ EOF
                 continue;
             }
             $results[$filesystem] = [
-                'total' => $this->getDfColumn($line, 'total'),
-                'used' => $this->getDfColumn($line, 'used'),
-                'available' => $this->getDfColumn($line, 'available'),
+                'total' => (int) $this->getDfColumn($line, 'total'),
+                'used' => (int) $this->getDfColumn($line, 'used'),
+                'available' => (int) $this->getDfColumn($line, 'available'),
                 'mounts' => [$mountPath],
             ];
             $results[$filesystem]['percent_used'] = $results[$filesystem]['used'] / $results[$filesystem]['total'] * 100;

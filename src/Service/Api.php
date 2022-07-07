@@ -63,14 +63,14 @@ class Api
      *
      * This is static so that a freshly logged-in client can then be reused by a parent command with a different service container.
      *
-     * @var PlatformClient
+     * @var PlatformClient|null
      */
     private static $client;
 
     /**
      * A cache of environments lists, keyed by project ID.
      *
-     * @var string<Environment[]>
+     * @var array<string, Environment[]>
      */
     private static $environmentsCache = [];
 
@@ -79,7 +79,7 @@ class Api
      *
      * @see Api::getAccount()
      *
-     * @var string<array>
+     * @var array<string, array>
      */
     private static $accountsCache = [];
 
@@ -88,7 +88,7 @@ class Api
      *
      * @see Api::getProjectAccesses()
      *
-     * @var string<\Platformsh\Client\Model\ProjectAccess[]>
+     * @var array<string, ProjectAccess[]>
      */
     private static $projectAccessesCache = [];
 
@@ -518,7 +518,7 @@ class Api
                 $cachedProjects[$id]['_endpoint'] = $project->getUri(true);
             }
 
-            $this->cache->save($cacheKey, $cachedProjects, $this->config->get('api.projects_ttl'));
+            $this->cache->save($cacheKey, $cachedProjects, (int) $this->config->get('api.projects_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
             $apiUrl = $this->config->getWithDefault('api.base_url', '');
@@ -556,7 +556,7 @@ class Api
             $cacheData = [
                 'projects' => array_map(function (ProjectStub $stub) { return $stub->getData(); }, $stubs)
             ];
-            $this->cache->save($cacheKey, $cacheData, $this->config->get('api.projects_ttl'));
+            $this->cache->save($cacheKey, $cacheData, (int) $this->config->get('api.projects_ttl'));
         } else {
             $stubs = ProjectStub::wrapCollection($cached, $apiUrl, $guzzleClient);
         }
@@ -601,7 +601,7 @@ class Api
             if ($project) {
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
-                $this->cache->save($cacheKey, $toCache, $this->config->get('api.projects_ttl'));
+                $this->cache->save($cacheKey, $toCache, (int) $this->config->get('api.projects_ttl'));
             } else {
                 return false;
             }
@@ -677,7 +677,7 @@ class Api
                 );
             }
 
-            $this->cache->save($cacheKey, $toCache, $this->config->get('api.environments_ttl'));
+            $this->cache->save($cacheKey, $toCache, (int) $this->config->get('api.environments_ttl'));
         } else {
             $environments = [];
             $endpoint = $project->getUri();
@@ -758,7 +758,7 @@ class Api
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         if ($reset || !($info = $this->cache->fetch($cacheKey))) {
             $info = $this->getClient()->getAccountInfo($reset);
-            $this->cache->save($cacheKey, $info, $this->config->get('api.users_ttl'));
+            $this->cache->save($cacheKey, $info, (int) $this->config->get('api.users_ttl'));
         }
 
         return $info;
@@ -822,12 +822,11 @@ class Api
             // Use embedded user information if possible.
             if (isset($data['_embedded']['users'][0]) && count($data['_embedded']['users']) === 1) {
                 $details = $data['_embedded']['users'][0];
-                self::$accountsCache[$access->id] = $details;
             } else {
                 $details = $access->getAccount()->getProperties();
-                $this->cache->save($cacheKey, $details, $this->config->get('api.users_ttl'));
-                self::$accountsCache[$access->id] = $details;
+                $this->cache->save($cacheKey, $details, (int) $this->config->get('api.users_ttl'));
             }
+            self::$accountsCache[$access->id] = $details;
         }
 
         return $details;
@@ -862,7 +861,7 @@ class Api
             if (!$user) {
                 throw new \InvalidArgumentException('User not found: ' . $id);
             }
-            $this->cache->save($cacheKey, $user->getData(), $this->config->get('api.users_ttl'));
+            $this->cache->save($cacheKey, $user->getData(), (int) $this->config->get('api.users_ttl'));
         } else {
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
@@ -1233,7 +1232,7 @@ class Api
             return $environment->is_main;
         });
         if (\count($main) === 1) {
-            return \reset($main) ?: null;
+            return \reset($main);
         }
 
         // Check if there is only one "main" environment without a parent.
@@ -1241,7 +1240,7 @@ class Api
             return $environment->parent === null && $environment->is_main;
         });
         if (\count($mainOrphans) === 1) {
-            return \reset($mainOrphans) ?: null;
+            return \reset($mainOrphans);
         }
 
         return null;

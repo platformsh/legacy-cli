@@ -93,20 +93,18 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
 
         $this->stdErr->writeln('Summary of changes:');
 
-        if ($member->permissions != $permissions) {
-            $this->stdErr->writeln('  Permissions:');
-            $same = \array_intersect($member->permissions, $permissions);
-            foreach ($same as $permission) {
-                $this->stdErr->writeln('      ' . $permission);
-            }
-            $remove = \array_diff($member->permissions, $permissions);
-            foreach ($remove as $permission) {
-                $this->stdErr->writeln('    <fg=red>- ' . $permission . '</>');
-            }
-            $add = \array_diff($permissions, $member->permissions);
-            foreach ($add as $permission) {
-                $this->stdErr->writeln('    <fg=green>+ ' . $permission . '</>');
-            }
+        $this->stdErr->writeln('  Permissions:');
+        $same = \array_intersect($member->permissions, $permissions);
+        foreach ($same as $permission) {
+            $this->stdErr->writeln('      ' . $permission);
+        }
+        $remove = \array_diff($member->permissions, $permissions);
+        foreach ($remove as $permission) {
+            $this->stdErr->writeln('    <fg=red>- ' . $permission . '</>');
+        }
+        $add = \array_diff($permissions, $member->permissions);
+        foreach ($add as $permission) {
+            $this->stdErr->writeln('    <fg=green>+ ' . $permission . '</>');
         }
 
         $this->stdErr->writeln('');

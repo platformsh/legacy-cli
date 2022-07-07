@@ -213,7 +213,7 @@ class ProjectListCommand extends CommandBase
      * Filter the list of projects.
      *
      * @param ProjectStub[]     &$projects
-     * @param mixed[string] $filters
+     * @param array<string, mixed> $filters
      */
     protected function filterProjectStubs(array &$projects, array $filters)
     {

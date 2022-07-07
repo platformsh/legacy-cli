@@ -36,7 +36,7 @@ class AdaptiveTableCell extends TableCell
      *
      * @param string $value
      *
-     * @return static
+     * @return self
      */
     public function withValue($value)
     {
@@ -46,6 +46,6 @@ class AdaptiveTableCell extends TableCell
             'wrap' => $this->canWrap(),
         ];
 
-        return new static($value, $options);
+        return new self($value, $options);
     }
 }

@@ -59,7 +59,7 @@ class RouteGetCommand extends CommandBase
         $selectedRoute = false;
 
         $id = $input->getOption('id');
-        if (!$selectedRoute && $id !== null) {
+        if ($id !== null) {
             foreach ($routes as $route) {
                 if ($route->id === $id) {
                     $selectedRoute = $route;
