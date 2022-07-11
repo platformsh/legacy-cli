@@ -2,6 +2,8 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
@@ -19,6 +21,14 @@ use Symfony\Component\Console\Question\Question;
 
 class UserAddCommand extends CommandBase
 {
+    /**
+     * @var bool
+     * Whether environment ID-based (rather than type-based) access is supported for backwards compatibility.
+     * This will be automatically converted to type-based access.
+     * If the project itself does not support environment types, ID-based
+     * access will still be supported regardless of this setting.
+     */
+    const BC_ID_BASED_ACCESS = true;
 
     protected function configure()
     {
@@ -67,26 +77,58 @@ class UserAddCommand extends CommandBase
 
         $hasOutput = false;
 
-        // Process the --role option.
-        $roleInput = $input->getOption('role');
-        if (count($input->getOption('role')) === 1) {
-            // Split comma-separated values.
-            $roleInput = preg_split('/[\s,]+/', reset($roleInput));
-        }
-        $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
-        $specifiedEnvironmentTypeRoles = $this->getSpecifiedEnvironmentTypeRoles($roleInput);
-        $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput);
-        unset($roleInput);
-
         $supportsEnvironmentTypes = $this->api()->supportsEnvironmentTypes($project);
-        if ($supportsEnvironmentTypes && !empty($specifiedEnvironmentRoles)) {
-            $this->stdErr->writeln('Access control is now based on environment types, not individual environments.');
-            $this->stdErr->writeln('Please use the environment type to specify roles.');
+        $environments = $this->api()->getEnvironments($project);
+
+        // Process the --role option.
+        $roleInput = ArrayArgument::getOption($input, 'role');
+        $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
+        $specifiedEnvironmentRoles = [];
+        $specifiedEnvironmentTypeRoles = [];
+        if ($supportsEnvironmentTypes) {
+            $specifiedEnvironmentTypeRoles = $this->getSpecifiedEnvironmentTypeRoles($roleInput, self::BC_ID_BASED_ACCESS);
+        }
+        if (!$supportsEnvironmentTypes || self::BC_ID_BASED_ACCESS) {
+            $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $environments);
+        }
+        if ($specifiedProjectRole === ProjectAccess::ROLE_ADMIN && (!empty($specifiedEnvironmentTypeRoles) || !empty($specifiedEnvironmentRoles))) {
+            $this->warnProjectAdminConflictingRoles($supportsEnvironmentTypes);
+            return 1;
+        }
+
+        if ($supportsEnvironmentTypes && self::BC_ID_BASED_ACCESS && !empty($specifiedEnvironmentRoles)) {
+            $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
+            $this->stdErr->writeln('<fg=yellow>Access control is now based on environment types, not individual environments.</>');
+            $this->stdErr->writeln('<fg=yellow>Please use the environment type to specify roles.</>');
             // In interactive use, error out. In non-interactive use, warn but continue (for backwards compatibility).
             if ($input->isInteractive()) {
+                // Try to show an example of how to use type-based roles.
+                $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $environments, new NullOutput());
+                if ($converted !== false) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln('For example, use:');
+                    $exampleRoleArgs = [];
+                    if ($specifiedProjectRole !== null) {
+                        $exampleRoleArgs[] = $specifiedProjectRole;
+                    }
+                    foreach ($converted as $typeId => $typeRole) {
+                        $exampleRoleArgs[] = "$typeId:$typeRole";
+                    }
+                    $this->stdErr->writeln(\sprintf('  <comment>--role %s</comment>', implode(',', $exampleRoleArgs)));
+                }
                 return 1;
             }
             $this->stdErr->writeln('');
+            // Attempt to convert the list of environment-based roles to type-based roles.
+            if (empty($specifiedEnvironmentTypeRoles)) {
+                $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $environments, $this->stdErr);
+                if ($converted === false) {
+                    return 1;
+                }
+                $specifiedEnvironmentTypeRoles = $converted;
+                $specifiedEnvironmentRoles = [];
+                $this->stdErr->writeln('');
+            }
         }
         if (!empty($specifiedEnvironmentTypeRoles) && !empty($specifiedEnvironmentRoles)) {
             $this->stdErr->writeln('Environment type and environment-specific roles cannot be mixed.');
@@ -323,14 +365,7 @@ class UserAddCommand extends CommandBase
 
         // Prevent changing environment access for project admins.
         if ($desiredProjectRole === ProjectAccess::ROLE_ADMIN && ($specifiedEnvironmentRoles || $specifiedEnvironmentTypeRoles)) {
-            if ($supportsEnvironmentTypes) {
-                $this->stdErr->writeln('<comment>A project admin has administrative access to all environment types.</comment>');
-                $this->stdErr->writeln("To set the user's environment type role(s), set their project role to '" . ProjectAccess::ROLE_VIEWER . "'.");
-            } else {
-                $this->stdErr->writeln('<comment>A project admin has administrative access to all environments.</comment>');
-                $this->stdErr->writeln("To set the user's environment role(s), set their project role to '" . ProjectAccess::ROLE_VIEWER . "'.");
-            }
-
+            $this->warnProjectAdminConflictingRoles($supportsEnvironmentTypes);
             return 1;
         }
 
@@ -500,7 +535,7 @@ class UserAddCommand extends CommandBase
      *
      * @param string $value
      *
-     * @throws \Symfony\Component\Console\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return string
      */
@@ -569,7 +604,7 @@ class UserAddCommand extends CommandBase
     /**
      * Return a label describing a user.
      *
-     * @param \Platformsh\Client\Model\ProjectAccess $access
+     * @param ProjectAccess $access
      *
      * @return string
      */
@@ -584,7 +619,7 @@ class UserAddCommand extends CommandBase
      * Show the form for entering the project role.
      *
      * @param string                                          $defaultRole
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      *
      * @return string
      */
@@ -611,7 +646,7 @@ class UserAddCommand extends CommandBase
     /**
      * Load the user's roles on the project's environments.
      *
-     * @param \Platformsh\Client\Model\ProjectAccess $projectAccess
+     * @param ProjectAccess $projectAccess
      *
      * @return array
      */
@@ -647,7 +682,7 @@ class UserAddCommand extends CommandBase
     /**
      * Load the user's roles on the project's environment types.
      *
-     * @param \Platformsh\Client\Model\ProjectAccess $projectAccess
+     * @param ProjectAccess $projectAccess
      *
      * @return array
      */
@@ -683,7 +718,7 @@ class UserAddCommand extends CommandBase
      * Show the form for entering environment roles.
      *
      * @param array                                           $defaultEnvironmentRoles
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      *
      * @return array
      *   The environment roles (keyed by environment ID) including the user's
@@ -728,7 +763,7 @@ class UserAddCommand extends CommandBase
      * Show the form for entering environment type roles.
      *
      * @param array                                           $defaultTypeRoles
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      *
      * @return array
      *   The environment type roles (keyed by type ID) including the user's
@@ -793,15 +828,14 @@ class UserAddCommand extends CommandBase
      * Extract the specified environment roles from the list (given in --role).
      *
      * @param string[] $roles
+     * @param array<string, Environment> $environments
      *
-     * @return array
+     * @return array<string, string>
      *   An array of environment roles, keyed by environment ID.
      */
-    private function getSpecifiedEnvironmentRoles(array $roles)
+    private function getSpecifiedEnvironmentRoles(array $roles, array $environments)
     {
         $environmentRoles = [];
-        $project = $this->getSelectedProject();
-        $environments = $this->api()->getEnvironments($project);
         foreach ($roles as $role) {
             if (strpos($role, ':') === false) {
                 continue;
@@ -809,21 +843,13 @@ class UserAddCommand extends CommandBase
             list($id, $role) = explode(':', $role, 2);
             $role = $this->validateEnvironmentRole($role);
             // Match environment IDs by wildcard.
-            if (strpos($id, '%') !== false) {
-                $pattern = '/^' . str_replace('%', '.*', preg_quote($id, '/')) . '$/';
-                $matched = preg_grep($pattern, array_keys($environments));
-                if (empty($matched)) {
-                    throw new InvalidArgumentException('No environment IDs match: ' . $id);
-                }
-                foreach ($matched as $environmentId) {
-                    $environmentRoles[$environmentId] = $role;
-                }
-                continue;
+            $matched = Wildcard::select(\array_keys($environments), [$id]);
+            if (empty($matched)) {
+                throw new InvalidArgumentException('No environment IDs match: ' . $id);
             }
-            if (!$this->api()->getEnvironment($id, $project)) {
-                throw new InvalidArgumentException('Environment not found: ' . $id);
+            foreach ($matched as $environmentId) {
+                $environmentRoles[$environmentId] = $role;
             }
-            $environmentRoles[$id] = $role;
         }
 
         return $environmentRoles;
@@ -835,16 +861,14 @@ class UserAddCommand extends CommandBase
      * @param string[] &$roles
      *   An array of role options (e.g. type:role or environment:role).
      *   The $roles array will be modified to remove the values that were used.
+     * @param bool $ignoreErrors
      *
-     * @return array
+     * @return array<string, string>
      *   An array of environment type roles, keyed by environment type ID.
      */
-    private function getSpecifiedEnvironmentTypeRoles(array &$roles)
+    private function getSpecifiedEnvironmentTypeRoles(array &$roles, $ignoreErrors = true)
     {
         $project = $this->getSelectedProject();
-        if (!$this->api()->supportsEnvironmentTypes($project)) {
-            return [];
-        }
         $typeRoles = [];
         $types = $project->getEnvironmentTypes();
         $typeIds = array_map(function (EnvironmentType $type) { return $type->id; }, $types);
@@ -855,24 +879,83 @@ class UserAddCommand extends CommandBase
             list($id, $role) = explode(':', $role, 2);
             $role = $this->validateEnvironmentRole($role);
             // Match type IDs by wildcard.
-            if (strpos($id, '%') !== false) {
-                $pattern = '/^' . str_replace('%', '.*', preg_quote($id, '/')) . '$/';
-                $matched = preg_grep($pattern, $typeIds);
-                if (empty($matched)) {
+            // Error for non-wildcard matches.
+            $matched = Wildcard::select($typeIds, [$id]);
+            if (empty($matched)) {
+                if (!$ignoreErrors) {
                     throw new InvalidArgumentException('No environment type IDs match: ' . $id);
                 }
-                foreach ($matched as $typeId) {
-                    $typeRoles[$typeId] = $role;
-                }
-                unset($roles[$key]);
                 continue;
             }
-            if (\in_array($id, $typeIds)) {
-                $typeRoles[$id] = $role;
-                unset($roles[$key]);
+            foreach ($matched as $typeId) {
+                $typeRoles[$typeId] = $role;
             }
+            unset($roles[$key]);
         }
 
         return $typeRoles;
+    }
+
+    /**
+     * Converts environment-specific roles to environment type roles.
+     *
+     * This will output messages to stderr about the conversion.
+     *
+     * @param array<string, string> $specifiedEnvironmentRoles
+     * @param array<string, Environment> $environments
+     * @param OutputInterface $stdErr
+     *
+     * @return array<string, string>|false
+     *   A list of environment type roles, keyed by type, or false on failure.
+     */
+    private function convertEnvironmentRolesToTypeRoles(array $specifiedEnvironmentRoles, array $environments, OutputInterface $stdErr)
+    {
+        /** @var array<string, array<string, string>> $byType Roles keyed by environment ID, then keyed by type */
+        $byType = [];
+        foreach ($specifiedEnvironmentRoles as $id => $role) {
+            if (!isset($environments[$id])) {
+                throw new \RuntimeException("Failed to find environment for ID: $id");
+            }
+            $type = $environments[$id]->getProperty('type');
+            $byType[$type][$id] = $role;
+        }
+
+        /** @var array<string, string> $converted Destination for converted roles: roles directly keyed by type */
+        $converted = [];
+        foreach ($byType as $type => $roles) {
+            if (count(\array_unique($roles, SORT_STRING)) > 1) {
+                $stdErr->writeln(\sprintf("Conflicting roles were given for environments of type <error>%s</error>:", $type));
+                \ksort($roles, SORT_STRING);
+                foreach ($roles as $id => $role) {
+                    $stdErr->writeln("    <error>$id</error>: $role");
+                }
+                return false;
+            }
+            $role = (string) \reset($roles);
+            $stdErr->writeln(sprintf(
+                'The role <comment>%s</comment> specified on environment(s) <comment>[%s]</comment> will actually be applied to all existing and future environments of the same type, <comment>%s</comment>.',
+                $role,
+                implode(', ', \array_keys($roles)),
+                $type
+            ));
+            $converted[$type] = $role;
+        }
+        return $converted;
+    }
+
+    /**
+     * @param bool $supportsEnvironmentTypes
+     *
+     * @return void
+     */
+    private function warnProjectAdminConflictingRoles($supportsEnvironmentTypes)
+    {
+        if ($supportsEnvironmentTypes) {
+            $this->stdErr->writeln('<comment>A project admin has administrative access to all environment types.</comment>');
+            $this->stdErr->writeln("To set the user's environment type role(s), set their project role to '" . ProjectAccess::ROLE_VIEWER . "'.");
+        } else {
+            $this->stdErr->writeln('<comment>A project admin has administrative access to all environments.</comment>');
+            $this->stdErr->writeln("To set the user's environment role(s), set their project role to '" . ProjectAccess::ROLE_VIEWER . "'.");
+        }
     }
 }

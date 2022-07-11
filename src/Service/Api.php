@@ -646,7 +646,7 @@ class Api
      * @param bool|null $refresh Whether to refresh the list.
      * @param bool      $events  Whether to update Drush aliases if the list changes.
      *
-     * @return Environment[] The user's environments, keyed by ID.
+     * @return array<string, Environment> The user's environments, keyed by ID.
      */
     public function getEnvironments(Project $project, $refresh = null, $events = true)
     {
