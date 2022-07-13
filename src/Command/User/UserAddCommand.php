@@ -7,7 +7,6 @@ use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\EnvironmentAccess;
 use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
-use Platformsh\Client\Model\Invitation\Environment;
 use Platformsh\Client\Model\Invitation\Permission;
 use Platformsh\Client\Model\ProjectAccess;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -80,7 +79,6 @@ class UserAddCommand extends CommandBase
 
         $hasOutput = false;
 
-        $environments = $this->api()->getEnvironments($project);
         $environmentTypes = $project->getEnvironmentTypes();
 
         // Process the --role option.
@@ -88,7 +86,9 @@ class UserAddCommand extends CommandBase
         $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
         if (self::BC_CONVERT_ID_BASED_ACCESS) {
             $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput, $environmentTypes);
-            $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $environments);
+            if (!empty($roleInput)) {
+                $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $this->api()->getEnvironments($project));
+            }
         } else {
             $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput, $environmentTypes, false);
         }
@@ -104,6 +104,7 @@ class UserAddCommand extends CommandBase
             // In interactive use, error out. In non-interactive use, warn but continue (for backwards compatibility).
             if ($input->isInteractive()) {
                 // Try to show an example of how to use type-based roles.
+                $environments = $this->api()->getEnvironments($project);
                 $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $specifiedTypeRoles, $environments, new NullOutput());
                 if ($converted !== false) {
                     $this->stdErr->writeln('');
@@ -121,6 +122,7 @@ class UserAddCommand extends CommandBase
             }
             $this->stdErr->writeln('');
             // Convert the list of environment-based roles to type-based roles.
+            $environments = $this->api()->getEnvironments($project);
             $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $specifiedTypeRoles, $environments, $this->stdErr);
             if ($converted === false) {
                 return 1;
@@ -190,7 +192,7 @@ class UserAddCommand extends CommandBase
             if ($existingProjectAccess->role !== ProjectAccess::ROLE_ADMIN) {
                 foreach ($environmentTypes as $type) {
                     $role = isset($existingTypeRoles[$type->id]) ? $existingTypeRoles[$type->id] : '[none]';
-                    $this->stdErr->writeln(sprintf('    Role on type <info>%s</info>: %s', $type->id, $role));
+                    $this->stdErr->writeln(sprintf('    Role on environment type <info>%s</info>: %s', $type->id, $role));
                 }
             }
             $hasOutput = true;
@@ -631,15 +633,16 @@ class UserAddCommand extends CommandBase
     /**
      * Extract the specified project role from the list (given in --role).
      *
-     * @param array $roles
+     * @param array &$roles
      *
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array $roles)
+    private function getSpecifiedProjectRole(array &$roles)
     {
-        foreach ($roles as $role) {
+        foreach ($roles as $key => $role) {
             if (strpos($role, ':') === false) {
+                unset($roles[$key]);
                 return $this->validateProjectRole($role);
             }
         }
@@ -651,7 +654,7 @@ class UserAddCommand extends CommandBase
      * Extract the specified environment roles from the list (given in --role).
      *
      * @param string[] $roles
-     * @param array<string, Environment> $environments
+     * @param array<string, \Platformsh\Client\Model\Environment> $environments
      *
      * @return array<string, string>
      *   An array of environment roles, keyed by environment ID.
@@ -725,7 +728,7 @@ class UserAddCommand extends CommandBase
      *
      * @param array<string, string> $specifiedEnvironmentRoles
      * @param array<string, string> $specifiedTypeRoles
-     * @param array<string, Environment> $environments
+     * @param array<string, \Platformsh\Client\Model\Environment> $environments
      * @param OutputInterface $stdErr
      *
      * @return array<string, string>|false
