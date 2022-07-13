@@ -1318,26 +1318,6 @@ class Api
     }
 
     /**
-     * Checks if a project supports environment types.
-     *
-     * @todo remove this when environment types are supported everywhere
-     *
-     * @param Project $project
-     *
-     * @return bool
-     */
-    public function supportsEnvironmentTypes(Project $project)
-    {
-        if ($project->operationAvailable('environment-types')) {
-            return true;
-        }
-        foreach ($this->getEnvironments($project) as $env) {
-            return $env->hasProperty('type', false);
-        }
-        return false;
-    }
-
-    /**
      * Loads a subscription through various APIs to see which one wins.
      *
      * @param string $id
