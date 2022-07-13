@@ -743,8 +743,6 @@ class UserAddCommand extends CommandBase
             $byType[$type][$id] = $role;
         }
 
-        /** @var array<string, string> $converted Destination for converted roles: roles directly keyed by type */
-        $converted = [];
         foreach ($byType as $type => $roles) {
             if (count(\array_unique($roles, SORT_STRING)) > 1) {
                 $stdErr->writeln(\sprintf("Conflicting roles were given for environments of type <error>%s</error>:", $type));
@@ -755,15 +753,24 @@ class UserAddCommand extends CommandBase
                 return false;
             }
             $role = (string) \reset($roles);
-            if (isset($specifiedTypeRoles[$type]) && $specifiedTypeRoles[$type] !== $role) {
+            if (isset($specifiedTypeRoles[$type])) {
+                if ($specifiedTypeRoles[$type] !== $role) {
+                    $stdErr->writeln(sprintf(
+                        'The role <error>%s</error> specified on %d environment(s) conflicts with the role <error>%s</error> specified for the environment type <error>%s</error>.',
+                        $role,
+                        count($roles),
+                        $specifiedTypeRoles[$type],
+                        $type
+                    ));
+                    return false;
+                }
                 $stdErr->writeln(sprintf(
-                    'The role <error>%s</error> specified on %d environment(s) conflicts with the role <error>%s</error> specified for the environment type <error>%s</error>.',
+                    'The role <comment>%s</comment> specified on %d environment(s) will be ignored as it is already specified on their type, <comment>%s</comment>.',
                     $role,
                     count($roles),
-                    $specifiedTypeRoles[$type],
                     $type
                 ));
-                return false;
+                continue;
             }
             $stdErr->writeln(sprintf(
                 'The role <comment>%s</comment> specified on %d environment(s) will actually be applied to all existing and future environments of the same type, <comment>%s</comment>.',
@@ -771,9 +778,9 @@ class UserAddCommand extends CommandBase
                 count($roles),
                 $type
             ));
-            $converted[$type] = $role;
+            $specifiedTypeRoles[$type] = $role;
         }
-        return $converted;
+        return $specifiedTypeRoles;
     }
 
     private function warnProjectAdminConflictingRoles()

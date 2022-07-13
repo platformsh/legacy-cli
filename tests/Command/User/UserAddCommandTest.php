@@ -30,25 +30,38 @@ class UserAddCommandTest extends \PHPUnit_Framework_TestCase
         $m = new \ReflectionMethod($command, 'convertEnvironmentRolesToTypeRoles');
         $m->setAccessible(true);
 
-        // Test cases: pairs of input (environment roles) and output (type roles or false on error).
+        // Test cases: triples of environment roles, type roles, and output (converted type roles, or false on error).
         $cases = [
             [
                 ['stg' => 'viewer', 'dev1' => 'contributor'],
+                [],
                 ['staging' => 'viewer', 'development' => 'contributor'],
             ],
             [
                 ['main' => 'viewer', 'stg' => 'admin', 'dev2' => 'admin'],
+                [],
                 ['production' => 'viewer', 'staging' => 'admin', 'development' => 'admin'],
             ],
             [
                 ['stg' => 'viewer', 'dev1' => 'contributor', 'dev2' => 'viewer'],
+                [],
+                false,
+            ],
+            [
+                ['main' => 'viewer', 'stg' => 'admin', 'dev2' => 'admin'],
+                ['development' => 'admin'],
+                ['production' => 'viewer', 'staging' => 'admin', 'development' => 'admin'],
+            ],
+            [
+                ['main' => 'viewer', 'stg' => 'admin', 'dev2' => 'admin'],
+                ['development' => 'contributor'],
                 false,
             ],
         ];
         $output = new NullOutput();
         foreach ($cases as $case) {
-            list($environmentRoles, $expectedTypeRoles) = $case;
-            $result = $m->invoke($command, $environmentRoles, $mockEnvironments, $output);
+            list($environmentRoles, $typeRoles, $expectedTypeRoles) = $case;
+            $result = $m->invoke($command, $environmentRoles, $typeRoles, $mockEnvironments, $output);
             $this->assertEquals($expectedTypeRoles, $result);
         }
     }
