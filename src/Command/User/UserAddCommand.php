@@ -20,17 +20,6 @@ use Symfony\Component\Console\Question\Question;
 
 class UserAddCommand extends CommandBase
 {
-    /**
-     * Backwards compatibility settings.
-     *
-     * These are used to identify BC code more easily, for future removal.
-     *
-     * @var bool
-     * Whether environment ID-based (rather than type-based) access is supported for backwards compatibility.
-     * This will be automatically converted to type-based access, for projects
-     * that support environment types.
-     */
-    const BC_CONVERT_ID_BASED_ACCESS = true;
 
     protected function configure()
     {
@@ -84,20 +73,17 @@ class UserAddCommand extends CommandBase
         // Process the --role option.
         $roleInput = ArrayArgument::getOption($input, 'role');
         $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
-        if (self::BC_CONVERT_ID_BASED_ACCESS) {
-            $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput, $environmentTypes);
-            if (!empty($roleInput)) {
-                $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $this->api()->getEnvironments($project));
-            }
-        } else {
-            $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput, $environmentTypes, false);
+        $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput, $environmentTypes);
+        if (!empty($roleInput)) {
+            $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $this->api()->getEnvironments($project));
         }
         if ($specifiedProjectRole === ProjectAccess::ROLE_ADMIN && (!empty($specifiedTypeRoles) || !empty($specifiedEnvironmentRoles))) {
             $this->warnProjectAdminConflictingRoles();
             return 1;
         }
 
-        if (self::BC_CONVERT_ID_BASED_ACCESS && !empty($specifiedEnvironmentRoles)) {
+        // For backwards compatibility, convert ID-based roles to type-based.
+        if (!empty($specifiedEnvironmentRoles)) {
             $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
             $this->stdErr->writeln('<fg=yellow>Access control is now based on environment types, not individual environments.</>');
             $this->stdErr->writeln('<fg=yellow>Please use the environment type to specify roles.</>');
