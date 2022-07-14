@@ -79,7 +79,7 @@ class UserAddCommand extends CommandBase
 
         $hasOutput = false;
 
-        $environmentTypes = $project->getEnvironmentTypes();
+        $environmentTypes = $this->api()->getEnvironmentTypes($project);
 
         // Process the --role option.
         $roleInput = ArrayArgument::getOption($input, 'role');
@@ -122,7 +122,8 @@ class UserAddCommand extends CommandBase
             }
             $this->stdErr->writeln('');
             // Convert the list of environment-based roles to type-based roles.
-            $environments = $this->api()->getEnvironments($project);
+            // Refresh the environments to check their types more accurately.
+            $environments = $this->api()->getEnvironments($project, true);
             $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $specifiedTypeRoles, $environments, $this->stdErr);
             if ($converted === false) {
                 return 1;

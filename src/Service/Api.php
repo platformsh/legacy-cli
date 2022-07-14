@@ -17,6 +17,7 @@ use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
@@ -740,6 +741,40 @@ class Api
         self::$notFound[$cacheKey] = true;
 
         return false;
+    }
+
+    /**
+     * Returns the environment types on a project.
+     *
+     * @param bool|null $refresh Whether to refresh the list of types.
+     *
+     * @return EnvironmentType[]
+     */
+    public function getEnvironmentTypes(Project $project, $refresh = null)
+    {
+        $cacheKey = sprintf('environment-types:%s', $project->id);
+
+        /** @var EnvironmentType[] $types */
+        $types = [];
+
+        $cached = $this->cache->fetch($cacheKey);
+
+        if ($refresh === false && !$cached) {
+            return [];
+        } elseif ($refresh || !$cached) {
+            $types = $project->getEnvironmentTypes();
+            $cachedTypes = \array_map(function (EnvironmentType $type) {
+                return $type->getData() + ['_uri' => $type->getUri()];
+            }, $types);
+            $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->get('api.environments_ttl'));
+        } else {
+            $guzzleClient = $this->getHttpClient();
+            foreach ((array) $cached as $data) {
+                $types[] = new EnvironmentType($data, $data['_uri'], $guzzleClient);
+            }
+        }
+
+        return $types;
     }
 
     /**
