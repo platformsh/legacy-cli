@@ -298,7 +298,7 @@ class EnvironmentPushCommand extends CommandBase
      */
     private function askEnvironmentType(Project $project) {
         try {
-            $types = $project->getEnvironmentTypes();
+            $types = $this->api()->getEnvironmentTypes($project);
         } catch (BadResponseException $e) {
             if ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
                 $this->debug('Cannot list environment types. The project probably does not yet support them.');

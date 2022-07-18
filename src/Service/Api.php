@@ -17,6 +17,7 @@ use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
@@ -646,7 +647,7 @@ class Api
      * @param bool|null $refresh Whether to refresh the list.
      * @param bool      $events  Whether to update Drush aliases if the list changes.
      *
-     * @return Environment[] The user's environments, keyed by ID.
+     * @return array<string, Environment> The user's environments, keyed by ID.
      */
     public function getEnvironments(Project $project, $refresh = null, $events = true)
     {
@@ -740,6 +741,40 @@ class Api
         self::$notFound[$cacheKey] = true;
 
         return false;
+    }
+
+    /**
+     * Returns the environment types on a project.
+     *
+     * @param bool|null $refresh Whether to refresh the list of types.
+     *
+     * @return EnvironmentType[]
+     */
+    public function getEnvironmentTypes(Project $project, $refresh = null)
+    {
+        $cacheKey = sprintf('environment-types:%s', $project->id);
+
+        /** @var EnvironmentType[] $types */
+        $types = [];
+
+        $cached = $this->cache->fetch($cacheKey);
+
+        if ($refresh === false && !$cached) {
+            return [];
+        } elseif ($refresh || !$cached) {
+            $types = $project->getEnvironmentTypes();
+            $cachedTypes = \array_map(function (EnvironmentType $type) {
+                return $type->getData() + ['_uri' => $type->getUri()];
+            }, $types);
+            $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->get('api.environments_ttl'));
+        } else {
+            $guzzleClient = $this->getHttpClient();
+            foreach ((array) $cached as $data) {
+                $types[] = new EnvironmentType($data, $data['_uri'], $guzzleClient);
+            }
+        }
+
+        return $types;
     }
 
     /**
@@ -1315,26 +1350,6 @@ class Api
             return (\strnatcasecmp($partsA[1], $partsB[1]) * 10) + \strnatcasecmp($partsA[0], $partsB[0]);
         }
         return \strnatcasecmp($regionA, $regionB);
-    }
-
-    /**
-     * Checks if a project supports environment types.
-     *
-     * @todo remove this when environment types are supported everywhere
-     *
-     * @param Project $project
-     *
-     * @return bool
-     */
-    public function supportsEnvironmentTypes(Project $project)
-    {
-        if ($project->operationAvailable('environment-types')) {
-            return true;
-        }
-        foreach ($this->getEnvironments($project) as $env) {
-            return $env->hasProperty('type', false);
-        }
-        return false;
     }
 
     /**
