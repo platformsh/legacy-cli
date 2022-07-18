@@ -27,7 +27,7 @@ class UserGetCommand extends CommandBase
         $this->addOption('role', 'r', InputOption::VALUE_REQUIRED, "[Deprecated: use user:update to change a user's role(s)]");
 
         $this->addExample("View Alice's role on the project", 'alice@example.com');
-        $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment');
+        $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment --pipe');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
