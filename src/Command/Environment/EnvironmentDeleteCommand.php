@@ -129,7 +129,7 @@ EOF
             $anythingSpecified = true;
             $withTypes = [];
             foreach ($environments as $environment) {
-                if ($environment->hasProperty('type') && \in_array($environment->getProperty('type'), $types)) {
+                if (\in_array($environment->type, $types)) {
                     $selectedEnvironments[$environment->id] = $withTypes[$environment->id] = $environment;
                 }
             }

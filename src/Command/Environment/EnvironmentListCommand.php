@@ -153,24 +153,12 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
 
         $progress->done();
 
-        // Determine whether environment types are supported.
-        $supportsTypes = $project->operationAvailable('environment-types');
-        if (!$supportsTypes) {
-            $first = reset($environments);
-            if ($first && $first->hasProperty('type')) {
-                $supportsTypes = true;
-            }
-        }
-
         // Filter the list of environments.
         $filters = [];
         if ($input->getOption('no-inactive')) {
             $filters['no-inactive'] = true;
         }
         if ($types = ArrayArgument::getOption($input, 'type')) {
-            if (!$supportsTypes) {
-                $this->stdErr->writeln('<options=reverse>Warning:</> environment types are not yet supported on this project.');
-            }
             $filters['type'] = $types;
         }
         $this->filterEnvironments($environments, $filters);
@@ -207,7 +195,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $project = $this->getSelectedProject();
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
-        if (($currentProject = $this->getCurrentProject()) && $currentProject == $project) {
+        if (($currentProject = $this->getCurrentProject()) && $currentProject->id === $project->id) {
             /** @var \Platformsh\Cli\Local\LocalProject $localProject */
             $localProject = $this->getService('local.project');
             $projectConfig = $localProject->getProjectConfig($this->getProjectRoot());
@@ -219,11 +207,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $tree = $this->buildEnvironmentTree($environments);
 
         $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
-        $defaultColumns = ['id', 'title', 'status'];
-
-        if ($supportsTypes) {
-            $defaultColumns[] = 'type';
-        }
+        $defaultColumns = ['id', 'title', 'status', 'type'];
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
@@ -315,8 +299,8 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             });
         }
         if (!empty($filters['type'])) {
-            $environments = array_filter($environments, function ($environment) use ($filters) {
-                return !$environment->hasProperty('type') || \in_array($environment->getProperty('type'), $filters['type']);
+            $environments = array_filter($environments, function (Environment $environment) use ($filters) {
+                return \in_array($environment->type, $filters['type']);
             });
         }
     }
