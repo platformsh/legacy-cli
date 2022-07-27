@@ -57,7 +57,7 @@ class UserGetCommand extends CommandBase
         $this->activityService->configureInput($definition);
 
         $this->addExample("View Alice's role on the project", 'alice@example.com');
-        $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment');
+        $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment --pipe');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
