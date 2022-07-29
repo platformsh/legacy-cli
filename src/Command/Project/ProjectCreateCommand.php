@@ -76,7 +76,7 @@ EOF
             try {
                 $organization = $this->validateOrganizationInput($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
-                $this->stdErr->writeln('You do not belong to an organization where you have permission to create a subscription.');
+                $this->stdErr->writeln('You do not yet own nor belong to an organization in which you can create a project.');
                 if ($input->isInteractive() && $this->config()->isCommandEnabled('organization:create') && $questionHelper->confirm('Do you want to create an organization now?')) {
                     if ($this->runOtherCommand('organization:create') !== 0) {
                         return 1;
