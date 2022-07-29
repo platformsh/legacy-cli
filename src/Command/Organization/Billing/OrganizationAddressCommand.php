@@ -88,16 +88,16 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         if ($property === null || $value === null) {
             return [];
         }
-        $updates[$property] = $value;
         $properties = $input->getArgument('properties');
         if (empty($properties)) {
-            return $updates;
+            return [$property => $value];
         }
         if (count($properties) % 2 !== 0) {
             throw new InvalidArgumentException('Invalid number of property/value pair arguments');
         }
         \array_unshift($properties, $value);
         \array_unshift($properties, $property);
+        $updates = [];
         $tempPropertyName = '';
         foreach ($properties as $arg) {
             if ($tempPropertyName === '') {
