@@ -80,7 +80,7 @@ class SelfUpdater
      * @param string|null $currentVersion
      *
      * @return false|string
-     *   The new version number, or false if there was no update.
+     *   The new version number, or an empty string if there was no update, or false on error.
      */
     public function update($manifestUrl = null, $currentVersion = null)
     {
@@ -124,7 +124,7 @@ class SelfUpdater
 
         if (!$updater->hasUpdate()) {
             $this->stdErr->writeln('No updates found');
-            return false;
+            return '';
         }
 
         $newVersionString = $updater->getNewVersion();

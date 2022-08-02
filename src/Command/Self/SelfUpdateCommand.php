@@ -34,6 +34,9 @@ class SelfUpdateCommand extends CommandBase
         $cliUpdater->setTimeout($input->getOption('timeout'));
 
         $result = $cliUpdater->update($manifestUrl, $currentVersion);
+        if ($result === '') {
+            return 0;
+        }
         if ($result === false) {
             return 1;
         }

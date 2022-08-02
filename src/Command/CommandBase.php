@@ -336,6 +336,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         try {
             $newVersion = $cliUpdater->update(null, $currentVersion);
+            if ($newVersion === '') {
+                return;
+            }
         } catch (\RuntimeException $e) {
             if (strpos($e->getMessage(), 'Failed to download') !== false) {
                 $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
