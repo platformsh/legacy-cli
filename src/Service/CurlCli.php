@@ -67,11 +67,22 @@ class CurlCli implements InputConfiguringInterface {
             }
         }
 
-        $singleValueOptions = ['request', 'json', 'data'];
-        foreach ($singleValueOptions as $valueOption) {
-            if ($value = $input->getOption($valueOption)) {
-                $commandline .= ' --' . $valueOption . ' ' . escapeshellarg($value);
+        if ($requestMethod = $input->getOption('request')) {
+            $commandline .= ' --request ' . escapeshellarg($requestMethod);
+        }
+
+        if ($data = $input->getOption('json')) {
+            if (\json_decode($data) === null && \json_last_error() !== JSON_ERROR_NONE) {
+                $stdErr->writeln('The value of --json contains invalid JSON.');
+                return 1;
             }
+            $commandline .= ' --data ' . escapeshellarg($data);
+            $commandline .= ' --header ' . escapeshellarg('Content-Type: application/json');
+            $commandline .= ' --header ' . escapeshellarg('Accept: application/json');
+        }
+
+        if ($data = $input->getOption('data')) {
+            $commandline .= ' --data ' . escapeshellarg($data);
         }
 
         if (!$input->getOption('disable-compression')) {
