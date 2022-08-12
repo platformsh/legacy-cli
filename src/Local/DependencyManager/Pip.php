@@ -58,7 +58,7 @@ class Pip extends DependencyManagerBase
         file_put_contents($path . '/requirements.txt', $this->formatRequirementsTxt($dependencies));
         $command = $this->getCommandName() . ' install --requirement=requirements.txt';
         if (!$global) {
-            $command .= ' --prefix=.';
+            $command .= ' --prefix=';
         }
         $this->runCommand($command, $path);
     }
