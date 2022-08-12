@@ -7,3 +7,4 @@ tasks:
       composer update-countries
     command: | 
       ./.gitpod/scripts/login.sh
+      printf "\n\n All set! Be sure to test your changes by running: vendor/bin/phpunit\n\n"
