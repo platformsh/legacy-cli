@@ -6,5 +6,4 @@ tasks:
       composer install
       composer update-countries
     command: | 
-      ./.gitpod/scripts/alias-dev-cli.sh
       ./.gitpod/scripts/login.sh
