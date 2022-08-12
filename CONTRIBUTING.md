@@ -4,6 +4,12 @@ Development of the Platform.sh CLI happens in public in the
 [GitHub repository](https://github.com/platformsh/platformsh-cli). Issues and
 pull requests submitted via GitHub are very welcome.
 
+## Developing via Gitpod
+
+This project ships with a no-install, ready-to-develop environment using Gitpod. Start working on the 3.x branch [here](https://gitpod.io/#https://github.com/platformsh/platformsh-cli/tree/3.x).
+
+Or, the branch of your choice using the format: https://gitpod.io/#https://github.com/platformsh/platformsh-cli/tree/{branch}
+
 ## Developing locally
 
 If you clone this repository locally, you can build it with:

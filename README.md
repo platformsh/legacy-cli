@@ -143,3 +143,5 @@ the command `platform clear-cache` (or `platform cc` for short).
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to the CLI.
+
+Or, launch a ready-to-develop environment via [Gitpod](https://gitpod.io/#https://github.com/platformsh/platformsh-cli/tree/3.x).
