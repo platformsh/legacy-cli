@@ -1,0 +1,11 @@
+image:
+  file: .gitpod.Dockerfile
+tasks:
+  - name: Prepare Environment
+    init: |
+      composer install
+      composer update-countries
+    command: | 
+      echo "alias platform=\$GITPOD_REPO_ROOT/bin/platform" >> ~/.zshrc
+      echo "alias p=platform" >> ~/.zshrc
+      source ~/.zshrc"
