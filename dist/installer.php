@@ -135,15 +135,6 @@ class Installer {
         $this->checkExtension('openssl');
         $this->checkExtension('pcre');
 
-        // Either mbstring or iconv is required by Symfony Console (even though this is not enforced in its composer.json).
-        $this->check(
-            'One or both of the "mbstring" or "iconv" PHP extensions is installed.',
-            'One or both of the "mbstring" or "iconv" PHP extensions is required.',
-            function () {
-                return \extension_loaded('mbstring') || \extension_loaded('iconv');
-            }
-        );
-
         $this->check(
             'The "curl" PHP extension is installed.',
             'The "curl" PHP extension is strongly recommended.',
