@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "d1a303e13e437001307472fd5e072574c9ddc0b8",
-        "sha256": "3960b1cf697cb6d6c076bf02d4f5b7d0dcf2cdd9511ca75694545f29b86316e6",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.81.0/platform.phar",
-        "version": "3.81.0",
+        "sha1": "412da2660bc5521b4395c18cef33506712af2bdb",
+        "sha256": "7f45e7cb60f2b0c0cbacfa84c6989d5a72e1c01d13429cd8e6b6f9891b8a2080",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.81.1/platform.phar",
+        "version": "3.81.1",
         "php": {
             "min": "5.5.9"
         },
@@ -454,7 +454,8 @@
             "3.80.1": "* Fix inverted --exclude in the environment:delete command\n  (a bug introduced in v3.80.0)",
             "3.80.2": "* Filter by organization (`--org`) without needing direct access, in the\n  `project:list` (`projects`) command.\n* Display the simpler version of the project directory in the `project:get`\n  (`get`) command.",
             "3.80.3": "* Translate environment ID to type when adding or changing a user.  \n  Since around 1 year ago with the introduction of environment types, users\n  should be given roles on the environment type, not on a specific environment\n  ID. For those still using environment IDs, the CLI now translates these to\n  types on the client side (before the API call), for more clarity in the\n  output and when later listing project invitations.\n* Remove support for projects which do not have environment types (such\n  projects no longer exist).\n\nMore information on environment types: https://docs.platform.sh/administration/users.html#environment-types",
-            "3.81.0": "New features:\n\n* Add `--no-warn` (`-W`) and `--header` (`-H`) options to the `auth:token` command.\n* Add `--json` option to curl commands.\n* Return a success (zero) exit code from `self:update` if there is no update.\n\nOther changes:\n\n* Fix \"Property defined twice\" error in the `org:billing:address` command.\n* Clarify no organization message in `project:create` (`create`) command.\n* Remove more now unnecessary checks for environment types.\n    Improves performance in `environment:list` (`env`) command.\n* Fix example for `user:get --level environment`."
+            "3.81.0": "New features:\n\n* Add `--no-warn` (`-W`) and `--header` (`-H`) options to the `auth:token` command.\n* Add `--json` option to curl commands.\n* Return a success (zero) exit code from `self:update` if there is no update.\n\nOther changes:\n\n* Fix \"Property defined twice\" error in the `org:billing:address` command.\n* Clarify no organization message in `project:create` (`create`) command.\n* Remove more now unnecessary checks for environment types.\n    Improves performance in `environment:list` (`env`) command.\n* Fix example for `user:get --level environment`.",
+            "3.81.1": "* Fix: automatic update prompt not saving last check time if there is no update\n* Remove mbstring requirement from README and installer\n* Add environment.domain activities to the type filter\n* Allow use of --json option with lower curl versions"
         }
     }
 ]
