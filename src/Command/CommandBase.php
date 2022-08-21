@@ -336,9 +336,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         try {
             $newVersion = $cliUpdater->update(null, $currentVersion);
-            if ($newVersion === '') {
-                return;
-            }
         } catch (\RuntimeException $e) {
             if (strpos($e->getMessage(), 'Failed to download') !== false) {
                 $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
@@ -350,11 +347,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $state->set('updates.last_checked', $timestamp);
 
+        if ($newVersion === '') {
+            // No update was available.
+            return;
+        }
+
         if ($newVersion !== false) {
+            // Update succeeded. Continue (based on a few conditions).
             $this->continueAfterUpdating($currentVersion, $newVersion, $pharFilename);
             exit(0);
         }
 
+        // Automatic update failed.
+        // Error messages will already have been printed, and the original
+        // command can continue.
         $this->stdErr->writeln('');
     }
 
