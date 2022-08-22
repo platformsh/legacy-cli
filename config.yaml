@@ -203,7 +203,10 @@ detection:
 pagination:
 
   # Whether pagination is enabled.
-  # Currently, this only applies to the projects (project:list) command.
+  #
+  # This only affects 2 commands for now. Disabling it is the equivalent of
+  # --count 0 in the projects command, and --page-limit 0 in the org:sub:list
+  # command.
   enabled: true
 
 # Automatic updates.
