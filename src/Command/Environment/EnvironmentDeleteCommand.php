@@ -150,11 +150,10 @@ EOF
         $excludeTypes = ArrayArgument::getOption($input, 'exclude-type');
         $onlyTypes = ArrayArgument::getOption($input, 'only-type');
         $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes, $onlyTypes) {
-            $type = $environment->getProperty('type', false, false);
-            if ($type !== null && \in_array($type, $excludeTypes, true)) {
+            if (\in_array($environment->type, $excludeTypes, true)) {
                 return false;
             }
-            if (!empty($onlyTypes) && ($type === null || !\in_array($type, $onlyTypes, true))) {
+            if (!empty($onlyTypes) && !\in_array($environment->type, $onlyTypes, true)) {
                 return false;
             }
             return true;
