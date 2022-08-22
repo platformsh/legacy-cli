@@ -116,7 +116,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             }
 
             $row[] = $this->formatEnvironmentStatus($environment->status);
-            $row[] = $environment->getProperty('type', false) ?: '';
+            $row[] = $environment->type;
 
             $row[] = $this->formatter->format($environment->created_at, 'created_at');
             $row[] = $this->formatter->format($environment->updated_at, 'updated_at');

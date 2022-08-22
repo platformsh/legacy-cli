@@ -240,7 +240,7 @@ class EnvironmentPushCommand extends CommandBase
             if (!$cloneParent && $targetEnvironment->getProperty('clone_parent_on_create', false, false)) {
                 $updates['clone_parent_on_create'] = false;
             }
-            if ($type !== null && $targetEnvironment->hasProperty('type') && $targetEnvironment->getProperty('type') !== $type) {
+            if ($type !== null && $targetEnvironment->type !== $type) {
                 $updates['type'] = $type;
             }
             if (!empty($updates)) {
