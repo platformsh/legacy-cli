@@ -144,7 +144,7 @@ class Config
             }
         }
 
-        throw new \RuntimeException(sprintf('Could not determine home directory. Set the %s environment variable.', $prefix . 'HOME'));
+        throw new \RuntimeException(sprintf('Could not determine home directory (environment variables checked: %s)', implode(', ', $envVars)));
     }
 
     /**
