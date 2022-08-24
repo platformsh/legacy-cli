@@ -12,7 +12,6 @@ use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Terminal;
 
 class ProjectListCommand extends CommandBase
 {
@@ -23,15 +22,15 @@ class ProjectListCommand extends CommandBase
             ->setName('project:list')
             ->setAliases(['projects', 'pro'])
             ->setDescription('Get a list of all active projects')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. This disables pagination.')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. Disables pagination.')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title (case-insensitive search)')
             ->addOption('my', null, InputOption::VALUE_NONE, 'Display only the projects you own')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
-            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number (starting from 1)', '1')
-            ->addOption('count', null, InputOption::VALUE_REQUIRED, 'The number of projects to display per page. The default is based on the terminal height. Use 0 to disable pagination.');
+            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count. Ignored if --pipe is specified.')
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of projects to display per page. Use 0 to disable pagination. Ignored if --page is specified.');
 
         if ($this->config()->getWithDefault('api.organizations', false)) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name or ID');
@@ -99,19 +98,14 @@ class ProjectListCommand extends CommandBase
         }
 
         // Paginate the list.
-        if (!$this->config()->getWithDefault('pagination.enabled', true)) {
+        if (!$this->config()->getWithDefault('pagination.enabled', true) && $input->getOption('page') === null) {
             $itemsPerPage = 0;
         } elseif ($input->getOption('count') !== null) {
             $itemsPerPage = (int)$input->getOption('count');
         } else {
-            // Find a default --count based on the terminal height (minimum 10).
-            // Deduct 24 lines for consistency with the welcome command.
-            $itemsPerPage = \max(10, (new Terminal())->getHeight() - 24);
-            if ($itemsPerPage > \count($projectStubs)) {
-                $itemsPerPage = \count($projectStubs);
-            }
+            $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
         }
-        $page = (new Pager())->page($projectStubs, (int) $input->getOption('page'), (int) $itemsPerPage);
+        $page = (new Pager())->page($projectStubs, (int) $input->getOption('page') ?: 1, $itemsPerPage);
         /** @var ProjectStub[] $projectStubs */
         $projectStubs = $page->items;
         if (\count($projectStubs) === 0) {
