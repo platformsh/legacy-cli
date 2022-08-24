@@ -21,8 +21,8 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         $this->setName('organization:subscription:list')
             ->setAliases(['organization:subscriptions'])
             ->setDescription('List subscriptions within an organization')
-            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number')
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Number of items per page (default 25, maximum 50, 0 means no pagination)')
+            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of projects to display per page. Use 0 to disable pagination. Ignored if --page is specified.')
             ->addOrganizationOptions();
         Table::configureInput($this->getDefinition());
     }
@@ -38,51 +38,50 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         $options['query']['filter']['status']['operator'] = 'IN';
 
         $count = $input->getOption('count');
-        $range = 25;
+        $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 50) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 50, or 0 to disable pagination.');
                 return 1;
             }
-            $range = $count;
+            $itemsPerPage = $count;
         }
-        $options['query']['range'] = $range;
+        $options['query']['range'] = $itemsPerPage;
 
         $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
         if ($count === '0') {
             $fetchAllPages = true;
         }
 
-        $page = $input->getOption('page');
-        if ($page !== null) {
+        $pageNumber = $input->getOption('page');
+        if ($pageNumber === null) {
+            $pageNumber = 1;
+        } else {
             $fetchAllPages = false;
-            $options['query']['page'] = $page;
         }
+        $options['query']['page'] = $pageNumber;
 
         $organization = $this->validateOrganizationInput($input);
-        $httpClient = $this->api()->getHttpClient();
 
+        $httpClient = $this->api()->getHttpClient();
         $subscriptions = [];
         $url = $organization->getUri() . '/subscriptions';
-        $pageCount = 0;
-        $nextPageNumber = $page ?: 1;
         $progress = new ProgressMessage($output);
         while (true) {
-            $progress->showIfOutputDecorated(\sprintf('Loading subscriptions (page %d)...', $nextPageNumber));
+            $progress->showIfOutputDecorated(\sprintf('Loading subscriptions (page %d)...', $pageNumber));
             $collection = $this->getPagedCollection($url, $httpClient, $options);
             $progress->done();
-            $pageCount++;
-            $nextPageNumber++;
             $subscriptions = \array_merge($subscriptions, $collection['items']);
             if ($fetchAllPages && count($collection['items']) > 0 && isset($collection['next']) && $collection['next'] !== $url) {
                 $url = $collection['next'];
+                $pageNumber++;
                 continue;
             }
             break;
         }
 
         if (empty($subscriptions)) {
-            if (!empty($page)) {
+            if ($pageNumber > 1) {
                 $this->stdErr->writeln('No subscriptions were found on this page.');
                 return 0;
             }
@@ -111,8 +110,8 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $title = \sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api()->getOrganizationLabel($organization));
-            if (isset($page)) {
-                $title .= \sprintf(' (page %d)', $page);
+            if ($pageNumber > 1 || isset($collection['next'])) {
+                $title .= \sprintf(' (page %d)', $pageNumber);
             }
             $this->stdErr->writeln($title);
         }
@@ -120,7 +119,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         $table->render($rows, $headers, $defaultColumns);
 
         if (!$table->formatIsMachineReadable() && isset($collection['next'])) {
-            $this->stdErr->writeln(\sprintf('More subscriptions are available on the next page (<info>--page %d</info>)', $nextPageNumber));
+            $this->stdErr->writeln(\sprintf('More subscriptions are available on the next page (<info>--page %d</info>)', $pageNumber + 1));
         }
 
         return 0;

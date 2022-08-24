@@ -102,13 +102,14 @@ local:
   # Configure the Drush executable to use (defaults to 'drush').
   drush_executable: null
 
+# Pagination settings.
+#
+# These only affect 2 commands for now: project:list and org:sub:list.
 pagination:
-    # Whether pagination is enabled.
-    #
-    # This only affects 2 commands for now. Disabling it is the equivalent of
-    # --count 0 in the projects command, and --page-limit 0 in the org:sub:list
-    # command.
+    # Enable pagination. Can be disabled with --count 0.
     enabled: true
+    # Items per page. Can be overridden with --count.
+    count: 20
 
 updates:
   # Whether to check for automatic updates.
