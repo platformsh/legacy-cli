@@ -22,7 +22,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             ->setAliases(['organization:subscriptions'])
             ->setDescription('List subscriptions within an organization')
             ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of projects to display per page. Use 0 to disable pagination. Ignored if --page is specified.')
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination. Ignored if --page is specified.')
             ->addOrganizationOptions();
         Table::configureInput($this->getDefinition());
     }
@@ -120,6 +120,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 
         if (!$table->formatIsMachineReadable() && isset($collection['next'])) {
             $this->stdErr->writeln(\sprintf('More subscriptions are available on the next page (<info>--page %d</info>)', $pageNumber + 1));
+            $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
         }
 
         return 0;
