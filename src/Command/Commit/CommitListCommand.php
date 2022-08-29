@@ -129,6 +129,9 @@ class CommitListCommand extends CommandBase
                 }
                 $currentCommit = $commits[$parentSha];
                 $progress->advance();
+                if (count($commits) >= $limit) {
+                    break 2;
+                }
             }
         }
         $progress->clear();
