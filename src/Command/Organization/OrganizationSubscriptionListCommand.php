@@ -110,7 +110,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $title = \sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api()->getOrganizationLabel($organization));
-            if ($pageNumber > 1 || isset($collection['next'])) {
+            if (($pageNumber > 1 || isset($collection['next'])) && !$fetchAllPages) {
                 $title .= \sprintf(' (page %d)', $pageNumber);
             }
             $this->stdErr->writeln($title);
