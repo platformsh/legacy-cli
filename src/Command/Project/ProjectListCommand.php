@@ -18,6 +18,7 @@ class ProjectListCommand extends CommandBase
 
     protected function configure()
     {
+        $organizationsEnabled = $this->config()->getWithDefault('api.organizations', false);
         $this
             ->setName('project:list')
             ->setAliases(['projects', 'pro'])
@@ -25,14 +26,14 @@ class ProjectListCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. Disables pagination.')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title (case-insensitive search)')
-            ->addOption('my', null, InputOption::VALUE_NONE, 'Display only the projects you own')
+            ->addOption('my', null, InputOption::VALUE_NONE, 'Display only the projects you own' . ($organizationsEnabled ? ' (through organizations you own)' : ''))
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
             ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count. Ignored if --pipe is specified.')
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of projects to display per page. Use 0 to disable pagination. Ignored if --page is specified.');
 
-        if ($this->config()->getWithDefault('api.organizations', false)) {
+        if ($organizationsEnabled) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name or ID');
         }
 
