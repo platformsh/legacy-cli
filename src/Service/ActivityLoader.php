@@ -198,6 +198,7 @@ class ActivityLoader
             'integration.health.email',
             'integration.health.pagerduty',
             'integration.health.slack',
+            'integration.health.webhook',
             'integration.webhook',
             'integration.script',
         ];
