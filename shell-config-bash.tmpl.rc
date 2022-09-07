@@ -1,0 +1,9 @@
+# {{ application.name }} shell configuration for Bash and ZSH.
+##
+## Keys inside double curly brackets will be replaced by their config value
+## during installation. Lines beginning with ## will be removed.
+
+# Enable auto-completion.
+if [ -f "$HOME/{{ application.user_config_dir }}/autocompletion.sh" ]; then
+    . "$HOME/{{ application.user_config_dir }}/autocompletion.sh" 2>/dev/null
+fi

@@ -1,8 +1,11 @@
-# Platform.sh CLI shell configuration for Bash and ZSH.
+# {{ application.name }} shell configuration for Bash and ZSH.
+##
+## Keys inside double curly brackets will be replaced by their config value
+## during installation. Lines beginning with ## will be removed.
 
 # Enable auto-completion.
-if [ -f "$HOME/.platformsh/autocompletion.sh" ]; then
-    . "$HOME/.platformsh/autocompletion.sh" 2>/dev/null
+if [ -f "$HOME/{{ application.user_config_dir }}/autocompletion.sh" ]; then
+    . "$HOME/{{ application.user_config_dir }}/autocompletion.sh" 2>/dev/null
 fi
 
 # Alias: make the CLI available via "p", if a command with that name doesn't

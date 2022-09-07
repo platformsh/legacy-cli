@@ -1,0 +1,13 @@
+# {{ application.name }} shell configuration.
+##
+## This is intended to be sourced by any shell, so mustn't contain Bashisms.
+##
+## Keys inside double curly brackets will be replaced by their config value
+## during installation. Lines beginning with ## will be removed.
+
+# Test for Bash or ZSH. Include shell-config-bash.rc if it exists.
+if [ "$BASH" ] || [ "$SHELL" = /bin/zsh ] || [ "$ZSH" ]; then
+    if [ -f "$HOME/{{ application.user_config_dir }}/shell-config-bash.rc" ]; then
+        . "$HOME/{{ application.user_config_dir }}/shell-config-bash.rc" 2>/dev/null
+    fi
+fi
