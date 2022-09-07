@@ -9,8 +9,9 @@
     "config.yaml",
     "constants.php",
     "services.yaml",
-    "shell-config.rc",
-    "shell-config-bash.rc",
+    "shell-config.tmpl.rc",
+    "shell-config-bash.tmpl.rc",
+    "shell-config-bash-direct.tmpl.rc",
     "vendor/autoload.php",
     "vendor/symfony/console/Resources/bin/hiddeninput.exe",
     "vendor/composer/ca-bundle/res/cacert.pem"
