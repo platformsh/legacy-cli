@@ -21,6 +21,7 @@ use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
+use Platformsh\Client\Model\ProjectStub;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
@@ -811,10 +812,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
-            $projects = $this->api()->getProjects();
-            if (count($projects) > 0) {
+            $projectStubs = $this->api()->getProjectStubs();
+            if (count($projectStubs) > 0) {
                 $this->debug('No project specified: offering a choice...');
-                $projectId = $this->offerProjectChoice($projects);
+                $projectId = $this->offerProjectChoice($projectStubs);
 
                 return $this->selectProject($projectId);
             }
@@ -843,7 +844,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     private function getProjectNotFoundMessage($projectId)
     {
         $message = 'Specified project not found: ' . $projectId;
-        if ($projects = $this->api()->getProjects()) {
+        if ($projects = $this->api()->getProjectStubs()) {
             $message .= "\n\nYour projects are:";
             $limit = 8;
             foreach (array_slice($projects, 0, $limit) as $project) {
@@ -1152,13 +1153,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Offer the user an interactive choice of projects.
      *
-     * @param Project[] $projects
-     * @param string    $text
+     * @param ProjectStub[] $projectStubs
+     * @param string $text
      *
      * @return string
      *   The chosen project ID.
      */
-    final protected function offerProjectChoice(array $projects, $text = 'Enter a number to choose a project:')
+    final protected function offerProjectChoice(array $projectStubs, $text = 'Enter a number to choose a project:')
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
@@ -1167,28 +1168,31 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        if (count($projects) >= 25 || count($projects) > (new Terminal())->getHeight() - 3) {
+        if (count($projectStubs) >= 25 || count($projectStubs) > (new Terminal())->getHeight() - 3) {
             $autocomplete = [];
-            foreach ($projects as $project) {
-                if ($project->title) {
-                    $autocomplete[$project->id] = $project->id . ' - <question>' . $project->title . '</question>';
+            foreach ($projectStubs as $projectStub) {
+                if ($projectStub->title) {
+                    $autocomplete[$projectStub->id] = $projectStub->id . ' - <question>' . $projectStub->title . '</question>';
                 } else {
-                    $autocomplete[$project->id] = $project->id;
+                    $autocomplete[$projectStub->id] = $projectStub->id;
                 }
             }
             asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
             return $questionHelper->askInput('Enter a project ID', null, array_values($autocomplete), function ($value) use ($autocomplete) {
                 list($id, ) = explode(' - ', $value);
+                if (empty(trim($id))) {
+                    throw new ConsoleInvalidArgumentException('A project ID is required');
+                }
                 if (!isset($autocomplete[$id]) && !$this->api()->getProject($id)) {
-                    throw new \RuntimeException('Project not found: ' . $id);
+                    throw new ConsoleInvalidArgumentException('Project not found: ' . $id);
                 }
                 return $id;
             });
         }
 
         $projectList = [];
-        foreach ($projects as $project) {
-            $projectList[$project->id] = $this->api()->getProjectLabel($project, false);
+        foreach ($projectStubs as $projectStub) {
+            $projectList[$projectStub->id] = $this->api()->getProjectLabel($projectStub, false);
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 

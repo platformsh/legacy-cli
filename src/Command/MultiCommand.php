@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Client\Model\ProjectStub;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -148,19 +149,19 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      *
      * @param InputInterface $input
      *
-     * @return \Platformsh\Client\Model\Project[]
+     * @return \Platformsh\Client\Model\ProjectStub[]
      */
-    protected function getAllProjects(InputInterface $input)
+    protected function getAllProjectStubs(InputInterface $input)
     {
-        $projects = $this->api()->getProjects();
+        $projectStubs = $this->api()->getProjectStubs();
         if ($input->getOption('sort')) {
-            $this->api()->sortResources($projects, $input->getOption('sort'));
+            $this->api()->sortResources($projectStubs, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
-            $projects = array_reverse($projects, true);
+            $projectStubs = array_reverse($projectStubs, true);
         }
 
-        return $projects;
+        return $projectStubs;
     }
 
     /**
@@ -220,21 +221,21 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             return false;
         }
 
-        $projects = $this->getAllProjects($input);
+        $projectStubs = $this->getAllProjectStubs($input);
         $projectOptions = [];
-        foreach ($projects as $project) {
-            $projectOptions[$project->id] = $project->title ?: $project->id;
+        foreach ($projectStubs as $projectStub) {
+            $projectOptions[$projectStub->id] = $projectStub->title ?: $projectStub->id;
         }
 
         $projectIds = $this->showDialogChecklist($projectOptions, 'Choose one or more projects');
         if (empty($projectIds)) {
             return false;
         }
-        $selected = array_intersect_key($projects, array_flip($projectIds));
+        $selected = array_intersect_key($projectStubs, array_flip($projectIds));
         $this->stdErr->writeln('Selected project(s): ' . implode(',', array_keys($selected)));
         $this->stdErr->writeln('');
 
-        return $selected;
+        return array_map(function (ProjectStub $ps) { return $this->api()->getProject($ps->id); }, $selected);
     }
 
     /**
