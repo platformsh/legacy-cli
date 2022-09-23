@@ -116,7 +116,17 @@ class ProjectGetCommand extends CommandBase
                 'Failed to connect to the Git repository: <error>' . $gitUrl . '</error>'
             ));
 
-            $this->suggestSshRemedies($gitUrl, $e->getProcess());
+            // Display the error from the Git process if it's about Xcode,
+            // otherwise assume it's an SSH problem and diagnose the SSH
+            // failure.
+            $process = $e->getProcess();
+            $errorOutput = $process->getErrorOutput();
+            if (strpos($errorOutput, 'Xcode license') !== false) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln($errorOutput);
+            } else {
+                $this->suggestSshRemedies($gitUrl, $process);
+            }
 
             return 1;
         }
