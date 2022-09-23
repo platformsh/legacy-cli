@@ -121,17 +121,23 @@ EOF
 
             $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
             if ($currentProject) {
-                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject)));
+                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject, 'comment')));
             }
             $this->stdErr->writeln('');
 
             if ($setRemote) {
                 $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository.', $options['title']));
+            } elseif ($currentProject) {
+                $setRemote = $questionHelper->confirm(sprintf(
+                    'Switch the remote project for this repository from <comment>%s</comment> to the new project <comment>%s</comment>?',
+                    $this->api()->getProjectLabel($currentProject, false),
+                    $options['title']
+                ), false);
             } else {
                 $setRemote = $questionHelper->confirm(sprintf(
                     'Set the new project <info>%s</info> as the remote for this repository?',
-                    $options['title'])
-                );
+                    $options['title']
+                ), false);
             }
             $this->stdErr->writeln('');
         }
