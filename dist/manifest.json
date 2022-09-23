@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "3b52442028de55b83582a622ee95a58d6f93d1fd",
-        "sha256": "74530796f070cceb8fb66968493514c4efc6c0406a2d8d73dde20ee211a09db2",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.82.1/platform.phar",
-        "version": "3.82.1",
+        "sha1": "a2531e1ce4ba80019cf2d52c73f10d1802a5e76c",
+        "sha256": "40d5853b958d30a895a884b1b062ea7ae5701063823b5dcb33c612e115311ac0",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.82.2/platform.phar",
+        "version": "3.82.2",
         "php": {
             "min": "5.5.9"
         },
@@ -457,7 +457,8 @@
             "3.81.0": "New features:\n\n* Add `--no-warn` (`-W`) and `--header` (`-H`) options to the `auth:token` command.\n* Add `--json` option to curl commands.\n* Return a success (zero) exit code from `self:update` if there is no update.\n\nOther changes:\n\n* Fix \"Property defined twice\" error in the `org:billing:address` command.\n* Clarify no organization message in `project:create` (`create`) command.\n* Remove more now unnecessary checks for environment types.\n    Improves performance in `environment:list` (`env`) command.\n* Fix example for `user:get --level environment`.",
             "3.81.1": "* Fix: automatic update prompt not saving last check time if there is no update\n* Remove mbstring requirement from README and installer\n* Add environment.domain activities to the type filter\n* Allow use of --json option with lower curl versions",
             "3.82.0": "* Support pagination in the `organization:subscriptions` command.\n  Add `--page` and `--count` (`-c`) options. A `0` count disables pagination.\n* Adapt the `project:list` (`projects`) command for consistency:\n  - Specifying a `--page` will work even if pagination had been otherwise disabled.\n  - Remove terminal height detection, instead making the \"items per page\" count\n    a configuration parameter defaulting to 20 items, overridden by `--count`.\n* Clarify environment variables when the home directory cannot be detected.\n* Remove now unnecessary webhook code in `integration` commands, fixing a bug\n  where source code integration webhooks were added with the incorrect URL.",
-            "3.82.1": "* Improve pagination description in the `org:sub` command.\n* Clarify `--my` option in `project:list` (`projects`) for organizations.\n* Add `integration.health.webhook` activity type.\n* Fix `commit:list` (`commits`) to respect `--limit` for commits with\n  multiple parents.\n* Replace templated values when installing shell config files. This only\n  affects alternative configurations, e.g. dev builds."
+            "3.82.1": "* Improve pagination description in the `org:sub` command.\n* Clarify `--my` option in `project:list` (`projects`) for organizations.\n* Add `integration.health.webhook` activity type.\n* Fix `commit:list` (`commits`) to respect `--limit` for commits with\n  multiple parents.\n* Replace templated values when installing shell config files. This only\n  affects alternative configurations, e.g. dev builds.",
+            "3.82.2": "* Display the error from Xcode in the project:get (get) command\n* Clarify \"switch remote\" vs \"set remote\" in the project:create (create) command\n* Fix env:delete command to respect --no-delete-branch in interactive mode"
         }
     }
 ]
