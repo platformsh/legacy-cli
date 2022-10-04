@@ -105,7 +105,7 @@ EOF
             try {
                 $organization = $this->selector->selectOrganization($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
-                $this->stdErr->writeln('You do not belong to an organization where you have permission to create a subscription.');
+                $this->stdErr->writeln('You do not yet own nor belong to an organization in which you can create a project.');
                 if ($input->isInteractive() && $this->config->isCommandEnabled('organization:create') && $this->questionHelper->confirm('Do you want to create an organization now?')) {
                     if ($this->subCommandRunner->run('organization:create') !== 0) {
                         return 1;
@@ -150,17 +150,23 @@ EOF
 
             $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
             if ($currentProject) {
-                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api->getProjectLabel($currentProject)));
+                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api->getProjectLabel($currentProject, 'comment')));
             }
             $this->stdErr->writeln('');
 
             if ($setRemote) {
                 $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository.', $options['title']));
+            } elseif ($currentProject) {
+                $setRemote = $this->questionHelper->confirm(sprintf(
+                    'Switch the remote project for this repository from <comment>%s</comment> to the new project <comment>%s</comment>?',
+                    $this->api->getProjectLabel($currentProject, false),
+                    $options['title']
+                ), false);
             } else {
                 $setRemote = $this->questionHelper->confirm(sprintf(
                     'Set the new project <info>%s</info> as the remote for this repository?',
-                    $options['title'])
-                );
+                    $options['title']
+                ), false);
             }
             $this->stdErr->writeln('');
         }

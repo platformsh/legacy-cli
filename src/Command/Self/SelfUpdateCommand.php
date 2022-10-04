@@ -45,6 +45,9 @@ class SelfUpdateCommand extends CommandBase
         $this->updater->setTimeout($input->getOption('timeout'));
 
         $result = $this->updater->update($manifestUrl, $currentVersion);
+        if ($result === '') {
+            return 0;
+        }
         if ($result === false) {
             return 1;
         }

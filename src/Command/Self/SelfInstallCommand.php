@@ -61,16 +61,26 @@ EOT
 
         $this->stdErr->write('Copying resource files...');
         $requiredFiles = [
-            'shell-config.rc',
-            'shell-config-bash.rc',
+            'shell-config.rc' => 'resources/shell-config.tmpl.rc',
+            'shell-config-bash.rc' => 'resources/shell-config-bash.tmpl.rc',
         ];
+        if ($this->config()->get('application.executable') === 'platform') {
+            $requiredFiles['shell-config-bash.rc'] = 'resources/shell-config-bash-direct.tmpl.rc';
+        }
         $fs = new \Symfony\Component\Filesystem\Filesystem();
         try {
-            foreach ($requiredFiles as $requiredFile) {
-                if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $requiredFile)) === false) {
-                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $requiredFile));
+            foreach ($requiredFiles as $destFile => $sourceFile) {
+                if (($contents = file_get_contents(CLI_ROOT . DIRECTORY_SEPARATOR . $sourceFile)) === false) {
+                    throw new \RuntimeException(sprintf('Failed to read file: %s', CLI_ROOT . '/' . $sourceFile));
                 }
-                $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $requiredFile, $contents);
+                // Remove lines beginning with ##.
+                $contents = \preg_replace('/^##[^\n]*\n/m', '', $contents);
+                // Replace configuration keys inside double curly brackets with
+                // their values.
+                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', function ($matches) {
+                    return $this->config()->get($matches[1]);
+                }, $contents);
+                $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $destFile, $contents);
             }
         } catch (\Exception $e) {
             $this->stdErr->writeln('');

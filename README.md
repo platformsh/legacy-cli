@@ -5,7 +5,7 @@ The **Platform.sh CLI** is the official command-line interface for [Platform.sh]
 ## Requirements
 
 * Operating system: Linux, OS X, or Windows (anything PHP supports)
-* PHP 7.2.5 or higher with the following extensions: `curl`, `json`, `mbstring`, `pcre`, and `phar`. The installation command will check for these.
+* PHP 7.2.5 or higher with the following extensions: `curl`, `json`, `pcre`, and `phar`. The installation command will check for these.
 * Git
 * A Bash-like shell:
   * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
@@ -102,11 +102,14 @@ local:
   # Configure the Drush executable to use (defaults to 'drush').
   drush_executable: null
 
+# Pagination settings.
+#
+# These only affect 2 commands for now: project:list and org:sub:list.
 pagination:
-
-    # Whether pagination is enabled.
-    # Currently, this only applies to the projects (project:list) command.
+    # Enable pagination. Can be disabled with --count 0.
     enabled: true
+    # Items per page. Can be overridden with --count.
+    count: 20
 
 updates:
   # Whether to check for automatic updates.

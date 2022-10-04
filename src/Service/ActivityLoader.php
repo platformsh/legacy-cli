@@ -174,6 +174,9 @@ class ActivityLoader
             'environment.merge',
             'environment.redeploy',
             'environment.delete',
+            'environment.domain.create',
+            'environment.domain.delete',
+            'environment.domain.update',
             'environment.route.create',
             'environment.route.delete',
             'environment.route.update',
@@ -196,6 +199,7 @@ class ActivityLoader
             'integration.health.email',
             'integration.health.pagerduty',
             'integration.health.slack',
+            'integration.health.webhook',
             'integration.webhook',
             'integration.script',
         ];

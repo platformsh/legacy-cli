@@ -102,9 +102,13 @@ class SelfUpdateChecker
 
         $this->state->set('updates.last_checked', $timestamp);
 
-        // If the update was successful, and it's not a major version change,
-        // then prompt the user to continue after updating.
+        if ($newVersion === '') {
+            // No update was available.
+            return;
+        }
+
         if ($newVersion !== false) {
+            // Update succeeded. Continue (based on a few conditions).
             $exitCode = 0;
             list($currentMajorVersion,) = explode('.', $currentVersion, 2);
             list($newMajorVersion,) = explode('.', $newVersion, 2);
@@ -123,6 +127,9 @@ class SelfUpdateChecker
             exit($exitCode);
         }
 
+        // Automatic update failed.
+        // Error messages will already have been printed, and the original
+        // command can continue.
         $this->stdErr->writeln('');
     }
 }

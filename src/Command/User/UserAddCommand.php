@@ -737,7 +737,7 @@ class UserAddCommand extends CommandBase
             if (!isset($environments[$id])) {
                 throw new \RuntimeException("Failed to find environment for ID: $id");
             }
-            $type = $environments[$id]->getProperty('type');
+            $type = $environments[$id]->type;
             $byType[$type][$id] = $role;
         }
 

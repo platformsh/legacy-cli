@@ -182,11 +182,10 @@ EOF
         $excludeTypes = ArrayArgument::getOption($input, 'exclude-type');
         $onlyTypes = ArrayArgument::getOption($input, 'only-type');
         $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes, $onlyTypes) {
-            $type = $environment->getProperty('type', false, false);
-            if ($type !== null && \in_array($type, $excludeTypes, true)) {
+            if (\in_array($environment->type, $excludeTypes, true)) {
                 return false;
             }
-            if (!empty($onlyTypes) && ($type === null || !\in_array($type, $onlyTypes, true))) {
+            if (!empty($onlyTypes) && !\in_array($environment->type, $onlyTypes, true)) {
                 return false;
             }
             return true;
@@ -217,6 +216,7 @@ EOF
         $this->api->sortResources($selectedEnvironments, 'id');
         $toDeleteBranch = [];
         $toDeactivate = [];
+        $needNewline = false;
         foreach ($selectedEnvironments as $environment) {
             $environmentId = $environment->id;
             // Check that the environment does not have children.
@@ -228,51 +228,67 @@ EOF
                         $this->api->getEnvironmentLabel($environment, 'error')
                     ));
                     $this->stdErr->writeln("Please delete the environment's children first.");
-                    $error = true;
+                    $error = $needNewline = true;
                     continue 2;
                 }
             }
+
+            if (!\in_array($environment->status, ['active', 'inactive', 'dirty', 'deleting'])) {
+                $this->stdErr->writeln("The environment <error>$environmentId</error> has an unrecognised status <error>" . $environment->status . "</error>.");
+                $error = $needNewline = true;
+                continue;
+            }
+            if ($environment->status === 'inactive' && $input->getOption('no-delete-branch')) {
+                $this->stdErr->writeln("The environment <comment>$environmentId</comment> is inactive and <comment>--no-delete-branch</comment> was specified, so it will not be deleted.");
+                $needNewline = true;
+                continue;
+            }
+            if ($environment->status === 'deleting') {
+                $this->stdErr->writeln("The environment <comment>$environmentId</comment> is already being deleted.");
+                $needNewline = true;
+                continue;
+            }
+            if ($environment->status === 'dirty') {
+                $this->stdErr->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait.");
+                $error = $needNewline = true;
+                continue;
+            }
+
+            // Ask about deactivation if the environment is active.
             if ($environment->isActive()) {
+                $needNewline = true;
                 $this->stdErr->writeln(\sprintf(
                     'The environment %s is currently active: deleting it will delete all associated data.',
                     $this->api->getEnvironmentLabel($environment, 'comment')
                 ));
                 if ($this->questionHelper->confirm('Are you sure you want to delete this environment?')) {
                     $toDeactivate[$environmentId] = $environment;
-                    if (!$input->getOption('no-delete-branch')
-                        && $this->activityService->shouldWait($input)
-                        && ($input->getOption('delete-branch')
-                            || (
-                                $input->isInteractive()
-                                && $this->questionHelper->confirm("Delete the remote Git branch too?")
-                            )
-                        )) {
-                        $toDeleteBranch[$environmentId] = $environment;
-                    }
                 } else {
                     $error = true;
                 }
-            } elseif ($environment->status === 'inactive') {
-                if ($this->questionHelper->confirm("Are you sure you want to delete the remote Git branch <comment>$environmentId</comment>?")) {
+            }
+
+            // Ask about deleting the branch, which requires either an inactive
+            // environment, or waiting for it to be deactivated.
+            if (!$input->getOption('no-delete-branch')
+                && ($environment->status === 'inactive' || (isset($toDeactivate[$environmentId]) && $this->activityService->shouldWait($input)))) {
+                $message = isset($toDeactivate[$environmentId])
+                    ? "Delete the inactive environment (Git branch) too?"
+                    : "Are you sure you want to delete the inactive environment (Git branch) <comment>$environmentId</comment>?";
+                if ($input->getOption('delete-branch') || ($input->isInteractive() && $this->questionHelper->confirm($message))) {
                     $toDeleteBranch[$environmentId] = $environment;
-                } else {
+                } elseif (!isset($toDeactivate[$environmentId])) {
                     $error = true;
                 }
-            } elseif ($environment->status === 'dirty') {
-                $this->stdErr->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait.");
-                $error = true;
-            } elseif ($environment->status === 'deleting') {
-                $this->stdErr->writeln("The environment <info>$environmentId</info> is already being deleted.");
-            } else {
-                $this->stdErr->writeln("The environment <error>$environmentId</error> has an unrecognised status <error>" . $environment->status . "</error>.");
-                $error = true;
+                $needNewline = true;
             }
         }
 
+        if ($needNewline) {
+            $this->stdErr->writeln('');
+        }
+
         if (empty($toDeleteBranch) && empty($toDeactivate)) {
-            if ($error) {
-                $this->stdErr->writeln('');
-            }
             $this->stdErr->writeln('No environment(s) to delete.');
             if (!$anythingSpecified) {
                 $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config->get('application.executable')));
@@ -334,12 +350,12 @@ EOF
                 if ($environment->status !== 'inactive') {
                     $environment->refresh();
                     if ($environment->status !== 'inactive') {
-                        $this->stdErr->writeln("Cannot delete branch <error>$environmentId</error>: it is not (yet) inactive.");
+                        $this->stdErr->writeln("Cannot delete Git branch <error>$environmentId</error>: the environment is not (yet) inactive.");
                         continue;
                     }
                 }
                 $environment->delete();
-                $this->stdErr->writeln("Deleted remote Git branch <info>$environmentId</info>");
+                $this->stdErr->writeln("Deleted Git branch (inactive environment) <info>$environmentId</info>");
                 $deleted++;
             } catch (\Exception $e) {
                 $this->stdErr->writeln($e->getMessage());

@@ -22,6 +22,7 @@ class CurlCli implements InputConfiguringInterface {
         $definition->addArgument(new InputArgument('path', InputArgument::OPTIONAL, 'The API path'));
         $definition->addOption(new InputOption('request', 'X', InputOption::VALUE_REQUIRED, 'The request method to use'));
         $definition->addOption(new InputOption('data', 'd', InputOption::VALUE_REQUIRED, 'Data to send'));
+        $definition->addOption(new InputOption('json', null, InputOption::VALUE_REQUIRED, 'JSON data to send'));
         $definition->addOption(new InputOption('include', 'i', InputOption::VALUE_NONE, 'Include headers in the output'));
         $definition->addOption(new InputOption('head', 'I', InputOption::VALUE_NONE, 'Fetch headers only'));
         $definition->addOption(new InputOption('disable-compression', null, InputOption::VALUE_NONE, 'Do not use the curl --compressed flag'));
@@ -67,7 +68,17 @@ class CurlCli implements InputConfiguringInterface {
         }
 
         if ($requestMethod = $input->getOption('request')) {
-            $commandline .= ' -X ' . escapeshellarg($requestMethod);
+            $commandline .= ' --request ' . escapeshellarg($requestMethod);
+        }
+
+        if ($data = $input->getOption('json')) {
+            if (\json_decode($data) === null && \json_last_error() !== JSON_ERROR_NONE) {
+                $stdErr->writeln('The value of --json contains invalid JSON.');
+                return 1;
+            }
+            $commandline .= ' --data ' . escapeshellarg($data);
+            $commandline .= ' --header ' . escapeshellarg('Content-Type: application/json');
+            $commandline .= ' --header ' . escapeshellarg('Accept: application/json');
         }
 
         if ($data = $input->getOption('data')) {
