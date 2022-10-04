@@ -79,7 +79,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         }
         $query['page'] = $pageNumber;
 
-        $organization = $this->validateOrganizationInput($input);
+        $organization = $this->selector->selectOrganization($input);
 
         $httpClient = $this->api->getHttpClient();
         $subscriptions = [];
