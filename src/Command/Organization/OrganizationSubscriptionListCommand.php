@@ -74,6 +74,9 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         $pageNumber = $input->getOption('page');
         if ($pageNumber === null) {
             $pageNumber = 1;
+        } elseif ($pageNumber < 1) {
+            $this->stdErr->writeln(\sprintf('Invalid <error>--page</error> number: %s', $pageNumber));
+            return 1;
         } else {
             $fetchAllPages = false;
         }
@@ -83,11 +86,11 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 
         $httpClient = $this->api->getHttpClient();
         $subscriptions = [];
-        $url = $organization->getUri() . '/subscriptions';
+        $url = $organization->getUri() . '/subscriptions?' . http_build_query($query);
         $progress = new ProgressMessage($output);
         while (true) {
             $progress->showIfOutputDecorated(\sprintf('Loading subscriptions (page %d)...', $pageNumber));
-            $collection = $this->getPagedCollection($url, $httpClient, $query);
+            $collection = $this->getPagedCollection($url, $httpClient);
             $progress->done();
             $subscriptions = \array_merge($subscriptions, $collection['items']);
             if ($fetchAllPages && count($collection['items']) > 0 && isset($collection['next']) && $collection['next'] !== $url) {
@@ -154,21 +157,21 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
      *
      * @param string $url
      * @param ClientInterface $client
-     * @param array $query
      *
      * @return array{'items': Subscription[], 'next': ?string}
-     *@todo move this into the API client library
+     * @todo move this into the API client library
      *
      */
-    private function getPagedCollection($url, ClientInterface $client, array $query = [])
+    private function getPagedCollection($url, ClientInterface $client)
     {
-        $request = new Request('get', Uri::withQueryValues(new Uri($url), $query));
+        $uri = new Uri($url);
+        $request = new Request('get', $uri);
         $data = Subscription::send($request, $client);
         $items = Subscription::wrapCollection($data, $url, $client);
 
         $nextUrl = null;
         if (isset($data['_links']['next']['href'])) {
-            $nextUrl = UriResolver::resolve(new Uri($url), $data['_links']['next']['href'])->__toString();
+            $nextUrl = UriResolver::resolve($uri, new Uri($data['_links']['next']['href']))->__toString();
         }
 
         return ['items' => $items, 'next' => $nextUrl];
