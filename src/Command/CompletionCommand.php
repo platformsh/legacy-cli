@@ -4,6 +4,8 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Client\Model\Project;
+use Platformsh\Client\Model\ProjectStub;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
@@ -17,7 +19,7 @@ class CompletionCommand extends ParentCompletionCommand
      * A list of the user's projects.
      * @var array
      */
-    protected $projects = [];
+    protected $projectStubs = [];
 
     /** @var CommandBase|null */
     private $welcomeCommand;
@@ -36,8 +38,8 @@ class CompletionCommand extends ParentCompletionCommand
     protected function runCompletion()
     {
         $this->api = new Api();
-        $this->projects = $this->api->isLoggedIn() ? $this->api->getProjects(false) : [];
-        $projectIds = array_keys($this->projects);
+        $this->projectStubs = $this->api->isLoggedIn() ? $this->api->getProjectStubs(false) : [];
+        $projectIds = array_map(function (ProjectStub $ps) { return $ps->id; }, $this->projectStubs);
 
         $this->handler->addHandlers([
             new Completion(
@@ -266,20 +268,14 @@ class CompletionCommand extends ParentCompletionCommand
      */
     protected function getProject()
     {
-        if (!$this->projects) {
-            return false;
-        }
-
         $commandLine = $this->handler->getContext()
             ->getCommandLine();
         $currentProjectId = $this->getProjectIdFromCommandLine($commandLine);
         if (!$currentProjectId && ($currentProject = $this->getWelcomeCommand()->getCurrentProject(true))) {
             return $currentProject;
-        } elseif (isset($this->projects[$currentProjectId])) {
-            return $this->projects[$currentProjectId];
         }
 
-        return false;
+        return $this->api->getProject($currentProjectId, null, false);
     }
 
     /**
