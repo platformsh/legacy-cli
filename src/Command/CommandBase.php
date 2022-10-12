@@ -1061,13 +1061,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
         }
 
-        // Enterprise environments do not have separate containers for workers.
-        // Disable interactive selection of worker.
-        // @todo revise this when the API provides an explicit list of SSH endpoints
-        if ($includeWorkers && $environment->deployment_target !== 'local') {
-            $includeWorkers = false;
-        }
-
         // Prompt the user to choose between the app(s) or worker(s) that have
         // been found.
         $default = null;
@@ -1081,11 +1074,24 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } else {
             $choices = array_combine($appNames, $appNames);
         }
+        $choicesIncludeWorkers = false;
         if ($includeWorkers) {
+            $servicesWithSsh = [];
+            foreach ($environment->getSshUrls() as $key => $sshUrl) {
+                $parts = explode(':', $key, 2);
+                $servicesWithSsh[$parts[0]] = $sshUrl;
+            }
             foreach ($deployment->workers as $worker) {
+                if (!isset($servicesWithSsh[$worker->name])) {
+                    // Only include workers in the interactive selection if they
+                    // have SSH endpoints. Some Dedicated environments do not have
+                    // separate SSH endpoints for workers.
+                    continue;
+                }
                 list($appPart, ) = explode('--', $worker->name, 2);
                 if (in_array($appPart, $appNames, true)) {
                     $choices[$worker->name] = $worker->name;
+                    $choicesIncludeWorkers = true;
                 }
             }
         }
@@ -1098,7 +1104,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
-            if ($includeWorkers && count($deployment->workers)) {
+            if ($choicesIncludeWorkers) {
                 $text = sprintf('Enter a number to choose %s app or %s worker:',
                     count($appNames) === 1 ? 'the' : 'an',
                     count($choices) === 2 ? 'its' : 'a'
