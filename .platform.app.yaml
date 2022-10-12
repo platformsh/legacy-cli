@@ -1,6 +1,5 @@
 name: app
-type: php:7.3
-disk: 128
+type: php:8.1
 
 hooks:
   build: |
