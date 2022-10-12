@@ -778,21 +778,21 @@
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.29",
+            "version": "v0.0.32",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "67f046343000718f92d4d181147aa53abd6a2419"
+                "reference": "d8f14e280a75098997cdfc562ae95392c7ee02f9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/67f046343000718f92d4d181147aa53abd6a2419",
-                "reference": "67f046343000718f92d4d181147aa53abd6a2419",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/d8f14e280a75098997cdfc562ae95392c7ee02f9",
+                "reference": "d8f14e280a75098997cdfc562ae95392c7ee02f9",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.5.9",
-                "symfony/console": "^4.0 || ^3.0 || ^2.6"
+                "symfony/console": "^6.0 || ^5.0 || ^4.0 || ^3.0 || ^2.6"
             },
             "require-dev": {
                 "phpunit/phpunit": "^5.0"
@@ -815,9 +815,9 @@
             "description": "A lightweight Symfony Console form system.",
             "support": {
                 "issues": "https://github.com/platformsh/console-form/issues",
-                "source": "https://github.com/platformsh/console-form/tree/v0.0.29"
+                "source": "https://github.com/platformsh/console-form/tree/v0.0.32"
             },
-            "time": "2022-05-11T12:31:03+00:00"
+            "time": "2022-09-23T10:13:34+00:00"
         },
         {
             "name": "psr/container",
@@ -1273,6 +1273,7 @@
                     "type": "tidelift"
                 }
             ],
+            "abandoned": "symfony/error-handler",
             "time": "2020-10-24T10:57:07+00:00"
         },
         {
