@@ -76,7 +76,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $this->getSelectedEnvironment();
 
         $container = $this->selectRemoteContainer($input);
-        $sshUrl = $container->getSshUrl();
+        $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         $config = $container->getConfig()->getNormalized();
         $ideKey = isset($config['runtime']['xdebug']['idekey']) ? $config['runtime']['xdebug']['idekey'] : '';

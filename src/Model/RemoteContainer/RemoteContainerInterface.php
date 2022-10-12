@@ -10,9 +10,11 @@ interface RemoteContainerInterface
     /**
      * Returns the container's SSH URL.
      *
+     * @param string $instance The instance ID (usually numeric, starting with '0').
+     *
      * @return string
      */
-    public function getSshUrl();
+    public function getSshUrl($instance = '');
 
     /**
      * Returns the container's name (machine or human-readable).

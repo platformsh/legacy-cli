@@ -28,9 +28,9 @@ class BrokenEnv implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getSshUrl()
+    public function getSshUrl($instance = '')
     {
-        return $this->environment->getSshUrl($this->appName);
+        return $this->environment->getSshUrl($this->appName, $instance);
     }
 
     /**
