@@ -1365,4 +1365,24 @@ class Api
         }
         return false;
     }
+
+    /**
+     * Returns whether the user is required to verify their phone number before certain actions.
+     *
+     * @return bool
+     */
+    public function needsPhoneVerification()
+    {
+        if (!$this->config->getWithDefault('api.phone_verification', false)) {
+            return false;
+        }
+
+        // Check if the user already has a verified phone number.
+        if ($this->authApiEnabled() && $this->getUser()->getProperty('phone_number_verified', false)) {
+            return false;
+        }
+
+        // Otherwise, check the API to see if verification is required.
+        return $this->getHttpClient()->post( '/me/phone')->json()['verify_phone'];
+    }
 }

@@ -8,6 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
+use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
@@ -63,6 +64,35 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Check if the user needs phone verification before creating a project.
+        if ($this->api()->needsPhoneVerification()) {
+            // Direct to Console for phone verification process,
+            $this->stdErr->writeln('Phone number verification is required before creating a project.');
+            $this->stdErr->writeln('');
+            $url = $this->config()->get('service.console_url') . '/-/phone-verify';
+
+            // Ask user if they want to launch browser.
+            if ($input->isInteractive()) {
+                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                $questionHelper = $this->getService('question_helper');
+                // Continue browser launch
+                /** @var \Platformsh\Cli\Service\Url $urlService */
+                $urlService = $this->getService('url');
+                if ($questionHelper->confirm('Verify via a browser?', false)) {
+                    // Launch console URL in browser, evaluate success.
+                    if ($urlService->openUrl($url, false)) {
+                        $this->stdErr->writeln(sprintf('Opened URL: <info>%s</info>', $url));
+                        $this->stdErr->writeln('Please use the browser to continue the verification process.');
+                        return 1;
+                    }
+                }
+            }
+
+            $this->stdErr->writeln('Please open the following URL in a browser to verify your phone number:');
+            $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
+            return 1;
+        }
+
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
 
