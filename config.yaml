@@ -186,6 +186,9 @@ api:
   # Whether the Auth API is enabled.
   auth: true
 
+  # Whether the Metrics API is enabled.
+  metrics: true
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   git_remote_name: 'platform'
