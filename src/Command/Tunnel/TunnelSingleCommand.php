@@ -39,7 +39,7 @@ class TunnelSingleCommand extends TunnelCommandBase
 
         $container = $this->selectRemoteContainer($input, false);
         $appName = $container->getName();
-        $sshUrl = $container->getSshUrl($input->getOption('instance'));
+        $sshUrl = $container->getSshUrl();
         $host = $this->selectHost($input, false, $container);
 
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
