@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "9b881de93f53d409cba541df2e87d59163118bb9",
-        "sha256": "9059683cf3b79090d33be95f861b3dba0b864071dbfdcc88330474fdd9459090",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.83.0/platform.phar",
-        "version": "3.83.0",
+        "sha1": "7b662038186b90ed4145cd0ea184d9b78da6b61d",
+        "sha256": "c8c6daa4dc6abca1dc960160034bf5e0c8ca3e4ebcb4da2d145867e1cd3c1803",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.83.1/platform.phar",
+        "version": "3.83.1",
         "php": {
             "min": "5.5.9"
         },
@@ -459,7 +459,8 @@
             "3.82.0": "* Support pagination in the `organization:subscriptions` command.\n  Add `--page` and `--count` (`-c`) options. A `0` count disables pagination.\n* Adapt the `project:list` (`projects`) command for consistency:\n  - Specifying a `--page` will work even if pagination had been otherwise disabled.\n  - Remove terminal height detection, instead making the \"items per page\" count\n    a configuration parameter defaulting to 20 items, overridden by `--count`.\n* Clarify environment variables when the home directory cannot be detected.\n* Remove now unnecessary webhook code in `integration` commands, fixing a bug\n  where source code integration webhooks were added with the incorrect URL.",
             "3.82.1": "* Improve pagination description in the `org:sub` command.\n* Clarify `--my` option in `project:list` (`projects`) for organizations.\n* Add `integration.health.webhook` activity type.\n* Fix `commit:list` (`commits`) to respect `--limit` for commits with\n  multiple parents.\n* Replace templated values when installing shell config files. This only\n  affects alternative configurations, e.g. dev builds.",
             "3.82.2": "* Display the error from Xcode in the project:get (get) command\n* Clarify \"switch remote\" vs \"set remote\" in the project:create (create) command\n* Fix env:delete command to respect --no-delete-branch in interactive mode",
-            "3.83.0": "New features:\n\n* Add --instance (-I) option to SSH commands.\n\nOther changes:\n\n* Disable the credential helper when running in a snap (e.g. an IDE on Ubuntu),\n  as it appears to work inconsistently (reading yet not writing).\n* Allow interactive choice of workers for SSH to Dedicated environments.\n* Rework fetching projects\n    - Separate project \"stub\" from full project representations to avoid using the\n      stub information accidentally. Fixes inconsistent marking a user as the\n      project \"owner\" in the users:list (users) command.\n    - Fixes the validation error when asked for a project ID interactively."
+            "3.83.0": "New features:\n\n* Add --instance (-I) option to SSH commands.\n\nOther changes:\n\n* Disable the credential helper when running in a snap (e.g. an IDE on Ubuntu),\n  as it appears to work inconsistently (reading yet not writing).\n* Allow interactive choice of workers for SSH to Dedicated environments.\n* Rework fetching projects\n    - Separate project \"stub\" from full project representations to avoid using the\n      stub information accidentally. Fixes inconsistent marking a user as the\n      project \"owner\" in the users:list (users) command.\n    - Fixes the validation error when asked for a project ID interactively.",
+            "3.83.1": "* Quick fix for: 'The \"instance\" option does not exist' in tunnel commands"
         }
     }
 ]
