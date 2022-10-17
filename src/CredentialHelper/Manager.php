@@ -306,6 +306,11 @@ class Manager {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (Gnome session not detected)');
             }
 
+            // Disable use of the secretservice helper inside a snap.
+            if (getenv('SNAP_CONTEXT') !== false) {
+                throw new \RuntimeException("Unable to find a credentials helper for this system (secretservice doesn't work properly inside a snap)");
+            }
+
             // The Linux helper needs "libsecret" to be installed.
             if (!$this->shell->execute('ldconfig --print-cache | grep -q libsecret')) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (libsecret is not installed)');
