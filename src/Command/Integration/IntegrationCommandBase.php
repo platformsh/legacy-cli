@@ -150,6 +150,9 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.slack',
                     'health.webhook',
                     'script',
+                    'newrelic',
+                    'splunk',
+                    'sumologic',
                 ],
             ]),
             'base_url' => new UrlField('Base URL', [
@@ -171,8 +174,9 @@ abstract class IntegrationCommandBase extends CommandBase
                     'gitlab',
                     'health.slack',
                     'bitbucket_server',
+                    'splunk',
                 ]],
-                'description' => 'An access token for the integration',
+                'description' => 'An authentication or access token for the integration',
             ]),
             'key' => new Field('OAuth consumer key', [
                 'optionName' => 'key',
@@ -189,6 +193,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'A Bitbucket OAuth consumer secret',
                 'valueKeys' => ['app_credentials', 'secret'],
+            ]),
+            'license_key' => new Field('License key', [
+                'conditions' => ['type' => [
+                    'newrelic',
+                ]],
+                'description' => 'The New Relic Logs license key',
             ]),
             'project' => new Field('Project', [
                 'optionName' => 'server-project',
@@ -319,10 +329,12 @@ abstract class IntegrationCommandBase extends CommandBase
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'health.webhook',
+                    'newrelic',
+                    'sumologic',
+                    'splunk',
                     'webhook',
                 ]],
-                'description' => 'Webhook: a URL to receive JSON data',
-                'questionLine' => 'What is the webhook URL (to which JSON data will be posted)?',
+                'description' => 'The URL or API endpoint for the integration',
             ]),
             'shared_key' => new Field('Shared key', [
                 'conditions' => ['type' => [
@@ -425,6 +437,33 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.pagerduty',
                 ]],
                 'description' => 'The PagerDuty routing key',
+            ]),
+            'category' => new Field('Category', [
+                'conditions' => ['type' => 'sumologic'],
+                'description' => 'The Sumo Logic category, used for filtering',
+                'required' => false,
+                'normalizer' => function ($val) { return (string) $val; },
+            ]),
+            'index' => new Field('Index', [
+                'conditions' => ['type' => 'splunk'],
+                'description' => 'The Splunk index',
+            ]),
+            'sourcetype' => new Field('Source type', [
+                'optionName' => 'sourcetype',
+                'conditions' => ['type' => 'splunk'],
+                'description' => 'The Splunk event source type',
+                'required' => false,
+            ]),
+            'tls_verify' => new BooleanField('Verify TLS', [
+                'conditions' => ['type' => [
+                    'newrelic',
+                    'splunk',
+                    'sumologic',
+                ]],
+                'description' => 'Whether HTTPS certificate verification should be enabled (recommended)',
+                'questionLine' => 'Should HTTPS certificate verification be enabled (recommended)',
+                'default' => true,
+                'required' => false,
             ]),
         ];
     }

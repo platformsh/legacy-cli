@@ -55,7 +55,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
         // Omit all empty, non-required fields when creating a new integration.
         foreach ($this->getForm()->getFields() as $name => $field) {
-            if (isset($values[$name]) && !$field->isRequired() && $field->isEmpty($values[$name])) {
+            if (array_key_exists($name, $values) && !$field->isRequired() && $field->isEmpty($values[$name])) {
                 unset($values[$name]);
             }
         }
