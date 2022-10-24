@@ -524,7 +524,7 @@ class Api
      * Return the user's project with the given ID.
      *
      * @param string      $id      The project ID.
-     * @param string|null $host    The project's hostname.
+     * @param string|null $host    The project's hostname. @deprecated no longer used if an api.base_url is configured.
      * @param bool|null   $refresh Whether to bypass the cache.
      *
      * @return Project|false
@@ -533,6 +533,13 @@ class Api
     {
         $cacheKey = sprintf('%s:project:%s:%s', $this->config->getSessionId(), $id, $host);
         $cached = $this->cache->fetch($cacheKey);
+
+        // Ignore the $host if an api.base_url is configured.
+        $apiUrl = $this->config->getWithDefault('api.base_url', '');
+        if ($apiUrl !== '') {
+            $host = null;
+        }
+
         if ($refresh || !$cached) {
             $scheme = 'https';
             if ($host !== null && (($pos = strpos($host, '//')) !== false)) {
@@ -560,26 +567,6 @@ class Api
         }
 
         return $project;
-    }
-
-    /**
-     * Checks whether a project matches the given hostname.
-     *
-     * Used to validate whether a project cached against an ID has a
-     * conflicting hostname (IDs can be the same on different hosts).
-     *
-     * @param Project $project
-     * @param string|null $host
-     *
-     * @return bool
-     */
-    private function hostConflicts(Project $project, $host)
-    {
-        if ($host !== null && $project->hasProperty('endpoint', false)) {
-            $projectHost = \parse_url($project->getProperty('endpoint', true, false), PHP_URL_HOST);
-            return \stripos($projectHost, $host) === false;
-        }
-        return false;
     }
 
     /**
