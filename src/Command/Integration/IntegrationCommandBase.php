@@ -153,6 +153,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'newrelic',
                     'splunk',
                     'sumologic',
+                    'syslog',
                 ],
             ]),
             'base_url' => new UrlField('Base URL', [
@@ -454,11 +455,60 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The Splunk event source type',
                 'required' => false,
             ]),
+            'host' => new Field('Host', [
+                'optionName' => 'syslog-host',
+                // N.B. syslog is an actual PHP function name so this is wrapped in extra array brackets, to avoid is_callable() passing
+                'conditions' => ['type' => ['syslog']],
+                'description' => 'Syslog relay/collector host',
+                'default' => 'localhost',
+                'required' => false,
+                'autoCompleterValues' => ['localhost'],
+            ]),
+            'port' => new Field('Port', [
+                'optionName' => 'syslog-port',
+                'conditions' => ['type' => ['syslog']],
+                'description' => 'Syslog relay/collector port',
+                'default' => 514,
+                'required' => false,
+                'normalizer' => 'intval',
+            ]),
+            'protocol' => new OptionsField('Protocol', [
+                'conditions' => ['type' => ['syslog']],
+                'description' => 'Syslog transport protocol',
+                'default' => 'udp',
+                'required' => false,
+                'options' => ['tcp', 'udp', 'tls'],
+            ]),
+            'facility' => new Field('Facility', [
+                'conditions' => ['type' => ['syslog']],
+                'description' => 'Syslog facility',
+                'default' => 1,
+                'required' => false,
+                'normalizer' => 'intval',
+            ]),
+            'message_format' => new OptionsField('Message format', [
+                'conditions' => ['type' => ['syslog']],
+                'description' => 'Syslog message format',
+                'options' => ['rfc3164' => 'RFC 3164', 'rfc5424' => 'RFC 5424'],
+                'default' => 'rfc5424',
+                'required' => false,
+            ]),
+            'auth_token' => new Field('Authentication token', [
+                'optionName' => 'auth-token',
+                'required' => false,
+            ]),
+            'auth_mode' => new OptionsField('Authentication mode', [
+                'optionName' => 'auth-mode',
+                'required' => false,
+                'options' => ['prefix', 'structured_data'],
+                'default' => 'prefix',
+            ]),
             'tls_verify' => new BooleanField('Verify TLS', [
                 'conditions' => ['type' => [
                     'newrelic',
                     'splunk',
                     'sumologic',
+                    'syslog',
                 ]],
                 'description' => 'Whether HTTPS certificate verification should be enabled (recommended)',
                 'questionLine' => 'Should HTTPS certificate verification be enabled (recommended)',
