@@ -705,7 +705,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function addProjectOption()
     {
         $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL');
-        $this->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname");
+
+        if ($this->config()->getWithDefault('api.base_url', '') !== '') {
+            $this->addOption('host', null, InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
+        } else {
+            $this->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname");
+        }
 
         return $this;
     }
@@ -1265,6 +1270,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
         $projectHost = $input->hasOption('host') ? $input->getOption('host') : null;
         $environmentId = null;
+
+        // Warn about using the deprecated --host option.
+        if ($this->config()->getWithDefault('api.base_url', '') !== '') {
+            $this->warnAboutDeprecatedOptions(['host']);
+        }
 
         // Identify the project.
         if ($projectId !== null) {
