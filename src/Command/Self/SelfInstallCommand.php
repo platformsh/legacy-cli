@@ -101,8 +101,9 @@ EOT
         $this->stdErr->write('Setting up autocompletion...');
         try {
             $args = [
-                '--generate-hook' => true,
                 '--program' => $this->config()->get('application.executable'),
+                '--generate-hook' => true,
+                '--multiple' => true,
             ];
             if ($shellType) {
                 $args['--shell-type'] = $shellType;
