@@ -494,10 +494,12 @@ abstract class IntegrationCommandBase extends CommandBase
                 'required' => false,
             ]),
             'auth_token' => new Field('Authentication token', [
+                'conditions' => ['type' => ['syslog']],
                 'optionName' => 'auth-token',
                 'required' => false,
             ]),
             'auth_mode' => new OptionsField('Authentication mode', [
+                'conditions' => ['type' => ['syslog']],
                 'optionName' => 'auth-mode',
                 'required' => false,
                 'options' => ['prefix', 'structured_data'],
