@@ -102,7 +102,7 @@ EOT
         try {
             $args = [
                 '--generate-hook' => true,
-                '--program' => $this->config()->get('application.executable'),
+                '--program' => '"' . $this->config()->get('application.executable') . '"',
             ];
             if ($shellType) {
                 $args['--shell-type'] = $shellType;
