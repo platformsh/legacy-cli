@@ -187,7 +187,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
                     continue;
                 }
 
-                $aliasName = str_replace('.', '-', $environment->id);
+                // Alias names can only contain the characters [a-zA-Z0-9_-] according to the ALIAS_NAME_REGEX constant:
+                // https://github.com/consolidation/site-alias/blob/103fbc9bad6bbadb1f7533454a8f070ddce18e13/src/SiteAliasName.php#L60
+                $aliasName = preg_replace('%[^a-zA-Z0-9_-]%', '-', $environment->id);
                 if (count($apps) > 1) {
                     $aliasName .= '--' . $appId;
                 }
