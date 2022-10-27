@@ -17,7 +17,12 @@ class SshKeyAddCommand extends CommandBase
             ->setDescription('Add a new SSH key')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
-        $this->addExample('Add an existing public key', '~/.ssh/id_ed25519.pub');
+
+        $help = 'This command lets you add an SSH key to your account. It can generate a key using OpenSSH.'
+            . "\n\n" . '<fg=yellow;options=bold>Notice:</> SSH keys are no longer needed by default.'
+            . "\n\n" . 'You can use an SSH certificate instead, which you can generate or refresh by running:'
+            . "\n    <info>" . $this->config()->get('application.executable') . ' ssh-cert:load</info>';
+        $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -39,6 +44,17 @@ class SshKeyAddCommand extends CommandBase
             $this->config()->get('service.name'),
             $email
         ));
+
+        $this->stdErr->writeln('<fg=yellow;options=bold>Notice</>');
+        $this->stdErr->writeln('SSH keys are no longer needed by default, as SSH certificates are supported.');
+        $this->stdErr->writeln('Certificates offer more security than keys.');
+        $this->stdErr->writeln('');
+        if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config()->get('application.executable')));
+            return 1;
+        }
+        $this->stdErr->writeln('');
 
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
