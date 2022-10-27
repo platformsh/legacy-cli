@@ -130,31 +130,73 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
+     * Returns a list of integration capability information on the selected project, if any.
+     *
+     * @return array
+     */
+    private function selectedProjectIntegrations()
+    {
+        static $cache = [];
+        $project = $this->getSelectedProject();
+        if (!isset($cache[$project->id])) {
+            $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
+        }
+        return $cache[$project->id];
+    }
+
+    /**
      * @return Field[]
      */
     private function getFields()
     {
+        $allSupportedTypes = [
+            'bitbucket',
+            'bitbucket_server',
+            'github',
+            'gitlab',
+            'webhook',
+            'health.email',
+            'health.pagerduty',
+            'health.slack',
+            'health.webhook',
+            'script',
+            'newrelic',
+            'splunk',
+            'sumologic',
+            'syslog',
+        ];
+
         return [
             'type' => new OptionsField('Integration type', [
                 'optionName' => 'type',
                 'description' => 'The integration type',
                 'questionLine' => '',
-                'options' => [
-                    'bitbucket',
-                    'bitbucket_server',
-                    'github',
-                    'gitlab',
-                    'webhook',
-                    'health.email',
-                    'health.pagerduty',
-                    'health.slack',
-                    'health.webhook',
-                    'script',
-                    'newrelic',
-                    'splunk',
-                    'sumologic',
-                    'syslog',
-                ],
+                'options' => $allSupportedTypes,
+                'validator' => function ($value) use ($allSupportedTypes) {
+                    // If the type isn't supported at all, fall back to the default validator.
+                    if (!in_array($value, $allSupportedTypes, true)) {
+                        return null;
+                    }
+                    // If the type is supported, check if it is available on the project.
+                    if ($this->hasSelectedProject()) {
+                        $integrations = $this->selectedProjectIntegrations();
+                        if (!empty($integrations['enabled']) && empty($integrations['config'][$value]['enabled'])) {
+                            return "The integration type '$value' is not available on this project.";
+                        }
+                    }
+                    return null;
+                },
+                'optionsCallback' => function () use ($allSupportedTypes) {
+                    if ($this->hasSelectedProject()) {
+                        $integrations = $this->selectedProjectIntegrations();
+                        if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
+                            return array_filter($allSupportedTypes, function ($type) use ($integrations) {
+                                return !empty($integrations['config'][$type]['enabled']);
+                            });
+                        }
+                    }
+                    return $allSupportedTypes;
+                },
             ]),
             'base_url' => new UrlField('Base URL', [
                 'conditions' => ['type' => [

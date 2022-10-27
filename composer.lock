@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "be74eb8360a20716e80f526d137af95e",
+    "content-hash": "c5a4c6c3ef6ca22f5b69d06fff885a64",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -793,16 +793,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "0.65.1",
+            "version": "0.66.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "05200bacfbc4ebb093922f521aa56643cd412b2d"
+                "reference": "d0faacf0029d106176dffa1f4085c071507d1b25"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/05200bacfbc4ebb093922f521aa56643cd412b2d",
-                "reference": "05200bacfbc4ebb093922f521aa56643cd412b2d",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/d0faacf0029d106176dffa1f4085c071507d1b25",
+                "reference": "d0faacf0029d106176dffa1f4085c071507d1b25",
                 "shasum": ""
             },
             "require": {
@@ -834,27 +834,27 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.65.1"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.66.0"
             },
-            "time": "2022-10-26T11:06:51+00:00"
+            "time": "2022-10-26T13:20:49+00:00"
         },
         {
             "name": "platformsh/console-form",
-            "version": "v0.0.29",
+            "version": "v0.0.35",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/console-form.git",
-                "reference": "67f046343000718f92d4d181147aa53abd6a2419"
+                "reference": "cebec22d63502b636035e00bebc7a2e2b74a62e1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/console-form/zipball/67f046343000718f92d4d181147aa53abd6a2419",
-                "reference": "67f046343000718f92d4d181147aa53abd6a2419",
+                "url": "https://api.github.com/repos/platformsh/console-form/zipball/cebec22d63502b636035e00bebc7a2e2b74a62e1",
+                "reference": "cebec22d63502b636035e00bebc7a2e2b74a62e1",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.5.9",
-                "symfony/console": "^4.0 || ^3.0 || ^2.6"
+                "symfony/console": "^6.0 || ^5.0 || ^4.0 || ^3.0 || ^2.6"
             },
             "require-dev": {
                 "phpunit/phpunit": "^5.0"
@@ -877,9 +877,9 @@
             "description": "A lightweight Symfony Console form system.",
             "support": {
                 "issues": "https://github.com/platformsh/console-form/issues",
-                "source": "https://github.com/platformsh/console-form/tree/v0.0.29"
+                "source": "https://github.com/platformsh/console-form/tree/v0.0.35"
             },
-            "time": "2022-05-11T12:31:03+00:00"
+            "time": "2022-10-30T20:54:45+00:00"
         },
         {
             "name": "psr/container",
