@@ -126,6 +126,13 @@ abstract class IntegrationCommandBase extends CommandBase
             }
         }
 
+        // Process syslog integer values.
+        foreach (['facility', 'port'] as $key) {
+            if (isset($values[$key])) {
+                $values[$key] = (int) $values[$key];
+            }
+        }
+
         return $values;
     }
 
@@ -497,36 +504,34 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The Splunk event source type',
                 'required' => false,
             ]),
+            'protocol' => new OptionsField('Protocol', [
+                'conditions' => ['type' => ['syslog']],
+                'description' => 'Syslog transport protocol',
+                'required' => false,
+                'default' => 'tls',
+                'options' => ['tcp', 'udp', 'tls'],
+            ]),
             'host' => new Field('Host', [
                 'optionName' => 'syslog-host',
                 // N.B. syslog is an actual PHP function name so this is wrapped in extra array brackets, to avoid is_callable() passing
                 'conditions' => ['type' => ['syslog']],
                 'description' => 'Syslog relay/collector host',
-                'default' => 'localhost',
-                'required' => false,
                 'autoCompleterValues' => ['localhost'],
             ]),
             'port' => new Field('Port', [
                 'optionName' => 'syslog-port',
                 'conditions' => ['type' => ['syslog']],
                 'description' => 'Syslog relay/collector port',
-                'default' => 514,
-                'required' => false,
-                'normalizer' => 'intval',
-            ]),
-            'protocol' => new OptionsField('Protocol', [
-                'conditions' => ['type' => ['syslog']],
-                'description' => 'Syslog transport protocol',
-                'default' => 'udp',
-                'required' => false,
-                'options' => ['tcp', 'udp', 'tls'],
+                'autoCompleterValues' => ['6514'],
+                'validator' => function ($value) { return is_numeric($value) && $value >= 0 && $value <= 65535 ? true : "Invalid port number: $value"; },
             ]),
             'facility' => new Field('Facility', [
                 'conditions' => ['type' => ['syslog']],
                 'description' => 'Syslog facility',
                 'default' => 1,
                 'required' => false,
-                'normalizer' => 'intval',
+                'avoidQuestion' => true,
+                'validator' => function ($value) { return is_numeric($value) && $value >= 0 && $value <= 23 ? true : "Invalid syslog facility code: $value"; },
             ]),
             'message_format' => new OptionsField('Message format', [
                 'conditions' => ['type' => ['syslog']],
@@ -534,11 +539,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'options' => ['rfc3164' => 'RFC 3164', 'rfc5424' => 'RFC 5424'],
                 'default' => 'rfc5424',
                 'required' => false,
-            ]),
-            'auth_token' => new Field('Authentication token', [
-                'conditions' => ['type' => ['syslog']],
-                'optionName' => 'auth-token',
-                'required' => false,
+                'avoidQuestion' => true,
             ]),
             'auth_mode' => new OptionsField('Authentication mode', [
                 'conditions' => ['type' => ['syslog']],
@@ -546,6 +547,11 @@ abstract class IntegrationCommandBase extends CommandBase
                 'required' => false,
                 'options' => ['prefix', 'structured_data'],
                 'default' => 'prefix',
+            ]),
+            'auth_token' => new Field('Authentication token', [
+                'conditions' => ['type' => ['syslog']],
+                'optionName' => 'auth-token',
+                'required' => false,
             ]),
             'tls_verify' => new BooleanField('Verify TLS', [
                 'conditions' => ['type' => [
@@ -558,6 +564,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'questionLine' => 'Should HTTPS certificate verification be enabled (recommended)',
                 'default' => true,
                 'required' => false,
+                'avoidQuestion' => true,
             ]),
         ];
     }
