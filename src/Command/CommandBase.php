@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\NoOrganizationsException;
@@ -695,6 +696,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
             'To redeploy an environment, run: <info>' . $this->config()->get('application.executable') . ' redeploy</info>',
         ]);
+    }
+
+    /**
+     * Adds a hidden command option.
+     *
+     * @see self::addOption() for the parameters
+     *
+     * @return self
+     */
+    protected function addHiddenOption($name, $shortcut = null, $mode = null, $description = '', $default = null)
+    {
+        $this->getDefinition()->addOption(new HiddenInputOption($name, $shortcut, $mode, $description, $default));
+
+        return $this;
     }
 
     /**
