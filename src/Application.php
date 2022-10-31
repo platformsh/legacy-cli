@@ -66,8 +66,8 @@ class Application extends ParentApplication
             new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
             new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages'),
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
-            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to any yes/no questions; disable interaction'),
-            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to any yes/no questions; disable interaction'),
+            new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to confirmation questions; accept the default value for other questions; disable interaction'),
+            new InputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to confirmation questions; accept the default value for other questions; disable interaction'),
         ]);
     }
 
