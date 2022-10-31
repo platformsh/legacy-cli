@@ -76,13 +76,8 @@ class DbDumpCommand extends CommandBase
 
         $schema = $input->getOption('schema');
         if (empty($schema)) {
-            // Get a list of schemas from the service configuration.
-            $schemas = [];
-            if ($service) {
-                $schemas = !empty($service->configuration['schemas'])
-                    ? $service->configuration['schemas']
-                    : ['main'];
-            }
+            // Get a list of schemas (database names) from the service configuration.
+            $schemas = $service ? $relationships->getServiceSchemas($service) : [];
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
