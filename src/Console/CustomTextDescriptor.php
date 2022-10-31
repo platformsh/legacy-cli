@@ -57,7 +57,7 @@ class CustomTextDescriptor extends TextDescriptor
         $this->writeText("\n");
 
         $this->writeText("\n");
-        $definition = $command->getNativeDefinition();
+        $definition = clone $command->getNativeDefinition();
         $definition->setOptions(array_filter($definition->getOptions(), function (InputOption $opt) {
             return !$opt instanceof HiddenInputOption;
         }));
