@@ -179,7 +179,7 @@ class DbDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
+                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
                 }
             }

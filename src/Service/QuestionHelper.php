@@ -39,8 +39,10 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Ask the user to confirm an action.
      *
-     * @param string          $questionText
-     * @param bool            $default
+     * @param string $questionText
+     * @param bool   $default
+     *   The default answer. Warning: this should be left as true if the question is going to be used in non-interactive
+     *   mode. This keeps consistent behavior for the --no-interaction and --yes (-y) options.
      *
      * @return bool
      */

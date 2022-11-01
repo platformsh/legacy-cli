@@ -98,7 +98,7 @@ class DbSizeCommand extends CommandBase
         $this->showInaccessibleSchemas($service, $database);
 
         if ($database['scheme'] === 'mysql' && $estimatedUsage > 0 && $input->getOption('cleanup')) {
-            $this->checkInnoDbTablesInNeedOfOptimizing($host, $database);
+            $this->checkInnoDbTablesInNeedOfOptimizing($host, $database, $input);
         }
 
         return 0;
@@ -129,12 +129,13 @@ class DbSizeCommand extends CommandBase
     /**
      * Displays a list of InnoDB tables that can be usefully cleaned up.
      *
-     * @param HostInterface $host
-     * @param array         $database
+     * @param HostInterface  $host
+     * @param array          $database
+     * @param InputInterface $input
      *
      * @return void
      */
-    private function checkInnoDbTablesInNeedOfOptimizing($host, array $database) {
+    private function checkInnoDbTablesInNeedOfOptimizing($host, array $database, InputInterface $input) {
         $tablesNeedingCleanup = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlTablesInNeedOfOptimizing());
         $queries = [];
         if (is_string($tablesNeedingCleanup)) {
@@ -159,7 +160,9 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln("Only run these when you know what you're doing.");
         $this->stdErr->writeln('');
 
-        if ($this->getService('question_helper')->confirm('Do you want to run these queries now?', false)) {
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if ($input->isInteractive() && $questionHelper->confirm('Do you want to run these queries now?', false)) {
             $mysqlCommand = $this->getMysqlCommand($database);
             foreach ($queries as $query) {
                 $this->stdErr->write($query);
@@ -260,13 +263,13 @@ class DbSizeCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
         $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
-        
+
         return sprintf(
-            'mongo %s --quiet --eval %s', 
+            'mongo %s --quiet --eval %s',
             $dbUrl,
             // See https://docs.mongodb.com/manual/reference/command/dbStats/
             OsUtil::escapePosixShellArg('db.stats().fsUsedSize')
-        );        
+        );
     }
 
     /**
@@ -346,11 +349,11 @@ class DbSizeCommand extends CommandBase
      */
     private function getEstimatedUsage(HostInterface $host, array $database) {
         switch($database['scheme']) {
-            case 'pgsql': 
-                return $this->getPgSqlUsage($host, $database); 
-            case 'mongodb': 
+            case 'pgsql':
+                return $this->getPgSqlUsage($host, $database);
+            case 'mongodb':
                 return $this->getMongoDbUsage($host, $database);
-            default: 
+            default:
                 return $this->getMySqlUsage($host, $database);
         }
     }

@@ -68,7 +68,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
                 "<comment>Warning:</comment> adding a '" . $values['type'] . "' integration will automatically synchronize code from the external Git repository."
                 . "\nThis means it can overwrite all the code in your project.\n"
             );
-            if (!$questionHelper->confirm('Are you sure you want to continue?', false)) {
+            if (!$questionHelper->confirm('Are you sure you want to continue?')) {
                 return 1;
             }
         }
