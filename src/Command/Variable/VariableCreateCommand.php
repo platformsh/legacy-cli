@@ -36,11 +36,6 @@ class VariableCreateCommand extends VariableCommandBase
     {
         $this->validateInput($input, true);
 
-        // Set the default for the environment form field.
-        if ($this->hasSelectedEnvironment() && ($field = $this->form->getField('environment'))) {
-            $field->set('default', $this->getSelectedEnvironment()->id);
-        }
-
         // Merge the 'name' argument with the --name option.
         if ($input->getArgument('name')) {
             if ($input->getOption('name')) {
