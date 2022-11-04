@@ -46,11 +46,11 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         $logDir = '/var/log';
 
-        // Special handling for Platform.sh Enterprise (Integrated UI)
-        // environments.
-        if (preg_match('/^ent-.*?platform\.sh$/', $container->getSshUrl($input->getOption('instance')))) {
+        // Special handling for Dedicated Generation 2 environments, for which
+        // the SSH URL contains something like "ssh://1.ent-" or "1.ent-" or "ent-".
+        if (preg_match('%(^|[/.])ent-[a-z0-9]%', $host->getLabel())) {
             $logDir = '/var/log/platform/"$USER"';
-            $this->debug('Detected Platform.sh Enterprise environment: using log directory: ' . $logDir);
+            $this->debug('Detected Dedicated environment: using log directory: ' . $logDir);
         }
 
         // Select the log file that the user specified.
