@@ -6,6 +6,7 @@ use GuzzleHttp\Query;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Client\Model\Deployment\Service;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -348,5 +349,33 @@ class Relationships implements InputConfiguringInterface
         }
 
         return \GuzzleHttp\Url::buildUrl($parts);
+    }
+
+    /**
+     * Returns a list of schemas (database names/paths) for a service.
+     *
+     * The MySQL, MariaDB and Oracle MySQL services allow specifying custom
+     * schemas. The PostgreSQL service has the same feature, but they are
+     * unfortunately named differently: "databases" not "schemas". If nothing
+     * is configured, all four service types default to having one schema named
+     * "main".
+     *
+     * See https://docs.platform.sh/add-services/postgresql.html
+     * and https://docs.platform.sh/add-services/mysql.html
+     *
+     * @return string[]
+     */
+    public function getServiceSchemas(Service $service)
+    {
+        if (!empty($service->configuration['schemas'])) {
+            return $service->configuration['schemas'];
+        }
+        if (!empty($service->configuration['databases'])) {
+            return $service->configuration['databases'];
+        }
+        if (preg_match('/^(postgresql|mariadb|mysql|oracle-mysql):/', $service->type) === 1) {
+            return ['main'];
+        }
+        return [];
     }
 }
