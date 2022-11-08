@@ -20,22 +20,22 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     {
         $this->setName('multi')
             ->setDescription('Execute a command on multiple projects')
-            ->addArgument('cmd', InputArgument::REQUIRED, 'The command to execute')
+            ->addArgument('cmd', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The command to execute')
             ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs, separated by commas and/or whitespace')
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
         $this->addExample(
-            'List variables on the "master" environment for multiple projects',
-            "--projects l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx 'variable:get --environment master'"
+            'List variables on the "main" environment for multiple projects',
+            "-p l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx -- var -e main"
         );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $commandLine = $input->getArgument('cmd');
-        $commandArgs = explode(' ', $commandLine);
+        $commandArgs = $input->getArgument('cmd');
         $commandName = reset($commandArgs);
+        $commandLine = implode(' ', array_map('escapeshellarg', $commandArgs));
         if (!$commandName) {
             throw new InvalidArgumentException('Invalid command: ' . $commandLine);
         }
@@ -65,14 +65,14 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $success = true;
         $continue = $input->getOption('continue');
         $this->stdErr->writeln(sprintf(
-            "Running command '%s' on %d %s.",
-            $commandLine,
+            "Running command on %d %s:  <info>%s</info>",
             count($projects),
-            count($projects) === 1 ? 'project' : 'projects'
+            count($projects) === 1 ? 'project' : 'projects',
+            $commandLine
         ));
         foreach ($projects as $project) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=reverse>*</> Project: ' . $this->api()->getProjectLabel($project, false));
+            $this->stdErr->writeln('<options=reverse>#</> Project: ' . $this->api()->getProjectLabel($project, false));
             try {
                 $application->setCurrentCommand($command);
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
