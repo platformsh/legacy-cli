@@ -211,7 +211,9 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config()->get('service.project_config_dir') . '/services.yaml'));
         }
 
-        if ($this->config()->getWithDefault('api.metrics', false) && isset($this->getSelectedEnvironment()->getData()['_links']['#metrics'])) {
+        if ($this->config()->getWithDefault('api.metrics', false)
+            && ($data = $this->getSelectedEnvironment()->getData())
+            && isset($data['_links']['#metrics'])) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=yellow>Notice</>');
             $this->stdErr->writeln('This environment supports the Metrics API');
