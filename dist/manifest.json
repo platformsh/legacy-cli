@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "00ba0d78f4e0934f2495cf7ab7f504eed601a84e",
-        "sha256": "d52fcd8e54f7d95459b619887c167e93227c1a26bcaa62d2f514b0f07f4575fa",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.84.2/platform.phar",
-        "version": "3.84.2",
+        "sha1": "ea1f458c0f51f933b6bd29dab8dae0f6014b5dad",
+        "sha256": "97bad58e270aef712f2d1e842b5cf3d28c2aefb7fd5b0b764d16dcd32173fe22",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.85.0/platform.phar",
+        "version": "3.85.0",
         "php": {
             "min": "5.5.9"
         },
@@ -463,7 +463,8 @@
             "3.83.1": "* Quick fix for: 'The \"instance\" option does not exist' in tunnel commands",
             "3.84.0": "New features:\n\n* Add support for third-party log forwarding integrations (API availability\n  depends on the project): newrelic, sumologic, splunk, and syslog.\n* Add metrics:disk-usage (disk) command.\n\nOther changes:\n\n* Use the API URL consistently to fetch a project even if a direct hostname is\n  supplied. This deprecates the `--host` option (the option is still there but\n  will be ignored).\n* Bump composer/ca-bundle from 1.3.3 to 1.3.4 (#1170).\n* Disable docker credential helper inside a container (where it does not work).\n* Ensure Drush alias names only contain allowed characters. This fixes aliases\n  for environment names containing a slash.\n* Find the correct app's SSH URL when no instance or default is given.",
             "3.84.1": "* Fix integration:create command: auth_token and auth_mode are only for syslog integrations",
-            "3.84.2": "* Hide unavailable integrations (per project) in the integration:create command\n* Simplify prompts for the syslog and other log integrations\n* Add clarity to the --yes flag in help"
+            "3.84.2": "* Hide unavailable integrations (per project) in the integration:create command\n* Simplify prompts for the syslog and other log integrations\n* Add clarity to the --yes flag in help",
+            "3.85.0": "* Accept multiple arguments in the \"multi\" command. This means that the command\n  to run multiple times can be specified after -- without needing to use\n  quotes.\n* Fix listing custom schema (database) names for postgresql in the db:dump command.\n* Fix PHP 5.6 incompatibility in the db:size command.\n* Fix Dedicated environment detection in the logs command.\n* Fix inconsistency between -e and --environment in the variable:create command."
         }
     }
 ]
