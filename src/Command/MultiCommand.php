@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Application;
 use Platformsh\Client\Model\ProjectStub;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
@@ -39,8 +40,8 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         if (!$commandName) {
             throw new InvalidArgumentException('Invalid command: ' . $commandLine);
         }
-        /** @var \Platformsh\Cli\Application $application */
-        $application = $this->getApplication();
+        $application = new Application();
+        $application->setRunningViaMulti();
         $command = $application->find($commandName);
         if (!$command instanceof MultiAwareInterface || !$command->canBeRunMultipleTimes()) {
             $this->stdErr->writeln(sprintf(
@@ -74,11 +75,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=reverse>#</> Project: ' . $this->api()->getProjectLabel($project, false));
             try {
-                $application->setCurrentCommand($command);
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
-                $command->setRunningViaMulti(true);
+                $application->run($commandInput, $output);
                 $returnCode = $command->run($commandInput, $output);
-                $application->setCurrentCommand($this);
                 if ($returnCode !== 0) {
                     $success = false;
                 }
@@ -86,7 +85,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                 if (!$continue) {
                     throw $e;
                 }
-                $this->getApplication()->renderException($e, $this->stdErr);
+                $application->renderException($e, $this->stdErr);
                 $success = false;
             }
         }
