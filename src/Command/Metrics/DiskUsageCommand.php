@@ -25,8 +25,6 @@ class DiskUsageCommand extends CommandBase
     const MIN_RANGE = 300; // 5 minutes
     const DEFAULT_RANGE = 600;
 
-    protected $stability = 'ALPHA';
-
     public function isEnabled()
     {
         if (!$this->config()->getWithDefault('api.metrics', false)) {
