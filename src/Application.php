@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli;
 
+use Platformsh\Cli\Command\MultiAwareInterface;
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Util\TimezoneUtil;
@@ -29,6 +30,9 @@ class Application extends ParentApplication
 
     /** @var string */
     private $envPrefix;
+
+    /** @var bool */
+    private $runningViaMulti = false;
 
     /**
      * {@inheritdoc}
@@ -304,6 +308,9 @@ class Application extends ParentApplication
     protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
     {
         $this->setCurrentCommand($command);
+        if ($command instanceof MultiAwareInterface) {
+            $command->setRunningViaMulti($this->runningViaMulti);
+        }
 
         // Build the command synopsis early, so it doesn't include default
         // options and arguments (such as --help and <command>).
@@ -410,5 +417,10 @@ class Application extends ParentApplication
             ), OutputInterface::VERBOSITY_QUIET);
             $output->writeln('', OutputInterface::VERBOSITY_QUIET);
         }
+    }
+
+    public function setRunningViaMulti()
+    {
+        $this->runningViaMulti = true;
     }
 }
