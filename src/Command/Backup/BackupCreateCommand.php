@@ -25,7 +25,7 @@ class BackupCreateCommand extends CommandBase
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
-        $this->addOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
+        $this->addHiddenOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
         $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
         $this->addExample('Make a backup of the current environment');
         $this->addExample('Request a backup (and exit quickly)', '--no-wait');

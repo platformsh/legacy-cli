@@ -30,9 +30,9 @@ class CommitGetCommand extends CommandBase
         PropertyFormatter::configureInput($definition);
 
         // Deprecated options, left for backwards compatibility
-        $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'DEPRECATED');
-        $this->addOption('columns', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'DEPRECATED');
-        $this->addOption('no-header', null, InputOption::VALUE_NONE, 'DEPRECATED');
+        $this->addHiddenOption('format', null, InputOption::VALUE_REQUIRED, 'DEPRECATED');
+        $this->addHiddenOption('columns', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'DEPRECATED');
+        $this->addHiddenOption('no-header', null, InputOption::VALUE_NONE, 'DEPRECATED');
 
         $this->addExample('Display the current commit on the environment');
         $this->addExample('Display the previous commit', 'HEAD~');

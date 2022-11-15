@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\NoOrganizationsException;
@@ -24,6 +25,7 @@ use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectStub;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -170,6 +172,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
             $this->stdErr->writeln('');
             self::$printedApiTokenWarning = true;
+        }
+
+        // Deprecate the -n flag as a shortcut for --no.
+        // It is confusing as it's a shortcut for --no-interaction in other Symfony Console commands.
+        if ($this->input->hasOption('no') && $this->input->getOption('no') && !$this->input->hasParameterOption('--no')) {
+            $this->labeledMessage(
+                'DEPRECATED',
+                'The -n flag (as a shortcut for --no) is deprecated. It will be removed or changed in a future version.'
+            );
         }
     }
 
@@ -698,6 +709,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
+     * Adds a hidden command option.
+     *
+     * @see self::addOption() for the parameters
+     *
+     * @return self
+     */
+    protected function addHiddenOption($name, $shortcut = null, $mode = null, $description = '', $default = null)
+    {
+        $this->getDefinition()->addOption(new HiddenInputOption($name, $shortcut, $mode, $description, $default));
+
+        return $this;
+    }
+
+    /**
      * Add the --project and --host options.
      *
      * @return CommandBase
@@ -707,7 +732,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL');
 
         if ($this->config()->getWithDefault('api.base_url', '') !== '') {
-            $this->addOption('host', null, InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
+            $this->addHiddenOption('host', null, InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
         } else {
             $this->addOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname");
         }
@@ -1647,6 +1672,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $key = $short ? 'short' : 'long';
 
         if (!isset($this->synopsis[$key])) {
+            $definition = clone $this->getDefinition();
+            $definition->setOptions(array_filter($definition->getOptions(), function (InputOption $opt) {
+                return !$opt instanceof HiddenInputOption;
+            }));
+
             $aliases = $this->getVisibleAliases();
             $name = $this->getName();
             $shortName = count($aliases) === 1 ? reset($aliases) : $name;
@@ -1654,7 +1684,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 '%s %s %s',
                 $this->config()->get('application.executable'),
                 $shortName,
-                $this->getDefinition()->getSynopsis($short)
+                $definition->getSynopsis($short)
             ));
         }
 
