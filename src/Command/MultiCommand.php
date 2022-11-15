@@ -231,11 +231,11 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         if (empty($projectIds)) {
             return false;
         }
-        $selected = array_intersect_key($projectStubs, array_flip($projectIds));
-        $this->stdErr->writeln('Selected project(s): ' . implode(',', array_keys($selected)));
+        $selected = array_intersect(array_keys($projectOptions), $projectIds);
+        $this->stdErr->writeln('Selected project(s): ' . implode(',', $selected));
         $this->stdErr->writeln('');
 
-        return array_map(function (ProjectStub $ps) { return $this->api()->getProject($ps->id); }, $selected);
+        return array_map(function ($id) { return $this->api()->getProject($id); }, $selected);
     }
 
     /**
