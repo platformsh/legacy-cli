@@ -93,7 +93,7 @@ class LocalDrushAliasesCommand extends CommandBase
                 $existing = $drush->getAliases($new_group);
                 if (!empty($existing)) {
                     $question = "The Drush alias group <info>@$new_group</info> already exists. Overwrite?";
-                    if (!$questionHelper->confirm($question, false)) {
+                    if (!$questionHelper->confirm($question)) {
                         return 1;
                     }
                 }

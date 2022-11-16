@@ -65,7 +65,7 @@ class TunnelSingleCommand extends TunnelCommandBase
                 $service['_relationship_name'],
                 $this->api()->getEnvironmentLabel($environment, false)
             );
-            if (!$questionHelper->confirm($confirmText, false)) {
+            if (!$questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');

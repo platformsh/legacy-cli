@@ -56,7 +56,7 @@ class MongoDumpCommand extends CommandBase
             if (file_exists($dumpFile)) {
                 /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                 $questionHelper = $this->getService('question_helper');
-                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?", false)) {
+                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
                 }
             }

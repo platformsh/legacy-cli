@@ -78,7 +78,7 @@ EOF
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api()->getEnvironmentLabel($environment, 'comment'));
-            if (!$questionHelper->confirm($confirmText, false)) {
+            if (!$questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');

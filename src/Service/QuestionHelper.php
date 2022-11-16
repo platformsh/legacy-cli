@@ -39,13 +39,24 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Ask the user to confirm an action.
      *
-     * @param string          $questionText
-     * @param bool            $default
+     * @param string $questionText
+     *   The text of the question to ask. This should normally include a question mark.
+     * @param bool   $default
+     *   The default answer. Warning: this should be left as true if the question is going to be used in non-interactive
+     *   mode. This keeps consistent behavior for the --no-interaction and --yes (-y) options.
      *
      * @return bool
      */
     public function confirm($questionText, $default = true)
     {
+        if (!$this->input->isInteractive() && !$default) {
+            trigger_error(
+                'A confirmation question is being asked with a default of "no" (false), despite being in non-interactive mode.'
+                . ' So --yes will not pick the default result for this question, which is confusing.',
+                E_USER_WARNING
+            );
+        }
+
         $questionText .= ' <question>' . ($default ? '[Y/n]' : '[y/N]') . '</question> ';
 
         $yes = $this->input->hasOption('yes') && $this->input->getOption('yes');
