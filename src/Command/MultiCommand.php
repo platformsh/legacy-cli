@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Application;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Client\Model\ProjectStub;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
@@ -34,7 +35,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $commandArgs = $input->getArgument('cmd');
+        $commandArgs = ArrayArgument::getArgument($input,'cmd');
         $commandName = reset($commandArgs);
         $commandLine = implode(' ', array_map('escapeshellarg', $commandArgs));
         if (!$commandName) {
@@ -42,6 +43,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         }
         $application = new Application();
         $application->setRunningViaMulti();
+        $application->setAutoExit(false);
         $command = $application->find($commandName);
         if (!$command instanceof MultiAwareInterface || !$command->canBeRunMultipleTimes()) {
             $this->stdErr->writeln(sprintf(
@@ -76,8 +78,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             $this->stdErr->writeln('<options=reverse>#</> Project: ' . $this->api()->getProjectLabel($project, false));
             try {
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
-                $application->run($commandInput, $output);
-                $returnCode = $command->run($commandInput, $output);
+                $returnCode = $application->run($commandInput, $output);
                 if ($returnCode !== 0) {
                     $success = false;
                 }
