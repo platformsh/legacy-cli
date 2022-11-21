@@ -101,7 +101,9 @@ class Git
     {
         $args = ['symbolic-ref', '--short', 'HEAD'];
 
-        return $this->execute($args, $dir, $mustRun);
+        $branch = $this->execute($args, $dir, $mustRun);
+
+        return str_replace('/', '-', $branch);
     }
 
     /**
