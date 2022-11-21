@@ -126,6 +126,9 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\PasswordLoginCommand();
         $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Auth\VerifyPhoneNumberCommand();
+        $commands[] = new Command\BlueGreen\BlueGreenConcludeCommand();
+        $commands[] = new Command\BlueGreen\BlueGreenDeployCommand();
+        $commands[] = new Command\BlueGreen\BlueGreenEnableCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
         $commands[] = new Command\Certificate\CertificateGetCommand();
@@ -252,6 +255,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Variable\VariableListCommand();
         $commands[] = new Command\Variable\VariableSetCommand();
         $commands[] = new Command\Variable\VariableUpdateCommand();
+        $commands[] = new Command\Version\VersionListCommand();
         $commands[] = new Command\WelcomeCommand();
         $commands[] = new Command\WebCommand();
         $commands[] = new Command\WinkyCommand();
