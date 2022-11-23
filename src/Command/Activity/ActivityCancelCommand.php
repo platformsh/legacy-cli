@@ -60,9 +60,6 @@ class ActivityCancelCommand extends ActivityCommandBase
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
-            $activities = \array_filter($activities, function (Activity $activity) {
-                return $activity->operationAvailable('cancel');
-            });
             if (\count($activities) === 0) {
                 $this->stdErr->writeln('No cancellable activities found');
 
@@ -100,9 +97,13 @@ class ActivityCancelCommand extends ActivityCommandBase
         try {
             $activity->cancel();
         } catch (BadResponseException $e) {
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && \strpos($e->getMessage(), 'cannot be cancelled in its current state')) {
-                $activity->refresh();
-                $this->stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->state));
+            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && \strpos($e->getMessage(), 'cannot be cancelled')) {
+                if (\strpos($e->getMessage(), 'cannot be cancelled in its current state')) {
+                    $activity->refresh();
+                    $this->stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->id, $activity->state));
+                } else {
+                    $this->stdErr->writeln(\sprintf('The activity <error>%s</error> cannot be cancelled.', $activity->id));
+                }
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf("To view this activity's log, run: <comment>%s activity:log %s</comment>", $executable, $activity->id));
                 return 1;
