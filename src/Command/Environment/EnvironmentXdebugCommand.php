@@ -37,7 +37,8 @@ class EnvironmentXdebugCommand extends CommandBase
             try {
                 return !$this->isPhp($projectRoot);
             } catch (\Exception $e) {
-                // Ignore errors when loading or parsing configuration.
+                // Warn but otherwise ignore errors when loading or parsing configuration.
+                trigger_error($e->getMessage(), E_USER_WARNING);
                 return true;
             }
         }

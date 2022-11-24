@@ -88,6 +88,10 @@ class ApplicationFinder
         $applications = [];
         $appConfigs = (array) (new YamlParser())->parseFile($configFile);
         foreach ($appConfigs as $key => $appConfig) {
+            if (!is_array($appConfig)) {
+                $type = gettype($appConfig);
+                throw new InvalidConfigException("Application config has invalid type $type: it must be an object", $configFile, $key);
+            }
             $appRoot = $this->getExplicitRoot($appConfig, $directory);
             if ($appRoot === null) {
                 throw new InvalidConfigException('The "source.root" key is required', $configFile, $key);
