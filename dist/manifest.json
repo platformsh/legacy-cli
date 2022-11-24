@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "b9283edc4a03cc430f5b7b0601ff5ae0365738d1",
-        "sha256": "fd3292890d824c53a9742de4ea429f142abe40dd978fc42f45102cd986d57ca8",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.86.0/platform.phar",
-        "version": "3.86.0",
+        "sha1": "4237c059297dab6c4a9de18e054b5907b436c60f",
+        "sha256": "50a673346ee9b912bf17541f2e5379beaf826060136b9dd0b41efe22b3c0dc0e",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.86.1/platform.phar",
+        "version": "3.86.1",
         "php": {
             "min": "5.5.9"
         },
@@ -465,7 +465,8 @@
             "3.84.1": "* Fix integration:create command: auth_token and auth_mode are only for syslog integrations",
             "3.84.2": "* Hide unavailable integrations (per project) in the integration:create command\n* Simplify prompts for the syslog and other log integrations\n* Add clarity to the --yes flag in help",
             "3.85.0": "* Accept multiple arguments in the \"multi\" command. This means that the command\n  to run multiple times can be specified after -- without needing to use\n  quotes.\n* Fix listing custom schema (database) names for postgresql in the db:dump command.\n* Fix PHP 5.6 incompatibility in the db:size command.\n* Fix Dedicated environment detection in the logs command.\n* Fix inconsistency between -e and --environment in the variable:create command.",
-            "3.86.0": "* Improve default options and their documentation:\n  - Add a `--no-interaction` option (to match Symfony Console defaults a little\n  more closely), with the same meaning as enabling the `PLATFORMSH_CLI_NO_INTERACTION`\n  environment variable: disable interaction and pick the default answer to\n  questions. The existing `--yes` (`-y`) option is similar in meaning and now\n  the same in effect; the answer \"yes\" has been made the default for all\n  confirmation questions.\n  - Hide deprecated options from command help (still with no error if they are\n  used). This includes `--no` (`-n`), which can be confused with `--no-interaction`\n  though it is subtly different: it answers \"no\" to all confirmation questions,\n  and picks the default answer for other questions. This also restores `--ansi`\n  and `--no-ansi` as hidden options; they are present by default in Symfony\n  Console but were previously omitted from this CLI for simplicity.\n  - See `platform help [cmd]` for more information.\n* Improve the git tree cache for commands such as `read`.\n* Show the `disk` command in the list.\n* Two fixes to the `multi` command:\n    - Fix dialog-based project selection (previously resulting in 0 projects)\n    - Fix non-interactive use: e.g. the `-y` flag now works for the parent and\n      child commands independently."
+            "3.86.0": "* Improve default options and their documentation:\n  - Add a `--no-interaction` option (to match Symfony Console defaults a little\n  more closely), with the same meaning as enabling the `PLATFORMSH_CLI_NO_INTERACTION`\n  environment variable: disable interaction and pick the default answer to\n  questions. The existing `--yes` (`-y`) option is similar in meaning and now\n  the same in effect; the answer \"yes\" has been made the default for all\n  confirmation questions.\n  - Hide deprecated options from command help (still with no error if they are\n  used). This includes `--no` (`-n`), which can be confused with `--no-interaction`\n  though it is subtly different: it answers \"no\" to all confirmation questions,\n  and picks the default answer for other questions. This also restores `--ansi`\n  and `--no-ansi` as hidden options; they are present by default in Symfony\n  Console but were previously omitted from this CLI for simplicity.\n  - See `platform help [cmd]` for more information.\n* Improve the git tree cache for commands such as `read`.\n* Show the `disk` command in the list.\n* Two fixes to the `multi` command:\n    - Fix dialog-based project selection (previously resulting in 0 projects)\n    - Fix non-interactive use: e.g. the `-y` flag now works for the parent and\n      child commands independently.",
+            "3.86.1": "* Avoid a TypeError when reading invalid applications.yaml configuration\n* Clarify activity cannot be cancelled error\n* Fix \"multi\" command exiting after the first project"
         }
     }
 ]
