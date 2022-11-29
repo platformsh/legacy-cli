@@ -13,6 +13,8 @@ class SelfStatsCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
+    private $tableHeader = ['Release', 'Date', 'Asset', 'Downloads'];
+
     protected function configure()
     {
         $this
@@ -20,7 +22,7 @@ class SelfStatsCommand extends CommandBase
             ->setDescription('View stats on GitHub package downloads')
             ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Results per page (max: 100)', 20);
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
@@ -54,7 +56,6 @@ class SelfStatsCommand extends CommandBase
         $table = $this->getService('table');
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $headers = ['Release', 'Date', 'Asset', 'Downloads'];
         $rows = [];
         foreach ($releases as $release) {
             $row = [];
@@ -71,7 +72,7 @@ class SelfStatsCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $headers);
+        $table->render($rows, $this->tableHeader);
 
         return 0;
     }

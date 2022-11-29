@@ -14,6 +14,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MountSizeCommand extends CommandBase
 {
+    private $tableHeader = [
+        'mounts' => 'Mount(s)',
+        'sizes' => 'Size(s)',
+        'max' => 'Disk',
+        'used' => 'Used',
+        'available' => 'Available',
+        'percent_used' => '% Used',
+    ];
 
     /**
      * {@inheritdoc}
@@ -25,7 +33,7 @@ class MountSizeCommand extends CommandBase
             ->setDescription('Check the disk usage of mounts')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -115,14 +123,6 @@ EOF
 
         // Build a table of results: one line per mount, one (multi-line) row
         // per filesystem.
-        $header = [
-            'mounts' => 'Mount(s)',
-            'sizes' => 'Size(s)',
-            'max' => 'Disk',
-            'used' => 'Used',
-            'available' => 'Available',
-            'percent_used' => '% Used',
-        ];
         $rows = [];
         $showInBytes = $input->getOption('bytes');
         foreach ($volumeInfo as $info) {
@@ -149,7 +149,7 @@ EOF
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $table->render($rows, $header);
+        $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
             if (count($volumeInfo) === 1 && count($mountPaths) > 1) {

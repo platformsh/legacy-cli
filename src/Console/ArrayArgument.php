@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Console;
 
 class ArrayArgument
 {
-    const SPLIT_HELP = 'If a single value is specified, it will be split by commas or whitespace.';
+    const SPLIT_HELP = 'If a list is given as a single value (e.g. "a,b,c") it will be split by commas and/or whitespace.';
 
     /**
      * Gets the value of an array input argument.

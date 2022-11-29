@@ -8,6 +8,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationListCommand extends OrganizationCommandBase
 {
+    private $tableHeader = [
+        'id' => 'ID',
+        'name' => 'Name',
+        'label' => 'Label',
+        'created_at' => 'Created at',
+        'updated_at' => 'Updated at',
+        'owner_id' => 'Owner ID',
+        'owner_email' => 'Owner email',
+        'owner_username' => 'Owner username',
+    ];
+    private $defaultColumns = ['name', 'label', 'owner_email'];
 
     /**
      * {@inheritdoc}
@@ -20,7 +31,7 @@ class OrganizationListCommand extends OrganizationCommandBase
             ->addOption('my', null, InputOption::VALUE_NONE, 'List only the organizations you own')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'An organization property to sort by')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     /**
@@ -54,18 +65,6 @@ class OrganizationListCommand extends OrganizationCommandBase
             return 1;
         }
 
-        $headers = [
-            'id' => 'ID',
-            'name' => 'Name',
-            'label' => 'Label',
-            'created_at' => 'Created at',
-            'updated_at' => 'Updated at',
-            'owner_id' => 'Owner ID',
-            'owner_email' => 'Owner email',
-            'owner_username' => 'Owner username',
-        ];
-        $defaultColumns = ['name', 'label', 'owner_email'];
-
         $rows = [];
         foreach ($organizations as $org) {
             $row = $org->getProperties();
@@ -86,7 +85,7 @@ class OrganizationListCommand extends OrganizationCommandBase
             }
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

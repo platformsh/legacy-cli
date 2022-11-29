@@ -9,6 +9,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainListCommand extends DomainCommandBase
 {
+    private $tableHeader = [
+        'name' => 'Name',
+        'ssl' => 'SSL enabled',
+        'created_at' => 'Creation date',
+        'updated_at' => 'Updated date',
+    ];
+    private $defaultColumns = ['name', 'ssl', 'created_at'];
+
     /**
      * {@inheritdoc}
      */
@@ -18,7 +26,7 @@ class DomainListCommand extends DomainCommandBase
             ->setName('domain:list')
             ->setAliases(['domains'])
             ->setDescription('Get a list of all domains');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addProjectOption();
     }
 
@@ -76,15 +84,7 @@ class DomainListCommand extends DomainCommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $header = ['name' => 'Name', 'ssl' => 'SSL enabled', 'created_at' => 'Creation date', 'updated_at' => 'Updated date'];
-        $defaultColumns = ['name', 'ssl', 'created_at'];
         $rows = $this->buildDomainRows($domains);
-
-        if ($table->formatIsMachineReadable()) {
-            $table->render($rows, $header, $defaultColumns);
-
-            return 0;
-        }
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
@@ -93,7 +93,7 @@ class DomainListCommand extends DomainCommandBase
             ));
         }
 
-        $table->render($rows, $header, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class MountListCommand extends CommandBase
 {
+    private $tableHeader = ['path' => 'Mount path', 'definition' => 'Definition'];
 
     /**
      * {@inheritdoc}
@@ -24,7 +25,7 @@ class MountListCommand extends CommandBase
             ->setDescription('Get a list of mounts')
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addRemoteContainerOptions();
@@ -60,7 +61,6 @@ class MountListCommand extends CommandBase
             return 0;
         }
 
-        $header = ['path' => 'Mount path', 'definition' => 'Definition'];
         $rows = [];
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
@@ -71,7 +71,7 @@ class MountListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $this->stdErr->writeln(sprintf('Mounts on <info>%s</info>:', $host->getLabel()));
-        $table->render($rows, $header);
+        $table->render($rows, $this->tableHeader);
 
         return 0;
     }

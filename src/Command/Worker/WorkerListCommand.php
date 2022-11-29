@@ -10,6 +10,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WorkerListCommand extends CommandBase
 {
+    private $tableHeader = ['Name', 'Type', 'Commands'];
+
     /**
      * {@inheritdoc}
      */
@@ -21,7 +23,7 @@ class WorkerListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption()
             ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
     /**
@@ -61,7 +63,7 @@ class WorkerListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, ['Name', 'Type', 'Commands']);
+        $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);

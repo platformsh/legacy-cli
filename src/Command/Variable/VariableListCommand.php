@@ -8,6 +8,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableListCommand extends VariableCommandBase
 {
+    private $tableHeader = [
+        'name' => 'Name',
+        'level' => 'Level',
+        'value' => 'Value',
+        'is_enabled' => 'Enabled',
+    ];
+
     /**
      * {@inheritdoc}
      */
@@ -18,7 +25,7 @@ class VariableListCommand extends VariableCommandBase
             ->setAliases(['variables', 'var'])
             ->setDescription('List variables');
         $this->addLevelOption();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -67,12 +74,6 @@ class VariableListCommand extends VariableCommandBase
             }
         }
 
-        $header = [
-            'name' => 'Name',
-            'level' => 'Level',
-            'value' => 'Value',
-            'is_enabled' => 'Enabled',
-        ];
         $rows = [];
 
         /** @var \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable $variable */
@@ -97,7 +98,7 @@ class VariableListCommand extends VariableCommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $header);
+        $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

@@ -10,6 +10,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AppListCommand extends CommandBase
 {
+    private $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
+    private $defaultColumns = ['name', 'type'];
 
     /**
      * {@inheritdoc}
@@ -22,7 +24,7 @@ class AppListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption()
             ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     /**
@@ -67,8 +69,8 @@ class AppListCommand extends CommandBase
             return '';
         };
 
-        $headers = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
-        $defaultColumns = ['name', 'type'];
+        $headers = $this->tableHeader;
+        $defaultColumns = $this->defaultColumns;
         if ($showLocalPath) {
             $headers['path'] = 'Path';
             $defaultColumns[] = 'Path';

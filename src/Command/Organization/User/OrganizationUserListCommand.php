@@ -10,6 +10,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationUserListCommand extends OrganizationCommandBase
 {
+    private $tableHeader = [
+        'id' => 'ID',
+        'first_name' => 'First name',
+        'last_name' => 'Last name',
+        'email' => 'Email',
+        'username' => 'Username',
+        'permissions' => 'Permissions',
+        'owner' => 'Owner?',
+        'created_at' => 'Created at',
+        'updated_at' => 'Updated at',
+    ];
+    private $defaultColumns = ['id', 'email', 'owner', 'permissions'];
+
     protected function configure()
     {
         $this->setName('organization:user:list')
@@ -17,7 +30,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             ->setAliases(['organization:users'])
             ->addOrganizationOptions();
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -34,8 +47,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $headers = ['id' => 'ID', 'first_name' => 'First name', 'last_name' => 'Last name', 'email' => 'Email', 'username' => 'Username', 'permissions' => 'Permissions', 'owner' => 'Owner?', 'created_at' => 'Created at', 'updated_at' => 'Updated at'];
-        $defaultColumns = ['id', 'email', 'owner', 'permissions'];
         $rows = [];
         foreach ($members as $member) {
             $userInfo = $member->getUserInfo();
@@ -62,7 +73,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             $this->stdErr->writeln('Users in the organization ' . $this->api()->getOrganizationLabel($organization) . ':');
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

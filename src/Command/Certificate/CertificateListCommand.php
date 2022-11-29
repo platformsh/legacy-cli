@@ -11,6 +11,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CertificateListCommand extends CommandBase
 {
+    private $tableHeader = [
+        'id' => 'ID',
+        'domains' => 'Domain(s)',
+        'created' => 'Created',
+        'expires' => 'Expires',
+        'issuer' => 'Issuer',
+    ];
 
     protected function configure()
     {
@@ -28,7 +35,7 @@ class CertificateListCommand extends CommandBase
         $this->addOption('no-expired', null, InputOption::VALUE_NONE, 'Show only non-expired certificates (default)');
         $this->addOption('pipe-domains', null, InputOption::VALUE_NONE, 'Only return a list of domain names covered by the certificates');
         PropertyFormatter::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption();
         $this->addExample('Output a list of domains covered by valid certificates', '--pipe-domains --no-expired');
     }
@@ -81,15 +88,14 @@ class CertificateListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->getService('property_formatter');
 
-        $header = ['ID', 'domains' => 'Domain(s)', 'Created', 'Expires', 'Issuer'];
         $rows = [];
         foreach ($certs as $cert) {
             $rows[] = [
-                $cert->id,
+                'id' => $cert->id,
                 'domains' => implode("\n", $cert->domains),
-                $propertyFormatter->format($cert->created_at, 'created_at'),
-                $propertyFormatter->format($cert->expires_at, 'expires_at'),
-                $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
+                'created' => $propertyFormatter->format($cert->created_at, 'created_at'),
+                'expires' => $propertyFormatter->format($cert->expires_at, 'expires_at'),
+                'issuer' => $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
             ];
         }
 
@@ -97,7 +103,7 @@ class CertificateListCommand extends CommandBase
             $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api()->getProjectLabel($project)));
         }
 
-        $table->render($rows, $header);
+        $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
