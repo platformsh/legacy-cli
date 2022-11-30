@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "1569ccd3ff8357643782e2d3c6c20e33aacb871a",
-        "sha256": "d359488ea7d24ef0dc81d9fce4b95cda46fd6f92942ce7ba105aafe55b4f1eb6",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.87.0/platform.phar",
-        "version": "3.87.0",
+        "sha1": "b0da917c35bb35dc6cbf2b2c8fcba0b734ce681e",
+        "sha256": "6103785b43e7b2f4b50b90dc96a57451e9f2e3c17aa365d1f25caeae0a3463d6",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.87.1/platform.phar",
+        "version": "3.87.1",
         "php": {
             "min": "5.5.9"
         },
@@ -467,7 +467,8 @@
             "3.85.0": "* Accept multiple arguments in the \"multi\" command. This means that the command\n  to run multiple times can be specified after -- without needing to use\n  quotes.\n* Fix listing custom schema (database) names for postgresql in the db:dump command.\n* Fix PHP 5.6 incompatibility in the db:size command.\n* Fix Dedicated environment detection in the logs command.\n* Fix inconsistency between -e and --environment in the variable:create command.",
             "3.86.0": "* Improve default options and their documentation:\n  - Add a `--no-interaction` option (to match Symfony Console defaults a little\n  more closely), with the same meaning as enabling the `PLATFORMSH_CLI_NO_INTERACTION`\n  environment variable: disable interaction and pick the default answer to\n  questions. The existing `--yes` (`-y`) option is similar in meaning and now\n  the same in effect; the answer \"yes\" has been made the default for all\n  confirmation questions.\n  - Hide deprecated options from command help (still with no error if they are\n  used). This includes `--no` (`-n`), which can be confused with `--no-interaction`\n  though it is subtly different: it answers \"no\" to all confirmation questions,\n  and picks the default answer for other questions. This also restores `--ansi`\n  and `--no-ansi` as hidden options; they are present by default in Symfony\n  Console but were previously omitted from this CLI for simplicity.\n  - See `platform help [cmd]` for more information.\n* Improve the git tree cache for commands such as `read`.\n* Show the `disk` command in the list.\n* Two fixes to the `multi` command:\n    - Fix dialog-based project selection (previously resulting in 0 projects)\n    - Fix non-interactive use: e.g. the `-y` flag now works for the parent and\n      child commands independently.",
             "3.86.1": "* Avoid a TypeError when reading invalid applications.yaml configuration\n* Clarify activity cannot be cancelled error\n* Fix \"multi\" command exiting after the first project",
-            "3.87.0": "* Integrate with the phone number verification API:\n  - Check if phone number verification is required in the\n    `project:create` (`create`) command.\n  - Add an `auth:verify-phone-number` command to verify the number\n    interactively."
+            "3.87.0": "* Integrate with the phone number verification API:\n  - Check if phone number verification is required in the\n    `project:create` (`create`) command.\n  - Add an `auth:verify-phone-number` command to verify the number\n    interactively.",
+            "3.87.1": "* Refresh phone verification status after verifying"
         }
     }
 ]
