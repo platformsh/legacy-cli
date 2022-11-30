@@ -125,6 +125,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\ApiTokenLoginCommand();
         $commands[] = new Command\Auth\PasswordLoginCommand();
         $commands[] = new Command\Auth\BrowserLoginCommand();
+        $commands[] = new Command\Auth\VerifyPhoneNumberCommand();
         $commands[] = new Command\Certificate\CertificateAddCommand();
         $commands[] = new Command\Certificate\CertificateDeleteCommand();
         $commands[] = new Command\Certificate\CertificateGetCommand();
