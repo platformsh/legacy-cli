@@ -74,6 +74,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /** @var \Platformsh\Cli\Service\Api|null */
     private $api;
+    /** @var ?bool */
+    private $apiHasListeners;
 
     /** @var InputInterface|null */
     private $input;
@@ -193,12 +195,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         if (!isset($this->api)) {
             $this->api = $this->getService('api');
+        }
+        if (!$this->apiHasListeners && $this->output && $this->input) {
             $this->api
                 ->dispatcher
                 ->addListener('login_required', [$this, 'login']);
             $this->api
                 ->dispatcher
                 ->addListener('environments_changed', [$this, 'updateDrushAliases']);
+            $this->apiHasListeners = true;
         }
 
         return $this->api;
