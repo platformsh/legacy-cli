@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfInstallCommand extends CommandBase
 {
+    const INSTALLED_FILENAME = 'self_installed';
     protected $local = true;
 
     protected function configure()
@@ -272,6 +273,8 @@ EOT
         } else {
             $this->stdErr->writeln('Configuration file updated successfully: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
         }
+
+        $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . self::INSTALLED_FILENAME, json_encode(['installed_at' => date('c')]));
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln($this->getRunAdvice($shellConfigFile, $configDir . '/bin'));
