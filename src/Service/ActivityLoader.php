@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Service;
 
 use DateTime;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Activities\HasActivitiesInterface;
 use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -61,19 +62,21 @@ class ActivityLoader
         $availableTypes = self::getAvailableTypes();
         $includeTypes = $input->hasOption('type') ? ArrayArgument::getOption($input, 'type') : [];
         $excludeTypes = $input->hasOption('exclude-type') ? ArrayArgument::getOption($input, 'exclude-type') : [];
+        $toExclude = Wildcard::select($availableTypes, $excludeTypes);
         $types = [];
         foreach ($includeTypes as $includeType) {
-            if (!\in_array($includeType, $availableTypes, true)) {
+            $toInclude = Wildcard::select($availableTypes, [$includeType]);
+            if (empty($toInclude)) {
                 $this->stdErr->writeln('Unrecognized activity type: <comment>' . $includeType . '</comment>');
             }
-            if (\in_array($includeType, $excludeTypes, true)) {
+            if (\in_array($includeType, $excludeTypes, true) || array_intersect($toInclude, $toExclude)) {
                 $this->stdErr->writeln('The <comment>--exclude-type</comment> and <comment>--type</comment> options conflict.');
             }
-            $types[] = $includeType;
+            $types = array_merge($types, $toInclude);
         }
-        if (empty($types) && !empty($excludeTypes)) {
-            $types = \array_filter($availableTypes, function ($type) use ($excludeTypes) {
-                return !\in_array($type, $excludeTypes, true);
+        if (empty($types) && !empty($toExclude)) {
+            $types = \array_filter($availableTypes, function ($type) use ($toExclude) {
+                return !\in_array($type, $toExclude, true);
             });
         }
         $result = $input->hasOption('result') ? $input->getOption('result') : null;
