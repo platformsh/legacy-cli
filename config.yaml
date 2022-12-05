@@ -34,6 +34,9 @@ application:
   github_repo: 'platformsh/platformsh-cli'
   release_branch: '3.x'
 
+  # Whether to prompt to run the self:install command if it wasn't already.
+  prompt_self_install: true
+
   # A directory (relative to the home directory) where the CLI can write
   # user-specific files, for storing state, logs, credentials, etc.
   # This can be overridden in the user config file.
