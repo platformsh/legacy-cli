@@ -17,10 +17,10 @@
     },
     {
         "name": "platform.phar",
-        "sha1": "52143968a0bd35f6dc7432b179b460dc2e1d6fc6",
-        "sha256": "d57ec2a1cc2dd41fb8fd885a5385f278658a887c792134064eb1d8bb4dac879e",
-        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.88.0/platform.phar",
-        "version": "3.88.0",
+        "sha1": "f3d6cc436f176be78433ba18e6723d2ea48aac30",
+        "sha256": "ad9fb5bb88e6e984acad1688d255c773adc18b36b563715b6578280c7164126f",
+        "url": "https://github.com/platformsh/platformsh-cli/releases/download/v3.88.1/platform.phar",
+        "version": "3.88.1",
         "php": {
             "min": "5.5.9"
         },
@@ -469,7 +469,8 @@
             "3.86.1": "* Avoid a TypeError when reading invalid applications.yaml configuration\n* Clarify activity cannot be cancelled error\n* Fix \"multi\" command exiting after the first project",
             "3.87.0": "* Integrate with the phone number verification API:\n  - Check if phone number verification is required in the\n    `project:create` (`create`) command.\n  - Add an `auth:verify-phone-number` command to verify the number\n    interactively.",
             "3.87.1": "* Refresh phone verification status after verifying",
-            "3.88.0": "* Add support for automatic \"self-installation\" of shell configuration files.\n* Fix auto-login (broken in v3.87.0)."
+            "3.88.0": "* Add support for automatic \"self-installation\" of shell configuration files.\n* Fix auto-login (broken in v3.87.0).",
+            "3.88.1": "* Avoid the self-install prompt in more situations:\n  - In all cases where the self:install command previously exited successfully.\n  - If environment variables are set:\n    `PLATFORMSH_CLI_APPLICATION_PROMPT_SELF_INSTALL=0` or `PLATFORMSH_CLI_WRAPPED=1`"
         }
     }
 ]
