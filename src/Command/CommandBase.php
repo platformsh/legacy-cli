@@ -309,7 +309,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Avoid if disabled.
         if (!$config->getWithDefault('application.prompt_self_install', true)
-            || !$config->isCommandEnabled('self:install')) {
+            || !$config->isCommandEnabled('self:install')
+            || \getenv($config->get('application.env_prefix') . 'WRAPPED') !== false) {
             return;
         }
 

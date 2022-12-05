@@ -158,8 +158,8 @@ EOT
         if ($shellConfigFile === false && OsUtil::isWindows()) {
             $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
             if ($this->inPath($binDir)) {
+                $this->markSelfInstalled($configDir);
                 $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, false));
-
                 return 0;
             }
 
@@ -172,8 +172,8 @@ EOT
                 $shell = $this->getService('shell');
                 $setPathCommand = 'setx PATH ' . OsUtil::escapeShellArg($newPath);
                 if ($shell->execute($setPathCommand, null, false, true, [], 10) !== false) {
+                    $this->markSelfInstalled($configDir);
                     $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, true));
-
                     return 0;
                 }
             }
@@ -216,7 +216,7 @@ EOT
         if (strpos($currentShellConfig, $suggestedShellConfig) !== false) {
             $this->stdErr->writeln('Already configured: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
             $this->stdErr->writeln('');
-
+            $this->markSelfInstalled($configDir);
             $this->stdErr->writeln($this->getRunAdvice($shellConfigFile, $configDir . '/bin'));
             return 0;
         }
@@ -274,12 +274,26 @@ EOT
             $this->stdErr->writeln('Configuration file updated successfully: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
         }
 
-        $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . self::INSTALLED_FILENAME, json_encode(['installed_at' => date('c')]));
+        $this->markSelfInstalled($configDir);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln($this->getRunAdvice($shellConfigFile, $configDir . '/bin'));
 
         return 0;
+    }
+
+    /**
+     * Writes a file to prevent future self-installation prompts.
+     *
+     * @param string $configDir
+     */
+    private function markSelfInstalled($configDir)
+    {
+        $filename = $configDir . DIRECTORY_SEPARATOR . self::INSTALLED_FILENAME;
+        if (!file_exists($filename)) {
+            $fs = new \Symfony\Component\Filesystem\Filesystem();
+            $fs->dumpFile($filename, json_encode(['installed_at' => date('c')]));
+        }
     }
 
     /**
