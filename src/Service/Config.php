@@ -446,6 +446,11 @@ class Config
             && in_array($name, $this->config['application']['disabled_commands'])) {
             return false;
         }
+        if ($this->isWrapped()
+            && !empty($this->config['application']['wrapped_disabled_commands'])
+            && in_array($name, $this->config['application']['wrapped_disabled_commands'])) {
+            return false;
+        }
         if (!empty($this->config['application']['experimental_commands'])
             && in_array($name, $this->config['application']['experimental_commands'])) {
             return !empty($this->config['experimental']['all_experiments'])
@@ -568,5 +573,15 @@ class Config
         }
 
         return $opts;
+    }
+
+    /**
+     * Detects if the CLI is running wrapped inside the go wrapper.
+     *
+     * @return bool
+     */
+    public function isWrapped()
+    {
+        return getenv($this->get('application.env_prefix') . 'WRAPPED') === '1';
     }
 }

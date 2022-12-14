@@ -61,6 +61,10 @@ application:
   disabled_commands:
     - auth:password-login
 
+  wrapped_disabled_commands:
+    - self:install
+    - self:update
+
   # Experimental commands (a list of full command names). Enable these in the
   # user config file: the array 'enable_commands' inside the 'experimental'
   # section.
@@ -226,3 +230,7 @@ updates:
 
   # Overridden by {application.env_prefix}UPDATES_CHECK env var.
   check: true
+
+migrate:
+  prompt: true
+  docs_url: https://docs.platform.sh/administration/cli.html

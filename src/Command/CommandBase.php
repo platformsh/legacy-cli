@@ -18,6 +18,7 @@ use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
@@ -48,6 +49,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     private static $checkedUpdates;
     /** @var ?bool */
     private static $checkedSelfInstall;
+    /** @var ?bool */
+    private static $checkedMigrate;
+    /** @var ?bool */
+    private static $checkedBothCLIsInstalled;
 
     /** @var ?bool */
     private static $printedApiTokenWarning;
@@ -292,6 +297,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->checkUpdates();
         $this->checkSelfInstall();
+        // Run migration steps only for the Platform.sh CLI
+        if ($this->config()->getWithDefault('migrate.prompt', false)) {
+            $this->checkBothCLIsInstalled();
+            $this->checkMigrateToNewCLI();
+        }
     }
 
     /**
@@ -309,8 +319,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Avoid if disabled.
         if (!$config->getWithDefault('application.prompt_self_install', true)
-            || !$config->isCommandEnabled('self:install')
-            || \getenv($config->get('application.env_prefix') . 'WRAPPED') !== false) {
+            || !$config->isCommandEnabled('self:install')) {
             return;
         }
 
@@ -435,6 +444,101 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Error messages will already have been printed, and the original
         // command can continue.
         $this->stdErr->writeln('');
+    }
+
+    /**
+     * Check if both CLIs are installed to prompt the user to delete the old one.
+     */
+    protected function checkBothCLIsInstalled()
+    {
+        // Avoid checking more than once in this process.
+        if (self::$checkedBothCLIsInstalled) {
+            return;
+        }
+        self::$checkedBothCLIsInstalled = true;
+
+        // Check that the Phar extension is available.
+        if (!extension_loaded('Phar')) {
+            return;
+        }
+
+        $config = $this->config();
+        // Avoid if running within the new CLI.
+        if ($this->isWrapped()) {
+            return;
+        }
+
+        $appName = $config->get('application.executable');
+        $paths = (new OsUtil())->findExecutables($appName);
+        $pharPath = \Phar::running(false);
+        $paths = array_diff($paths, [$pharPath]);
+        if (count($paths)) {
+            // Avoid deleting random directories in path
+            $legacyDir = dirname(dirname($pharPath));
+            if ($legacyDir !== $config->getUserConfigDir()) {
+                return;
+            }
+
+            // Check if the file is writable.
+            if (!is_writable($pharPath)) {
+                return;
+            }
+
+            $message = "\n<comment>Warning:</comment> Both the Legacy (PHP) CLI and the New CLI are installed on your system."
+                . "\nTo migrate fully, delete the Legacy CLI."
+                . "\n"
+                . "\n<comment>Remove the following file completely</comment>: $pharPath"
+                . "\nThis operation is safe and doesn't delete any data."
+                . "\n";
+            $this->stdErr->writeln($message);
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
+            if ($questionHelper->confirm('Do you want to remove this file now?')) {
+                if (unlink($pharPath)) {
+                    $this->stdErr->writeln('File successfully removed! Open a new terminal for the changes to take effect.');
+                } else {
+                    $this->stdErr->writeln('<error>Error:</error> Failed to delete the file.');
+                }
+                $this->stdErr->writeln('');
+            }
+        }
+    }
+
+    /**
+     * Check for migration to the new CLI.
+     */
+    protected function checkMigrateToNewCLI()
+    {
+        // Avoid checking more than once in this process.
+        if (self::$checkedMigrate) {
+            return;
+        }
+        self::$checkedMigrate = true;
+
+        // Avoid if running within the new CLI or within a CI.
+        if ($this->isWrapped() || $this->isCI()) {
+            return;
+        }
+
+        $config = $this->config();
+
+        // Prompt the user to migrate at most once every 24 hours.
+        $now = time();
+        $embargoTime = $now - $config->getWithDefault('migrate.prompt_interval', 60 * 60 * 24);
+        $state = $this->getService('state');
+        if ($state->get('migrate.last_prompted') > $embargoTime) {
+            return;
+        }
+
+        $message = "<comment>Warning:</comment>"
+            . "\nRunning the CLI directly under PHP is now referred to as the \"Legacy CLI\", and is no longer recommended.";
+        if ($config->has('migrate.docs_url')) {
+            $message .= "\nInstall the latest release for your operating system by following these instructions: "
+                . "\n" . $config->get('migrate.docs_url');
+        }
+        $message .= "\n";
+        $this->stdErr->writeln($message);
+        $state->set('migrate.last_prompted', time());
     }
 
     /**
@@ -877,6 +981,29 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return false;
+    }
+
+    /**
+     * Detects if it's running within a CI.
+     *
+     * @return bool
+     */
+    protected function isCI()
+    {
+        return $this->detectRunningInHook() // PSH
+            || getenv("CI") // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+            || getenv("BUILD_NUMBER") // Jenkins, TeamCity
+            || getenv("RUN_ID"); // TaskCluster, dsari
+    }
+
+    /**
+     * Detects if the CLI is running wrapped inside the go wrapper.
+     *
+     * @return bool
+     */
+    protected function isWrapped()
+    {
+        return $this->config()->isWrapped();
     }
 
     /**
