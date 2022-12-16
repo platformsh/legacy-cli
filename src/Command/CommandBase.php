@@ -566,6 +566,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
+            $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
             try {
                 $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             } catch (BadResponseException $e) {
@@ -589,7 +590,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     . "\nEither you do not have access to the project or it no longer exists."
                 );
             }
-            $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
         }
         $this->currentProject = $project;
 
@@ -641,7 +641,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
-                $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
+                $this->debug('Selected environment ' . $environment->id . ' based on Git upstream: ' . $upstream);
                 return $environment;
             }
         }
@@ -658,7 +658,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
             }
             if ($environment) {
-                $this->debug('Selected environment ' . $this->api()->getEnvironmentLabel($environment) . ' based on branch name: ' . $currentBranch);
+                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
                 return $environment;
             }
             $this->debug('No environment was found to match the current Git branch: ' . $currentBranch);
@@ -987,7 +987,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
 
             $this->environment = $environment;
-            $this->debug('Selected environment: ' . $this->api()->getEnvironmentLabel($environment));
             return;
         }
 
@@ -1405,7 +1404,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Select the project.
-        $this->selectProject($projectId, $projectHost, $detectCurrent);
+        $project = $this->selectProject($projectId, $projectHost, $detectCurrent);
+        if ($this->stdErr->isVerbose()) {
+            $this->stdErr->writeln('Selected project ' . $this->api()->getProjectLabel($project));
+        }
 
         // Select the environment.
         $envOptionName = 'environment';
@@ -1431,12 +1433,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
                 $this->selectEnvironment($argument, true, $selectDefaultEnv, $detectCurrent);
+                if ($this->stdErr->isVerbose() && $this->environment) {
+                    $this->stdErr->writeln('Selected environment ' . $this->api()->getEnvironmentLabel($this->environment));
+                }
             }
         } elseif ($input->hasOption($envOptionName)) {
             if ($input->getOption($envOptionName) !== null) {
                 $environmentId = $input->getOption($envOptionName);
             }
             $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv, $detectCurrent);
+            if ($this->stdErr->isVerbose() && $this->environment) {
+                $this->stdErr->writeln('Selected environment ' . $this->api()->getEnvironmentLabel($this->environment));
+            }
         }
     }
 
