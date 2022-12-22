@@ -11,8 +11,10 @@ class AppConfigGetTest extends \PHPUnit_Framework_TestCase
 {
     private function runCommand(array $args) {
         $output = new BufferedOutput();
+        $input = new ArrayInput($args);
+        $input->setInteractive(false);
         (new AppConfigGetCommand())
-            ->run(new ArrayInput($args), $output);
+            ->run($input, $output);
 
         return $output->fetch();
     }

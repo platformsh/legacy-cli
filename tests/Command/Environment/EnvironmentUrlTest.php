@@ -36,8 +36,9 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
     private function runCommand(array $args, $verbosity = OutputInterface::VERBOSITY_NORMAL) {
         $output = new BufferedOutput();
         $output->setVerbosity($verbosity);
-        (new EnvironmentUrlCommand())
-            ->run(new ArrayInput($args), $output);
+        $input = new ArrayInput($args);
+        $input->setInteractive(false);
+        (new EnvironmentUrlCommand())->run($input, $output);
 
         return $output->fetch();
     }

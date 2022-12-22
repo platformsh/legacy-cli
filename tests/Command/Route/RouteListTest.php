@@ -34,8 +34,9 @@ class RouteListTest extends \PHPUnit_Framework_TestCase
 
     private function runCommand(array $args) {
         $output = new BufferedOutput();
-        (new RouteListCommand())
-            ->run(new ArrayInput($args), $output);
+        $input = new ArrayInput($args);
+        $input->setInteractive(false);
+        (new RouteListCommand())->run($input, $output);
 
         return $output->fetch();
     }
