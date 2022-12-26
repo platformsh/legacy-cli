@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityMonitor
 {
+    const STREAM_WAIT = 200000; // microseconds
 
     protected static $resultNames = [
         Activity::RESULT_FAILURE => 'failure',
@@ -108,9 +109,13 @@ class ActivityMonitor
         $lastRefresh = microtime(true);
         $buffer = '';
         while (!feof($logStream) || (!$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED)) {
-            // If $pollInterval has passed, or if there is nothing else left
-            // to do, then refresh the activity.
-            if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
+            // If $pollInterval has passed, or if the stream has ended, then
+            // refresh the activity.
+            // EOF is checked using stream_get_meta_data() because feof() can
+            // apparently return false when the stream timeout is reached.
+            $metadata = stream_get_meta_data($logStream);
+
+            if ($metadata['eof'] || microtime(true) - $lastRefresh >= $pollInterval) {
                 $activity->refresh();
                 $overrideState = '';
                 $lastRefresh = microtime(true);
@@ -118,16 +123,28 @@ class ActivityMonitor
 
             // Update the progress bar.
             $bar->advance();
-
-            // Wait to see if a read will not block the stream, for up to .2
-            // seconds.
-            if (!$this->canRead($logStream, 200000)) {
+            if ($metadata['eof']) {
                 continue;
             }
 
+            // Read up to 2 KiB of new content from the stream.
+            // This will return a string when a packet is available, or false
+            // when the stream timeout is reached, or on EOF.
+            $content = \fread($logStream, 2048);
+            if ($content === '') {
+                \usleep(self::STREAM_WAIT);
+                continue;
+            } elseif ($content === false) {
+                // This indicates a stream timeout or EOF.
+                continue;
+            } else {
+                $buffer .= $content;
+            }
+
             // Parse the log.
-            $items = $this->parseLog($logStream, $buffer);
+            $items = $this->parseLog($buffer);
             if (empty($items)) {
+                \usleep(self::STREAM_WAIT);
                 continue;
             }
 
@@ -175,15 +192,12 @@ class ActivityMonitor
     /**
      * Reads the log stream and returns LogItem objects.
      *
-     * @param resource $stream
-     *   The stream.
-     * @param string   &$buffer
-     *   A string where a buffer can be stored between stream updates.
+     * @param string &$buffer
+     *   A buffer containing recent data from the stream.
      *
      * @return LogItem[]
      */
-    private function parseLog($stream, &$buffer) {
-        $buffer .= stream_get_contents($stream);
+    private function parseLog(&$buffer) {
         $lastNewline = strrpos($buffer, "\n");
         if ($lastNewline === false) {
             return [];
@@ -192,27 +206,6 @@ class ActivityMonitor
         $buffer = substr($buffer, $lastNewline + 1);
 
         return LogItem::multipleFromJsonStream($content);
-    }
-
-    /**
-     * Waits to see if a stream can be read (if the read will not block).
-     *
-     * @param resource $stream  The stream.
-     * @param int      $microseconds A timeout in microseconds.
-     *
-     * @return bool
-     */
-    private function canRead($stream, $microseconds) {
-        if (PHP_MAJOR_VERSION >= 8) {
-            // Work around a bug: "Cannot cast a filtered stream on this system" which throws a ValueError in PHP 8+.
-            // See https://github.com/platformsh/platformsh-cli/issues/1027#issuecomment-779170913
-            \usleep($microseconds);
-            return true;
-        }
-        $readSet = [$stream];
-        $ignore = [];
-
-        return (bool) stream_select($readSet, $ignore, $ignore, 0, $microseconds);
     }
 
     /**
@@ -462,7 +455,12 @@ class ActivityMonitor
             $bar->advance();
             $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         }
-        \stream_set_blocking($stream, 0);
+        if (!\stream_set_blocking($stream, false)) {
+            \trigger_error('Failed to set stream to non-blocking', E_USER_WARNING);
+        }
+        if (!\stream_set_timeout($stream, 0, self::STREAM_WAIT)) {
+            \trigger_error('Failed to set stream timeout', E_USER_WARNING);
+        }
 
         return $stream;
     }
