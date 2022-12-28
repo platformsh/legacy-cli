@@ -49,7 +49,8 @@ class ActivityLogCommand extends ActivityCommandBase
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
-            ->addExample('Display the log for the last activity on the current project', '--all');
+            ->addExample('Display the log for the last activity on the current project', '--all')
+            ->addExample('Display the log for the last push, with microsecond timestamps', "-a -t --type %push --date-fmt 'Y-m-d\TH:i:s.uP'");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
