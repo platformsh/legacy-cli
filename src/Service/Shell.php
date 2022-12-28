@@ -105,34 +105,22 @@ class Shell
             OutputInterface::VERBOSITY_VERBOSE
         );
 
-        $blankLine = false;
-
-        if (!empty($input) && is_string($input)) {
-            $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input), OutputInterface::VERBOSITY_VERBOSE);
-            $blankLine = true;
+        if (!empty($input) && is_string($input) && $this->stdErr->isVeryVerbose()) {
+            $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input));
+            $this->stdErr->writeln('');
         }
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
-            $blankLine = true;
             $process->setEnv($env + $this->getParentEnv());
         }
 
         if ($dir && is_dir($dir)) {
             $process->setWorkingDirectory($dir);
             $this->showWorkingDirMessage($dir);
-            $blankLine = true;
-        }
-
-        // Conditional blank line just to aid debugging.
-        if ($blankLine) {
-            $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
         }
 
         $result = $this->runProcess($process, $mustRun, $quiet);
-
-        // Another blank line after the command output ends.
-        $this->stdErr->writeln('', OutputInterface::VERBOSITY_VERBOSE);
 
         return is_int($result) ? $result === 0 : $result;
     }
@@ -142,8 +130,9 @@ class Shell
      */
     private function showWorkingDirMessage($dir)
     {
-        if ($dir !== null) {
-            $this->stdErr->writeln('  Working directory: ' . $dir, OutputInterface::VERBOSITY_VERY_VERBOSE);
+        if ($dir !== null && $this->stdErr->isVeryVerbose()) {
+            $this->stdErr->writeln('  Working directory: ' . $dir);
+            $this->stdErr->writeln('');
         }
     }
 
@@ -152,12 +141,13 @@ class Shell
      */
     private function showEnvMessage(array $env)
     {
-        if (!empty($env)) {
+        if (!empty($env) && $this->stdErr->isVeryVerbose()) {
             $message = ['  Using additional environment variables:'];
             foreach ($env as $variable => $value) {
                 $message[] = sprintf('    <info>%s</info>=%s', $variable, $value);
             }
-            $this->stdErr->writeln($message, OutputInterface::VERBOSITY_VERY_VERBOSE);
+            $this->stdErr->writeln($message);
+            $this->stdErr->writeln('');
         }
     }
 
@@ -212,7 +202,7 @@ class Shell
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the process fails or times out, and $mustRun is true.
      *
-     * @return int|string
+     * @return int|bool|string
      *   The exit code of the process if it fails, true if it succeeds with no
      *   output, or a string if it succeeds with output.
      */
