@@ -89,7 +89,7 @@ class ActivityListCommand extends ActivityCommandBase
         $defaultColumns = $this->defaultColumns;
 
         if (!$environmentSpecific) {
-            $defaultColumns[] = 'Environment(s)';
+            $defaultColumns[] = 'environments';
         }
 
         $rows = [];
