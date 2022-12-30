@@ -25,6 +25,18 @@ class DiskUsageCommand extends CommandBase
     const MIN_RANGE = 300; // 5 minutes
     const DEFAULT_RANGE = 600;
 
+    private $tableHeader = [
+        'timestamp' => 'Timestamp',
+        'used' => 'Used',
+        'limit' => 'Limit',
+        'percent' => 'Used %',
+        'iused' => 'Inodes used',
+        'ilimit' => 'Inodes limit',
+        'ipercent' => 'Inodes %',
+        'interval' => 'Interval',
+    ];
+    private $defaultColumns = ['timestamp', 'used', 'limit', 'percent', 'ipercent'];
+
     public function isEnabled()
     {
         if (!$this->config()->getWithDefault('api.metrics', false)) {
@@ -66,7 +78,7 @@ class DiskUsageCommand extends CommandBase
         $this->addExample('Show the persistent disk usage of a mysql service in five-minute intervals over the last hour', '--type mysql -i 5m -r 1h');
         $this->addProjectOption()
             ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
@@ -283,16 +295,6 @@ class DiskUsageCommand extends CommandBase
             ));
         }
 
-        $header = ['timestamp' => 'Timestamp',
-            'used' => 'Used',
-            'limit' => 'Limit',
-            'percent' => 'Used %',
-            'iused' => 'Inodes used',
-            'ilimit' => 'Inodes limit',
-            'ipercent' => 'Inodes %',
-            'interval' => 'Interval',
-        ];
-        $defaultColumns = ['timestamp', 'used', 'limit', 'percent', 'ipercent'];
         $rows = [];
 
         $bytes = $input->getOption('bytes');
@@ -352,7 +354,7 @@ class DiskUsageCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $header, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         return 0;
     }

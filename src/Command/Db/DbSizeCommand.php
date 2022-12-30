@@ -17,6 +17,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSizeCommand extends CommandBase
 {
 
+    private $tableHeader = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
+
     const RED_WARNING_THRESHOLD = 90;//percentage
     const YELLOW_WARNING_THRESHOLD = 80;//percentage
     const BYTE_TO_MEGABYTE = 1048576;
@@ -39,7 +41,7 @@ class DbSizeCommand extends CommandBase
         $this->setHelp($help);
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
         Relationships::configureInput($this->getDefinition());
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());
     }
 
@@ -83,7 +85,6 @@ class DbSizeCommand extends CommandBase
         $machineReadable = $table->formatIsMachineReadable();
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
-        $columns  = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
         $values = [
             'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
             'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
@@ -91,7 +92,7 @@ class DbSizeCommand extends CommandBase
         ];
 
         $this->stdErr->writeln('');
-        $table->render([$values], $columns);
+        $table->render([$values], $this->tableHeader);
 
         $this->showWarnings($percentageUsed);
 

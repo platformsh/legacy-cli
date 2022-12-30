@@ -18,6 +18,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CommitListCommand extends CommandBase
 {
 
+    private $tableHeader = ['Date', 'SHA', 'Author', 'Summary'];
+
     /**
      * {@inheritdoc}
      */
@@ -33,7 +35,7 @@ class CommitListCommand extends CommandBase
         $this->addEnvironmentOption();
 
         $definition = $this->getDefinition();
-        Table::configureInput($definition);
+        Table::configureInput($definition, $this->tableHeader);
         PropertyFormatter::configureInput($definition);
 
         $this->addExample('Display commits on an environment');
@@ -78,7 +80,6 @@ class CommitListCommand extends CommandBase
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $header = ['Date', 'SHA', 'Author', 'Summary'];
         $rows = [];
         foreach ($commits as $commit) {
             $row = [];
@@ -92,7 +93,7 @@ class CommitListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $header);
+        $table->render($rows, $this->tableHeader);
 
         return 0;
     }

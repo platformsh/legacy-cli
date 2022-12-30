@@ -12,6 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 {
+    private $tableHeader = [
+        'id' => 'Subscription ID',
+        'project_id' => 'Project ID',
+        'project_title' => 'Title',
+        'project_region' => 'Region',
+        'created_at' => 'Created at',
+        'updated_at' => 'Updated at',
+    ];
+    private $defaultColumns = ['id', 'project_id', 'project_title', 'project_region'];
 
     /**
      * {@inheritdoc}
@@ -24,7 +33,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination. Ignored if --page is specified.')
             ->addOrganizationOptions();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     /**
@@ -89,16 +98,6 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             return 0;
         }
 
-        $headers = [
-            'id' => 'Subscription ID',
-            'project_id' => 'Project ID',
-            'project_title' => 'Title',
-            'project_region' => 'Region',
-            'created_at' => 'Created at',
-            'updated_at' => 'Updated at',
-        ];
-        $defaultColumns = ['id', 'project_id', 'project_title', 'project_region'];
-
         $rows = [];
         foreach ($subscriptions as $subscription) {
             $row = $subscription->getProperties();
@@ -116,7 +115,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             $this->stdErr->writeln($title);
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable() && isset($collection['next'])) {
             $this->stdErr->writeln(\sprintf('More subscriptions are available on the next page (<info>--page %d</info>)', $pageNumber + 1));

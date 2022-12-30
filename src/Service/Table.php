@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Csv;
 use Platformsh\Cli\Util\PlainFormat;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -17,17 +18,19 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * Usage:
  * <code>
- *     // In a command's configure() method, add the --format option:
- *     Table::addFormatOption($this->getDefinition());
+ *     // Create a command property $tableHeader;
+ *     private $tableHeader = ['Column 1', 'Column 2', 'Column 3'];
+ *
+ *     // In a command's configure() method, add the --format and --columns options:
+ *     Table::configureInput($this->getDefinition(), $this->tableHeader);
  *
  *     // In a command's execute() method, build and display the table:
  *     $table = new Table($input, $output);
- *     $header = ['Column 1', 'Column 2', 'Column 3'];
  *     $rows = [
  *         ['Cell 1', 'Cell 2', 'Cell 3'],
  *         ['Cell 4', 'Cell 5', 'Cell 6'],
  *     ];
- *     $table->render($rows, $header);
+ *     $table->render($rows, $this->tableHeader);
  * </code>
  */
 class Table implements InputConfiguringInterface
@@ -49,18 +52,54 @@ class Table implements InputConfiguringInterface
      * Add the --format and --columns options to a command's input definition.
      *
      * @param InputDefinition $definition
+     * @param array $columns
+     *   The table header or a list of available columns.
+     * @param string[] $defaultColumns
+     *   A list of default columns.
      */
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition, array $columns = [], array $defaultColumns = [])
     {
-        $description = 'The output format ("table", "csv", "tsv", or "plain")';
+        $description = 'The output format: table, csv, tsv, or plain';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');
         $definition->addOption($option);
-        $description = 'Columns to display (comma-separated list, or multiple values)';
-        $option = new InputOption('columns', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $description);
+        $description = 'Columns to display.';
+        if (!empty($columns)) {
+            if (!empty($defaultColumns)) {
+                $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns, $defaultColumns) . ' (* = default columns).';
+                $description .= "\n" . 'The character "+" can be used as a placeholder for the default columns.';
+            } else {
+                $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns) . '.';
+            }
+        }
+        $description .= "\n" . ArrayArgument::SPLIT_HELP;
+        $shortcut = $definition->hasShortcut('c') ? null : 'c';
+        $option = new InputOption('columns', $shortcut, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $description);
         $definition->addOption($option);
         $description = 'Do not output the table header';
         $option = new InputOption('no-header', null, InputOption::VALUE_NONE, $description);
         $definition->addOption($option);
+    }
+
+    /**
+     * @param array $columns
+     * @param string[] $defaultColumns
+     * @param bool $markDefault
+     * @return string
+     */
+    private static function formatAvailableColumns($columns, $defaultColumns = [], $markDefault = true)
+    {
+        $columnNames = array_keys(static::availableColumns($columns));
+        natcasesort($columnNames);
+        if ($defaultColumns) {
+            $defaultColumns = array_map('\strtolower', $defaultColumns);
+            $columnNames = array_diff($columnNames, $defaultColumns);
+            if ($markDefault) {
+                $defaultColumns = array_map(function ($c) { return $c . '*'; }, $defaultColumns);
+            }
+            $columnNames = array_merge($defaultColumns, $columnNames);
+        }
+
+        return implode(', ', $columnNames);
     }
 
     /**
@@ -75,7 +114,7 @@ class Table implements InputConfiguringInterface
     public function replaceDeprecatedColumns(array $replacements, InputInterface $input, OutputInterface $output)
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $columns = $this->columnsToDisplay();
+        $columns = $this->specifiedColumns();
         foreach ($replacements as $old => $new) {
             if (($pos = \array_search($old, $columns, true)) !== false) {
                 $stdErr->writeln(\sprintf('<options=reverse>DEPRECATED</> The column <comment>%s</comment> has been replaced by <info>%s</info>.', $old, $new));
@@ -98,7 +137,7 @@ class Table implements InputConfiguringInterface
     public function removeDeprecatedColumns(array $remove, $placeholder, InputInterface $input, OutputInterface $output)
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $columns = $this->columnsToDisplay();
+        $columns = $this->specifiedColumns();
         foreach ($remove as $name) {
             if (($pos = \array_search($name, $columns, true)) !== false) {
                 $stdErr->writeln(\sprintf('<options=reverse>DEPRECATED</> The column <comment>%s</comment> has been removed.', $name));
@@ -138,7 +177,25 @@ class Table implements InputConfiguringInterface
     {
         $format = $this->getFormat();
 
-        $columnsToDisplay = $this->columnsToDisplay() ?: $defaultColumns;
+        if (empty($defaultColumns)) {
+            $defaultColumns = array_keys(self::availableColumns($header));
+        }
+
+        $columnsToDisplay = [];
+        foreach ($this->specifiedColumns() as $specifiedColumn) {
+            // A plus is a placeholder for the set of default columns.
+            // It can be a name on its own or next to another name.
+            if ($specifiedColumn === '+') {
+                $columnsToDisplay = \array_merge($columnsToDisplay, $defaultColumns);
+            } else {
+                $columnsToDisplay[] = $specifiedColumn;
+            }
+        }
+        if (empty($columnsToDisplay)) {
+            $columnsToDisplay = $defaultColumns;
+        }
+        $columnsToDisplay = \array_unique($columnsToDisplay);
+
         $rows = $this->filterColumns($rows, $header, $columnsToDisplay);
         $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
 
@@ -186,17 +243,37 @@ class Table implements InputConfiguringInterface
      *
      * @return array
      */
-    protected function columnsToDisplay()
+    protected function specifiedColumns()
     {
         if (!$this->input->hasOption('columns')) {
             return [];
         }
-        $columns = $this->input->getOption('columns');
-        if (count($columns) === 1) {
-            $columns = preg_split('/\s*,\s*/', $columns[0]);
+        $val = $this->input->getOption('columns');
+        if (\count($val) === 1) {
+            $first = \reset($val);
+            if (\strpos($first, '+') !== false) {
+                $first = preg_replace('/(\w)\+/', '$1,+', $first);
+                $first = preg_replace('/\+(\w)/', '+,$1', $first);
+                $val = [$first];
+            }
         }
+        return ArrayArgument::split($val);
+    }
 
-        return $columns;
+    /**
+     * Returns the available columns, which are all the (lower-cased) values and string keys in the header.
+     *
+     * @param array $header
+     * @return array
+     */
+    private static function availableColumns(array $header)
+    {
+        $availableColumns = [];
+        foreach ($header as $key => $column) {
+            $columnName = \is_string($key) ? $key : $column;
+            $availableColumns[\strtolower($columnName)] = $key;
+        }
+        return $availableColumns;
     }
 
     /**
@@ -214,20 +291,14 @@ class Table implements InputConfiguringInterface
             return $rows;
         }
 
-        // The available columns are all the (lower-cased) values and string
-        // keys in $header.
-        $availableColumns = [];
-        foreach ($header as $key => $column) {
-            $columnName = is_string($key) ? $key : $column;
-            $availableColumns[strtolower($columnName)] = $key;
-        }
+        $availableColumns = self::availableColumns($header);
 
         // Validate the column names.
         foreach ($columnsToDisplay as &$columnName) {
             $columnNameLowered = strtolower($columnName);
             if (!isset($availableColumns[$columnNameLowered])) {
                 throw new InvalidArgumentException(
-                    sprintf('Column not found: %s (available columns: %s)', $columnName, implode(', ', array_keys($availableColumns)))
+                    sprintf('Column not found: %s (available columns: %s)', $columnName, self::formatAvailableColumns($availableColumns))
                 );
             }
             $columnName = $columnNameLowered;
@@ -238,9 +309,15 @@ class Table implements InputConfiguringInterface
         $newRows = [];
         foreach ($rows as $row) {
             $newRow = [];
-            foreach ($columnsToDisplay as $columnNameLowered) {
-                $key = $availableColumns[$columnNameLowered];
-                $newRow[] = array_key_exists($key, $row) ? $row[$key] : '';
+            foreach ($columnsToDisplay as $numericKey => $columnNameLowered) {
+                $keyFromHeader = $availableColumns[$columnNameLowered];
+                if (array_key_exists($keyFromHeader, $row)) {
+                    $newRow[] = $row[$keyFromHeader];
+                } elseif (array_key_exists($numericKey, $row)) {
+                    $newRow[] = $row[$numericKey];
+                } else {
+                    $newRow[] = '';
+                }
             }
             $newRows[] = $newRow;
         }

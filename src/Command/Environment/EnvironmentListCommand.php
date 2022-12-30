@@ -15,6 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentListCommand extends CommandBase implements CompletionAwareInterface
 {
+    private $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
+    private $defaultColumns = ['id', 'title', 'status', 'type'];
 
     protected $children = [];
 
@@ -40,7 +42,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
             ->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter the list by environment type(s).' . "\n" . ArrayArgument::SPLIT_HELP);
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addProjectOption();
     }
 
@@ -206,9 +208,6 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
 
         $tree = $this->buildEnvironmentTree($environments);
 
-        $headers = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
-        $defaultColumns = ['id', 'title', 'status', 'type'];
-
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
@@ -216,13 +215,13 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->formatter = $this->getService('property_formatter');
 
         if ($table->formatIsMachineReadable()) {
-            $table->render($this->buildEnvironmentRows($tree, false, false), $headers, $defaultColumns);
+            $table->render($this->buildEnvironmentRows($tree, false, false), $this->tableHeader, $this->defaultColumns);
             return 0;
         }
 
         $this->stdErr->writeln("Your environments are: ");
 
-        $table->render($this->buildEnvironmentRows($tree), $headers, $defaultColumns);
+        $table->render($this->buildEnvironmentRows($tree), $this->tableHeader, $this->defaultColumns);
 
         if (!$this->currentEnvironment) {
             return 0;

@@ -15,6 +15,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
+    private $tableHeader = ['ID', 'Created', 'Completed', 'Description', 'Type', 'State', 'Result'];
+    private $defaultColumns = ['ID', 'Created', 'Description', 'Type', 'State', 'Result'];
+
     /**
      * {@inheritdoc}
      */
@@ -33,7 +36,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
             ->setDescription('Get a list of activities for an integration');
         $this->setHiddenAliases(['integration:activities']);
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
@@ -65,9 +68,6 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $headers = ['ID', 'Created', 'Completed', 'Description', 'Type', 'State', 'Result'];
-        $defaultColumns = ['ID', 'Created', 'Description', 'Type', 'State', 'Result'];
-
         $rows = [];
         foreach ($activities as $activity) {
             $rows[] = [
@@ -90,7 +90,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ));
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');

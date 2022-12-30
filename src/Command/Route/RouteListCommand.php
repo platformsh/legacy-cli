@@ -13,6 +13,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RouteListCommand extends CommandBase
 {
+    private $tableHeader = [
+        'route' => 'Route',
+        'type' => 'Type',
+        'to' => 'To',
+        'url' => 'URL',
+    ];
+    private $defaultColumns = ['route', 'type', 'to'];
+
     /**
      * {@inheritdoc}
      */
@@ -25,7 +33,7 @@ class RouteListCommand extends CommandBase
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addProjectOption()
              ->addEnvironmentOption();
     }
@@ -59,13 +67,6 @@ class RouteListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
-        $header = [
-            'route' => 'Route',
-            'type' => 'Type',
-            'to' => 'To',
-            'url' => 'URL',
-        ];
-        $defaultColumns = ['route', 'type', 'to'];
         $rows = [];
         foreach ($routes as $route) {
             $row = [];
@@ -89,7 +90,7 @@ class RouteListCommand extends CommandBase
             }
         }
 
-        $table->render($rows, $header, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

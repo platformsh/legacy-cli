@@ -10,6 +10,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ServiceListCommand extends CommandBase
 {
+    private $tableHeader = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
+
     /**
      * {@inheritdoc}
      */
@@ -21,7 +23,7 @@ class ServiceListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption()
             ->addEnvironmentOption();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
     /**
@@ -42,8 +44,6 @@ class ServiceListCommand extends CommandBase
 
             return 0;
         }
-
-        $headers = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
 
         $rows = [];
         foreach ($services as $name => $service) {
@@ -66,7 +66,7 @@ class ServiceListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, $headers);
+        $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);

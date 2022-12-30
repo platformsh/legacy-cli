@@ -8,6 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class UserListCommand extends CommandBase
 {
+    private $tableHeader = ['email' => 'Email address', 'Name', 'role' => 'Project role', 'ID'];
 
     protected function configure()
     {
@@ -15,7 +16,7 @@ class UserListCommand extends CommandBase
             ->setName('user:list')
             ->setAliases(['users'])
             ->setDescription('List project users');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption();
     }
 
@@ -51,7 +52,7 @@ class UserListCommand extends CommandBase
             ));
         }
 
-        $table->render(array_values($rows), ['email' => 'Email address', 'Name', 'role' => 'Project role', 'ID']);
+        $table->render(array_values($rows), $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

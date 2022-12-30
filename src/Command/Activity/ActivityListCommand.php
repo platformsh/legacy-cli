@@ -12,6 +12,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityListCommand extends ActivityCommandBase
 {
+    private $tableHeader = ['ID', 'Created', 'Completed', 'Description', 'Type', 'Progress', 'State', 'Result', 'environments' => 'Environment(s)'];
+    private $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
+
     /**
      * {@inheritdoc}
      */
@@ -36,7 +39,7 @@ class ActivityListCommand extends ActivityCommandBase
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments')
             ->setDescription('Get a list of activities for an environment or project');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
@@ -75,8 +78,7 @@ class ActivityListCommand extends ActivityCommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $headers = ['ID', 'Created', 'Completed', 'Description', 'Type', 'Progress', 'State', 'Result', 'Environment(s)'];
-        $defaultColumns = ['ID', 'Created', 'Description', 'Progress', 'State', 'Result'];
+        $defaultColumns = $this->defaultColumns;
 
         if (!$environmentSpecific) {
             $defaultColumns[] = 'Environment(s)';
@@ -112,7 +114,7 @@ class ActivityListCommand extends ActivityCommandBase
             }
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');

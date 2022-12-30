@@ -15,10 +15,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectListCommand extends CommandBase
 {
+    private $tableHeader = [
+        'id' => 'ID',
+        'title' => 'Title',
+        'ui_url' => 'Web URL',
+        'region' => 'Region',
+        'region_label' => 'Region label',
+        'organization_name' => 'Organization',
+        'organization_id' => 'Organization ID',
+        'organization_label' => 'Organization label',
+        'status' => 'Status',
+        'endpoint' => 'Endpoint',
+        'created_at' => 'Created',
+    ];
+    private $defaultColumns = ['id', 'title', 'region'];
 
     protected function configure()
     {
         $organizationsEnabled = $this->config()->getWithDefault('api.organizations', false);
+        $this->defaultColumns = ['id', 'title', 'region'];
+        if ($organizationsEnabled) {
+            $this->defaultColumns[] = 'organization_name';
+        }
         $this
             ->setName('project:list')
             ->setAliases(['projects', 'pro'])
@@ -37,7 +55,7 @@ class ProjectListCommand extends CommandBase
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'Filter by organization name or ID');
         }
 
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
@@ -118,24 +136,6 @@ class ProjectListCommand extends CommandBase
         $table = $this->getService('table');
         $machineReadable = $table->formatIsMachineReadable();
 
-        $header = [
-            'id' => 'ID',
-            'title' => 'Title',
-            'ui_url' => 'Web URL',
-            'region' => 'Region',
-            'region_label' => 'Region label',
-            'organization_name' => 'Organization',
-            'organization_id' => 'Organization ID',
-            'organization_label' => 'Organization label',
-            'status' => 'Status',
-            'endpoint' => 'Endpoint',
-            'created_at' => 'Created',
-        ];
-        $defaultColumns = ['id', 'title', 'region'];
-        if ($this->config()->getWithDefault('api.organizations', false)) {
-            $defaultColumns[] = 'organization_name';
-        }
-
         $table->replaceDeprecatedColumns(['url' => 'ui_url', 'host' => 'region'], $input, $output);
 
         /** @var PropertyFormatter $formatter */
@@ -173,7 +173,7 @@ class ProjectListCommand extends CommandBase
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).
         if ($machineReadable) {
-            $table->render($rows, $header, $defaultColumns);
+            $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
             return 0;
         }
@@ -187,7 +187,7 @@ class ProjectListCommand extends CommandBase
             $this->stdErr->writeln(':');
         }
 
-        $table->render($rows, $header, $defaultColumns);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         $executable = $this->config()->get('application.executable');
 

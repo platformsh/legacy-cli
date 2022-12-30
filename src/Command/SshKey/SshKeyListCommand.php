@@ -8,6 +8,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SshKeyListCommand extends CommandBase
 {
+    private $tableHeader = [
+        'id' => 'ID',
+        'title' => 'Title',
+        'fingerprint' => 'Fingerprint',
+        'path' => 'Local path'
+    ];
+    private $defaultColumns = ['id', 'title', 'path'];
 
     protected function configure()
     {
@@ -15,7 +22,7 @@ class SshKeyListCommand extends CommandBase
             ->setName('ssh-key:list')
             ->setAliases(['ssh-keys'])
             ->setDescription('Get a list of SSH keys in your account');
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -28,31 +35,29 @@ class SshKeyListCommand extends CommandBase
                 $this->config()->get('service.name')
             ));
         } else {
-            $headers = ['ID', 'Title', 'Fingerprint', 'Local path'];
-            $defaultColumns = ['ID', 'Title', 'Local path'];
             /** @var \Platformsh\Cli\Service\Table $table */
             $table = $this->getService('table');
             /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
             $sshKeyService = $this->getService('ssh_key');
             $rows = [];
             foreach ($keys as $key) {
-                $row = [$key->key_id, $key->title, $key->fingerprint];
+                $row = ['id' => $key->key_id, 'title' => $key->title, 'fingerprint' => $key->fingerprint];
                 $identity = $sshKeyService->findIdentityMatchingPublicKeys([$key->fingerprint]);
                 $path = $identity ? $identity . '.pub' : '';
                 if (!$identity && !$table->formatIsMachineReadable()) {
                     $path = '<comment>Not found</comment>';
                 }
-                $row[] = $path;
+                $row['path'] = $path;
                 $rows[] = $row;
             }
             if ($table->formatIsMachineReadable()) {
-                $table->render($rows, $headers, $defaultColumns);
+                $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
                 return 0;
             }
 
             $this->stdErr->writeln("Your SSH keys are:");
-            $table->render($rows, $headers, $defaultColumns);
+            $table->render($rows, $this->tableHeader, $this->defaultColumns);
         }
 
         $this->stdErr->writeln('');
