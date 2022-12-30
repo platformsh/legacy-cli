@@ -140,14 +140,10 @@ class DiskUsageCommand extends CommandBase
         $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
-        if (!$environment->isActive()) {
-            $this->stdErr->writeln(\sprintf('The environment %s is not currently active.', $this->api()->getEnvironmentLabel($environment, 'error')));
-            return 1;
-        }
 
         $environmentData = $environment->getData();
         if (!isset($environmentData['_links']['#metrics'])) {
-            $this->stdErr->writeln(\sprintf('The metrics API is not available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
 
             return 1;
         }
