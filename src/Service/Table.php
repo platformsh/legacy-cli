@@ -309,14 +309,17 @@ class Table implements InputConfiguringInterface
         $newRows = [];
         foreach ($rows as $row) {
             $newRow = [];
-            foreach ($columnsToDisplay as $numericKey => $columnNameLowered) {
+            foreach ($columnsToDisplay as $columnNameLowered) {
                 $keyFromHeader = $availableColumns[$columnNameLowered];
                 if (array_key_exists($keyFromHeader, $row)) {
                     $newRow[] = $row[$keyFromHeader];
-                } elseif (array_key_exists($numericKey, $row)) {
-                    $newRow[] = $row[$numericKey];
                 } else {
-                    $newRow[] = '';
+                    $numericKey = array_search($columnNameLowered, array_keys($availableColumns), true);
+                    if (array_key_exists($numericKey, $row)) {
+                        $newRow[] = $row[$numericKey];
+                    } else {
+                        $newRow[] = '';
+                    }
                 }
             }
             $newRows[] = $newRow;

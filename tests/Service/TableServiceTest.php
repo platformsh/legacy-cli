@@ -20,11 +20,11 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
         $definition = new InputDefinition();
         Table::configureInput($definition);
         $tableService = new Table(new ArrayInput([
-            '--columns' => ['value 2,name'],
+            '--columns' => ['value2,name'],
             '--format' => 'csv',
         ], $definition), $output);
 
-        $header = ['Name', 'Value 1', 'Value 2', 'Value 3'];
+        $header = ['Name', 'Value 1', 'value2' => 'Value 2', 'Value 3'];
         $rows = [
             ['foo', 1, 2, 3],
             ['bar', 4, 5, 6],
