@@ -48,7 +48,12 @@ EOF
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input, true);
+        // Select the current project, deliberately ignoring the 'environment'
+        // argument and option, as those will be processed separately.
+        $inputCopy = clone $input;
+        $inputCopy->setArgument('environment', null);
+        $inputCopy->setOption('environment', null);
+        $this->validateInput($inputCopy, true);
 
         $environments = $this->api()->getEnvironments($this->getSelectedProject());
 
