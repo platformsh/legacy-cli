@@ -25,10 +25,8 @@ class ActivityListCommand extends ActivityCommandBase
             ->setAliases(['activities', 'act']);
 
         // Add the --type option, with a link to help if configured.
-        $typeDescription = 'Filter activities by type';
-        if ($this->config()->has('service.activity_type_list_url')) {
-            $typeDescription .= "\nFor a list of types see: <info>" . $this->config()->get('service.activity_type_list_url') . '</info>';
-        }
+        $typeDescription = 'Filter activities by type.';
+        $typeDescription .= "\nFor a list of types see: <info>" . $this->config()->get('application.executable') . ' activity:types</info>';
         $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             $typeDescription
             . "\n" . ArrayArgument::SPLIT_HELP
