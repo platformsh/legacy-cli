@@ -27,8 +27,15 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->setName('integration:activity:list')
             ->setAliases(['i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude activities by type.' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Filter activities by type.'
+                . "\n" . ArrayArgument::SPLIT_HELP
+            )
+            ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Exclude activities by type.'
+                . "\n" . ArrayArgument::SPLIT_HELP
+                . "\nThe % character can be used as a wildcard to exclude types."
+            )
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)

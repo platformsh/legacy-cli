@@ -29,8 +29,16 @@ class ActivityListCommand extends ActivityCommandBase
         if ($this->config()->has('service.activity_type_list_url')) {
             $typeDescription .= "\nFor a list of types see: <info>" . $this->config()->get('service.activity_type_list_url') . '</info>';
         }
-        $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $typeDescription . "\n" . ArrayArgument::SPLIT_HELP);
-        $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude activities by type.' . "\n" . ArrayArgument::SPLIT_HELP);
+        $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            $typeDescription
+            . "\n" . ArrayArgument::SPLIT_HELP
+            . "\nThe % character can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities."
+        );
+        $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            'Exclude activities by type.'
+            . "\n" . ArrayArgument::SPLIT_HELP
+            . "\nThe % character can be used as a wildcard to exclude types."
+        );
 
         $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')

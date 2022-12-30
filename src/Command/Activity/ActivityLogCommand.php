@@ -29,8 +29,16 @@ class ActivityLogCommand extends ActivityCommandBase
                 3
             )
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Exclude by type (when selecting a default activity).' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Filter by type (when selecting a default activity).'
+                . "\n" . ArrayArgument::SPLIT_HELP
+                . "\nThe % character can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities."
+            )
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Exclude by type (when selecting a default activity).'
+                . "\n" . ArrayArgument::SPLIT_HELP
+                . "\nThe % character can be used as a wildcard to exclude types."
+            )
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
@@ -41,7 +49,8 @@ class ActivityLogCommand extends ActivityCommandBase
         $this->addProjectOption()
              ->addEnvironmentOption();
         $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
-            ->addExample('Display the log for the last activity on the current project', '--all');
+            ->addExample('Display the log for the last activity on the current project', '--all')
+            ->addExample('Display the log for the last push, with microsecond timestamps', "-a -t --type %push --date-fmt 'Y-m-d\TH:i:s.uP'");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
