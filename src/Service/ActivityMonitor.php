@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityMonitor
 {
+    const STREAM_WAIT = 200000; // microseconds
 
     protected static $resultNames = [
         Activity::RESULT_FAILURE => 'failure',
@@ -102,32 +103,84 @@ class ActivityMonitor
         $bar->start();
 
         $logStream = $this->getLogStream($activity, $bar);
+        $lastLogFetch = microtime(true);
         $bar->advance();
 
         // Read the log while waiting for the activity to complete.
         $lastRefresh = microtime(true);
         $buffer = '';
-        while (!feof($logStream) || (!$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED)) {
-            // If $pollInterval has passed, or if there is nothing else left
-            // to do, then refresh the activity.
-            if (feof($logStream) || microtime(true) - $lastRefresh >= $pollInterval) {
+        $seal = false;
+        $itemIds = [];
+        while (true) {
+            // If $pollInterval has passed, or if the stream has ended, then
+            // refresh the activity.
+            if ($seal || microtime(true) - $lastRefresh >= $pollInterval) {
                 $activity->refresh();
                 $overrideState = '';
                 $lastRefresh = microtime(true);
             }
 
-            // Update the progress bar.
-            $bar->advance();
-
-            // Wait to see if a read will not block the stream, for up to .2
-            // seconds.
-            if (!$this->canRead($logStream, 200000)) {
+            // Exit the loop if the log finished and the activity is complete.
+            if ($seal) {
+                if ($activity->isComplete() || $activity->state === Activity::STATE_CANCELLED) {
+                    break;
+                }
                 continue;
             }
 
+            $bar->advance();
+
+            // Re-fetch the log if it reached EOF or errored before receiving
+            // the "seal".
+            if (\feof($logStream)) {
+                // Limit the frequency of re-fetching the log.
+                if (microtime(true) - $lastLogFetch < .3) {
+                    \usleep(300000);
+                    $bar->advance();
+                }
+                $logStream = $this->getLogStream($activity, $bar);
+                $lastLogFetch = microtime(true);
+                $bar->advance();
+                continue;
+            }
+
+            // Read up to 8 KiB of new content from the stream.
+            // This will return a string when a packet is available, or false
+            // when the stream timeout is reached, or on EOF.
+            $content = \fread($logStream, 8192);
+            if ($content === '') {
+                \usleep(self::STREAM_WAIT);
+                continue;
+            } elseif ($content === false) {
+                // This indicates a stream timeout or EOF.
+                continue;
+            } else {
+                $buffer .= $content;
+            }
+
             // Parse the log.
-            $items = $this->parseLog($logStream, $buffer);
+            $data = $this->parseLog($buffer);
+            if ($data['seal']) {
+                $seal = true;
+            }
+
+            // Deduplicate already seen log items.
+            $items = $data['items'];
+            foreach ($items as $key => $item) {
+                $id = $item->getId();
+                if ($id !== '') {
+                    if (isset($itemIds[$id])) {
+                        unset($items[$key]);
+                    } else {
+                        $itemIds[$id] = true;
+                    }
+                }
+            }
+
             if (empty($items)) {
+                if (!$seal) {
+                    \usleep(self::STREAM_WAIT);
+                }
                 continue;
             }
 
@@ -137,7 +190,7 @@ class ActivityMonitor
             }
 
             // Format log items.
-            $formatted = $this->formatLog($items, $timestamps);
+            $formatted = $this->formatLog($data['items'], $timestamps);
 
             // Clear the progress bar and ensure the current line is flushed.
             $bar->clear();
@@ -175,44 +228,23 @@ class ActivityMonitor
     /**
      * Reads the log stream and returns LogItem objects.
      *
-     * @param resource $stream
-     *   The stream.
-     * @param string   &$buffer
-     *   A string where a buffer can be stored between stream updates.
+     * @param string &$buffer
+     *   A buffer containing recent data from the stream.
      *
-     * @return LogItem[]
+     * @return array{'items': LogItem[], 'seal': bool}
      */
-    private function parseLog($stream, &$buffer) {
-        $buffer .= stream_get_contents($stream);
+    private function parseLog(&$buffer) {
+        if (\strlen($buffer) <= 1) {
+            return ['items' => [], 'seal' => false];
+        }
         $lastNewline = strrpos($buffer, "\n");
         if ($lastNewline === false) {
-            return [];
+            return ['items' => [], 'seal' => false];
         }
         $content = substr($buffer, 0, $lastNewline + 1);
         $buffer = substr($buffer, $lastNewline + 1);
 
-        return LogItem::multipleFromJsonStream($content);
-    }
-
-    /**
-     * Waits to see if a stream can be read (if the read will not block).
-     *
-     * @param resource $stream  The stream.
-     * @param int      $microseconds A timeout in microseconds.
-     *
-     * @return bool
-     */
-    private function canRead($stream, $microseconds) {
-        if (PHP_MAJOR_VERSION >= 8) {
-            // Work around a bug: "Cannot cast a filtered stream on this system" which throws a ValueError in PHP 8+.
-            // See https://github.com/platformsh/platformsh-cli/issues/1027#issuecomment-779170913
-            \usleep($microseconds);
-            return true;
-        }
-        $readSet = [$stream];
-        $ignore = [];
-
-        return (bool) stream_select($readSet, $ignore, $ignore, 0, $microseconds);
+        return LogItem::multipleFromJsonStreamWithSeal($content);
     }
 
     /**
@@ -451,6 +483,15 @@ class ActivityMonitor
         // second interval between calls, for up to 2 minutes.
         $readTimeout = 10;
         $interval = .5;
+
+        if ($this->config->get('api.debug')) {
+            $bar->clear();
+            $stdErr = $this->getStdErr();
+            $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
+            $stdErr->writeln('<options=reverse>DEBUG</> Fetching stream: ' . $url);
+            $bar->display();
+        }
+
         $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         $start = \microtime(true);
         while ($stream === false) {
@@ -462,7 +503,12 @@ class ActivityMonitor
             $bar->advance();
             $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         }
-        \stream_set_blocking($stream, 0);
+        if (!\stream_set_blocking($stream, false)) {
+            \trigger_error('Failed to set stream to non-blocking', E_USER_WARNING);
+        }
+        if (!\stream_set_timeout($stream, 0, self::STREAM_WAIT)) {
+            \trigger_error('Failed to set stream timeout', E_USER_WARNING);
+        }
 
         return $stream;
     }
