@@ -335,10 +335,7 @@ class SshConfig {
      *
      * @todo prioritise account-specific identity files
      *
-     * These are the filenames that are used by SSH when there is no
-     * IdentityFile specified, and when there is no SSH agent.
-     *
-     * @see https://man.openbsd.org/ssh#i
+     * @see SshKey::defaultKeyNames()
      *
      * @return array
      */
@@ -348,16 +345,8 @@ class SshConfig {
         if (!\is_dir($dir)) {
             return [];
         }
-        $basenames = [
-            'id_rsa',
-            'id_ecdsa_sk',
-            'id_ecdsa',
-            'id_ed25519_sk',
-            'id_ed25519',
-            'id_dsa',
-        ];
         $files = [];
-        foreach ($basenames as $basename) {
+        foreach ($this->sshKey->defaultKeyNames() as $basename) {
             $filename = $dir . DIRECTORY_SEPARATOR . $basename;
             if (\file_exists($filename) && \file_exists($filename . '.pub')) {
                 $files[] = $filename;

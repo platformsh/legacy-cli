@@ -31,6 +31,8 @@ class SshKeyAddCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         /** @var \Platformsh\Cli\Service\Shell $shellHelper */
         $shellHelper = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
+        $sshKeyService = $this->getService('ssh_key');
 
         $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 
@@ -80,14 +82,7 @@ class SshKeyAddCommand extends CommandBase
                 $this->stdErr->writeln("Generated a new key: $publicKeyPath\n");
 
                 // An SSH agent is required if the key's filename is not an OpenSSH default.
-                if (!in_array(basename($newKeyPath), [
-                    'id_rsa',
-                    'id_ecdsa_sk',
-                    'id_ecdsa',
-                    'id_ed25519_sk',
-                    'id_ed25519',
-                    'id_dsa',
-                ])) {
+                if (!in_array(basename($newKeyPath), $sshKeyService->defaultKeyNames())) {
                     $this->stdErr->writeln('Add this key to an SSH agent with:');
                     $this->stdErr->writeln('    eval $(ssh-agent)');
                     $this->stdErr->writeln('    ssh-add ' . \escapeshellarg($newKeyPath));
@@ -117,8 +112,6 @@ class SshKeyAddCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
-        $sshKeyService = $this->getService('ssh_key');
         $fingerprint = $sshKeyService->getPublicKeyFingerprint($publicKeyPath);
 
         // Check whether the public key already exists in the user's account.
