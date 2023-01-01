@@ -1,14 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyAddCommand extends CommandBase
+class SshKeyAddCommand extends SshKeyCommandBase
 {
     protected function configure()
     {
@@ -19,9 +18,7 @@ class SshKeyAddCommand extends CommandBase
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
 
         $help = 'This command lets you add an SSH key to your account. It can generate a key using OpenSSH.'
-            . "\n\n" . '<fg=yellow;options=bold>Notice:</> SSH keys are no longer needed by default.'
-            . "\n\n" . 'You can use an SSH certificate instead, which you can generate or refresh by running:'
-            . "\n    <info>" . $this->config()->get('application.executable') . ' ssh-cert:load</info>';
+            . "\n\n" . $this->certificateNotice();
         $this->setHelp($help);
     }
 
@@ -47,9 +44,7 @@ class SshKeyAddCommand extends CommandBase
             $email
         ));
 
-        $this->stdErr->writeln('<fg=yellow;options=bold>Notice</>');
-        $this->stdErr->writeln('SSH keys are no longer needed by default, as SSH certificates are supported.');
-        $this->stdErr->writeln('Certificates offer more security than keys.');
+        $this->stdErr->writeln($this->certificateNotice(false));
         $this->stdErr->writeln('');
         if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
             $this->stdErr->writeln('');

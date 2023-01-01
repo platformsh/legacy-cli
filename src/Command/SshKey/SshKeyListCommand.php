@@ -1,12 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyListCommand extends CommandBase
+class SshKeyListCommand extends SshKeyCommandBase
 {
     private $tableHeader = [
         'id' => 'ID',
@@ -23,6 +22,10 @@ class SshKeyListCommand extends CommandBase
             ->setAliases(['ssh-keys'])
             ->setDescription('Get a list of SSH keys in your account');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
+
+        $help = 'This command lets you list SSH keys in your account.'
+            . "\n\n" . $this->certificateNotice();
+        $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -65,6 +68,9 @@ class SshKeyListCommand extends CommandBase
         $executable = $this->config()->get('application.executable');
         $this->stdErr->writeln("Add a new SSH key with: <info>$executable ssh-key:add</info>");
         $this->stdErr->writeln("Delete an SSH key with: <info>$executable ssh-key:delete [id]</info>");
+
+        $this->stdErr->writeln('');
+        $this->stdErr->writeln($this->certificateNotice());
 
         return !empty($keys) ? 0 : 1;
     }

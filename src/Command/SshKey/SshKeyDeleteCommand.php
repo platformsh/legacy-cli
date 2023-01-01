@@ -1,12 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
-use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyDeleteCommand extends CommandBase
+class SshKeyDeleteCommand extends SshKeyCommandBase
 {
 
     protected function configure()
@@ -20,6 +19,9 @@ class SshKeyDeleteCommand extends CommandBase
                 'The ID of the SSH key to delete'
             );
         $this->addExample('Delete the key 123', '123');
+        $help = 'This command lets you delete SSH keys from your account.'
+            . "\n\n" . $this->certificateNotice();
+        $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
