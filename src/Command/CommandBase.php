@@ -297,7 +297,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->checkUpdates();
         $this->checkSelfInstall();
-        // Run migration steps only for the Platform.sh CLI
+        // Run migration steps if configured.
         if ($this->config()->getWithDefault('migrate.prompt', false)) {
             $this->checkBothCLIsInstalled();
             $this->checkMigrateToNewCLI();
