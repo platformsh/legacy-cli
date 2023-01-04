@@ -26,6 +26,7 @@
  *      --manifest URL         A manifest JSON file URL (use for testing).
  *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
  *      --insecure             Disable TLS verification (not recommended).
+ *      --no-interaction       Disable interactivity.
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
@@ -126,10 +127,23 @@ class Installer {
                 $this->output('You can install the latest release for your operating system by following these instructions:');
                 $this->output($this->migrateDocsUrl, 'info');
             }
-            if (!getenv($this->envPrefix . 'NO_INTERACTION')) {
+            if ($this->isInteractive()) {
                 $this->output('');
-                $this->output('Continuing with the installation in 10 seconds...');
-                sleep(10);
+                $waitTime = 10;
+                // Check STDIN in a loop to see if the user hit a key.
+                if (stream_set_blocking(STDIN, FALSE)) {
+                    $start = microtime(true);
+                    $this->output("Continuing with the installation in $waitTime seconds. Press Enter to continue now, or Ctrl+C to quit.");
+                    while (microtime(true) - $start < $waitTime) {
+                        if (readline() !== false) {
+                            break;
+                        }
+                        usleep(300000);
+                    }
+                } else {
+                    $this->output("Continuing with the installation in $waitTime seconds (use Ctrl+C to quit)...");
+                    sleep($waitTime);
+                }
             }
         }
 
@@ -809,6 +823,16 @@ class Installer {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns whether interactivity is possible and not disabled.
+     *
+     * @return bool
+     */
+    private function isInteractive()
+    {
+        return !getenv($this->envPrefix . 'NO_INTERACTION') && $this->isTerminal(STDIN) && !$this->flagEnabled('no-interaction');
     }
 
     /**
