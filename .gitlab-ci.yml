@@ -9,7 +9,7 @@ variables:
 
   # The PF_PROJECT_ID is required.
   # PF_PROJECT_ID:
-  PF_PARENT_ENV: 3.x
+  PF_PARENT_ENV: main
   PF_NO_CLONE_PARENT: 1 # CLI environments are stateless, so no need for data cloning
 
 quick-tests:
