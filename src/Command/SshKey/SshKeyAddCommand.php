@@ -1,14 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshKeyAddCommand extends CommandBase
+class SshKeyAddCommand extends SshKeyCommandBase
 {
     protected function configure()
     {
@@ -17,7 +16,10 @@ class SshKeyAddCommand extends CommandBase
             ->setDescription('Add a new SSH key')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
-        $this->addExample('Add an existing public key', '~/.ssh/id_rsa.pub');
+
+        $help = 'This command lets you add an SSH key to your account. It can generate a key using OpenSSH.'
+            . "\n\n" . $this->certificateNotice();
+        $this->setHelp($help);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -26,6 +28,8 @@ class SshKeyAddCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         /** @var \Platformsh\Cli\Service\Shell $shellHelper */
         $shellHelper = $this->getService('shell');
+        /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
+        $sshKeyService = $this->getService('ssh_key');
 
         $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 
@@ -40,9 +44,18 @@ class SshKeyAddCommand extends CommandBase
             $email
         ));
 
+        $this->stdErr->writeln($this->certificateNotice(false));
+        $this->stdErr->writeln('');
+        if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config()->get('application.executable')));
+            return 1;
+        }
+        $this->stdErr->writeln('');
+
         $publicKeyPath = $input->getArgument('path');
         if (empty($publicKeyPath)) {
-            $defaultKeyPath = $sshDir . DIRECTORY_SEPARATOR . 'id_rsa';
+            $defaultKeyPath = $sshDir . DIRECTORY_SEPARATOR . 'id_ed25519';
             $defaultPublicKeyPath = $defaultKeyPath . '.pub';
 
             // Look for an existing local key.
@@ -58,13 +71,13 @@ class SshKeyAddCommand extends CommandBase
                 $newKeyPath = $this->askNewKeyPath($questionHelper);
                 $this->stdErr->writeln('');
 
-                $args = ['ssh-keygen', '-t', 'rsa', '-f', $newKeyPath, '-N', ''];
+                $args = ['ssh-keygen', '-t', 'ed25519', '-f', $newKeyPath, '-N', ''];
                 $shellHelper->execute($args, null, true);
                 $publicKeyPath = $newKeyPath . '.pub';
                 $this->stdErr->writeln("Generated a new key: $publicKeyPath\n");
 
-                // An SSH agent is required if the key's filename is unusual.
-                if (!in_array(basename($newKeyPath), ['id_rsa', 'id_dsa'])) {
+                // An SSH agent is required if the key's filename is not an OpenSSH default.
+                if (!in_array(basename($newKeyPath), $sshKeyService->defaultKeyNames())) {
                     $this->stdErr->writeln('Add this key to an SSH agent with:');
                     $this->stdErr->writeln('    eval $(ssh-agent)');
                     $this->stdErr->writeln('    ssh-add ' . \escapeshellarg($newKeyPath));
@@ -94,8 +107,6 @@ class SshKeyAddCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
-        $sshKeyService = $this->getService('ssh_key');
         $fingerprint = $sshKeyService->getPublicKeyFingerprint($publicKeyPath);
 
         // Check whether the public key already exists in the user's account.
@@ -168,7 +179,7 @@ class SshKeyAddCommand extends CommandBase
      */
     private function askNewKeyPath(QuestionHelper $questionHelper)
     {
-        $basename = 'id_rsa-' . $this->config()->get('service.slug');
+        $basename = 'id_ed25519-' . $this->config()->get('service.slug');
         if ($this->api()->authApiEnabled()) {
             $username = $this->api()->getUser()->username;
         } else {

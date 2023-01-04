@@ -21,6 +21,28 @@ class SshKey {
     }
 
     /**
+     * Returns a list of default SSH identity basenames.
+     *
+     * These are the base filenames that are used by SSH when there is no
+     * IdentityFile specified, and when there is no SSH agent.
+     *
+     * @see https://man.openbsd.org/ssh#i
+     *
+     * @return string[]
+     */
+    public function defaultKeyNames()
+    {
+        return [
+            'id_rsa',
+            'id_ecdsa_sk',
+            'id_ecdsa',
+            'id_ed25519_sk',
+            'id_ed25519',
+            'id_dsa',
+        ];
+    }
+
+    /**
      * Returns a local SSH identity that matches the user's current account.
      *
      * This can be configured as the IdentityFile for SSH.
@@ -58,7 +80,7 @@ class SshKey {
         if (\count($publicKeys) === 1) {
             $filename = \reset($publicKeys) ?: '';
             $identityFile = \substr($filename, 0, \strlen($filename) - 4);
-            if (\in_array(\basename($identityFile), ['id_rsa', 'id_ecdsa_sk', 'id_ecdsa', 'id_ed25519_sk', 'id_ed25519', 'id_dsa'], true)) {
+            if (\in_array(\basename($identityFile), $this->defaultKeyNames(), true)) {
                 return null;
             }
         }
