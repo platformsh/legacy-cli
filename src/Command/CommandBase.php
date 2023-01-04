@@ -990,10 +990,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function isCI()
     {
-        return $this->detectRunningInHook() // PSH
-            || getenv("CI") // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
-            || getenv("BUILD_NUMBER") // Jenkins, TeamCity
-            || getenv("RUN_ID"); // TaskCluster, dsari
+        return getenv('CI') // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+            || getenv('BUILD_NUMBER') // Jenkins, TeamCity
+            || getenv('RUN_ID') // TaskCluster, dsari
+            || $this->detectRunningInHook(); // PSH
     }
 
     /**
