@@ -118,7 +118,7 @@ class Installer {
 
         $this->output($this->cliName . " installer", 'heading');
 
-        if ($this->migratePrompt && !getenv($this->envPrefix . 'WRAPPED') && !$this->isCI()) {
+        if ($this->migratePrompt && !$this->isCI()) {
             $this->output('');
             $this->output('Warning', 'heading');
             $this->output('This is the "legacy" PHP-based installer and is no longer recommended.');
