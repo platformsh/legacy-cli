@@ -71,4 +71,38 @@ class OsUtil
 
         return '"' . str_replace(['"', '^', '%', '!', "\n"], ['""', '"^^"', '"^%"', '"^!"', '!LF!'], $argument) . '"';
     }
+
+    /**
+     * Finds all executable matching the given name inside the PATH.
+     *
+     * @see \Symfony\Component\Process\ExecutableFinder::find()
+     *
+     * @param string $name
+     *
+     * @return array
+     */
+    public static function findExecutables($name)
+    {
+        $dirs = explode(\PATH_SEPARATOR, getenv('PATH') ?: getenv('Path'));
+        $suffixes = [''];
+
+        $found = [];
+
+        $isWindows = self::isWindows();
+        if ($isWindows) {
+            $suffixes = ['.exe', '.bat', '.cmd', '.com'];
+            $pathExt = getenv('PATHEXT');
+            $suffixes = array_merge($pathExt ? explode(\PATH_SEPARATOR, $pathExt) : $suffixes, $suffixes);
+        }
+
+        foreach ($suffixes as $suffix) {
+            foreach ($dirs as $dir) {
+                if (@is_file($file = $dir.\DIRECTORY_SEPARATOR.$name.$suffix) && ($isWindows || @is_executable($file))) {
+                    array_push($found, $file);
+                }
+            }
+        }
+
+        return $found;
+    }
 }
