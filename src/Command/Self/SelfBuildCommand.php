@@ -194,6 +194,9 @@ class SelfBuildCommand extends CommandBase
             'executable' => $this->config()->get('application.executable'),
             'cliName' => $this->config()->get('application.name'),
             'userAgent' => $this->config()->get('application.slug'),
+            'serviceEnvPrefix' => $this->config()->get('service.env_prefix'),
+            'migratePrompt' => $this->config()->getWithDefault('migrate.prompt', false),
+            'migrateDocsUrl' => $this->config()->getWithDefault('migrate.docs_url', ''),
         ], true);
         $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
         if ($newContents !== $installerContents) {

@@ -2,7 +2,11 @@
 
 /**
  * @file
- * Platform.sh CLI installer.
+ * Platform.sh Legacy CLI installer.
+ *
+ * @deprecated
+ *   The CLI no longer requires a local PHP installation or this installer.
+ *   See https://docs.platform.sh/administration/cli.html
  *
  * This script will check requirements, download the CLI, move it into place,
  * and run the self:install command (to set up the PATH and autocompletion).
@@ -22,6 +26,7 @@
  *      --manifest URL         A manifest JSON file URL (use for testing).
  *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
  *      --insecure             Disable TLS verification (not recommended).
+ *      --no-interaction       Disable interactivity.
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
@@ -56,6 +61,9 @@ class Installer {
     private $userAgent;
     private $pharName;
     private $argv;
+    private $serviceEnvPrefix;
+    private $migratePrompt = false;
+    private $migrateDocsUrl;
 
     public function __construct(array $args = []) {
         $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
@@ -69,6 +77,9 @@ class Installer {
   'executable' => 'platform',
   'cliName' => 'Platform.sh CLI',
   'userAgent' => 'platformsh-cli',
+  'serviceEnvPrefix' => 'PLATFORM_',
+  'migratePrompt' => true,
+  'migrateDocsUrl' => 'https://docs.platform.sh/administration/cli.html',
 )/* END_CONFIG */;
 
         $required = ['envPrefix', 'manifestUrl', 'configDir', 'executable', 'cliName'];
@@ -107,6 +118,34 @@ class Installer {
         ini_set('display_errors', 1);
 
         $this->output($this->cliName . " installer", 'heading');
+
+        if ($this->migratePrompt && !$this->isCI()) {
+            $this->output('');
+            $this->output('Warning', 'heading');
+            $this->output('This is the "legacy" PHP-based installer and is no longer recommended.');
+            if (!empty($this->migrateDocsUrl)) {
+                $this->output('You can install the latest release for your operating system by following these instructions:');
+                $this->output($this->migrateDocsUrl, 'info');
+            }
+            if ($this->isInteractive()) {
+                $this->output('');
+                $waitTime = 10;
+                // Check STDIN in a loop to see if the user hit a key.
+                if (stream_set_blocking(STDIN, FALSE)) {
+                    $start = microtime(true);
+                    $this->output("Continuing with the installation in $waitTime seconds. Press Enter to continue now, or Ctrl+C to quit.");
+                    while (microtime(true) - $start < $waitTime) {
+                        if (readline() !== false) {
+                            break;
+                        }
+                        usleep(300000);
+                    }
+                } else {
+                    $this->output("Continuing with the installation in $waitTime seconds (use Ctrl+C to quit)...");
+                    sleep($waitTime);
+                }
+            }
+        }
 
         // Run environment checks.
         $this->output(PHP_EOL . "Environment check", 'heading');
@@ -784,6 +823,60 @@ class Installer {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns whether interactivity is possible and not disabled.
+     *
+     * @return bool
+     */
+    private function isInteractive()
+    {
+        return !getenv($this->envPrefix . 'NO_INTERACTION') && $this->isTerminal(STDIN) && !$this->flagEnabled('no-interaction');
+    }
+
+    /**
+     * Detects if running in a TTY terminal.
+     *
+     * @see \Platformsh\Cli\Command\CommandBase::isTerminal()
+     *
+     * @param resource|int $descriptor
+     *
+     * @return bool
+     */
+    private function isTerminal($descriptor)
+    {
+        return !function_exists('posix_isatty') || posix_isatty($descriptor);
+    }
+
+    /**
+     * Detects a Platform.sh non-terminal Dash environment; i.e. a hook.
+     *
+     * @see \Platformsh\Cli\Command\CommandBase::detectRunningInHook()
+     *
+     * @return bool
+     */
+    private function detectRunningInHook()
+    {
+        $envPrefix = $this->serviceEnvPrefix;
+        return getenv($envPrefix . 'PROJECT')
+            && basename(getenv('SHELL')) === 'dash'
+            && !$this->isTerminal(STDIN);
+    }
+
+    /**
+     * Detects if running within a CI system.
+     *
+     * @see \Platformsh\Cli\Command\CommandBase::isCI()
+     *
+     * @return bool
+     */
+    private function isCI()
+    {
+        return getenv('CI') // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+            || getenv('BUILD_NUMBER') // Jenkins, TeamCity
+            || getenv('RUN_ID') // TaskCluster, dsari
+            || $this->detectRunningInHook(); // PSH
     }
 }
 
