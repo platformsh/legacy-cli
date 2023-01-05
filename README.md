@@ -1,46 +1,57 @@
-The **Platform.sh CLI** is the official command-line interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects, and to build them locally for development purposes.
+The **Legacy** Platform.sh CLI is the legacy version of the command-line interface for [Platform.sh](https://platform.sh). For the **current Platform.sh CLI**, check [this repository](https://github.com/platformsh/cli).
 
 [![Build Status](https://api.travis-ci.com/platformsh/platformsh-cli.svg)](https://travis-ci.com/github/platformsh/platformsh-cli) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/main/LICENSE)
 
-## Requirements
+## Install
 
-* Operating system: Linux, OS X, or Windows (anything PHP supports)
-* PHP 5.5.9 or higher, with the following extensions: `curl`, `json`, `pcre`, and `phar`. The installation command will check for these.
-* Git
-* A Bash-like shell:
-  * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
-  * On Windows: [Windows Subsystem for Linux](https://msdn.microsoft.com/en-gb/commandline/wsl/about) (recommended), or another Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
-    The built-in Command Prompt may also work for most purposes.
-* For building locally, your project's dependencies, e.g.
-  * [Composer](https://getcomposer.org/) (for many PHP projects)
-  * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
-  * Other build tools: [npm](https://www.npmjs.com/), [pip](http://docs.python-guide.org/en/latest/starting/installation/), [bundler](http://bundler.io/), etc.
+To install the CLI, use either [Homebrew](https://brew.sh/) (on Linux, macOS, or the Windows Subsystem for Linux) or [Scoop](https://scoop.sh/) (on Windows):
 
-## Installation
+### HomeBrew
 
-Run this command to install the CLI:
+```console
+brew install platformsh/tap/platformsh-cli
+```
 
-    curl -sS https://platform.sh/cli/installer | php
+### Scoop
+
+```console
+scoop bucket add platformsh https://github.com/platformsh/homebrew-tap.git
+scoop install platform
+```
+
+### Manual installation
+
+For manual installation, you can also [download the latest binaries](https://github.com/platformsh/cli/releases/latest).
+
+### Legacy installer
+
+_This installation method is considered legacy and is discouraged, use one of the methods above instead. Starting with version 5.x, this installation method will not be supported._
+
+In order to use the Legacy installer, you need to have an operating system supported by PHP (Linux, OS X, or Windows) and PHP 5.5.9 or higher, with the following extensions: `curl`, `json`, `pcre`, and `phar`.
+
+Run this command to install the CLI using the legacy installer, given that you have PHP already installed:
+
+```console
+curl -sS https://platform.sh/cli/installer | php
+```
 
 In some Windows terminals you may need `php.exe` instead of `php`.
 
-### Installing manually
+## Upgrade
 
-1. Download the `platform.phar` file from the
-  [latest release](https://github.com/platformsh/platformsh-cli/releases/latest).
+Upgrade using the same tool:
 
-2. Rename the file to `platform`, ensure it is executable, and move it into a
-  directory in your PATH.
+### HomeBrew
 
-3. Enable autocompletion and shell aliases:
+```console
+brew upgrade platformsh-cli
+```
 
-        platform self:install
+### Scoop
 
-## Updating
-
-New releases of the CLI are made regularly. Update with this command:
-
-    platform self:update
+```console
+scoop update platform
+```
 
 ## Usage
 
