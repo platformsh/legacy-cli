@@ -107,6 +107,8 @@ class Installer {
             PHP_VERSION
         );
         $this->pharName = $this->executable . '.phar';
+
+        $this->ensureStreamConstants();
     }
 
     /**
@@ -440,23 +442,16 @@ class Installer {
         return $result->getData();
     }
 
-    /**
-     * Runs a shell command.
+    /*
+     * Sets up the STDIN, STDOUT and STDERR constants.
      *
-     * @param string $cmd
-     * @param bool $forceStdout Whether to redirect all stderr output to stdout.
+     * Due to a PHP bug, these constants are not available when the PHP script
+     * is being read from stdin.
      *
-     * @return int The command's exit code.
+     * See https://bugs.php.net/bug.php?id=43283
      */
-    private function runCommand($cmd, $forceStdout = false) {
-        /*
-         * Set up the STDIN, STDOUT and STDERR constants.
-         *
-         * Due to a PHP bug, these constants are not available when the PHP script
-         * is being read from stdin.
-         *
-         * See https://bugs.php.net/bug.php?id=43283
-         */
+    private function ensureStreamConstants()
+    {
         if (!defined('STDIN')) {
             define('STDIN', fopen('php://stdin', 'r'));
         }
@@ -466,7 +461,17 @@ class Installer {
         if (!defined('STDERR')) {
             define('STDERR', fopen('php://stderr', 'w'));
         }
+    }
 
+    /**
+     * Runs a shell command.
+     *
+     * @param string $cmd
+     * @param bool $forceStdout Whether to redirect all stderr output to stdout.
+     *
+     * @return int The command's exit code.
+     */
+    private function runCommand($cmd, $forceStdout = false) {
         $process = proc_open($cmd, [STDIN, STDOUT, $forceStdout ? STDOUT : STDERR], $pipes);
 
         return proc_close($process);
