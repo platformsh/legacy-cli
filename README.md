@@ -1,20 +1,6 @@
-The **Platform.sh CLI** is the official command-line interface for [Platform.sh](https://platform.sh). Use this tool to interact with your [Platform.sh](https://platform.sh) projects, and to build them locally for development purposes.
+The **Legacy** Platform.sh CLI is the legacy version of the command-line interface for [Platform.sh](https://platform.sh). For the **current Platform.sh CLI**, check [this repository](https://github.com/platformsh/cli).
 
 [![Build Status](https://api.travis-ci.com/platformsh/platformsh-cli.svg)](https://travis-ci.com/github/platformsh/platformsh-cli) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/3.x/LICENSE)
-
-## Requirements
-
-* Operating system: Linux, OS X, or Windows (anything PHP supports)
-* PHP 5.5.9 or higher, with the following extensions: `curl`, `json`, `pcre`, and `phar`. The installation command will check for these.
-* Git
-* A Bash-like shell:
-  * On OS X or Linux/Unix: SH, Bash, Dash or ZSH - usually the built-in shell will work.
-  * On Windows: [Windows Subsystem for Linux](https://msdn.microsoft.com/en-gb/commandline/wsl/about) (recommended), or another Bash-compatible shell such as [Git Bash](https://git-for-windows.github.io/), Cygwin, or MinGW.
-    The built-in Command Prompt may also work for most purposes.
-* For building locally, your project's dependencies, e.g.
-  * [Composer](https://getcomposer.org/) (for many PHP projects)
-  * [Drush](https://github.com/drush-ops/drush) (for Drupal projects)
-  * Other build tools: [npm](https://www.npmjs.com/), [pip](http://docs.python-guide.org/en/latest/starting/installation/), [bundler](http://bundler.io/), etc.
 
 ## Install
 
@@ -40,6 +26,8 @@ For manual installation, you can also [download the latest binaries](https://git
 ### Legacy installer
 
 _This installation method is considered legacy and is discouraged, use one of the methods above instead. Starting with version 5.x, this installation method will not be supported._
+
+In order to use the Legacy installer, you need to have an operating system supported by PHP (Linux, OS X, or Windows) and PHP 5.5.9 or higher, with the following extensions: `curl`, `json`, `pcre`, and `phar`.
 
 Run this command to install the CLI using the legacy installer, given that you have PHP already installed:
 
