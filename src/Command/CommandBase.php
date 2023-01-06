@@ -496,6 +496,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($questionHelper->confirm('Do you want to remove this file now?')) {
                 if (unlink($pharPath)) {
                     $this->stdErr->writeln('File successfully removed! Open a new terminal for the changes to take effect.');
+                    // Exit because no further Phar classes can be loaded.
+                    // This uses a non-zero code because the original command
+                    // technically failed.
+                    exit(1);
                 } else {
                     $this->stdErr->writeln('<error>Error:</error> Failed to delete the file.');
                 }
