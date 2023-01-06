@@ -20,4 +20,4 @@ USER psh
 
 RUN mkdir /home/psh/.ssh
 
-WORKDIR /home/psh/platformsh-cli
+WORKDIR /home/psh/legacy-cli

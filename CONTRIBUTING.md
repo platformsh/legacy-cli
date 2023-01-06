@@ -1,8 +1,12 @@
 # Contributing
 
-Development of the Platform.sh CLI happens in public in the
-[GitHub repository](https://github.com/platformsh/platformsh-cli). Issues and
-pull requests submitted via GitHub are very welcome.
+Development of the Platform.sh Legacy CLI happens in public in the
+[GitHub repository](https://github.com/platformsh/legacy-cli).
+
+Issues and pull requests submitted via GitHub are very welcome.
+
+In the near future - to be confirmed - this may move to being a subtree split
+of the new CLI repository at: https://github.com/platformsh/cli
 
 ## Developing locally
 
@@ -44,7 +48,7 @@ To get the UID and GID for local user, run:
 id
 ```
 
-If your `uid` and and `gid` is not `1000`, then alter `USER_ID` and `GROUP_ID` in `.env` accordingly.
+If your `uid` and `gid` is not `1000`, then alter `USER_ID` and `GROUP_ID` in `.env` accordingly.
 
 
 Next, build and start your container

@@ -31,7 +31,7 @@ application:
   user_state_file: 'state.json'
   env_prefix: 'PLATFORMSH_CLI_'
   tmp_sub_dir: 'platformsh-cli-tmp'
-  github_repo: 'platformsh/platformsh-cli'
+  github_repo: 'platformsh/legacy-cli'
   release_branch: 'main'
 
   # Whether to prompt to run the self:install command if it wasn't already.
