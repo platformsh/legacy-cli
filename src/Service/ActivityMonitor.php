@@ -133,6 +133,7 @@ class ActivityMonitor
             // Re-fetch the log if it reached EOF or errored before receiving
             // the "seal".
             if (\feof($logStream)) {
+                $buffer = '';
                 // Limit the frequency of re-fetching the log.
                 if (microtime(true) - $lastLogFetch < .3) {
                     \usleep(300000);
