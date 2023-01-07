@@ -56,4 +56,30 @@ class TimezoneUtilTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertNotEmpty(TimezoneUtil::getTimezone());
     }
+
+    public function testConvertTz()
+    {
+        $util = new TimezoneUtil();
+        $method = new \ReflectionMethod($util,'convertTz');
+        $method->setAccessible(true);
+        $dataDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'data';
+        $cases = [
+            'UTC' => 'UTC',
+            'GMT' => 'GMT',
+            'AEST' => 'AEST',
+            'UTC0' => 'UTC',
+            'UTC+0' => 'UTC',
+            'UTC-0' => 'UTC',
+            'AEST+0' => 'AEST',
+            'UTC+1' => false,
+            'name' => 'name',
+            'x' => false, // the name must be "three or more characters long"
+            ":$dataDir/tz" => 'Antarctica/Troll',
+            ":$dataDir/tz_" => false,
+            ':' => false,
+        ];
+        foreach ($cases as $input => $expected) {
+            $this->assertEquals($expected, $method->invoke($util, $input), "converting \"$input\"");
+        }
+    }
 }

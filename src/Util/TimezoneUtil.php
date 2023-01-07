@@ -33,7 +33,10 @@ class TimezoneUtil
         }
 
         if (getenv('TZ')) {
-            return (string) getenv('TZ');
+            $converted = self::convertTz((string) getenv('TZ'));
+            if ($converted !== false) {
+                return $converted;
+            }
         }
 
         if ($systemTz = self::detectSystemTimezone()) {
@@ -41,6 +44,37 @@ class TimezoneUtil
         }
 
         return $currentTz;
+    }
+
+    /**
+     * Converts the TZ environment variable format to the PHP format.
+     *
+     * Variable values with non-zero offsets are not supported.
+     *
+     * @link https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+     * @see date_default_timezone_set()
+     *
+     * @param string $tz
+     *
+     * @return string|false
+     *   A string or false if the value cannot be read or is invalid.
+     */
+    private static function convertTz($tz)
+    {
+        if (\strlen($tz) > 1 && $tz[0] === ':') {
+            $filename = substr($tz, 1);
+            if ($filename[0] !== '/') {
+                $filename = '/usr/share/zoneinfo/' . $filename;
+            }
+            if (file_exists($filename) && ($data = file_get_contents($filename)) !== false) {
+                return trim($data);
+            }
+            return false;
+        }
+        if (preg_match('/^([^:0-9,+-]{3,})(0|[+-]0+|$)/i', $tz, $matches) === 1) {
+            return $matches[1];
+        }
+        return false;
     }
 
     /**
