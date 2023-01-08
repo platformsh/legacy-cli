@@ -129,11 +129,11 @@ class Installer {
                 $this->output('You can install the latest release for your operating system by following these instructions:');
                 $this->output($this->migrateDocsUrl, 'info');
             }
-            if ($this->isInteractive()) {
+            if ($this->isInteractive() && $this->isTerminal(STDERR)) {
                 $this->output('');
                 $waitTime = 10;
                 // Check STDIN in a loop to see if the user hit a key.
-                if (stream_set_blocking(STDIN, FALSE)) {
+                if ($this->isTerminal(STDIN) && stream_set_blocking(STDIN, FALSE)) {
                     $start = microtime(true);
                     $this->output("Continuing with the installation in $waitTime seconds. Press Enter to continue now, or Ctrl+C to quit.");
                     while (microtime(true) - $start < $waitTime) {
@@ -837,7 +837,7 @@ class Installer {
      */
     private function isInteractive()
     {
-        return !getenv($this->envPrefix . 'NO_INTERACTION') && $this->isTerminal(STDIN) && !$this->flagEnabled('no-interaction');
+        return !getenv($this->envPrefix . 'NO_INTERACTION') && !$this->flagEnabled('no-interaction');
     }
 
     /**
