@@ -23,7 +23,10 @@
       "exclude": [
         "phpunit",
         "Tests",
-        "tests"
+        "tests",
+        "giggsey/libphonenumber-for-php/src/carrier/data",
+        "giggsey/libphonenumber-for-php/src/geocoding/data",
+        "giggsey/locale/data"
       ]
     }
   ],
