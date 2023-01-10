@@ -471,6 +471,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $appName = $config->get('application.executable');
         $paths = (new OsUtil())->findExecutables($appName);
         $pharPath = \Phar::running(false);
+        $paths = array_unique(array_filter(array_map('realpath', $paths)));
         $paths = array_diff($paths, [$pharPath]);
         if (count($paths)) {
             // Avoid deleting random directories in path
@@ -479,8 +480,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 return;
             }
 
-            // Check if the file is writable.
-            if (!is_writable($pharPath)) {
+            // Check if the path is a regular, writable file.
+            if (!is_file($pharPath) || !is_writable($pharPath)) {
                 return;
             }
 
