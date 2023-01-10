@@ -1,16 +1,17 @@
 [
     {
-        "version": "4.0.1",
-        "sha1": "98399391e526e31fefe1963db4d83a29dc32af47",
-        "sha256": "6a5a0492c2def6fc3c9d89616aea8b3f621519385988afe054492293e4d43dd3",
+        "version": "4.0.2",
+        "sha1": "02f46ecee472c6250f66dba13ce417191abf5a89",
+        "sha256": "187e147f2f4048442ea0a57c512d3cd49ca6483505c925c9ba2c6fd6447941ff",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.0.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.0.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
         "notes": {
             "4.0.0": "This release helps users migrate to the new CLI, which is now recommended.\n\nTo install the latest version see:\nhttps://docs.platform.sh/administration/cli.html\n\nThe new CLI is entirely backwards compatible with the \"Legacy\" CLI: features\nand usage are the same. However, it has a new installation method which no\nlonger requires PHP; it embeds the Legacy CLI and a PHP runtime as part of the\nsame binary.\n\nThe Legacy CLI will now prompt to install the new one, when appropriate. A\nnotice will be displayed if both CLIs are installed, with a suggestion to\ndelete the Legacy one.\n\nThe new CLI's version number will track the Legacy version that it wraps; in\nother words version numbers will be synchronized.\n\nOther changes:\n\n* Update ssh-key commands:\n  - Use `ed25519` instead of `rsa` by default.\n  - Recommend SSH certificates instead of keys.\n  - Otherwise, use ed25519 instead of rsa by default.\n  - Support interactive selection in ssh-key:delete.\n* Allow the `disk` command to be used during crons/deployments.\n* Always print the selected project/environment in verbose mode.\n* Fix wildcard matching for `environment:delete`.\n* Support wildcards when filtering by activity type.\n* Describe which columns are available in help for the `--columns` option\n  (affects commands that list data).\n* Re-fetch the activity log to ensure log items are not missed.\n* Fix \"Cannot cast a filtered stream\" error (on PHP 7.4+).\n* Reduce blank lines from shell commands in verbose mode.\n* Update library `giggsey/libphonenumber-for-php` from 8.13.1 to 8.13.3.",
-            "4.0.1": "* Exit the legacy CLI after deleting (during migration) to avoid Phar errors.\n* Clear the buffer when re-fetching the activity log.\n  - Fixes a JSON decoding error (occurring mainly with longer and busier logs).\n* Parse the TZ environment variable according to the glibc format.\n  - Fixes \"Notice: date_default_timezone_set(): Timezone ID 'UTC0' is invalid\".\n  - Non-zero offsets are not supported."
+            "4.0.1": "* Exit the legacy CLI after deleting (during migration) to avoid Phar errors.\n* Clear the buffer when re-fetching the activity log.\n  - Fixes a JSON decoding error (occurring mainly with longer and busier logs).\n* Parse the TZ environment variable according to the glibc format.\n  - Fixes \"Notice: date_default_timezone_set(): Timezone ID 'UTC0' is invalid\".\n  - Non-zero offsets are not supported.",
+            "4.0.2": "* Exclude unnecessary `libphonenumber` data from Phar build.  \n  The build size increased when adding this library in v3.87.0.  \n  The size is now reduced again by 15MB.\n* The library version has also been updated from 8.13.3 to 8.13.4.\n* Follow symlinks when checking for multiple CLI instances.\n* installer: wait during migration warning even when STDIN is not a tty."
         }
     },
     {
