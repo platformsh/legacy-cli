@@ -2122,7 +2122,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!$input->isInteractive()) {
             throw new \InvalidArgumentException('An organization name or ID (--org) is required.');
         }
-        $organizations = $client->listOrganizationsWithMember($this->api()->getMyUserId());
+        $userId = $this->api()->getMyUserId();
+        $organizations = $client->listOrganizationsWithMember($userId);
         if (!$organizations) {
             throw new NoOrganizationsException('No organizations found.');
         }
@@ -2130,12 +2131,16 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->api()->sortResources($organizations, 'name');
         $options = [];
         $byId = [];
+        $owned = [];
         foreach ($organizations as $organization) {
             if ($filterByLink !== '' && !$organization->hasLink($filterByLink)) {
                 continue;
             }
             $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
             $byId[$organization->id] = $organization;
+            if ($organization->owner_id === $userId) {
+                $owned[$organization->id] = $organization;
+            }
         }
         if (empty($options)) {
             throw new NoOrganizationsException('An organization name or ID (--org) is required.');
@@ -2146,10 +2151,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln(\sprintf('Selected organization: %s (by default)', $this->api()->getOrganizationLabel($organization)));
             return $organization;
         }
+        $default = null;
+        if (count($owned) === 1) {
+            $default = key($owned);
+
+            // Move the default to the top of the list and label it.
+            $options = [$default => $options[$default] . ' <info>(default)</info>'] + $options;
+        }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):');
+        $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):', $default);
         return $byId[$id];
     }
 }
