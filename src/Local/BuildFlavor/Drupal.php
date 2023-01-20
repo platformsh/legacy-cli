@@ -38,6 +38,7 @@ class Drupal extends BuildFlavorBase
         // Look for at least one Drush make file.
         $finder->in($directory)
                ->files()
+               ->ignoreUnreadableDirs()
                ->depth($depth)
                ->exclude(['node_modules', 'vendor'])
                ->name('project.make*')
@@ -50,6 +51,7 @@ class Drupal extends BuildFlavorBase
         // contain the word "Drupal".
         $finder->in($directory)
                ->files()
+               ->ignoreUnreadableDirs()
                ->depth($depth)
                ->name('index.php');
         foreach ($finder as $file) {
@@ -64,6 +66,7 @@ class Drupal extends BuildFlavorBase
         // Check whether there is a composer.json file requiring Drupal core.
         $finder->in($directory)
                ->files()
+               ->ignoreUnreadableDirs()
                ->depth($depth)
                ->name('composer.json');
         foreach ($finder as $file) {

@@ -32,8 +32,9 @@ class LocalDrushAliasesCommand extends CommandBase
     public function isHidden()
     {
         // Hide this command in the list if the project is not Drupal.
+        // Avoid checking if running in the home directory.
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && !Drupal::isDrupal($projectRoot)) {
+        if ($projectRoot && $this->config()->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
             return true;
         }
 
