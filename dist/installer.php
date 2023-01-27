@@ -27,6 +27,7 @@
  *      --shell-type TYPE      The shell type for autocompletion (bash or zsh).
  *      --insecure             Disable TLS verification (not recommended).
  *      --no-interaction       Disable interactivity.
+ *      --no-legacy-warning    Suppress the legacy version warning.
  *
  * This file's syntax must support PHP 5.5.9 or higher.
  * It must not include any other files.
@@ -121,7 +122,7 @@ class Installer {
 
         $this->output($this->cliName . " installer", 'heading');
 
-        if ($this->migratePrompt && !$this->isCI()) {
+        if ($this->migratePrompt && !$this->isCI() && !getenv('NO_LEGACY_WARNING') && !$this->flagEnabled('no-legacy-warning')) {
             $this->output('');
             $this->output('Warning', 'heading');
             $this->output('This is the "legacy" PHP-based installer and is no longer recommended.');
@@ -129,6 +130,9 @@ class Installer {
                 $this->output('You can install the latest release for your operating system by following these instructions:');
                 $this->output($this->migrateDocsUrl, 'info');
             }
+            $this->output('');
+            $this->output('To suppress this message, set the environment variable ', null, false);
+            $this->output('NO_LEGACY_WARNING=1', 'info');
             if ($this->isInteractive() && $this->isTerminal(STDERR)) {
                 $this->output('');
                 $waitTime = 10;
@@ -870,7 +874,7 @@ class Installer {
     }
 
     /**
-     * Detects if running within a CI system.
+     * Detects if running within a CI or local container system.
      *
      * @see \Platformsh\Cli\Command\CommandBase::isCI()
      *
@@ -878,9 +882,11 @@ class Installer {
      */
     private function isCI()
     {
-        return getenv('CI') // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
-            || getenv('BUILD_NUMBER') // Jenkins, TeamCity
-            || getenv('RUN_ID') // TaskCluster, dsari
+        return getenv('CI') !== false // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+            || getenv('BUILD_NUMBER') !== false // Jenkins, TeamCity
+            || getenv('RUN_ID') !== false // TaskCluster, dsari
+            || getenv('LANDO_INFO') !== false // Lando (https://docs.lando.dev/guides/lando-info.html)
+            || getenv('IS_DDEV_PROJECT') === 'true' // DDEV (https://ddev.readthedocs.io/en/latest/users/extend/custom-commands/#environment-variables-provided)
             || $this->detectRunningInHook(); // PSH
     }
 }
