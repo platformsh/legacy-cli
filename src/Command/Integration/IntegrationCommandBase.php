@@ -207,6 +207,7 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'base_url' => new UrlField('Base URL', [
                 'conditions' => ['type' => [
+                    'github',
                     'gitlab',
                     'bitbucket_server',
                 ]],
