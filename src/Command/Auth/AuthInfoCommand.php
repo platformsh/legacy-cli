@@ -37,7 +37,7 @@ class AuthInfoCommand extends CommandBase
         }
 
         if ($this->api()->authApiEnabled()) {
-            $info = $this->api()->getUser()->getProperties();
+            $info = $this->api()->getUser(null, (bool) $input->getOption('refresh'))->getProperties();
         } else {
             // Backwards compatibility.
             $account = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
