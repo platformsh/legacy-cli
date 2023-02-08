@@ -989,15 +989,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Detects if it's running within a CI.
+     * Detects if running within a CI or local container system.
      *
      * @return bool
      */
-    protected function isCI()
+    private function isCI()
     {
-        return getenv('CI') // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
-            || getenv('BUILD_NUMBER') // Jenkins, TeamCity
-            || getenv('RUN_ID') // TaskCluster, dsari
+        return getenv('CI') !== false // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
+            || getenv('BUILD_NUMBER') !== false // Jenkins, TeamCity
+            || getenv('RUN_ID') !== false // TaskCluster, dsari
+            || getenv('LANDO_INFO') !== false // Lando (https://docs.lando.dev/guides/lando-info.html)
+            || getenv('IS_DDEV_PROJECT') === 'true' // DDEV (https://ddev.readthedocs.io/en/latest/users/extend/custom-commands/#environment-variables-provided)
             || $this->detectRunningInHook(); // PSH
     }
 
