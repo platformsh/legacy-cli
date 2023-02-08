@@ -122,7 +122,7 @@ class Installer {
 
         $this->output($this->cliName . " installer", 'heading');
 
-        if ($this->migratePrompt && !$this->isCI() && !getenv('NO_LEGACY_WARNING') && !$this->flagEnabled('no-legacy-warning')) {
+        if ($this->migratePrompt && !$this->isCI() && !getenv($this->envPrefix . 'NO_LEGACY_WARNING') && !$this->flagEnabled('no-legacy-warning')) {
             $this->output('');
             $this->output('Warning', 'heading');
             $this->output('This is the "legacy" PHP-based installer and is no longer recommended.');
@@ -132,7 +132,7 @@ class Installer {
             }
             $this->output('');
             $this->output('To suppress this message, set the environment variable ', null, false);
-            $this->output('NO_LEGACY_WARNING=1', 'info');
+            $this->output($this->envPrefix . 'NO_LEGACY_WARNING=1', 'info');
             if ($this->isInteractive() && $this->isTerminal(STDERR)) {
                 $this->output('');
                 $waitTime = 10;

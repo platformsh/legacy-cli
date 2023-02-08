@@ -352,6 +352,11 @@ class Config
         if (($value = $this->getEnv('SSH_DOMAIN_WILDCARD')) !== false) {
             $this->config['api']['ssh_domain_wildcards'] = [$value];
         }
+
+        // Special case: {PREFIX}NO_LEGACY_WARNING disables the migration prompt.
+        if ($this->getEnv('NO_LEGACY_WARNING')) {
+            $this->config['migrate']['prompt'] = false;
+        }
     }
 
     /**
