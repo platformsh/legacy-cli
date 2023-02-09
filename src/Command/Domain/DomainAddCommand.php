@@ -2,7 +2,9 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
+use Platformsh\Cli\Model\EnvironmentDomain;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DomainAddCommand extends DomainCommandBase
@@ -17,7 +19,10 @@ class DomainAddCommand extends DomainCommandBase
             ->setName('domain:add')
             ->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
-        $this->addProjectOption()->addWaitOptions();
+        $this->addOption('replace', null, InputOption::VALUE_REQUIRED, 'The production domain which this one replaces (required for non-production environment domains)');
+        $this->addProjectOption()
+            ->addEnvironmentOption()
+            ->addWaitOptions();
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain secure.example.com with SSL enabled',
@@ -30,26 +35,32 @@ class DomainAddCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, true);
 
         if (!$this->validateDomainInput($input)) {
             return 1;
         }
 
-        $project = $this->getSelectedProject();
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
 
+        $project = $this->getSelectedProject();
+        $environment = $this->getSelectedEnvironment();
+
+        $this->stdErr->writeln(sprintf('Adding the domain <info>%s</info> to the environment %s', $this->domainName, $this->api()->getEnvironmentLabel($environment)));
+        if (!empty($this->replacementFor)) {
+            $this->stdErr->writeln(sprintf('The domain will replace the production domain <info>%s</info>', $this->replacementFor));
+        }
+        $this->stdErr->writeln('');
+        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+            return 1;
+        }
+
+        $httpClient = $this->api()->getHttpClient();
         try {
-            $this->stdErr->writeln("Adding the domain <info>{$this->domainName}</info>");
-            $result = $project->addDomain($this->domainName, $this->sslOptions);
+            $result = EnvironmentDomain::add($httpClient, $environment, $this->domainName, $this->replacementFor, $this->sslOptions);
         } catch (ClientException $e) {
-            // Catch 409 Conflict errors.
-            $response = $e->getResponse();
-            if ($response && $response->getStatusCode() === 409) {
-                $this->stdErr->writeln("The domain <error>{$this->domainName}</error> already exists on the project.");
-                $this->stdErr->writeln("Use <info>domain:delete</info> to delete an existing domain");
-            } else {
-                $this->handleApiException($e, $project);
-            }
+            $this->handleApiException($e, $project);
 
             return 1;
         }

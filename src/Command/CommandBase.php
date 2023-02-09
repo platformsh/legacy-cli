@@ -1108,8 +1108,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *   Whether to select a default environment.
      * @param bool $detectCurrentEnv
      *   Whether to detect the current environment from Git.
+     * @param bool $devOnly
+     *   If an interactive choice is given, filter the choice to only dev (non-production) environments.
      */
-    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false, $detectCurrentEnv = true)
+    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false, $detectCurrentEnv = true, $devOnly = false)
     {
         $envPrefix = $this->config()->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -1147,9 +1149,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
-            $this->debug('No environment specified or detected: offering a choice...');
-            $this->environment = $this->offerEnvironmentChoice($this->api()->getEnvironments($this->project));
-            return;
+            $environments = $this->api()->getEnvironments($this->project);
+            if ($devOnly) {
+                $defaultBranch = $this->project->default_branch;
+                $environments = array_filter($environments, function (Environment $e) use ($defaultBranch) {
+                    return $e->type !== 'production' && $e->id !== $defaultBranch;
+                });
+            }
+            if (count($environments) > 0) {
+                $this->debug('No environment specified or detected: offering a choice...');
+                $this->environment = $this->offerEnvironmentChoice($environments, 'Enter a number to choose an environment:', $devOnly);
+                return;
+            }
         }
 
         if ($required) {
@@ -1443,10 +1454,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param Environment[] $environments
      * @param string $text
+     * @param bool $devOnly
      *
      * @return Environment
      */
-    final protected function offerEnvironmentChoice(array $environments, $text = 'Enter a number to choose an environment:')
+    final protected function offerEnvironmentChoice(array $environments, $text, $devOnly = false)
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
@@ -1454,8 +1466,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $defaultEnvironment = $this->api()->getDefaultEnvironment($this->project);
-        $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
+        if ($devOnly) {
+            $defaultEnvironmentId = null;
+        } else {
+            $defaultEnvironment = $this->api()->getDefaultEnvironment($this->project);
+            $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
+        }
 
         if (count($environments) > (new Terminal())->getHeight() / 2) {
             $ids = array_keys($environments);

@@ -17,6 +17,10 @@ abstract class DomainCommandBase extends CommandBase
 
     protected $domainName;
 
+    protected $environmentIsProduction;
+
+    protected $replacementFor;
+
     /**
      * @param InputInterface $input
      *
@@ -45,8 +49,43 @@ abstract class DomainCommandBase extends CommandBase
                 $this->stdErr->writeln($e->getMessage());
                 return false;
             }
+        }
 
-            return true;
+        if ($input->hasOption('environment') || $input->hasOption('replace')) {
+            $project = $this->getSelectedProject();
+            $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
+                || ($input->hasOption('replace') && $input->getOption('replace') !== null);
+
+            if ($forEnvironment) {
+                $this->selectEnvironment(null, true, false, true, true);
+                $environment = $this->getSelectedEnvironment();
+                $this->environmentIsProduction = $environment->id === $project->default_branch;
+            } elseif ($project->default_branch === null) {
+                $this->stdErr->writeln('The <error>default_branch</error> property is not set on the project, so the production environment cannot be determined');
+                return false;
+            } else {
+                $this->selectEnvironment($project->default_branch, true, false, false);
+                $environment = $this->getSelectedEnvironment();
+                $this->environmentIsProduction = true;
+                $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                if ($input->hasOption('replace')) {
+                    $this->stdErr->writeln('Use the <comment>--replace</comment> option (and optionally <comment>--environment</comment>) to add a domain to a non-production environment.');
+                    $this->stdErr->writeln('');
+                }
+            }
+
+            if ($input->hasOption('replace')) {
+                $this->replacementFor = $input->getOption('replace');
+                if (!$this->environmentIsProduction && $this->replacementFor === null) {
+                    $this->stdErr->writeln('The <error>--replace</error> option is required for non-production environment domains.');
+                    $this->stdErr->writeln('This specifies which production domain the new domain will replace.');
+                    return false;
+                }
+                if ($this->environmentIsProduction && $this->replacementFor !== null) {
+                    $this->stdErr->writeln('The <error>--replace</error> option is only valid for non-production environment domains.');
+                    return false;
+                }
+            }
         }
 
         return true;
