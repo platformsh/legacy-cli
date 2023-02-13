@@ -234,3 +234,7 @@ updates:
 migrate:
   prompt: true
   docs_url: https://docs.platform.sh/administration/cli.html
+
+warnings:
+  # Whether to display billing warnings related to additional project users.
+  project_users_billing: true

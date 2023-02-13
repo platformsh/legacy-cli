@@ -87,13 +87,15 @@ class WelcomeCommand extends CommandBase
     private function warnIfSuspended(Project $project)
     {
         if ($project->isSuspended()) {
-            $messages = [];
-            $messages[] = '<comment>This project is suspended.</comment>';
-            if ($project->owner === $this->api()->getMyAccount()['id']) {
-                $messages[] = '<comment>Update your payment details to re-activate it</comment>';
+            if ($this->config()->getWithDefault('warnings.project_users_billing', true)) {
+                $messages = [];
+                $messages[] = '<comment>This project is suspended.</comment>';
+                if ($project->owner === $this->api()->getMyAccount()['id']) {
+                    $messages[] = '<comment>Update your payment details to re-activate it</comment>';
+                }
+                $messages[] = '';
+                $this->stdErr->writeln($messages);
             }
-            $messages[] = '';
-            $this->stdErr->writeln($messages);
         }
     }
 

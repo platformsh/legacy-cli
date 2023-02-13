@@ -134,13 +134,15 @@ class SubscriptionInfoCommand extends CommandBase
             $this->formatter->format($currentValue, $property),
             $this->formatter->format($value, $property)
         );
-        $warning = sprintf(
-            '<comment>This action may %s the cost of your subscription.</comment>',
-            is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
-        );
-        $confirmMessage = $warning . "\n" . $confirmMessage;
-        if (!$questionHelper->confirm($confirmMessage)) {
-            return 1;
+        if ($this->config()->getWithDefault('warnings.project_users_billing', true)) {
+            $warning = sprintf(
+                '<comment>This action may %s the cost of your subscription.</comment>',
+                is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
+            );
+            $confirmMessage = $warning . "\n" . $confirmMessage;
+            if (!$questionHelper->confirm($confirmMessage)) {
+                return 1;
+            }
         }
 
         $subscription->update([$property => $value]);

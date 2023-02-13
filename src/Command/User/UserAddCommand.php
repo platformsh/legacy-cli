@@ -308,8 +308,10 @@ class UserAddCommand extends CommandBase
                 return 1;
             }
         } else {
-            $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
-            $this->stdErr->writeln('');
+            if ($this->config()->getWithDefault('warnings.project_users_billing', true)) {
+                $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
+                $this->stdErr->writeln('');
+            }
             if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
                 return 1;
             }
