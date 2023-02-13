@@ -238,3 +238,5 @@ migrate:
 warnings:
   # Whether to display billing warnings related to additional project users.
   project_users_billing: true
+  # Whether to display "Update your payment details" next to suspended projects.
+  project_suspended_payment: true
