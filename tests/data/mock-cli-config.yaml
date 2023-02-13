@@ -10,3 +10,12 @@ application:
 
 service:
   name: 'Mock Service'
+
+api:
+  disable_cache: true
+
+detection:
+  use_site_headers: false
+  site_domains: [example.site]
+  api_domain_suffix: example.com
+  console_domain: console.example.com
