@@ -425,6 +425,7 @@ EOF
             },
             'default' => in_array('development', $this->getAvailablePlans(false, $setupOptions)) ? 'development' : null,
             'allowOther' => true,
+            'avoidQuestion' => true,
           ]),
           'environments' => new Field('Environments', [
             'optionName' => 'environments',
@@ -433,6 +434,7 @@ EOF
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 50;
             },
+            'avoidQuestion' => true,
           ]),
           'storage' => new Field('Storage', [
             'description' => 'The amount of storage per environment, in GiB',
@@ -440,6 +442,7 @@ EOF
             'validator' => function ($value) {
                 return is_numeric($value) && $value > 0 && $value < 1024;
             },
+            'avoidQuestion' => true,
           ]),
           'default_branch' => new Field('Default branch', [
             'description' => 'The default Git branch name for the project (the production environment)',

@@ -195,14 +195,16 @@ abstract class VariableCommandBase extends CommandBase
             'description' => "The variable's value",
         ]);
         $fields['is_json'] = new BooleanField('JSON', [
-            'description' => 'Whether the variable is JSON-formatted',
-            'questionLine' => 'Is the value JSON-formatted',
+            'description' => 'Whether the variable value is JSON-formatted',
+            'questionLine' => 'Is the value JSON-formatted?',
             'default' => false,
+            'avoidQuestion' => true,
         ]);
         $fields['is_sensitive'] = new BooleanField('Sensitive', [
-            'description' => 'Whether the variable is sensitive',
+            'description' => 'Whether the variable value is sensitive',
             'questionLine' => 'Is the value sensitive?',
             'default' => false,
+            'avoidQuestion' => true,
         ]);
         $fields['prefix'] = new OptionsField('Prefix', [
             'description' => "The variable name's prefix",
@@ -225,6 +227,7 @@ abstract class VariableCommandBase extends CommandBase
             ],
             'description' => 'Whether the variable should be enabled',
             'questionLine' => 'Should the variable be enabled?',
+            'avoidQuestion' => true,
         ]);
         $fields['is_inheritable'] = new BooleanField('Inheritable', [
             'conditions' => [
@@ -232,6 +235,7 @@ abstract class VariableCommandBase extends CommandBase
             ],
             'description' => 'Whether the variable is inheritable by child environments',
             'questionLine' => 'Is the variable inheritable (by child environments)?',
+            'avoidQuestion' => true,
         ]);
         $fields['visible_build'] = new BooleanField('Visible at build time', [
             'optionName' => 'visible-build',
@@ -243,11 +247,13 @@ abstract class VariableCommandBase extends CommandBase
                 // This defaults to true for project-level variables, false otherwise.
                 return isset($values['level']) && $values['level'] === self::LEVEL_PROJECT;
             },
+            'avoidQuestion' => true,
         ]);
         $fields['visible_runtime'] = new BooleanField('Visible at runtime', [
             'optionName' => 'visible-runtime',
             'description' => 'Whether the variable should be visible at runtime',
             'questionLine' => 'Should the variable be available at runtime?',
+            'avoidQuestion' => true,
         ]);
 
         return $fields;
