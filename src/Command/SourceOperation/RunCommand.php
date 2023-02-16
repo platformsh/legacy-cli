@@ -13,8 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RunCommand extends CommandBase
 {
-    protected $stability = 'BETA';
-
     protected function configure()
     {
         $this->setName('source-operation:run')
@@ -36,9 +34,29 @@ class RunCommand extends CommandBase
         $variables = $this->parseVariables($input->getOption('variable'));
         $this->debug('Parsed variables: ' . json_encode($variables));
 
+        $operation = $input->getArgument('operation');
+
+        $environment = $this->getSelectedEnvironment();
+        $sourceOps = $environment->getSourceOperations();
+        if (!$sourceOps) {
+            $this->stdErr->writeln('No source operations were found on the environment.');
+            return 1;
+        }
+        $operationNames = [];
+        foreach ($sourceOps as $sourceOp) {
+            $operationNames[] = $sourceOp->operation;
+        }
+        if (!in_array($operation, $operationNames, true)) {
+            $this->stdErr->writeln(sprintf('The source operation <error>%s</error> was not found on the environment %s.', $operation, $this->api()->getEnvironmentLabel($environment, 'comment')));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config()->get('application.executable')));
+            return 1;
+        }
+
+
         try {
             $result = $this->getSelectedEnvironment()->runSourceOperation(
-                $input->getArgument('operation'),
+                $operation,
                 $variables
             );
         } catch (OperationUnavailableException $e) {
