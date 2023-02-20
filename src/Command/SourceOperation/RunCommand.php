@@ -70,6 +70,7 @@ class RunCommand extends CommandBase
 
 
         try {
+            $this->stdErr->writeln(\sprintf('Running source operation <info>%s</info>', $operation));
             $result = $this->getSelectedEnvironment()->runSourceOperation(
                 $operation,
                 $variables
@@ -83,6 +84,11 @@ class RunCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
             $monitor = $this->getService('activity_monitor');
             $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        }
+
+        if ($success && $this->selectedProjectIsCurrent()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('You may wish to run <info>git pull</info> to update your local repository.');
         }
 
         return $success ? 0 : 1;
