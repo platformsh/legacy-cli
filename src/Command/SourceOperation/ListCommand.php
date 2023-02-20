@@ -3,21 +3,26 @@
 namespace Platformsh\Cli\Command\SourceOperation;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ListCommand extends CommandBase
 {
+    const COMMAND_MAX_LENGTH = 24;
+
     private $tableHeader = ['Operation', 'App', 'Command'];
 
     protected function configure()
     {
         $this->setName('source-operation:list')
             ->setAliases(['source-ops'])
-            ->setDescription('List source operations on an environment');
+            ->setDescription('List source operations on an environment')
+            ->addOption('full', null, InputOption::VALUE_NONE, 'Do not limit the length of command to display. The default limit is ' . self::COMMAND_MAX_LENGTH . ' lines.');
 
         $this->addProjectOption();
         $this->addEnvironmentOption();
@@ -43,11 +48,11 @@ class ListCommand extends CommandBase
 
         $rows = [];
         foreach ($sourceOps as $sourceOp) {
-            $rows[] = [
-                $sourceOp->operation,
-                $sourceOp->app,
-                $sourceOp->command,
-            ];
+            $row = [];
+            $row[] = new AdaptiveTableCell($sourceOp->operation, ['wrap' => false]);
+            $row[] = $sourceOp->app;
+            $row[] = $input->getOption('full') ? $sourceOp->command : $this->truncateCommand($sourceOp->command);
+            $rows[] = $row;
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
@@ -68,5 +73,14 @@ class ListCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    private function truncateCommand($cmd)
+    {
+        $lines = \preg_split('/\r?\n/', $cmd);
+        if (count($lines) > self::COMMAND_MAX_LENGTH) {
+            return trim(implode("\n", array_slice($lines, 0, self::COMMAND_MAX_LENGTH))) . "\n# ...";
+        }
+        return trim($cmd);
     }
 }
