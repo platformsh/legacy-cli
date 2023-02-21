@@ -78,7 +78,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         $progress = new ProgressMessage($output);
         while (true) {
             $progress->showIfOutputDecorated(\sprintf('Loading subscriptions (page %d)...', $pageNumber));
-            $collection = $this->getPagedCollection($url, $httpClient, $options);
+            $collection = Subscription::getPagedCollection($url, $httpClient, $options);
             $progress->done();
             $subscriptions = \array_merge($subscriptions, $collection['items']);
             if ($fetchAllPages && count($collection['items']) > 0 && isset($collection['next']) && $collection['next'] !== $url) {
@@ -123,38 +123,5 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * Returns a list of subscriptions.
-     *
-     * This is the equivalent of Subscription::getCollection() with pagination
-     * logic.
-     *
-     * If 'items' is non-empty and if a non-null 'next' URL is returned, this
-     * call may be repeated with the new URL to fetch the next page.
-     *
-     * Use $options['query']['page'] to specify a page number explicitly.
-     *
-     * @todo move this into the API client library
-     *
-     * @param string $url
-     * @param ClientInterface $client
-     * @param array $options
-     *
-     * @return array{'items': Subscription[], 'next': ?string}
-     */
-    private function getPagedCollection($url, ClientInterface $client, array $options = [])
-    {
-        $request = $client->createRequest('get', $url, $options);
-        $data = Subscription::send($request, $client);
-        $items = Subscription::wrapCollection($data, $url, $client);
-
-        $nextUrl = null;
-        if (isset($data['_links']['next']['href'])) {
-            $nextUrl = Url::fromString($url)->combine($data['_links']['next']['href'])->__toString();
-        }
-
-        return ['items' => $items, 'next' => $nextUrl];
     }
 }

@@ -6,6 +6,7 @@ use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Ref\UserRef;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -70,6 +71,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         $formatter = $this->getService('property_formatter');
 
         $data = $member->getProperties();
+        $memberInfo = $member->getUserInfo();
 
         // Convert the user ref object to the 'user' property.
         if (isset($data['ref:users'][$member->user_id]) && $data['ref:users'][$member->user_id] instanceof UserRef) {
@@ -97,6 +99,10 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         }
 
         $table->renderSimple($values, $headings);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf("To view the user's project access, run: <info>%s</info>", $this->otherCommandExample($input, 'org:user:projects', $memberInfo ? OsUtil::escapeShellArg($memberInfo->email) : '')));
+        }
 
         return 0;
     }

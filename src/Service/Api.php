@@ -23,6 +23,7 @@ use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\ProjectStub;
+use Platformsh\Client\Model\Ref\UserRef;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\Model\Subscription;
@@ -1407,5 +1408,23 @@ class Api
 
         // Otherwise, check the API to see if verification is required.
         return $this->getHttpClient()->post( '/me/phone')->json()['verify_phone'];
+    }
+
+    /**
+     * Returns a descriptive label for a referenced user.
+     *
+     * @param UserRef $userRef
+     * @param string|false $tag
+     *
+     * @return string
+     */
+    public function getUserRefLabel(UserRef $userRef, $tag = 'info')
+    {
+        $name = trim($userRef->first_name . ' ' . $userRef->last_name);
+        $pattern = $name !== '' ? '%2$s \<%3$s>' : '%3$s';
+        if ($tag !== false) {
+            $pattern = $name !== '' ? '<%1$s>%2$s</%1$s> \<%3$s>' : '<%1$s>%3$s</%1$s>';
+        }
+        return \sprintf($pattern, $tag, $name, $userRef->email);
     }
 }
