@@ -222,7 +222,7 @@ EOF
                 $lastCheck = time();
                 try {
                     // The API call will timeout after $checkTimeout seconds.
-                    $subscription->refresh(['timeout' => $checkTimeout, 'exceptions' => false]);
+                    $subscription->refresh(['timeout' => $checkTimeout]);
                 } catch (ConnectException $e) {
                     if (strpos($e->getMessage(), 'timed out') !== false) {
                         $this->debug($e->getMessage());
