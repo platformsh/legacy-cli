@@ -115,10 +115,10 @@ abstract class IntegrationCommandBase extends CommandBase
 
         // Process Bitbucket Server values.
         if ($type === 'bitbucket_server') {
-            // Translate base_url into url.
-            if (isset($values['base_url'])) {
-                $values['url'] = $values['base_url'];
-                unset($values['base_url']);
+            // Translate bitbucket_url into url.
+            if (isset($values['bitbucket_url'])) {
+                $values['url'] = $values['bitbucket_url'];
+                unset($values['bitbucket_url']);
             }
             // Split bitbucket_server "repository" into project/repository.
             if (isset($values['repository']) && strpos($values['repository'], '/', 1) !== false) {
@@ -206,12 +206,15 @@ abstract class IntegrationCommandBase extends CommandBase
                 },
             ]),
             'base_url' => new UrlField('Base URL', [
-                'conditions' => ['type' => [
-                    'github',
-                    'gitlab',
-                    'bitbucket_server',
-                ]],
+                'conditions' => ['type' => ['github', 'gitlab']],
                 'description' => 'The base URL of the server installation',
+                'required' => false,
+                'avoidQuestion' => true,
+            ]),
+            'bitbucket_url' => new UrlField('Base URL', [
+                'conditions' => ['type' => 'bitbucket_server'],
+                'optionName' => 'bitbucket-url',
+                'description' => 'The base URL of the Bitbucket Server installation',
             ]),
             'username' => new Field('Username', [
                 'conditions' =>  ['type' => [
