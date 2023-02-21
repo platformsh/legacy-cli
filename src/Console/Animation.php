@@ -58,7 +58,7 @@ class Animation
             $timeSince = (microtime(true) - $this->lastFrameTime) * 1000000;
             $interval = $this->frames[$this->lastFrame]->getDuration();
             if ($timeSince < $interval) {
-                usleep($interval - $timeSince);
+                usleep($interval - (int) $timeSince);
             }
         }
 
