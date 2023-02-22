@@ -2127,8 +2127,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
             $organizationId = $currentProject->getProperty('organization');
             foreach ($organizations as $organization) {
+                if ($filterByLink !== '' && !$organization->hasLink($filterByLink)) {
+                    continue;
+                }
                 if ($organization->id === $organizationId) {
-                    $this->stdErr->writeln(\sprintf('Selected organization: %s (based on the current project)', $this->api()->getOrganizationLabel($organization)));
+                    $this->stdErr->writeln(\sprintf('Selected organization: %s (based on current project)', $this->api()->getOrganizationLabel($organization)));
                     return $organization;
                 }
             }
