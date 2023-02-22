@@ -2121,11 +2121,22 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $organization;
         }
 
+        $userId = $this->api()->getMyUserId();
+        $organizations = $client->listOrganizationsWithMember($userId);
+
+        if (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
+            $organizationId = $currentProject->getProperty('organization');
+            foreach ($organizations as $organization) {
+                if ($organization->id === $organizationId) {
+                    $this->stdErr->writeln(\sprintf('Selected organization: %s (based on the current project)', $this->api()->getOrganizationLabel($organization)));
+                    return $organization;
+                }
+            }
+        }
+
         if (!$input->isInteractive()) {
             throw new \InvalidArgumentException('An organization name or ID (--org) is required.');
         }
-        $userId = $this->api()->getMyUserId();
-        $organizations = $client->listOrganizationsWithMember($userId);
         if (!$organizations) {
             throw new NoOrganizationsException('No organizations found.');
         }
