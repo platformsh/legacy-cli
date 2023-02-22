@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.1.1",
-        "sha1": "dbc8a3217d69597cc0417d437f4c05201bef8aff",
-        "sha256": "07956aeb526ae34150432983b08a482c50938362dceff39872e7fb98cc1b33f3",
+        "version": "4.1.2",
+        "sha1": "ca58e8fa10ec44a7a138e2add43b0ec045fdf080",
+        "sha256": "d4aff4ca47a18f24a5510031fd9576e4e1541150c25b297410b44a5bd5073d9a",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.1.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.1.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -13,7 +13,8 @@
             "4.0.1": "* Exit the legacy CLI after deleting (during migration) to avoid Phar errors.\n* Clear the buffer when re-fetching the activity log.\n  - Fixes a JSON decoding error (occurring mainly with longer and busier logs).\n* Parse the TZ environment variable according to the glibc format.\n  - Fixes \"Notice: date_default_timezone_set(): Timezone ID 'UTC0' is invalid\".\n  - Non-zero offsets are not supported.",
             "4.0.2": "* Exclude unnecessary `libphonenumber` data from Phar build.  \n  The build size increased when adding this library in v3.87.0.  \n  The size is now reduced again by 15MB.\n* The library version has also been updated from 8.13.3 to 8.13.4.\n* Follow symlinks when checking for multiple CLI instances.\n* installer: wait during migration warning even when STDIN is not a tty.",
             "4.1.0": "New features:\n\n* Add a `source-operations:list` (`source-ops`) command and improve validation\n  in the `source-operations:run` command.\n\nOther changes:\n\n* Ask fewer questions in the `project:create` (`create`) and `variable:create`\n  (`var:create`) forms. The following can be used on the command line but will\n  no longer be asked interactively:\n    - the --plan, --environments and --storage in the project:create command\n    - --json, --sensitive, --enabled, --prefix, --inheritable, --visible-build, and\n      --visible-runtime in the variable:create command\n* Provide more ways to suppress the legacy warning.\n  Reads the following environment variables to suppress the warning about\n  migrating to the new CLI installation method:\n    - PLATFORMSH_CLI_NO_LEGACY_WARNING=1\n    - IS_DDEV_PROJECT=true\n    - LANDO_INFO=anything\n    - (in addition to the other currently supported variables which are CI,\n      BUILD_NUMBER and RUN_ID)\n* Fix help and list commands to properly display the executable name.\n* Fix `--refresh` option in the `auth:info` command (it had no effect).\n* Allow base URLs for GitHub integrations.\n* If the user owns 1 organization (and is a member of others), select it by\n  default.\n* Fix \"RecursiveDirectoryIterator UnexpectedValueException\" from unreadable\n  directories while detecting the local app.\n* Dependency updates:\n    - Bump giggsey/libphonenumber-for-php from 8.13.4 to 8.13.5 (#1223)\n    - Bump composer/ca-bundle from 1.3.4 to 1.3.5 (#1219)",
-            "4.1.1": "* Do not require `--base-url` for GitHub and GitLab integrations.  \n  N.B. with apologies for the potential compatibility break, this changes the\n  option name `--base-url` to `--bitbucket-url` for creating or updating\n  Bitbucket Server integrations, which was necessary to fix the bug with GitHub\n  and GitLab.\n* Fix failure to refresh token in `create` command resulting in an eventual\n  error message \"Property not found: status\"."
+            "4.1.1": "* Do not require `--base-url` for GitHub and GitLab integrations.  \n  N.B. with apologies for the potential compatibility break, this changes the\n  option name `--base-url` to `--bitbucket-url` for creating or updating\n  Bitbucket Server integrations, which was necessary to fix the bug with GitHub\n  and GitLab.\n* Fix failure to refresh token in `create` command resulting in an eventual\n  error message \"Property not found: status\".",
+            "4.1.2": "* Add iconv and mbstring polyfills to Composer dependencies.  \n  Fixes the `iconv()` function not being found during some commands, on systems\n  without the `mbstring` PHP extension."
         }
     },
     {
