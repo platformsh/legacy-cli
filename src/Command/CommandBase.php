@@ -159,19 +159,26 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->environment = null;
         $this->remoteContainer = null;
 
-        if ($this->config()->get('api.debug') || getenv('CLI_DEBUG')) {
+        $envPrefix = $this->config()->get('application.env_prefix');
+        if (getenv('CLI_DEBUG') || getenv($envPrefix . 'DEBUG')) {
             $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
         }
 
-        // Tune error reporting based on the output verbosity.
-        ini_set('display_errors', '0');
-        if ($output->isVerbose()) {
-            error_reporting($output->isDebug() ? E_ALL : E_ALL & ~E_DEPRECATED);
-            ini_set('display_errors', 'stderr');
-        } elseif ($output->isQuiet()) {
+        // Tune error reporting.
+        if ($output->isQuiet()) {
             error_reporting(false);
+            ini_set('display_errors', '0');
         } else {
-            error_reporting(E_PARSE | E_ERROR);
+            // By default, deprecation notices are not displayed.
+            // They can be switched on in debug mode by setting the
+            // CLI_REPORT_DEPRECATIONS environment variable to 1.
+            $error_level = ($output->isVerbose() ? E_ALL : E_PARSE | E_ERROR) & ~E_DEPRECATED;
+            $report_deprecations = getenv('CLI_REPORT_DEPRECATIONS') || getenv($envPrefix . 'REPORT_DEPRECATIONS');
+            if ($report_deprecations && $output->isDebug()) {
+                $error_level |= E_DEPRECATED;
+            }
+            error_reporting($error_level);
+            ini_set('display_errors', 'stderr');
         }
 
         $this->promptLegacyMigrate();
