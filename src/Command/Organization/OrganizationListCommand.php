@@ -65,19 +65,31 @@ class OrganizationListCommand extends OrganizationCommandBase
             return 1;
         }
 
+        $currentProjectOrg = null;
+        $currentProject = $this->getCurrentProject(true);
+        if ($currentProject && $currentProject->hasProperty('organization')) {
+            $currentProjectOrg = $currentProject->getProperty('organization');
+        }
+
+        /** @var \Platformsh\Cli\Service\Table $table */
+        $table = $this->getService('table');
+
         $rows = [];
+        $machineReadable = $table->formatIsMachineReadable();
+        $markedCurrent = false;
         foreach ($organizations as $org) {
             $row = $org->getProperties();
+            if (!$machineReadable && $org->id === $currentProjectOrg) {
+                $row['name'] .= '<info>*</info>';
+                $markedCurrent = true;
+            }
             $info = $org->getOwnerInfo();
             $row['owner_email'] = $info ? $info->email : '';
             $row['owner_username'] = $info ? $info->username : '';
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$machineReadable) {
             if ($input->getOption('my')) {
                 $this->stdErr->writeln('Organizations you own:');
             } else {
@@ -86,6 +98,10 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
+
+        if ($markedCurrent) {
+            $this->stdErr->writeln("<info>*</info> - Indicates the current project's organization");
+        }
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
