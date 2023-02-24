@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use CommerceGuys\Guzzle\Oauth2\AccessToken;
+use Composer\CaBundle\CaBundle;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
@@ -262,10 +263,7 @@ class Api
             $connectorOptions['api_token_type'] = 'access';
         }
 
-        $guzzleOptions = $this->getGuzzleOptions();
-        if (!empty($guzzleOptions['defaults']['proxy'])) {
-            $connectorOptions['proxy'] = $guzzleOptions['defaults']['proxy'];
-        }
+        $connectorOptions['proxy'] = $this->guzzleProxyConfig();
 
         // Override the OAuth 2.0 token and revoke URLs if provided.
         if ($this->config->has('api.oauth2_token_url')) {
@@ -294,7 +292,22 @@ class Api
      */
     private function caBundlePath()
     {
-        return \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath(new ConsoleLogger($this->stdErr));
+        $path = CaBundle::getSystemCaRootBundlePath();
+        $this->debug('Determined CA bundle path: ' . $path);
+        return $path;
+    }
+
+    /**
+     * Logs a debug message.
+     *
+     * @param string $message
+     * @return void
+     */
+    private function debug($message)
+    {
+        if ($this->stdErr && $this->stdErr->isDebug()) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
+        }
     }
 
     /**
@@ -376,14 +389,7 @@ class Api
                 'headers' => ['User-Agent' => $this->config->getUserAgent()],
                 'debug' => $this->config->get('api.debug') ? STDERR : false,
                 'verify' => $this->config->get('api.skip_ssl') ? false : $this->caBundlePath(),
-                'proxy' => array_map(function($proxyUrl) {
-                    // If Guzzle is going to use PHP's built-in HTTP streams,
-                    // rather than curl, then transform the proxy scheme.
-                    if (!\extension_loaded('curl') && \ini_get('allow_url_fopen')) {
-                        return \str_replace(['http://', 'https://'], ['tcp://', 'tcp://'], $proxyUrl);
-                    }
-                    return $proxyUrl;
-                }, $this->config->getProxies()),
+                'proxy' => $this->guzzleProxyConfig(),
                 'timeout' => $this->config->get('api.default_timeout'),
             ],
         ];
@@ -394,6 +400,23 @@ class Api
         }
 
         return $options;
+    }
+
+    /**
+     * Returns proxy config in the format expected by Guzzle.
+     *
+     * @return string[]
+     */
+    private function guzzleProxyConfig()
+    {
+        return array_map(function($proxyUrl) {
+            // If Guzzle is going to use PHP's built-in HTTP streams,
+            // rather than curl, then transform the proxy scheme.
+            if (!\extension_loaded('curl') && \ini_get('allow_url_fopen')) {
+                return \str_replace(['http://', 'https://'], ['tcp://', 'tcp://'], $proxyUrl);
+            }
+            return $proxyUrl;
+        }, $this->config->getProxies());
     }
 
     /**
@@ -1316,7 +1339,7 @@ class Api
                 $subscription = false;
             }
             if ($subscription) {
-                $this->stdErr->writeln('Loaded the subscription directly', OutputInterface::VERBOSITY_DEBUG);
+                $this->debug('Loaded the subscription directly');
                 return $subscription;
             }
         }
@@ -1336,7 +1359,7 @@ class Api
         }
         if (!empty($organizationId) && ($organization = $this->getClient()->getOrganizationById($organizationId))) {
             if ($subscription = $organization->getSubscription($id)) {
-                $this->stdErr->writeln("Loaded the subscription via the project's organization: " . $this->getOrganizationLabel($organization), OutputInterface::VERBOSITY_DEBUG);
+                $this->debug("Loaded the subscription via the project's organization: " . $this->getOrganizationLabel($organization));
                 return $subscription;
             }
         }
@@ -1348,7 +1371,7 @@ class Api
             try {
                 $subscription = $organization->getSubscription($id);
                 if ($subscription) {
-                    $this->stdErr->writeln("Loaded the subscription through organization: " . $this->getOrganizationLabel($organization), OutputInterface::VERBOSITY_DEBUG);
+                    $this->debug("Loaded the subscription through organization: " . $this->getOrganizationLabel($organization));
                     return $subscription;
                 }
             } catch (BadResponseException $e) {
