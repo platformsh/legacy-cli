@@ -107,7 +107,6 @@ class Shell
 
         if (!empty($input) && is_string($input) && $this->stdErr->isVeryVerbose()) {
             $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input));
-            $this->stdErr->writeln('');
         }
 
         if (!empty($env)) {
@@ -132,7 +131,6 @@ class Shell
     {
         if ($dir !== null && $this->stdErr->isVeryVerbose()) {
             $this->stdErr->writeln('  Working directory: ' . $dir);
-            $this->stdErr->writeln('');
         }
     }
 
@@ -147,7 +145,6 @@ class Shell
                 $message[] = sprintf('    <info>%s</info>=%s', $variable, $value);
             }
             $this->stdErr->writeln($message);
-            $this->stdErr->writeln('');
         }
     }
 
