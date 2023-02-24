@@ -2136,7 +2136,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->debug('Error when fetching project organization: ' . $e->getMessage());
                 $organization = false;
             }
-            if ($organization && ($filterByLink === '' || $organization->hasLink($filterByLink))) {
+            // The organization is not filtered by $filterByLink here, so that
+            // behavior is more predictable between different organization
+            // commands.
+            if ($organization) {
                 $this->stdErr->writeln(\sprintf('Selected organization: %s (based on current project)', $this->api()->getOrganizationLabel($organization)));
                 return $organization;
             }
