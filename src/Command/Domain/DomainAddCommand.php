@@ -60,6 +60,15 @@ class DomainAddCommand extends DomainCommandBase
         try {
             $result = EnvironmentDomain::add($httpClient, $environment, $this->domainName, $this->replacementFor, $this->sslOptions);
         } catch (ClientException $e) {
+            if (($response = $e->getResponse()) && $response->getStatusCode() === 409) {
+                $data = $response->json();
+                if (isset($data['title'], $data['message'], $data['detail']['conflicting_domain']) && $data['title'] === 'replacement_for conflict') {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf('The environment %s already has a domain with the same <comment>--replace</comment> value: <error>%s</error>', $this->api()->getEnvironmentLabel($environment, 'comment'), $data['detail']['conflicting_domain']));
+                    return 1;
+                }
+            }
+
             $this->handleApiException($e, $project);
 
             return 1;
