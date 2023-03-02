@@ -757,7 +757,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
-                $this->debug('Found mapped environment for branch "' . $currentBranch . '": ' . $this->api()->getEnvironmentLabel($environment));
+                $this->debug('Found mapped environment for branch "' . $currentBranch . '": ' . $this->api()->getEnvironmentLabel($environment, 'info', true));
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
@@ -1180,7 +1180,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $environments = $this->api()->getEnvironments($this->project);
             $environment = $this->api()->getDefaultEnvironment($environments, $this->project);
             if ($environment) {
-                $this->stdErr->writeln(\sprintf('Selected default environment: %s', $this->api()->getEnvironmentLabel($environment)));
+                $this->stdErr->writeln(\sprintf('Selected default environment: %s', $this->api()->getEnvironmentLabel($environment, 'info', true)));
                 $this->printedSelectedEnvironment = true;
                 $this->environment = $environment;
                 return;
@@ -1519,7 +1519,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } else {
             $environmentList = [];
             foreach ($environments as $environment) {
-                $environmentList[$environment->id] = $this->api()->getEnvironmentLabel($environment, false);
+                $environmentList[$environment->id] = $this->api()->getEnvironmentLabel($environment, false, true);
             }
             asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
 
@@ -1665,7 +1665,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 return;
             }
             $this->ensurePrintSelectedProject();
-            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment));
+            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment, 'info', true));
             $this->printedSelectedEnvironment = true;
             if ($blankLine) {
                 $this->stdErr->writeln('');

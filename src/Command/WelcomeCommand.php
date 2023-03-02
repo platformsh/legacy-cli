@@ -122,7 +122,7 @@ class WelcomeCommand extends CommandBase
         if ($project) {
             $this->stdErr->writeln('Project: ' . $this->api()->getProjectLabel($project));
             if ($environment) {
-                $this->stdErr->writeln('Environment: ' . $this->api()->getEnvironmentLabel($environment));
+                $this->stdErr->writeln('Environment: ' . $this->api()->getEnvironmentLabel($environment, 'info', true));
             }
             if ($appName) {
                 $this->stdErr->writeln('Application name: <info>' . $appName . '</info>');

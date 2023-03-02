@@ -94,7 +94,7 @@ class BackupRestoreCommand extends CommandBase
             ? $this->api()->getEnvironment($target, $this->getSelectedProject())
             : $environment;
         $targetLabel = $targetEnvironment
-            ? $this->api()->getEnvironmentLabel($targetEnvironment)
+            ? $this->api()->getEnvironmentLabel($targetEnvironment, 'info', true)
             : '<info>' . $target . '</info>';
 
         // Do not allow restoring with --target on legacy regions: it can

@@ -147,7 +147,7 @@ EOF
         if (!$anythingSpecified
             && empty($selectedEnvironments)
             && ($current = $this->getCurrentEnvironment($this->getSelectedProject()))) {
-            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api()->getEnvironmentLabel($current));
+            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api()->getEnvironmentLabel($current, 'info', true));
             $this->stdErr->writeln('');
             $selectedEnvironments[$current->id] = $current;
         }
