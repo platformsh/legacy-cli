@@ -32,8 +32,8 @@ class DomainDeleteCommand extends CommandBase
         $this->validateInput($input, true);
 
         $forEnvironment = $input->getOption('environment') !== null;
-
         $name = $input->getArgument('name');
+        $project = $this->getSelectedProject();
 
         if ($forEnvironment) {
             $httpClient = $this->api()->getHttpClient();
@@ -41,7 +41,6 @@ class DomainDeleteCommand extends CommandBase
             $domain = EnvironmentDomain::get($name, $environment->getLink('#domains'), $httpClient);
         }
         else {
-            $project = $this->getSelectedProject();
             $domain = $project->getDomain($name);
         }
 
