@@ -57,7 +57,7 @@ abstract class DomainCommandBase extends CommandBase
                 || ($input->hasOption('replace') && $input->getOption('replace') !== null);
 
             if ($forEnvironment) {
-                $this->selectEnvironment(null, true, false, true, true);
+                $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
                 $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = $environment->id === $project->default_branch;
             } elseif ($project->default_branch === null) {
