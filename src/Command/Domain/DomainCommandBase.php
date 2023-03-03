@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
@@ -84,6 +85,26 @@ abstract class DomainCommandBase extends CommandBase
                 if ($this->environmentIsProduction && $this->replacementFor !== null) {
                     $this->stdErr->writeln('The <error>--replace</error> option is only valid for non-production environment domains.');
                     return false;
+                }
+                $capabilities = $project->getCapabilities();
+                if (empty($capabilities->custom_domains['enabled']) || empty($capabilities->custom_domains['environments_with_domains_limit'])) {
+                    $this->stdErr->writeln(sprintf('The project %s does not support development environment domains.', $this->api()->getProjectLabel($project, 'error')));
+                    return false;
+                }
+                try {
+                    $domain = $project->getDomain($this->replacementFor);
+                    if ($domain === false) {
+                        $this->stdErr->writeln(sprintf(
+                            'The <comment>--replace</comment> domain was not found: <error>%s</error>',
+                            $this->replacementFor
+                        ));
+                        return false;
+                    }
+                } catch (BadResponseException $e) {
+                    // Ignore access denied errors.
+                    if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                        throw $e;
+                    }
                 }
             }
         }
