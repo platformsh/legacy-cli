@@ -207,7 +207,7 @@ abstract class VariableCommandBase extends CommandBase
             'avoidQuestion' => true,
         ]);
         $fields['prefix'] = new OptionsField('Prefix', [
-            'description' => "The variable name's prefix",
+            'description' => "The variable name's prefix which can determine its type, e.g. 'env'. Only applicable if the name does not already contain a prefix.",
             'conditions' => [
                 'name' => function ($name) {
                     return strpos($name, ':') === false;
@@ -225,7 +225,7 @@ abstract class VariableCommandBase extends CommandBase
             'conditions' => [
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
-            'description' => 'Whether the variable should be enabled',
+            'description' => 'Whether the variable should be enabled on the environment',
             'questionLine' => 'Should the variable be enabled?',
             'avoidQuestion' => true,
         ]);
