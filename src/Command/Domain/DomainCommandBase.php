@@ -88,7 +88,7 @@ abstract class DomainCommandBase extends CommandBase
                 }
                 $capabilities = $project->getCapabilities();
                 if (empty($capabilities->custom_domains['enabled']) || empty($capabilities->custom_domains['environments_with_domains_limit'])) {
-                    $this->stdErr->writeln(sprintf('The project %s does not support development environment domains.', $this->api()->getProjectLabel($project, 'error')));
+                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
                     return false;
                 }
                 try {
