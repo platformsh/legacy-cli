@@ -103,11 +103,19 @@ class DomainListCommand extends DomainCommandBase
                     $this->api()->getProjectLabel($project)
                 ));
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf(
-                    'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name]</info>',
-                    $executable,
-                    OsUtil::escapeShellArg($environment->name)
-                ));
+                if ($environment->is_main) {
+                    $this->stdErr->writeln(sprintf(
+                        'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name]</info>',
+                        $executable,
+                        OsUtil::escapeShellArg($environment->name)
+                    ));
+                } else {
+                    $this->stdErr->writeln(sprintf(
+                        'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name] --replace [replace]</info>',
+                        $executable,
+                        OsUtil::escapeShellArg($environment->name)
+                    ));
+                }
             }
             else {
                 $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
@@ -145,6 +153,9 @@ class DomainListCommand extends DomainCommandBase
             $this->stdErr->writeln('');
             if ($forEnvironment) {
                 $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' [domain-name]';
+                if (!$this->getSelectedEnvironment()->is_main) {
+                    $exampleArgs .= ' -r [replace]';
+                }
             } else {
                 $exampleArgs = '[domain-name]';
             }
