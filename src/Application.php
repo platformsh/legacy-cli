@@ -193,6 +193,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Organization\User\OrganizationUserDeleteCommand();
         $commands[] = new Command\Organization\User\OrganizationUserGetCommand();
         $commands[] = new Command\Organization\User\OrganizationUserListCommand();
+        $commands[] = new Command\Organization\User\OrganizationUserProjectsCommand();
         $commands[] = new Command\Organization\User\OrganizationUserUpdateCommand();
         $commands[] = new Command\Metrics\DiskUsageCommand();
         $commands[] = new Command\Project\ProjectClearBuildCacheCommand();

@@ -61,6 +61,7 @@ class PropertyFormatter implements InputConfiguringInterface
             case 'expires_at':
             case 'started_at':
             case 'completed_at':
+            case 'granted_at':
             case 'ssl.expires_on':
                 $value = $this->formatDate($value);
                 break;

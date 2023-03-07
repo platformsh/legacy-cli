@@ -184,20 +184,23 @@ api:
   # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
   auto_load_ssh_cert: true
 
-  # Whether the API supports project invitations.
-  invitations: true
-
-  # Whether the Organizations API is enabled.
-  organizations: true
-
   # Whether the Auth API is enabled.
   auth: true
 
+  # Whether the API supports project invitations (requires "auth").
+  invitations: true
+
+  # Whether the Organizations API is enabled (requires "auth").
+  organizations: true
+
+  # Whether Centralized User Management is available (requires "auth" and "organizations").
+  centralized_permissions: true
+
+  # Whether the Phone Verification APIs (/me/phone and /users/ID/phonenumber) are enabled (requires "auth").
+  phone_verification: true
+
   # Whether the Metrics API is enabled.
   metrics: true
-
-  # Whether the Phone Verification APIs (/me/phone and /users/ID/phonenumber) are enabled.
-  phone_verification: true
 
 # How the CLI detects and configures Git repositories as projects.
 detection:
