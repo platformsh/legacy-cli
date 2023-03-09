@@ -23,7 +23,7 @@ class EnvironmentScpCommand extends CommandBase
             ->setAliases(['scp'])
             ->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
             ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories')
-            ->setDescription('Copy files to and from current environment using scp');
+            ->setDescription('Copy files to and from an environment using scp');
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addRemoteContainerOptions();
