@@ -112,9 +112,7 @@ class ProjectGetCommand extends CommandBase
                 || $git->remoteRefExists($gitUrl);
         } catch (ProcessFailedException $e) {
             // The ls-remote command failed.
-            $this->stdErr->writeln(sprintf(
-                'Failed to connect to the Git repository: <error>' . $gitUrl . '</error>'
-            ));
+            $this->stdErr->writeln('Failed to connect to the Git repository: <error>' . $gitUrl . '</error>');
 
             // Display the error from the Git process if it's about Xcode,
             // otherwise assume it's an SSH problem and diagnose the SSH

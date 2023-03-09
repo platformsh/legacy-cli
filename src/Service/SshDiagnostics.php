@@ -10,6 +10,7 @@ use Symfony\Component\Process\Process;
 class SshDiagnostics
 {
     const _SSH_ERROR_EXIT_CODE = 255;
+    const _GIT_SSH_ERROR_EXIT_CODE = 128;
 
     private $ssh;
     private $sshKey;
@@ -29,6 +30,24 @@ class SshDiagnostics
     }
 
     /**
+     * Checks whether SSH authentication succeeded and there was a message.
+     *
+     * @param Process $failedProcess
+     *
+     * @return string
+     */
+    private function authenticationSucceededMessage(Process $failedProcess)
+    {
+        $errorOutput = $failedProcess->getErrorOutput();
+        if (stripos($errorOutput, "you successfully authenticated") !== false) {
+            if (preg_match('/^Hello[^,]+, you successfully authenticated, but.+$/m', $errorOutput, $matches)) {
+                return $matches[0];
+            }
+        }
+        return '';
+    }
+
+    /**
      * Checks whether the SSH connection failed due to MFA requirements.
      *
      * @param Process $failedProcess
@@ -38,25 +57,6 @@ class SshDiagnostics
     private function connectionFailedDueToMFA(Process $failedProcess)
     {
         return stripos($failedProcess->getErrorOutput(), 'reason: access requires MFA') !== false;
-    }
-
-    /**
-     * Checks if SSH authentication succeeded, even if the connection failed.
-     *
-     * This occurs if the SSH key or certificate was correct, but the requested
-     * service does not exist or the user does not have access to it.
-     *
-     * @param Process $failedProcess
-     *
-     * @return bool
-     */
-    private function authenticationSucceeded(Process $failedProcess)
-    {
-        $stdErr = $failedProcess->getErrorOutput();
-
-        return stripos($stdErr, "reason: service doesn't exist") !== false
-            || stripos($stdErr, 'reason: service not found') !== false
-            || stripos($stdErr, 'you successfully authenticated, but') !== false;
     }
 
     /**
@@ -157,11 +157,28 @@ class SshDiagnostics
      */
     public function diagnoseFailure($uri, Process $failedProcess)
     {
-        if (!$this->sshHostIsInternal($uri) || $failedProcess->getExitCode() !== self::_SSH_ERROR_EXIT_CODE) {
+        if (!$this->sshHostIsInternal($uri)) {
+            return;
+        }
+        $cmdLine = $failedProcess->getCommandLine();
+        $cmdName = trim(explode(' ', $cmdLine, 2)[0], '"\'');
+        $exitCode = $failedProcess->getExitCode();
+        if ($cmdName === 'git') {
+            if ($exitCode !== self::_GIT_SSH_ERROR_EXIT_CODE) {
+                return;
+            }
+        } elseif ($exitCode !== self::_SSH_ERROR_EXIT_CODE) {
             return;
         }
 
         $executable = $this->config->get('application.executable');
+
+        if ($msg = $this->authenticationSucceededMessage($failedProcess)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('The server responded:');
+            $this->stdErr->writeln('  ' . $msg);
+            return;
+        }
 
         $mfaVerified = ($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa();
 
@@ -196,10 +213,6 @@ class SshDiagnostics
                 }
                 $this->stdErr->writeln(\sprintf('Then log in again with: <comment>%s login -f</comment>', $executable));
             }
-            return;
-        }
-
-        if ($this->authenticationSucceeded($failedProcess)) {
             return;
         }
 
