@@ -30,7 +30,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
     public function isEnabled()
     {
         if (!$this->config()->getWithDefault('api.organizations', false)
-            || $this->config()->getWithDefault('api.centralized_permissions', false)) {
+            || !$this->config()->getWithDefault('api.centralized_permissions', false)) {
             return false;
         }
         return parent::isEnabled();
