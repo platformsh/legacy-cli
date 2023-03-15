@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Model\EnvironmentDomain;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,7 +18,9 @@ class DomainDeleteCommand extends CommandBase
             ->setName('domain:delete')
             ->setDescription('Delete a domain from the project')
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
-        $this->addProjectOption()->addWaitOptions();
+        $this->addProjectOption()
+            ->addEnvironmentOption()
+            ->addWaitOptions();
         $this->addExample('Delete the domain example.com', 'example.com');
     }
 
@@ -26,12 +29,20 @@ class DomainDeleteCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, true);
 
+        $forEnvironment = $input->getOption('environment') !== null;
         $name = $input->getArgument('name');
         $project = $this->getSelectedProject();
 
-        $domain = $project->getDomain($name);
+        if ($forEnvironment) {
+            $httpClient = $this->api()->getHttpClient();
+            $environment = $this->getSelectedEnvironment();
+            $domain = EnvironmentDomain::get($name, $environment->getLink('#domains'), $httpClient);
+        }
+        else {
+            $domain = $project->getDomain($name);
+        }
 
         if (!$domain) {
             $this->stdErr->writeln("Domain not found: <error>$name</error>");

@@ -1,8 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -23,7 +25,8 @@ class DomainGetCommand extends DomainCommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->addProjectOption()
+            ->addEnvironmentOption();
     }
 
     /**
@@ -31,30 +34,36 @@ class DomainGetCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, true);
         $project = $this->getSelectedProject();
+        $forEnvironment = $input->getOption('environment') !== null;
+        $environment = $forEnvironment ? $this->getSelectedEnvironment() : null;
+        $httpClient = $this->api()->getHttpClient();
 
         $domainName = $input->getArgument('name');
-        if (empty($domainName)) {
-            if (!$input->isInteractive()) {
-                $this->stdErr->writeln('The domain name is required.');
+        if (!empty($domainName)) {
+            $domain = $forEnvironment
+                ? EnvironmentDomain::get($domainName, $environment->getLink('#domains'), $httpClient)
+                : $project->getDomain($domainName);
+            if (!$domain) {
+                $this->stdErr->writeln('Domain not found: <error>' . $domainName . '</error>');
                 return 1;
             }
-
-            $domains = $project->getDomains();
+        } elseif (!$input->isInteractive()) {
+            $this->stdErr->writeln('The domain name is required.');
+            return 1;
+        } else {
+            $domains = $forEnvironment ? EnvironmentDomain::getList($environment, $httpClient) : $project->getDomains();
             $options = [];
+            $byName = [];
             foreach ($domains as $domain) {
                 $options[$domain->name] = $domain->name;
+                $byName[$domain->name] = $domain;
             }
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
-        }
-
-        $domain = $project->getDomain($domainName);
-        if (!$domain) {
-            $this->stdErr->writeln('Domain not found: <error>' . $domainName . '</error>');
-            return 1;
+            $domain = $byName[$domainName];
         }
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
@@ -83,9 +92,14 @@ class DomainGetCommand extends DomainCommandBase
 
         $this->stdErr->writeln('');
         $executable = $this->config()->get('application.executable');
+        $exampleArgs = '';
+        if ($forEnvironment) {
+            $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' ';
+        }
+        $exampleArgs .= OsUtil::escapeShellArg($domainName);
         $this->stdErr->writeln([
-            'To update a domain, run: <info>' . $executable . ' domain:update [domain-name]</info>',
-            'To delete a domain, run: <info>' . $executable . ' domain:delete [domain-name]</info>',
+            sprintf('To update the domain, run: <info>%s domain:update %s</info>', $executable, $exampleArgs),
+            sprintf('To delete the domain, run: <info>%s domain:delete %s</info>', $executable, $exampleArgs),
         ]);
 
         return 0;

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
@@ -16,6 +17,10 @@ abstract class DomainCommandBase extends CommandBase
     protected $sslOptions = [];
 
     protected $domainName;
+
+    protected $environmentIsProduction;
+
+    protected $replacementFor;
 
     /**
      * @param InputInterface $input
@@ -45,8 +50,72 @@ abstract class DomainCommandBase extends CommandBase
                 $this->stdErr->writeln($e->getMessage());
                 return false;
             }
+        }
 
-            return true;
+        if ($input->hasOption('environment') || $input->hasOption('replace')) {
+            $project = $this->getSelectedProject();
+            $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
+                || ($input->hasOption('replace') && $input->getOption('replace') !== null);
+
+            $capabilities = $project->getCapabilities();
+            $supportsNonProduction = !empty($capabilities->custom_domains['enabled']);
+
+            if ($forEnvironment) {
+                $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
+                $environment = $this->getSelectedEnvironment();
+                $this->environmentIsProduction = $environment->id === $project->default_branch;
+            } elseif ($project->default_branch === null) {
+                $this->stdErr->writeln('The <error>default_branch</error> property is not set on the project, so the production environment cannot be determined');
+                return false;
+            } else {
+                $this->selectEnvironment($project->default_branch, true, false, false);
+                $environment = $this->getSelectedEnvironment();
+                $this->environmentIsProduction = true;
+                if ($this->stdErr->isVerbose()) {
+                    $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                }
+                if ($input->hasOption('replace') && $supportsNonProduction) {
+                    $this->stdErr->writeln('Use the <comment>--replace</comment> option (and optionally <comment>--environment</comment>) to add a domain to a non-production environment.');
+                    $this->stdErr->writeln('');
+                }
+            }
+
+            if ($input->hasOption('replace')) {
+                $this->replacementFor = $input->getOption('replace');
+                if (!$this->environmentIsProduction && $this->replacementFor === null) {
+                    $this->stdErr->writeln('The <error>--replace</error> option is required for non-production environment domains.');
+                    $this->stdErr->writeln('This specifies which production domain the new domain will replace.');
+                    return false;
+                }
+                if ($this->environmentIsProduction && $this->replacementFor !== null) {
+                    $this->stdErr->writeln('The <error>--replace</error> option is only valid for non-production environment domains.');
+                    return false;
+                }
+                if ($this->replacementFor !== null) {
+                    if (!$supportsNonProduction) {
+                        $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
+                        if ($this->config()->has('warnings.non_production_domains_msg')) {
+                            $this->stdErr->writeln("\n". trim($this->config()->get('warnings.non_production_domains_msg')));
+                        }
+                        return false;
+                    }
+                    try {
+                        $domain = $project->getDomain($this->replacementFor);
+                        if ($domain === false) {
+                            $this->stdErr->writeln(sprintf(
+                                'The <comment>--replace</comment> domain was not found: <error>%s</error>',
+                                $this->replacementFor
+                            ));
+                            return false;
+                        }
+                    } catch (BadResponseException $e) {
+                        // Ignore access denied errors.
+                        if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                            throw $e;
+                        }
+                    }
+                }
+            }
         }
 
         return true;

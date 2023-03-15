@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Model\EnvironmentDomain;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -16,7 +17,9 @@ class DomainUpdateCommand extends DomainCommandBase
             ->setName('domain:update')
             ->setDescription('Update a domain');
         $this->addDomainOptions();
-        $this->addProjectOption()->addWaitOptions();
+        $this->addProjectOption()
+            ->addEnvironmentOption()
+            ->addWaitOptions();
         $this->addExample(
             'Update the certificate for the domain example.com',
             'example.com --cert secure-example-com.crt --key secure-example-com.key'
@@ -28,15 +31,23 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->validateInput($input);
+        $this->validateInput($input, true);
 
         if (!$this->validateDomainInput($input)) {
             return 1;
         }
 
+        $forEnvironment = $input->getOption('environment') !== null;
+        $environment = $forEnvironment ? $this->getSelectedEnvironment() : null;
+
         $project = $this->getSelectedProject();
 
-        $domain = $project->getDomain($this->domainName);
+        if ($forEnvironment) {
+            $httpClient = $this->api()->getHttpClient();
+            $domain = EnvironmentDomain::get($this->domainName, $environment->getLink('#domains'), $httpClient);
+        } else {
+            $domain = $project->getDomain($this->domainName);
+        }
         if (!$domain) {
             $this->stdErr->writeln('Domain not found: <error>' . $this->domainName . '</error>');
             return 1;
