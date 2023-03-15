@@ -57,6 +57,9 @@ abstract class DomainCommandBase extends CommandBase
             $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
                 || ($input->hasOption('replace') && $input->getOption('replace') !== null);
 
+            $capabilities = $project->getCapabilities();
+            $supportsNonProduction = !empty($capabilities->custom_domains['enabled']);
+
             if ($forEnvironment) {
                 $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
                 $environment = $this->getSelectedEnvironment();
@@ -68,8 +71,10 @@ abstract class DomainCommandBase extends CommandBase
                 $this->selectEnvironment($project->default_branch, true, false, false);
                 $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = true;
-                $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
-                if ($input->hasOption('replace')) {
+                if ($this->stdErr->isVerbose()) {
+                    $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                }
+                if ($input->hasOption('replace') && $supportsNonProduction) {
                     $this->stdErr->writeln('Use the <comment>--replace</comment> option (and optionally <comment>--environment</comment>) to add a domain to a non-production environment.');
                     $this->stdErr->writeln('');
                 }
@@ -86,24 +91,28 @@ abstract class DomainCommandBase extends CommandBase
                     $this->stdErr->writeln('The <error>--replace</error> option is only valid for non-production environment domains.');
                     return false;
                 }
-                $capabilities = $project->getCapabilities();
-                if (empty($capabilities->custom_domains['enabled']) || empty($capabilities->custom_domains['environments_with_domains_limit'])) {
-                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
-                    return false;
-                }
-                try {
-                    $domain = $project->getDomain($this->replacementFor);
-                    if ($domain === false) {
-                        $this->stdErr->writeln(sprintf(
-                            'The <comment>--replace</comment> domain was not found: <error>%s</error>',
-                            $this->replacementFor
-                        ));
+                if ($this->replacementFor !== null) {
+                    if (!$supportsNonProduction) {
+                        $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
+                        if ($this->config()->has('warnings.non_production_domains_msg')) {
+                            $this->stdErr->writeln("\n". trim($this->config()->get('warnings.non_production_domains_msg')));
+                        }
                         return false;
                     }
-                } catch (BadResponseException $e) {
-                    // Ignore access denied errors.
-                    if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
-                        throw $e;
+                    try {
+                        $domain = $project->getDomain($this->replacementFor);
+                        if ($domain === false) {
+                            $this->stdErr->writeln(sprintf(
+                                'The <comment>--replace</comment> domain was not found: <error>%s</error>',
+                                $this->replacementFor
+                            ));
+                            return false;
+                        }
+                    } catch (BadResponseException $e) {
+                        // Ignore access denied errors.
+                        if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                            throw $e;
+                        }
                     }
                 }
             }
