@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.2.1",
-        "sha1": "b1b12ba5da215a02cccc543c05257540e68f9d50",
-        "sha256": "174d06e93b38f31972f1601a4cc0644d71deb28d3ee8e79dc7adf9519197461b",
+        "version": "4.3.0",
+        "sha1": "3e071f0f0146929ca4c7073cfe4a33a705f49e41",
+        "sha256": "1f203b442f1924e44e26d9169bdd9723f1cc34eb08041f7cf3ce7c7a0861a4b3",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.2.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.3.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -16,7 +16,8 @@
             "4.1.1": "* Do not require `--base-url` for GitHub and GitLab integrations.  \n  N.B. with apologies for the potential compatibility break, this changes the\n  option name `--base-url` to `--bitbucket-url` for creating or updating\n  Bitbucket Server integrations, which was necessary to fix the bug with GitHub\n  and GitLab.\n* Fix failure to refresh token in `create` command resulting in an eventual\n  error message \"Property not found: status\".",
             "4.1.2": "* Add iconv and mbstring polyfills to Composer dependencies.  \n  Fixes the `iconv()` function not being found during some commands, on systems\n  without the `mbstring` PHP extension.",
             "4.2.0": "* Add `org:user:projects` (`oups`) command to list projects per user.\n* Mark the current project's org in the `org:list` (`orgs`) command.\n* Auto-select the organization of the current project, for organization-related\n  commands.\n* Quieten debug output:\n  - Reduce blank lines in very-verbose/debug shell output.\n  - Reduce debug message noise when finding the CA bundle.\n  - Suppress PHP deprecation notices by default.\n* Explain the SSH error from the `project:get` (`get`) command.\n* Add more detail to `variable:create` help.\n* Bump giggsey/libphonenumber-for-php from 8.13.6 to 8.13.7 (#1239)",
-            "4.2.1": "* Fix config to enable the org:user:projects command"
+            "4.2.1": "* Fix config to enable the org:user:projects command",
+            "4.3.0": "Add support for non-production environment domains.\n\nThis feature is only available to Enterprise and Elite customers and is currently in beta.\nIf you're an Enterprise or Elite customer, contact support to become a beta tester.\nOtherwise, contact sales first to upgrade your plan.\nSee: https://docs.platform.sh/overview/get-support.html"
         }
     },
     {
