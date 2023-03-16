@@ -152,15 +152,15 @@ class DomainListCommand extends DomainCommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             if ($forEnvironment) {
-                $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' [domain-name]';
+                $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' [domain-name]';
                 if (!$this->getSelectedEnvironment()->is_main) {
-                    $exampleArgs .= ' -r [replace]';
+                    $exampleAddArgs .= ' -r [replace]';
                 }
             } else {
-                $exampleArgs = '[domain-name]';
+                $exampleAddArgs = $exampleArgs = '[domain-name]';
             }
             $this->stdErr->writeln([
-                sprintf('To add a new domain, run: <info>%s domain:add %s</info>', $executable, $exampleArgs),
+                sprintf('To add a new domain, run: <info>%s domain:add %s</info>', $executable, $exampleAddArgs),
                 sprintf('To view a domain, run: <info>%s domain:get %s</info>', $executable, $exampleArgs),
                 sprintf('To delete a domain, run: <info>%s domain:delete %s</info>', $executable, $exampleArgs),
             ]);
