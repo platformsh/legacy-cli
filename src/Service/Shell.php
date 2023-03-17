@@ -214,7 +214,7 @@ class Shell
                         return;
                     }
                 }
-                $output->write(preg_replace('/^/m', '  ', $buffer));
+                $output->write(preg_replace('/(^|[\n\r]+)(.)/', '$1  $2', $buffer));
             });
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {
