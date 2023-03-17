@@ -175,7 +175,7 @@ class ProjectGetCommand extends CommandBase
             '--origin',
             $this->config()->get('detection.git_remote_name'),
         ];
-        if ($output->isDecorated()) {
+        if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
             $cloneArgs[] = '--progress';
         }
         if ($input->getOption('depth')) {
