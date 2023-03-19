@@ -161,6 +161,9 @@ class EnvironmentPushCommand extends CommandBase
                 $gitArgs[] = '--' . $option;
             }
         }
+        if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
+            $gitArgs[] = '--progress';
+        }
 
         // Build the SSH command to use with Git.
         $extraSshOptions = [];
