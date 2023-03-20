@@ -229,6 +229,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Service\ServiceListCommand();
         $commands[] = new Command\Session\SessionSwitchCommand();
         $commands[] = new Command\Backup\BackupCreateCommand();
+        $commands[] = new Command\Backup\BackupDeleteCommand();
+        $commands[] = new Command\Backup\BackupGetCommand();
         $commands[] = new Command\Backup\BackupListCommand();
         $commands[] = new Command\Backup\BackupRestoreCommand();
         $commands[] = new Command\SourceOperation\ListCommand();
