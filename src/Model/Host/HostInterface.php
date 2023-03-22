@@ -20,6 +20,11 @@ interface HostInterface
     public function getCacheKey();
 
     /**
+     * @return ?\DateTimeInterface The time the host last changed, for caching purposes.
+     */
+    public function lastChanged();
+
+    /**
      * Runs a command on the host.
      *
      * @param string $command

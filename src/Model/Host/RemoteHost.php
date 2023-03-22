@@ -7,18 +7,21 @@ use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Client\Model\Environment;
 
 class RemoteHost implements HostInterface
 {
     private $sshUrl;
+    private $environment;
     private $sshService;
     private $shell;
     private $extraSshArgs = [];
     private $sshDiagnostics;
 
-    public function __construct($sshUrl, Ssh $sshService, Shell $shell, SshDiagnostics $sshDiagnostics)
+    public function __construct($sshUrl, Environment $environment, Ssh $sshService, Shell $shell, SshDiagnostics $sshDiagnostics)
     {
         $this->sshUrl = $sshUrl;
+        $this->environment = $environment;
         $this->sshService = $sshService;
         $this->shell = $shell;
         $this->sshDiagnostics = $sshDiagnostics;
@@ -85,5 +88,18 @@ class RemoteHost implements HostInterface
     public function getCacheKey()
     {
         return $this->sshUrl;
+    }
+
+    public function lastChanged()
+    {
+        $deployment_state = $this->environment->getProperty('deployment_state', false, false);
+        if (!empty($deployment_state['last_deployment_at'])) {
+            try {
+                return new \DateTimeImmutable($deployment_state['last_deployment_at']);
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+        return null;
     }
 }

@@ -38,6 +38,9 @@ class RemoteEnvVars
      * @param bool $refresh Whether to refresh the cache.
      * @param int $ttl The cache lifetime of the result.
      *
+     * The cache is limited by the TTL, but it is also invalidated if the
+     * $host->lastChanged() timestamp changes.
+     *
      * @return string The environment variable or an empty string.
      */
     public function getEnvVar($variable, HostInterface $host, $refresh = false, $ttl = 3600)
@@ -53,12 +56,16 @@ class RemoteEnvVars
         // extract the result from between them.
         $begin = '_BEGIN_ENV_VAR_';
         $end = '_END_ENV_VAR_';
-        $cacheKey = 'env-' . $host->getCacheKey() . '--' . $varName;
-        $value = $this->cache->fetch($cacheKey);
-        if ($refresh || $value === false) {
+        $cacheKey = 'env-var-' . $host->getCacheKey() . '--' . $varName;
+        /** @var false|array{'last_changed': ?\DateTimeInterface, 'value': string} $data */
+        $data = $this->cache->fetch($cacheKey);
+        if ($refresh || $data === false || $data['last_changed'] !== $host->lastChanged()) {
             $output = $host->runCommand(\sprintf('echo -n \'%s\'"$%s"\'%s\'', $begin, $varName, $end));
             $value = $this->extractResult($output, $begin, $end);
-            $this->cache->save($cacheKey, $value, $ttl);
+            $data = ['last_changed' => $host->lastChanged(), 'value' => $value];
+            $this->cache->save($cacheKey, $data, $ttl);
+        } else {
+            $value = $data['value'];
         }
 
         return $value ?: '';
