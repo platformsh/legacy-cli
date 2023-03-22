@@ -20,7 +20,9 @@ interface HostInterface
     public function getCacheKey();
 
     /**
-     * @return ?\DateTimeInterface The time the host last changed, for caching purposes.
+     * @return string
+     *   The RFC3339 timestamp when the host last changed, for
+     *   caching purposes, or an empty string if unknown.
      */
     public function lastChanged();
 

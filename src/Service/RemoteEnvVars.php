@@ -57,7 +57,7 @@ class RemoteEnvVars
         $begin = '_BEGIN_ENV_VAR_';
         $end = '_END_ENV_VAR_';
         $cacheKey = 'env-var-' . $host->getCacheKey() . '--' . $varName;
-        /** @var false|array{'last_changed': ?\DateTimeInterface, 'value': string} $data */
+        /** @var false|array{'last_changed': string, 'value': string} $data */
         $data = $this->cache->fetch($cacheKey);
         if ($refresh || $data === false || $data['last_changed'] !== $host->lastChanged()) {
             $output = $host->runCommand(\sprintf('echo -n \'%s\'"$%s"\'%s\'', $begin, $varName, $end));

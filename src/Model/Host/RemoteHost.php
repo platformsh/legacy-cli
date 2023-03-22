@@ -93,13 +93,6 @@ class RemoteHost implements HostInterface
     public function lastChanged()
     {
         $deployment_state = $this->environment->getProperty('deployment_state', false, false);
-        if (!empty($deployment_state['last_deployment_at'])) {
-            try {
-                return new \DateTimeImmutable($deployment_state['last_deployment_at']);
-            } catch (\Exception $e) {
-                return null;
-            }
-        }
-        return null;
+        return isset($deployment_state['last_deployment_at']) ? $deployment_state['last_deployment_at'] : '';
     }
 }

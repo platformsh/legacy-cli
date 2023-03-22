@@ -59,7 +59,7 @@ class LocalHost implements HostInterface
 
     public function lastChanged()
     {
-        return null;
+        return '';
     }
 
     /**
