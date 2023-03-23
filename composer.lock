@@ -2516,16 +2516,16 @@
         },
         {
             "name": "drush/drush",
-            "version": "8.4.11",
+            "version": "8.4.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/drush-ops/drush.git",
-                "reference": "f4ac6117b0d5de614d5759de35356e7777488a58"
+                "reference": "b27e30ebabc6a2c3ce56eaeaaa7fa67db7e9ee96"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/drush-ops/drush/zipball/f4ac6117b0d5de614d5759de35356e7777488a58",
-                "reference": "f4ac6117b0d5de614d5759de35356e7777488a58",
+                "url": "https://api.github.com/repos/drush-ops/drush/zipball/b27e30ebabc6a2c3ce56eaeaaa7fa67db7e9ee96",
+                "reference": "b27e30ebabc6a2c3ce56eaeaaa7fa67db7e9ee96",
                 "shasum": ""
             },
             "require": {
@@ -2632,7 +2632,7 @@
                 "forum": "http://drupal.stackexchange.com/questions/tagged/drush",
                 "irc": "irc://irc.freenode.org/drush",
                 "issues": "https://github.com/drush-ops/drush/issues",
-                "source": "https://github.com/drush-ops/drush/tree/8.4.11"
+                "source": "https://github.com/drush-ops/drush/tree/8.4.12"
             },
             "funding": [
                 {
@@ -2640,7 +2640,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2022-06-02T15:23:14+00:00"
+            "time": "2023-03-15T14:25:43+00:00"
         },
         {
             "name": "nikic/php-parser",
