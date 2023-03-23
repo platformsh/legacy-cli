@@ -195,7 +195,11 @@ class Application extends ParentApplication
         $commands[] = new Command\Organization\User\OrganizationUserListCommand();
         $commands[] = new Command\Organization\User\OrganizationUserProjectsCommand();
         $commands[] = new Command\Organization\User\OrganizationUserUpdateCommand();
+        $commands[] = new Command\Metrics\AllMetricsCommand();
+        $commands[] = new Command\Metrics\CpuCommand();
+        $commands[] = new Command\Metrics\CurlCommand();
         $commands[] = new Command\Metrics\DiskUsageCommand();
+        $commands[] = new Command\Metrics\MemCommand();
         $commands[] = new Command\Project\ProjectClearBuildCacheCommand();
         $commands[] = new Command\Project\ProjectCurlCommand();
         $commands[] = new Command\Project\ProjectCreateCommand();
