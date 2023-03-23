@@ -57,6 +57,11 @@ class LocalHost implements HostInterface
         return 'localhost';
     }
 
+    public function lastChanged()
+    {
+        return '';
+    }
+
     /**
      * {@inheritDoc}
      */

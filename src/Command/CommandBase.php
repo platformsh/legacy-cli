@@ -2004,7 +2004,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $sshUrl = $remoteContainer->getSshUrl($instanceId);
         $this->debug('Selected host: ' . $sshUrl);
-        return new RemoteHost($sshUrl, $ssh, $shell, $sshDiagnostics);
+        return new RemoteHost($sshUrl, $this->getSelectedEnvironment(), $ssh, $shell, $sshDiagnostics);
     }
 
     /**
