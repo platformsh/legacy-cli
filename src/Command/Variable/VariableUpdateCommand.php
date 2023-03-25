@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Variable;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableUpdateCommand extends VariableCommandBase
@@ -20,7 +21,8 @@ class VariableUpdateCommand extends VariableCommandBase
         $this
             ->setName('variable:update')
             ->setDescription('Update a variable')
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
+            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
+            ->addOption('allow-no-change', null, InputOption::VALUE_NONE, 'Return success (zero exit code) if no changes were provided');
         $this->addLevelOption();
         $fields = $this->getFields();
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);
@@ -75,7 +77,7 @@ class VariableUpdateCommand extends VariableCommandBase
         if (!$values) {
             $this->stdErr->writeln('No changes were provided.');
 
-            return 1;
+            return $input->getOption('allow-no-change') ? 0 : 1;
         }
 
         $result = $variable->update($values);
