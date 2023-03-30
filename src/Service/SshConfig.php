@@ -213,6 +213,13 @@ class SshConfig {
         $manualMessage = 'To configure SSH, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
 
+        $writeUserSshConfig = $this->config->getWithDefault('api.write_user_ssh_config', null);
+        $writeUserSshConfig = $writeUserSshConfig === null ? null : (bool) $writeUserSshConfig;
+        if ($writeUserSshConfig === false) {
+            $this->stdErr->writeln($manualMessage);
+            return true;
+        }
+
         if (file_exists($filename)) {
             $currentContents = file_get_contents($filename);
             if ($currentContents === false) {
@@ -224,13 +231,13 @@ class SshConfig {
                 return true;
             }
             $this->stdErr->writeln('Checking SSH configuration file: <info>' . $filename . '</info>');
-            if (!$questionHelper->confirm('Do you want to update the file automatically?')) {
+            if ($writeUserSshConfig !== true && !$questionHelper->confirm('Do you want to update the file automatically?')) {
                 $this->stdErr->writeln($manualMessage);
                 return false;
             }
             $creating = false;
         } elseif ($this->fs->canWrite($filename)) {
-            if (!$questionHelper->confirm('Do you want to create an SSH configuration file automatically?')) {
+            if ($writeUserSshConfig !== true && !$questionHelper->confirm('Do you want to create an SSH configuration file automatically?')) {
                 $this->stdErr->writeln($manualMessage);
                 return false;
             }
