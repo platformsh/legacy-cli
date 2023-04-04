@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.4.0",
-        "sha1": "ab0ec1c0f1626395623a1efc4fba33d94dd9d1be",
-        "sha256": "22f5eaa2ee35a6688584a86db8846371e0076438873c76098b3e9fb2549c8e54",
+        "version": "4.4.1",
+        "sha1": "63b64e6693bcb1e1eba208ae82e336fbee8e8e74",
+        "sha256": "00b21f0e8fec71b2219102900b44a61d3129fb643138fb629f0e12a9b3539166",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.4.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.4.1/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -18,7 +18,8 @@
             "4.2.0": "* Add `org:user:projects` (`oups`) command to list projects per user.\n* Mark the current project's org in the `org:list` (`orgs`) command.\n* Auto-select the organization of the current project, for organization-related\n  commands.\n* Quieten debug output:\n  - Reduce blank lines in very-verbose/debug shell output.\n  - Reduce debug message noise when finding the CA bundle.\n  - Suppress PHP deprecation notices by default.\n* Explain the SSH error from the `project:get` (`get`) command.\n* Add more detail to `variable:create` help.\n* Bump giggsey/libphonenumber-for-php from 8.13.6 to 8.13.7 (#1239)",
             "4.2.1": "* Fix config to enable the org:user:projects command",
             "4.3.0": "Add support for non-production environment domains.\n\nThis feature is only available to Enterprise and Elite customers and is currently in beta.\nIf you're an Enterprise or Elite customer, contact support to become a beta tester.\nOtherwise, contact sales first to upgrade your plan.\nSee: https://docs.platform.sh/overview/get-support.html",
-            "4.4.0": "New features:\n\n* Add `backup:get` and `backup:delete` commands.\n\nOther changes:\n\n* Show Git progress output during the `push` command.\n* Add new or missing activity types (for `exclude` and wildcard matching):\n  environment.merge-pr, environment.pause, environment.resume, maintenance.upgrade, project.clear_build_cache.\n* Fix indenting of command output with carriage returns\n  (e.g. in the Git progress output of `get` and `push`).\n* Fix suggested commands for non-production domains in the `domains` command.\n* Invalidate the environment variable cache on redeployment.  \n  This means relationships data is more likely to be up-to-date."
+            "4.4.0": "New features:\n\n* Add `backup:get` and `backup:delete` commands.\n\nOther changes:\n\n* Show Git progress output during the `push` command.\n* Add new or missing activity types (for `exclude` and wildcard matching):\n  environment.merge-pr, environment.pause, environment.resume, maintenance.upgrade, project.clear_build_cache.\n* Fix indenting of command output with carriage returns\n  (e.g. in the Git progress output of `get` and `push`).\n* Fix suggested commands for non-production domains in the `domains` command.\n* Invalidate the environment variable cache on redeployment.  \n  This means relationships data is more likely to be up-to-date.",
+            "4.4.1": "* Update client: fix unavailable \"#edit\" operation for environment type access.\n* Update `backup:restore` command `--target` filter for migrated regions.\n* Bump giggsey/libphonenumber-for-php from 8.13.7 to 8.13.8.\n* Add configuration option `api.write_user_ssh_config` to control whether\n  `~/.ssh/config` will be modified, overridden by the environment variable\n  `PLATFORMSH_CLI_API_WRITE_USER_SSH_CONFIG`. The possible values are:\n  - unset (or YAML `null`) (the default): ask to create/update `~/.ssh/config`\n  - truthy (\"1\" or YAML `true`): create/update automatically without asking\n  - falsy (\"0\" or YAML `false`): don't create/update, display suggested config"
         }
     },
     {
