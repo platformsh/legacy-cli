@@ -17,31 +17,29 @@ class EnvironmentDeleteCommand extends CommandBase
     {
         $this
             ->setName('environment:delete')
-            ->setHiddenAliases(['environment:deactivate'])
-            ->setDescription('Delete one or more environments')
-            ->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\nThe % character may be used as a wildcard." . "\n" . ArrayArgument::SPLIT_HELP)
+            ->setAliases(['environment:deactivate'])
+            ->setDescription('Deactivate or delete one or more environments')
+            ->addArgument('environment', InputArgument::IS_ARRAY, "Select environment(s) by ID.\nThe % character may be used as a wildcard." . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete Git branch(es) (inactive environments)')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete Git branch(es) (inactive environments)')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Delete all environments of a type (adding to any others selected)' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('only-type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only delete environment(s) of a specific type' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) not to delete.\nThe % character may be used as a wildcard.\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments (adding to any others selected')
-            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)');
+            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Select all environments of a type (adding to any others selected)' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('only-type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Include only environment(s) of a specific type' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) to exclude.\nThe % character may be used as a wildcard.\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) to exclude' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('inactive', null, InputOption::VALUE_NONE, 'Select all inactive environments (adding to any others selected')
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Select all merged environments (adding to any others selected)');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
-        $this->addExample('Delete the currently checked out environment');
-        $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
+        $this->addExample('Deactivate and delete the currently checked out environment');
+        $this->addExample('Deactivate and delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
-        $this->addExample('Delete all environments merged with their parent', '--merged');
-        $service = $this->config()->get('service.name');
+        $this->addExample('Deactivate and delete all environments merged with their parent', '--merged');
         $this->setHelp(<<<EOF
-When a {$service} environment is deleted, it will become "inactive": it will
-exist only as a Git branch, containing code but no services, databases nor
-files.
+Deactivating an environment will destroy all its data and services. Only the
+code in the Git branch remains.
 
-This command allows you to delete environment(s) as well as their Git branches.
+This command allows you to deactivate environment(s) and delete their Git branches.
 EOF
         );
     }
@@ -185,7 +183,8 @@ EOF
             $this->stdErr->writeln('');
         }
 
-        // Confirm which of the environments the user wishes to be deleted.
+        // Confirm which of the environments the user wishes to be deactivated
+        // or deleted.
         $this->api()->sortResources($selectedEnvironments, 'id');
         $toDeleteBranch = [];
         $toDeactivate = [];
@@ -199,7 +198,7 @@ EOF
             foreach ($environments as $potentialChild) {
                 if ($potentialChild->parent === $environment->id) {
                     $this->stdErr->writeln(\sprintf(
-                        "The environment %s has children and therefore can't be deleted.",
+                        "The environment %s has children and therefore can't be deactivated or deleted.",
                         $this->api()->getEnvironmentLabel($environment, 'error')
                     ));
                     $this->stdErr->writeln("Please delete the environment's children first.");
@@ -219,12 +218,12 @@ EOF
                 continue;
             }
             if ($environment->status === 'deleting') {
-                $this->stdErr->writeln("The environment <comment>$environmentId</comment> is already being deleted.");
+                $this->stdErr->writeln("The environment <comment>$environmentId</comment> is already being deactivated or deleted.");
                 $needNewline = true;
                 continue;
             }
             if ($environment->status === 'dirty') {
-                $this->stdErr->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deleted. Please wait.");
+                $this->stdErr->writeln("The environment <error>$environmentId</error> is currently building, and therefore can't be deactivated or deleted. Please wait.");
                 $error = $needNewline = true;
                 continue;
             }
@@ -233,10 +232,10 @@ EOF
             if ($environment->isActive()) {
                 $needNewline = true;
                 $this->stdErr->writeln(\sprintf(
-                    'The environment %s is currently active: deleting it will delete all associated data.',
+                    'The environment %s is currently active. Deactivating it will destroy all associated data and services.',
                     $this->api()->getEnvironmentLabel($environment, 'comment')
                 ));
-                if ($questionHelper->confirm('Are you sure you want to delete this environment?')) {
+                if ($questionHelper->confirm('Are you sure you want to deactivate this environment?')) {
                     $toDeactivate[$environmentId] = $environment;
                 } else {
                     $error = true;
@@ -264,7 +263,7 @@ EOF
         }
 
         if (empty($toDeleteBranch) && empty($toDeactivate)) {
-            $this->stdErr->writeln('No environment(s) to delete.');
+            $this->stdErr->writeln('No environments to deactivate or delete.');
             if (!$anythingSpecified) {
                 $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config()->get('application.executable')));
             }
@@ -304,7 +303,7 @@ EOF
         /** @var Environment $environment */
         foreach ($toDeactivate as $environmentId => $environment) {
             try {
-                $this->stdErr->writeln("Deleting environment <info>$environmentId</info>");
+                $this->stdErr->writeln("Deactivating environment <info>$environmentId</info>");
                 $deactivateActivities[] = $environment->deactivate();
                 $deactivated++;
             } catch (\Exception $e) {
