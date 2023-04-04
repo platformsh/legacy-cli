@@ -184,6 +184,15 @@ api:
   # Overridden by {application.env_prefix}AUTO_LOAD_SSH_CERT env var
   auto_load_ssh_cert: true
 
+  # Whether the user's SSH config file (~/.ssh/config) can be written automatically.
+  #
+  # The file is validated when SSH certificates are installed or refreshed.
+  #
+  # Setting this to true means it will be created or updated automatically,
+  # null means the user will be asked, false means it will not be touched
+  # though a recommendation will be displayed.
+  write_user_ssh_config: null
+
   # Whether the Auth API is enabled.
   auth: true
 
