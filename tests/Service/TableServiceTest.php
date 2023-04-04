@@ -19,12 +19,24 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
         $output = new BufferedOutput();
         $definition = new InputDefinition();
         Table::configureInput($definition);
-        $tableService = new Table(new ArrayInput([
-            '--columns' => ['value2,name'],
-            '--format' => 'csv',
-        ], $definition), $output);
+
+        $input = new ArrayInput([], $definition);
+        $tableService = new Table($input, $output);
 
         $header = ['Name', 'Value 1', 'value2' => 'Value 2', 'Value 3'];
+
+        $input->setOption('columns', ['value%', 'name']);
+        $expected = ['value 1', 'value2', 'value 3', 'name'];
+        $this->assertEquals($expected, $tableService->columnsToDisplay($header));
+
+        $input->setOption('columns', ['+value2']);
+        $expected = ['name', 'value2'];
+        $this->assertEquals($expected, $tableService->columnsToDisplay($header, ['name']));
+
+        $input->setOption('columns', ['value2', 'name']);
+        $expected = ['value2', 'name'];
+        $this->assertEquals($expected, $tableService->columnsToDisplay($header));
+
         $rows = [
             ['foo', 1, 2, 3],
             ['bar', 4, 5, 6],
@@ -34,11 +46,9 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
             ['2', 'foo'],
             ['5', 'bar'],
         ]);
-
+        $input->setOption('format', 'csv');
         $tableService->render($rows, $header);
-        $actual = $output->fetch();
-
-        $this->assertEquals($expected, $actual);
+        $this->assertEquals($expected, $output->fetch());
     }
 
     /**
@@ -53,13 +63,9 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
             '--format' => 'csv',
         ], $definition), new NullOutput());
 
-        $rows = [
-            ['foo', 1, 3],
-            ['bar', 4, 6],
-        ];
         $header = ['Name', 'Value 1', 'Value 3'];
 
         $this->setExpectedException('InvalidArgumentException');
-        $tableService->render($rows, $header);
+        $tableService->columnsToDisplay($header);
     }
 }

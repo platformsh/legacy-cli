@@ -6,6 +6,7 @@ use Platformsh\Cli\Console\AdaptiveTable;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Csv;
 use Platformsh\Cli\Util\PlainFormat;
+use Platformsh\Cli\Util\Wildcard;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -71,7 +72,7 @@ class Table implements InputConfiguringInterface
                 $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns) . '.';
             }
         }
-        $description .= "\n" . ArrayArgument::SPLIT_HELP;
+        $description .= "\nThe % character may be used as a wildcard.\n" . ArrayArgument::SPLIT_HELP;
         $shortcut = $definition->hasShortcut('c') ? null : 'c';
         $option = new InputOption('columns', $shortcut, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $description);
         $definition->addOption($option);
@@ -163,6 +164,50 @@ class Table implements InputConfiguringInterface
     }
 
     /**
+     * Returns the columns to display, based on defaults and user input.
+     *
+     * @param string[]|array<string, string> $header
+     * @param string[] $defaultColumns
+     * @return string[]
+     */
+    public function columnsToDisplay(array $header, array $defaultColumns = [])
+    {
+        $availableColumns = array_keys(self::availableColumns($header));
+        if (empty($defaultColumns)) {
+            $defaultColumns = $availableColumns;
+        }
+
+        $specifiedColumns = $this->specifiedColumns();
+        if (empty($specifiedColumns)) {
+            return $defaultColumns;
+        }
+
+        $requestedCols = [];
+        foreach ($specifiedColumns as $specifiedColumn) {
+            // A plus is a placeholder for the set of default columns.
+            // It can be a name on its own or next to another name.
+            if ($specifiedColumn === '+') {
+                $requestedCols = \array_merge($requestedCols, $defaultColumns);
+            } else {
+                $requestedCols[] = \strtolower($specifiedColumn);
+            }
+        }
+
+        $toDisplay = [];
+        foreach ($requestedCols as $requestedCol) {
+            $matched = Wildcard::select($availableColumns, [$requestedCol]);
+            if (empty($matched)) {
+                throw new InvalidArgumentException(
+                    sprintf('Column not found: %s (available columns: %s)', $requestedCol, self::formatAvailableColumns($availableColumns))
+                );
+            }
+            $toDisplay = array_merge($toDisplay, $matched);
+        }
+
+        return \array_unique($toDisplay);
+    }
+
+    /**
      * Render a table of data to output.
      *
      * @param array $rows
@@ -173,29 +218,11 @@ class Table implements InputConfiguringInterface
      *   Default columns to display (optional). Columns are identified by
      *   their name in $header, or alternatively by their key in $rows.
      */
-    public function render(array $rows, array $header = [], $defaultColumns = [])
+    public function render(array $rows, array $header = [], array $defaultColumns = [])
     {
         $format = $this->getFormat();
 
-        if (empty($defaultColumns)) {
-            $defaultColumns = array_keys(self::availableColumns($header));
-        }
-
-        $columnsToDisplay = [];
-        foreach ($this->specifiedColumns() as $specifiedColumn) {
-            // A plus is a placeholder for the set of default columns.
-            // It can be a name on its own or next to another name.
-            if ($specifiedColumn === '+') {
-                $columnsToDisplay = \array_merge($columnsToDisplay, $defaultColumns);
-            } else {
-                $columnsToDisplay[] = $specifiedColumn;
-            }
-        }
-        if (empty($columnsToDisplay)) {
-            $columnsToDisplay = $defaultColumns;
-        }
-        $columnsToDisplay = \array_unique($columnsToDisplay);
-
+        $columnsToDisplay = $this->columnsToDisplay($header, $defaultColumns);
         $rows = $this->filterColumns($rows, $header, $columnsToDisplay);
         $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
 
@@ -252,8 +279,8 @@ class Table implements InputConfiguringInterface
         if (\count($val) === 1) {
             $first = \reset($val);
             if (\strpos($first, '+') !== false) {
-                $first = preg_replace('/(\w)\+/', '$1,+', $first);
-                $first = preg_replace('/\+(\w)/', '+,$1', $first);
+                $first = preg_replace('/([\w%])\+/', '$1,+', $first);
+                $first = preg_replace('/\+([\w%])/', '+,$1', $first);
                 $val = [$first];
             }
         }
@@ -292,17 +319,6 @@ class Table implements InputConfiguringInterface
         }
 
         $availableColumns = self::availableColumns($header);
-
-        // Validate the column names.
-        foreach ($columnsToDisplay as &$columnName) {
-            $columnNameLowered = strtolower($columnName);
-            if (!isset($availableColumns[$columnNameLowered])) {
-                throw new InvalidArgumentException(
-                    sprintf('Column not found: %s (available columns: %s)', $columnName, self::formatAvailableColumns($availableColumns))
-                );
-            }
-            $columnName = $columnNameLowered;
-        }
 
         // Filter the rows for keys matching those in $availableColumns. If a
         // key doesn't exist in a row, then the cell will be an empty string.
