@@ -53,7 +53,7 @@ class UserAddCommand extends CommandBase
             InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             "The user's project role ('admin' or 'viewer') or environment type role (e.g. 'staging:contributor' or 'production:viewer')."
             . "\nTo remove a user from an environment type, set the role as 'none'."
-            . "\nThe % character can be used as a wildcard for the environment type, e.g. '%:viewer' to give the user the 'viewer' role on all types."
+            . "\nThe % or * characters can be used as a wildcard for the environment type, e.g. '%:viewer' to give the user the 'viewer' role on all types."
             . "\nThe role can be abbreviated, e.g. 'production:v'."
         );
     }

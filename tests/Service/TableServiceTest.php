@@ -25,7 +25,7 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
 
         $header = ['Name', 'Value 1', 'value2' => 'Value 2', 'Value 3'];
 
-        $input->setOption('columns', ['value%', 'name']);
+        $input->setOption('columns', ['value*', 'name']);
         $expected = ['value 1', 'value2', 'value 3', 'name'];
         $this->assertEquals($expected, $tableService->columnsToDisplay($header));
 

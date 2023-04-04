@@ -72,7 +72,7 @@ class Table implements InputConfiguringInterface
                 $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns) . '.';
             }
         }
-        $description .= "\nThe % character may be used as a wildcard.\n" . ArrayArgument::SPLIT_HELP;
+        $description .= "\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP;
         $shortcut = $definition->hasShortcut('c') ? null : 'c';
         $option = new InputOption('columns', $shortcut, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, $description);
         $definition->addOption($option);
