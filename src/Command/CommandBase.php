@@ -79,6 +79,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
+    /**
+     * Whether the selected environment has been printed (e.g. via verbose output).
+     *
+     * @var bool
+     */
+    protected $printedSelectedEnvironment = false;
+
     private static $container;
 
     /** @var \Platformsh\Cli\Service\Api|null */
@@ -683,7 +690,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $localProject = $this->getService('local.project');
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
-            $this->debug('Project ' . $config['id'] . ' is mapped to the current directory');
+            $this->debug('Project "' . $config['id'] . '" is mapped to the current directory');
             try {
                 $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             } catch (BadResponseException $e) {
@@ -743,7 +750,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             && !empty($config['mapping'][$currentBranch])) {
             $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
-                $this->debug('Found mapped environment for branch ' . $currentBranch . ': ' . $this->api()->getEnvironmentLabel($environment));
+                $this->debug('Found mapped environment for branch "' . $currentBranch . '": ' . $this->api()->getEnvironmentLabel($environment));
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
@@ -758,7 +765,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
-                $this->debug('Selected environment ' . $environment->id . ' based on Git upstream: ' . $upstream);
+                $this->debug('Selecting environment "' . $environment->id . '" based on Git upstream: ' . $upstream);
                 return $environment;
             }
         }
@@ -775,7 +782,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
             }
             if ($environment) {
-                $this->debug('Selected environment ' . $environment->id . ' based on branch name: ' . $currentBranch);
+                $this->debug('Selecting environment "' . $environment->id . '" based on branch name: ' . $currentBranch);
                 return $environment;
             }
             $this->debug('No environment was found to match the current Git branch: ' . $currentBranch);
@@ -1038,8 +1045,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
 
-            $this->debug('Selected project: ' . $this->project->id);
-
             return $this->project;
         }
 
@@ -1144,6 +1149,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $environment = $this->api()->getDefaultEnvironment($this->project);
             if ($environment) {
                 $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api()->getEnvironmentLabel($environment)));
+                $this->printedSelectedEnvironment = true;
                 $this->environment = $environment;
                 return;
             }
@@ -1164,7 +1170,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
 
-        if ($required) {
+        if ($required && !$this->environment) {
             if ($this->getProjectRoot() || !$detectCurrentEnv) {
                 $message = 'Could not determine the current environment.'
                     . "\n" . 'Specify it manually using --environment (-e).';
@@ -1564,11 +1570,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Select the project.
         $project = $this->selectProject($projectId, $projectHost, $detectCurrent);
         if ($this->stdErr->isVerbose()) {
-            $this->stdErr->writeln('Selected project ' . $this->api()->getProjectLabel($project));
+            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($project));
         }
 
         // Select the environment.
         $envOptionName = 'environment';
+        $this->printedSelectedEnvironment = false;
         if ($input->hasArgument($this->envArgName)
             && $input->getArgument($this->envArgName) !== null
             && $input->getArgument($this->envArgName) !== []) {
@@ -1591,18 +1598,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
                 $this->selectEnvironment($argument, true, $selectDefaultEnv, $detectCurrent);
-                if ($this->stdErr->isVerbose() && $this->environment) {
-                    $this->stdErr->writeln('Selected environment ' . $this->api()->getEnvironmentLabel($this->environment));
-                }
             }
         } elseif ($input->hasOption($envOptionName)) {
             if ($input->getOption($envOptionName) !== null) {
                 $environmentId = $input->getOption($envOptionName);
             }
             $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv, $detectCurrent);
-            if ($this->stdErr->isVerbose() && $this->environment) {
-                $this->stdErr->writeln('Selected environment ' . $this->api()->getEnvironmentLabel($this->environment));
-            }
+        }
+
+        if ($this->stdErr->isVerbose() && $this->environment && !$this->printedSelectedEnvironment) {
+            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment));
+            $this->printedSelectedEnvironment = true;
         }
     }
 
