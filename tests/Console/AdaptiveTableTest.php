@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Tests\Console;
 use Platformsh\Cli\Console\AdaptiveTable;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Symfony\Component\Console\Helper\Helper;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
@@ -23,6 +24,7 @@ class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
         $table->setRows([
             ['#1', 'amet', 'consectetur', 'adipiscing elit', 'Quisque pulvinar'],
             ['#2', 'tellus sit amet', 'sollicitudin', 'tincidunt', 'risus'],
+            new TableSeparator(),
             ['#3', 'risus', 'sem', 'mattis', 'ex'],
             ['#4', 'quis', 'luctus metus', 'lorem cursus', 'ligula'],
         ]);
@@ -44,6 +46,7 @@ class AdaptiveTableTest extends \PHPUnit_Framework_TestCase
 |     |            | r          | elit       | pulvinar |
 | #2  | tellus sit | sollicitud | tincidunt  | risus    |
 |     | amet       | in         |            |          |
++-----+------------+------------+------------+----------+
 | #3  | risus      | sem        | mattis     | ex       |
 | #4  | quis       | luctus     | lorem      | ligula   |
 |     |            | metus      | cursus     |          |

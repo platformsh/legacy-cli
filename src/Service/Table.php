@@ -324,6 +324,11 @@ class Table implements InputConfiguringInterface
         // key doesn't exist in a row, then the cell will be an empty string.
         $newRows = [];
         foreach ($rows as $row) {
+            if (!is_array($row)) {
+                // Ignore non-arrays such as TableSeparator objects.
+                $newRows[] = $row;
+                continue;
+            }
             $newRow = [];
             foreach ($columnsToDisplay as $columnNameLowered) {
                 $keyFromHeader = $availableColumns[$columnNameLowered];
@@ -370,6 +375,7 @@ class Table implements InputConfiguringInterface
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
+        $rows = array_filter($rows, '\\is_array');
         // RFC 4180 (the closest thing to a CSV standard) asks for CRLF line
         // breaks, but these do not play nicely with POSIX shells whose
         // default internal field separator (IFS) does not account for CR. So
@@ -388,6 +394,7 @@ class Table implements InputConfiguringInterface
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
+        $rows = array_filter($rows, '\\is_array');
         $this->output->write((new PlainFormat())->format($rows));
     }
 

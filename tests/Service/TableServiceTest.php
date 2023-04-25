@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Tests\Service;
 
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Csv;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -39,6 +40,7 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
 
         $rows = [
             ['foo', 1, 2, 3],
+            new TableSeparator(),
             ['bar', 4, 5, 6],
         ];
         $expected = (new Csv(',', "\n"))->format([
