@@ -43,7 +43,7 @@ use Symfony\Component\Process\Process;
 class ProcessManager
 {
     /** @var Process[] */
-    protected $processes;
+    protected $processes = [];
 
     /**
      * @return bool
