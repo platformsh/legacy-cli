@@ -1206,13 +1206,17 @@ class Api
         }
         $envs = $this->getEnvironments($project, $refresh);
 
-        if (isset($envs[$project->default_branch])) {
-            return $envs[$project->default_branch];
-        }
-
         // If there is only one environment, use that.
         if (count($envs) <= 1) {
             return \reset($envs) ?: null;
+        }
+
+        // Check if there is only one "production" environment.
+        $prod = \array_filter($envs, function (Environment $environment) {
+            return $environment->type === 'production';
+        });
+        if (\count($prod) === 1) {
+            return \reset($prod);
         }
 
         // Check if there is only one "main" environment.
@@ -1223,12 +1227,9 @@ class Api
             return \reset($main);
         }
 
-        // Check if there is only one "main" environment without a parent.
-        $mainOrphans = \array_filter($main, function (Environment $environment) {
-            return $environment->parent === null && $environment->is_main;
-        });
-        if (\count($mainOrphans) === 1) {
-            return \reset($mainOrphans);
+        // Select the environment matching the default branch.
+        if (isset($envs[$project->default_branch])) {
+            return $envs[$project->default_branch];
         }
 
         return null;
