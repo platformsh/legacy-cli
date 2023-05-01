@@ -548,6 +548,7 @@ class Api
             $this->cache->save($cacheKey, $cacheData, (int) $this->config->get('api.projects_ttl'));
         } else {
             $stubs = ProjectStub::wrapCollection($cached, $apiUrl, $guzzleClient);
+            $this->debug('Loaded project stubs from cache');
         }
 
         return $stubs;
@@ -593,6 +594,7 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
+            $this->debug('Loaded project from cache: ' . $id);
         }
         $apiUrl = $this->config->getWithDefault('api.base_url', '');
         if ($apiUrl) {
@@ -648,6 +650,7 @@ class Api
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
+            $this->debug('Loaded environments from cache');
         }
 
         self::$environmentsCache[$projectId] = $environments;
@@ -734,6 +737,7 @@ class Api
             foreach ((array) $cached as $data) {
                 $types[] = new EnvironmentType($data, $data['_uri'], $guzzleClient);
             }
+            $this->debug('Loaded environment types from cache for project: ' . $project->id);
         }
 
         return $types;
@@ -753,7 +757,10 @@ class Api
     public function getMyAccount($reset = false)
     {
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
-        if ($reset || !($info = $this->cache->fetch($cacheKey))) {
+        $info = $this->cache->fetch($cacheKey);
+        if (!$reset && $info) {
+            $this->debug('Loaded account information from cache');
+        } else {
             $info = $this->getClient()->getAccountInfo($reset);
             $this->cache->save($cacheKey, $info, (int) $this->config->get('api.users_ttl'));
         }
@@ -814,7 +821,10 @@ class Api
         }
 
         $cacheKey = 'account:' . $access->id;
-        if ($reset || !($details = $this->cache->fetch($cacheKey))) {
+        $details = $this->cache->fetch($cacheKey);
+        if (!$reset && $details) {
+            $this->debug('Loaded account information from cache for: ' . $access->id);
+        } else {
             $data = $access->getData();
             // Use embedded user information if possible.
             if (isset($data['_embedded']['users'][0]) && count($data['_embedded']['users']) === 1) {
@@ -862,6 +872,7 @@ class Api
         } else {
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
+            $this->debug('Loaded user info from cache: ' . $id);
         }
         return $user;
     }
@@ -1181,6 +1192,7 @@ class Api
             $this->cache->save($cacheKey, $data);
         } else {
             $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
+            $this->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
         }
 
         return $deployment;
