@@ -73,7 +73,7 @@ class AppListCommand extends CommandBase
         $defaultColumns = $this->defaultColumns;
         if ($showLocalPath) {
             $headers['path'] = 'Path';
-            $defaultColumns[] = 'Path';
+            $defaultColumns[] = 'path';
         }
 
         $rows = [];
