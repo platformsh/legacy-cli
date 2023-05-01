@@ -73,6 +73,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     protected $envArgName = 'environment';
     protected $hiddenInList = false;
+    protected $preferredName = '';
     protected $stability = self::STABILITY_STABLE;
     protected $local = false;
     protected $canBeRunMultipleTimes = true;
@@ -1903,18 +1904,25 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 return !$opt instanceof HiddenInputOption;
             }));
 
-            $aliases = $this->getVisibleAliases();
-            $name = $this->getName();
-            $shortName = count($aliases) === 1 ? reset($aliases) : $name;
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
                 $this->config()->get('application.executable'),
-                $shortName,
+                $this->getPreferredName(),
                 $definition->getSynopsis($short)
             ));
         }
 
         return $this->synopsis[$key];
+    }
+
+    /**
+     * Returns the shortest command name for use in help.
+     *
+     * @return string
+     */
+    public function getPreferredName()
+    {
+        return $this->preferredName ? $this->preferredName : $this->getName();
     }
 
     /**
