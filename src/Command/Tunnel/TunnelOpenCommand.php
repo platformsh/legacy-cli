@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
+use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -100,6 +101,12 @@ EOF
         $sshArgs = $ssh->getSshArgs($sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
+
+        // It seems PHP or the Phar extension cannot load new classes after
+        // forking in some circumstances. Preload classes that are needed here
+        // to avoid class not found errors later.
+        // TODO find out exactly why this is required
+        $this->debug('Preloading class before forking: ' . ConsoleTerminateEvent::class);
 
         $processManager = new ProcessManager();
         $processManager->fork();
