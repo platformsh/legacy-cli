@@ -44,6 +44,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     use HasExamplesTrait;
 
     const STABILITY_STABLE = 'STABLE';
+    const STABILITY_BETA = 'BETA';
 
     /** @var ?bool */
     private static $checkedUpdates;
@@ -146,7 +147,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function isHidden()
     {
-        return $this->hiddenInList || $this->stability !== self::STABILITY_STABLE;
+        return $this->hiddenInList || !in_array($this->stability, [self::STABILITY_STABLE, self::STABILITY_BETA]);
     }
 
     /**
@@ -1970,7 +1971,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $description = parent::getDescription();
 
         if ($this->stability !== self::STABILITY_STABLE) {
-            $prefix = '<fg=white;bg=red>[ ' . strtoupper($this->stability) . ' ]</> ';
+            $prefix = '<fg=white;bg=red> ' . strtoupper($this->stability) . ' </> ';
             $description = $prefix . $description;
         }
 

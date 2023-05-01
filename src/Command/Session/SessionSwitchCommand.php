@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SessionSwitchCommand extends CommandBase {
     protected $hiddenInList = true;
-    protected $stability = 'beta';
+    protected $stability = self::STABILITY_BETA;
 
     protected function configure()
     {
