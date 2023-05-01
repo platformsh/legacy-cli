@@ -12,6 +12,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\GuzzleDebugSubscriber;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
@@ -251,7 +252,7 @@ class Api
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
         $connectorOptions['verify'] = $this->config->get('api.skip_ssl') ? false : $this->caBundlePath();
 
-        $connectorOptions['debug'] = $this->config->get('api.debug') ? STDERR : false;
+        $connectorOptions['debug'] = false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->config->getUserAgent();
         $connectorOptions['timeout'] = $this->config->get('api.default_timeout');
@@ -388,12 +389,16 @@ class Api
         $options = [
             'defaults' => [
                 'headers' => ['User-Agent' => $this->config->getUserAgent()],
-                'debug' => $this->config->get('api.debug') ? STDERR : false,
+                'debug' => false,
                 'verify' => $this->config->get('api.skip_ssl') ? false : $this->caBundlePath(),
                 'proxy' => $this->guzzleProxyConfig(),
                 'timeout' => $this->config->get('api.default_timeout'),
             ],
         ];
+
+        if ($this->output->isDebug()) {
+            $options['defaults']['subscribers'][] = new GuzzleDebugSubscriber($this->output, $this->config->get('api.debug'));
+        }
 
         if (extension_loaded('zlib')) {
             $options['defaults']['decode_content'] = true;
@@ -469,11 +474,15 @@ class Api
             }
 
             try {
-                $connector->getClient()->getEmitter()->on('error', function (ErrorEvent $event) {
+                $emitter = $connector->getClient()->getEmitter();
+                $emitter->on('error', function (ErrorEvent $event) {
                     if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
                         $this->on403($event);
                     }
                 });
+                if ($this->output->isDebug()) {
+                    $emitter->attach(new GuzzleDebugSubscriber($this->output, $this->config->get('api.debug')));
+                }
             } catch (\RuntimeException $e) {
                 // Ignore errors if the user is not logged in at this stage.
             }
