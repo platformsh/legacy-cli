@@ -97,6 +97,13 @@ class Api
     private static $projectAccessesCache = [];
 
     /**
+     * A cache of environment deployments.
+     *
+     * @var array<string, EnvironmentDeployment>
+     */
+    private static $deploymentsCache = [];
+
+    /**
      * A cache of not-found environment IDs.
      *
      * @see Api::getEnvironment()
@@ -1184,6 +1191,9 @@ class Api
     public function getCurrentDeployment(Environment $environment, $refresh = false)
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
+        if (!$refresh && isset(self::$deploymentsCache[$cacheKey])) {
+            return self::$deploymentsCache[$cacheKey];
+        }
         $data = $this->cache->fetch($cacheKey);
         if ($data === false || $refresh) {
             $deployment = $environment->getCurrentDeployment();
@@ -1195,7 +1205,7 @@ class Api
             $this->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
         }
 
-        return $deployment;
+        return self::$deploymentsCache[$cacheKey] = $deployment;
     }
 
     /**
@@ -1209,7 +1219,7 @@ class Api
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
 
-        return $this->cache->contains($cacheKey);
+        return isset(self::$deploymentsCache[$cacheKey]) || $this->cache->contains($cacheKey);
     }
 
     /**
