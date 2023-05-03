@@ -10,10 +10,13 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Descriptor\JsonDescriptor;
+use Symfony\Component\Console\Descriptor\XmlDescriptor;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class HelpCommand extends CommandBase
@@ -21,9 +24,6 @@ class HelpCommand extends CommandBase
 
     protected $command;
 
-    /**
-     * @inheritdoc
-     */
     public function setCommand(Command $command)
     {
         $this->command = $command;
@@ -40,7 +40,7 @@ class HelpCommand extends CommandBase
             ->setName('help')
             ->setDefinition([
                 new InputArgument('command_name', InputArgument::OPTIONAL, 'The command name', 'help'),
-                new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, xml, json, or md)', 'txt'),
+                new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, json, or md)', 'txt'),
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command help'),
             ])
             ->setDescription('Displays help for a command')
@@ -51,7 +51,7 @@ The <info>%command.name%</info> command displays help for a given command:
 
 You can also output the help in other formats by using the <comment>--format</comment> option:
 
-  <info>%command.full_name% --format=xml list</info>
+  <info>%command.full_name% --format=json list</info>
 
 To display the list of available commands, please use the <info>list</info> command.
 EOF
@@ -71,16 +71,40 @@ EOF
 
         $config = new Config();
 
-        $helper = new DescriptorHelper();
-        $helper->register('txt', new CustomTextDescriptor($config->get('application.executable')));
-        $helper->register('md', new CustomMarkdownDescriptor($config->get('application.executable')));
-        $helper->describe(
-            $output,
-            $this->command,
-            [
-                'format' => $input->getOption('format'),
-                'raw_text' => $input->getOption('raw'),
-            ]
-        );
+        $format = $input->getOption('format');
+        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $options = ['format' => $format, 'raw_text' => $input->getOption('raw')];
+
+        switch ($format) {
+            case 'xml':
+                $stdErr->writeln('<options=reverse>DEPRECATED</> The <comment>xml</comment> help format is deprecated and will be removed in a future version.');
+                if (!extension_loaded('simplexml')) {
+                    $stdErr->writeln('It depends on the <comment>simplexml</comment> PHP extension which is not installed.');
+                    return 1;
+                }
+                $stdErr->writeln('');
+                (new XmlDescriptor())->describe($output, $this->command, $options);
+                return 0;
+            case 'md':
+                (new CustomMarkdownDescriptor())->describe($output, $this->command, $options);
+                return 0;
+            case 'json':
+                (new JsonDescriptor())->describe($output, $this->command, $options);
+                return 0;
+            case 'txt':
+                (new CustomTextDescriptor($config->get('application.executable')))->describe($output, $this->command, $options);
+                return 0;
+        }
+
+        $originalCommand = $this->getApplication()->find($input->getFirstArgument());
+        if ($originalCommand->getName() !== 'help' && $originalCommand->getDefinition()->hasOption('format')) {
+            // If the --format is unrecognised, it might be because the
+            // command has its own --format option. Fall back to plain text
+            // help.
+            (new CustomTextDescriptor($config->get('application.executable')))->describe($output, $this->command, $options);
+            return 0;
+        }
+
+        throw new InvalidArgumentException(sprintf('Unsupported format "%s".', $format));
     }
 }
