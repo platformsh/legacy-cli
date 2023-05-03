@@ -2,13 +2,13 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class VariableCreateCommand extends VariableCommandBase
@@ -24,7 +24,8 @@ class VariableCreateCommand extends VariableCommandBase
         $this
             ->setName('variable:create')
             ->setDescription('Create a variable')
-            ->addArgument('name', InputArgument::OPTIONAL, 'The variable name');
+            ->addArgument('name', InputArgument::OPTIONAL, 'The variable name')
+            ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update the variable if it already exists');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()
@@ -47,24 +48,44 @@ class VariableCreateCommand extends VariableCommandBase
         }
 
         // Check whether the variable already exists, if a name is provided.
-        if (($name = $input->getOption('name')) && $this->getExistingVariable($name, $input->getOption('level'), false)) {
-            $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
+        if (($name = $input->getOption('name'))) {
+            if (($prefix = $input->getOption('prefix')) && $prefix !== 'none') {
+                $name = rtrim($prefix, ':') . ':' .  $name;
+            }
+            $existing = $this->getExistingVariable($name, $this->getRequestedLevel($input), false);
+            if ($existing) {
+                if (!$input->getOption('update')) {
+                    $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
 
-            $executable = $this->config()->get('application.executable');
-            $escapedName = $this->escapeShellArg($name);
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                'To view the variable, use: <comment>%s variable:get %s</comment>',
-                $executable,
-                $escapedName
-            ));
-            $this->stdErr->writeln(sprintf(
-                'To update the variable, use: <comment>%s variable:update %s</comment>',
-                $executable,
-                $escapedName
-            ));
+                    $executable = $this->config()->get('application.executable');
+                    $escapedName = $this->escapeShellArg($name);
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf(
+                        'To view the variable, use: <comment>%s variable:get %s</comment>',
+                        $executable,
+                        $escapedName
+                    ));
+                    $this->stdErr->writeln(
+                        'To skip this check, use the <comment>--update</comment> (<comment>-u</comment>) option.'
+                    );
 
-            return 1;
+                    return 1;
+                }
+                $arguments = [
+                    '--allow-no-change' => true,
+                ];
+                foreach ($this->form->getFields() as $field) {
+                    $value = $field->getValueFromInput($input, false);
+                    $argName = '--' . $field->getOptionName();
+                    if ($argName === '--name') {
+                        $argName = 'name';
+                    }
+                    if ($value !== null && !in_array($argName, ['--level', '--prefix'])) {
+                        $arguments[$argName] = $value;
+                    }
+                }
+                return $this->runOtherCommand('variable:update', $arguments, $output);
+            }
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */

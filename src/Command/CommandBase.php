@@ -27,7 +27,6 @@ use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectStub;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -1703,7 +1702,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $cmdInput->setInteractive($this->input->isInteractive());
         }
 
-        $this->debug('Running command: ' . $name);
+        $this->debug('Running command: ' . $cmdInput->__toString());
 
         // Set the original command name for comparison.
         self::$originalCommand = $this->getName();
