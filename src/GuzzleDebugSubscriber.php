@@ -27,6 +27,7 @@ class GuzzleDebugSubscriber implements SubscriberInterface
     public function getEvents()
     {
         return [
+            // Errors are not handled: they are already printed via exceptions.
             'before' => ['onBefore', RequestEvents::LATE],
             'complete' => ['onComplete', RequestEvents::LATE],
         ];
@@ -34,7 +35,7 @@ class GuzzleDebugSubscriber implements SubscriberInterface
 
     public function onBefore(BeforeEvent $event)
     {
-        if ($this->stdErr->isDebug()) {
+        if ($this->stdErr->isVeryVerbose()) {
             $req = $event->getRequest();
             if (!$req->getConfig()->hasKey('started_at')) {
                 $req->getConfig()->set('started_at', microtime(true));
@@ -48,7 +49,10 @@ class GuzzleDebugSubscriber implements SubscriberInterface
                 $seq = self::$requestSeq++;
                 $req->getConfig()->set('seq', $seq);
             }
-            $this->stdErr->writeln('<options=reverse>DEBUG</> Making HTTP request #' . $seq . ': ' . $this->formatMessage($req, '> '));
+            $this->stdErr->writeln(sprintf(
+                '<options=reverse>></> Making HTTP request #%d: %s',
+                $seq, $this->formatMessage($req, '> ')
+            ));
         }
     }
 
@@ -71,14 +75,20 @@ class GuzzleDebugSubscriber implements SubscriberInterface
 
     public function onComplete(CompleteEvent $event)
     {
-        if (!$this->stdErr->isDebug() || !$event->hasResponse()) {
+        if (!$this->stdErr->isVeryVerbose() || !$event->hasResponse()) {
             return;
         }
         $seq = $event->getRequest()->getConfig()->get('seq');
         if (($startedAt = $event->getRequest()->getConfig()->get('started_at')) !== null) {
-            $this->stdErr->writeln(sprintf('<options=reverse>DEBUG</> Received response for #' . $seq . ' after %d ms: %s', (microtime(true) - $startedAt) * 1000, $this->formatMessage($event->getResponse(), '< ')));
+            $this->stdErr->writeln(sprintf(
+                '<options=reverse>\<</> Received response for #%d after %d ms: %s',
+                $seq, (microtime(true) - $startedAt) * 1000, $this->formatMessage($event->getResponse(), '< ')
+            ));
         } else {
-            $this->stdErr->writeln(sprintf('<options=reverse>DEBUG</> Received response for #' . $seq . ': %s', $this->formatMessage($event->getResponse(), '< ')));
+            $this->stdErr->writeln(sprintf(
+                '<options=reverse>\<</> Received response for #%d: %s',
+                $seq, $this->formatMessage($event->getResponse(), '< ')
+            ));
         }
     }
 }

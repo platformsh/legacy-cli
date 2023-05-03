@@ -58,7 +58,7 @@ class ProgressMessage
     public function done()
     {
         if ($this->visible) {
-            if ($this->output->isDecorated()) {
+            if ($this->output->isDecorated() && !$this->output->isVeryVerbose()) {
                 $this->overwrite('', \substr_count($this->message, "\n"));
             }
             $this->visible = false;

@@ -396,7 +396,7 @@ class Api
             ],
         ];
 
-        if ($this->output->isDebug()) {
+        if ($this->output->isVeryVerbose()) {
             $options['defaults']['subscribers'][] = new GuzzleDebugSubscriber($this->output, $this->config->get('api.debug'));
         }
 
@@ -480,7 +480,7 @@ class Api
                         $this->on403($event);
                     }
                 });
-                if ($this->output->isDebug()) {
+                if ($this->output->isVeryVerbose()) {
                     $emitter->attach(new GuzzleDebugSubscriber($this->output, $this->config->get('api.debug')));
                 }
             } catch (\RuntimeException $e) {

@@ -393,7 +393,7 @@ class Application extends ParentApplication
 
             $output->writeln($messages, OutputInterface::OUTPUT_RAW | OutputInterface::VERBOSITY_QUIET);
 
-            if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
+            if ($output->isDebug()) {
                 $output->writeln('<comment>Exception trace:</comment>', OutputInterface::VERBOSITY_QUIET);
 
                 // exception related properties
@@ -417,7 +417,7 @@ class Application extends ParentApplication
 
                 $output->writeln('', OutputInterface::VERBOSITY_QUIET);
             }
-        } while ($e = $e->getPrevious());
+        } while (($c = $e) && ($e = $e->getPrevious()) && $e->getMessage() !== $c->getMessage());
 
         if (isset($this->currentCommand)
             && $this->currentCommand->getName() !== 'welcome'

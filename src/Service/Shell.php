@@ -18,6 +18,8 @@ class Shell
     /** @var OutputInterface */
     protected $stdErr;
 
+    private $debugPrefix = '<options=reverse>#</> ';
+
     public function __construct(OutputInterface $output = null)
     {
         $this->setOutput($output ?: new NullOutput());
@@ -49,8 +51,8 @@ class Shell
     public function executeSimple($commandline, $dir = null, array $env = [])
     {
         $this->stdErr->writeln(
-            'Running command: <info>' . $commandline . '</info>',
-            OutputInterface::VERBOSITY_VERBOSE
+            sprintf( '%sRunning command: <info>%s</info>', $this->debugPrefix, $commandline),
+            OutputInterface::VERBOSITY_VERY_VERBOSE
         );
 
         if (!empty($env)) {
@@ -101,12 +103,12 @@ class Shell
         }
 
         $this->stdErr->writeln(
-            "Running command: <info>" . $process->getCommandLine() . "</info>",
-            OutputInterface::VERBOSITY_VERBOSE
+            sprintf( '%sRunning command: <info>%s</info>', $this->debugPrefix, $process->getCommandLine()),
+            OutputInterface::VERBOSITY_VERY_VERBOSE
         );
 
-        if (!empty($input) && is_string($input) && $this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln(sprintf('  Command input: <info>%s</info>', $input));
+        if (!empty($input) && is_string($input) && $this->stdErr->isDebug()) {
+            $this->stdErr->writeln(sprintf('%s  Command input: <info>%s</info>', $this->debugPrefix, $input));
         }
 
         if (!empty($env)) {
@@ -129,8 +131,8 @@ class Shell
      */
     private function showWorkingDirMessage($dir)
     {
-        if ($dir !== null && $this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln('  Working directory: ' . $dir);
+        if ($dir !== null && $this->stdErr->isDebug()) {
+            $this->stdErr->writeln($this->debugPrefix . '  Working directory: ' . $dir);
         }
     }
 
@@ -139,10 +141,10 @@ class Shell
      */
     private function showEnvMessage(array $env)
     {
-        if (!empty($env) && $this->stdErr->isVeryVerbose()) {
-            $message = ['  Using additional environment variables:'];
+        if (!empty($env) && $this->stdErr->isDebug()) {
+            $message = [$this->debugPrefix . '  Using additional environment variables:'];
             foreach ($env as $variable => $value) {
-                $message[] = sprintf('    <info>%s</info>=%s', $variable, $value);
+                $message[] = sprintf('%s    <info>%s</info>=%s', $this->debugPrefix, $variable, $value);
             }
             $this->stdErr->writeln($message);
         }
