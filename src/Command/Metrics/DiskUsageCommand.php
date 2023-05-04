@@ -64,12 +64,6 @@ class DiskUsageCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
-            $this->stdErr->writeln(\sprintf(
-                'Average disk usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
-                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
-            ));
         }
 
         $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
@@ -96,6 +90,15 @@ class DiskUsageCommand extends MetricsCommandBase
             'tmp_ilimit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_ipercent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
         ]);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf(
+                'Average disk usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
+                (new Duration())->humanize($timeSpec->getInterval()),
+                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
+                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
+            ));
+        }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 

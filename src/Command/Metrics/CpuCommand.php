@@ -55,12 +55,6 @@ class CpuCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
-            $this->stdErr->writeln(\sprintf(
-                'Average CPU usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
-                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
-            ));
         }
 
         $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['cpu_used', 'cpu_percent', 'cpu_limit']);
@@ -73,6 +67,15 @@ class CpuCommand extends MetricsCommandBase
             'limit' => new Field('cpu_limit', Field::FORMAT_ROUNDED_2DP),
             'percent' => new Field('cpu_percent', Field::FORMAT_PERCENT),
         ]);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf(
+                'Average CPU usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
+                (new Duration())->humanize($timeSpec->getInterval()),
+                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
+                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
+            ));
+        }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 

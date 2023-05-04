@@ -57,12 +57,6 @@ class MemCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
-            $this->stdErr->writeln(\sprintf(
-                'Average memory usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
-                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
-            ));
         }
 
         $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
@@ -77,6 +71,15 @@ class MemCommand extends MetricsCommandBase
             'limit' => new Field('mem_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
             'percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
         ]);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf(
+                'Average memory usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
+                (new Duration())->humanize($timeSpec->getInterval()),
+                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
+                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
+            ));
+        }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 

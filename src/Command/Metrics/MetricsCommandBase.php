@@ -305,6 +305,21 @@ abstract class MetricsCommandBase extends CommandBase
             $values = \array_slice($values, -1, null, true);
         }
 
+        // It's possible that there is nothing to display, e.g. if the router
+        // has been filtered out and no metrics were available for the other
+        // services, perhaps because the environment was paused.
+        if (empty($values)) {
+            $this->stdErr->writeln('No values were found to display.');
+
+            if ($environment->status === 'paused') {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('The environment is currently paused.');
+                $this->stdErr->writeln('Metrics collection will start when the environment is redeployed.');
+            }
+
+            return false;
+        }
+
         return $values;
     }
 

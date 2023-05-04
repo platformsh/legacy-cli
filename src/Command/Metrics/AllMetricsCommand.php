@@ -80,12 +80,6 @@ class AllMetricsCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
-            $this->stdErr->writeln(\sprintf(
-                'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
-                (new Duration())->humanize($timeSpec->getInterval()),
-                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
-                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
-            ));
         }
 
         // Only request the metrics fields that will be displayed.
@@ -123,6 +117,15 @@ class AllMetricsCommand extends MetricsCommandBase
             'tmp_inodes_limit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_inodes_percent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
         ]);
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf(
+                'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
+                (new Duration())->humanize($timeSpec->getInterval()),
+                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
+                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
+            ));
+        }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
