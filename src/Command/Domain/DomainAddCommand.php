@@ -19,7 +19,7 @@ class DomainAddCommand extends DomainCommandBase
             ->setName('domain:add')
             ->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
-        $this->addOption('replace', 'r', InputOption::VALUE_REQUIRED, 'The production domain which this one replaces (required for non-production environment domains)');
+        $this->addOption('replace', 'r', InputOption::VALUE_REQUIRED, "The production domain which this one replaces in the environment's routes (required for non-production environment domains)");
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addWaitOptions();
