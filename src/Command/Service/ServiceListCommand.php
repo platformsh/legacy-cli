@@ -20,7 +20,8 @@ class ServiceListCommand extends CommandBase
         $this->setName('service:list')
             ->setAliases(['services'])
             ->setDescription('List services in the project')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of service names only');
         $this->addProjectOption()
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
@@ -41,6 +42,14 @@ class ServiceListCommand extends CommandBase
         if (!count($services)) {
             $this->stdErr->writeln('No services found.');
             $this->recommendOtherCommands($deployment);
+
+            return 0;
+        }
+
+        if ($input->getOption('pipe')) {
+            $names = array_keys($services);
+            sort($names, SORT_NATURAL);
+            $output->writeln($names);
 
             return 0;
         }

@@ -21,7 +21,8 @@ class AppListCommand extends CommandBase
         $this->setName('app:list')
             ->setAliases(['apps'])
             ->setDescription('List apps in the project')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of app names only');
         $this->addProjectOption()
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
@@ -42,6 +43,14 @@ class AppListCommand extends CommandBase
         if (!count($apps)) {
             $this->stdErr->writeln('No applications found.');
             $this->recommendOtherCommands($deployment);
+
+            return 0;
+        }
+
+        if ($input->getOption('pipe')) {
+            $appNames = array_keys($apps);
+            sort($appNames, SORT_NATURAL);
+            $output->writeln($appNames);
 
             return 0;
         }

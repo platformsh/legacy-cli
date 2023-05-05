@@ -20,7 +20,8 @@ class WorkerListCommand extends CommandBase
         $this->setName('worker:list')
             ->setAliases(['workers'])
             ->setDescription('Get a list of all deployed workers')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of worker names only');
         $this->addProjectOption()
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
@@ -40,6 +41,14 @@ class WorkerListCommand extends CommandBase
         if (empty($workers)) {
             $this->stdErr->writeln('No workers found.');
             $this->recommendOtherCommands($deployment);
+
+            return 0;
+        }
+
+        if ($input->getOption('pipe')) {
+            $names = array_keys($workers);
+            sort($names, SORT_NATURAL);
+            $output->writeln($names);
 
             return 0;
         }
