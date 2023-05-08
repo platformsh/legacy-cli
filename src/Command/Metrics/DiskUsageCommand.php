@@ -29,6 +29,7 @@ class DiskUsageCommand extends MetricsCommandBase
         'tmp_ipercent' => '/tmp inodes %',
     ];
     private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
+    private $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
 
     /**
      * {@inheritdoc}
@@ -38,8 +39,9 @@ class DiskUsageCommand extends MetricsCommandBase
         $this->setName('metrics:disk-usage')
             ->setAliases(['disk'])
             ->setDescription('Show disk usage of an environment')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
-        $this->addMetricsOptions()
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+            ->addMetricsOptions()
+            ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')')
             ->addProjectOption()
             ->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
@@ -54,6 +56,10 @@ class DiskUsageCommand extends MetricsCommandBase
         $timeSpec = $this->validateTimeInput($input);
         if ($timeSpec === false) {
             return 1;
+        }
+
+        if ($input->getOption('tmp')) {
+            $input->setOption('columns', $this->tmpReportColumns);
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
@@ -93,7 +99,8 @@ class DiskUsageCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf(
-                'Average disk usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
+                'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
+                $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',
                 (new Duration())->humanize($timeSpec->getInterval()),
                 \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
                 \date('Y-m-d H:i:s', $timeSpec->getEndTime())
