@@ -2,8 +2,11 @@
 namespace Platformsh\Cli\Console;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\MarkdownDescriptor;
+use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -18,6 +21,38 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     public function __construct($cliExecutableName = null)
     {
         $this->cliExecutableName = $cliExecutableName ?: basename($_SERVER['PHP_SELF']);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function describeApplication(Application $application, array $options = array())
+    {
+        $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
+        $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
+        $title = sprintf('%s %s', $application->getName(), $application->getVersion());
+
+        $this->write($title."\n".str_repeat('=', Helper::strlen($title)));
+
+        foreach ($description->getNamespaces() as $namespace) {
+            if (empty($namespace['commands'])) {
+                continue;
+            }
+            if (ApplicationDescription::GLOBAL_NAMESPACE !== $namespace['id']) {
+                $this->write("\n\n");
+                $this->write('**'.$namespace['id'].':**');
+            }
+
+            $this->write("\n\n");
+            $this->write(implode("\n", array_map(function ($commandName) use ($description) {
+                return sprintf('* [`%s`](#%s)', $commandName, str_replace(':', '', $description->getCommand($commandName)->getName()));
+            }, $namespace['commands'])));
+        }
+
+        foreach ($description->getCommands() as $command) {
+            $this->write("\n\n");
+            $this->describeCommand($command);
+        }
     }
 
     /**
