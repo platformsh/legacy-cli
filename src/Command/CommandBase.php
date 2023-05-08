@@ -2114,6 +2114,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         if ($this->config()->getWithDefault('api.organizations', false)) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)');
+            if (!$this->getDefinition()->hasOption('project')) {
+                $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL, to auto-select the organization if --org is not used');
+            }
         }
         return $this;
     }
@@ -2143,6 +2146,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $client = $this->api()->getClient();
 
         if ($identifier = $input->getOption('org')) {
+            if ($input->hasOption('project') && $input->getOption('project')) {
+                throw new ConsoleInvalidArgumentException('The --org and --project options cannot be used together.');
+            }
             // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
             // So it's easy to distinguish one from the other.
             /** @link https://github.com/ulid/spec */
@@ -2158,20 +2164,28 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $organization;
         }
 
-        if (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
-            $organizationId = $currentProject->getProperty('organization');
-            try {
-                $organization = $client->getOrganizationById($organizationId);
-            } catch (BadResponseException $e) {
-                $this->debug('Error when fetching project organization: ' . $e->getMessage());
-                $organization = false;
-            }
-            // The organization is not filtered by $filterByLink here, so that
-            // behavior is more predictable between different organization
-            // commands.
+        if ($input->hasOption('project') && ($id = $input->getOption('project'))) {
+            $project = $this->selectProject($id);
+            $this->stdErr->writeln(\sprintf('Selected project: %s', $this->api()->getProjectLabel($project)));
+            $organization = $client->getOrganizationById($project->getProperty('organization'));
             if ($organization) {
-                $this->stdErr->writeln(\sprintf('Selected organization: %s (based on current project)', $this->api()->getOrganizationLabel($organization)));
+                $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
                 return $organization;
+            }
+        } elseif (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
+            $organizationId = $currentProject->getProperty('organization');
+            if ($this->stdErr->isVerbose()) {
+                try {
+                    $organization = $client->getOrganizationById($organizationId);
+                } catch (BadResponseException $e) {
+                    $this->debug('Error when fetching project organization: ' . $e->getMessage());
+                    $organization = false;
+                }
+                if ($organization) {
+                    $this->stdErr->writeln(\sprintf('Selected project: %s', $this->api()->getProjectLabel($currentProject)));
+                    $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
+                    return $organization;
+                }
             }
         }
 
