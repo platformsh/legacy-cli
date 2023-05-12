@@ -2174,18 +2174,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         } elseif (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
             $organizationId = $currentProject->getProperty('organization');
-            if ($this->stdErr->isVerbose()) {
-                try {
-                    $organization = $client->getOrganizationById($organizationId);
-                } catch (BadResponseException $e) {
-                    $this->debug('Error when fetching project organization: ' . $e->getMessage());
-                    $organization = false;
-                }
-                if ($organization) {
+            try {
+                $organization = $client->getOrganizationById($organizationId);
+            } catch (BadResponseException $e) {
+                $this->debug('Error when fetching project organization: ' . $e->getMessage());
+                $organization = false;
+            }
+            if ($organization) {
+                if ($this->stdErr->isVerbose()) {
                     $this->stdErr->writeln(\sprintf('Selected project: %s', $this->api()->getProjectLabel($currentProject)));
                     $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
-                    return $organization;
                 }
+                return $organization;
             }
         }
 
