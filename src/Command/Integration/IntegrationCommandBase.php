@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Client\Model\Integration;
 use Platformsh\Client\Model\Project;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
@@ -133,6 +134,16 @@ abstract class IntegrationCommandBase extends CommandBase
             }
         }
 
+        // Process HTTP headers.
+        if (isset($values['headers'])) {
+            $map = [];
+            foreach ($values['headers'] as $header) {
+                $parts = explode(':', $header, 2);
+                $map[$parts[0]] = isset($parts[1]) ? ltrim($parts[1]) : '';
+            }
+            $values['headers'] = $map;
+        }
+
         return $values;
     }
 
@@ -166,6 +177,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'health.pagerduty',
             'health.slack',
             'health.webhook',
+            'httplog',
             'script',
             'newrelic',
             'splunk',
@@ -383,6 +395,7 @@ abstract class IntegrationCommandBase extends CommandBase
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'health.webhook',
+                    'httplog',
                     'newrelic',
                     'sumologic',
                     'splunk',
@@ -559,6 +572,7 @@ abstract class IntegrationCommandBase extends CommandBase
             ]),
             'tls_verify' => new BooleanField('Verify TLS', [
                 'conditions' => ['type' => [
+                    'httplog',
                     'newrelic',
                     'splunk',
                     'sumologic',
@@ -569,6 +583,33 @@ abstract class IntegrationCommandBase extends CommandBase
                 'default' => true,
                 'required' => false,
                 'avoidQuestion' => true,
+            ]),
+            'headers' => new ArrayField('HTTP header', [
+                'optionName' => 'header',
+                'conditions' => ['type' => 'httplog'],
+                'description' => 'HTTP header(s) to use in POST requests. Separate names and values with a colon (:).',
+                'required' => false,
+                // Override the default split pattern (which splits a comma-separated
+                // value), as HTTP headers can contain commas.
+                'splitPattern' => ArrayField::SPLIT_PATTERN_NEWLINE,
+                // As multiple HTTP headers are separated by newlines, but the
+                // QuestionHelper reads only one input line, it is not
+                // practical to ask for headers interactively.
+                'avoidQuestion' => false,
+                'validator' => function ($headers) {
+                    $uniqueNames = [];
+                    foreach ($headers as $header) {
+                        $parts = \explode(':', $header, 2);
+                        if (isset($uniqueNames[$parts[0]])) {
+                            return 'Duplicate header name: ' . $parts[0];
+                        }
+                        if (!isset($parts[1])) {
+                            return 'Invalid header (no value): ' . $header;
+                        }
+                        $uniqueNames[$parts[0]] = true;
+                    }
+                    return TRUE;
+                },
             ]),
         ];
     }
