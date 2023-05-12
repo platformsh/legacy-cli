@@ -103,7 +103,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
      */
     protected function describeInputArgument(InputArgument $argument, array $options = [])
     {
-        $this->write('* **`' . $argument->getName() . "`**");
+        $this->write('* `' . $argument->getName() . '`');
         $notes = [
             $argument->isRequired() ? "required" : "optional",
         ];
@@ -123,7 +123,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
      */
     protected function describeInputOption(InputOption $option, array $options = [])
     {
-        $this->write('* **`--' . $option->getName() . "`**");
+        $this->write('* `--' . $option->getName() . '`');
         if ($shortcut = $option->getShortcut()) {
             $this->write(" (`-" . implode('|-', explode('|', $shortcut)). "`)");
         }
