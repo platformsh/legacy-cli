@@ -168,13 +168,15 @@ class Table implements InputConfiguringInterface
      *
      * @param string[]|array<string, string> $header
      * @param string[] $defaultColumns
-     * @return string[]
+     * @return string[] A list of (lower-case) column names.
      */
     public function columnsToDisplay(array $header, array $defaultColumns = [])
     {
         $availableColumns = array_keys(self::availableColumns($header));
         if (empty($defaultColumns)) {
             $defaultColumns = $availableColumns;
+        } else {
+            $defaultColumns = array_map('strtolower', $defaultColumns);
         }
 
         $specifiedColumns = $this->specifiedColumns();
@@ -331,16 +333,16 @@ class Table implements InputConfiguringInterface
             }
             $newRow = [];
             foreach ($columnsToDisplay as $columnNameLowered) {
-                $keyFromHeader = $availableColumns[$columnNameLowered];
-                if (array_key_exists($keyFromHeader, $row)) {
+                $keyFromHeader = isset($availableColumns[$columnNameLowered]) ? $availableColumns[$columnNameLowered] : false;
+                if ($keyFromHeader !== false && array_key_exists($keyFromHeader, $row)) {
                     $newRow[] = $row[$keyFromHeader];
+                    continue;
+                }
+                $numericKey = array_search($columnNameLowered, array_keys($availableColumns), true);
+                if ($numericKey !== false && array_key_exists($numericKey, $row)) {
+                    $newRow[] = $row[$numericKey];
                 } else {
-                    $numericKey = array_search($columnNameLowered, array_keys($availableColumns), true);
-                    if (array_key_exists($numericKey, $row)) {
-                        $newRow[] = $row[$numericKey];
-                    } else {
-                        $newRow[] = '';
-                    }
+                    $newRow[] = '';
                 }
             }
             $newRows[] = $newRow;
