@@ -6,11 +6,11 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Descriptor\JsonDescriptor;
 use Symfony\Component\Console\Descriptor\XmlDescriptor;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -73,7 +73,7 @@ EOF
 
         $format = $input->getOption('format');
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $options = ['format' => $format, 'raw_text' => $input->getOption('raw')];
+        $options = ['format' => $format, 'raw_text' => $input->getOption('raw'), 'all' => true];
 
         switch ($format) {
             case 'xml':
@@ -89,7 +89,7 @@ EOF
                 (new CustomMarkdownDescriptor())->describe($output, $this->command, $options);
                 return 0;
             case 'json':
-                (new JsonDescriptor())->describe($output, $this->command, $options);
+                (new CustomJsonDescriptor())->describe($output, $this->command, $options);
                 return 0;
             case 'txt':
                 (new CustomTextDescriptor($config->get('application.executable')))->describe($output, $this->command, $options);

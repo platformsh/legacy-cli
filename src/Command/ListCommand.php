@@ -6,6 +6,8 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\CustomJsonDescriptor;
+use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -52,6 +54,8 @@ EOF
     {
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
+        $helper->register('md', new CustomMarkdownDescriptor());
+        $helper->register('json', new CustomJsonDescriptor());
         $helper->describe(
             $output,
             $this->getApplication(),
