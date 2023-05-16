@@ -7,6 +7,7 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
 class Shell
@@ -19,6 +20,9 @@ class Shell
     protected $stdErr;
 
     private $debugPrefix = '<options=reverse>#</> ';
+
+    /** @var string|null */
+    private static $phpVersion;
 
     public function __construct(OutputInterface $output = null)
     {
@@ -325,5 +329,26 @@ class Shell
         }
 
         return $command;
+    }
+
+    /**
+     * Returns the locally installed version of PHP.
+     *
+     * Falls back to the version of PHP running the CLI (which may or may not
+     * be the same).
+     *
+     * @return string
+     */
+    public function getPhpVersion()
+    {
+        if (!isset(self::$phpVersion)) {
+            $result = $this->execute([
+                (new PhpExecutableFinder())->find() ?: PHP_BINARY,
+                '-r',
+                'echo PHP_VERSION;',
+            ]);
+            self::$phpVersion = is_string($result) ? $result : PHP_VERSION;
+        }
+        return self::$phpVersion;
     }
 }

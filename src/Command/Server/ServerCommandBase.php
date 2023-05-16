@@ -228,10 +228,13 @@ abstract class ServerCommandBase extends CommandBase
         if (isset($appConfig['type'])) {
             $type = explode(':', $appConfig['type'], 2);
             $version = isset($type[1]) ? $type[1] : false;
-            if ($type[0] === 'php' && $version && version_compare(PHP_VERSION, $version, '<')) {
+            /** @var \Platformsh\Cli\Service\Shell $shell */
+            $shell = $this->getService('shell');
+            $localPhpVersion = $shell->getPhpVersion();
+            if ($type[0] === 'php' && $version && version_compare($localPhpVersion, $version, '<')) {
                 $this->stdErr->writeln(sprintf(
                     '<comment>Warning:</comment> your local PHP version is %s, but the app expects %s',
-                    PHP_VERSION,
+                    $localPhpVersion,
                     $version
                 ));
             }
