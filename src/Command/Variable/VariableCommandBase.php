@@ -175,6 +175,12 @@ abstract class VariableCommandBase extends CommandBase
             },
             'asChoice' => false,
             'includeAsOption' => false,
+            'defaultCallback' => function () {
+                if ($this->hasSelectedEnvironment()) {
+                    return $this->getSelectedEnvironment()->id;
+                }
+                return null;
+            },
         ]);
         $fields['name'] = new Field('Name', [
             'description' => 'The variable name',
