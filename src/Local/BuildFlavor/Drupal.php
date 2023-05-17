@@ -55,11 +55,12 @@ class Drupal extends BuildFlavorBase
                ->depth($depth)
                ->name('index.php');
         foreach ($finder as $file) {
-            $f = fopen($file, 'r');
-            $beginning = fread($f, 3178);
-            fclose($f);
-            if (strpos($beginning, 'Drupal') !== false) {
-                return true;
+            if (($f = fopen($file, 'r')) !== false) {
+                $beginning = fread($f, 3178);
+                fclose($f);
+                if ($beginning !== false && strpos($beginning, 'Drupal') !== false) {
+                    return true;
+                }
             }
         }
 
