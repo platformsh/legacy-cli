@@ -20,7 +20,7 @@ abstract class DomainCommandBase extends CommandBase
 
     protected $environmentIsProduction;
 
-    protected $replacementFor;
+    protected $attach;
 
     /**
      * @param InputInterface $input
@@ -52,9 +52,10 @@ abstract class DomainCommandBase extends CommandBase
             }
         }
 
-        if ($input->hasOption('environment') || $input->hasOption('replace')) {
+        if ($input->hasOption('environment') || $input->hasOption('attach')) {
             $project = $this->getSelectedProject();
             $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
+                || ($input->hasOption('attach') && $input->getOption('attach') !== null)
                 || ($input->hasOption('replace') && $input->getOption('replace') !== null);
 
             $capabilities = $project->getCapabilities();
@@ -74,24 +75,24 @@ abstract class DomainCommandBase extends CommandBase
                 if ($this->stdErr->isVerbose()) {
                     $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
                 }
-                if ($input->hasOption('replace') && $supportsNonProduction) {
-                    $this->stdErr->writeln('Use the <comment>--replace</comment> option (and optionally <comment>--environment</comment>) to add a domain to a non-production environment.');
+                if ($input->hasOption('attach') && $supportsNonProduction) {
+                    $this->stdErr->writeln('Use the <comment>--attach</comment> option (and optionally <comment>--environment</comment>) to add a domain to a non-production environment.');
                     $this->stdErr->writeln('');
                 }
             }
 
-            if ($input->hasOption('replace')) {
-                $this->replacementFor = $input->getOption('replace');
-                if (!$this->environmentIsProduction && $this->replacementFor === null) {
-                    $this->stdErr->writeln('The <error>--replace</error> option is required for non-production environment domains.');
-                    $this->stdErr->writeln('This specifies which production domain the new domain will replace.');
+            if ($input->hasOption('attach')) {
+                $this->attach = $input->getOption('attach') ?: $input->getOption('replace');
+                if (!$this->environmentIsProduction && $this->attach === null) {
+                    $this->stdErr->writeln('The <error>--attach</error> option is required for non-production environment domains.');
+                    $this->stdErr->writeln("This specifies the production domain that this new domain will replace in the environment's routes.");
                     return false;
                 }
-                if ($this->environmentIsProduction && $this->replacementFor !== null) {
-                    $this->stdErr->writeln('The <error>--replace</error> option is only valid for non-production environment domains.');
+                if ($this->environmentIsProduction && $this->attach !== null) {
+                    $this->stdErr->writeln('The <error>--attach</error> option is only valid for non-production environment domains.');
                     return false;
                 }
-                if ($this->replacementFor !== null) {
+                if ($this->attach !== null) {
                     if (!$supportsNonProduction) {
                         $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
                         if ($this->config()->has('warnings.non_production_domains_msg')) {
@@ -100,11 +101,11 @@ abstract class DomainCommandBase extends CommandBase
                         return false;
                     }
                     try {
-                        $domain = $project->getDomain($this->replacementFor);
+                        $domain = $project->getDomain($this->attach);
                         if ($domain === false) {
                             $this->stdErr->writeln(sprintf(
-                                'The <comment>--replace</comment> domain was not found: <error>%s</error>',
-                                $this->replacementFor
+                                'The <comment>--attach</comment> domain was not found: <error>%s</error>',
+                                $this->attach
                             ));
                             return false;
                         }
