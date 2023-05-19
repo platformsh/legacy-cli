@@ -21,7 +21,8 @@ class AuthTokenCommand extends CommandBase
             ))
             ->addOption('header', 'H', InputOption::VALUE_NONE, 'Prefix the token with "' . self::RFC6750_PREFIX . '" to make an RFC 6750 header')
             ->addOption('no-warn', 'W', InputOption::VALUE_NONE, 'Suppress the warning that is printed by default to stderr.'
-                . ' This option is preferred over redirecting stderr, as that would hide other potentially useful messages.');
+                . ' This option is preferred over redirecting stderr, as that would hide other potentially useful messages.')
+            ->addOption('check', null, InputOption::VALUE_NONE, 'Check the token for validity against an API before returning it');
         $help = \wordwrap(
             'This command prints a valid OAuth 2 access token to stdout. It can be used to make API requests via standard Bearer authentication (RFC 6750).'
             . "\n\n" . '<comment>Warning: access tokens must be kept secret.</comment>'
@@ -48,6 +49,10 @@ class AuthTokenCommand extends CommandBase
             $this->stdErr->writeln(
                 '<fg=yellow>Warning: keep access tokens secret.</>'
             );
+        }
+
+        if ($input->getOption('check')) {
+            $this->api()->getMyUserId(true);
         }
 
         $token = $this->api()->getAccessToken();
