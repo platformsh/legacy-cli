@@ -2,15 +2,13 @@
 
 namespace Platformsh\Cli\Command\Repo;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Model\Git\Tree;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ReadCommand extends CommandBase
+class ReadCommand extends RepoCommandBase
 {
     /**
      * {@inheritdoc}
@@ -22,7 +20,7 @@ class ReadCommand extends CommandBase
             ->setAliases(['read'])
             ->setDescription('Read a directory or file in the project repository')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')
-            ->addOption('commit', 'c', InputOption::VALUE_REQUIRED, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP);
+            ->addCommitOption();
         $this->addProjectOption();
         $this->addEnvironmentOption();
     }
@@ -44,16 +42,9 @@ class ReadCommand extends CommandBase
 
             return 2;
         }
-        if ($object instanceof Tree) {
-            $cmd = 'repo:ls';
-        } else {
-            $cmd = 'repo:cat';
-        }
-        return $this->runOtherCommand($cmd, \array_filter([
-            'path' => $path,
-            '--commit' => $input->getOption('commit'),
-            '--project' => $this->getSelectedProject()->id,
-            '--environment' => $this->getSelectedEnvironment()->id,
-        ]));
+
+        return $object instanceof Tree
+            ? $this->ls($environment, $input, $output)
+            : $this->cat($environment, $input, $output);
     }
 }

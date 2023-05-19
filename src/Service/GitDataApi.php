@@ -232,6 +232,19 @@ class GitDataApi
     }
 
     /**
+     * @param string $path
+     * @return string
+     */
+    private function normalizePath($path)
+    {
+        if (strpos($path, './') === 0) {
+            $path = substr($path, 2);
+        }
+        $path = trim($path, '/');
+        return $path === '' ? '.' : $path;
+    }
+
+    /**
      * Get a Git Tree object (a repository directory) for an environment.
      *
      * @param Environment $environment
@@ -244,7 +257,8 @@ class GitDataApi
     public function getTree(Environment $environment, $path = '.', $commitSha = null, $onlyUseCache = false)
     {
         $normalizedSha = $this->normalizeSha($environment, $commitSha);
-        $cacheKey = implode(':', ['tree', $environment->project, trim($path, '/'), $normalizedSha]);
+        $normalizedPath = $this->normalizePath($path);
+        $cacheKey = implode(':', ['tree', $environment->project, $normalizedPath, $normalizedSha]);
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
             if ($onlyUseCache) {
@@ -253,14 +267,14 @@ class GitDataApi
 
             // Check if the parent tree is already cached, to avoid re-fetching
             // each parent.
-            $parentPath = \dirname($path);
+            $parentPath = \dirname($normalizedPath);
             $parentTree = false;
-            if ($parentPath !== $path && $parentPath !== '.') {
+            if ($parentPath !== $normalizedPath && $parentPath !== '.') {
                 $parentTree = $this->getTree($environment, $parentPath, $normalizedSha, true);
             }
 
             if ($parentTree) {
-                $tree = $parentTree->getTree(basename($path));
+                $tree = $parentTree->getTree(basename($normalizedPath));
             } else {
                 if (!$commit = $this->getCommit($environment, $normalizedSha)) {
                     throw new \InvalidArgumentException(sprintf(
@@ -272,7 +286,7 @@ class GitDataApi
                     // This is unlikely to happen.
                     throw new \RuntimeException('Failed to get tree for commit: ' . $commit->id);
                 }
-                $tree = $rootTree->getTree($path);
+                $tree = $rootTree->getTree($normalizedPath);
             }
 
             $this->cache->save($cacheKey, [
