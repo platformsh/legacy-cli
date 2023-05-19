@@ -1702,7 +1702,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $cmdInput->setInteractive($this->input->isInteractive());
         }
 
-        $this->debug('Running command: ' . $cmdInput->__toString());
+        if ($this->stdErr->isVeryVerbose()) {
+            $this->stdErr->writeln(
+                '<options=reverse>#</> Running subcommand: <info>' . $cmdInput->__toString() . '</info>'
+            );
+        }
 
         // Set the original command name for comparison.
         self::$originalCommand = $this->getName();
