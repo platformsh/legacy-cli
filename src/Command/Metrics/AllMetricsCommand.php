@@ -119,11 +119,13 @@ class AllMetricsCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
+            /** @var PropertyFormatter $formatter */
+            $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),
-                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
-                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
+                $formatter->formatDate($timeSpec->getStartTime()),
+                $formatter->formatDate($timeSpec->getEndTime())
             ));
         }
 

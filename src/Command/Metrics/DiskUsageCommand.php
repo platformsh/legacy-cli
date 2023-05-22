@@ -98,12 +98,14 @@ class DiskUsageCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
+            /** @var PropertyFormatter $formatter */
+            $formatter = $this->getService('property_formatter');
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',
                 (new Duration())->humanize($timeSpec->getInterval()),
-                \date('Y-m-d H:i:s', $timeSpec->getStartTime()),
-                \date('Y-m-d H:i:s', $timeSpec->getEndTime())
+                $formatter->formatDate($timeSpec->getStartTime()),
+                $formatter->formatDate($timeSpec->getEndTime())
             ));
         }
 
