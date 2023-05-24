@@ -2070,9 +2070,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Shows information about the currently logged in user and their session, if applicable.
      *
+     * @param bool $logout  Whether this should avoid re-authentication (if an API token is set).
      * @param bool $newline Whether to prepend a newline if there is output.
      */
-    protected function showSessionInfo($newline = true)
+    protected function showSessionInfo($logout = false, $newline = true)
     {
         $api = $this->api();
         $config = $this->config();
@@ -2087,7 +2088,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $config->get('application.executable')));
             }
         }
-        if ($api->isLoggedIn()) {
+        if (!$logout && $api->isLoggedIn()) {
             if ($newline) {
                 $this->stdErr->writeln('');
             }

@@ -65,11 +65,11 @@ class LogoutCommand extends CommandBase
             $this->api()->deleteAllSessions();
             $this->stdErr->writeln('');
             $this->stdErr->writeln('All sessions have been deleted.');
-            $this->showSessionInfo();
+            $this->showSessionInfo(true);
             return 0;
         }
 
-        $this->showSessionInfo();
+        $this->showSessionInfo(true);
 
         if ($this->api()->anySessionsExist()) {
             $this->stdErr->writeln('');

@@ -30,9 +30,9 @@ use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\Model\Subscription;
 use Platformsh\Client\Model\User;
 use Platformsh\Client\PlatformClient;
+use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -227,6 +227,9 @@ class Api
         if (is_dir($dir)) {
             (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
         }
+
+        // Wipe the client so it is re-initialized when needed.
+        self::$client = null;
     }
 
     /**
@@ -445,12 +448,7 @@ class Api
     {
         if (!isset(self::$client) || $reset) {
             $options = $this->getConnectorOptions();
-            $connector = new Connector($options);
 
-            // Set up a persistent session to store OAuth2 tokens. By default,
-            // this will be stored in a JSON file:
-            // $HOME/.platformsh/.session/sess-cli-default/sess-cli-default.json
-            $session = $connector->getSession();
             $sessionId = $this->config->getSessionId();
 
             // Override the session ID if an API token is set.
@@ -459,20 +457,20 @@ class Api
             if (!empty($options['api_token'])) {
                 $sessionId = 'api-token-' . \substr(\hash('sha256', $options['api_token']), 0, 32);
             }
-            $session->setId('cli-' . $sessionId);
 
-            $this->initSessionStorage();
+            // Set up a session to store OAuth2 tokens.
+            // By default this uses in-memory storage.
+            $session = new Session($sessionId);
 
-            // Don't use any storage for the session if an access token is set.
+            // Set up persistent session storage
+            // (unless an access token was set directly).
             if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
+                $this->initSessionStorage();
+                // This will load from the session for the first time.
                 $session->setStorage($this->sessionStorage);
             }
 
-            // Ensure session data is (re-)loaded every time.
-            // @todo move this to the Session
-            if (!$session->getData()) {
-                $session->load(true);
-            }
+            $connector = new Connector($options, $session);
 
             self::$client = new PlatformClient($connector);
 
