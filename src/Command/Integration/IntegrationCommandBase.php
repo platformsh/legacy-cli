@@ -144,6 +144,12 @@ abstract class IntegrationCommandBase extends CommandBase
             $values['headers'] = $map;
         }
 
+        // Ensure prune_branches is sent as false if fetch_branches is also false.
+        // TODO remove this when the API default is fixed to no longer need this
+        if (isset($values['fetch_branches']) && $values['fetch_branches'] === false && !isset($values['prune_branches'])) {
+            $values['prune_branches'] = false;
+        }
+
         return $values;
     }
 
