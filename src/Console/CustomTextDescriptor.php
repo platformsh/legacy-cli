@@ -76,8 +76,14 @@ class CustomTextDescriptor extends TextDescriptor
             $this->writeText("\n");
             $this->writeText('<comment>Examples:</comment>', $options);
             $name = $command->getPreferredName();
-            foreach ($examples as $arguments => $description) {
-                $this->writeText("\n $description:\n   <info>{$this->cliExecutableName} $name $arguments</info>\n");
+            foreach ($examples as $example) {
+                $this->writeText(sprintf(
+                    "\n %s:\n   <info>%s %s %s</info>\n",
+                    $example['description'],
+                    $this->cliExecutableName,
+                    $name,
+                    $example['commandline']
+                ));
             }
         }
     }

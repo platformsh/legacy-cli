@@ -91,8 +91,14 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write('## Examples');
             $this->write("\n");
             $name = $command->getPreferredName();
-            foreach ($examples as $arguments => $description) {
-                $this->write("\n* $description:  \n  ```\n  {$this->cliExecutableName} $name $arguments\n  ```\n");
+            foreach ($examples as $example) {
+                $this->write(sprintf(
+                    "\n* %s:  \n  ```\n  %s %s %s\n  ```\n",
+                    $example['description'],
+                    $this->cliExecutableName,
+                    $name,
+                    $example['commandline']
+                ));
             }
             $this->write("\n");
         }

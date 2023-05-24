@@ -154,12 +154,7 @@ class CustomJsonDescriptor extends Descriptor
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
         $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();
-        $examples = [];
-        if ($command instanceof CommandBase) {
-            foreach ($command->getExamples() as $arguments => $description) {
-                $examples[] = ['commandline' => $arguments, 'description' => $description];
-            }
-        }
+        $examples = $command instanceof CommandBase ? $command->getExamples() : [];
 
         return [
             'name' => $command->getName(),
