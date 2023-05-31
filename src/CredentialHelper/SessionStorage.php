@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\CredentialHelper;
 
-use Platformsh\Cli\Service\Config;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\SessionStorageInterface;
 
@@ -13,7 +12,6 @@ class SessionStorage implements SessionStorageInterface
 {
     private $serverUrlBase;
     private $manager;
-    private $config;
 
     /**
      * CredentialsHelperStorage constructor.
@@ -24,13 +22,11 @@ class SessionStorage implements SessionStorageInterface
      *   not actually have to be a URL at this time, and a human-readable value
      *   is more helpful to the user. In Windows this will be described as the
      *   "Internet or network address".
-     * @param Config|null $config
      */
-    public function __construct(Manager $manager, $serverUrlPrefix, Config $config = null)
+    public function __construct(Manager $manager, $serverUrlPrefix)
     {
         $this->manager = $manager;
         $this->serverUrlBase = rtrim($serverUrlPrefix, '/');
-        $this->config = $config ?: new Config();
     }
 
     /**
@@ -61,10 +57,6 @@ class SessionStorage implements SessionStorageInterface
 
         if ($secret !== false) {
             $session->setData($this->deserialize($secret));
-        } else {
-            // If data doesn't exist in the credential store yet, load it from
-            // an old file for backwards compatibility.
-            $this->loadFromFile($session);
         }
     }
 
@@ -110,31 +102,6 @@ class SessionStorage implements SessionStorageInterface
         return array_filter(array_keys($list), function ($url) {
             return strpos($url, $this->serverUrlBase) === 0;
         });
-    }
-
-    /**
-     * Load the session from an old file for backwards compatibility.
-     *
-     * @param \Platformsh\Client\Session\SessionInterface $session
-     */
-    private function loadFromFile(SessionInterface $session)
-    {
-        $id = preg_replace('/[^\w\-]+/', '-', $session->getId());
-        $dir = $this->config->getSessionDir();
-        $filename = "$dir/sess-$id/sess-$id.json";
-        if (is_readable($filename) && ($contents = file_get_contents($filename))) {
-            $data = json_decode($contents, true) ?: [];
-            $session->setData($data);
-            $this->save($session);
-            // Reload the session from the credential store, and delete the
-            // file if successful.
-            if (rename($filename, $filename . '.bak')) {
-                $this->load($session);
-                if ($session->getData()) {
-                    unlink($filename . '.bak');
-                }
-            }
-        }
     }
 
     /**

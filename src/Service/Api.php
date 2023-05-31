@@ -504,7 +504,7 @@ class Api
         $manager = new Manager($this->config);
         if ($manager->isSupported()) {
             $manager->install();
-            $this->sessionStorage = new SessionStorage($manager, $this->config->get('application.slug'), $this->config);
+            $this->sessionStorage = new SessionStorage($manager, $this->config->get('application.slug'));
             return;
         }
 
