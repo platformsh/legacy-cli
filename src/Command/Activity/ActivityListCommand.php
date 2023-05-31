@@ -32,11 +32,13 @@ class ActivityListCommand extends ActivityCommandBase
         $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             $typeDescription
             . "\n" . ArrayArgument::SPLIT_HELP
-            . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities."
+            . "\nThe first part of the activity name can be omitted, e.g. 'cron' can select 'environment.cron' activities."
+            . "\nThe % or * characters can be used as a wildcard, e.g. '%var%' to select variable-related activities."
         );
         $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             'Exclude activities by type.'
             . "\n" . ArrayArgument::SPLIT_HELP
+            . "\nThe first part of the activity name can be omitted, e.g. 'cron' can exclude 'environment.cron' activities."
             . "\nThe % or * characters can be used as a wildcard to exclude types."
         );
 
@@ -53,8 +55,9 @@ class ActivityListCommand extends ActivityCommandBase
              ->addEnvironmentOption();
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
-             ->addExample('List recent pushes', '--type environment.push')
-             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15')
+             ->addExample('List recent pushes', '--type push')
+             ->addExample('List all recent activities excluding crons and redeploys', "--exclude-type '*.cron,*.backup*'")
+             ->addExample('List pushes made before 15 March', '--type push --start 2015-03-15')
              ->addExample('List up to 25 incomplete activities', '--limit 25 -i');
     }
 
