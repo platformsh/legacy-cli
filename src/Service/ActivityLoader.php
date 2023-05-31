@@ -93,6 +93,9 @@ class ActivityLoader
                 return !\in_array($type, $typesToExclude, true);
             });
         }
+        if (!empty($typesFilter) && $this->stdErr->isDebug()) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> Selected activity type(s): ' . implode(',', $typesFilter));
+        }
         $result = $input->hasOption('result') ? $input->getOption('result') : null;
         $startsAt = null;
         if ($input->hasOption('start') && $input->getOption('start')) {
