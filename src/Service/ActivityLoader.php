@@ -7,6 +7,7 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Activities\HasActivitiesInterface;
 use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -60,31 +61,47 @@ class ActivityLoader
             $limit = $input->hasOption('limit') ? $input->getOption('limit') : null;
         }
         $availableTypes = self::getAvailableTypes();
-        $includeTypes = $input->hasOption('type') ? ArrayArgument::getOption($input, 'type') : [];
-        $excludeTypes = $input->hasOption('exclude-type') ? ArrayArgument::getOption($input, 'exclude-type') : [];
-        $toExclude = Wildcard::select($availableTypes, $excludeTypes);
-        $types = [];
-        foreach ($includeTypes as $includeType) {
-            $toInclude = Wildcard::select($availableTypes, [$includeType]);
-            if (empty($toInclude)) {
-                $this->stdErr->writeln('Unrecognized activity type: <comment>' . $includeType . '</comment>');
+        $requestedIncludeTypes = $input->hasOption('type') ? ArrayArgument::getOption($input, 'type') : [];
+        $requestedExcludeTypes = $input->hasOption('exclude-type') ? ArrayArgument::getOption($input, 'exclude-type') : [];
+        $typesToExclude = [];
+        foreach ($requestedExcludeTypes as $requestedExcludeType) {
+            // Make the first part of the type optional.
+            $toExclude = Wildcard::select($availableTypes, [$requestedExcludeType]) ?: Wildcard::select($availableTypes, ['%.' . $requestedExcludeType]);
+            if (empty($toExclude)) {
+                $this->stdErr->writeln('Unrecognized activity type to exclude: <comment>' . $requestedExcludeType . '</comment>');
+                $typesToExclude[] = $requestedExcludeType;
+            } else {
+                $typesToExclude = array_merge($typesToExclude, $toExclude);
             }
-            if (\in_array($includeType, $excludeTypes, true) || array_intersect($toInclude, $toExclude)) {
+        }
+        $typesFilter = [];
+        foreach ($requestedIncludeTypes as $requestedIncludeType) {
+            // Make the first part of the type optional.
+            $toInclude = Wildcard::select($availableTypes, [$requestedIncludeType]) ?: Wildcard::select($availableTypes, ['%.' . $requestedIncludeType]);
+            if (empty($toInclude)) {
+                $this->stdErr->writeln('Unrecognized activity type to include: <comment>' . $requestedIncludeType . '</comment>');
+                $typesFilter[] = $requestedIncludeType;
+            } else {
+                $typesFilter = array_merge($typesFilter, $toInclude);
+            }
+            if (\in_array($requestedIncludeType, $requestedExcludeTypes, true) || array_intersect($toInclude, $typesToExclude)) {
                 $this->stdErr->writeln('The <comment>--exclude-type</comment> and <comment>--type</comment> options conflict.');
             }
-            $types = array_merge($types, $toInclude);
         }
-        if (empty($types) && !empty($toExclude)) {
-            $types = \array_filter($availableTypes, function ($type) use ($toExclude) {
-                return !\in_array($type, $toExclude, true);
+        if (empty($typesFilter) && !empty($typesToExclude)) {
+            $typesFilter = \array_filter($availableTypes, function ($type) use ($typesToExclude) {
+                return !\in_array($type, $typesToExclude, true);
             });
+        }
+        if (!empty($typesFilter) && $this->stdErr->isDebug()) {
+            $this->stdErr->writeln('<options=reverse>DEBUG</> Selected activity type(s): ' . implode(',', $typesFilter));
         }
         $result = $input->hasOption('result') ? $input->getOption('result') : null;
         $startsAt = null;
         if ($input->hasOption('start') && $input->getOption('start')) {
             $startsAt = new DateTime($input->getOption('start'));
         }
-        $activities = $this->load($apiResource, $limit, $types, $startsAt, $state, $result);
+        $activities = $this->load($apiResource, $limit, $typesFilter, $startsAt, $state, $result);
         if ($withOperation) {
             $activities = array_filter($activities, function (Activity $activity) use ($withOperation) {
                return $activity->operationAvailable($withOperation);
@@ -167,11 +184,15 @@ class ActivityLoader
             'environment.initialize',
             'environment.merge',
             'environment.merge-pr',
+            'environment.operation',
             'environment.pause',
             'environment.push',
             'environment.redeploy',
             'environment.restore',
             'environment.resume',
+            'environment.version.create',
+            'environment.version.update',
+            'environment.version.delete',
             'environment.route.create',
             'environment.route.delete',
             'environment.route.update',
@@ -205,6 +226,9 @@ class ActivityLoader
             'project.domain.create',
             'project.domain.delete',
             'project.domain.update',
+            'project.metrics.enable',
+            'project.metrics.update',
+            'project.metrics.disable',
             'project.modify.title',
             'project.variable.create',
             'project.variable.delete',
