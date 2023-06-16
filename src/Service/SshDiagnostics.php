@@ -219,15 +219,6 @@ class SshDiagnostics
         if ($this->hostKeyVerificationFailed($failedProcess)) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('SSH was unable to verify the host key.');
-            if ($host = $this->getHost($uri)) {
-                $this->stdErr->writeln('In non-interactive environments, you can install the host key with:');
-                $this->stdErr->writeln('ssh-keyscan ' . \escapeshellarg($host) . ' >> $HOME/.ssh/known_hosts');
-                if (\strpos($host, 'ssh.') === 0) {
-                    $this->stdErr->writeln('ssh-keyscan ' . \escapeshellarg('git.' . \substr($host, 4)) . ' >> $HOME/.ssh/known_hosts');
-                } elseif (\strpos($host, 'git.') === 0) {
-                    $this->stdErr->writeln('ssh-keyscan ' . \escapeshellarg('ssh.' . \substr($host, 4)) . ' >> $HOME/.ssh/known_hosts');
-                }
-            }
             return;
         }
 
