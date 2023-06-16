@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,7 +46,19 @@ class EnvironmentSshCommand extends CommandBase
             return 0;
         }
 
-        $container = $this->selectRemoteContainer($input);
+        try {
+            $container = $this->selectRemoteContainer($input);
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->id === $environment->id && $e->getEnvironment()->status === 'inactive') {
+                $this->stdErr->writeln(sprintf('The environment %s is inactive, so an SSH connection is not possible.', $this->api()->getEnvironmentLabel($e->getEnvironment(), 'error')));
+                if (!$e->getEnvironment()->has_code) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln('Push code to the environment to activate it.');
+                }
+                return 1;
+            }
+            throw $e;
+        }
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         if ($input->getOption('pipe')) {
