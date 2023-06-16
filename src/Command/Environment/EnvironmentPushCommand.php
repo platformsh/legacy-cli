@@ -88,24 +88,27 @@ class EnvironmentPushCommand extends CommandBase
             return 1;
         }
 
-        $project = $this->getSelectedProject();
-
-        // Guard against accidental pushing to production.
-        // @todo if/when the API provides "is this production" for an environment, use that instead of hardcoding branch names
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if (in_array($target, ['master', 'production', $project->default_branch])) {
+
+        $project = $this->getSelectedProject();
+
+        /** @var Environment|false $targetEnvironment The target environment, which may not exist yet. */
+        $targetEnvironment = $this->api()->getEnvironment($target, $project);
+
+        // Guard against accidental pushing to production.
+        if (($targetEnvironment && ($targetEnvironment->is_main || $targetEnvironment->type === 'production'))
+            || in_array($target, ['main', 'master', 'production', $project->default_branch], true)) {
             $questionText = sprintf(
                 'Are you sure you want to push to the %s branch?',
-                '<comment>' . $target . '</comment>' . ($target === 'production' ? '' : ' (production)')
+                $targetEnvironment
+                        ? $this->api()->getEnvironmentLabel($targetEnvironment, 'comment')
+                        : '<comment>' . $target . '</comment>'
             );
             if (!$questionHelper->confirm($questionText)) {
                 return 1;
             }
         }
-
-        // Determine whether the target environment is new.
-        $targetEnvironment = $this->api()->getEnvironment($target, $project);
 
         $activities = [];
         if ($target !== $project->default_branch) {
@@ -124,7 +127,7 @@ class EnvironmentPushCommand extends CommandBase
 
             if ($activate) {
                 // If activating, determine what the environment's parent should be.
-                $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment ?: null);
+                $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment);
 
                 // Determine the environment type.
                 $type = $input->getOption('type');
@@ -326,11 +329,11 @@ class EnvironmentPushCommand extends CommandBase
      * Determines the parent of the target environment (for activate / branch).
      *
      * @param Project          $project
-     * @param Environment|null $targetEnvironment
+     * @param Environment|false $targetEnvironment
      *
      * @return string The parent environment ID.
      */
-    private function findTargetParent(Project $project, Environment $targetEnvironment = null) {
+    private function findTargetParent(Project $project, $targetEnvironment) {
         if ($targetEnvironment && $targetEnvironment->parent) {
             return $targetEnvironment->parent;
         }
