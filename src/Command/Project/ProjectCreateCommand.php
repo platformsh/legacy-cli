@@ -86,7 +86,13 @@ EOF
                 }
             }
         } else if ($needsVerify['type'] == 'ticket') { 
-            $this->stdErr->writeln('Staff verification is required before creating a project. Please reach out to Support.');
+            $this->stdErr->writeln('Verification via Support is required before creating a project.');
+            if ($this->config()->has('service.console_url')) {
+                $url = $this->config()->get('service.console_url') . '/support';
+                $this->stdErr->writeln('Please open the following URL in a browser to open a ticket with Support:');
+                $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
+            }
+            return 1;
         }
 
         /** @var \Platformsh\Cli\Service\Git $git */
