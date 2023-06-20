@@ -105,11 +105,15 @@ class VerifyPhoneNumberCommand extends CommandBase
         });
 
         $this->debug('Refreshing phone verification status');
-        $needsVerify = $httpClient->post( '/me/phone?force_refresh=1')->json()['verify_phone'];
+        $needsVerify = $httpClient->post( '/me/verification?force_refresh=1')->json();
         $this->stdErr->writeln('');
 
-        if ($needsVerify) {
-            $this->stdErr->writeln('Phone verification succeeded but the status check failed.');
+        if ($needsVerify['state']) {
+            if ($needsVerify['type'] == 'phone') {
+                $this->stdErr->writeln('Phone verification succeeded but the status check failed.');
+            } else if ($needsVerify['type'] == 'ticket') {
+                $this->stdErr->writeln('Phone verification succeeded but staff verification is required. Please reach out to Support.');
+            }
             return 1;
         }
 

@@ -1437,7 +1437,7 @@ class Api
         }
 
         // Otherwise, check the API to see if verification is required.
-        return $this->getHttpClient()->post( '/me/phone')->json()['verify_phone'];
+        return $this->getHttpClient()->post( '/me/verification')->json();
     }
 
     /**
