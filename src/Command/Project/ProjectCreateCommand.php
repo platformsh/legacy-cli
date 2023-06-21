@@ -81,8 +81,6 @@ EOF
                     $this->stdErr->writeln('Please open the following URL in a browser to verify your phone number:');
                     $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                     return 1;
-                } else {
-                    return 1;
                 }
             }
         } else if ($needsVerify['type'] == 'ticket') { 

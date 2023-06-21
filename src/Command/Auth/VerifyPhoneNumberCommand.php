@@ -112,7 +112,10 @@ class VerifyPhoneNumberCommand extends CommandBase
             if ($needsVerify['type'] == 'phone') {
                 $this->stdErr->writeln('Phone verification succeeded but the status check failed.');
             } else if ($needsVerify['type'] == 'ticket') {
-                $this->stdErr->writeln('Phone verification succeeded but staff verification is required. Please reach out to Support.');
+                $this->stdErr->writeln('There was a problem with verification. Please open the following URL in a browser to open a ticket with Support:');
+                $url = $this->config()->get('service.console_url') . '/support';
+                $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
+                
             }
             return 1;
         }
