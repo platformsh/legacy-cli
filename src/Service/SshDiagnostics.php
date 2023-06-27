@@ -89,14 +89,16 @@ class SshDiagnostics
      * Tests the SSH connection.
      *
      * @param string $uri
+     * @param float|int $timeout
      *
      * @return Process
      *   A process (already run) that tested the SSH connection.
      */
-    private function testConnection($uri)
+    private function testConnection($uri, $timeout = 5)
     {
         $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
         $process = new Process($this->ssh->getSshCommand([], $uri, 'exit'));
+        $process->setTimeout($timeout);
         $process->run();
         $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
         return $process;
