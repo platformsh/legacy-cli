@@ -393,8 +393,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        // Check if the file is writable.
-        if (!is_writable($pharFilename)) {
+        // Check if the file and its containing directory are writable.
+        if (!is_writable($pharFilename) || !is_writable(dirname($pharFilename))) {
             return;
         }
 

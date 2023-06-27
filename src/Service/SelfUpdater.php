@@ -115,6 +115,11 @@ class SelfUpdater
 
             return false;
         }
+        if (!is_writable(dirname($localPhar))) {
+            $this->stdErr->writeln('Cannot update as the directory is not writable: ' . dirname($localPhar));
+
+            return false;
+        }
 
         $updater = new Updater($localPhar, false);
         $strategy = new ManifestStrategy(ltrim($currentVersion, 'v'), $manifestUrl, $this->allowMajor, $this->allowUnstable);
