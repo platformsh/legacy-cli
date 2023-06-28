@@ -27,7 +27,8 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) not to delete.\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments (adding to any others selected)')
-            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)');
+            ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)')
+            ->addOption('allow-delete-parent', null, InputOption::VALUE_NONE, 'Allow environments that have children to be deleted');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -178,6 +179,28 @@ EOF
                 $this->stdErr->writeln(count($resolved) . ' environment(s) excluded by ID.');
                 $this->stdErr->writeln('');
             }
+        }
+
+        // Exclude environments which have children.
+        if (!$input->getOption('allow-delete-parent')) {
+            $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($environments) {
+                foreach ($environments as $potentialChild) {
+                    if ($potentialChild->parent === $environment->id) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            if (($numExcluded = count($selectedEnvironments) - count($filtered)) > 0) {
+                if ($numExcluded === 1) {
+                    $this->stdErr->writeln('1 environment excluded as it is has child environment(s).');
+                } else {
+                    $this->stdErr->writeln($numExcluded . ' environments excluded as they have child environment(s).');
+                }
+                $this->stdErr->writeln('You can skip this check using: <comment>--allow-delete-parent</comment>');
+                $this->stdErr->writeln('');
+            }
+            $selectedEnvironments = $filtered;
         }
 
         // Finally report the selected environments.
