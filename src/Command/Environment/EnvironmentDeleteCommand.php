@@ -23,7 +23,7 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete Git branch(es) for inactive environments, without confirmation')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete any Git branch(es) (inactive environments)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Delete all environments of a type (adding to any others selected)' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('only-type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only delete environment(s) of a specific type' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('only-type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only delete environments of a specific type' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) not to delete.\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments (adding to any others selected)')
@@ -42,7 +42,7 @@ When a {$service} environment is deleted, it will become "inactive": it will
 exist only as a Git branch, containing code but no services, databases nor
 files.
 
-This command allows you to delete environment(s) as well as their Git branches.
+This command allows you to delete environments as well as their Git branches.
 EOF
         );
     }
@@ -87,7 +87,7 @@ EOF
                 $error = true;
             }
             $specifiedEnvironments = array_intersect_key($environments, array_flip($specifiedEnvironmentIds));
-            $this->stdErr->writeln(count($specifiedEnvironments) . ' environment(s) found by ID');
+            $this->stdErr->writeln($this->formatPlural(count($specifiedEnvironments), 'environment') . ' found by ID.');
             $this->stdErr->writeln('');
             foreach ($specifiedEnvironments as $specifiedEnvironment) {
                 $selectedEnvironments[$specifiedEnvironment->id] = $specifiedEnvironment;
@@ -109,7 +109,7 @@ EOF
                     return $environment->status == 'inactive';
                 }
             );
-            $this->stdErr->writeln(count($inactive) . ' inactive environment(s) found.');
+            $this->stdErr->writeln($this->formatPlural(count($inactive), 'inactive environment') . ' found.');
             $this->stdErr->writeln('');
             foreach ($inactive as $inactiveEnv) {
                 $selectedEnvironments[$inactiveEnv->id] = $inactiveEnv;
@@ -126,7 +126,7 @@ EOF
                     $selectedEnvironments[$environment->id] = $merged[$environment->id] = $environment;
                 }
             }
-            $this->stdErr->writeln(count($merged) . ' merged environment(s) found.');
+            $this->stdErr->writeln($this->formatPlural(count($merged), 'merged environment') . ' found.');
             $this->stdErr->writeln('');
         }
 
@@ -139,7 +139,7 @@ EOF
                     $selectedEnvironments[$environment->id] = $withTypes[$environment->id] = $environment;
                 }
             }
-            $this->stdErr->writeln(count($withTypes) . ' environment(s) found matching type(s): ' . implode(', ', $types));
+            $this->stdErr->writeln($this->formatPlural(count($withTypes), 'environment') . ' found matching type(s): ' . implode(', ', $types));
             $this->stdErr->writeln('');
         }
 
@@ -165,7 +165,7 @@ EOF
             return true;
         });
         if (($numExcluded = count($selectedEnvironments) - count($filtered)) > 0) {
-            $this->stdErr->writeln($numExcluded . ' environment(s) excluded by type.');
+            $this->stdErr->writeln($this->formatPlural($numExcluded, 'environment') . ' excluded by type.');
             $this->stdErr->writeln('');
         }
         $selectedEnvironments = $filtered;
@@ -176,7 +176,7 @@ EOF
             $resolved = Wildcard::select(\array_keys($selectedEnvironments), $excludeIds);
             if (count($resolved)) {
                 $selectedEnvironments = \array_diff_key($selectedEnvironments, \array_flip($resolved));
-                $this->stdErr->writeln(count($resolved) . ' environment(s) excluded by ID.');
+                $this->stdErr->writeln($this->formatPlural(count($resolved), 'environment') . ' excluded by ID.');
                 $this->stdErr->writeln('');
             }
         }
@@ -205,7 +205,11 @@ EOF
 
         // Finally report the selected environments.
         if (count($selectedEnvironments)) {
-            $this->stdErr->writeln('Selected environment(s): ' . $this->listEnvironments($selectedEnvironments));
+            if (count($selectedEnvironments) === 1) {
+                $this->stdErr->writeln('Selected environment: ' . $this->listEnvironments($selectedEnvironments));
+            } else {
+                $this->stdErr->writeln('Selected environments: ' . $this->listEnvironments($selectedEnvironments));
+            }
             $this->stdErr->writeln('');
         }
 
@@ -237,7 +241,7 @@ EOF
                     if ($isSingle) {
                         $this->stdErr->writeln(sprintf("The environment %s has in-progress activity, and therefore can't be deleted yet.", $this->api()->getEnvironmentLabel(reset($environments), 'error')));
                     } elseif ($isSubSet) {
-                        $this->stdErr->writeln("The following environment(s) have in-progress activity, and therefore can't be deleted yet: " . $this->listEnvironments($environments, 'error'));
+                        $this->stdErr->writeln("The following environments have in-progress activity, and therefore can't be deleted yet: " . $this->listEnvironments($environments, 'error'));
                     } else {
                         $this->stdErr->writeln("The environments have in-progress activity, and therefore can't be deleted yet.");
                     }
@@ -248,25 +252,25 @@ EOF
                     if ($isSingle) {
                         $this->stdErr->writeln(sprintf('The environment %s is already being deleted.', $this->api()->getEnvironmentLabel(reset($environments), 'error')));
                     } elseif ($isSubSet) {
-                        $this->stdErr->writeln('The following environment(s) are already being deleted: ' . $this->listEnvironments($environments, 'error'));
+                        $this->stdErr->writeln('The following environments are already being deleted: ' . $this->listEnvironments($environments, 'error'));
                     } else {
                         $this->stdErr->writeln('The environments are already being deleted.');
                     }
                     $this->stdErr->writeln('');
                     break;
                 case 'active or paused':
-                    $confirmText = 'Are you sure you want to delete these environment(s)?';
-                    $deleteConfirmText = 'Delete the inactive environment(s) (Git branches) too?';
+                    $confirmText = 'Are you sure you want to delete them?';
+                    $deleteConfirmText = 'Delete the inactive environments (Git branches) too?';
                     if ($isSingle) {
                         $this->stdErr->writeln(sprintf('The environment %s is currently active.', $this->api()->getEnvironmentLabel(reset($environments), 'comment')));
                         $this->stdErr->writeln('Deleting it <options=bold>will delete all associated data</>.');
                         $confirmText = 'Are you sure you want to delete this environment?';
                         $deleteConfirmText = 'Delete the inactive environment (Git branch) too?';
                     } elseif ($isSubSet) {
-                        $this->stdErr->writeln('The following environment(s) are currently active: ' . $this->listEnvironments($environments, 'comment'));
+                        $this->stdErr->writeln('The following environments are currently active: ' . $this->listEnvironments($environments, 'comment'));
                         $this->stdErr->writeln('Deleting them <options=bold>will delete all associated data</>.');
                     } else {
-                        $this->stdErr->writeln('The environment(s) are currently active. Deleting them <options=bold>will delete all associated data</>.');
+                        $this->stdErr->writeln('The environments are currently active. Deleting them <options=bold>will delete all associated data</>.');
                     }
                     if ($questionHelper->confirm($confirmText)) {
                         $toDeactivate += $environments;
@@ -329,7 +333,7 @@ EOF
         }
 
         if (empty($toDeleteBranch) && empty($toDeactivate)) {
-            $this->stdErr->writeln('No environment(s) to delete.');
+            $this->stdErr->writeln('No environments to delete.');
             if (!$anythingSpecified) {
                 $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config()->get('application.executable')));
             }
@@ -417,5 +421,23 @@ EOF
         }
 
         return !$error;
+    }
+
+    /**
+     * Formats a string with a singular or plural count.
+     *
+     * @param int $count
+     * @param string $singular
+     * @param string|null $plural
+     * @return string
+     */
+    private function formatPlural($count, $singular, $plural = null)
+    {
+        if ($count === 1) {
+            $name = $singular;
+        } else {
+            $name = $plural === null ? $singular . 's' : $plural;
+        }
+        return sprintf('%d %s', $count, $name);
     }
 }
