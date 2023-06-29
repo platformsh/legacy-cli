@@ -1622,7 +1622,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv, $detectCurrent);
         }
 
-        if ($this->stdErr->isVerbose() && $this->environment && !$this->printedSelectedEnvironment) {
+        if ($this->stdErr->isVerbose() && $this->environment) {
             $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment));
             $this->printedSelectedEnvironment = true;
         }
