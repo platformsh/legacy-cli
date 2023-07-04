@@ -119,12 +119,21 @@ abstract class DomainCommandBase extends CommandBase
                         $this->attach = $productionDomain->name;
                     } else {
                         $choices = [];
+                        $default = $project->getProperty('default_domain', false);
                         foreach ($productionDomains as $productionDomain) {
-                            $choices[$productionDomain->name] = $productionDomain->name;
+                            if ($productionDomain->name === $default) {
+                                $choices[$productionDomain->name] = $productionDomain->name . ' (default)';
+                            } else {
+                                $choices[$productionDomain->name] = $productionDomain->name;
+                            }
                         }
                         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
                         $questionHelper = $this->getService('question_helper');
-                        $this->attach = $questionHelper->choose($choices, "Choose a production domain for this one to replace in the environment's routes (<info>--attach</info>):", $project->getProperty('default_domain', false));
+                        $questionText = '<options=bold>Attachment</> (<info>--attach</info>)'
+                            . "\nA non-production domain must be attached to an existing production domain."
+                            . "\nIt will inherit the same routing behavior."
+                            . "\nChoose a production domain:";
+                        $this->attach = $questionHelper->choose($choices, $questionText, $default);
                     }
                 } elseif ($this->attach !== null) {
                     try {
