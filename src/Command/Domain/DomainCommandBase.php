@@ -65,16 +65,13 @@ abstract class DomainCommandBase extends CommandBase
                 $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
                 $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = $environment->id === $project->default_branch;
+                $this->ensurePrintSelectedEnvironment(true);
             } elseif ($project->default_branch === null) {
                 $this->stdErr->writeln('The <error>default_branch</error> property is not set on the project, so the production environment cannot be determined');
                 return false;
             } else {
                 $this->selectEnvironment($project->default_branch, true, false, false);
-                $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = true;
-                if ($this->stdErr->isVerbose()) {
-                    $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
-                }
                 if ($input->hasOption('attach') && $supportsNonProduction) {
                     $this->stdErr->writeln('Use the <comment>--environment</comment> option (and optionally <comment>--attach</comment>) to add a domain to a non-production environment.');
                     $this->stdErr->writeln('');
@@ -134,7 +131,7 @@ abstract class DomainCommandBase extends CommandBase
                         $domain = $project->getDomain($this->attach);
                         if ($domain === false) {
                             $this->stdErr->writeln(sprintf(
-                                'The <comment>--attach</comment> domain was not found: <error>%s</error>',
+                                'The production domain (<comment>--attach</comment>) was not found: <error>%s</error>',
                                 $this->attach
                             ));
                             return false;

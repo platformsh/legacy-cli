@@ -49,10 +49,11 @@ class DomainAddCommand extends DomainCommandBase
 
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
+        $this->ensurePrintSelectedEnvironment(true);
 
-        $this->stdErr->writeln(sprintf('Adding the domain <info>%s</info> to the environment %s.', $this->domainName, $this->api()->getEnvironmentLabel($environment)));
+        $this->stdErr->writeln(sprintf('Adding the domain: <info>%s</info>', $this->domainName));
         if (!empty($this->attach)) {
-            $this->stdErr->writeln(sprintf('The domain will be attached to the production domain <info>%s</info>', $this->attach));
+            $this->stdErr->writeln(sprintf('It will be attached to the production domain: <info>%s</info>', $this->attach));
         }
         $this->stdErr->writeln('');
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
