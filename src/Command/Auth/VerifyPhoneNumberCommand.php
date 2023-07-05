@@ -22,7 +22,7 @@ class VerifyPhoneNumberCommand extends CommandBase
     public function isEnabled()
     {
         $config = $this->config();
-        if (!$config->getWithDefault('api.phone_verification', false)
+        if (!$config->getWithDefault('api.user_verification', false)
             || !$config->getWithDefault('api.auth', false)
             || !$config->getWithDefault('api.base_url', '')) {
             return false;
@@ -108,11 +108,9 @@ class VerifyPhoneNumberCommand extends CommandBase
         $needsVerify = $httpClient->post( '/me/verification?force_refresh=1')->json();
         $this->stdErr->writeln('');
 
-        if ($needsVerify['state']) {
-            if ($needsVerify['type'] == 'phone') {
-                $this->stdErr->writeln('Phone verification succeeded but the status check failed.');
-                return 1;
-            }
+        if ($needsVerify['type'] == 'phone') {
+            $this->stdErr->writeln('Phone verification succeeded but the status check failed.');
+            return 1;
         }
 
         $this->stdErr->writeln('Your phone number has been successfully verified.');

@@ -65,7 +65,7 @@ EOF
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Check if the user needs phone verification before creating a project.
-        $needsVerify = $this->api()->needsVerification();
+        $needsVerify = $this->api()->checkUserVerification();
         if ($needsVerify['state']) {
             if ($needsVerify['type'] == 'phone') {
                 $this->stdErr->writeln('Phone number verification is required before creating a project.');
@@ -83,7 +83,7 @@ EOF
                     $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                     return 1;
                 }
-            } else if ($needsVerify['type'] == 'ticket') { 
+            } else { 
                 $this->stdErr->writeln('Verification via Support is required before creating a project.');
                 if ($this->config()->has('service.console_url')) {
                     $url = $this->config()->get('service.console_url') . '/support';
