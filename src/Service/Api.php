@@ -1428,7 +1428,7 @@ class Api
     public function checkUserVerification()
     {
         if (!$this->config->getWithDefault('api.user_verification', false)) {
-            return false;
+            return ['state' => false, 'type' => ''];
         }
 
         // Check the API to see if verification is required.

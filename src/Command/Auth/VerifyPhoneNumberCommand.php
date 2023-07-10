@@ -108,7 +108,7 @@ class VerifyPhoneNumberCommand extends CommandBase
         $needsVerify = $httpClient->post( '/me/verification?force_refresh=1')->json();
         $this->stdErr->writeln('');
 
-        if ($needsVerify['type'] == 'phone') {
+        if ($needsVerify['type'] === 'phone') {
             $this->stdErr->writeln('Phone verification succeeded but the status check failed.');
             return 1;
         }
