@@ -205,8 +205,8 @@ api:
   # Whether Centralized User Management is available (requires "auth" and "organizations").
   centralized_permissions: true
 
-  # Whether the Phone Verification APIs (/me/phone and /users/ID/phonenumber) are enabled (requires "auth").
-  phone_verification: true
+  # Whether the Phone Verification APIs (/me/verification and /users/ID/phonenumber) are enabled (requires "auth").
+  user_verification: true
 
   # Whether the Metrics API is enabled.
   metrics: true

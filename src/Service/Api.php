@@ -1423,21 +1423,16 @@ class Api
     /**
      * Returns whether the user is required to verify their phone number before certain actions.
      *
-     * @return bool
+     * @return array{'state': bool, 'type': string}
      */
-    public function needsPhoneVerification()
+    public function checkUserVerification()
     {
-        if (!$this->config->getWithDefault('api.phone_verification', false)) {
+        if (!$this->config->getWithDefault('api.user_verification', false)) {
             return false;
         }
 
-        // Check if the user already has a verified phone number.
-        if ($this->authApiEnabled() && $this->getUser()->getProperty('phone_number_verified', false)) {
-            return false;
-        }
-
-        // Otherwise, check the API to see if verification is required.
-        return $this->getHttpClient()->post( '/me/phone')->json()['verify_phone'];
+        // Check the API to see if verification is required.
+        return $this->getHttpClient()->post( '/me/verification')->json();
     }
 
     /**
