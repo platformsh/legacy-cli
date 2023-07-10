@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.7.1",
-        "sha1": "17c941bf9a259ea5252bcc25260bb15b59b081c3",
-        "sha256": "8fe85b3e00508fa7f38bd361a3d0466a6946b3abebc21346cca608e48409acf7",
+        "version": "4.7.2",
+        "sha1": "41eaac341fabc1b84a06063cd04466cc7cdc9454",
+        "sha256": "7df2eb82ab34d8f6e9de9e7a572c8e65a33463ae9ed34cc8d2a154accb7ec768",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.7.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.7.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -24,7 +24,8 @@
             "4.6.0": "New features:\n\n* Support the `httplog` generic log forwarding integration (when available).\n* Add a `--tmp` option to the `disk` command to show temporary disk columns.\n* Add a `--pipe` option to the `apps`, `services` and `workers` commands,\n  making it easier to obtain a list of service names.\n* Allow selecting an organization by project ID in `org` commands.\n\nOther changes:\n\n* Implement hidden aliases, options and namespaces in the `json` and `md`\n  formats for the `list` command.\n* Fix `integration:activities:list` (`int:ac:list`) command table output.\n* Explain when no values are found after filtering in the `metrics` command.\n* Tweak the description of `--replace` in the `domain:add` command.",
             "4.6.1": "* On integration:add set `\"prune_branches\": false` if `\"fetch_branches\": false`\n  to work around a validation problem in the API.\n* Add aliases and examples to JSON-formatted help.\n* Format dates consistently in metrics command messages.\n* Report subcommands similarly to shell commands in `-vv` output.\n* Increase cache reuse in `repo` commands.\n* Set a default environment in the `variable:create` command.\n* Fix TypeError while detecting Drupal in projects containing `index.php`.\n* Improve PHP version detection for the local build warning.\n* Bump giggsey/libphonenumber-for-php from 8.13.11 to 8.13.12 (#1262)",
             "4.7.0": "New features:\n\n* Add `env:pause` and `env:resume` commands. Development environments are\n  automatically paused after two weeks of inactivity to save resources and\n  reduce carbon emissions. These commands add some manual control.\n\nOther changes:\n\n* Make first part of activity type name optional in `--type` and\n  `--exclude-type`, e.g. \"cron\" will match \"environment.cron\".\n* Warn when an activity `--exclude-type` value is not recognized.\n* Fix non-interactive use of `env:delete --inactive`.\n* In `env:delete`, group environments together for confirmation questions (based\n  on their status), instead of asking per environment.\n* Improve login required help message to suit non-interactive use.\n* Fix session loading for a non-default file storage location.\n* Remove warning when app config not found during command loading.",
-            "4.7.1": "* Restore the check to prevent deleting parent environments.  \n  The check had been imprudently removed in `v4.7.0`.  \n  This adds an option `--allow-delete-parent` as a way to skip the check.\n* Improve singular/plural output formatting in `env:delete`.\n* Improve the check for the production environment in the `push` command.\n* Only check for updates if the containing directory is writable (for legacy\n  only-Phar installations).\n* Dependency updates:\n  - Bump giggsey/libphonenumber-for-php from 8.13.12 to 8.13.15\n  - Bump composer/ca-bundle from 1.3.5 to 1.3.6\n* SSH error handling improvements:\n  - Avoiding recommending `ssh-keyscan` as it could be confusing.\n  - Improve SSH error message when an environment is inactive.\n  - Set timeout on test SSH connection."
+            "4.7.1": "* Restore the check to prevent deleting parent environments.  \n  The check had been imprudently removed in `v4.7.0`.  \n  This adds an option `--allow-delete-parent` as a way to skip the check.\n* Improve singular/plural output formatting in `env:delete`.\n* Improve the check for the production environment in the `push` command.\n* Only check for updates if the containing directory is writable (for legacy\n  only-Phar installations).\n* Dependency updates:\n  - Bump giggsey/libphonenumber-for-php from 8.13.12 to 8.13.15\n  - Bump composer/ca-bundle from 1.3.5 to 1.3.6\n* SSH error handling improvements:\n  - Avoiding recommending `ssh-keyscan` as it could be confusing.\n  - Improve SSH error message when an environment is inactive.\n  - Set timeout on test SSH connection.",
+            "4.7.2": "* Add support for checking whether ticket-based user verification is required.\n* Fix \"Incorrectly nested style tag found\" error. This was caused by bad\n  formatting for the \"login required\" exception message when wrapped for\n  narrower terminals."
         }
     },
     {
