@@ -15,6 +15,7 @@ class ProjectSetRemoteCommand extends CommandBase
     {
         $this
             ->setName('project:set-remote')
+            ->setAliases(['set-remote'])
             ->setDescription('Set the remote project for the current Git repository')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->addExample('Set the remote project for this repository to "abcdef123456"', 'abcdef123456');
