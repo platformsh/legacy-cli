@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,12 +22,7 @@ class EnvironmentBranchCommand extends CommandBase
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'The type of the new environment')
-            ->addOption(
-                'force',
-                null,
-                InputOption::VALUE_NONE,
-                "Create the new environment even if the branch cannot be checked out locally"
-            )
+            ->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used')
             ->addOption(
                 'no-clone-parent',
                 null,
@@ -42,6 +38,8 @@ class EnvironmentBranchCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['force']);
+
         $this->envArgName = 'parent';
         $branchName = $input->getArgument('id');
         $this->validateInput($input, $branchName === null);
@@ -103,20 +101,17 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $force = $input->getOption('force');
-
         $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot && $force) {
-            $this->stdErr->writeln(
-                "<comment>This command was run from outside your local project root, so the new " . $this->config()->get('service.name') . " branch cannot be checked out in your local Git repository."
-                . " Make sure to run '" . $this->config()->get('application.executable') . " checkout' or 'git checkout' in your local repository to switch to the branch you are expecting.</comment>"
-            );
-        } elseif (!$projectRoot) {
-            $this->stdErr->writeln(
-                '<error>You must run this command inside the project root, or specify --force.</error>'
-            );
-
-            return 1;
+        if (!$projectRoot) {
+            $this->stdErr->writeln([
+                'This command was run from outside a local project root, so the new branch cannot be checked out automatically.',
+                sprintf(
+                    'To switch to the branch when inside a repository run: <comment>%s checkout %s</comment>',
+                    $this->config()->get('application.executable'),
+                    OsUtil::escapeShellArg($branchName)
+                ),
+                '',
+            ]);
         }
 
         $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
@@ -156,10 +151,7 @@ class EnvironmentBranchCommand extends CommandBase
             if ($existsLocally) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
                 if (!$git->checkOut($branchName, $projectRoot)) {
-                    $this->stdErr->writeln('<error>Failed to check out branch locally: ' . $branchName . '</error>');
-                    if (!$force) {
-                        return 1;
-                    }
+                    $this->stdErr->writeln('Failed to check out branch locally: <error>' . $branchName . '</error>');
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
@@ -167,10 +159,7 @@ class EnvironmentBranchCommand extends CommandBase
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
                 if (!$git->checkOutNew($branchName, $parent, null, $projectRoot)) {
-                    $this->stdErr->writeln('<error>Failed to create branch locally: ' . $branchName . '</error>');
-                    if (!$force) {
-                        return 1;
-                    }
+                    $this->stdErr->writeln('Failed to create branch locally: <error>' . $branchName . '</error>');
                 }
                 $createdNew = true;
             }
