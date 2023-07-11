@@ -239,6 +239,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Backup\BackupGetCommand();
         $commands[] = new Command\Backup\BackupListCommand();
         $commands[] = new Command\Backup\BackupRestoreCommand();
+        $commands[] = new Command\RuntimeOperation\ListCommand();
+        $commands[] = new Command\RuntimeOperation\RunCommand();
         $commands[] = new Command\SourceOperation\ListCommand();
         $commands[] = new Command\SourceOperation\RunCommand();
         $commands[] = new Command\SshCert\SshCertInfoCommand();
