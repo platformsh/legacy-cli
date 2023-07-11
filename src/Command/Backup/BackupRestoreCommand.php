@@ -101,7 +101,7 @@ class BackupRestoreCommand extends CommandBase
         // overwrite the wrong branch. This is a (hopefully) temporary measure.
         $region = $this->getSelectedProject()->region;
         if ((!$targetEnvironment || $targetEnvironment->id !== $environment->id)
-            && \preg_match('#^(eu\.[pm]|us\.m)#', $region)) {
+            && \preg_match('#^us\.m#', $region)) {
             $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region: <comment>' . $region . '</comment>');
             $this->stdErr->writeln('Please contact support.');
 
