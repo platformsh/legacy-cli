@@ -133,7 +133,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Creating a new environment %s, branched from %s',
             $newLabel,
-            $this->api()->getEnvironmentLabel($parentEnvironment)
+            $this->api()->getEnvironmentLabel($parentEnvironment, 'info', false)
         ));
 
         $activity = $parentEnvironment->branch(

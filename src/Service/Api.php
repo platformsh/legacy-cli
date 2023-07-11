@@ -1048,16 +1048,17 @@ class Api
      *
      * @param Environment  $environment
      * @param string|false $tag
+     * @param bool $showType
      *
      * @return string
      */
-    public function getEnvironmentLabel(Environment $environment, $tag = 'info')
+    public function getEnvironmentLabel(Environment $environment, $tag = 'info', $showType = true)
     {
         $id = $environment->id;
         $title = $environment->title;
         $type = $environment->type;
-        $use_title = strlen($title) > 0 && $title !== $id;
-        $use_type = $type !== null && $type !== $id;
+        $use_title = strlen($title) > 0 && $title !== $id && strtolower($title) !== $id;
+        $use_type = $showType && $type !== null && $type !== $id;
         $pattern = $use_title ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
             $pattern = $use_title ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
