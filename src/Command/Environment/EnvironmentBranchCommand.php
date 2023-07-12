@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentBranchCommand extends CommandBase
 {
+    protected $preferredName = 'branch';
 
     protected function configure()
     {
@@ -22,25 +22,23 @@ class EnvironmentBranchCommand extends CommandBase
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'The type of the new environment')
-            ->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used')
-            ->addOption(
-                'no-clone-parent',
-                null,
-                InputOption::VALUE_NONE,
-                "Do not clone the parent branch's data"
-            );
+            ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
+            ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
-        Ssh::configureInput($this->getDefinition());
+        $this->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used');
+        $this->addHiddenOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->warnAboutDeprecatedOptions(['force']);
+        $this->warnAboutDeprecatedOptions(['force', 'identity-file']);
 
         $this->envArgName = 'parent';
+        $this->chooseEnvText = 'Enter a number to choose a parent environment:';
+        $this->enterEnvText = 'Enter the ID of the parent environment';
         $branchName = $input->getArgument('id');
         $this->validateInput($input, $branchName === null);
         $selectedProject = $this->getSelectedProject();
@@ -60,9 +58,8 @@ class EnvironmentBranchCommand extends CommandBase
 
         $parentEnvironment = $this->getSelectedEnvironment();
 
-        if ($branchName === $parentEnvironment->id) {
+        if ($branchName === $parentEnvironment->id && ($e = $this->getCurrentEnvironment($selectedProject)) && $e->id === $branchName) {
             $this->stdErr->writeln('Already on <comment>' . $branchName . '</comment>');
-
             return 1;
         }
 
@@ -101,19 +98,6 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $projectRoot = $this->getProjectRoot();
-        if (!$projectRoot) {
-            $this->stdErr->writeln([
-                'This command was run from outside a local project root, so the new branch cannot be checked out automatically.',
-                sprintf(
-                    'To switch to the branch when inside a repository run: <comment>%s checkout %s</comment>',
-                    $this->config()->get('application.executable'),
-                    OsUtil::escapeShellArg($branchName)
-                ),
-                '',
-            ]);
-        }
-
         $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
         $newLabel = strlen($title) > 0 && $title !== $branchName
@@ -125,27 +109,37 @@ class EnvironmentBranchCommand extends CommandBase
             $newLabel .= ' (type: <info>' . $type . '</info>)';
         }
 
-        $this->stdErr->writeln(sprintf(
-            'Creating a new environment %s, branched from %s',
-            $newLabel,
-            $this->api()->getEnvironmentLabel($parentEnvironment)
-        ));
+        $this->stdErr->writeln(sprintf('Creating a new environment: %s', $newLabel));
+        $this->stdErr->writeln('');
+        $parentMessage = $input->getOption('no-clone-parent')
+            ? 'Settings will be copied from the parent environment: %s'
+            : 'Settings will be copied and data cloned from the parent environment: %s';
+        $this->stdErr->writeln(sprintf($parentMessage, $this->api()->getEnvironmentLabel($parentEnvironment, 'info', false)));
 
-        $activity = $parentEnvironment->branch(
-            $title,
-            $branchName,
-            !$input->getOption('no-clone-parent'),
-            $type
-        );
+        $dryRun = $input->getOption('dry-run');
+        if ($dryRun) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('<comment>Dry-run mode:</comment> skipping branch operation.');
 
-        // Clear the environments cache, as branching has started.
-        $this->api()->clearEnvironmentsCache($selectedProject->id);
+            $activity = false;
+        } else {
+            $activity = $parentEnvironment->branch(
+                $title,
+                $branchName,
+                !$input->getOption('no-clone-parent'),
+                $type
+            );
+
+            // Clear the environments cache, as branching has started.
+            $this->api()->clearEnvironmentsCache($selectedProject->id);
+        }
 
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
 
         $createdNew = false;
-        if ($projectRoot) {
+        $projectRoot = $this->getProjectRoot();
+        if ($projectRoot && !$dryRun) {
             // If the Git branch already exists locally, just check it out.
             $existsLocally = $git->branchExists($branchName, $projectRoot);
             if ($existsLocally) {
@@ -163,12 +157,23 @@ class EnvironmentBranchCommand extends CommandBase
                 }
                 $createdNew = true;
             }
+        } elseif (!$projectRoot) {
+            $this->stdErr->writeln([
+                '',
+                'This command was run from outside a local project root, so the new branch cannot be checked out automatically.',
+                sprintf(
+                    'To switch to the branch when inside a repository run: <comment>%s checkout %s</comment>',
+                    $this->config()->get('application.executable'),
+                    OsUtil::escapeShellArg($branchName)
+                ),
+            ]);
         }
 
         $remoteSuccess = true;
-        if ($this->shouldWait($input)) {
+        if ($this->shouldWait($input) && !$dryRun && $activity) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
+            $this->stdErr->writeln('');
             $remoteSuccess = $activityMonitor->waitAndLog($activity);
 
             // If a new local branch has been created, set it to track the
@@ -179,9 +184,9 @@ class EnvironmentBranchCommand extends CommandBase
                 $git->fetch($upstreamRemote, $branchName, $projectRoot);
                 $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
             }
-        }
 
-        $this->api()->clearEnvironmentsCache($this->getSelectedProject()->id);
+            $this->api()->clearEnvironmentsCache($selectedProject->id);
+        }
 
         return $remoteSuccess ? 0 : 1;
     }

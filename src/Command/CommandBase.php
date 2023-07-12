@@ -72,6 +72,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $stdErr;
 
     protected $envArgName = 'environment';
+    protected $chooseEnvText = 'Enter a number to choose an environment:';
+    protected $enterEnvText = 'Enter an environment ID';
     protected $hiddenInList = false;
     protected $preferredName = '';
     protected $stability = self::STABILITY_STABLE;
@@ -1165,7 +1167,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (count($environments) > 0) {
                 $this->debug('No environment specified or detected: offering a choice...');
-                $this->environment = $this->offerEnvironmentChoice($environments, 'Enter a number to choose an environment:', $devOnly);
+                $this->environment = $this->offerEnvironmentChoice($environments, $this->chooseEnvText, $devOnly);
                 return;
             }
         }
@@ -1484,7 +1486,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $ids = array_keys($environments);
             sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
-            $id = $questionHelper->askInput('Enter an environment ID', $defaultEnvironmentId, array_keys($environments), function ($value) use ($environments) {
+            $id = $questionHelper->askInput($this->enterEnvText, $defaultEnvironmentId, array_keys($environments), function ($value) use ($environments) {
                 if (!isset($environments[$value])) {
                     throw new \RuntimeException('Environment not found: ' . $value);
                 }
