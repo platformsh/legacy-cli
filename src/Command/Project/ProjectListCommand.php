@@ -100,10 +100,18 @@ class ProjectListCommand extends CommandBase
                     . implode('</comment>, <comment>--', array_keys($filters))
                     . '</comment>';
                 $this->stdErr->writeln('No projects found (filters in use: ' . $filtersUsed . ').');
-            } else {
-                $this->stdErr->writeln(
-                    'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
-                );
+
+                return 0;
+            }
+            $this->stdErr->writeln(
+                'You do not have any ' . $this->config()->get('service.name') . ' projects yet.'
+            );
+            if ($this->config()->isCommandEnabled('project:create')) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'To create a new project, run: <info>%s create</info>',
+                    $this->config()->get('application.executable')
+                ));
             }
 
             return 0;
