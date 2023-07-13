@@ -125,25 +125,35 @@ class VariableGetCommand extends VariableCommandBase
      * @return ProjectLevelVariable|EnvironmentLevelVariable|false
      */
     private function chooseVariable($level) {
-        $variables = [];
+        $projectVariables = [];
         if ($level === 'project' || $level === null) {
-            $variables = array_merge($variables, $this->getSelectedProject()->getVariables());
+            foreach ($this->getSelectedProject()->getVariables() as $variable) {
+                $projectVariables[$variable->name] = $variable;
+            }
         }
+        $environmentVariables = [];
         if ($level === 'environment' || $level === null) {
-            $variables = array_merge($variables, $this->getSelectedEnvironment()->getVariables());
+            foreach ($this->getSelectedEnvironment()->getVariables() as $variable) {
+                $environmentVariables[$variable->name] = $variable;
+            }
         }
-        if (empty($variables)) {
+        if (empty($environmentVariables) && empty($projectVariables)) {
             return false;
         }
-        $options = [];
-        foreach ($variables as $key => $variable) {
-            $options[$key] = $variable->name;
+        $projectPrefix = '__PROJECT__:';
+        $options = array_combine(array_keys($environmentVariables), array_keys($environmentVariables));
+        foreach ($projectVariables as $name => $variable) {
+            $options[$projectPrefix . $name] = $name
+                . (isset($options[$name]) ? ' (project-level)' : '');
         }
-        asort($options);
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
+        asort($options, SORT_NATURAL | SORT_FLAG_CASE);
         $key = $questionHelper->choose($options, 'Enter a number to choose a variable:');
+        if (strpos($key, $projectPrefix) === 0) {
+            return $projectVariables[substr($key, strlen($projectPrefix))];
+        }
 
-        return $variables[$key];
+        return $environmentVariables[$key];
     }
 }
