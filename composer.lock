@@ -870,16 +870,16 @@
         },
         {
             "name": "pjcdawkins/guzzle-oauth2-plugin",
-            "version": "v2.3.1",
+            "version": "v2.3.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pjcdawkins/guzzle-oauth2-plugin.git",
-                "reference": "f8139ff410824c68a6a341dcd88bf070e5908a9e"
+                "reference": "8409e94266896da3b5eb9e8231a267783466af66"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pjcdawkins/guzzle-oauth2-plugin/zipball/f8139ff410824c68a6a341dcd88bf070e5908a9e",
-                "reference": "f8139ff410824c68a6a341dcd88bf070e5908a9e",
+                "url": "https://api.github.com/repos/pjcdawkins/guzzle-oauth2-plugin/zipball/8409e94266896da3b5eb9e8231a267783466af66",
+                "reference": "8409e94266896da3b5eb9e8231a267783466af66",
                 "shasum": ""
             },
             "require": {
@@ -912,22 +912,22 @@
             ],
             "description": "An OAuth2 plugin (subscriber) for Guzzle (forked from commerceguys/guzzle-oauth2-plugin)",
             "support": {
-                "source": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/tree/master"
+                "source": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/tree/v2.3.3"
             },
-            "time": "2020-04-15T07:44:29+00:00"
+            "time": "2023-05-22T15:13:44+00:00"
         },
         {
             "name": "platformsh/client",
-            "version": "0.71.2",
+            "version": "0.71.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "52d61104287cd4256aea4ca195f6169afca987e1"
+                "reference": "86cf9139869b7c7269a909b77dccd69f13ff9b94"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/52d61104287cd4256aea4ca195f6169afca987e1",
-                "reference": "52d61104287cd4256aea4ca195f6169afca987e1",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/86cf9139869b7c7269a909b77dccd69f13ff9b94",
+                "reference": "86cf9139869b7c7269a909b77dccd69f13ff9b94",
                 "shasum": ""
             },
             "require": {
@@ -959,9 +959,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.71.2"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.71.3"
             },
-            "time": "2023-07-13T10:03:42+00:00"
+            "time": "2023-07-17T11:23:05+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -1111,23 +1111,23 @@
         },
         {
             "name": "react/promise",
-            "version": "v2.9.0",
+            "version": "v2.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/promise.git",
-                "reference": "234f8fd1023c9158e2314fa9d7d0e6a83db42910"
+                "reference": "f913fb8cceba1e6644b7b90c4bfb678ed8a3ef38"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/promise/zipball/234f8fd1023c9158e2314fa9d7d0e6a83db42910",
-                "reference": "234f8fd1023c9158e2314fa9d7d0e6a83db42910",
+                "url": "https://api.github.com/repos/reactphp/promise/zipball/f913fb8cceba1e6644b7b90c4bfb678ed8a3ef38",
+                "reference": "f913fb8cceba1e6644b7b90c4bfb678ed8a3ef38",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.36"
+                "phpunit/phpunit": "^9.5 || ^5.7 || ^4.8.36"
             },
             "type": "library",
             "autoload": {
@@ -1171,19 +1171,15 @@
             ],
             "support": {
                 "issues": "https://github.com/reactphp/promise/issues",
-                "source": "https://github.com/reactphp/promise/tree/v2.9.0"
+                "source": "https://github.com/reactphp/promise/tree/v2.10.0"
             },
             "funding": [
                 {
-                    "url": "https://github.com/WyriHaximus",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/clue",
-                    "type": "github"
+                    "url": "https://opencollective.com/reactphp",
+                    "type": "open_collective"
                 }
             ],
-            "time": "2022-02-11T10:27:51+00:00"
+            "time": "2023-05-02T15:15:43+00:00"
         },
         {
             "name": "stecman/symfony-console-completion",
