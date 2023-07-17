@@ -45,6 +45,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     const STABILITY_STABLE = 'STABLE';
     const STABILITY_BETA = 'BETA';
 
+    const DEFAULT_ENVIRONMENT_CODE = '.';
+
     /** @var ?bool */
     private static $checkedUpdates;
     /** @var ?bool */
@@ -932,7 +934,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addEnvironmentOption()
     {
-        return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID');
+        return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID. Use "' . self::DEFAULT_ENVIRONMENT_CODE . '" to select the project\'s default environment.');
     }
 
     /**
@@ -1130,6 +1132,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($environmentId !== null) {
+            if ($environmentId === self::DEFAULT_ENVIRONMENT_CODE) {
+                $this->stdErr->writeln(sprintf('Selecting default environment (indicated by <info>%s</info>)', $environmentId));
+                $environment = $this->api()->getDefaultEnvironment($this->project, true);
+                if (!$environment) {
+                    throw new \RuntimeException('Default environment not found');
+                }
+                $this->stdErr->writeln(\sprintf('Selected environment: %s', $this->api()->getEnvironmentLabel($environment)));
+                $this->printedSelectedEnvironment = true;
+                $this->environment = $environment;
+                return;
+            }
+
             $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
                 throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);

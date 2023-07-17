@@ -1221,17 +1221,26 @@ class Api
     }
 
     /**
-     * Get the default environment in a project.
+     * Returns a default environment for a project.
+     *
+     * This may be the one set as the project's default_branch, or another
+     * environment, e.g. if the user only has access to 1 environment.
      *
      * @param Project   $project
+     * @param bool $onlyDefaultBranch Only use the default_branch.
      * @param bool|null $refresh
      *
      * @return Environment|null
      */
-    public function getDefaultEnvironment(Project $project, $refresh = null)
+    public function getDefaultEnvironment(Project $project, $onlyDefaultBranch = false, $refresh = null)
     {
+        if ($project->default_branch === '') {
+            throw new \RuntimeException('Default branch not set');
+        }
         if ($env = $this->getEnvironment($project->default_branch, $project, $refresh)) {
             return $env;
+        } elseif ($onlyDefaultBranch) {
+            return null;
         }
         $envs = $this->getEnvironments($project, $refresh);
 
