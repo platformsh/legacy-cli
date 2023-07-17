@@ -73,7 +73,10 @@ class Drupal extends BuildFlavorBase
         foreach ($finder as $file) {
             $composerJson = json_decode(file_get_contents($file), true);
             if (isset($composerJson['require']['drupal/core'])
-                || isset($composerJson['require']['drupal/phing-drush-task'])) {
+                || isset($composerJson['require']['drupal/core-recommended'])
+                || isset($composerJson['require']['drupal/drupal'])
+                || isset($composerJson['require']['drupal/phing-drush-task'])
+            ) {
                 return true;
             }
         }
