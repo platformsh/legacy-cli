@@ -43,7 +43,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @param array $extraOptions
      * @param string|null $uri
-     * @param string|null $remoteCommand
+     * @param string[]|string|null $remoteCommand
      *
      * @return array
      */
@@ -67,8 +67,12 @@ class Ssh implements InputConfiguringInterface
         if ($uri !== null) {
             $args[] = $uri;
         }
-        if ($remoteCommand !== null) {
-            $args[] = $remoteCommand;
+        if (!empty($remoteCommand)) {
+            if (is_array($remoteCommand)) {
+                $args[] = $this->argsToString($remoteCommand);
+            } else {
+                $args[] = $remoteCommand;
+            }
         }
 
         return $args;
@@ -161,9 +165,14 @@ class Ssh implements InputConfiguringInterface
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
         if (!empty($args)) {
-            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
+            $command .= ' ' . $this->argsToString($args);
         }
 
         return $command;
+    }
+
+    private function argsToString(array $args)
+    {
+        return implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $args));
     }
 }
