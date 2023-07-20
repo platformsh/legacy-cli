@@ -66,7 +66,7 @@ class RemoteHost implements HostInterface
     private function wrapCommandLine($commandLine)
     {
         return $this->sshService->getSshCommand()
-            . ($this->extraSshArgs ? ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $this->extraSshArgs)) : '')
+            . ($this->extraSshArgs ? ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $this->extraSshArgs)) : '')
             . ' ' . escapeshellarg($this->sshUrl)
             . ' ' . escapeshellarg($commandLine);
     }

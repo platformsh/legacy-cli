@@ -51,7 +51,7 @@ class EnvironmentScpCommand extends CommandBase
         $command = 'scp';
 
         if ($sshArgs = $ssh->getSshArgs()) {
-            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $sshArgs));
+            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $sshArgs));
         }
 
         if ($input->getOption('recursive')) {
