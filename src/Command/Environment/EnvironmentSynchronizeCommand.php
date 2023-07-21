@@ -124,11 +124,11 @@ EOT
 
         $this->stdErr->writeln("Synchronizing environment <info>$environmentId</info>");
 
-        $activity = $selectedEnvironment->synchronize($syncData, $syncCode, $rebase);
+        $result = $selectedEnvironment->runOperation('synchronize', 'POST', ['synchronize_data' => $syncData, 'synchronize_code' => $syncCode, 'rebase' => $rebase]);
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;
             }
@@ -152,7 +152,7 @@ EOT
     /**
      * {@inheritdoc}
      */
-    public function completeOptionValues($argumentName, CompletionContext $context)
+    public function completeOptionValues($optionName, CompletionContext $context)
     {
         return [];
     }

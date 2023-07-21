@@ -41,13 +41,13 @@ class EnvironmentResumeCommand extends CommandBase
         }
         $this->stdErr->writeln('');
 
-        $activity = $environment->resume();
+        $result = $environment->runOperation('resume');
         $this->api()->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;
             }

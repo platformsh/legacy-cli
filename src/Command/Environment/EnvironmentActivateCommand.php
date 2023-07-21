@@ -102,7 +102,7 @@ class EnvironmentActivateCommand extends CommandBase
                     'Activating environment <info>%s</info>',
                     $environmentId
                 ));
-                $activities[] = $environment->activate();
+                $activities = array_merge($activities, $environment->runOperation('activate')->getActivities());
                 $processed++;
             } catch (\Exception $e) {
                 $output->writeln($e->getMessage());

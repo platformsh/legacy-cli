@@ -43,12 +43,12 @@ class EnvironmentRedeployCommand extends CommandBase
             return 1;
         }
 
-        $activity = $environment->redeploy();
+        $result = $environment->runOperation('redeploy');
 
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;
             }

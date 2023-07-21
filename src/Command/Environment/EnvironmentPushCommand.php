@@ -255,7 +255,7 @@ class EnvironmentPushCommand extends CommandBase
                     $targetEnvironment->update($updates)->getActivities()
                 );
             }
-            $activities[] = $targetEnvironment->activate();
+            $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
             $this->stdErr->writeln(sprintf(
                 'Activated environment <info>%s</info>',
                 $this->api()->getEnvironmentLabel($targetEnvironment)
@@ -281,18 +281,25 @@ class EnvironmentPushCommand extends CommandBase
             return false;
         }
 
-        $activity = $parentEnvironment->branch($target, $target, $cloneParent, $type);
+        $params = [
+            'name' => $target,
+            'title' => $target,
+            'clone_parent' => $cloneParent,
+        ];
+        if ($type !== null) {
+            $params['type'] = $type;
+        }
+        $result = $parentEnvironment->runOperation('branch', 'POST', $params);
         $this->stdErr->writeln(sprintf(
             'Branched <info>%s</info>%s from parent %s',
             $target,
             $type !== null ? ' (type: <info>' . $type . '</info>)' : '',
             $this->api()->getEnvironmentLabel($parentEnvironment)
         ));
-        $this->debug(sprintf('Branch activity ID / state: %s / %s', $activity->id, $activity->state));
 
         $this->api()->clearEnvironmentsCache($project->id);
 
-        return [$activity];
+        return $result->getActivities();
     }
 
     /**
