@@ -34,7 +34,7 @@ class ActivityLogCommand extends ActivityCommandBase
                 . "\n" . ArrayArgument::SPLIT_HELP
                 . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities."
             )
-            ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Exclude by type (when selecting a default activity).'
                 . "\n" . ArrayArgument::SPLIT_HELP
                 . "\nThe % or * characters can be used as a wildcard to exclude types."
