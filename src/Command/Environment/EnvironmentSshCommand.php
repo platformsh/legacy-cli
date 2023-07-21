@@ -67,10 +67,7 @@ class EnvironmentSshCommand extends CommandBase
         }
 
         $remoteCommand = $input->getArgument('cmd');
-        if (is_array($remoteCommand)) {
-            $remoteCommand = implode(' ', $remoteCommand);
-        }
-        if (!$remoteCommand && $this->runningViaMulti) {
+        if (empty($remoteCommand) && $this->runningViaMulti) {
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
