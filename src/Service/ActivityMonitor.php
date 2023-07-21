@@ -298,6 +298,9 @@ class ActivityMonitor
         }
 
         $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
+        foreach ($activities as $activity) {
+            $stdErr->writeln(sprintf('  <info>%s</info>: %s', $activity->id, self::getFormattedDescription($activity)));
+        }
 
         // The progress bar will show elapsed time and all of the activities'
         // states.
