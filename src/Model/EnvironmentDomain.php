@@ -35,7 +35,6 @@ class EnvironmentDomain extends Resource
     {
         $body = ['name' => $name];
         if (!empty($replacementFor)) {
-            $body['type'] = 'replacement';
             $body['replacement_for'] = $replacementFor;
         }
         if (!empty($ssl)) {
