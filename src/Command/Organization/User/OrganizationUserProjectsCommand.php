@@ -18,6 +18,8 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
 {
     protected $tableHeader = [
         'organization_id' => 'Organization ID',
+        'organization_name' => 'Organization',
+        'organization_label' => 'Organization label',
         'project_id' => 'Project ID',
         'project_title' => 'Title',
         'roles' => 'Role(s)',
@@ -165,6 +167,9 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $projectInfo = $item->getProjectInfo();
             $row['project_title'] = $projectInfo ? $projectInfo->title : '';
             $row['region'] = $projectInfo ? $projectInfo->region : '';
+            $orgInfo = $item->getOrganizationInfo();
+            $row['organization_name'] = $orgInfo ? $orgInfo->name : '';
+            $row['organization_label'] = $orgInfo ? $orgInfo->label : '';
             $rows[] = $row;
         }
 
@@ -183,7 +188,12 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $defaultColumns = $this->defaultColumns;
+        if (!$organization) {
+            $defaultColumns[] = 'organization_name';
+        }
+
+        $table->render($rows, $this->tableHeader, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('To view the user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', OsUtil::escapeShellArg($userRef->email))));
