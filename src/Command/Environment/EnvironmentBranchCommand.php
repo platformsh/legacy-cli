@@ -121,14 +121,18 @@ class EnvironmentBranchCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<comment>Dry-run mode:</comment> skipping branch operation.');
 
-            $activity = false;
+            $activities = [];
         } else {
-            $activity = $parentEnvironment->branch(
-                $title,
-                $branchName,
-                !$input->getOption('no-clone-parent'),
-                $type
-            );
+            $params = [
+                'name' => $branchName,
+                'title' => $title,
+                'clone_parent' => !$input->getOption('no-clone-parent'),
+            ];
+            if ($type !== null) {
+                $params['type'] = $type;
+            }
+            $result = $parentEnvironment->runOperation('branch', 'POST', $params);
+            $activities = $result->getActivities();
 
             // Clear the environments cache, as branching has started.
             $this->api()->clearEnvironmentsCache($selectedProject->id);
@@ -170,11 +174,11 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if ($this->shouldWait($input) && !$dryRun && $activity) {
+        if ($this->shouldWait($input) && !$dryRun && $activities) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $this->stdErr->writeln('');
-            $remoteSuccess = $activityMonitor->waitAndLog($activity);
+            $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
 
             // If a new local branch has been created, set it to track the
             // remote branch. This requires first fetching the new branch from

@@ -375,7 +375,7 @@ EOF
         foreach ($toDeactivate as $environmentId => $environment) {
             try {
                 $this->stdErr->writeln("Deleting environment <info>$environmentId</info>");
-                $deactivateActivities[] = $environment->deactivate();
+                $deactivateActivities = array_merge($deactivateActivities, $environment->runOperation('deactivate')->getActivities());
                 $deactivated++;
             } catch (\Exception $e) {
                 $this->stdErr->writeln($e->getMessage());

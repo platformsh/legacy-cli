@@ -74,14 +74,15 @@ class EnvironmentInitCommand extends CommandBase
         }
         $this->stdErr->writeln($message);
 
-        $activity = $environment->initialize($profile, $url);
+        $result = $environment->runOperation('initialize', 'POST', ['profile' => $profile, 'repository' => $url]);
 
         $this->api()->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            return $success ? 0 : 1;
         }
 
         return 0;

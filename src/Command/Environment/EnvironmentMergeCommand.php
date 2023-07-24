@@ -68,11 +68,11 @@ class EnvironmentMergeCommand extends CommandBase
 
         $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
 
-        $activity = $selectedEnvironment->merge();
+        $result = $selectedEnvironment->runOperation('merge');
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;
             }
