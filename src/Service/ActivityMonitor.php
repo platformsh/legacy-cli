@@ -71,10 +71,11 @@ class ActivityMonitor
      * @param bool|string $timestamps Whether to display timestamps (or pass in a date format).
      * @param bool $context Whether to add a context message.
      * @param OutputInterface|null $logOutput The output object for log messages (defaults to stderr).
+     * @param bool $noResult Whether to suppress the activity result.
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null)
+    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null, $noResult = false)
     {
         $stdErr = $this->getStdErr();
         $logOutput = $logOutput ?: $stdErr;
@@ -88,6 +89,7 @@ class ActivityMonitor
         // The progress bar will show elapsed time and the activity's state.
         $bar = $this->newProgressBar($stdErr);
         $overrideState = '';
+        $progressColor = 'cyan';
         $bar->setPlaceholderFormatterDefinition('state', function () use ($activity, &$overrideState) {
             return $this->formatState($overrideState ?: $activity->state);
         });
@@ -95,7 +97,8 @@ class ActivityMonitor
         $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
             return $this->formatDuration(time() - $startTime);
         });
-        $bar->setFormat('[%bar%] <fg=cyan>%elapsed:6s%</> (%state%)');
+        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor) { return $progressColor; });
+        $bar->setFormat('[%bar%] <fg=%fgColor%>%elapsed:6s%</> (%state%)');
         $bar->start();
 
         $logStream = $this->getLogStream($activity, $bar);
@@ -199,28 +202,28 @@ class ActivityMonitor
             // Display the progress bar again.
             $bar->advance();
         }
-        $bar->finish();
-        $stdErr->writeln('');
-        $stdErr->writeln('');
 
-        // Display the success or failure messages.
-        switch ($activity->result) {
-            case Activity::RESULT_SUCCESS:
-                $stdErr->writeln('The activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
-                return true;
-
-            case Activity::RESULT_FAILURE:
-                if ($activity->state === Activity::STATE_CANCELLED) {
-                    $stdErr->writeln('The activity was cancelled: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
-                } else {
-                    $stdErr->writeln('The activity failed: ' . self::getFormattedDescription($activity, true, true, 'red'));
-                }
-                return false;
+        if ($activity->result === Activity::RESULT_FAILURE) {
+            if ($activity->state === Activity::STATE_CANCELLED) {
+                $progressColor = 'yellow';
+            } else {
+                $progressColor = 'red';
+            }
+        } elseif ($activity->result === Activity::RESULT_SUCCESS) {
+            $progressColor = 'green';
+        } else {
+            $progressColor = 'yellow';
         }
 
-        $stdErr->writeln('The activity finished with an unknown result: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
+        $bar->finish();
+        $stdErr->writeln('');
 
-        return false;
+        if (!$noResult) {
+            $stdErr->writeln('');
+            $this->printResult($activity);
+        }
+
+        return $activity->result === Activity::RESULT_SUCCESS;
     }
 
     /**
@@ -299,13 +302,16 @@ class ActivityMonitor
      * A progress bar tracks the state of each activity. The activity log is
      * only displayed at the end, if an activity failed.
      *
-     * @param Activity[]      $activities
-     * @param Project         $project
+     * @param Activity[] $activities
+     * @param Project $project
+     * @param bool $context Display the activity names before waiting.
+     * @param bool $noLog Don't display the log even if there is only 1 activity.
+     * @param bool $noResult Don't display the activity result.
      *
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public function waitMultiple(array $activities, Project $project)
+    public function waitMultiple(array $activities, Project $project, $context = true, $noLog = false, $noResult = false)
     {
         $stdErr = $this->getStdErr();
 
@@ -313,50 +319,121 @@ class ActivityMonitor
         $count = count($activities);
         if ($count == 0) {
             return true;
-        } elseif ($count === 1) {
-            return $this->waitAndLog(reset($activities));
+        } elseif ($count === 1 && !$noLog) {
+            return $this->waitAndLog(reset($activities), 3, false, $context, $stdErr);
+        }
+
+        // Split integration and non-integration activities, and put the latter first.
+        $integrationActivities = array_filter($activities, function (Activity $a) {
+            return strpos($a->type, 'integration.') === 0;
+        });
+        $nonIntegrationActivities = array_filter($activities, function (Activity $a) {
+            return strpos($a->type, 'integration.') !== 0;
+        });
+        $activities = array_merge($nonIntegrationActivities, $integrationActivities);
+
+        // For more than one activity, output a list of their descriptions.
+        if ($context) {
+            $stdErr->writeln('');
+            $stdErr->writeln(sprintf('Waiting for %d activities:', $count));
+            foreach ($activities as $i => $activity) {
+                $stdErr->writeln(sprintf('  <fg=cyan>#%d</> %s', $i + 1, self::getFormattedDescription($activity, true, true, 'cyan')));
+            }
         }
 
         // If there is 1 non-integration activity, then display its log, and
         // wait for the integration activities separately.
-        $nonIntegrationActivities = array_filter($activities, function (Activity $a) {
-            return strpos($a->type, 'integration.') !== 0;
-        });
+        //
+        // This is because user actions tend to return a single activity,
+        // alongside one or more integration activities. The log of the single
+        // activity is more likely to be immediately useful.
         if (count($nonIntegrationActivities) === 1) {
             $nonIntegrationActivity = reset($nonIntegrationActivities);
-            $integrationActivities = array_filter($activities, function (Activity $a) {
-                return strpos($a->type, 'integration.') === 0;
-            });
-            $nonIntegrationSuccess = $this->waitAndLog($nonIntegrationActivity);
-            $integrationSuccess = $this->waitMultiple($integrationActivities, $project);
+            $stdErr->writeln('');
+            $stdErr->writeln(sprintf('<fg=cyan>#%d</> %s:', 1, self::getFormattedDescription($nonIntegrationActivity, true, true, 'cyan')));
+            $stdErr->writeln('');
+            $nonIntegrationSuccess = $this->waitAndLog($nonIntegrationActivity, 3, false, false, $stdErr, true);
+            $stdErr->writeln('');
+            $i = 1;
+            foreach ($integrationActivities as $integrationActivity) {
+                $stdErr->writeln(sprintf('<fg=cyan>#%d</> %s:', $i + 1, self::getFormattedDescription($integrationActivity, true, true, 'cyan')));
+                $i++;
+            }
+            $stdErr->writeln('');
+            $integrationSuccess = $this->waitMultiple($integrationActivities, $project, false, true, true);
+            $stdErr->writeln('');
+            // Display success or failure messages for each activity.
+            $byResult = [Activity::RESULT_SUCCESS => [], 'cancelled' => [], Activity::RESULT_FAILURE => []];
+            foreach ($activities as $i => $activity) {
+                $result = $activity->result;
+                if ($activity->state === Activity::STATE_CANCELLED) {
+                    $result = 'cancelled';
+                }
+                $byResult[$result][] = [$i + 1, $activity];
+            }
+            foreach ($byResult as $result => $items) {
+                if (empty($items)) {
+                    continue;
+                }
+                $showLog = false;
+                $summaryCount = count($activities) === 1 ? 'The activity' : sprintf('%d/%d activities', count($items), count($activities));
+                switch ($result) {
+                    case 'cancelled':
+                        $fgColor = 'yellow';
+                        $stdErr->writeln(sprintf('%s %s <fg=%s>cancelled</>:', $summaryCount, count($activities) === 1 ? 'was' : 'were', $fgColor));
+                        break;
+                    case Activity::RESULT_SUCCESS:
+                        $fgColor = 'green';
+                        $stdErr->writeln(sprintf('%s <fg=%s>succeeded</>:', $summaryCount, $fgColor));
+                        break;
+                    case Activity::RESULT_FAILURE:
+                        $fgColor = 'red';
+                        $stdErr->writeln(sprintf('%s <fg=%s>failed</>:', $summaryCount, $fgColor));
+                        $showLog = true;
+                        break;
+                    default:
+                        $fgColor = 'red';
+                        $showLog = true;
+                        $stdErr->writeln(sprintf('%s finished with an <fg=%s>unknown result</>:', $summaryCount, $fgColor));
+                }
+                foreach ($items as $item) {
+                    list($num, $activity) = $item;
+                    $stdErr->writeln(sprintf('  <fg=%s>#%d</> %s', $fgColor, $num, self::getFormattedDescription($activity, true, true, $fgColor)));
+                    if ($showLog) {
+                        $stdErr->writeln('  <error>Log:</error>');
+                        $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
+                    }
+                }
+            }
             return $nonIntegrationSuccess && $integrationSuccess;
-        }
-
-        // For more than one activity, display a progress bar with the status of each.
-        $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
-        foreach ($activities as $activity) {
-            $stdErr->writeln('  ' . self::getFormattedDescription($activity, true, true, 'cyan'));
         }
 
         // The progress bar will show elapsed time and all of the activities'
         // states.
         $bar = $this->newProgressBar($stdErr);
         $states = [];
+        $progressColor = 'cyan';
+        $startTime = time();
         foreach ($activities as $activity) {
             $state = $activity->state;
             $states[$state] = isset($states[$state]) ? $states[$state] + 1 : 1;
-        }
-        $bar->setFormat('[%bar%] <fg=cyan>%elapsed:6s%</> (%states%)');
-        $bar->setPlaceholderFormatterDefinition('states', function () use (&$states) {
-            $format = '';
-            foreach ($states as $state => $count) {
-                $format .= $count . ' ' . $this->formatState($state) . ', ';
+            if (($activityStart = $this->getStart($activity)) && $activityStart < $startTime) {
+                $startTime = $activityStart;
             }
-
-            return rtrim($format, ', ');
+        }
+        $bar->setFormat('[%bar%] <fg=%fgColor%>%elapsed:6s%</> (%states%)');
+        $bar->setPlaceholderFormatterDefinition('states', function () use (&$states) {
+            if (count($states) === 1) {
+                return $this->formatState(key($states));
+            }
+            $withCount = [];
+            foreach ($states as $state => $count) {
+                $withCount[] = $count . ' ' . $this->formatState($state);
+            }
+            return implode(', ', $withCount);
         });
-        $startTime = time();
-        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
+        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor) { return $progressColor; });
+        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime, &$progressColor) {
             return $this->formatDuration(time() - $startTime);
         });
         $bar->start();
@@ -400,30 +477,71 @@ class ActivityMonitor
             }
             $bar->advance();
         }
+
+        $success = true;
+        foreach ($activities as $activity) {
+            $success = $activity->result === Activity::RESULT_SUCCESS && $success;
+            if ($activity->result === Activity::RESULT_FAILURE) {
+                if ($activity->state === Activity::STATE_CANCELLED && $progressColor !== 'red') {
+                    $progressColor = 'yellow';
+                    continue;
+                }
+                $progressColor = 'red';
+            } elseif ($progressColor !== 'red' && $activity->result === Activity::RESULT_SUCCESS) {
+                $progressColor = 'green';
+            } elseif ($progressColor !== 'red') {
+                $progressColor = 'yellow';
+            }
+        }
+
         $bar->finish();
         $stdErr->writeln('');
 
         // Display success or failure messages for each activity.
-        $success = true;
-        foreach ($activities as $activity) {
-            switch ($activity['result']) {
-                case Activity::RESULT_SUCCESS:
-                    $stdErr->writeln('Activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
-                    break;
-
-                case Activity::RESULT_FAILURE:
-                    $success = false;
-                    $stdErr->writeln(sprintf('Activity failed: <error>%s</error>', $activity->id));
-
-                    // If the activity failed, show the complete log.
-                    $stdErr->writeln('  <error>Description:</error> ' . self::getFormattedDescription($activity));
-                    $stdErr->writeln('  <error>Log:</error>');
-                    $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
-                    break;
+        if (!$noResult) {
+            $stdErr->writeln('');
+            foreach ($activities as $activity) {
+                $this->printResult($activity, true);
             }
         }
 
         return $success;
+    }
+
+    /**
+     * Prints the result of an activity: success, failure, or cancelled.
+     *
+     * @param Activity $activity
+     * @param bool $logOnFailure
+     *
+     * @return bool Success or failure.
+     */
+    private function printResult(Activity $activity, $logOnFailure = false)
+    {
+        $stdErr = $this->getStdErr();
+
+        // Display the success or failure messages.
+        switch ($activity->result) {
+            case Activity::RESULT_SUCCESS:
+                $stdErr->writeln('The activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
+                return true;
+
+            case Activity::RESULT_FAILURE:
+                if ($activity->state === Activity::STATE_CANCELLED) {
+                    $stdErr->writeln('The activity was cancelled: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
+                    return false;
+                }
+                $stdErr->writeln('The activity failed: ' . self::getFormattedDescription($activity, true, true, 'red'));
+                if ($logOnFailure) {
+                    $stdErr->writeln('  <error>Log:</error>');
+                    $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
+                }
+                return false;
+
+            default:
+                $stdErr->writeln('The activity finished with an unknown result: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
+                return false;
+        }
     }
 
     /**
