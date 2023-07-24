@@ -114,17 +114,12 @@ class ProjectGetCommand extends CommandBase
             // The ls-remote command failed.
             $this->stdErr->writeln('Failed to connect to the Git repository: <error>' . $gitUrl . '</error>');
 
-            // Display the error from the Git process if it's about Xcode,
-            // otherwise assume it's an SSH problem and diagnose the SSH
-            // failure.
+            // Display the error from the Git process.
             $process = $e->getProcess();
             $errorOutput = $process->getErrorOutput();
-            if (strpos($errorOutput, 'Xcode license') !== false) {
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln($errorOutput);
-            } else {
-                $this->suggestSshRemedies($gitUrl, $process);
-            }
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln($errorOutput);
+            $this->suggestSshRemedies($gitUrl, $process);
 
             return 1;
         }
@@ -326,17 +321,6 @@ class ProjectGetCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
         $sshDiagnostics = $this->getService('ssh_diagnostics');
-
-        // Determine whether the URL is for an internal Git repository, as
-        // opposed to a third-party one (like GitLab/GitHub).
-        if ($gitSshUri === '' || !$sshDiagnostics->sshHostIsInternal($gitSshUri)) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln(
-                'Please make sure you have the correct access rights and the repository exists.'
-            );
-            return;
-        }
-
         $sshDiagnostics->diagnoseFailure($gitSshUri, $process);
     }
 }
