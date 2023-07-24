@@ -96,11 +96,7 @@ class ActivityCancelCommand extends ActivityCommandBase
             $activity = $byId[$id];
         }
 
-        $this->stdErr->writeln(sprintf(
-            'Cancelling the activity <info>%s</info> (%s)...',
-            $activity->id,
-            ActivityMonitor::getFormattedDescription($activity)
-        ));
+        $this->stdErr->writeln('Cancelling the activity ' . ActivityMonitor::getFormattedDescription($activity, true, true, 'cyan'));
 
         try {
             $activity->cancel();

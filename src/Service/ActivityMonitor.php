@@ -81,11 +81,8 @@ class ActivityMonitor
         $logOutput = $logOutput ?: $stdErr;
 
         if ($context) {
-            $stdErr->writeln(sprintf(
-                'Waiting for the activity <info>%s</info> (%s):',
-                $activity->id,
-                self::getFormattedDescription($activity)
-            ));
+            $stdErr->writeln('');
+            $stdErr->writeln('Waiting for the activity: ' . self::getFormattedDescription($activity, true, true, 'cyan'));
             $stdErr->writeln('');
         }
 
@@ -205,23 +202,24 @@ class ActivityMonitor
         }
         $bar->finish();
         $stdErr->writeln('');
+        $stdErr->writeln('');
 
         // Display the success or failure messages.
         switch ($activity->result) {
             case Activity::RESULT_SUCCESS:
-                $stdErr->writeln("Activity <info>{$activity->id}</info> succeeded");
+                $stdErr->writeln('The activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
                 return true;
 
             case Activity::RESULT_FAILURE:
                 if ($activity->state === Activity::STATE_CANCELLED) {
-                    $stdErr->writeln("The activity <error>{$activity->id}</error> was cancelled");
+                    $stdErr->writeln('The activity was cancelled: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
                 } else {
-                    $stdErr->writeln("Activity <error>{$activity->id}</error> failed");
+                    $stdErr->writeln('The activity failed: ' . self::getFormattedDescription($activity, true, true, 'red'));
                 }
                 return false;
         }
 
-        $stdErr->writeln("The log for activity <info>{$activity->id}</info> finished with an unknown result");
+        $stdErr->writeln('The activity finished with an unknown result: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
 
         return false;
     }
@@ -290,6 +288,7 @@ class ActivityMonitor
     {
         $stdErr = $this->getStdErr();
 
+        // If there is 1 activity then display its log.
         $count = count($activities);
         if ($count == 0) {
             return true;
@@ -297,9 +296,25 @@ class ActivityMonitor
             return $this->waitAndLog(reset($activities));
         }
 
+        // If there is 1 non-integration activity, then display its log, and
+        // wait for the integration activities separately.
+        $nonIntegrationActivities = array_filter($activities, function (Activity $a) {
+            return strpos($a->type, 'integration.') !== 0;
+        });
+        if (count($nonIntegrationActivities) === 1) {
+            $nonIntegrationActivity = reset($nonIntegrationActivities);
+            $integrationActivities = array_filter($activities, function (Activity $a) {
+                return strpos($a->type, 'integration.') === 0;
+            });
+            $nonIntegrationSuccess = $this->waitAndLog($nonIntegrationActivity);
+            $integrationSuccess = $this->waitMultiple($integrationActivities, $project);
+            return $nonIntegrationSuccess && $integrationSuccess;
+        }
+
+        // For more than one activity, display a progress bar with the status of each.
         $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
         foreach ($activities as $activity) {
-            $stdErr->writeln(sprintf('  <info>%s</info>: %s', $activity->id, self::getFormattedDescription($activity)));
+            $stdErr->writeln('  ', self::getFormattedDescription($activity, true, true, 'cyan'));
         }
 
         // The progress bar will show elapsed time and all of the activities'
@@ -366,19 +381,18 @@ class ActivityMonitor
         // Display success or failure messages for each activity.
         $success = true;
         foreach ($activities as $activity) {
-            $description = self::getFormattedDescription($activity);
             switch ($activity['result']) {
                 case Activity::RESULT_SUCCESS:
-                    $stdErr->writeln(sprintf('Activity <info>%s</info> succeeded: %s', $activity->id, $description));
+                    $stdErr->writeln('Activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
                     break;
 
                 case Activity::RESULT_FAILURE:
                     $success = false;
-                    $stdErr->writeln(sprintf('Activity <error>%s</error> failed', $activity->id));
+                    $stdErr->writeln(sprintf('Activity failed: <error>%s</error>', $activity->id));
 
                     // If the activity failed, show the complete log.
-                    $stdErr->writeln('  Description: ' . $description);
-                    $stdErr->writeln('  Log:');
+                    $stdErr->writeln('  <error>Description:</error> ' . self::getFormattedDescription($activity));
+                    $stdErr->writeln('  <error>Log:</error>');
                     $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                     break;
             }
@@ -435,31 +449,43 @@ class ActivityMonitor
     /**
      * Get the formatted description of an activity.
      *
-     * @param \Platformsh\Client\Model\Activity $activity
-     * @param bool                              $withDecoration
+     * @param \Platformsh\Client\Model\Activity $activity The activity.
+     * @param bool $withDecoration Add decoration to activity tags.
+     * @param bool $withId Add the activity ID.
+     * @param string $fgColor Define a foreground color e.g. 'green', 'red', 'cyan'.
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity, $withDecoration = true)
+    public static function getFormattedDescription(Activity $activity, $withDecoration = true, $withId = false, $fgColor = '')
     {
         if (!$withDecoration) {
+            if ($withId) {
+                return '[' . $activity->id . '] ' . $activity->getDescription(false);
+            }
             return $activity->getDescription(false);
         }
-        $value = $activity->getDescription(true);
+        $descr = $activity->getDescription(true);
 
         // Replace description HTML elements with Symfony Console decoration
         // tags.
-        $value = preg_replace('@<[^/][^>]+>@', '<options=underscore>', $value);
-        $value = preg_replace('@</[^>]+>@', '</>', $value);
+        $descr = preg_replace('@<[^/][^>]+>@', '<options=underscore>', $descr);
+        $descr = preg_replace('@</[^>]+>@', '</>', $descr);
 
         // Replace literal tags like "&lt;info&;gt;" with escaped tags like
         // "\<info>".
-        $value = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $value);
+        $descr = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $descr);
 
         // Decode other HTML entities.
-        $value = html_entity_decode($value, ENT_QUOTES, 'utf-8');
+        $descr = html_entity_decode($descr, ENT_QUOTES, 'utf-8');
 
-        return $value;
+        if ($withId) {
+            if ($fgColor) {
+                return sprintf('<fg=%s>[%s]</> %s', $fgColor, $activity->id, $descr);
+            }
+            return sprintf('[%s] %s', $activity->id, $descr);
+        }
+
+        return $descr;
     }
 
     /**
