@@ -177,7 +177,6 @@ class EnvironmentBranchCommand extends CommandBase
         if ($this->shouldWait($input) && !$dryRun && $activities) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $this->stdErr->writeln('');
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
 
             // If a new local branch has been created, set it to track the

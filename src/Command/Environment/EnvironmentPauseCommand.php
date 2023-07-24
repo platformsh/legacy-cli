@@ -58,7 +58,6 @@ EOF;
         if (!$questionHelper->confirm($text)) {
             return 1;
         }
-        $this->stdErr->writeln('');
 
         $result = $environment->runOperation('pause');
         $this->api()->clearEnvironmentsCache($environment->project);

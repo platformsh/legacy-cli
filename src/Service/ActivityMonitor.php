@@ -314,7 +314,7 @@ class ActivityMonitor
         // For more than one activity, display a progress bar with the status of each.
         $stdErr->writeln(sprintf('Waiting for %d activities...', $count));
         foreach ($activities as $activity) {
-            $stdErr->writeln('  ', self::getFormattedDescription($activity, true, true, 'cyan'));
+            $stdErr->writeln('  ' . self::getFormattedDescription($activity, true, true, 'cyan'));
         }
 
         // The progress bar will show elapsed time and all of the activities'
