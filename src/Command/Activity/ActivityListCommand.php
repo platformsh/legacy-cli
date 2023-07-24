@@ -134,13 +134,12 @@ class ActivityListCommand extends ActivityCommandBase
             $maybeMoreAvailable = count($activities) === $max;
             if ($maybeMoreAvailable) {
                 $this->stdErr->writeln('');
+                $this->stdErr->writeln('More activities may be available.');
                 $this->stdErr->writeln(sprintf(
-                    'More activities may be available.'
-                    . ' To display older activities, increase <info>--limit</info> above %d, or set <info>--start</info> to a date in the past.'
-                    . ' For more information, run: <info>%s activity:list -h</info>',
-                    $max,
-                    $executable
+                    'To display older activities, increase <info>--limit</info> above %d, or set <info>--start</info> to a date in the past.',
+                    $max
                 ));
+                $this->suggestExclusions($activities);
             }
 
             $this->stdErr->writeln('');
@@ -152,8 +151,36 @@ class ActivityListCommand extends ActivityCommandBase
                 'To view more information about an activity, run: <info>%s activity:get [id]</info>',
                 $executable
             ));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('For more information, run: <info>%s activity:list -h</info>', $executable));
         }
 
         return 0;
+    }
+
+    private function suggestExclusions(array $activities)
+    {
+        $counts = [];
+        foreach ($activities as $activity) {
+            $type = $activity->type;
+            $counts[$type] = isset($counts[$type]) ? $counts[$type] + 1 : 1;
+        }
+        if (empty($counts)) {
+            return;
+        }
+        $total = count($activities);
+        $suggest = [];
+        foreach ($counts as $type => $count) {
+            if ($count > 4 && $count / $total >= .4) {
+                if (($dotPos = strpos($type, '.')) > 0) {
+                    $suggest[] = substr($type, $dotPos + 1);
+                } else {
+                    $suggest[] = $type;
+                }
+            }
+        }
+        if (!empty($suggest)) {
+            $this->stdErr->writeln(sprintf('Exclude the most frequent activity %s by adding: <info>-x %s</info>', count($suggest) !== 1 ? 'types' : 'type', implode(' -x ', $suggest)));
+        }
     }
 }

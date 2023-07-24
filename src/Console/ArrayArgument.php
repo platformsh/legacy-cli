@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Console;
 
 class ArrayArgument
 {
-    const SPLIT_HELP = 'If a list is given as a single value (e.g. "a,b,c") it will be split by commas and/or whitespace.';
+    const SPLIT_HELP = 'Values may be split by commas (e.g. "a,b,c") and/or whitespace.';
 
     /**
      * Gets the value of an array input argument.
@@ -41,7 +41,7 @@ class ArrayArgument
     }
 
     /**
-     * Splits the first value, by commas or whitespace, if there is only one.
+     * Splits the provided arguments by commas or whitespace.
      *
      * @param string[] $args
      *
@@ -49,9 +49,10 @@ class ArrayArgument
      */
     public static function split($args)
     {
-        if (\count($args) !== 1) {
-            return $args;
+        $split = [];
+        foreach ($args as $arg) {
+            $split = \array_merge($split, \preg_split('/[,\s]+/', $arg));
         }
-        return \array_filter(\preg_split('/[,\s]+/', \reset($args)), '\\strlen');
+        return \array_filter($split, '\\strlen');
     }
 }
