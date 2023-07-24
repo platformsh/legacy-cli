@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Service;
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\ActivityLog\LogItem;
 use Platformsh\Client\Model\Project;
-use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -94,9 +93,9 @@ class ActivityMonitor
         });
         $startTime = $this->getStart($activity) ?: time();
         $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
-            return Helper::formatTime(time() - $startTime);
+            return $this->formatDuration(time() - $startTime);
         });
-        $bar->setFormat('[%bar%] %elapsed:6s% (%state%)');
+        $bar->setFormat('[%bar%] <fg=cyan>%elapsed:6s%</> (%state%)');
         $bar->start();
 
         $logStream = $this->getLogStream($activity, $bar);
@@ -225,6 +224,28 @@ class ActivityMonitor
     }
 
     /**
+     * Formats a duration in seconds.
+     *
+     * @param int|float $value
+     *
+     * @return string
+     */
+    private function formatDuration($value)
+    {
+        $hours = $minutes = 0;
+        $seconds = (int) round($value);
+        if ($seconds >= 3600) {
+            $hours = floor($seconds / 3600);
+            $seconds %= 3600;
+        }
+        if ($seconds >= 60) {
+            $minutes = floor($seconds / 60);
+            $seconds %= 60;
+        }
+        return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+    }
+
+    /**
      * Reads the log stream and returns LogItem objects.
      *
      * @param string &$buffer
@@ -325,6 +346,7 @@ class ActivityMonitor
             $state = $activity->state;
             $states[$state] = isset($states[$state]) ? $states[$state] + 1 : 1;
         }
+        $bar->setFormat('[%bar%] <fg=cyan>%elapsed:6s%</> (%states%)');
         $bar->setPlaceholderFormatterDefinition('states', function () use (&$states) {
             $format = '';
             foreach ($states as $state => $count) {
@@ -333,7 +355,10 @@ class ActivityMonitor
 
             return rtrim($format, ', ');
         });
-        $bar->setFormat('  [%bar%] %elapsed:6s% (%states%)');
+        $startTime = time();
+        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
+            return $this->formatDuration(time() - $startTime);
+        });
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix
