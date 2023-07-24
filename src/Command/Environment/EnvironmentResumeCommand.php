@@ -39,7 +39,6 @@ class EnvironmentResumeCommand extends CommandBase
         if (!$questionHelper->confirm('Are you sure you want to resume the paused environment <comment>' . $environment->id . '</comment>?')) {
             return 1;
         }
-        $this->stdErr->writeln('');
 
         $activity = $environment->resume();
         $this->api()->clearEnvironmentsCache($environment->project);
