@@ -391,6 +391,9 @@ EOF
         }
 
         $deleted = 0;
+        if (count($toDeleteBranch) > 0) {
+            $this->stdErr->writeln('');
+        }
         foreach ($toDeleteBranch as $environmentId => $environment) {
             try {
                 if ($environment->status !== 'inactive') {
@@ -409,6 +412,7 @@ EOF
         }
 
         if ($deleted > 0) {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln("Run <info>git fetch --prune</info> to remove deleted branches from your local cache.");
         }
 
