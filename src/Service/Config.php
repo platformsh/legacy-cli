@@ -603,4 +603,14 @@ class Config
     {
         return getenv($this->get('application.env_prefix') . 'WRAPPED') === '1';
     }
+
+    /**
+     * Returns all the current configuration.
+     *
+     * @return array
+     */
+    public function getAll()
+    {
+        return $this->config;
+    }
 }

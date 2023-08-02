@@ -219,6 +219,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Route\RouteListCommand();
         $commands[] = new Command\Route\RouteGetCommand();
         $commands[] = new Command\Self\SelfBuildCommand();
+        $commands[] = new Command\Self\SelfConfigCommand();
         $commands[] = new Command\Self\SelfInstallCommand();
         $commands[] = new Command\Self\SelfUpdateCommand();
         $commands[] = new Command\Self\SelfReleaseCommand();
