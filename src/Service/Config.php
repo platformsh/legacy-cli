@@ -25,7 +25,11 @@ class Config
     {
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
-        $this->defaultsFile = $defaultsFile ?: CLI_ROOT . '/config.yaml';
+        if ($defaultsFile === null) {
+            $defaultsFile = $this->getEnv('CLI_CONFIG_FILE', false) ?: CLI_ROOT . '/config.yaml';
+        }
+
+        $this->defaultsFile = $defaultsFile;
         $this->config = $this->loadConfigFromFile($this->defaultsFile);
 
         // Load the session ID from a file.
@@ -291,6 +295,8 @@ class Config
     }
 
     /**
+     * Loads configuration from a file and parses it.
+     *
      * @param string $filename
      *
      * @return array
@@ -299,6 +305,12 @@ class Config
     {
         $contents = file_get_contents($filename);
         if ($contents === false) {
+            if (!file_exists($filename)) {
+                throw new \InvalidArgumentException('Config file not found: ' . $filename);
+            }
+            if (!is_readable($filename)) {
+                throw new \RuntimeException('Config file not readable: ' . $filename);
+            }
             throw new \RuntimeException('Failed to read config file: ' . $filename);
         }
 
@@ -363,14 +375,16 @@ class Config
      * Get an environment variable
      *
      * @param string $name
-     *   The variable name. The configured prefix will be prepended.
+     *   The variable name.
+     * @param bool $addPrefix
+     *   Whether to add the configured prefix to the variable name.
      *
      * @return mixed|false
      *   The value of the environment variable, or false if it is not set.
      */
-    private function getEnv($name)
+    private function getEnv($name, $addPrefix = true)
     {
-        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
+        $prefix = $addPrefix && isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
             return $this->env[$prefix . $name];
         }
