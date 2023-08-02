@@ -89,6 +89,6 @@ class State
      */
     protected function getFilename()
     {
-        return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . $this->config->get('application.user_state_file');
+        return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . $this->config->getWithDefault('application.user_state_file', 'state.json');
     }
 }

@@ -127,10 +127,10 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
         $this->settings = $settings;
         $this->config = $config;
 
-        if ($this->config->get('local.copy_on_windows')) {
+        if ($this->config->getWithDefault('local.copy_on_windows', false)) {
             $this->fsHelper->setCopyOnWindows(true);
         }
-        $this->ignoredFiles[] = $this->config->get('local.web_root');
+        $this->ignoredFiles[] = $this->config->getWithDefault('local.web_root', '_www');
 
         $this->setBuildDir($buildDir);
 

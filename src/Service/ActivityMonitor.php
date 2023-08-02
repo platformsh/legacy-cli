@@ -657,7 +657,7 @@ class ActivityMonitor
         $readTimeout = 10;
         $interval = .5;
 
-        if ($this->config->get('api.debug')) {
+        if ($this->config->getWithDefault('api.debug', false)) {
             $bar->clear();
             $stdErr = $this->getStdErr();
             $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");

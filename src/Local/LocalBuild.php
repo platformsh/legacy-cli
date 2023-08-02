@@ -221,7 +221,7 @@ class LocalBuild
         $verbose = $this->output->isVerbose();
 
         $sourceDir = $app->getSourceDir();
-        $destination = $destination ?: $sourceDir . '/' . $this->config->get('local.web_root');
+        $destination = $destination ?: $sourceDir . '/' . $this->config->getWithDefault('local.web_root', '_www');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
         $appId = $app->getId();
@@ -495,7 +495,7 @@ class LocalBuild
      */
     protected function getActiveBuilds($projectRoot)
     {
-        $www = $projectRoot . '/' . $this->config->get('local.web_root');
+        $www = $projectRoot . '/' . $this->config->getWithDefault('local.web_root', '_www');
         if (!file_exists($www)) {
             return [];
         }

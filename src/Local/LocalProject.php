@@ -338,7 +338,7 @@ EOF
      */
     public function writeGitExclude($dir)
     {
-        $filesToExclude = ['/' . $this->config->get('local.local_dir'), '/' . $this->config->get('local.web_root')];
+        $filesToExclude = ['/' . $this->config->get('local.local_dir'), '/' . $this->config->getWithDefault('local.web_root', '_www')];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
 

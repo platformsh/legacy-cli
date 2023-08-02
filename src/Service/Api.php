@@ -260,12 +260,12 @@ class Api
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
         }
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
-        $connectorOptions['verify'] = $this->config->get('api.skip_ssl') ? false : $this->caBundlePath();
+        $connectorOptions['verify'] = $this->config->getWithDefault('api.skip_ssl', false) ? false : $this->caBundlePath();
 
         $connectorOptions['debug'] = false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->config->getUserAgent();
-        $connectorOptions['timeout'] = $this->config->get('api.default_timeout');
+        $connectorOptions['timeout'] = $this->config->getWithDefault('api.default_timeout', 30);
 
         if ($apiToken = $this->tokenConfig->getApiToken()) {
             $connectorOptions['api_token'] = $apiToken;
@@ -400,14 +400,14 @@ class Api
             'defaults' => [
                 'headers' => ['User-Agent' => $this->config->getUserAgent()],
                 'debug' => false,
-                'verify' => $this->config->get('api.skip_ssl') ? false : $this->caBundlePath(),
+                'verify' => $this->config->getWithDefault('api.skip_ssl', false) ? false : $this->caBundlePath(),
                 'proxy' => $this->guzzleProxyConfig(),
-                'timeout' => $this->config->get('api.default_timeout'),
+                'timeout' => $this->config->getWithDefault('api.default_timeout', 30),
             ],
         ];
 
         if ($this->output->isVeryVerbose()) {
-            $options['defaults']['subscribers'][] = new GuzzleDebugSubscriber($this->output, $this->config->get('api.debug'));
+            $options['defaults']['subscribers'][] = new GuzzleDebugSubscriber($this->output, $this->config->getWithDefault('api.debug', false));
         }
 
         if (extension_loaded('zlib')) {
@@ -486,7 +486,7 @@ class Api
                     }
                 });
                 if ($this->output->isVeryVerbose()) {
-                    $emitter->attach(new GuzzleDebugSubscriber($this->output, $this->config->get('api.debug')));
+                    $emitter->attach(new GuzzleDebugSubscriber($this->output, $this->config->getWithDefault('api.debug', false)));
                 }
             } catch (\RuntimeException $e) {
                 // Ignore errors if the user is not logged in at this stage.
@@ -550,7 +550,7 @@ class Api
             $cacheData = [
                 'projects' => array_map(function (ProjectStub $stub) { return $stub->getData(); }, $stubs)
             ];
-            $this->cache->save($cacheKey, $cacheData, (int) $this->config->get('api.projects_ttl'));
+            $this->cache->save($cacheKey, $cacheData, (int) $this->config->getWithDefault('api.projects_ttl', 600));
         } else {
             $stubs = ProjectStub::wrapCollection($cached, $apiUrl, $guzzleClient);
             $this->debug('Loaded project stubs from cache');
@@ -590,7 +590,7 @@ class Api
             if ($project) {
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
-                $this->cache->save($cacheKey, $toCache, (int) $this->config->get('api.projects_ttl'));
+                $this->cache->save($cacheKey, $toCache, (int) $this->config->getWithDefault('api.projects_ttl', 600));
             } else {
                 return false;
             }
@@ -647,7 +647,7 @@ class Api
                 );
             }
 
-            $this->cache->save($cacheKey, $toCache, (int) $this->config->get('api.environments_ttl'));
+            $this->cache->save($cacheKey, $toCache, (int) $this->config->getWithDefault('api.environments_ttl', 120));
         } else {
             $environments = [];
             $endpoint = $project->getUri();
@@ -736,7 +736,7 @@ class Api
             $cachedTypes = \array_map(function (EnvironmentType $type) {
                 return $type->getData() + ['_uri' => $type->getUri()];
             }, $types);
-            $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->get('api.environments_ttl'));
+            $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->getWithDefault('api.environments_ttl', 120));
         } else {
             $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $data) {
@@ -767,7 +767,7 @@ class Api
             $this->debug('Loaded account information from cache');
         } else {
             $info = $this->getClient()->getAccountInfo($reset);
-            $this->cache->save($cacheKey, $info, (int) $this->config->get('api.users_ttl'));
+            $this->cache->save($cacheKey, $info, (int) $this->config->getWithDefault('api.users_ttl', 600));
         }
 
         return $info;
@@ -836,7 +836,7 @@ class Api
                 $details = $data['_embedded']['users'][0];
             } else {
                 $details = $access->getAccount()->getProperties();
-                $this->cache->save($cacheKey, $details, (int) $this->config->get('api.users_ttl'));
+                $this->cache->save($cacheKey, $details, (int) $this->config->getWithDefault('api.users_ttl', 600));
             }
             self::$accountsCache[$access->id] = $details;
         }
@@ -873,7 +873,7 @@ class Api
             if (!$user) {
                 throw new \InvalidArgumentException('User not found: ' . $id);
             }
-            $this->cache->save($cacheKey, $user->getData(), (int) $this->config->get('api.users_ttl'));
+            $this->cache->save($cacheKey, $user->getData(), (int) $this->config->getWithDefault('api.users_ttl', 600));
         } else {
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());

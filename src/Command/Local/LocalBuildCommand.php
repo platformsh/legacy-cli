@@ -36,7 +36,7 @@ class LocalBuildCommand extends CommandBase
                 'destination',
                 'd',
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config()->get('local.web_root')
+                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config()->getWithDefault('local.web_root', '_www')
             )
             ->addOption(
                 'copy',
@@ -154,7 +154,7 @@ class LocalBuildCommand extends CommandBase
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
-                ? $this->config()->get('local.web_root')
+                ? $this->config()->getWithDefault('local.web_root', '_www')
                 : null;
             $destination = $questionHelper->askInput('Build destination', $default);
         }
@@ -168,7 +168,7 @@ class LocalBuildCommand extends CommandBase
                 'Project root not found. Specify --destination or go to a project directory.'
             );
         } else {
-            $destination = $projectRoot . '/' . $this->config()->get('local.web_root');
+            $destination = $projectRoot . '/' . $this->config()->getWithDefault('local.web_root', '_www');
         }
 
         // Ensure no conflicts between source and destination.
