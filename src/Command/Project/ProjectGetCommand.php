@@ -26,8 +26,10 @@ class ProjectGetCommand extends CommandBase
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
             ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to the project default, or the first available environment")
-            ->addOption('depth', null, InputOption::VALUE_REQUIRED, 'Create a shallow clone: limit the number of commits in the history')
-            ->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
+            ->addOption('depth', null, InputOption::VALUE_REQUIRED, 'Create a shallow clone: limit the number of commits in the history');
+        if ($this->config()->isCommandEnabled('local:build')) {
+            $this->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
+        }
         $this->addProjectOption();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
@@ -222,7 +224,7 @@ class ProjectGetCommand extends CommandBase
 
         // Launch the first build.
         $success = true;
-        if ($input->getOption('build')) {
+        if ($input->hasOption('build') && $input->getOption('build')) {
             // Launch the first build.
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -233,14 +235,6 @@ class ProjectGetCommand extends CommandBase
             /** @var \Platformsh\Cli\Local\LocalBuild $builder */
             $builder = $this->getService('local.build');
             $success = $builder->build($options, $projectRoot);
-        } else {
-            $this->stdErr->writeln(sprintf(
-                "\nYou can build the project with: "
-                . "\n    cd %s"
-                . "\n    %s build",
-                $projectRootFormatted,
-                $this->config()->get('application.executable')
-            ));
         }
 
         return $success ? 0 : 1;
