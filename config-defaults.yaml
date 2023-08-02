@@ -281,6 +281,9 @@ api:
   # Whether the Metrics API is enabled.
   metrics: false
 
+  # Whether the Flexible Resources API (AKA sizing/scaling) is enabled.
+  sizing: false
+
   # Whether Git Push Options are enabled.
   git_push_options: false
 

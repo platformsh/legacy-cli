@@ -97,6 +97,7 @@ class QuestionHelper extends BaseQuestionHelper
         }
         $itemList = array_values($items);
         $defaultKey = $default !== null && isset($items[$default]) ? array_search($items[$default], $itemList, true) : null;
+
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
 
@@ -122,6 +123,35 @@ class QuestionHelper extends BaseQuestionHelper
         $this->output->writeln('');
 
         return $choiceKey;
+    }
+
+    /**
+     * Provides an interactive choice question preserving the array keys.
+     *
+     * @param array  $items     An associative array of choices.
+     * @param string $text      Some text to precede the choices.
+     * @param mixed  $default   A default (as a key in $items).
+     * @param bool   $skipOnOne Whether to skip the choice if there is only one
+     *                          item.
+     * @param bool   $newLine   Whether to output a newline after asking the question.
+     *
+     * @throws \RuntimeException on failure
+     *
+     * @return int|string|null
+     *   The chosen item (as a key in $items).
+     */
+    public function chooseAssoc(array $items, $text = 'Choose an item:', $default = null, $skipOnOne = true, $newLine = true)
+    {
+        if (count($items) === 1 && $skipOnOne) {
+            return key($items);
+        }
+        $question = new ChoiceQuestion($text, $items, $default);
+        $question->setMaxAttempts(5);
+        $choice = $this->ask($this->input, $this->output, $question);
+        if ($newLine) {
+            $this->output->writeln('');
+        }
+        return $choice;
     }
 
     /**

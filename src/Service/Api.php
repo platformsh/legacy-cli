@@ -1211,10 +1211,12 @@ class Api
      *
      * @param Environment $environment
      * @param bool        $refresh
+     * @param bool        $required
      *
-     * @return EnvironmentDeployment
+     * @return EnvironmentDeployment|false
+     *   The current deployment, or false if $required is false and there is no current deployment.
      */
-    public function getCurrentDeployment(Environment $environment, $refresh = false)
+    public function getCurrentDeployment(Environment $environment, $refresh = false, $required = true)
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
         if (!$refresh && isset(self::$deploymentsCache[$cacheKey])) {
@@ -1222,7 +1224,10 @@ class Api
         }
         $data = $this->cache->fetch($cacheKey);
         if ($data === false || $refresh) {
-            $deployment = $environment->getCurrentDeployment();
+            $deployment = $environment->getCurrentDeployment($required);
+            if (!$required && $deployment === false) {
+                return self::$deploymentsCache[$cacheKey] = false;
+            }
             $data = $deployment->getData();
             $data['_uri'] = $deployment->getUri();
             $this->cache->save($cacheKey, $data);

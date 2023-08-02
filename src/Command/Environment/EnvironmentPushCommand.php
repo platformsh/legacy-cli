@@ -273,13 +273,39 @@ class EnvironmentPushCommand extends CommandBase
         // Clear the environment cache after pushing.
         $this->api()->clearEnvironmentsCache($project->id);
 
-        // Check the push log for possible deployment error messages.
         $log = $process->getErrorOutput();
+
+        // Check the push log for services that need resources configured ("flexible resources").
+        if (\strpos($log, 'Invalid deployment') !== false
+            && \strpos($log, 'Resources must be configured') !== false) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('The push completed but resources must be configured before deployment can succeed.');
+            if ($this->config()->isCommandEnabled('resources:set')) {
+                $cmd = 'resources:set';
+                if ($input->getOption('project')) {
+                    $cmd .= ' -p ' . OsUtil::escapeShellArg($input->getOption('project'));
+                }
+                if ($input->getOption('target')) {
+                    $cmd .= ' -e ' . OsUtil::escapeShellArg($input->getOption('target'));
+                } elseif ($input->getOption('environment')) {
+                    $cmd .= ' -e ' . OsUtil::escapeShellArg($input->getOption('environment'));
+                }
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf(
+                    'Configure resources for the environment by running: <comment>%s %s</comment>',
+                    $this->config()->get('application.executable'),
+                    $cmd
+                ));
+            }
+            return self::PUSH_FAILURE_EXIT_CODE;
+        }
+
+        // Check the push log for other possible deployment error messages.
         $messages = $this->config()->getWithDefault('detection.push_deploy_error_messages', []);
         foreach ($messages as $message) {
             if (\strpos($log, $message) !== false) {
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(\sprintf('The "git push" completed but there was a deployment error ("<error>%s</error>").', $message));
+                $this->stdErr->writeln(\sprintf('The push completed but there was a deployment error ("<error>%s</error>").', $message));
 
                 return self::PUSH_FAILURE_EXIT_CODE;
             }

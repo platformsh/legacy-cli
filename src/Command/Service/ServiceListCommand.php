@@ -86,20 +86,31 @@ class ServiceListCommand extends CommandBase
 
     private function recommendOtherCommands(EnvironmentDeployment $deployment)
     {
-        if ($deployment->webapps || $deployment->workers) {
-            $this->stdErr->writeln('');
-        }
+        $lines = [];
+        $executable = $this->config()->get('application.executable');
         if ($deployment->webapps) {
-            $this->stdErr->writeln(sprintf(
+            $lines[] = sprintf(
                 'To list applications, run: <info>%s apps</info>',
-                $this->config()->get('application.executable')
-            ));
+                $executable
+            );
         }
         if ($deployment->workers) {
-            $this->stdErr->writeln(sprintf(
+            $lines[] = sprintf(
                 'To list workers, run: <info>%s workers</info>',
-                $this->config()->get('application.executable')
-            ));
+                $executable
+            );
+        }
+        if ($info = $deployment->getProperty('project_info', false)) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config()->get('api.sizing') && $this->config()->isCommandEnabled('resources:set')) {
+                $lines[] = sprintf(
+                    "To configure resources, run: <info>%s resources:set</info>",
+                    $executable
+                );
+            }
+        }
+        if ($lines) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln($lines);
         }
     }
 }
