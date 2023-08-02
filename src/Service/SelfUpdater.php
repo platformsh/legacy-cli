@@ -96,9 +96,13 @@ class SelfUpdater
             // Instructions for users who are running a global Composer install.
             if (defined('CLI_ROOT') && file_exists(CLI_ROOT . '/../../autoload.php')) {
                 $this->stdErr->writeln("Update using:\n\n  composer global update");
-                $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
-                $this->stdErr->writeln("  composer global remove " . $this->config->get('application.package_name'));
-                $this->stdErr->writeln("  curl -sS " . $this->config->get('application.installer_url') . " | php\n");
+                if ($this->config->has('application.package_name')) {
+                    $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
+                    $this->stdErr->writeln("  composer global remove " . $this->config->get('application.package_name'));
+                    $this->stdErr->writeln("  curl -sS " . $this->config->get('application.installer_url') . " | php\n");
+                } else {
+                    $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>)\n");
+                }
             }
 
             return false;

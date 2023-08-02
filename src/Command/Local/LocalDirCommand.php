@@ -33,8 +33,8 @@ class LocalDirCommand extends CommandBase
             'builds' => $this->config()->get('local.build_dir'),
             'local' => $this->config()->get('local.local_dir'),
             'shared' => $this->config()->get('local.shared_dir'),
-            'web' => $this->config()->get('local.web_root'),
-            'web_root' => $this->config()->get('local.web_root'),
+            'web' => $this->config()->getWithDefault('local.web_root', '_www'),
+            'web_root' => $this->config()->getWithDefault('local.web_root', '_www'),
         ];
 
         $subDir = $input->getArgument('subdir');

@@ -18,7 +18,7 @@ class PasswordLoginCommand extends CommandBase
         $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:password-login');
-        if ($this->config()->get('application.login_method') === 'password') {
+        if ($this->config()->getWithDefault('application.login_method', 'browser') === 'password') {
             $this->setAliases(['login']);
         }
 

@@ -123,7 +123,7 @@ EOF
             $this->stdErr->writeln('Removing old "www" symlink.');
             $fs->remove($legacyRoot . '/www');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('After running <comment>' . $this->config()->get('application.executable') . ' build</comment>, your web root will be at: <comment>' . $this->config()->get('local.web_root') . '</comment>');
+            $this->stdErr->writeln('After running <comment>' . $this->config()->get('application.executable') . ' build</comment>, your web root will be at: <comment>' . $this->config()->getWithDefault('local.web_root', '_www') . '</comment>');
             $this->stdErr->writeln('You may need to update your local web server configuration.');
             $this->stdErr->writeln('');
         }

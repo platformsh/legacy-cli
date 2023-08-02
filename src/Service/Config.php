@@ -207,7 +207,7 @@ class Config
      */
     public function getSessionId()
     {
-        return $this->get('api.session_id') ?: 'default';
+        return $this->getWithDefault('api.session_id', 'default');
     }
 
     /**
@@ -477,7 +477,7 @@ class Config
         if (isset($this->version)) {
             return $this->version;
         }
-        $version = $this->get('application.version');
+        $version = $this->getWithDefault('application.version', '@version-placeholder@');
         if (substr($version, 0, 1) === '@' && substr($version, -1) === '@') {
             // Silently try getting the version from Git.
             $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
@@ -552,7 +552,7 @@ class Config
             // See https://www.php.net/manual/en/context.http.php
             'http' => [
                 'method' => 'GET',
-                'timeout' => $timeout !== null ? $timeout : $this->get('api.default_timeout'),
+                'timeout' => $timeout !== null ? $timeout : $this->getWithDefault('api.default_timeout', 30),
                 'user_agent' => $this->getUserAgent(),
             ],
         ];
@@ -565,7 +565,7 @@ class Config
         }
 
         // Set up SSL options.
-        if ($this->get('api.skip_ssl')) {
+        if ($this->getWithDefault('api.skip_ssl', false)) {
             $opts['ssl']['verify_peer'] = false;
             $opts['ssl']['verify_peer_name'] = false;
         } else {

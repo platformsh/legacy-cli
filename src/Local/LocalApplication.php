@@ -133,7 +133,7 @@ class LocalApplication
      */
     public function getLocalWebRoot($destination = null)
     {
-        $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->get('local.web_root');
+        $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->getWithDefault('local.web_root', '_www');
         if ($this->isSingle()) {
             return $destination;
         }

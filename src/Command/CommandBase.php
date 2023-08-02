@@ -404,13 +404,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Check if updates are configured.
         $config = $this->config();
-        if (!$config->get('updates.check')) {
+        if (!$config->getWithDefault('updates.check', true)) {
             return;
         }
 
         // Determine an embargo time, after which updates can be checked.
         $timestamp = time();
-        $embargoTime = $timestamp - $config->get('updates.check_interval');
+        $embargoTime = $timestamp - (int) $config->getWithDefault('updates.check_interval', 604800);
 
         // Stop if updates were last checked after the embargo time.
         /** @var \Platformsh\Cli\Service\State $state */
@@ -428,7 +428,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // update.
         $this->getService('question_helper');
         $this->getService('shell');
-        $currentVersion = $this->config()->get('application.version');
+        $currentVersion = $this->config()->getVersion();
 
         /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
         $cliUpdater = $this->getService('self_updater');

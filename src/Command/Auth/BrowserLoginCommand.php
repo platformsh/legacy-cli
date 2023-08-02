@@ -24,7 +24,7 @@ class BrowserLoginCommand extends CommandBase
         $applicationName = $this->config()->get('application.name');
 
         $this->setName('auth:browser-login');
-        if ($this->config()->get('application.login_method') === 'browser') {
+        if ($this->config()->getWithDefault('application.login_method', 'browser') === 'browser') {
             $this->setAliases(['login']);
         }
 
@@ -342,7 +342,7 @@ class BrowserLoginCommand extends CommandBase
                 'code_verifier' => $codeVerifier,
             ],
             'auth' => false,
-            'verify' => !$this->config()->get('api.skip_ssl'),
+            'verify' => !$this->config()->getWithDefault('api.skip_ssl', false),
         ]);
 
         try {

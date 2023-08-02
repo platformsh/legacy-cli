@@ -18,7 +18,7 @@ class ApiTokenLoginCommand extends CommandBase
         $executable = $this->config()->get('application.executable');
 
         $this->setName('auth:api-token-login');
-        if ($this->config()->get('application.login_method') === 'api-token') {
+        if ($this->config()->getWithDefault('application.login_method', 'browser') === 'api-token') {
             $this->setAliases(['login']);
         }
 
