@@ -1,7 +1,5 @@
 The **Legacy** Platform.sh CLI is the legacy version of the command-line interface for [Platform.sh](https://platform.sh). For the **current Platform.sh CLI**, check [this repository](https://github.com/platformsh/cli).
 
-[![Build Status](https://api.travis-ci.com/platformsh/platformsh-cli.svg)](https://travis-ci.com/github/platformsh/platformsh-cli) [![License](https://poser.pugx.org/platformsh/cli/license)](https://github.com/platformsh/platformsh-cli/blob/main/LICENSE)
-
 ## Install
 
 To install the CLI, use either [Homebrew](https://brew.sh/) (on Linux, macOS, or the Windows Subsystem for Linux) or [Scoop](https://scoop.sh/) (on Windows):

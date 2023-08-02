@@ -28,8 +28,6 @@ Run tests with:
 ./scripts/test/unit.sh
 ```
 
-Tests are also run on Travis CI: https://travis-ci.org/platformsh/platformsh-cli
-
 ## Developing in a docker container
 
 If you don't have PHP installed locally or for other reasons want to do development on the
