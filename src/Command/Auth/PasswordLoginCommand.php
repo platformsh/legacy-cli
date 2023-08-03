@@ -25,12 +25,15 @@ class PasswordLoginCommand extends CommandBase
         $this->setHiddenAliases(['auth:login']);
         $this->setDescription('Log in to ' . $service . ' using a username and password');
 
-        $help = 'Use this command to log in to your ' . $service . ' account in the terminal.'
-            . "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>'
-            . "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
-            . $this->config()->get('service.reset_password_url') . '</info>'
-            . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
-            . $executable . ' auth:browser-login</info>'
+        $help = 'Use this command to log in to your ' . $service . ' account in the terminal.';
+        if ($this->config()->has('service.register_url')) {
+            $help .= "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>';
+        }
+        if ($this->config()->has('service.reset_password_url')) {
+            $help .= "\n\nIf you have an account, but you do not already have a password, you can set one here:\n    <info>"
+                . $this->config()->get('service.reset_password_url') . '</info>';
+        }
+        $help .= "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>" . $executable . ' auth:browser-login</info>'
             . "\n\n" . $this->getNonInteractiveAuthHelp();
         $this->setHelp($help);
     }

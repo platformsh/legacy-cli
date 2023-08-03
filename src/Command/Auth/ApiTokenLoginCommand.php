@@ -24,12 +24,15 @@ class ApiTokenLoginCommand extends CommandBase
 
         $this->setDescription('Log in to ' . $service . ' using an API token');
 
-        $help = 'Use this command to log in to your ' . $service . ' account using an API token.'
-            . "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>'
-            . "\n\nIf you have an account, but you do not already have an API token, you can create one here:\n    <info>"
-            . $this->config()->get('service.api_tokens_url') . '</info>'
-            . "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>"
-            . $executable . ' auth:browser-login</info>';
+        $help = 'Use this command to log in to your ' . $service . ' account using an API token.';
+        if ($this->config()->has('service.register_url')) {
+            $help .= "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>';
+        }
+        if ($this->config()->has('service.api_tokens_url')) {
+            $help .= "\n\nIf you have an account, but you do not already have an API token, you can create one here:\n    <info>"
+                . $this->config()->get('service.api_tokens_url') . '</info>';
+        }
+        $help .= "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>" . $executable . ' auth:browser-login</info>';
         $this->setHelp($help);
     }
 

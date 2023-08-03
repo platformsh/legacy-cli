@@ -96,16 +96,30 @@ service:
   app_config_file: '.platform.app.yaml'
   project_config_dir: '.platform'
   applications_config_file: '.platform/applications.yaml'
+
+  # Console URL used for help in various commands.
+  # Technically optional but recommended.
+  console_url: 'https://console.platform.sh'
+
+  # URLs required to enable the 'docs' command.
   docs_url: 'https://docs.platform.sh'
   docs_search_url: 'https://docs.platform.sh/search.html?q={{ terms }}'
-  api_tokens_url: 'https://accounts.platform.sh/user/api-tokens'
+
+  # Optional URLs used for help in the 'login' commands:
+  api_tokens_url: ~
   register_url: 'https://auth.api.platform.sh'
   reset_password_url: 'https://auth.api.platform.sh/reset-password'
+
+  # Optional MFA/2FA setup URL for help in SSH certificate commands.
   mfa_setup_url: ~
-  console_url: 'https://console.platform.sh'
+
+  # Optional pricing URL used for help in the 'create' command.
   pricing_url: 'https://platform.sh/pricing'
-  api_token_help_url: 'https://docs.platform.sh/gettingstarted/cli/api-tokens.html'
+
+  # Optional activity type docs URL used for help in 'activity' commands.
   activity_type_list_url: 'https://docs.platform.sh/integrations/activity/reference.html#type'
+
+  # Used for the static list of regions and plans in the 'create' command.
   available_regions:
     - eu-2.platform.sh
     - us-3.platform.sh

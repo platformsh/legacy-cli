@@ -20,6 +20,13 @@ class DocsCommand extends CommandBase
         Url::configureInput($this->getDefinition());
     }
 
+    public function isEnabled()
+    {
+        return $this->config()->has('service.docs_url')
+            && $this->config()->has('service.docs_search_url')
+            && parent::isEnabled();
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ($searchArguments = $input->getArgument('search')) {
