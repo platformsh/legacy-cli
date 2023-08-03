@@ -58,8 +58,7 @@ abstract class DomainCommandBase extends CommandBase
                 || ($input->hasOption('attach') && $input->getOption('attach') !== null)
                 || ($input->hasOption('replace') && $input->getOption('replace') !== null);
 
-            $capabilities = $project->getCapabilities();
-            $supportsNonProduction = !empty($capabilities->custom_domains['enabled']);
+            $supportsNonProduction = $this->supportsNonProductionDomains($project);
 
             if ($forEnvironment) {
                 $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
@@ -212,5 +211,22 @@ abstract class DomainCommandBase extends CommandBase
             }
         }
         throw $e;
+    }
+
+    /**
+     * Checks if a project supports non-production domains.
+     *
+     * @param Project $project
+     *
+     * @return bool
+     */
+    protected function supportsNonProductionDomains(Project $project)
+    {
+        static $cache = [];
+        if (!isset($cache[$project->id])) {
+            $capabilities = $project->getCapabilities();
+            $cache[$project->id] = !empty($capabilities->custom_domains['enabled']);
+        }
+        return $cache[$project->id];
     }
 }
