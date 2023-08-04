@@ -84,6 +84,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $runningViaMulti = false;
 
     /**
+     * Whether the selected project has been printed (e.g. via verbose output).
+     *
+     * @var bool
+     */
+    protected $printedSelectedProject = false;
+
+    /**
      * Whether the selected environment has been printed (e.g. via verbose output).
      *
      * @var bool
@@ -1587,6 +1594,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $project = $this->selectProject($projectId, $projectHost, $detectCurrent);
         if ($this->stdErr->isVerbose()) {
             $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($project));
+            $this->printedSelectedProject = true;
         }
 
         // Select the environment.
@@ -1622,9 +1630,41 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->selectEnvironment($environmentId, !$envNotRequired, $selectDefaultEnv, $detectCurrent);
         }
 
-        if ($this->stdErr->isVerbose() && $this->environment && !$this->printedSelectedEnvironment) {
+        if ($this->stdErr->isVerbose()) {
+            $this->ensurePrintSelectedEnvironment();
+        }
+    }
+
+    /**
+     * Prints the selected project, if it has not already been printed.
+     *
+     * @param bool $blankLine Append an extra newline after the message, if any is printed.
+     */
+    private function ensurePrintSelectedProject($blankLine = false) {
+        if (!$this->printedSelectedProject && $this->project) {
+            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($this->project));
+            $this->printedSelectedProject = true;
+            if ($blankLine) {
+                $this->stdErr->writeln('');
+            }
+        }
+    }
+
+    /**
+     * Prints the selected environment, if it has not already been printed.
+     *
+     * Also prints the selected project if necessary.
+     *
+     * @param bool $blankLine Append an extra newline after the message, if any is printed.
+     */
+    protected function ensurePrintSelectedEnvironment($blankLine = false) {
+        if (!$this->printedSelectedEnvironment && $this->environment) {
+            $this->ensurePrintSelectedProject();
             $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment));
             $this->printedSelectedEnvironment = true;
+            if ($blankLine) {
+                $this->stdErr->writeln('');
+            }
         }
     }
 
@@ -2187,7 +2227,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($input->hasOption('project') && ($id = $input->getOption('project'))) {
             $project = $this->selectProject($id);
-            $this->stdErr->writeln(\sprintf('Selected project: %s', $this->api()->getProjectLabel($project)));
+            $this->ensurePrintSelectedProject();
             $organization = $client->getOrganizationById($project->getProperty('organization'));
             if ($organization) {
                 $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
@@ -2203,7 +2243,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if ($organization) {
                 if ($this->stdErr->isVerbose()) {
-                    $this->stdErr->writeln(\sprintf('Selected project: %s', $this->api()->getProjectLabel($currentProject)));
+                    $this->ensurePrintSelectedProject();
                     $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
                 }
                 return $organization;

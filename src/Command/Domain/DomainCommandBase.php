@@ -20,7 +20,7 @@ abstract class DomainCommandBase extends CommandBase
 
     protected $environmentIsProduction;
 
-    protected $replacementFor;
+    protected $attach;
 
     /**
      * @param InputInterface $input
@@ -52,59 +52,95 @@ abstract class DomainCommandBase extends CommandBase
             }
         }
 
-        if ($input->hasOption('environment') || $input->hasOption('replace')) {
+        if ($input->hasOption('environment') || $input->hasOption('attach')) {
             $project = $this->getSelectedProject();
             $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
+                || ($input->hasOption('attach') && $input->getOption('attach') !== null)
                 || ($input->hasOption('replace') && $input->getOption('replace') !== null);
 
-            $capabilities = $project->getCapabilities();
-            $supportsNonProduction = !empty($capabilities->custom_domains['enabled']);
+            $supportsNonProduction = $this->supportsNonProductionDomains($project);
 
             if ($forEnvironment) {
                 $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
                 $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = $environment->id === $project->default_branch;
+                $this->ensurePrintSelectedEnvironment(true);
             } elseif ($project->default_branch === null) {
                 $this->stdErr->writeln('The <error>default_branch</error> property is not set on the project, so the production environment cannot be determined');
                 return false;
             } else {
                 $this->selectEnvironment($project->default_branch, true, false, false);
-                $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = true;
-                if ($this->stdErr->isVerbose()) {
-                    $this->stdErr->writeln(sprintf('Selected production environment %s by default', $this->api()->getEnvironmentLabel($environment, 'comment')));
-                }
-                if ($input->hasOption('replace') && $supportsNonProduction) {
-                    $this->stdErr->writeln('Use the <comment>--replace</comment> option (and optionally <comment>--environment</comment>) to add a domain to a non-production environment.');
+                if ($input->hasOption('attach') && $supportsNonProduction) {
+                    $this->stdErr->writeln('Use the <comment>--environment</comment> option (and optionally <comment>--attach</comment>) to add a domain to a non-production environment.');
                     $this->stdErr->writeln('');
                 }
             }
 
-            if ($input->hasOption('replace')) {
-                $this->replacementFor = $input->getOption('replace');
-                if (!$this->environmentIsProduction && $this->replacementFor === null) {
-                    $this->stdErr->writeln('The <error>--replace</error> option is required for non-production environment domains.');
-                    $this->stdErr->writeln('This specifies which production domain the new domain will replace.');
+            if ($input->hasOption('attach')) {
+                $this->attach = $input->getOption('attach') ?: $input->getOption('replace');
+                if ($this->environmentIsProduction && $this->attach !== null) {
+                    $this->stdErr->writeln('The <error>--attach</error> option is only valid for non-production environment domains.');
                     return false;
                 }
-                if ($this->environmentIsProduction && $this->replacementFor !== null) {
-                    $this->stdErr->writeln('The <error>--replace</error> option is only valid for non-production environment domains.');
+                if (!$this->environmentIsProduction && !$supportsNonProduction) {
+                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
+                    if ($this->config()->has('warnings.non_production_domains_msg')) {
+                        $this->stdErr->writeln("\n". trim($this->config()->get('warnings.non_production_domains_msg')));
+                    }
                     return false;
                 }
-                if ($this->replacementFor !== null) {
-                    if (!$supportsNonProduction) {
-                        $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
-                        if ($this->config()->has('warnings.non_production_domains_msg')) {
-                            $this->stdErr->writeln("\n". trim($this->config()->get('warnings.non_production_domains_msg')));
+                if (!$this->environmentIsProduction && $this->attach === null) {
+                    $project = $this->getSelectedProject();
+                    try {
+                        $productionDomains = $project->getDomains();
+                        $productionDomainAccess = true;
+                    } catch (BadResponseException $e) {
+                        if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                            $productionDomainAccess = false;
+                            $productionDomains = [];
+                        } else {
+                            throw $e;
                         }
+                    }
+                    if (!$productionDomainAccess) {
+                        $this->stdErr->writeln('The <error>--attach</error> option is required for non-production environment domains.');
+                        $this->stdErr->writeln("This specifies the production domain that this new domain will replace in the environment's routes.");
                         return false;
                     }
+                    if (empty($productionDomains)) {
+                        $this->stdErr->writeln('No production domains found.');
+                        $this->stdErr->writeln("A domain cannot be added to a non-production environment until the production environment has at least one domain.");
+                        return false;
+                    }
+                    if (count($productionDomains) === 1) {
+                        $productionDomain = reset($productionDomains);
+                        $this->attach = $productionDomain->name;
+                    } else {
+                        $choices = [];
+                        $default = $project->getProperty('default_domain', false);
+                        foreach ($productionDomains as $productionDomain) {
+                            if ($productionDomain->name === $default) {
+                                $choices[$productionDomain->name] = $productionDomain->name . ' (default)';
+                            } else {
+                                $choices[$productionDomain->name] = $productionDomain->name;
+                            }
+                        }
+                        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+                        $questionHelper = $this->getService('question_helper');
+                        $questionText = '<options=bold>Attachment</> (<info>--attach</info>)'
+                            . "\nA non-production domain must be attached to an existing production domain."
+                            . "\nIt will inherit the same routing behavior."
+                            . "\nChoose a production domain:";
+                        $this->attach = $questionHelper->choose($choices, $questionText, $default);
+                    }
+                } elseif ($this->attach !== null) {
                     try {
-                        $domain = $project->getDomain($this->replacementFor);
+                        $domain = $project->getDomain($this->attach);
                         if ($domain === false) {
                             $this->stdErr->writeln(sprintf(
-                                'The <comment>--replace</comment> domain was not found: <error>%s</error>',
-                                $this->replacementFor
+                                'The production domain (<comment>--attach</comment>) was not found: <error>%s</error>',
+                                $this->attach
                             ));
                             return false;
                         }
@@ -175,5 +211,22 @@ abstract class DomainCommandBase extends CommandBase
             }
         }
         throw $e;
+    }
+
+    /**
+     * Checks if a project supports non-production domains.
+     *
+     * @param Project $project
+     *
+     * @return bool
+     */
+    protected function supportsNonProductionDomains(Project $project)
+    {
+        static $cache = [];
+        if (!isset($cache[$project->id])) {
+            $capabilities = $project->getCapabilities();
+            $cache[$project->id] = !empty($capabilities->custom_domains['enabled']);
+        }
+        return $cache[$project->id];
     }
 }

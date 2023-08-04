@@ -274,10 +274,9 @@ warnings:
 
   # The message shown when trying to add non-production domains to a project
   # without the capability.
-  # TODO update this when the feature is no longer in beta.
   non_production_domains_msg: |
-    This feature is only available to Enterprise and Elite customers and is currently in beta.
-    If you're an Enterprise or Elite customer, contact support to become a beta tester.
+    This feature is only available to Enterprise and Elite customers.
+    If you're an Enterprise or Elite customer, contact support to enable the feature.
     Otherwise contact sales first to upgrade your plan.
 
     See: https://docs.platform.sh/overview/get-support.html

@@ -17,7 +17,7 @@ class DomainListCommand extends DomainCommandBase
         'created_at' => 'Creation date',
         'updated_at' => 'Updated date',
         'registered_name' => 'Registered name',
-        'replacement_for' => 'Replaces',
+        'replacement_for' => 'Attached domain',
         'type' => 'Type',
     ];
     private $defaultColumns = ['name', 'ssl', 'created_at'];
@@ -111,7 +111,7 @@ class DomainListCommand extends DomainCommandBase
                     ));
                 } else {
                     $this->stdErr->writeln(sprintf(
-                        'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name] --replace [replace]</info>',
+                        'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name] --attach [attach]</info>',
                         $executable,
                         OsUtil::escapeShellArg($environment->name)
                     ));
@@ -154,7 +154,7 @@ class DomainListCommand extends DomainCommandBase
             if ($forEnvironment) {
                 $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' [domain-name]';
                 if (!$this->getSelectedEnvironment()->is_main) {
-                    $exampleAddArgs .= ' -r [replace]';
+                    $exampleAddArgs .= ' --attach [attach]';
                 }
             } else {
                 $exampleAddArgs = $exampleArgs = '[domain-name]';

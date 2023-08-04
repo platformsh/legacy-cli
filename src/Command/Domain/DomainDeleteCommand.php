@@ -1,13 +1,13 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\EnvironmentDomain;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DomainDeleteCommand extends CommandBase
+class DomainDeleteCommand extends DomainCommandBase
 {
     /**
      * {@inheritdoc}
@@ -49,11 +49,36 @@ class DomainDeleteCommand extends CommandBase
             return 1;
         }
 
+        // Show a warning about non-production domains when deleting a
+        // production one.
+        //
+        // This is shown regardless of whether any non-production domains exist,
+        // because looping through all the non-production environments to fetch
+        // their domains would not be scalable.
+        $isProductionDomain = $domain->getProperty('type', false) === 'production'
+            || (!$forEnvironment || $this->getSelectedEnvironment()->type === 'production');
+        if ($isProductionDomain && $this->supportsNonProductionDomains($project)) {
+            // Check the project has at least 1 non-inactive, non-production environment.
+            $hasNonProductionActiveEnvs = count(array_filter($this->api()->getEnvironments($project), function (Environment $e) {
+                return $e->type !== 'production' && $e->status !== 'inactive';
+            })) > 0;
+            if ($hasNonProductionActiveEnvs) {
+                $this->stdErr->writeln([
+                    '<options=bold>Warning</>',
+                    'If this domain has non-production domains attached to it, they will also be deleted.',
+                    'Non-production environments will not be automatically redeployed.',
+                    'Consider redeploying these environments so that routes are updated correctly.',
+                    '',
+                ]);
+            }
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         if (!$questionHelper->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
             return 1;
         }
+        $this->stdErr->writeln('');
 
         $result = $domain->delete();
 
