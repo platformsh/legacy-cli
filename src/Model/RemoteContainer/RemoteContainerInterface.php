@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Model\RemoteContainer;
 
+use Platformsh\Client\Model\Deployment\RuntimeOperation;
+
 /**
  * Represents a resource that provides an SSH server.
  */
@@ -29,4 +31,11 @@ interface RemoteContainerInterface
      * @return \Platformsh\Cli\Model\AppConfig
      */
     public function getConfig();
+
+    /**
+     * Returns runtime operations defined on the app or worker.
+     *
+     * @return array<string, RuntimeOperation>
+     */
+    public function getRuntimeOperations();
 }

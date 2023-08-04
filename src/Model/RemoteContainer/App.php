@@ -42,4 +42,12 @@ class App implements RemoteContainerInterface
     public function getConfig() {
         return AppConfig::fromWebApp($this->webApp);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRuntimeOperations()
+    {
+        return $this->webApp->getRuntimeOperations();
+    }
 }

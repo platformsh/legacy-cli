@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Model\RemoteContainer;
 
 use Platformsh\Cli\Model\AppConfig;
+use Platformsh\Client\Model\Deployment\RuntimeOperation;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Deployment\Worker as DeployedWorker;
 
@@ -41,5 +42,13 @@ class Worker implements RemoteContainerInterface
      */
     public function getConfig() {
         return new AppConfig($this->worker->getProperties());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRuntimeOperations()
+    {
+        return $this->worker->getRuntimeOperations();
     }
 }
