@@ -69,7 +69,7 @@ class Ssh implements InputConfiguringInterface
         }
         if (!empty($remoteCommand)) {
             if (is_array($remoteCommand)) {
-                $args[] = $this->argsToString($remoteCommand);
+                $args[] = count($remoteCommand) > 1 ? $this->argsToString($remoteCommand) : reset($remoteCommand);
             } else {
                 $args[] = $remoteCommand;
             }
