@@ -104,7 +104,7 @@ class ActivityCancelCommand extends ActivityCommandBase
             if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && \strpos($e->getMessage(), 'cannot be cancelled')) {
                 if (\strpos($e->getMessage(), 'cannot be cancelled in its current state')) {
                     $activity->refresh();
-                    $this->stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->id, $activity->state));
+                    $this->stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->state));
                 } else {
                     $this->stdErr->writeln(\sprintf('The activity <error>%s</error> cannot be cancelled.', $activity->id));
                 }
