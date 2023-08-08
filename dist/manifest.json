@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.8.1",
-        "sha1": "e385ad2b41a726af036e4e75e578791695b2a792",
-        "sha256": "16873c481278d19dd6686b443b3d1e2a78d4553542bda22e2081e06c8fd6d687",
+        "version": "4.8.2",
+        "sha1": "5b756b4e7a6af9323e3d4e59f38e789be6ea73e2",
+        "sha256": "7c7065b79f8448514735010e346e2ff6e61c19816c14e6ca82efb4340df79aa5",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -27,7 +27,8 @@
             "4.7.1": "* Restore the check to prevent deleting parent environments.  \n  The check had been imprudently removed in `v4.7.0`.  \n  This adds an option `--allow-delete-parent` as a way to skip the check.\n* Improve singular/plural output formatting in `env:delete`.\n* Improve the check for the production environment in the `push` command.\n* Only check for updates if the containing directory is writable (for legacy\n  only-Phar installations).\n* Dependency updates:\n  - Bump giggsey/libphonenumber-for-php from 8.13.12 to 8.13.15\n  - Bump composer/ca-bundle from 1.3.5 to 1.3.6\n* SSH error handling improvements:\n  - Avoiding recommending `ssh-keyscan` as it could be confusing.\n  - Improve SSH error message when an environment is inactive.\n  - Set timeout on test SSH connection.",
             "4.7.2": "* Add support for checking whether ticket-based user verification is required.\n* Fix \"Incorrectly nested style tag found\" error. This was caused by bad\n  formatting for the \"login required\" exception message when wrapped for\n  narrower terminals.",
             "4.8.0": "New features:\n\n* Support runtime operations:\n  - Add an `op:list` (`ops`) command to list operations.\n  - Add an `op:run` command to execute an operation.\n* Allow a dot (`.`) to select the default environment in the\n  `--environment` (`-e`) option.\n* Config improvements:\n  - Add more defaults for generic values.\n  - Document defaults in the config.yaml file.\n  - Support `CLI_CONFIG_FILE` to override the config (for internal use).\n* Custom (non-production) domains improvements:\n  - Present an interactive choice of domain to attach.\n  - Warn about attached domains on deletion.\n  - Compatibility with project system version 22 (omit `type` parameter when\n    creating a domain).\n  - Remove beta messaging.\n  - Change `--replace` to `--attach`.\n\nOther changes:\n\n* Improve printing of the selected project and environment.\n* Split list/array args by commas (not just the first arg).\n* Bump giggsey/libphonenumber-for-php from 8.13.15 to 8.13.17.\n* Add organization metadata in the `org:user:projects` command.\n* Improvements to the `project:get` (`get`) command:\n  - Always display Git errors.\n  - Allow the `build` command to be disabled.\n  - Remove the recommendation to build after cloning.\n* Improve activity log handling:\n  - Handle multiple activities on environment actions.\n  - Prioritize displaying the log if there is one non-integration activity.\n  - Display activity descriptions before waiting for them.\n  - Improve elapsed time formatting.\n* Suggest exclusions in the `activity:list` command.\n* Add shortcuts for `--exclude-type` (`-x`) and `--type` (`-t`) to more\n  activity commands.\n* Fix quoting of SSH arguments when multiple are given on the command line.  \n  For example the following command will now work:\n  ```\n  platform ssh -- sed -n '/04\\/Aug\\/2023\\:09\\:40/, /04\\/Aug\\/2023\\:09\\:45/p' /var/log/access.log\n  ```\n* Improve Drupal app detection via composer packages.\n* Improvements to the `branch` command, including removing the `--force` option.\n* Recommend `project:create` from `project:list`.\n* Fix interactive selection of project-level variables.\n* Fix \"Link not found: #manage-variables\" when the user has read-only variables access.\n* Alias `project:set-remote` as `set-remote`\n* Allow paused environments to be deactivated.\n* Update the legacy region condition in `backup:restore`.",
-            "4.8.1": "* Fix quoting an ssh command when provided as a single arg"
+            "4.8.1": "* Fix quoting an ssh command when provided as a single arg",
+            "4.8.2": "* Fix activity:cancel state error message\n* Fix PHP < 7.3 compatibility (parse error for RuntimeOperation\\ListCommand.php)"
         }
     },
     {
