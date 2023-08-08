@@ -93,7 +93,7 @@ class ListCommand extends CommandBase
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Runtime operations on the environment %s:',
-                    $this->api()->getEnvironmentLabel($this->getSelectedEnvironment()),
+                    $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
                 ));
             }
         }
