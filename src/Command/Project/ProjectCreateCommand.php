@@ -335,6 +335,23 @@ EOF
     }
 
     /**
+     * Picks a default plan from a list.
+     *
+     * @param string[] $availablePlans
+     * @return string|null
+     */
+    protected function getDefaultPlan($availablePlans)
+    {
+        if (count($availablePlans) === 1) {
+            return reset($availablePlans);
+        }
+        if (in_array('development', $availablePlans)) {
+            return 'development';
+        }
+        return null;
+    }
+
+    /**
      * Return a list of regions.
      *
      * The default list is in the config `service.available_regions`. This is
@@ -432,7 +449,7 @@ EOF
             'optionsCallback' => function () use ($setupOptions) {
                 return $this->getAvailablePlans(true, $setupOptions);
             },
-            'default' => in_array('development', $this->getAvailablePlans(false, $setupOptions)) ? 'development' : null,
+            'default' => $this->getDefaultPlan($this->getAvailablePlans(false, $setupOptions)),
             'allowOther' => true,
             'avoidQuestion' => true,
           ]),
