@@ -39,6 +39,18 @@ class AllMetricsCommand extends MetricsCommandBase
         'tmp_inodes_used' => '/tmp inodes used',
         'tmp_inodes_limit' => '/tmp inodes limit',
         'tmp_inodes_percent' => '/tmp inodes %',
+
+        'http_request_rate' => 'Request rate',
+        'http_response_count' => 'Response count',
+        'http_response_status' => 'Response status',
+        'http_request_size' => 'Request size',
+        'http_response_size' => 'Response size',
+        'http_bandwidth_total' => 'Bandwidth: total',
+        'http_bandwidth_avg' => 'Bandwidth: average',
+        'http_request_url_method_count' => 'Request URL + method count',
+        'http_request_url_method_impact' => 'Request URL + method impact',
+        'http_request_url_method_duration_avg' => 'Request duration: average',
+        'http_request_url_method_duration_p95' => 'Request duration: P95',
     ];
 
     private $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
@@ -118,6 +130,18 @@ class AllMetricsCommand extends MetricsCommandBase
             'tmp_inodes_used' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_inodes_limit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_inodes_percent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
+
+            'http_request_rate' => new Field('http_request_rate', Field::FORMAT_ROUNDED),
+            'http_response_count' => new Field('http_response_count', Field::FORMAT_ROUNDED),
+            'http_response_status' => new Field('http_response_status', Field::FORMAT_ROUNDED),
+            'http_request_size' => new Field('http_request_size', Field::FORMAT_ROUNDED),
+            'http_response_size' => new Field('http_response_size', Field::FORMAT_ROUNDED),
+            'http_bandwidth_total' => new Field('http_bandwidth_total', Field::FORMAT_DISK),
+            'http_bandwidth_avg' => new Field('http_bandwidth_avg', Field::FORMAT_DISK),
+            'http_request_url_method_count' => new Field('http_request_url_method_count', Field::FORMAT_ROUNDED),
+            'http_request_url_method_impact' => new Field('http_request_url_method_impact', Field::FORMAT_ROUNDED),
+            'http_request_url_method_duration_avg' => new Field('http_request_url_method_duration_avg', Field::FORMAT_ROUNDED),
+            'http_request_url_method_duration_p95' => new Field('http_request_url_method_duration_p95', Field::FORMAT_ROUNDED),
         ]);
 
         if (!$table->formatIsMachineReadable()) {

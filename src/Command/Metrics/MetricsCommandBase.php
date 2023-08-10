@@ -85,6 +85,20 @@ abstract class MetricsCommandBase extends CommandBase
             'disk_limit' => "AVG(`disk.space.limit`, 'mountpoint')",
             'inodes_limit' => "AVG(`disk.inodes.limit`, 'mountpoint')",
         ],
+        // HTTP metrics (apply to all).
+        'http' => [
+            'http_request_rate' => "AVG(SUM(`http.request`) / `interval`)",
+            'http_response_count' => "SUM(`http.response`)",
+            'http_response_status' => "SUM(`http.response`, 'http.response.code')",
+            'http_request_bytes' => "SUM(`app.http.request.header.size` + `app.http.request.body.size`)",
+            'http_response_bytes' => "SUM(`app.http.response.header.size` + `app.http.response.body.size`)",
+            'http_bandwidth_total_bytes' => "SUM(`app.http.request.header.size` + `app.http.request.body.size` + `app.http.response.header.size` + `app.http.response.body.size`)",
+            'http_bandwidth_avg_bytes' => "AVG(`app.http.request.header.size` + `app.http.request.body.size` + `app.http.response.header.size` + `app.http.response.body.size`)",
+            'http_request_url_method_count' => "SUM(`http.request`, 'http.request.url', 'http.request.method')",
+            'http_request_url_method_impact' => "100 * (SUM(`http.request`, 'http.request.url', 'http.request.method') / SUM(`http.request`))",
+            'http_request_url_method_duration_avg' => "AVG(`tracing.duration`, 'http.request.url', 'http.request.method')",
+            'http_request_url_method_duration_p95' => "QUANTILE(SUM(`tracing.duration`, 'http.request.url', 'http.request.method'), 0.95)",
+        ],
     ];
 
     public function isEnabled()
@@ -208,7 +222,7 @@ abstract class MetricsCommandBase extends CommandBase
             }
             return $f;
         }, $fieldNames);
-        foreach ($this->fields[$deploymentType] as $name => $expression) {
+        foreach (array_merge($this->fields[$deploymentType], $this->fields['http']) as $name => $expression) {
             if (in_array($name, $fieldNames)) {
                 $query->addField($name, $expression);
             }
@@ -249,6 +263,9 @@ abstract class MetricsCommandBase extends CommandBase
                 $query->addFilter('service', reset($selectedServiceNames));
             }
         }
+
+        // TODO this is only for HTTP metrics?
+        //$query->addFilter('kind', 'SERVER');
 
         if ($this->stdErr->isDebug()) {
             $this->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
@@ -494,7 +511,7 @@ abstract class MetricsCommandBase extends CommandBase
                 $serviceRows = [];
                 foreach ($byDimension as $values) {
                     $row = [];
-                    $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, ['wrap' => false]);
+                    $row['timestamp'] = $formattedTimestamp;
                     $row['service'] = $service;
                     $row['type'] = $formatter->format($type, 'service_type');
                     foreach ($fields as $columnName => $field) {
@@ -537,11 +554,13 @@ abstract class MetricsCommandBase extends CommandBase
         $infoKeys = array_flip(['service', 'timestamp', 'instance', 'type']);
         $previous = $previousKey = null;
         foreach (array_keys($rows) as $key) {
-            // Merge rows if they do not have any keys in common except for
-            // $infoKeys, and if their values are the same for those keys.
+            // Merge rows if they are equal, or if they do not have any keys
+            // in common except for $infoKeys, and if their values are the same
+            // for those keys.
             if ($previous !== null
-                && !array_intersect_key(array_diff_key($rows[$key], $infoKeys), array_diff_key($previous, $infoKeys))
-                && array_intersect_key($rows[$key], $infoKeys) == array_intersect_key($previous, $infoKeys)) {
+                && ($rows[$key] == $previous
+                || (!array_intersect_key(array_diff_key($rows[$key], $infoKeys), array_diff_key($previous, $infoKeys))
+                && array_intersect_key($rows[$key], $infoKeys) == array_intersect_key($previous, $infoKeys)))) {
                 $rows[$key] += $previous;
                 unset($rows[$previousKey]);
             }
