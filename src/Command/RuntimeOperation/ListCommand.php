@@ -43,6 +43,8 @@ class ListCommand extends CommandBase
         $this->validateInput($input);
         $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
 
+        // Fetch a list of operations grouped by service name, either for one
+        // service or all of the services in an environment.
         try {
             if ($input->getOption('app') || $input->getOption('worker')) {
                 $selectedApp = $this->selectRemoteContainer($input);
@@ -57,16 +59,6 @@ class ListCommand extends CommandBase
             throw new ApiFeatureMissingException('This project does not support runtime operations.');
         }
 
-        if (!count($operations)) {
-            $this->stdErr->writeln('No runtime operations found.');
-
-            // @todo link to help
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln("Runtime operations can be configured in the application's YAML definition.");
-
-            return 0;
-        }
-
         $rows = [];
         foreach ($operations as $serviceName => $appOperations) {
             foreach ($appOperations as $name => $op) {
@@ -78,6 +70,20 @@ class ListCommand extends CommandBase
                 $row['role'] = $op->role;
                 $rows[] = $row;
             }
+        }
+
+        if (!count($rows)) {
+            $this->stdErr->writeln('No runtime operations found.');
+
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln("Runtime operations can be configured in the application's YAML definition.");
+
+            if ($this->config()->has('service.runtime_operations_help_url')) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('For more information see: ' . $this->config()->get('service.runtime_operations_help_url'));
+            }
+
+            return 0;
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */

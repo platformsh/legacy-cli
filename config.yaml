@@ -139,6 +139,9 @@ service:
   # Optional activity type docs URL used for help in 'activity' commands.
   activity_type_list_url: 'https://docs.platform.sh/integrations/activity/reference.html#type'
 
+  # Optional URL to help about runtime operations.
+  runtime_operations_help_url: 'https://docs.platform.sh/create-apps/runtime-operations.html'
+
   # Used for the static list of regions and plans in the 'create' command.
   available_regions:
     - eu-2.platform.sh
