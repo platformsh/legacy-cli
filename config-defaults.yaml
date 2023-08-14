@@ -274,6 +274,9 @@ api:
   # Whether the Metrics API is enabled.
   metrics: false
 
+  # Whether Git Push Options are enabled.
+  git_push_options: false
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   ## Required keys that must be defined elsewhere:

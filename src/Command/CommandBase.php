@@ -1630,7 +1630,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param bool $blankLine Append an extra newline after the message, if any is printed.
      */
-    private function ensurePrintSelectedProject($blankLine = false) {
+    protected function ensurePrintSelectedProject($blankLine = false) {
         if (!$this->printedSelectedProject && $this->project) {
             $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($this->project));
             $this->printedSelectedProject = true;
@@ -1648,7 +1648,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @param bool $blankLine Append an extra newline after the message, if any is printed.
      */
     protected function ensurePrintSelectedEnvironment($blankLine = false) {
-        if (!$this->printedSelectedEnvironment && $this->environment) {
+        if (!$this->printedSelectedEnvironment) {
+            if (!$this->environment) {
+                $this->ensurePrintSelectedProject($blankLine);
+                return;
+            }
             $this->ensurePrintSelectedProject();
             $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment));
             $this->printedSelectedEnvironment = true;
