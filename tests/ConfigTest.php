@@ -6,12 +6,12 @@ use Platformsh\Cli\Service\Config;
 
 class ConfigTest extends \PHPUnit_Framework_TestCase
 {
-    private $defaultsFile;
+    private $configFile;
 
     public function __construct($name = null, array $data = array(), $dataName = '')
     {
         parent::__construct($name, $data, $dataName);
-        $this->defaultsFile = __DIR__ . '/data/mock-cli-config.yaml';
+        $this->configFile = __DIR__ . '/data/mock-cli-config.yaml';
     }
 
     /**
@@ -19,7 +19,7 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
      */
     public function testLoadMainConfig()
     {
-        $config = new Config([], $this->defaultsFile);
+        $config = new Config([], $this->configFile);
         $this->assertTrue($config->has('application.name'));
         $this->assertFalse($config->has('nonexistent'));
         $this->assertEquals('Mock CLI', $config->get('application.name'));
@@ -28,14 +28,14 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
 
     public function testGetHomeDirectory()
     {
-        $homeDir = (new Config(['HOME' => '.'], $this->defaultsFile))->getHomeDirectory();
+        $homeDir = (new Config(['HOME' => '.'], $this->configFile))->getHomeDirectory();
         $this->assertNotEmpty($homeDir, 'Home directory returned');
         $this->assertNotEquals('.', $homeDir, 'Home directory not relative');
 
-        $homeDir = (new Config(['MOCK_CLI_HOME' => __DIR__ . '/data', 'HOME' => __DIR__],  $this->defaultsFile))->getHomeDirectory();
+        $homeDir = (new Config(['MOCK_CLI_HOME' => __DIR__ . '/data', 'HOME' => __DIR__],  $this->configFile))->getHomeDirectory();
         $this->assertEquals(__DIR__ . '/data', $homeDir, 'Home directory overridden');
 
-        $homeDir = (new Config(['MOCK_CLI_HOME' => '', 'HOME' => __DIR__],  $this->defaultsFile))->getHomeDirectory();
+        $homeDir = (new Config(['MOCK_CLI_HOME' => '', 'HOME' => __DIR__],  $this->configFile))->getHomeDirectory();
         $this->assertEquals(__DIR__, $homeDir, 'Empty value treated as nonexistent');
     }
 
@@ -44,15 +44,15 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
      */
     public function testEnvironmentOverrides()
     {
-        $config = new Config([], $this->defaultsFile);
-        $this->assertFalse($config->has('api.debug'));
-        putenv('MOCK_CLI_DISABLE_CACHE=1');
+        $config = new Config([], $this->configFile);
+        $this->assertFalse($config->has('service.slug'));
+        putenv('MOCK_CLI_DISABLE_CACHE=0');
         $config = new Config([
             'MOCK_CLI_APPLICATION_NAME' => 'Overridden application name',
             'MOCK_CLI_DEBUG' => 1,
-        ], $this->defaultsFile);
-        $this->assertNotEmpty($config->get('api.disable_cache'));
-        $this->assertNotEmpty($config->get('api.debug'));
+        ], $this->configFile);
+        $this->assertFalse((bool) $config->get('api.disable_cache'));
+        $this->assertTrue((bool) $config->get('api.debug'));
         $this->assertEquals('Overridden application name', $config->get('application.name'));
     }
 
@@ -61,14 +61,67 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
      */
     public function testUserConfigOverrides()
     {
-        $config = new Config([], $this->defaultsFile);
+        $config = new Config([], $this->configFile);
         $this->assertFalse($config->has('experimental.test'));
         $home = getenv('HOME');
         putenv('HOME=' . __DIR__ . '/data');
-        $config = new Config([], $this->defaultsFile);
+        $config = new Config([], $this->configFile);
         putenv('HOME=' . $home);
         $this->assertTrue($config->has('experimental.test'));
         $this->assertTrue($config->get('experimental.test'));
-        $this->assertNotEquals('Attempted override', $config->get('application.name'));
+    }
+
+    /**
+     * Test misc. dynamic defaults.
+     */
+    public function testDynamicDefaults()
+    {
+        $config = new Config([], $this->configFile);
+        $this->assertEquals('mock-cli', $config->get('application.slug'));
+        $this->assertEquals('mock-cli-tmp', $config->get('application.tmp_sub_dir'));
+        $this->assertEquals('mock-cli', $config->get('api.oauth2_client_id'));
+        $this->assertEquals('console.example.com', $config->get('detection.console_domain'));
+        $this->assertEquals('api.example.com', $config->get('detection.api_domain_suffix'));
+        $this->assertEquals('.mock/applications.yaml', $config->get('service.applications_config_file'));
+    }
+
+    /**
+     * Test dynamic defaults for URLs.
+     */
+    public function testDynamicUrlDefaults()
+    {
+        $config = new Config(['MOCK_CLI_AUTH_URL' => 'https://auth.example.com'], $this->configFile);
+        $this->assertEquals('https://auth.example.com/oauth2/token', $config->get('api.oauth2_token_url'));
+        $this->assertEquals('https://auth.example.com/oauth2/authorize', $config->get('api.oauth2_auth_url'));
+        $this->assertEquals('https://auth.example.com/oauth2/revoke', $config->get('api.oauth2_revoke_url'));
+    }
+
+    /**
+     * Test dynamic defaults for local paths.
+     */
+    public function testLocalPathDefaults()
+    {
+        $config = new Config([], $this->configFile);
+        $this->assertEquals('.mock/local', $config->get('local.local_dir'));
+        $this->assertEquals('.mock/local/project.yaml', $config->get('local.project_config'));
+        $this->assertEquals('.mock/local/builds', $config->get('local.build_dir'));
+        $this->assertEquals('.mock/local/build-archives', $config->get('local.archive_dir'));
+        $this->assertEquals('.mock/local/deps', $config->get('local.dependencies_dir'));
+        $this->assertEquals('.mock/local/shared', $config->get('local.shared_dir'));
+        putenv('MOCK_CLI_LOCAL_SHARED_DIR=/tmp/shared');
+        $config = new Config([], $this->configFile);
+        $this->assertEquals('/tmp/shared', $config->get('local.shared_dir'));
+    }
+
+    /**
+     * Test the default for application.writable_user_dir
+     */
+    public function testGetWritableUserDir()
+    {
+        $config = new Config([], $this->configFile);
+        $this->assertEquals('mock-cli-user-config', $config->get('application.user_config_dir'));
+        $this->assertEquals(null, $config->get('application.writable_user_dir'));
+        $home = $config->getHomeDirectory();
+        $this->assertEquals($home . DIRECTORY_SEPARATOR . 'mock-cli-user-config', $config->getWritableUserDir());
     }
 }

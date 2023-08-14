@@ -38,12 +38,11 @@ class MountSizeCommand extends CommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addRemoteContainerOptions();
-        $appConfigFile = $this->config()->get('service.app_config_file');
         $this->setHelp(<<<EOF
 Use this command to check the disk size and usage for an application's mounts.
 
 Mounts are directories mounted into the application from a persistent, writable
-filesystem. They are configured in the <info>mounts</info> key in the <info>$appConfigFile</info> file.
+filesystem. They are configured in the <info>mounts</info> key in the application configuration.
 
 The filesystem's total size is determined by the <info>disk</info> key in the same file.
 EOF
@@ -157,10 +156,9 @@ EOF
                 $this->stdErr->writeln('All the mounts share the same disk.');
             }
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf(
-                'To increase the available space, edit the <info>disk</info> key in the <info>%s</info> file.',
-                $this->config()->get('service.app_config_file')
-            ));
+            $this->stdErr->writeln(
+                'To increase the available space, edit the <info>disk</info> key in the application configuration.',
+            );
         }
 
         return 0;

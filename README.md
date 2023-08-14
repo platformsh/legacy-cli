@@ -78,59 +78,12 @@ There are two ways to authenticate:
 ## Customization
 
 You can configure the CLI via the user configuration file `~/.platformsh/config.yaml`.
-These are the possible keys, and their default values:
 
-```yaml
-api:
-  # Whether to disable the docker-credential-helpers credential storage method.
-  # When enabled (default), and if supported, credentials are stored in:
-  #   - OS X: the default keychain
-  #   - Linux: the default collection in the Secret Service
-  #   - Windows: the Credential Manager under "Generic Credentials"
-  # When disabled or not supported, credentials are stored in a hidden file.
-  disable_credential_helpers: false
+The possible keys that can be overridden are in the [config-defaults.yaml](/config-defaults.yaml) and [config.yaml](/config.yaml) files.
 
-application:
-  # The default timezone for times displayed or interpreted by the CLI.
-  # An empty (falsy) value here means the PHP or system timezone will be used.
-  # For a list of timezones, see: http://php.net/manual/en/timezones.php
-  timezone: ~
+Other customization is available via environment variables, including:
 
-  # The default date format string, for dates and times displayed by the CLI.
-  # For a list of formats, see: http://php.net/manual/en/function.date.php
-  date_format: c
-
-  # A directory (relative to the home directory) where the CLI can write
-  # user-specific files, for storing state, logs, credentials, etc.
-  writable_user_dir: '.platformsh'
-
-local:
-  # Set this to true to avoid some Windows symlink issues.
-  copy_on_windows: false
-
-  # Configure the Drush executable to use (defaults to 'drush').
-  drush_executable: null
-
-# Pagination settings.
-#
-# These only affect 2 commands for now: project:list and org:sub:list.
-pagination:
-    # Enable pagination. Can be disabled with --count 0.
-    enabled: true
-    # Items per page. Can be overridden with --count.
-    count: 20
-
-updates:
-  # Whether to check for automatic updates.
-  check: true
-
-  # The interval between checking for updates (in seconds). 604800 = 7 days.
-  check_interval: 604800
-```
-
-Other customization is available via environment variables:
-
-* `PLATFORMSH_CLI_DEBUG`: set to 1 to enable cURL debugging. _Warning_: this will print all request information in the terminal, including sensitive access tokens.
+* `PLATFORMSH_CLI_DEBUG`: set to 1 to enable debugging. _Warning_: this could print HTTP request information in the terminal, including sensitive access tokens.
 * `PLATFORMSH_CLI_DEFAULT_TIMEOUT`: the timeout (in seconds) for most individual API requests. The default is 30.
 * `PLATFORMSH_CLI_DISABLE_CACHE`: set to 1 to disable caching
 * `PLATFORMSH_CLI_HOME`: override the home directory (inside which the .platformsh directory is stored)

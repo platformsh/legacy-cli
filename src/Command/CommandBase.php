@@ -633,8 +633,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
             }
 
-            $method = $this->config()->getWithDefault('application.login_method', 'browser');
-            if ($method === 'browser') {
+            if ($this->config()->getWithDefault('application.login_method', 'browser') === 'browser') {
                 /** @var \Platformsh\Cli\Service\Url $url */
                 $urlService = $this->getService('url');
                 if ($urlService->canOpenUrls()) {
@@ -653,14 +652,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                         $success = $exitCode === 0;
                     }
                 }
-            } elseif ($method === 'password') {
-                if ($sessionAdvice) {
-                    $this->stdErr->writeln($sessionAdvice);
-                    $this->stdErr->writeln('');
-                }
-                $exitCode = $this->runOtherCommand('auth:password-login');
-                $this->stdErr->writeln('');
-                $success = $exitCode === 0;
             }
         }
         if (!$success) {
@@ -708,11 +699,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 if ($suppressErrors && $e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
                     return $this->currentProject = false;
                 }
-                $suffix = $this->config()->getWithDefault('detection.api_domain_suffix', null);
-                if ($suffix && $e->getResponse() && $e->getResponse()->getStatusCode() === 401
-                    && \preg_match('/' . \preg_quote($suffix, '/') . '\.?$/i', $e->getRequest()->getHost()) === 0) {
-                    $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getHost());
-                    return $this->currentProject = false;
+                if ($this->config()->has('detection.api_domain_suffix')) {
+                    $suffix = $this->config()->get('detection.api_domain_suffix');
+                    if ($e->getResponse() && $e->getResponse()->getStatusCode() === 401
+                        && \preg_match('/' . \preg_quote($suffix, '/') . '\.?$/i', $e->getRequest()->getHost()) === 0) {
+                        $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getHost());
+                        return $this->currentProject = false;
+                    }
                 }
                 throw $e;
             }

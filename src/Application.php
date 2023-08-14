@@ -46,8 +46,7 @@ class Application extends ParentApplication
 
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
-            $this->cliConfig->getWithDefault('application.timezone', null)
-                ?: TimezoneUtil::getTimezone()
+            $this->cliConfig->getWithDefault('application.timezone', TimezoneUtil::getTimezone())
         );
 
         $this->addCommands($this->getCommands());
@@ -123,7 +122,6 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\AuthTokenCommand();
         $commands[] = new Command\Auth\LogoutCommand();
         $commands[] = new Command\Auth\ApiTokenLoginCommand();
-        $commands[] = new Command\Auth\PasswordLoginCommand();
         $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Auth\VerifyPhoneNumberCommand();
         $commands[] = new Command\BlueGreen\BlueGreenConcludeCommand();

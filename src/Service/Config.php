@@ -11,7 +11,7 @@ use Symfony\Component\Yaml\Yaml;
 class Config
 {
     private $config;
-    private $defaultsFile;
+    private $configFile;
     private $env;
     private $fs;
     private $version;
@@ -19,18 +19,25 @@ class Config
 
     /**
      * @param array|null  $env
-     * @param string|null $defaultsFile
+     * @param string|null $file
      */
-    public function __construct(array $env = null, $defaultsFile = null)
+    public function __construct(array $env = null, $file = null)
     {
         $this->env = $env !== null ? $env : $this->getDefaultEnv();
 
-        if ($defaultsFile === null) {
-            $defaultsFile = $this->getEnv('CLI_CONFIG_FILE', false) ?: CLI_ROOT . '/config.yaml';
+        if ($file === null) {
+            $file = $this->getEnv('CLI_CONFIG_FILE', false) ?: CLI_ROOT . '/config.yaml';
         }
 
-        $this->defaultsFile = $defaultsFile;
-        $this->config = $this->loadConfigFromFile($this->defaultsFile);
+        $this->configFile = $file;
+
+        $defaultsFile = CLI_ROOT . '/config-defaults.yaml';
+        $defaults = $this->loadConfigFromFile($defaultsFile);
+
+        $config = $this->loadConfigFromFile($this->configFile);
+
+        // Merge the configuration with the defaults.
+        $this->config = array_replace_recursive($defaults, $config);
 
         // Load the session ID from a file.
         $sessionIdFile = $this->getSessionIdFile();
@@ -48,6 +55,7 @@ class Config
 
         $this->applyUserConfigOverrides();
         $this->applyEnvironmentOverrides();
+        $this->applyDynamicDefaults();
 
         // Validate the session ID.
         if (isset($this->config['api']['session_id'])) {
@@ -104,14 +112,17 @@ class Config
      * Get a configuration value, specifying a default if it does not exist.
      *
      * @param string $name
-     * @param mixed  $default
+     * @param mixed $default
+     *   A default. This can be overridden by the config-defaults.yaml file.
+     * @param bool $useDefaultIfNull
+     *   Whether to use the default if the current value is null.
      *
      * @return mixed
      */
-    public function getWithDefault($name, $default)
+    public function getWithDefault($name, $default, $useDefaultIfNull = true)
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
-        if (!$exists) {
+        if (!$exists || ($useDefaultIfNull && $value === null)) {
             return $default;
         }
 
@@ -175,15 +186,21 @@ class Config
     }
 
     /**
+     * Returns a directory where user-specific files can be written.
+     *
+     * This may be for storing state, logs, credentials, etc.
+     *
      * @return string
      */
     public function getWritableUserDir()
     {
-        $path = $this->get('application.writable_user_dir');
+        $path = isset($this->config['application']['writable_user_dir'])
+            ? $this->config['application']['writable_user_dir']
+            : $this->getUserConfigDir(false);
         $configDir = $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path;
 
-        // If the config directory is not writable (e.g. if we are on a
-        // Platform.sh environment), use a temporary directory instead.
+        // If the directory is not writable (e.g. if we are on a Platform.sh
+        // environment), use a temporary directory instead.
         if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
             return sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->get('application.tmp_sub_dir');
         }
@@ -287,7 +304,7 @@ class Config
      */
     public function withOverrides(array $overrides)
     {
-        $config = new self($this->env, $this->defaultsFile);
+        $config = new self($this->env, $this->configFile);
         foreach ($overrides as $key => $value) {
             NestedArrayUtil::setNestedArrayValue($config->config, explode('.', $key), $value);
         }
@@ -344,6 +361,7 @@ class Config
             'ACCOUNTS_API' => 'api.accounts_api_url',
             'API_URL' => 'api.base_url',
             'DEFAULT_TIMEOUT' => 'api.default_timeout',
+            'AUTH_URL' => 'api.auth_url',
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_CLIENT_ID' => 'api.oauth2_client_id',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
@@ -393,51 +411,15 @@ class Config
         return getenv($prefix . $name);
     }
 
-    /**
-     * @return array
-     */
-    private function getUserConfig()
-    {
-        $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
-        if (file_exists($userConfigFile)) {
-            return $this->loadConfigFromFile($userConfigFile);
-        }
-
-        return [];
-    }
-
     private function applyUserConfigOverrides()
     {
-        // A list of allowed overrides.
-        $overrideMap = [
-            'api' => 'api',
-            'local.copy_on_windows' => 'local.copy_on_windows',
-            'local.drush_executable' => 'local.drush_executable',
-            'experimental' => 'experimental',
-            'updates' => 'updates',
-            'application.login_method' => 'application.login_method',
-            'application.writable_user_dir' => 'application.writable_user_dir',
-            'application.date_format' => 'application.date_format',
-            'application.timezone' => 'application.timezone',
-            'pagination' => 'pagination',
-        ];
-
-        $userConfig = $this->getUserConfig();
+        $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
+        if (!file_exists($userConfigFile)) {
+            return;
+        }
+        $userConfig = $this->loadConfigFromFile($userConfigFile);
         if (!empty($userConfig)) {
-            foreach ($overrideMap as $userConfigKey => $configKey) {
-                $value = NestedArrayUtil::getNestedArrayValue($userConfig, explode('.', $userConfigKey), $exists);
-                if ($exists) {
-                    $configParents = explode('.', $configKey);
-                    $default = NestedArrayUtil::getNestedArrayValue($this->config, $configParents, $defaultExists);
-                    if ($defaultExists && is_array($default)) {
-                        if (!is_array($value)) {
-                            continue;
-                        }
-                        $value = array_replace_recursive($default, $value);
-                    }
-                    NestedArrayUtil::setNestedArrayValue($this->config, $configParents, $value, true);
-                }
-            }
+            $this->config = array_replace_recursive($this->config, $userConfig);
         }
     }
 
@@ -522,8 +504,10 @@ class Config
      */
     public function getUserAgent()
     {
-        $template = $this->getWithDefault('api.user_agent', null)
-            ?: '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})';
+        $template = $this->getWithDefault(
+            'api.user_agent',
+            '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})'
+        );
         $replacements = [
             '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->get('application.name')),
             '{APP_NAME}' => $this->get('application.name'),
@@ -613,5 +597,80 @@ class Config
     public function getAll()
     {
         return $this->config;
+    }
+
+    /**
+     * Applies defaults values based on other config values.
+     */
+    private function applyDynamicDefaults()
+    {
+        $this->applyUrlDefaults();
+        $this->applyLocalDirectoryDefaults();
+
+        if (!isset($this->config['application']['slug'])) {
+            $this->config['application']['slug'] = preg_replace('/[^a-z0-9-]+/', '-', str_replace(['.', ' '], ['', '-'], strtolower($this->get('application.name'))));
+        }
+        if (!isset($this->config['application']['tmp_sub_dir'])) {
+            $this->config['application']['tmp_sub_dir'] = $this->get('application.slug') . '-tmp';
+        }
+        if (!isset($this->config['api']['oauth2_client_id'])) {
+            $this->config['api']['oauth2_client_id'] = $this->get('application.slug');
+        }
+        if (!isset($this->config['detection']['console_domain']) && isset($this->config['service']['console_url'])) {
+            $consoleDomain = parse_url($this->config['service']['console_url'], PHP_URL_HOST);
+            if ($consoleDomain !== false) {
+                $this->config['detection']['console_domain'] = $consoleDomain;
+            }
+        }
+        if (!isset($this->config['detection']['api_domain_suffix']) && isset($this->config['api']['base_url'])) {
+            $host = parse_url($this->config['api']['base_url'], PHP_URL_HOST);
+            if ($host !== false) {
+                $this->config['detection']['api_domain_suffix'] = $host;
+            }
+        }
+        if (!isset($this->config['service']['applications_config_file'])) {
+            $this->config['service']['applications_config_file'] = $this->get('service.project_config_dir') . '/applications.yaml';
+        }
+    }
+
+    private function applyUrlDefaults()
+    {
+        $authUrl = $this->getWithDefault('api.auth_url', '');
+        if ($authUrl === '') {
+            return;
+        }
+        $defaultsUnderAuthUrl = [
+            'oauth2_auth_url' => '/oauth2/authorize',
+            'oauth2_token_url' => '/oauth2/token',
+            'oauth2_revoke_url' => '/oauth2/revoke',
+            'certifier_url' => '',
+        ];
+        foreach ($defaultsUnderAuthUrl as $apiSubKey => $path) {
+            if (!isset($this->config['api'][$apiSubKey])) {
+                $this->config['api'][$apiSubKey] = rtrim($authUrl, '/') . $path;
+            }
+        }
+    }
+
+    private function applyLocalDirectoryDefaults()
+    {
+        if (isset($this->config['local']['local_dir'])) {
+            $localDir = $this->config['local']['local_dir'];
+        } else {
+            $localDir = $this->get('service.project_config_dir') . DIRECTORY_SEPARATOR . 'local';
+            $this->config['local']['local_dir'] = $localDir;
+        }
+        $defaultsUnderLocalDir = [
+            'archive_dir' => 'build-archives',
+            'build_dir' => 'builds',
+            'dependencies_dir' => 'deps',
+            'project_config' => 'project.yaml',
+            'shared_dir' => 'shared',
+        ];
+        foreach ($defaultsUnderLocalDir as $localSubKey => $subPath) {
+            if (!isset($this->config['local'][$localSubKey])) {
+                $this->config['local'][$localSubKey] = $localDir . DIRECTORY_SEPARATOR . $subPath;
+            }
+        }
     }
 }

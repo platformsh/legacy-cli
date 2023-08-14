@@ -86,7 +86,11 @@ class EnvironmentXdebugCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('To use Xdebug your project must have an <comment>idekey</comment> value set.');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
+            if ($this->config()->has('service.app_config_file')) {
+                $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
+            } else {
+                $this->stdErr->writeln('Set this in the application configuration file as in this example:');
+            }
             $this->stdErr->writeln(
                 "\n<comment># ...\n"
                 . "runtime:\n"

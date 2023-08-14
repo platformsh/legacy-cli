@@ -1,5 +1,2 @@
 experimental:
   test: true
-
-application:
-  name: 'Attempted override'

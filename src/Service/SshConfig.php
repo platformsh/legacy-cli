@@ -214,7 +214,6 @@ class SshConfig {
             . "\n" . $suggestedConfig;
 
         $writeUserSshConfig = $this->config->getWithDefault('api.write_user_ssh_config', null);
-        $writeUserSshConfig = $writeUserSshConfig === null ? null : (bool) $writeUserSshConfig;
         if ($writeUserSshConfig === false) {
             $this->stdErr->writeln($manualMessage);
             return true;

@@ -127,7 +127,7 @@ class LocalBuildCommand extends CommandBase
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $default = file_exists($this->config()->get('service.app_config_file')) || is_dir('.git') ? '.' : null;
+            $default = file_exists($this->config()->get('service.project_config_dir')) || is_dir('.git') ? '.' : null;
             $sourceDirOption = $questionHelper->askInput('Source directory', $default);
         }
 
@@ -141,7 +141,6 @@ class LocalBuildCommand extends CommandBase
             // source directory.
             if (file_exists($sourceDir . $this->config()->get('local.project_config'))) {
                 $projectRoot = $sourceDir;
-                $sourceDir = $projectRoot;
             }
         } elseif (!$projectRoot) {
             throw new RootNotFoundException('Project root not found. Specify --source or go to a project directory.');

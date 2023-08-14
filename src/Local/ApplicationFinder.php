@@ -141,6 +141,9 @@ class ApplicationFinder
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.
         $finder = new Finder();
+        if (!$this->config->has('service.app_config_file')) {
+            return $finder;
+        }
         return $finder->in($directory)
             ->name($this->config->get('service.app_config_file'))
             ->ignoreDotFiles(false)

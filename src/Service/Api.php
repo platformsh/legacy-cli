@@ -277,13 +277,8 @@ class Api
 
         $connectorOptions['proxy'] = $this->guzzleProxyConfig();
 
-        // Override the OAuth 2.0 token and revoke URLs if provided.
-        if ($this->config->has('api.oauth2_token_url')) {
-            $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
-        }
-        if ($this->config->has('api.oauth2_revoke_url')) {
-            $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
-        }
+        $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
+        $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
 
         $connectorOptions['on_refresh_error'] = function (BadResponseException $e) {
             return $this->onRefreshError($e);

@@ -354,29 +354,23 @@ EOF
     /**
      * Return a list of regions.
      *
-     * The default list is in the config `service.available_regions`. This is
-     * replaced at runtime by an API call.
-     *
-     * @param bool $runtime
      * @param SetupOptions|null $setupOptions
      *
      * @return array<string, string>
      *   A list of region names, mapped to option names.
      */
-    protected function getAvailableRegions($runtime = false, SetupOptions $setupOptions = null)
+    protected function getAvailableRegions(SetupOptions $setupOptions = null)
     {
-        $regions = $runtime ? $this->api()->getClient()->getRegions() : [];
+        $regions = $this->api()->getClient()->getRegions();
+        $available = [];
         if (isset($setupOptions)) {
             $available = $setupOptions->regions;
-        } elseif ($runtime) {
-            $available = [];
+        } else {
             foreach ($regions as $region) {
                 if ($region->available) {
                     $available[] = $region->id;
                 }
             }
-        } else {
-            $available = (array) $this->config()->get('service.available_regions');
         }
 
         \usort($available, [Api::class, 'compareDomains']);
@@ -436,7 +430,6 @@ EOF
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
-            'options' => $this->getAvailableRegions(),
             'optionsCallback' => function () use ($setupOptions) {
                 return $this->getAvailableRegions(true, $setupOptions);
             },

@@ -37,6 +37,11 @@ EOF
         return $localProject->getLegacyProjectRoot() ? false : true;
     }
 
+    public function isEnabled()
+    {
+        return $this->config()->has('local.project_config_legacy') && parent::isEnabled();
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */

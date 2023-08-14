@@ -202,6 +202,9 @@ class LocalProject
      */
     public function getLegacyProjectRoot($startDir = null)
     {
+        if (!$this->config->has('local.project_config_legacy')) {
+            return false;
+        }
         return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'), $startDir);
     }
 
@@ -218,7 +221,7 @@ class LocalProject
 
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        if (is_dir($startDir . '/repository') && file_exists($startDir . '/' . $this->config->get('local.project_config_legacy'))) {
+        if (is_dir($startDir . '/repository') && $this->config->has('local.project_config_legacy') && file_exists($startDir . '/' . $this->config->get('local.project_config_legacy'))) {
             $startDir = $startDir . '/repository';
         }
 
