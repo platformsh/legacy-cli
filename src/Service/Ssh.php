@@ -68,8 +68,16 @@ class Ssh implements InputConfiguringInterface
             $args[] = $uri;
         }
         if (!empty($remoteCommand)) {
+            // The remote command may be provided as 1 argument (escaped
+            // according to the user), or as multiple arguments, in which case
+            // it will be collapsed into a string escaped for the remote POSIX
+            // shell.
             if (is_array($remoteCommand)) {
-                $args[] = count($remoteCommand) > 1 ? $this->argsToString($remoteCommand) : reset($remoteCommand);
+                if (count($remoteCommand) === 1) {
+                    $args[] = reset($remoteCommand);
+                } else {
+                    $args[] = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $remoteCommand));
+                }
             } else {
                 $args[] = $remoteCommand;
             }
@@ -165,14 +173,9 @@ class Ssh implements InputConfiguringInterface
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
         if (!empty($args)) {
-            $command .= ' ' . $this->argsToString($args);
+            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
         }
 
         return $command;
-    }
-
-    private function argsToString(array $args)
-    {
-        return implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $args));
     }
 }
