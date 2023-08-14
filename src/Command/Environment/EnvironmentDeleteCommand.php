@@ -391,7 +391,7 @@ EOF
         }
 
         $deleted = 0;
-        if (count($toDeleteBranch) > 0) {
+        if (count($toDeactivate) > 0 && count($toDeleteBranch) > 0) {
             $this->stdErr->writeln('');
         }
         foreach ($toDeleteBranch as $environmentId => $environment) {
