@@ -405,7 +405,14 @@ abstract class MetricsCommandBase extends CommandBase
     private function defaultInterval($range)
     {
         $divisor = 5; // Number of points per time range.
-        $granularity = 10; // Number of seconds to round to.
+        // Number of seconds to round to:
+        $granularity = 10;
+        foreach ([3600*24, 3600*6, 3600*3, 3600, 600, 300, 60, 30] as $level) {
+            if ($range >= $level * $divisor) {
+                $granularity = $level;
+                break;
+            }
+        }
         $interval = \round($range / ($divisor * $granularity)) * $granularity;
         if ($interval <= self::MIN_INTERVAL) {
             return self::MIN_INTERVAL;
