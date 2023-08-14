@@ -319,6 +319,9 @@ class BrowserLoginCommand extends CommandBase
         if (!file_put_contents($dir . '/index.php', file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {
             throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/index.php');
         }
+        if (!file_put_contents($dir . '/config.json', json_encode($this->config()->getWithDefault('browser_login', []), JSON_UNESCAPED_SLASHES))) {
+            throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/config.json');
+        }
     }
 
     /**

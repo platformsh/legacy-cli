@@ -33,7 +33,7 @@ class Listener
         $this->prompt = $_ENV['CLI_OAUTH_PROMPT'];
         $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
         $this->scope = isset($_ENV['CLI_OAUTH_SCOPE']) ? $_ENV['CLI_OAUTH_SCOPE'] : '';
-        $this->localUrl = $localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
+        $this->localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
     }
 
@@ -81,8 +81,8 @@ class Listener
 
         // Show the final result page.
         if (array_key_exists('done', $_GET)) {
-            $this->response->content = '<h1>Successfully logged in</h1>'
-                . '<p>You can return to the command line</p>';
+            $this->response->title = 'Successfully logged in';
+            $this->response->content = '<p>You can return to the command line</p>';
 
             return;
         }
@@ -138,7 +138,7 @@ class Listener
     private function reportError($message = null, $error = null, $hint = null)
     {
         $this->response->headers['Status'] = 401;
-        $this->response->content = '<h1 class="error">Error</h1>';
+        $this->response->title = 'Error';
         if (isset($error)) {
             $this->response->content .= '<p class="error"><code>' . htmlspecialchars($error) . '</code></p>';
         }
@@ -146,7 +146,7 @@ class Listener
             $this->response->content .= '<p class="error">' . htmlspecialchars($message) . '</p>';
         }
         if (isset($hint)) {
-            $this->response->content .= '<p class="error">' . htmlspecialchars($hint) . '</p>';
+            $this->response->content .= '<p class="error error-hint">' . htmlspecialchars($hint) . '</p>';
         }
         if ($message || $error || $hint) {
             $response = ['error' => $error, 'error_description' => $message, 'error_hint' => $hint];
@@ -162,6 +162,7 @@ class Response
 {
     public $headers = [];
     public $code = 200;
+    public $headTitle = '';
     public $title = '';
     public $content = '';
 
@@ -169,7 +170,7 @@ class Response
     {
         // Set default title and headers.
         $appName = getenv('CLI_OAUTH_APP_NAME') ?: 'CLI';
-        $this->title = htmlspecialchars($appName) . ': Authentication (temporary URL)';
+        $this->headTitle = htmlspecialchars($appName) . ': Authentication (temporary URL)';
         $this->headers = [
             'Cache-Control' => 'no-cache',
             'Content-Type' => 'text/html; charset=utf-8',
@@ -177,10 +178,24 @@ class Response
     }
 }
 
+$configJson = file_get_contents('config.json');
+if ($configJson === false) {
+    throw new \RuntimeException('Failed to load configuration file: config.json');
+}
+$config = (array) json_decode($configJson, true);
+
 $listener = new Listener();
 $listener->run();
 
 $response = $listener->getResponse();
+
+if (!empty($config['body'])) {
+    $body = preg_replace_callback('/\{\{\s*(content|title)\s*}}/', function (array $matches) use ($response) {
+        return ['content' => $response->content, 'title' => $response->title][$matches[1]];
+    }, $config['body']);
+} else {
+    $body = '<h1>' . $response->title . '</h1>' . $response->content;
+}
 
 http_response_code($response->code);
 foreach ($response->headers as $name => $value) {
@@ -191,7 +206,7 @@ foreach ($response->headers as $name => $value) {
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title><?php echo $response->title; ?></title>
+    <title><?php echo $response->headTitle; ?></title>
     <style>
         html {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -199,18 +214,18 @@ foreach ($response->headers as $name => $value) {
             background-color: #eee;
         }
 
-        h1 {
-            font-weight: 100;
-        }
-
         body {
-            margin: 3em;
             text-align: center;
         }
 
-        img {
+        img.icon {
             display: block;
-            margin: 10px auto;
+            margin: 3em auto 1em;
+        }
+
+        h1 {
+            font-weight: 100;
+            margin: 1em auto;
         }
 
         .error {
@@ -220,15 +235,13 @@ foreach ($response->headers as $name => $value) {
             font-style: oblique;
         }
     </style>
+    <?php if (!empty($config['css'])): ?>
+    <style>
+        <?php echo $config['css']; ?>
+    </style>
+    <?php endif; ?>
 </head>
 <body>
-    <img
-        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkAQMAAABKLAcXAAAABlBMVEUAAADg4ODy8Xj7AAAAAXRSTlMAQObYZgAAAB5JREFUOMtj+I8EPozyRnlU4w1NMJhCcDT+hm2MAQAJBMb6YxK/8wAAAABJRU5ErkJggg=="
-        alt=""
-        width="100"
-        height="100">
-
-    <?php echo $response->content; ?>
-
+<?php echo $body; ?>
 </body>
 </html>
