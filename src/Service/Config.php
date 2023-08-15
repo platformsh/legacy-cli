@@ -252,7 +252,8 @@ class Config
      */
     public function isSessionIdFromEnv()
     {
-        return $this->getEnv('SESSION_ID') === $this->config['api']['session_id'];
+        $sessionId = $this->getSessionId();
+        return $sessionId !== 'default' && $sessionId === $this->getEnv('SESSION_ID');
     }
 
     /**
