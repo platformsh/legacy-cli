@@ -51,7 +51,7 @@ class Listener
             'code_challenge' => $this->codeChallenge,
             'code_challenge_method' => 'S256',
             'scope' => $this->scope,
-        ], null, '&', PHP_QUERY_RFC3986);
+        ], '', '&', PHP_QUERY_RFC3986);
     }
 
     /**
