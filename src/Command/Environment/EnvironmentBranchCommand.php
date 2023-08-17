@@ -23,6 +23,7 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'The type of the new environment')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
+            ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the new Git branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -64,7 +65,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
-            if (!$this->getProjectRoot()) {
+            if (!$this->getProjectRoot() || $input->getOption('no-checkout')) {
                 $this->stdErr->writeln("The environment <comment>$branchName</comment> already exists.");
 
                 return 1;
@@ -143,7 +144,32 @@ class EnvironmentBranchCommand extends CommandBase
 
         $createdNew = false;
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && !$dryRun) {
+        if ($input->getOption('no-checkout')) {
+            if ($projectRoot) {
+                $this->stdErr->writeln([
+                    '',
+                    'Not checking out the new branch automatically (due to <info>--no-checkout</info>).',
+                    sprintf(
+                        'To switch to the branch run: <info>%s checkout %s</info>',
+                        $this->config()->get('application.executable'),
+                        OsUtil::escapeShellArg($branchName)
+                    ),
+                ]);
+            } else {
+                $this->debug('Not checking out the new branch automatically (due to --no-checkout)');
+            }
+        } elseif (!$projectRoot) {
+            $this->stdErr->writeln([
+                '',
+                'This command was run from outside a local project root, so the new branch cannot be checked out automatically.',
+                sprintf(
+                    'To switch to the branch when inside a repository run: <comment>%s checkout %s</comment>',
+                    $this->config()->get('application.executable'),
+                    OsUtil::escapeShellArg($branchName)
+                ),
+                'To ignore this check in the future use the <comment>--no-checkout</comment> option.'
+            ]);
+        } elseif (!$dryRun) {
             // If the Git branch already exists locally, just check it out.
             $existsLocally = $git->branchExists($branchName, $projectRoot);
             if ($existsLocally) {
@@ -161,16 +187,6 @@ class EnvironmentBranchCommand extends CommandBase
                 }
                 $createdNew = true;
             }
-        } elseif (!$projectRoot) {
-            $this->stdErr->writeln([
-                '',
-                'This command was run from outside a local project root, so the new branch cannot be checked out automatically.',
-                sprintf(
-                    'To switch to the branch when inside a repository run: <comment>%s checkout %s</comment>',
-                    $this->config()->get('application.executable'),
-                    OsUtil::escapeShellArg($branchName)
-                ),
-            ]);
         }
 
         $remoteSuccess = true;
