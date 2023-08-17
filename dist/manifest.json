@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.8.3",
-        "sha1": "5c9a4b3bcd85fdcfdf8d6579e383fbe9576c279f",
-        "sha256": "d27b3dadbfe49873580fa71c886f3a7849cc2c382919467a8321f1630a3f3218",
+        "version": "4.8.4",
+        "sha1": "7c3a4d7b77b863c04f2c32970d85fbd107d93724",
+        "sha256": "5cd9ff5919410c30b56b1ffdb0d15980635c45a9d3a278efb85d6a1f40fe29e0",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.3/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.4/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -29,7 +29,8 @@
             "4.8.0": "New features:\n\n* Support runtime operations:\n  - Add an `op:list` (`ops`) command to list operations.\n  - Add an `op:run` command to execute an operation.\n* Allow a dot (`.`) to select the default environment in the\n  `--environment` (`-e`) option.\n* Config improvements:\n  - Add more defaults for generic values.\n  - Document defaults in the config.yaml file.\n  - Support `CLI_CONFIG_FILE` to override the config (for internal use).\n* Custom (non-production) domains improvements:\n  - Present an interactive choice of domain to attach.\n  - Warn about attached domains on deletion.\n  - Compatibility with project system version 22 (omit `type` parameter when\n    creating a domain).\n  - Remove beta messaging.\n  - Change `--replace` to `--attach`.\n\nOther changes:\n\n* Improve printing of the selected project and environment.\n* Split list/array args by commas (not just the first arg).\n* Bump giggsey/libphonenumber-for-php from 8.13.15 to 8.13.17.\n* Add organization metadata in the `org:user:projects` command.\n* Improvements to the `project:get` (`get`) command:\n  - Always display Git errors.\n  - Allow the `build` command to be disabled.\n  - Remove the recommendation to build after cloning.\n* Improve activity log handling:\n  - Handle multiple activities on environment actions.\n  - Prioritize displaying the log if there is one non-integration activity.\n  - Display activity descriptions before waiting for them.\n  - Improve elapsed time formatting.\n* Suggest exclusions in the `activity:list` command.\n* Add shortcuts for `--exclude-type` (`-x`) and `--type` (`-t`) to more\n  activity commands.\n* Fix quoting of SSH arguments when multiple are given on the command line.  \n  For example the following command will now work:\n  ```\n  platform ssh -- sed -n '/04\\/Aug\\/2023\\:09\\:40/, /04\\/Aug\\/2023\\:09\\:45/p' /var/log/access.log\n  ```\n* Improve Drupal app detection via composer packages.\n* Improvements to the `branch` command, including removing the `--force` option.\n* Recommend `project:create` from `project:list`.\n* Fix interactive selection of project-level variables.\n* Fix \"Link not found: #manage-variables\" when the user has read-only variables access.\n* Alias `project:set-remote` as `set-remote`\n* Allow paused environments to be deactivated.\n* Update the legacy region condition in `backup:restore`.",
             "4.8.1": "* Fix quoting an ssh command when provided as a single arg",
             "4.8.2": "* Fix activity:cancel state error message\n* Fix PHP < 7.3 compatibility (parse error for RuntimeOperation\\ListCommand.php)",
-            "4.8.3": "* Fix SSH command quoting on Windows.\r\n* Handle only one available plan in the `project:create` (`create`) command\r\n  (use it as the default).\r\n* Fix message when no runtime operations are found in the `ops` command.\r\n* Remove extra newline in `env:delete` command output.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.17 to 8.13.18 (#1302)"
+            "4.8.3": "* Fix SSH command quoting on Windows.\r\n* Handle only one available plan in the `project:create` (`create`) command\r\n  (use it as the default).\r\n* Fix message when no runtime operations are found in the `ops` command.\r\n* Remove extra newline in `env:delete` command output.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.17 to 8.13.18 (#1302)",
+            "4.8.4": "Changes to internals:\n* Simplify configuration by introducing a defaults file\n* Allow any configuration to be overridden in the user-specific config file\n  (though please note that local overrides can make updates more complex)\n* Remove old release note format from manifest.json\n\nAnd some minor bug fixes:\n* Fix type of http_build_query() argument in oauth-listener/index.php\n* Fix notice when additional sessions are active, 'Undefined array key \"session_id\"'"
         }
     },
     {
