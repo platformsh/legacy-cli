@@ -137,7 +137,7 @@ class Rsync
         // matches is the one that takes effect.  Thus, if an early rule
         // excludes a file, no include rule that comes after it can have any
         // effect. This means that you must place any include overrides
-        // somewhere prior to the exclude that it is intended to limit.
+        // somewhere prior to the exclude that it is intended to limit."
         foreach (['include', 'exclude'] as $option) {
             if (!empty($options[$option])) {
                 foreach ($options[$option] as $value) {
