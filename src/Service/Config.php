@@ -39,23 +39,25 @@ class Config
         // Merge the configuration with the defaults.
         $this->config = array_replace_recursive($defaults, $config);
 
-        // Load the session ID from a file.
-        $sessionIdFile = $this->getSessionIdFile();
-        if (\file_exists($sessionIdFile)) {
-            $id = \file_get_contents($sessionIdFile);
-            if ($id !== false) {
-                try {
-                    $this->validateSessionId(\trim($id));
-                } catch (\InvalidArgumentException $e) {
-                    throw new \InvalidArgumentException('Invalid session ID in file: ' . $sessionIdFile);
-                }
-                $this->config['api']['session_id'] = \trim($id);
-            }
-        }
-
         $this->applyUserConfigOverrides();
         $this->applyEnvironmentOverrides();
         $this->applyDynamicDefaults();
+
+        // Load the session ID from a file.
+        if ($this->getEnv('SESSION_ID') === false) {
+            $sessionIdFile = $this->getSessionIdFile();
+            if (\file_exists($sessionIdFile)) {
+                $id = \file_get_contents($sessionIdFile);
+                if ($id !== false) {
+                    try {
+                        $this->validateSessionId(\trim($id));
+                    } catch (\InvalidArgumentException $e) {
+                        throw new \InvalidArgumentException('Invalid session ID in file: ' . $sessionIdFile);
+                    }
+                    $this->config['api']['session_id'] = \trim($id);
+                }
+            }
+        }
 
         // Validate the session ID.
         if (isset($this->config['api']['session_id'])) {
