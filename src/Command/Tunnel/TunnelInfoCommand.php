@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
-use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,11 +17,20 @@ class TunnelInfoCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        Table::configureInput($this->getDefinition());
+
+        // Deprecated options, left for backwards compatibility
+        $this->addHiddenOption('format', null, InputOption::VALUE_REQUIRED, 'DEPRECATED');
+        $this->addHiddenOption('columns', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'DEPRECATED');
+        $this->addHiddenOption('no-header', null, InputOption::VALUE_NONE, 'DEPRECATED');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
+
+        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
+        $relationshipsService = $this->getService('relationships');
+
         $tunnels = $this->getTunnelInfo();
         $relationships = [];
         foreach ($this->filterTunnels($tunnels, $input) as $key => $tunnel) {
@@ -34,6 +42,8 @@ class TunnelInfoCommand extends TunnelCommandBase
                 'ip' => self::LOCAL_IP,
                 'port' => $tunnel['localPort'],
             ], $service));
+
+            $service['url'] = $relationshipsService->buildUrl($service);
 
             $relationships[$tunnel['relationship']][$tunnel['serviceKey']] = $service;
         }
