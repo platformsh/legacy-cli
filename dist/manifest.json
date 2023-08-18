@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.8.4",
-        "sha1": "7c3a4d7b77b863c04f2c32970d85fbd107d93724",
-        "sha256": "5cd9ff5919410c30b56b1ffdb0d15980635c45a9d3a278efb85d6a1f40fe29e0",
+        "version": "4.8.5",
+        "sha1": "38c58383822779c9e79eefa20a81d8279eb8ea3e",
+        "sha256": "a25cbe11b7689cf387972d409ad3671ca150a38b428917fb127834840b86f8f3",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.4/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.5/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -30,7 +30,8 @@
             "4.8.1": "* Fix quoting an ssh command when provided as a single arg",
             "4.8.2": "* Fix activity:cancel state error message\n* Fix PHP < 7.3 compatibility (parse error for RuntimeOperation\\ListCommand.php)",
             "4.8.3": "* Fix SSH command quoting on Windows.\r\n* Handle only one available plan in the `project:create` (`create`) command\r\n  (use it as the default).\r\n* Fix message when no runtime operations are found in the `ops` command.\r\n* Remove extra newline in `env:delete` command output.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.17 to 8.13.18 (#1302)",
-            "4.8.4": "Changes to internals:\n* Simplify configuration by introducing a defaults file\n* Allow any configuration to be overridden in the user-specific config file\n  (though please note that local overrides can make updates more complex)\n* Remove old release note format from manifest.json\n\nAnd some minor bug fixes:\n* Fix type of http_build_query() argument in oauth-listener/index.php\n* Fix notice when additional sessions are active, 'Undefined array key \"session_id\"'"
+            "4.8.4": "Changes to internals:\n* Simplify configuration by introducing a defaults file\n* Allow any configuration to be overridden in the user-specific config file\n  (though please note that local overrides can make updates more complex)\n* Remove old release note format from manifest.json\n\nAnd some minor bug fixes:\n* Fix type of http_build_query() argument in oauth-listener/index.php\n* Fix notice when additional sessions are active, 'Undefined array key \"session_id\"'",
+            "4.8.5": "* Fix \"Configuration not defined: application.tmp_sub_dir\" when the user config dir is not writable"
         }
     },
     {
