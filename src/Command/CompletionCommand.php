@@ -264,7 +264,7 @@ class CompletionCommand extends ParentCompletionCommand
      * the command (via the 'project' argument or '--project' option), or it is
      * determined from the current path.
      *
-     * @return \Platformsh\Client\Model\Project|false
+     * @return Project|false
      */
     protected function getProject()
     {

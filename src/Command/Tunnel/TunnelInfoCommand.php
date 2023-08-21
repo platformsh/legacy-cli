@@ -25,7 +25,7 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         $tunnels = $this->getTunnelInfo();
         $relationships = [];
-        foreach ($this->filterTunnels($tunnels, $input) as $key => $tunnel) {
+        foreach ($this->filterTunnels($tunnels, $input) as $tunnel) {
             $service = $tunnel['service'];
 
             // Overwrite the service's address with the local tunnel details.

@@ -89,27 +89,4 @@ class SslUtil
         }
         return $chain;
     }
-
-    /**
-     * Get the contents of multiple chain files.
-     *
-     * @param string[] $chainPaths
-     *
-     * @throws \InvalidArgumentException If any one of the files is not readable.
-     *
-     * @return array
-     *   An array of file contents (whitespace trimmed) keyed by file name.
-     */
-    protected function readChainFiles(array $chainPaths)
-    {
-        $chainFiles = [];
-        foreach ($chainPaths as $chainPath) {
-            if (!is_readable($chainPath)) {
-                throw new \InvalidArgumentException("The chain file could not be read: $chainPath");
-            }
-            $chainFiles[$chainPath] = trim(file_get_contents($chainPath));
-        }
-
-        return $chainFiles;
-    }
 }

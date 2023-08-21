@@ -398,14 +398,6 @@ class Git
     }
 
     /**
-     * @return bool
-     */
-    public function supportsShallowClone()
-    {
-        return version_compare($this->getVersion(), '1.9', '>=');
-    }
-
-    /**
      * Clone a repository.
      *
      * A ProcessFailedException will be thrown if the command fails.

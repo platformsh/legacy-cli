@@ -109,7 +109,6 @@ class CommitListCommand extends CommandBase
      */
     private function loadCommitList(Environment $environment, Commit $startCommit, $limit = 10)
     {
-        /** @var Commit[] $commits */
         $commits = [$startCommit];
         if (!count($startCommit->parents) || $limit === 1) {
             return $commits;

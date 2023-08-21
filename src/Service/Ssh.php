@@ -14,7 +14,6 @@ class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;
-    protected $ssh;
     protected $certifier;
     protected $sshConfig;
     protected $sshKey;

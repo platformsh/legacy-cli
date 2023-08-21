@@ -45,7 +45,6 @@ class RunCommand extends CommandBase
                     $selectedApp->getName() => $selectedApp->getRuntimeOperations(),
                 ];
             } else {
-                $selectedApp = null;
                 $appName = null;
                 $operations = $deployment->getRuntimeOperations();
             }

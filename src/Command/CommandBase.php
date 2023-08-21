@@ -67,9 +67,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     private static $projectRoot = null;
 
-    /** @var null|string The name of the original command. */
-    private static $originalCommand;
-
     /** @var OutputInterface|null */
     protected $stdErr;
 
@@ -1565,7 +1562,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Set the --app option.
         if ($input->hasOption('app') && !$input->getOption('app')) {
             // An app ID might be provided from the parsed project URL.
-            if (isset($result) && isset($result['appId'])) {
+            if (isset($result['appId'])) {
                 $input->setOption('app', $result['appId']);
                 $this->debug(sprintf(
                     'App name identified as: %s',
@@ -1757,9 +1754,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             );
         }
 
-        // Set the original command name for comparison.
-        self::$originalCommand = $this->getName();
-
         // Give the other command an entirely new service container, because the
         // "input" and "output" parameters, and all their dependents, need to
         // change.
@@ -1778,11 +1772,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return $result;
-    }
-
-    protected function isOriginalCommand()
-    {
-        return self::$originalCommand === null || self::$originalCommand === $this->getName();
     }
 
     /**

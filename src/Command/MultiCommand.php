@@ -149,7 +149,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      *
      * @param InputInterface $input
      *
-     * @return \Platformsh\Client\Model\ProjectStub[]
+     * @return ProjectStub[]
      */
     protected function getAllProjectStubs(InputInterface $input)
     {

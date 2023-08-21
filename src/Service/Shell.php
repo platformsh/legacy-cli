@@ -259,7 +259,7 @@ class Shell
                 } else {
                     $commands = [['command', '-v', $command], ['which', $command]];
                 }
-                foreach ($commands as $key => $args) {
+                foreach ($commands as $args) {
                     try {
                         $result[$command] = $this->execute($args);
                     } catch (ProcessFailedException $e) {
