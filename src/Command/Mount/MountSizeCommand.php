@@ -157,7 +157,7 @@ EOF
             }
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
-                'To increase the available space, edit the <info>disk</info> key in the application configuration.',
+                'To increase the available space, edit the <info>disk</info> key in the application configuration.'
             );
         }
 
