@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.8.5",
-        "sha1": "38c58383822779c9e79eefa20a81d8279eb8ea3e",
-        "sha256": "a25cbe11b7689cf387972d409ad3671ca150a38b428917fb127834840b86f8f3",
+        "version": "4.8.6",
+        "sha1": "32ff410db0c44b09ee7f21f4af8efbe38d8d4536",
+        "sha256": "33b672f57ccd9b6717cd1637a810f7122525caffd5779e61ef7035a4c114f05f",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.5/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.8.6/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -31,7 +31,8 @@
             "4.8.2": "* Fix activity:cancel state error message\n* Fix PHP < 7.3 compatibility (parse error for RuntimeOperation\\ListCommand.php)",
             "4.8.3": "* Fix SSH command quoting on Windows.\r\n* Handle only one available plan in the `project:create` (`create`) command\r\n  (use it as the default).\r\n* Fix message when no runtime operations are found in the `ops` command.\r\n* Remove extra newline in `env:delete` command output.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.17 to 8.13.18 (#1302)",
             "4.8.4": "Changes to internals:\n* Simplify configuration by introducing a defaults file\n* Allow any configuration to be overridden in the user-specific config file\n  (though please note that local overrides can make updates more complex)\n* Remove old release note format from manifest.json\n\nAnd some minor bug fixes:\n* Fix type of http_build_query() argument in oauth-listener/index.php\n* Fix notice when additional sessions are active, 'Undefined array key \"session_id\"'",
-            "4.8.5": "* Fix \"Configuration not defined: application.tmp_sub_dir\" when the user config dir is not writable"
+            "4.8.5": "* Fix \"Configuration not defined: application.tmp_sub_dir\" when the user config dir is not writable",
+            "4.8.6": "* Fix undefined BadResponseException class in variable:create command\n* Fix a PHP < 7.3 incompatibility in mount:size command\n* Fix TypeError in \"create\" command when fetching available regions"
         }
     },
     {
