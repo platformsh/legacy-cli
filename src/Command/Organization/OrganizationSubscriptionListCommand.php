@@ -1,8 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
-use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Url;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;

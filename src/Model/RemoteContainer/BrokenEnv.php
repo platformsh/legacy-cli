@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Model\RemoteContainer;
 
 use Platformsh\Cli\Model\AppConfig;
-use Platformsh\Client\Model\Deployment\RuntimeOperation;
 use Platformsh\Client\Model\Environment;
 
 /**

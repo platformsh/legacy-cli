@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Client\Model\Integration;
 use Platformsh\Client\Model\Project;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;

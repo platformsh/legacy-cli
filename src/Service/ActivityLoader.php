@@ -7,7 +7,6 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Activities\HasActivitiesInterface;
 use Platformsh\Client\Model\Activity;
-use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;

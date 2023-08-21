@@ -56,29 +56,6 @@ class Route
     }
 
     /**
-     * Translates routes found in $environment->getRoutes() to Route objects.
-     *
-     * @see \Platformsh\Client\Model\Environment::getRoutes()
-     *
-     * @param \Platformsh\Client\Model\Route[] $routes
-     *
-     * @return \Platformsh\Cli\Model\Route[]
-     */
-    public static function fromEnvironmentApi(array $routes)
-    {
-        $result = [];
-        foreach ($routes as $url => $route) {
-            $properties = $route->getProperties();
-            $properties['original_url'] = $properties['id'];
-            $properties['url'] = $url;
-            unset($properties['id']);
-            $result[] = static::fromData($properties);
-        }
-
-        return static::sort($result);
-    }
-
-    /**
      * Translates routes found in PLATFORM_ROUTES to Route objects.
      *
      * @param array $routes

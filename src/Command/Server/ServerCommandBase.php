@@ -191,7 +191,7 @@ abstract class ServerCommandBase extends CommandBase
     protected function getPort($default = 3000)
     {
         $ports = [];
-        foreach ($this->getServerInfo() as $address => $server) {
+        foreach ($this->getServerInfo() as $server) {
             $ports[] = $server['port'];
         }
 

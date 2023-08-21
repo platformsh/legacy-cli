@@ -16,11 +16,6 @@ class Filesystem
     /** @var Shell */
     protected $shell;
 
-    public function getName()
-    {
-        return 'fs';
-    }
-
     /**
      * @param Shell|null             $shell
      * @param SymfonyFilesystem|null $fs
