@@ -334,3 +334,23 @@ experimental:
 
   # Enable all experiments.
   all_experiments: false
+
+# Optional styling for browser login web page.
+# The "css" string will be added as a stylesheet.
+# The "body" string will replace the whole body content.
+# Two template parameters are available:
+# - {{title}} is replaced with a plain-text page title
+# - {{content}} is replaced with the rest of the content HTML
+browser_login:
+  # css: ''
+  body: |
+    <img
+      src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkAQMAAABKLAcXAAAABlBMVEUAAADg4ODy8Xj7AAAAAXRSTlMAQObYZgAAAB5JREFUOMtj+I8EPozyRnlU4w1NMJhCcDT+hm2MAQAJBMb6YxK/8wAAAABJRU5ErkJggg=="
+      alt=""
+      width="100"
+      height="100"
+      class="icon">
+
+    <h1>{{title}}</h1>
+
+    {{content}}
