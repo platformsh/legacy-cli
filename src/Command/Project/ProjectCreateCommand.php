@@ -8,7 +8,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
-use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
@@ -431,7 +430,7 @@ EOF
             'optionName' => 'region',
             'description' => 'The region where the project will be hosted',
             'optionsCallback' => function () use ($setupOptions) {
-                return $this->getAvailableRegions(true, $setupOptions);
+                return $this->getAvailableRegions($setupOptions);
             },
             'allowOther' => true,
           ]),
