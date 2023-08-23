@@ -2224,11 +2224,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $organization = false;
             }
             if ($organization) {
-                if ($this->stdErr->isVerbose()) {
-                    $this->ensurePrintSelectedProject();
-                    $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
+                if ($filterByLink === '' || $organization->hasLink($filterByLink)) {
+                    if ($this->stdErr->isVerbose()) {
+                        $this->ensurePrintSelectedProject();
+                        $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
+                    }
+                    return $organization;
+                } elseif ($this->stdErr->isVerbose()) {
+                    $this->stdErr->writeln(sprintf(
+                        'Not auto-selecting project organization %s (it does not have the link <comment>%s</comment>)',
+                        $this->api()->getOrganizationLabel($organization, 'comment'),
+                        $filterByLink
+                    ));
                 }
-                return $organization;
             }
         }
 
