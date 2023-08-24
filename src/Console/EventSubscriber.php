@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use GuzzleHttp\Message\Request;
 use GuzzleHttp\Message\RequestInterface;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
