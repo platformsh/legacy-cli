@@ -167,7 +167,7 @@ EOF
                 $setRemote = $questionHelper->confirm(sprintf(
                     'Set the new project <info>%s</info> as the remote for this repository?',
                     $options['title']
-                ), false);
+                ));
             }
             $this->stdErr->writeln('');
         }
