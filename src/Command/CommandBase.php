@@ -1066,7 +1066,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     . "\n\nSpecify it using --project, or go to a project directory."
                 );
             } else {
-                throw new \RuntimeException('You must specify a project.');
+                throw new ConsoleInvalidArgumentException('You must specify a project.');
             }
         }
 
