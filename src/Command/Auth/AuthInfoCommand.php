@@ -36,6 +36,31 @@ class AuthInfoCommand extends CommandBase
             return 0;
         }
 
+        $property = $input->getArgument('property');
+        if ($input->getOption('property')) {
+            if ($property) {
+                throw new InvalidArgumentException(
+                    sprintf(
+                        'You cannot use both the <%s> argument and the --%s option',
+                        'property',
+                        'property'
+                    )
+                );
+            }
+            $property = $input->getOption('property');
+        }
+
+        // Exit early if it's the user ID.
+        if ($property === 'id' && $this->api()->authApiEnabled()) {
+            $userId = $this->api()->getMyUserId();
+            if ($userId === false) {
+                $this->stdErr->writeln('The current session is not associated with a user ID');
+                return 1;
+            }
+            $output->writeln($userId);
+            return 0;
+        }
+
         if ($this->api()->authApiEnabled()) {
             $info = $this->api()->getUser(null, (bool) $input->getOption('refresh'))->getProperties();
         } else {
@@ -60,20 +85,6 @@ class AuthInfoCommand extends CommandBase
 
         $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'phone_number_verified'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));
-
-        $property = $input->getArgument('property');
-        if ($input->getOption('property')) {
-            if ($property) {
-                throw new InvalidArgumentException(
-                    sprintf(
-                        'You cannot use both the <%s> argument and the --%s option',
-                        'property',
-                        'property'
-                    )
-                );
-            }
-            $property = $input->getOption('property');
-        }
 
         if ($property) {
             if (!isset($info[$property])) {

@@ -20,11 +20,11 @@ use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
-use Platformsh\Client\Model\ProjectStub;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
@@ -1051,10 +1051,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
-            $projectStubs = $this->api()->getProjectStubs();
-            if (count($projectStubs) > 0) {
+            $myProjects = $this->api()->getMyProjects();
+            if (count($myProjects) > 0) {
                 $this->debug('No project specified: offering a choice...');
-                $projectId = $this->offerProjectChoice($projectStubs);
+                $projectId = $this->offerProjectChoice($myProjects);
 
                 return $this->selectProject($projectId);
             }
@@ -1083,18 +1083,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     private function getProjectNotFoundMessage($projectId)
     {
         $message = 'Specified project not found: ' . $projectId;
-        if ($projects = $this->api()->getProjectStubs()) {
+        if ($projectInfos = $this->api()->getMyProjects()) {
             $message .= "\n\nYour projects are:";
             $limit = 8;
-            foreach (array_slice($projects, 0, $limit) as $project) {
-                $message .= "\n    " . $project->id;
-                if ($project->title) {
-                    $message .= ' - ' . $project->title;
+            foreach (array_slice($projectInfos, 0, $limit) as $info) {
+                $message .= "\n    " . $info->id;
+                if ($info->title !== '') {
+                    $message .= ' - ' . $info->title;
                 }
             }
-            if (count($projects) > $limit) {
+            if (count($projectInfos) > $limit) {
                 $message .= "\n    ...";
-                $message .= "\n\n    List projects with: " . $this->config()->get('application.executable') . ' project:list';
+                $message .= "\n\n    List projects with: " . $this->config()->get('application.executable') . ' projects';
             }
         }
 
@@ -1423,13 +1423,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Offer the user an interactive choice of projects.
      *
-     * @param ProjectStub[] $projectStubs
+     * @param BasicProjectInfo[] $projectInfos
      * @param string $text
      *
      * @return string
      *   The chosen project ID.
      */
-    final protected function offerProjectChoice(array $projectStubs, $text = 'Enter a number to choose a project:')
+    final protected function offerProjectChoice(array $projectInfos, $text = 'Enter a number to choose a project:')
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
@@ -1438,13 +1438,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        if (count($projectStubs) >= 25 || count($projectStubs) > (new Terminal())->getHeight() - 3) {
+        if (count($projectInfos) >= 25 || count($projectInfos) > (new Terminal())->getHeight() - 3) {
             $autocomplete = [];
-            foreach ($projectStubs as $projectStub) {
-                if ($projectStub->title) {
-                    $autocomplete[$projectStub->id] = $projectStub->id . ' - <question>' . $projectStub->title . '</question>';
+            foreach ($projectInfos as $info) {
+                if ($info->title) {
+                    $autocomplete[$info->id] = $info->id . ' - <question>' . $info->title . '</question>';
                 } else {
-                    $autocomplete[$projectStub->id] = $projectStub->id;
+                    $autocomplete[$info->id] = $info->id;
                 }
             }
             asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
@@ -1461,8 +1461,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $projectList = [];
-        foreach ($projectStubs as $projectStub) {
-            $projectList[$projectStub->id] = $this->api()->getProjectLabel($projectStub, false);
+        foreach ($projectInfos as $info) {
+            $projectList[$info->id] = $this->api()->getProjectLabel($info, false);
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 

@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Client\Model\ProjectStub;
+use Platformsh\Client\Model\BasicProjectInfo;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -149,19 +149,19 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      *
      * @param InputInterface $input
      *
-     * @return ProjectStub[]
+     * @return BasicProjectInfo[]
      */
-    protected function getAllProjectStubs(InputInterface $input)
+    protected function getAllProjectsBasicInfo(InputInterface $input)
     {
-        $projectStubs = $this->api()->getProjectStubs();
+        $projects = $this->api()->getMyProjects();
         if ($input->getOption('sort')) {
-            $this->api()->sortResources($projectStubs, $input->getOption('sort'));
+            $this->api()->sortObjects($projects, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
-            $projectStubs = array_reverse($projectStubs, true);
+            $projects = array_reverse($projects, true);
         }
 
-        return $projectStubs;
+        return $projects;
     }
 
     /**
@@ -221,10 +221,10 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             return false;
         }
 
-        $projectStubs = $this->getAllProjectStubs($input);
+        $projectInfos = $this->getAllProjectsBasicInfo($input);
         $projectOptions = [];
-        foreach ($projectStubs as $projectStub) {
-            $projectOptions[$projectStub->id] = $projectStub->title ?: $projectStub->id;
+        foreach ($projectInfos as $info) {
+            $projectOptions[$info->id] = $info->title ?: $info->id;
         }
 
         $projectIds = $this->showDialogChecklist($projectOptions, 'Choose one or more projects');

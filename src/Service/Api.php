@@ -17,13 +17,13 @@ use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
+use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
-use Platformsh\Client\Model\ProjectStub;
 use Platformsh\Client\Model\Ref\UserRef;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
@@ -284,6 +284,9 @@ class Api
             return $this->onRefreshError($e);
         };
 
+        $connectorOptions['auth_api_enabled'] = $this->config->get('api.auth');
+        $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions');
+
         return $connectorOptions;
     }
 
@@ -524,34 +527,28 @@ class Api
     }
 
     /**
-     * Returns the logged-in user's project stubs.
+     * Returns the project list for the current user.
      *
-     * @param bool $refresh
+     * @param bool|null $refresh
      *
-     * @return ProjectStub[]
+     * @return BasicProjectInfo[]
      */
-    public function getProjectStubs($refresh = null)
+    public function getMyProjects($refresh = null)
     {
-        $cacheKey = sprintf('%s:project-stubs', $this->config->getSessionId());
+        $cacheKey = sprintf('%s:my-projects', $this->config->getSessionId());
         $cached = $this->cache->fetch($cacheKey);
-
-        $guzzleClient = $this->getHttpClient();
-        $apiUrl = $this->config->getWithDefault('api.base_url', '');
 
         if ($refresh === false && !$cached) {
             return [];
         } elseif ($refresh || !$cached) {
-            $stubs = $this->getClient()->getProjectStubs((bool) $refresh);
-            $cacheData = [
-                'projects' => array_map(function (ProjectStub $stub) { return $stub->getData(); }, $stubs)
-            ];
-            $this->cache->save($cacheKey, $cacheData, (int) $this->config->getWithDefault('api.projects_ttl', 600));
+            $projects = $this->getClient()->getMyProjects();
+            $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
         } else {
-            $stubs = ProjectStub::wrapCollection($cached, $apiUrl, $guzzleClient);
-            $this->debug('Loaded project stubs from cache');
+            $projects = $cached;
+            $this->debug('Loaded user project data from cache');
         }
 
-        return $stubs;
+        return $projects;
     }
 
     /**
@@ -769,16 +766,13 @@ class Api
     }
 
     /**
-     * Returns the ID of the current user.
+     * Shortcut to return the ID of the current user.
      *
-     * @return string
+     * @return string|false
      */
     public function getMyUserId($reset = false)
     {
-        if ($this->authApiEnabled()) {
-            return $this->getUser(null, $reset)->id;
-        }
-        return $this->getMyAccount($reset)['id'];
+        return $this->getClient()->getMyUserId($reset);
     }
 
     /**
@@ -905,7 +899,41 @@ class Api
     }
 
     /**
-     * Sort resources.
+     * Sorts arrays of objects by a property.
+     *
+     * @param object[] $objects
+     * @param string $property
+     * @param bool $reverse
+     * @return void
+     */
+    public static function sortObjects(array &$objects, $property, $reverse = false)
+    {
+        uasort($objects, function ($a, $b) use ($property, $reverse) {
+            if (!property_exists($a, $property) || !property_exists($b, $property)) {
+                throw new \InvalidArgumentException('Cannot sort: property not found: ' . $property);
+            }
+            $valueA = $a->{$property};
+            $valueB = $b->{$property};
+            $cmp = 0;
+
+            switch (gettype($valueA)) {
+                case 'string':
+                    $cmp = strcasecmp($valueA, $valueB);
+                    break;
+
+                case 'integer':
+                case 'double':
+                case 'boolean':
+                    $cmp = $valueA - $valueB;
+                    break;
+            }
+
+            return $reverse ? -$cmp : $cmp;
+        });
+    }
+
+    /**
+     * Sorts API resources, supporting a nested property lookup.
      *
      * @param ApiResource[] &$resources
      * @param string        $propertyPath
@@ -1022,7 +1050,7 @@ class Api
     /**
      * Returns a project label.
      *
-     * @param Project|ProjectStub $project
+     * @param Project|BasicProjectInfo $project
      * @param string|false $tag
      *
      * @return string
@@ -1139,7 +1167,7 @@ class Api
         // If there is no token, or it has expired, make an API request, which
         // automatically obtains a token and saves it to the session.
         if (!$token || $expires < time()) {
-            $this->getMyUserId(true);
+            $this->getUser(null, true);
             if (!$token = $session->get('accessToken')) {
                 throw new \RuntimeException('No access token found');
             }
@@ -1386,9 +1414,9 @@ class Api
             $organizationId = $project->getProperty('organization_id', false, false);
         }
         if (empty($organizationId)) {
-            foreach ($this->getProjectStubs() as $projectStub) {
-                if ($projectStub->subscription_id === $id && (!isset($project) || $project->id === $projectStub->id)) {
-                    $organizationId = $projectStub->getProperty('organization_id', false, false);
+            foreach ($this->getMyProjects() as $info) {
+                if ($info->subscription_id === $id && (!isset($project) || $project->id === $info->id)) {
+                    $organizationId = !empty($info->organization_ref->id) ? $info->organization_ref->id : false;
                     break;
                 }
             }

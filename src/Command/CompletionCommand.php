@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Project;
-use Platformsh\Client\Model\ProjectStub;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionCommand as ParentCompletionCommand;
 
@@ -14,12 +14,6 @@ class CompletionCommand extends ParentCompletionCommand
 
     /** @var Api */
     protected $api;
-
-    /**
-     * A list of the user's projects.
-     * @var array
-     */
-    protected $projectStubs = [];
 
     /** @var CommandBase|null */
     private $welcomeCommand;
@@ -38,8 +32,8 @@ class CompletionCommand extends ParentCompletionCommand
     protected function runCompletion()
     {
         $this->api = new Api();
-        $this->projectStubs = $this->api->isLoggedIn() ? $this->api->getProjectStubs(false) : [];
-        $projectIds = array_map(function (ProjectStub $ps) { return $ps->id; }, $this->projectStubs);
+        $projectInfos = $this->api->isLoggedIn() ? $this->api->getMyProjects(false) : [];
+        $projectIds = array_map(function (BasicProjectInfo $p) { return $p->id; }, $projectInfos);
 
         $this->handler->addHandlers([
             new Completion(
