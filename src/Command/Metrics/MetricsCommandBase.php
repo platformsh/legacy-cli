@@ -22,10 +22,11 @@ use Symfony\Component\Console\Input\InputOption;
 abstract class MetricsCommandBase extends CommandBase
 {
     const MIN_INTERVAL = 60; // 1 minute
-    const MAX_INTERVAL = 3600; // 1 hour
 
     const MIN_RANGE = 300; // 5 minutes
     const DEFAULT_RANGE = 600;
+
+    const MAX_INTERVALS = 100; // intervals per range
 
     /**
      * @var bool Whether services have been identified that use high memory.
@@ -110,7 +111,7 @@ abstract class MetricsCommandBase extends CommandBase
         $this->addOption('interval', 'i', InputOption::VALUE_REQUIRED,
             'The time interval. Defaults to a division of the range.'
             . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
-            . "\n" . \sprintf('Minimum <comment>%s</comment>, maximum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL), $duration->humanize(self::MAX_INTERVAL))
+            . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL))
         );
         $this->addOption('to', null, InputOption::VALUE_REQUIRED, 'The end time. Defaults to now.');
         $this->addOption('latest', '1', InputOption::VALUE_NONE, 'Show only the latest single data point');
@@ -346,9 +347,6 @@ abstract class MetricsCommandBase extends CommandBase
             } elseif ($interval < self::MIN_INTERVAL) {
                 $this->stdErr->writeln(\sprintf('The --interval <error>%s</error> is too short: it must be at least %d seconds.', $intervalStr, self::MIN_INTERVAL));
                 return false;
-            } elseif ($interval > self::MAX_INTERVAL) {
-                $this->stdErr->writeln(\sprintf('The --interval <error>%s</error> is too long: it must be %d seconds or less.', $intervalStr, self::MAX_INTERVAL));
-                return false;
             }
             $interval = \intval($interval);
         }
@@ -378,6 +376,14 @@ abstract class MetricsCommandBase extends CommandBase
 
         if ($interval === null) {
             $interval = $this->defaultInterval($rangeSeconds);
+        } elseif ($interval > 0 && ($rangeSeconds / $interval) > self::MAX_INTERVALS) {
+            $this->stdErr->writeln(\sprintf(
+                'The --interval <error>%s</error> is too short relative to the --range (<error>%s</error>): the maximum number of intervals is <error>%d</error>.',
+                (new Duration())->humanize($interval),
+                (new Duration())->humanize($rangeSeconds),
+                self::MAX_INTERVALS
+            ));
+            return false;
         }
 
         if ($input->getOption('latest')) {
@@ -399,14 +405,19 @@ abstract class MetricsCommandBase extends CommandBase
     private function defaultInterval($range)
     {
         $divisor = 5; // Number of points per time range.
-        $granularity = 10; // Number of seconds to round to.
+        // Number of seconds to round to:
+        $granularity = 10;
+        foreach ([3600*24, 3600*6, 3600*3, 3600, 600, 300, 60, 30] as $level) {
+            if ($range >= $level * $divisor) {
+                $granularity = $level;
+                break;
+            }
+        }
         $interval = \round($range / ($divisor * $granularity)) * $granularity;
         if ($interval <= self::MIN_INTERVAL) {
             return self::MIN_INTERVAL;
         }
-        if ($interval >= self::MAX_INTERVAL) {
-            return self::MAX_INTERVAL;
-        }
+
         return (int) $interval;
     }
 
