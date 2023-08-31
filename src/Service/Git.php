@@ -534,7 +534,7 @@ class Git
      *
      * @return array
      */
-    private function setupSshEnv()
+    public function setupSshEnv()
     {
         if (isset($this->ssh) && !isset($this->sshCommand)) {
             $this->sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
