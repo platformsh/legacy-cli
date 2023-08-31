@@ -8,6 +8,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class TunnelListCommand extends TunnelCommandBase
 {
+    protected $tableHeader = [
+        'port' => 'Port',
+        'project' => 'Project',
+        'environment' => 'Environment',
+        'app' => 'App',
+        'relationship' => 'Relationship',
+        'url' => 'URL',
+    ];
+    protected $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
+
     protected function configure()
     {
         $this
@@ -18,7 +28,7 @@ class TunnelListCommand extends TunnelCommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
-        Table::configureInput($this->getDefinition());
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -49,18 +59,18 @@ class TunnelListCommand extends TunnelCommandBase
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        $headers = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
         $rows = [];
         foreach ($tunnels as $tunnel) {
             $rows[] = [
-                $tunnel['localPort'],
-                $tunnel['projectId'],
-                $tunnel['environmentId'],
-                $tunnel['appName'] ?: '[default]',
-                $this->formatTunnelRelationship($tunnel),
+                'port' => $tunnel['localPort'],
+                'project' => $tunnel['projectId'],
+                'environment' => $tunnel['environmentId'],
+                'app' => $tunnel['appName'] ?: '[default]',
+                'relationship' => $this->formatTunnelRelationship($tunnel),
+                'url' => $this->getTunnelUrl($tunnel, $tunnel['service']),
             ];
         }
-        $table->render($rows, $headers);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
