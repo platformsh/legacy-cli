@@ -8,7 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
-use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
@@ -372,7 +372,7 @@ EOF
             }
         }
 
-        \usort($available, [Api::class, 'compareDomains']);
+        \usort($available, [Sort::class, 'compareDomains']);
 
         $options = [];
         foreach ($available as $id) {

@@ -7,6 +7,7 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Pager\Pager;
+use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Input\InputInterface;
@@ -84,7 +85,7 @@ class ProjectListCommand extends CommandBase
 
         // Sort the list of projects.
         if ($input->getOption('sort')) {
-            $this->api()->sortObjects($projects, $input->getOption('sort'));
+            Sort::sortObjects($projects, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
             $projects = array_reverse($projects, true);

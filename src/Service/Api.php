@@ -15,6 +15,7 @@ use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\GuzzleDebugSubscriber;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
+use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\BasicProjectInfo;
@@ -899,71 +900,25 @@ class Api
     }
 
     /**
-     * Sorts arrays of objects by a property.
-     *
-     * @param object[] $objects
-     * @param string $property
-     * @param bool $reverse
-     * @return void
-     */
-    public static function sortObjects(array &$objects, $property, $reverse = false)
-    {
-        uasort($objects, function ($a, $b) use ($property, $reverse) {
-            if (!property_exists($a, $property) || !property_exists($b, $property)) {
-                throw new \InvalidArgumentException('Cannot sort: property not found: ' . $property);
-            }
-            $valueA = $a->{$property};
-            $valueB = $b->{$property};
-            $cmp = 0;
-
-            switch (gettype($valueA)) {
-                case 'string':
-                    $cmp = strcasecmp($valueA, $valueB);
-                    break;
-
-                case 'integer':
-                case 'double':
-                case 'boolean':
-                    $cmp = $valueA - $valueB;
-                    break;
-            }
-
-            return $reverse ? -$cmp : $cmp;
-        });
-    }
-
-    /**
      * Sorts API resources, supporting a nested property lookup.
+     *
+     * Keys will be preserved.
      *
      * @param ApiResource[] &$resources
      * @param string        $propertyPath
      * @param bool          $reverse
      *
-     * @return ApiResource[]
+     * @return void
      */
     public static function sortResources(array &$resources, $propertyPath, $reverse = false)
     {
         uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath, $reverse) {
-            $valueA = static::getNestedProperty($a, $propertyPath, false);
-            $valueB = static::getNestedProperty($b, $propertyPath, false);
-            $cmp = 0;
-
-            switch (gettype($valueA)) {
-                case 'string':
-                    $cmp = strcasecmp($valueA, $valueB);
-                    break;
-
-                case 'integer':
-                case 'double':
-                case 'boolean':
-                    $cmp = $valueA - $valueB;
-                    break;
-            }
-
+            $cmp = Sort::compare(
+                static::getNestedProperty($a, $propertyPath, false),
+                static::getNestedProperty($b, $propertyPath, false)
+            );
             return $reverse ? -$cmp : $cmp;
         });
-
-        return $resources;
     }
 
     /**
@@ -1348,24 +1303,6 @@ class Api
                 $this->clearProjectsCache();
             }
         }
-    }
-
-    /**
-     * Compares domains as a sorting function. Used to sort region IDs.
-     *
-     * @param string $regionA
-     * @param string $regionB
-     *
-     * @return int
-     */
-    public static function compareDomains($regionA, $regionB)
-    {
-        if (strpos($regionA, '.') && strpos($regionB, '.')) {
-            $partsA = explode('.', $regionA, 2);
-            $partsB = explode('.', $regionB, 2);
-            return (\strnatcasecmp($partsA[1], $partsB[1]) * 10) + \strnatcasecmp($partsA[0], $partsB[0]);
-        }
-        return \strnatcasecmp($regionA, $regionB);
     }
 
     /**

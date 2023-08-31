@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
@@ -155,7 +156,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     {
         $projects = $this->api()->getMyProjects();
         if ($input->getOption('sort')) {
-            $this->api()->sortObjects($projects, $input->getOption('sort'));
+            Sort::sortObjects($projects, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
             $projects = array_reverse($projects, true);
