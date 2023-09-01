@@ -295,18 +295,6 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        // Clear the relationships cache if the environment was probably altered.
-        if ($targetEnvironment) {
-            try {
-                $sshUrl = $targetEnvironment->getSshUrl();
-                /** @var \Platformsh\Cli\Service\Relationships $relationships */
-                $relationships = $this->getService('relationships');
-                $relationships->clearCaches($sshUrl);
-            } catch (EnvironmentStateException $e) {
-                // Ignore environments with a missing SSH URL.
-            }
-        }
-
         // Advise the user to set the project as the remote.
         if (!$currentProject && !$input->getOption('set-upstream')) {
             $this->stdErr->writeln('');

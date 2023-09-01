@@ -304,14 +304,6 @@ class Relationships implements InputConfiguringInterface
     }
 
     /**
-     * @param string $sshUrl
-     */
-    public function clearCaches($sshUrl)
-    {
-        $this->envVarService->clearCaches($sshUrl);
-    }
-
-    /**
      * @return bool
      */
     public function hasLocalEnvVar()
