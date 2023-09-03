@@ -61,27 +61,7 @@ class AuthInfoCommand extends CommandBase
             return 0;
         }
 
-        if ($this->api()->authApiEnabled()) {
-            $info = $this->api()->getUser(null, (bool) $input->getOption('refresh'))->getProperties();
-        } else {
-            // Backwards compatibility.
-            $account = $this->api()->getMyAccount((bool) $input->getOption('refresh'));
-            $info = [
-                'id' => $account['id'],
-                'first_name' => '',
-                'last_name' => '',
-                'email' => $account['mail'],
-                'username' => $account['username'],
-            ];
-            if (isset($account['display_name'])) {
-                $parts = \explode(' ', $account['display_name'], 2);
-                if (count($parts) === 2) {
-                    list($info['first_name'], $info['last_name']) = $parts;
-                } else {
-                    $info['last_name'] = $account['display_name'];
-                }
-            }
-        }
+        $info = $this->api()->getMyAccount();
 
         $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'phone_number_verified'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));

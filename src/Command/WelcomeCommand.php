@@ -90,7 +90,7 @@ class WelcomeCommand extends CommandBase
             $messages = [];
             $messages[] = '<comment>This project is suspended.</comment>';
             if ($this->config()->getWithDefault('warnings.project_suspended_payment', true)) {
-                if ($project->owner === $this->api()->getMyAccount()['id']) {
+                if ($project->owner === $this->api()->getMyUserId()) {
                     $messages[] = '<comment>Update your payment details to re-activate it</comment>';
                 }
             }

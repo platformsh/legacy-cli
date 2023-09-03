@@ -746,13 +746,52 @@ class Api
      *
      * @param bool $reset
      *
-     * @deprecated use getUser() if the Auth API (the config key api.auth) is enabled
-     *
-     * @return array
-     *   An array containing at least 'username', 'id', 'mail', and
-     *   'display_name'.
+     * @return array{
+     *     'id': string,
+     *     'username': string,
+     *     'email': string,
+     *     'first_name': string,
+     *     'last_name': string,
+     *     'display_name': string,
+     *     'phone_number_verified': bool,
+     *     'uuid'?: string
+     * }
      */
     public function getMyAccount($reset = false)
+    {
+        $info = ['id' => '', 'username' => '', 'email' => '', 'first_name' => '', 'last_name' => '', 'phone_number_verified' => false];
+        if ($this->authApiEnabled()) {
+            $user = $this->getUser(null, $reset);
+            $info = array_merge($info, $user->getProperties());
+            $info['display_name'] = trim($user->first_name . ' ' . $user->last_name);
+        } else {
+            $account = $this->getLegacyAccountInfo($reset);
+            $info = [
+                'id' => $account['id'],
+                'username' => $account['username'],
+                'email' => $account['mail'],
+                'display_name' => $account['display_name'],
+            ];
+            if (isset($account['display_name'])) {
+                $parts = \explode(' ', $account['display_name'], 2);
+                if (count($parts) === 2) {
+                    list($info['first_name'], $info['last_name']) = $parts;
+                } else {
+                    $info['last_name'] = $account['display_name'];
+                }
+            }
+        }
+        return $info;
+    }
+
+    /**
+     * Get the current user's legacy account info, including SSH keys.
+     *
+     * @param bool $reset
+     *
+     * @return array{'id': string, 'username': string, 'mail': string, 'display_name': string, 'ssh_keys': array}
+     */
+    private function getLegacyAccountInfo($reset = false)
     {
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         $info = $this->cache->fetch($cacheKey);
@@ -795,7 +834,7 @@ class Api
      */
     public function getSshKeys($reset = false)
     {
-        $data = $this->getMyAccount($reset);
+        $data = $this->getLegacyAccountInfo($reset);
 
         return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->get('api.base_url'), '/') . '/', $this->getHttpClient());
     }

@@ -33,15 +33,10 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
         $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 
-        if ($this->api()->authApiEnabled()) {
-            $email = $this->api()->getUser()->email;
-        } else {
-            $email = $this->api()->getMyAccount()['mail'];
-        }
         $this->stdErr->writeln(sprintf(
             "Adding an SSH key to your %s account (<info>%s</info>)\n",
             $this->config()->get('service.name'),
-            $email
+            $this->api()->getMyAccount()['email']
         ));
 
         $this->stdErr->writeln($this->certificateNotice(false));
@@ -179,13 +174,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
      */
     private function askNewKeyPath(QuestionHelper $questionHelper)
     {
-        $basename = 'id_ed25519-' . $this->config()->get('service.slug');
-        if ($this->api()->authApiEnabled()) {
-            $username = $this->api()->getUser()->username;
-        } else {
-            $username = $this->api()->getMyAccount()['username'];
-        }
-        $basename .= '-' . $username;
+        $basename = 'id_ed25519-' . $this->config()->get('service.slug') . '-' . $this->api()->getMyAccount()['username'];
         $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
         for ($i = 2; \file_exists($sshDir . DIRECTORY_SEPARATOR . $basename); $i++) {
             $basename .= $i;
