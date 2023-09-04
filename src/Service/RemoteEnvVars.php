@@ -108,18 +108,4 @@ class RemoteEnvVars
 
         return json_decode(base64_decode($value), true) ?: [];
     }
-
-    /**
-     * Clear caches for remote environment variables.
-     *
-     * @param string $sshUrl    The SSH URL to the application.
-     * @param array  $variables A list of unprefixed variables.
-     */
-    public function clearCaches($sshUrl, array $variables = ['APPLICATION', 'RELATIONSHIPS', 'ROUTES'])
-    {
-        $prefix = $this->config->get('service.env_prefix');
-        foreach ($variables as $variable) {
-            $this->cache->delete('env-' . $sshUrl . '-' . $prefix . $variable);
-        }
-    }
 }

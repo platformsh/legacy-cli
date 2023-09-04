@@ -74,7 +74,7 @@ class Shell
     }
 
     /**
-     * Execute a command.
+     * Executes a command.
      *
      * @param string|array $args
      * @param string|null  $dir
@@ -92,6 +92,44 @@ class Shell
      *   string if it succeeds with output.
      */
     public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
+    {
+        $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
+        $result = $this->runProcess($process, $mustRun, $quiet);
+
+        return is_int($result) ? $result === 0 : $result;
+    }
+
+    /**
+     * Executes a command and returns the process object.
+     *
+     * @param string|array $args
+     * @param string|null $dir
+     * @param bool $mustRun
+     * @param bool $quiet
+     * @param array $env
+     * @param int|null $timeout
+     * @param string|null $input
+     *
+     * @return Process
+     */
+    public function executeCaptureProcess($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
+    {
+        $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
+        $this->runProcess($process, $mustRun, $quiet);
+        return $process;
+    }
+
+    /**
+     * Sets up a Process and reports to the user that the command is being run.
+     *
+     * @param $args
+     * @param $dir
+     * @param array $env
+     * @param $timeout
+     * @param $input
+     * @return Process
+     */
+    private function setupProcess($args, $dir = null, array $env = [], $timeout = 3600, $input = null)
     {
         $process = new Process($args, null, null, $input, $timeout);
 
@@ -125,9 +163,7 @@ class Shell
             $this->showWorkingDirMessage($dir);
         }
 
-        $result = $this->runProcess($process, $mustRun, $quiet);
-
-        return is_int($result) ? $result === 0 : $result;
+        return $process;
     }
 
     /**

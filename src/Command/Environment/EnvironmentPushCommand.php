@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Environment;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\EnvironmentStateException;
@@ -16,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentPushCommand extends CommandBase
 {
+    const PUSH_FAILURE_EXIT_CODE = 87;
 
     protected function configure()
     {
@@ -132,6 +132,7 @@ class EnvironmentPushCommand extends CommandBase
                     ? sprintf('Do you want to activate the target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment, 'info', false))
                     : sprintf('Create <info>%s</info> as an active environment?', $target);
                 $activateRequested = $questionHelper->confirm($questionText);
+                $this->stdErr->writeln('');
             }
             if ($activateRequested) {
                 // If activating, determine what the environment's parent should be.
@@ -147,8 +148,9 @@ class EnvironmentPushCommand extends CommandBase
                 } elseif ($type === null && $input->isInteractive()) {
                     $type = $this->askEnvironmentType($project);
                 }
+
+                $this->stdErr->writeln('');
             }
-            $this->stdErr->writeln('');
         }
 
         // Check if the environment may be a production one.
@@ -256,14 +258,31 @@ class EnvironmentPushCommand extends CommandBase
         }
         $git->setExtraSshOptions($extraSshOptions);
 
-        // Push.
-        try {
-            $git->execute($gitArgs, null, true, false, $env, true);
-        } catch (ProcessFailedException $e) {
+        // Perform the push, capturing the Process object so that the STDERR
+        // output can be read.
+        /** @var \Platformsh\Cli\Service\Shell $shell */
+        $shell = $this->getService('shell');
+        $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv(), $this->config()->get('api.git_push_timeout'));
+        if ($process->getExitCode() !== 0) {
             /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
             $diagnostics = $this->getService('ssh_diagnostics');
-            $diagnostics->diagnoseFailure($project->getGitUrl(), $e->getProcess());
-            return 1;
+            $diagnostics->diagnoseFailure($project->getGitUrl(), $process);
+            return $process->getExitCode();
+        }
+
+        // Clear the environment cache after pushing.
+        $this->api()->clearEnvironmentsCache($project->id);
+
+        // Check the push log for possible deployment error messages.
+        $log = $process->getErrorOutput();
+        $messages = $this->config()->getWithDefault('detection.push_deploy_error_messages', []);
+        foreach ($messages as $message) {
+            if (\strpos($log, $message) !== false) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(\sprintf('The "git push" completed but there was a deployment error ("<error>%s</error>").', $message));
+
+                return self::PUSH_FAILURE_EXIT_CODE;
+            }
         }
 
         // Wait if there are still activities.
@@ -273,19 +292,6 @@ class EnvironmentPushCommand extends CommandBase
             $success = $monitor->waitMultiple($activities, $project);
             if (!$success) {
                 return 1;
-            }
-        }
-
-        // Clear some caches after pushing.
-        $this->api()->clearEnvironmentsCache($project->id);
-        if ($this->hasSelectedEnvironment()) {
-            try {
-                $sshUrl = $this->getSelectedEnvironment()->getSshUrl();
-                /** @var \Platformsh\Cli\Service\Relationships $relationships */
-                $relationships = $this->getService('relationships');
-                $relationships->clearCaches($sshUrl);
-            } catch (EnvironmentStateException $e) {
-                // Ignore environments with a missing SSH URL.
             }
         }
 

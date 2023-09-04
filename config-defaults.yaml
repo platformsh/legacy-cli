@@ -277,6 +277,9 @@ api:
   # Whether Git Push Options are enabled.
   git_push_options: false
 
+  # The timeout in seconds for a "git push" command. Set to null for no timeout.
+  git_push_timeout: 3600
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   ## Required keys that must be defined elsewhere:
@@ -297,6 +300,19 @@ detection:
   ## Dynamically defaults to the hostname of {service.console_url} if set.
   ##
   # console_domain: 'console.example.com'
+
+  # Messages from "git push" that should be considered as a deployment error.
+  #
+  # If one of these messages is found, the push command's exit code will be 87
+  # (non-zero, indicating failure).
+  push_deploy_error_messages:
+    - Environment creation failed
+    - Environment redeployment failed
+    - Error building project
+    - Unable to build application
+    - Unknown error building the application
+    - Unable to find stack
+    - Cannot build application of type
 
 # Pagination settings.
 #

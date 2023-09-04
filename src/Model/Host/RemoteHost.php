@@ -87,7 +87,7 @@ class RemoteHost implements HostInterface
      */
     public function getCacheKey()
     {
-        return $this->sshUrl;
+        return $this->sshUrl . '--' . $this->environment->head_commit;
     }
 
     public function lastChanged()
