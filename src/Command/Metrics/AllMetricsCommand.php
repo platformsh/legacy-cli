@@ -6,6 +6,7 @@ use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class AllMetricsCommand extends MetricsCommandBase
@@ -52,7 +53,8 @@ class AllMetricsCommand extends MetricsCommandBase
     {
         $this->setName('metrics:all')
             ->setAliases(['met', 'metrics'])
-            ->setDescription('Show CPU, disk and memory metrics for an environment');
+            ->setDescription('Show CPU, disk and memory metrics for an environment')
+            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
         $this->addExample('Show metrics in five-minute intervals over the last hour', '-i 5m -r 1h');
         $this->addExample('Show metrics for all SQL services', '--type mariadb,%sql');
@@ -92,21 +94,23 @@ class AllMetricsCommand extends MetricsCommandBase
             return 1;
         }
 
+        $bytes = $input->getOption('bytes');
+
         $rows = $this->buildRows($values, [
             'cpu_used' => new Field('cpu_used', Field::FORMAT_ROUNDED_2DP),
             'cpu_limit' => new Field('cpu_limit', Field::FORMAT_ROUNDED_2DP),
             'cpu_percent' => new Field('cpu_percent', Field::FORMAT_PERCENT),
 
-            'mem_used' => new Field('mem_used', Field::FORMAT_MEMORY),
-            'mem_limit' => new Field('mem_limit', Field::FORMAT_MEMORY),
+            'mem_used' => new Field('mem_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
+            'mem_limit' => new Field('mem_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
             'mem_percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
 
-            'disk_used' => new Field('disk_used', Field::FORMAT_DISK),
-            'disk_limit' => new Field('disk_limit', Field::FORMAT_DISK),
+            'disk_used' => new Field('disk_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
+            'disk_limit' => new Field('disk_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
             'disk_percent' => new Field('disk_percent', Field::FORMAT_PERCENT),
 
-            'tmp_disk_used' => new Field('tmp_disk_used', Field::FORMAT_DISK),
-            'tmp_disk_limit' => new Field('tmp_disk_limit', Field::FORMAT_DISK),
+            'tmp_disk_used' => new Field('tmp_disk_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
+            'tmp_disk_limit' => new Field('tmp_disk_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_DISK),
             'tmp_disk_percent' => new Field('tmp_disk_percent', Field::FORMAT_PERCENT),
 
             'inodes_used' => new Field('inodes_used', Field::FORMAT_ROUNDED),
