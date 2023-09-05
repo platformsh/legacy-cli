@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Util\Jwt;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -92,7 +93,7 @@ class Certifier
     }
 
     /**
-     * Checks whether a valid certificate exists with other necessary files.
+     * Checks whether a certificate exists with other necessary files.
      *
      * @return Certificate|null
      */
@@ -105,6 +106,64 @@ class Certifier
         $exists = file_exists($private) && file_exists($cert);
 
         return $exists ? new Certificate($cert, $private) : null;
+    }
+
+    /**
+     * Checks whether the certificate is valid.
+     *
+     * It must be not expired, and match the current user ID, and if the
+     * certificate contains access claims, they must match the local JWT access
+     * token (otherwise the certificate is likely to be rejected).
+     *
+     * @param Certificate $certificate
+     * @return bool
+     */
+    public function isValid(Certificate $certificate)
+    {
+        if ($certificate->hasExpired()) {
+            return false;
+        }
+        if ($certificate->metadata()->getKeyId() !== $this->api->getMyUserId()) {
+            return false;
+        }
+        if ($this->certificateConflictsWithJwt($certificate)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns whether a certificate conflicts with the claims in a JWT.
+     *
+     * @param Certificate $certificate
+     * @param string|null $jwt
+     *   A JWT, or null to use the locally stored access token.
+     *
+     * @return bool
+     */
+    public function certificateConflictsWithJwt(Certificate $certificate, $jwt = null)
+    {
+        $extensions = $certificate->metadata()->getExtensions();
+        if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh'])) {
+            // Only access-related claims matter. The token ID is allowed to differ.
+            return false;
+        }
+        $jwt = $jwt ?: $this->api->getAccessToken();
+        $claims = (new Jwt($jwt))->unsafeGetUnverifiedClaims();
+        if (!$claims) {
+            trigger_error('Unable to parse access token claims', E_USER_WARNING);
+            return false;
+        }
+        if (isset($extensions['access-id@platform.sh']) && (!isset($claims['access_id']) || $claims['access_id'] !== $extensions['access-id@platform.sh'])) {
+            return true;
+        }
+        if (isset($extensions['access@platform.sh'])) {
+            $certAccess = json_decode($extensions['access@platform.sh'], true);
+            if (!isset($claims['access']) || $claims['access'] != $certAccess) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

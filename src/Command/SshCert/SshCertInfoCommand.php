@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\SshCert;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\SshCert\Certificate;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -33,7 +32,7 @@ class SshCertInfoCommand extends CommandBase
         $sshConfig = $this->getService('ssh_config');
 
         $cert = $certifier->getExistingCertificate();
-        if (!$cert || !$this->isValid($cert)) {
+        if (!$cert || !$certifier->isValid($cert)) {
             if ($input->getOption('no-refresh')) {
                 $this->stdErr->writeln('No valid SSH certificate found.');
                 $this->stdErr->writeln('To generate a certificate, run this command again without the <comment>--no-refresh</comment> option.');
@@ -61,9 +60,5 @@ class SshCertInfoCommand extends CommandBase
         $formatter->displayData($output, $properties, $input->getOption('property'));
 
         return 0;
-    }
-
-    private function isValid(Certificate $cert) {
-        return !$cert->hasExpired(0) && $cert->metadata()->getKeyId() === $this->api()->getMyUserId();
     }
 }

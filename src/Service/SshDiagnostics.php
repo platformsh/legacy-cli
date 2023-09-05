@@ -86,6 +86,20 @@ class SshDiagnostics
     }
 
     /**
+     * Checks if SSH certificate authentication failed due to its validity.
+     *
+     * This may mean the linked access token was revoked.
+     *
+     * @param Process $failedProcess
+     *
+     * @return bool
+     */
+    private function connectionFailedDueToCertificateValidity(Process $failedProcess)
+    {
+        return stripos($failedProcess->getErrorOutput(), 'the SSH certificate is no longer valid') !== false;
+    }
+
+    /**
      * Tests the SSH connection.
      *
      * @param string $uri
@@ -183,6 +197,13 @@ class SshDiagnostics
         }
 
         $mfaVerified = ($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa();
+
+        if ($this->connectionFailedDueToCertificateValidity($failedProcess)) {
+            $this->stdErr->writeln('The SSH connection failed because the SSH certificate is no longer valid.');
+            $this->certifier->generateCertificate();
+            $this->stdErr->writeln('A new SSH certificate has been generated. Please try again.');
+            return;
+        }
 
         if (!$mfaVerified && $this->connectionFailedDueToMFA($failedProcess)) {
             $this->stdErr->writeln('');

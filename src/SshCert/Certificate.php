@@ -61,11 +61,11 @@ class Certificate {
      *
      * @param int $buffer
      *   A duration in seconds by which to reduce the certificate's lifetime,
-     *   to account for clock drift. Defaults to 300 (five minutes).
+     *   to account for clock drift. Defaults to 120 (two minutes).
      *
      * @return bool
      */
-    public function hasExpired($buffer = 300) {
+    public function hasExpired($buffer = 120) {
         return $this->metadata()->getValidBefore() - $buffer < \time();
     }
 

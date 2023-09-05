@@ -44,8 +44,7 @@ class SshCertLoadCommand extends CommandBase
         if ($sshCert
             && !$input->getOption('new')
             && !$input->getOption('new-key')
-            && !$sshCert->hasExpired()
-            && $sshCert->metadata()->getKeyId() === $this->api()->getMyUserId()) {
+            && $certifier->isValid($sshCert)) {
             $this->stdErr->writeln('A valid SSH certificate exists');
             $this->displayCertificate($sshCert);
             $refresh = false;
@@ -83,11 +82,11 @@ class SshCertLoadCommand extends CommandBase
         $expires = $formatter->formatUnixTimestamp($cert->metadata()->getValidBefore());
         $expiresWithColor = $expires < time() ? '<fg=green>' . $expires . '</>' : $expires;
         $mfaWithColor = $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified';
-        $interactivityMode = $cert->isApp() ? 'app' : 'interactive';
+        $interactivityMode = '<fg=green>' . ($cert->isApp() ? 'app' : 'interactive') . '</>';
         $this->stdErr->writeln([
             "  Expires at: $expiresWithColor",
             "  Multi-factor authentication: $mfaWithColor",
-            "  Mode: <info>$interactivityMode</info>",
+            "  Mode: $interactivityMode",
         ]);
         $this->stdErr->writeln('The certificate will be automatically refreshed when necessary.');
     }

@@ -111,7 +111,7 @@ class Ssh implements InputConfiguringInterface
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
                 $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
 
-                if ((!$sshCert || $sshCert->hasExpired()) && $this->sshConfig->checkRequiredVersion()) {
+                if ((!$sshCert || !$this->certifier->isValid($sshCert)) && $this->sshConfig->checkRequiredVersion()) {
                     $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
                     try {
                         $sshCert = $this->certifier->generateCertificate();
