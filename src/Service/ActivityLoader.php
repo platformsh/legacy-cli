@@ -189,6 +189,8 @@ class ActivityLoader
             'environment.redeploy',
             'environment.restore',
             'environment.resume',
+            'environment.resources.update',
+            'environment.update.privileged_configuration',
             'environment.version.create',
             'environment.version.update',
             'environment.version.delete',
