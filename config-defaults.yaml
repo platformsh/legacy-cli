@@ -313,6 +313,7 @@ detection:
     - Unknown error building the application
     - Unable to find stack
     - Cannot build application of type
+    - Invalid deployment
 
 # Pagination settings.
 #
