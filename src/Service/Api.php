@@ -536,13 +536,23 @@ class Api
      */
     public function getMyProjects($refresh = null)
     {
-        $cacheKey = sprintf('%s:my-projects', $this->config->getSessionId());
+        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.projects_list_new');
+        $cacheKey = sprintf('%s:my-projects%s', $this->config->getSessionId(), $new ? ':new' : '');
         $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh === false && !$cached) {
             return [];
         } elseif ($refresh || !$cached) {
-            $projects = $this->getClient()->getMyProjects();
+            if ($new) {
+                $this->debug('Loading extended access information to fetch the projects list');
+                $projects = $this->getClient()->getMyProjects();
+            } else {
+                $this->debug('Loading account information to fetch the projects list');
+                $projects = [];
+                foreach ($this->getClient()->getProjectStubs((bool) $refresh) as $stub) {
+                    $projects[] = BasicProjectInfo::fromStub($stub);
+                }
+            }
             $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
         } else {
             $projects = $cached;
