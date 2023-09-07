@@ -25,7 +25,7 @@ export PLATFORMSH_CLI_NO_INTERACTION=1
 
 platform project:set-remote "$PF_PROJECT_ID"
 
-# Build the push command.
+# Build and run the push command.
 push_command="platform push --force --target=${BRANCH}"
 if [ "$PF_PARENT_ENV" != "$BRANCH" ]; then
   push_command="$push_command --activate --parent=${PF_PARENT_ENV}"
@@ -34,20 +34,7 @@ if [ -n "$PF_NO_CLONE_PARENT" ]; then
   push_command="$push_command --no-clone-parent"
 fi
 
-# Run the push command, copying its output to push.log.
-$push_command 2>&1 | tee push.log
-
-# Analyse the result for a push failure or build failure.
-push_result=${PIPESTATUS[0]}
-[ "$push_result" != 0 ] && exit "$push_result"
-if grep -q "Unable to build application" push.log \
-  || grep -q "Error building project" push.log \
-  || grep -q "Resources exceeding plan limit" push.log \
-  || grep -q "Environment redeployment failed" push.log; then
-  rm push.log || true
-  exit 1
-fi
-rm push.log || true
+$push_command
 
 # Write the environment's primary URL to a dotenv file.
 # This can be used by a GitLab job via the "dotenv" artifact type.
