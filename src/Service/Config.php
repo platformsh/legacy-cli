@@ -438,6 +438,19 @@ class Config
     }
 
     /**
+     * Test if a command should be hidden.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isCommandHidden($name)
+    {
+        return (!empty($this->config['application']['hidden_commands'])
+            && in_array($name, $this->config['application']['hidden_commands']));
+    }
+
+    /**
      * Test if a command should be enabled.
      *
      * @param string $name

@@ -31,6 +31,10 @@ class LocalDrushAliasesCommand extends CommandBase
 
     public function isHidden()
     {
+        if (parent::isHidden()) {
+            return true;
+        }
+
         // Hide this command in the list if the project is not Drupal.
         // Avoid checking if running in the home directory.
         $projectRoot = $this->getProjectRoot();
@@ -38,7 +42,7 @@ class LocalDrushAliasesCommand extends CommandBase
             return true;
         }
 
-        return parent::isHidden();
+        return false;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

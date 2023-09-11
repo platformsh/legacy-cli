@@ -31,10 +31,13 @@ EOF
 
     public function isHidden()
     {
+        if (parent::isHidden()) {
+            return true;
+        }
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
 
-        return $localProject->getLegacyProjectRoot() ? false : true;
+        return !$localProject->getLegacyProjectRoot();
     }
 
     public function isEnabled()

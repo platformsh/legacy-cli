@@ -154,7 +154,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function isHidden()
     {
-        return $this->hiddenInList || !in_array($this->stability, [self::STABILITY_STABLE, self::STABILITY_BETA]);
+        return $this->hiddenInList
+            || !in_array($this->stability, [self::STABILITY_STABLE, self::STABILITY_BETA])
+            || $this->config()->isCommandHidden($this->getName());
     }
 
     /**

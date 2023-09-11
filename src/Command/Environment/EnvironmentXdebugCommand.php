@@ -31,6 +31,10 @@ class EnvironmentXdebugCommand extends CommandBase
 
     public function isHidden()
     {
+        if (parent::isHidden()) {
+            return true;
+        }
+
         // Hide this command in the list if the project is not PHP.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot) {
@@ -42,7 +46,7 @@ class EnvironmentXdebugCommand extends CommandBase
             }
         }
 
-        return parent::isHidden();
+        return false;
     }
 
     /**

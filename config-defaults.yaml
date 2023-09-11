@@ -76,6 +76,10 @@ application:
   # section.
   experimental_commands: []
 
+  # Hidden commands (a list of full command names).
+  # Some commands may be hidden in the code, regardless of this setting.
+  hidden_commands: []
+
   # The Composer package name (for legacy PHP Composer installations).
   package_name: null
 
