@@ -134,7 +134,7 @@ class ApplicationFinder
      *
      * @param string $directory
      *
-     * @return Finder
+     * @return Finder|array
      */
     private function findAppConfigFiles($directory)
     {
@@ -142,7 +142,7 @@ class ApplicationFinder
         // search depth is limited to safeguard against this.
         $finder = new Finder();
         if (!$this->config->has('service.app_config_file')) {
-            return $finder;
+            return [];
         }
         return $finder->in($directory)
             ->name($this->config->get('service.app_config_file'))

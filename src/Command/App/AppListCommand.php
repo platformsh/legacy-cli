@@ -61,7 +61,7 @@ class AppListCommand extends CommandBase
         // @todo The "Local path" column is mainly here for legacy reasons, and can be removed in a future version.
         $showLocalPath = false;
         $localApps = [];
-        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent()) {
+        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config()->has('service.app_config_file')) {
             /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
             $finder = $this->getService('app_finder');
             $localApps = $finder->findApplications($projectRoot);

@@ -163,13 +163,17 @@ class LocalApplication
      */
     private function getConfigObject()
     {
-        if (!isset($this->config) && $this->cliConfig->has('service.app_config_file')) {
-            $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
-            if (!file_exists($file)) {
-                throw new InvalidConfigException('Configuration file not found: ' . $file);
+        if (!isset($this->config)) {
+            if ($this->cliConfig->has('service.app_config_file')) {
+                $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
+                if (!file_exists($file)) {
+                    throw new InvalidConfigException('Configuration file not found: ' . $file);
+                }
+                $config = (array) (new YamlParser())->parseFile($file);
+                $this->config = new AppConfig($config);
+            } else {
+                $this->config = new AppConfig([]);
             }
-            $config = (array) (new YamlParser())->parseFile($file);
-            $this->config = new AppConfig($config);
         }
 
         return $this->config;
