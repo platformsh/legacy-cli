@@ -63,6 +63,8 @@ api:
   user_verification: true
   metrics: true
 
+  vendor_filter: 'platformsh'
+
 detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh' # matches git.eu-5.platform.sh, etc.
