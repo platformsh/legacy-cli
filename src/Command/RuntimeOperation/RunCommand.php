@@ -116,7 +116,7 @@ class RunCommand extends CommandBase
         try {
             $result = $deployment->execRuntimeOperation($operationName, $appName);
         } catch (OperationUnavailableException $e) {
-            throw new ApiFeatureMissingException('This project does not support source operations.');
+            throw new ApiFeatureMissingException('This project does not support runtime operations.');
         }
 
         $success = true;
