@@ -81,21 +81,20 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         // Validate the --size option.
-        $sizeNormalizer = function ($v) { return $v[0] === '.' ? '0' . $v : $v; };
-        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, function ($v, $serviceName, $service) use ($nextDeployment, $sizeNormalizer) {
-            return $this->validateProfileSize($v, $serviceName, $service, $nextDeployment, $sizeNormalizer);
-        }, $sizeNormalizer);
+        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, function ($v, $serviceName, $service) use ($nextDeployment) {
+            return $this->validateProfileSize($v, $serviceName, $service, $nextDeployment);
+        });
 
         // Validate the --count option.
         list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, function ($v, $serviceName, $service) use ($instanceLimit) {
             return $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit);
-        }, '\\intval');
+        });
         $errored = $errored || $countErrored;
 
         // Validate the --disk option.
         list($givenDiskSizes, $diskErrored) = $this->parseSetting($input, 'disk', $services, function ($v, $serviceName, $service) {
             return $this->validateDiskSize($v, $serviceName, $service);
-        }, '\\intval');
+        });
         $errored = $errored || $diskErrored;
         if ($errored) {
             return 1;
@@ -177,10 +176,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $ensureHeader();
                     $default = $properties['instance_count'] ?: 1;
                     $instanceCount = $questionHelper->askInput('Enter the number of instances', $default, [], function ($v) use ($name, $service, $instanceLimit) {
-                        if ($error = $this->validateInstanceCount($v, $name, $service, $instanceLimit)) {
-                            throw new InvalidArgumentException($error);
-                        }
-                        return (int) $v;
+                        return $this->validateInstanceCount($v, $name, $service, $instanceLimit);
                     });
                     if ($instanceCount !== $properties['instance_count']) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
@@ -198,10 +194,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $ensureHeader();
                     $default = $service->disk;
                     $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  function ($v) use ($name, $service) {
-                        if ($error = $this->validateDiskSize($v, $name, $service)) {
-                            throw new InvalidArgumentException($error);
-                        }
-                        return (int) $v;
+                        return $this->validateDiskSize($v, $name, $service);
                     });
                     if ($diskSize !== $service->disk) {
                         $updates[$group][$name]['disk'] = $diskSize;
@@ -381,7 +374,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @param Service|WebApp|Worker $service
      * @param int|null $limit
      *
-     * @return string|null An error message or null.
+     * @throws InvalidArgumentException
+     *
+     * @return int
      */
     protected function validateInstanceCount($value, $serviceName, $service, $limit)
     {
@@ -395,7 +390,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         if ($limit !== null && $count > $limit) {
             return sprintf('The instance count <error>%d</error> exceeds the limit %d.', $count, $limit);
         }
-        return null;
+        return intval($value);
     }
 
     /**
@@ -405,18 +400,24 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @param string $serviceName
      * @param Service|WebApp|Worker $service
      *
-     * @return string|null
+     * @throws InvalidArgumentException
+     *
+     * @return int
      */
     protected function validateDiskSize($value, $serviceName, $service)
     {
         if (!$this->needsDisk($service)) {
-            return sprintf('The %s <error>%s</error> does not have a persistent disk.', $this->typeName($service), $serviceName);
+            throw new InvalidArgumentException(sprintf(
+                'The %s <error>%s</error> does not have a persistent disk.', $this->typeName($service), $serviceName
+            ));
         }
         $size = (int) $value;
         if ($size != $value || $value <= 0) {
-            return sprintf('Invalid disk size <error>%s</error>: it must be an integer in MB.', $value);
+            throw new InvalidArgumentException(sprintf(
+                'Invalid disk size <error>%s</error>: it must be an integer in MB.', $value
+            ));
         }
-        return null;
+        return $size;
     }
 
     /**
@@ -426,22 +427,26 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @param string $serviceName
      * @param Service|WebApp|Worker $service
      * @param EnvironmentDeployment $deployment
-     * @param callable $normalizer
      *
-     * @return string|null
+     * @throws InvalidArgumentException
+     *
+     * @return string
      */
-    protected function validateProfileSize($value, $serviceName, $service, EnvironmentDeployment $deployment, $normalizer)
+    protected function validateProfileSize($value, $serviceName, $service, EnvironmentDeployment $deployment)
     {
         $properties = $service->getProperties();
         $containerProfile = $properties['container_profile'];
         if (!isset($deployment->container_profiles[$containerProfile])) {
             throw new \RuntimeException(sprintf('Container profile %s for service %s not found', $containerProfile, $serviceName));
         }
-        $normalized = $normalizer($value);
-        if (!isset($deployment->container_profiles[$containerProfile][$normalized])) {
-            return sprintf('Size <error>%s</error> not found in container profile %s (for service %s).', $value, $containerProfile, $serviceName);
+        // Loosely compare the value with the container profile sizes.
+        $sizes = array_keys($deployment->container_profiles[$containerProfile]);
+        foreach ($sizes as $size) {
+            if ($value == $size) {
+                return $size;
+            }
         }
-        return null;
+        throw new InvalidArgumentException(sprintf('Size <error>%s</error> not found in container profile <comment>%s</comment>; the available sizes are: <comment>%s</comment>', $value, $containerProfile, implode('</comment>, <comment>', $sizes)));
     }
 
     /**
@@ -452,15 +457,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @param array<string, Service|WebApp|Worker> $services
      * @param callable|null $validator
      *   Validate the value. The callback takes the arguments ($value,
-     *   $serviceName, $service) and returns an error message or null.
-     * @param callable|null $normalizer
-     *   Normalize the value (after validation). Takes a string and returns
-     *   the normalized value (any type that can be cast into a string).
+     *   $serviceName, $service) and returns a normalized value or throws
+     *   an InvalidArgumentException.
      *
      * @return array{array<string, mixed>, bool}
      *     An array of settings per service, and whether an error occurred.
      */
-    private function parseSetting(InputInterface $input, $optionName, $services, $validator, $normalizer)
+    private function parseSetting(InputInterface $input, $optionName, $services, $validator)
     {
         $items = ArrayArgument::getOption($input, $optionName);
         $serviceNames = array_keys($services);
@@ -477,10 +480,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 $errors[] = sprintf('App or service <error>%s</error> not found.', $pattern);
                 continue;
             }
-            $normalized = $normalizer ? $normalizer($value) : $value;
             foreach ($givenServiceNames as $name) {
-                if ($validator !== null && ($errorMessage = $validator($value, $name, $services[$name])) !== null) {
-                    $errors[] = $errorMessage;
+                try {
+                    $normalized = $validator($value, $name, $services[$name]);
+                } catch (\InvalidArgumentException $e) {
+                    $errors[] = $e->getMessage();
                     continue;
                 }
                 if (isset($values[$name]) && $values[$name] !== $normalized) {
