@@ -443,7 +443,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $sizes = array_keys($deployment->container_profiles[$containerProfile]);
         foreach ($sizes as $size) {
             if ($value == $size) {
-                return $size;
+                return (string) $size;
             }
         }
         throw new InvalidArgumentException(sprintf('Size <error>%s</error> not found in container profile <comment>%s</comment>; the available sizes are: <comment>%s</comment>', $value, $containerProfile, implode('</comment>, <comment>', $sizes)));
