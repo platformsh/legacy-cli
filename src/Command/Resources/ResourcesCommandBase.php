@@ -54,15 +54,21 @@ class ResourcesCommandBase extends CommandBase
      */
     protected function needsDisk($service)
     {
+        if (!empty($service->disk)) {
+            return true;
+        }
+        // Workers use the disk of their parent app.
         if ($service instanceof Worker) {
-            // Workers use the disk of their parent app.
             return false;
         }
-        $diskless = ['chrome_headless', 'memcached', 'redis'];
-        if ($service instanceof Service && in_array($service->type, $diskless)) {
-            return false;
+        // All services have a disk except 3 types.
+        if ($service instanceof Service) {
+            list($prefix) = explode(':', $service->type, 2);
+            $diskless = ['chrome_headless', 'memcached', 'redis'];
+            return !in_array($prefix, $diskless, true);
         }
-        return !empty($service->disk) || ($service instanceof Service || !empty($service->mounts));
+        // Apps have a disk if they have mounts.
+        return !empty($service->mounts);
     }
 
     /**
