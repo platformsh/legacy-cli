@@ -381,16 +381,16 @@ class ResourcesSetCommand extends ResourcesCommandBase
     protected function validateInstanceCount($value, $serviceName, $service, $limit)
     {
         if ($service instanceof Service) {
-            return sprintf('The instance count of the service <error>%s</error> cannot be changed.', $serviceName);
+            throw new InvalidArgumentException(sprintf('The instance count of the service <error>%s</error> cannot be changed.', $serviceName));
         }
         $count = (int) $value;
         if ($count != $value || $value <= 0) {
-            return sprintf('Invalid instance count <error>%s</error>: it must be an integer greater than 0.', $value);
+            throw new InvalidArgumentException(sprintf('Invalid instance count <error>%s</error>: it must be an integer greater than 0.', $value));
         }
         if ($limit !== null && $count > $limit) {
-            return sprintf('The instance count <error>%d</error> exceeds the limit %d.', $count, $limit);
+            throw new InvalidArgumentException(sprintf('The instance count <error>%d</error> exceeds the limit %d.', $count, $limit));
         }
-        return intval($value);
+        return $count;
     }
 
     /**
