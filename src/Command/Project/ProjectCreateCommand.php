@@ -21,6 +21,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ProjectCreateCommand extends CommandBase
 {
+    private $plansCache;
+
     /**
      * {@inheritdoc}
      */
@@ -308,29 +310,24 @@ EOF
     /**
      * Return a list of plans.
      *
-     * The default list is in the config `service.available_plans`. This is
-     * replaced at runtime by an API call.
-     *
-     * @param bool $runtime
      * @param SetupOptions|null $setupOptions
      *
      * @return array
      *   A list of plan machine names.
      */
-    protected function getAvailablePlans($runtime = false, SetupOptions $setupOptions = null)
+    protected function getAvailablePlans(SetupOptions $setupOptions = null)
     {
         if (isset($setupOptions)) {
             return $setupOptions->plans;
         }
-        if (!$runtime) {
-            return (array) $this->config()->get('service.available_plans');
+        if ($this->plansCache !== null) {
+            return $this->plansCache;
         }
-
         $plans = [];
         foreach ($this->api()->getClient()->getPlans() as $plan) {
             $plans[] = $plan->name;
         }
-        return $plans;
+        return $this->plansCache = $plans;
     }
 
     /**
@@ -437,11 +434,19 @@ EOF
           'plan' => new OptionsField('Plan', [
             'optionName' => 'plan',
             'description' => 'The subscription plan',
-            'options' => $this->getAvailablePlans(),
+
+            // The field starts with an empty list of plans. Then when it is
+            // initialized during "resolveOptions", replace the list of plans
+            // and set a default if possible. If the organization setup options
+            // have been supplied ($setupOptions is not null) then that plans
+            // list will be used.
             'optionsCallback' => function () use ($setupOptions) {
-                return $this->getAvailablePlans(true, $setupOptions);
+                return $this->getAvailablePlans($setupOptions);
             },
-            'default' => $this->getDefaultPlan($this->getAvailablePlans(false, $setupOptions)),
+            'defaultCallback' => function () use ($setupOptions) {
+                return $this->getDefaultPlan($this->getAvailablePlans($setupOptions));
+            },
+
             'allowOther' => true,
             'avoidQuestion' => true,
           ]),
