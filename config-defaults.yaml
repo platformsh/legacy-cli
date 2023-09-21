@@ -149,13 +149,6 @@ service:
   # Optional URL to help about runtime operations.
   runtime_operations_help_url: null
 
-  # Used for the static list of plans in the 'create' command.
-  available_plans:
-    - development
-    - standard
-    - medium
-    - large
-
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
 api:
