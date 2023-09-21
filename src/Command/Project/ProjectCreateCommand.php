@@ -37,7 +37,7 @@ class ProjectCreateCommand extends CommandBase
 
         Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());
 
-        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository (default)');
+        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository. This is the default if no remote project is already set.');
         $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
 
         $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
@@ -169,7 +169,7 @@ EOF
                 $setRemote = $questionHelper->confirm(sprintf(
                     'Set the new project <info>%s</info> as the remote for this repository?',
                     $options['title']
-                ), false);
+                ));
             }
             $this->stdErr->writeln('');
         }
