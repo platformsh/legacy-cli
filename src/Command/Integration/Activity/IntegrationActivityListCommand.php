@@ -25,7 +25,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
     {
         $this
             ->setName('integration:activity:list')
-            ->setAliases(['i:act'])
+            ->setAliases(['int:act'])
+            ->setHiddenAliases(['integration:activities', 'i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter activities by type.'
@@ -42,7 +43,6 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
             ->setDescription('Get a list of activities for an integration');
-        $this->setHiddenAliases(['integration:activities']);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();

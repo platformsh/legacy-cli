@@ -26,7 +26,8 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
     protected function configure()
     {
         $this->setName('organization:subscription:list')
-            ->setAliases(['organization:subscriptions'])
+            ->setAliases(['org:subs'])
+            ->setHiddenAliases(['organization:subscriptions'])
             ->setDescription('List subscriptions within an organization')
             ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination. Ignored if --page is specified.')

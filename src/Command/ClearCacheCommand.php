@@ -13,7 +13,8 @@ class ClearCacheCommand extends CommandBase
     {
         $this
             ->setName('clear-cache')
-            ->setAliases(['clearcache', 'cc'])
+            ->setAliases(['cc'])
+            ->setHiddenAliases(['clearcache'])
             ->setDescription('Clear the CLI cache');
     }
 

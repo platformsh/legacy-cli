@@ -10,8 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentBranchCommand extends CommandBase
 {
-    protected $preferredName = 'branch';
-
     protected function configure()
     {
         $this
