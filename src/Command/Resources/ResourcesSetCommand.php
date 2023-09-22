@@ -149,6 +149,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 $default = isset($properties['resources']['profile_size']) ? $properties['resources']['profile_size'] : null;
                 $options = [];
                 foreach ($profileSizes as $profileSize => $sizeInfo) {
+                    // Skip showing sizes that are below the minimum for this service.
+                    if ((isset($properties['resources']['minimum']['cpu']) && $sizeInfo['cpu'] < $properties['resources']['minimum']['cpu'])
+                      || (isset($properties['resources']['minimum']['memory']) && $sizeInfo['memory'] < $properties['resources']['minimum']['memory'])) {
+                        continue;
+                    }
                     $description = sprintf('CPU %s, memory %s MB', $sizeInfo['cpu'], $sizeInfo['memory']);
                     if (isset($properties['resources']['profile_size'])
                         && $profileSize == $properties['resources']['profile_size']) {
@@ -156,9 +161,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     }
                     $options[$profileSize] = $description;
                 }
-                $profileSize = $questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $default, false, false);
-                if (!isset($properties['resources']['profile_size']) || $profileSize != $properties['resources']['profile_size']) {
-                    $updates[$group][$name]['resources']['profile_size'] = $profileSize;
+                if (!isset($properties['resources']['profile_size']) && empty($options)) {
+                    $this->stdErr->writeln(sprintf('No profile size can be found for the %s <comment>%s</comment> which satisfies its minimum resources.', $type, $name));
+                    $errored = true;
+                } else {
+                    $profileSize = $questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $default, false, false);
+                    if (!isset($properties['resources']['profile_size']) || $profileSize != $properties['resources']['profile_size']) {
+                        $updates[$group][$name]['resources']['profile_size'] = $profileSize;
+                    }
                 }
             } elseif (!isset($properties['resources']['profile_size'])) {
                 $this->stdErr->writeln(sprintf('A profile size is required for the %s <comment>%s</comment>.', $type, $name));
