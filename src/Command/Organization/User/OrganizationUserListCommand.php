@@ -27,7 +27,8 @@ class OrganizationUserListCommand extends OrganizationCommandBase
     {
         $this->setName('organization:user:list')
             ->setDescription('List organization users')
-            ->setAliases(['organization:users'])
+            ->setAliases(['org:users'])
+            ->setHiddenAliases(['organization:users'])
             ->addOrganizationOptions();
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);

@@ -74,7 +74,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $chooseEnvText = 'Enter a number to choose an environment:';
     protected $enterEnvText = 'Enter an environment ID';
     protected $hiddenInList = false;
-    protected $preferredName = '';
     protected $stability = self::STABILITY_STABLE;
     protected $local = false;
     protected $canBeRunMultipleTimes = true;
@@ -1970,13 +1969,16 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Returns the shortest command name for use in help.
+     * Returns the preferred command name for use in help.
      *
      * @return string
      */
     public function getPreferredName()
     {
-        return $this->preferredName ? $this->preferredName : $this->getName();
+        if ($visibleAliases = $this->getVisibleAliases()) {
+            return reset($visibleAliases);
+        }
+        return $this->getName();
     }
 
     /**

@@ -12,14 +12,14 @@ class SelfUpdateCommand extends CommandBase
     {
         $this
             ->setName('self:update')
-            ->setAliases(['self-update'])
+            ->setAliases(['update', 'up'])
+            ->setHiddenAliases(['self-update'])
             ->setDescription('Update the CLI to the latest version')
             ->addOption('no-major', null, InputOption::VALUE_NONE, 'Only update between minor or patch versions')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')
             ->addOption('current-version', null, InputOption::VALUE_REQUIRED, 'Override the current version')
             ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'A timeout for the version check', 30);
-        $this->setHiddenAliases(['update']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

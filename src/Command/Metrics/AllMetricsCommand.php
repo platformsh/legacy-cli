@@ -12,7 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AllMetricsCommand extends MetricsCommandBase
 {
     protected $stability = self::STABILITY_BETA;
-    protected $preferredName = 'metrics';
 
     private $tableHeader = [
         'timestamp' => 'Timestamp',
@@ -52,7 +51,7 @@ class AllMetricsCommand extends MetricsCommandBase
     protected function configure()
     {
         $this->setName('metrics:all')
-            ->setAliases(['met', 'metrics'])
+            ->setAliases(['metrics', 'met'])
             ->setDescription('Show CPU, disk and memory metrics for an environment')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
