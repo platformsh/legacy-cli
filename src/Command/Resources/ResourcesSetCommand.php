@@ -417,6 +417,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 'Invalid disk size <error>%s</error>: it must be an integer in MB.', $value
             ));
         }
+        $resources = $service->getProperty('resources', false);
+        if (isset($resources['minimum']['disk']) && $value < $resources['minimum']['disk']) {
+            throw new InvalidArgumentException(sprintf(
+                'Invalid disk size <error>%s</error>: the minimum size for this %s is <error>%d</error> MB.',
+                $value, $this->typeName($service), $resources['minimum']['disk']
+            ));
+        }
         return $size;
     }
 
@@ -439,14 +446,27 @@ class ResourcesSetCommand extends ResourcesCommandBase
         if (!isset($deployment->container_profiles[$containerProfile])) {
             throw new \RuntimeException(sprintf('Container profile %s for service %s not found', $containerProfile, $serviceName));
         }
-        // Loosely compare the value with the container profile sizes.
-        $sizes = array_keys($deployment->container_profiles[$containerProfile]);
-        foreach ($sizes as $size) {
-            if ($value == $size) {
-                return (string) $size;
+        $resources = $service->getProperty('resources', false);
+        $profile = $deployment->container_profiles[$containerProfile];
+        foreach ($profile as $sizeName => $sizeInfo) {
+            // Loosely compare the value with the container profile size.
+            if ($value == $sizeName) {
+                if (isset($resources['minimum']['cpu'], $sizeInfo['cpu']) && $sizeInfo['cpu'] < $resources['minimum']['cpu']) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Invalid profile size <error>%s</error>: its CPU amount %d is below the minimum for this %s, %d',
+                        $sizeName, $sizeInfo['cpu'], $this->typeName($service), $resources['minimum']['cpu']
+                    ));
+                }
+                if (isset($resources['minimum']['memory'], $sizeInfo['memory']) && $sizeInfo['memory'] < $resources['minimum']['memory']) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Invalid profile size <error>%s</error>: its memory amount %d MB is below the minimum for this %s, %d MB',
+                        $sizeName, $sizeInfo['memory'], $this->typeName($service), $resources['minimum']['memory']
+                    ));
+                }
+                return (string) $sizeName;
             }
         }
-        throw new InvalidArgumentException(sprintf('Size <error>%s</error> not found in container profile <comment>%s</comment>; the available sizes are: <comment>%s</comment>', $value, $containerProfile, implode('</comment>, <comment>', $sizes)));
+        throw new InvalidArgumentException(sprintf('Size <error>%s</error> not found in container profile <comment>%s</comment>; the available sizes are: <comment>%s</comment>', $value, $containerProfile, implode('</comment>, <comment>', array_keys($profile))));
     }
 
     /**
