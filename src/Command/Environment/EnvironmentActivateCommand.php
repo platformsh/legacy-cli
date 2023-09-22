@@ -73,10 +73,31 @@ class EnvironmentActivateCommand extends CommandBase
                     $count--;
                     continue;
                 }
+                if ($environment->status === 'paused') {
+                    $output->writeln("The environment " . $this->api()->getEnvironmentLabel($environment, 'comment') . " is paused.");
+                    if (count($environments) === 1 && $input->isInteractive() && $questionHelper->confirm('Do you want to resume it?')) {
+                        return $this->runOtherCommand('environment:resume', [
+                            '--project' => $environment->project,
+                            '--environment' => $environment->id,
+                            '--wait' => $input->getOption('wait'),
+                            '--no-wait' => $input->getOption('no-wait'),
+                            '--yes' => true,
+                        ]);
+                    }
+                    $output->writeln(sprintf(
+                        'To resume the environment, run: <comment>%s environment:resume</comment>',
+                        $this->config()->get('application.executable')
+                    ));
+                    $count--;
+                    continue;
+                }
 
                 $output->writeln(
                     "Operation not available: The environment " . $this->api()->getEnvironmentLabel($environment, 'error') . " can't be activated."
                 );
+                if ($environment->is_dirty) {
+                    $output->writeln('An activity is currently in progress on the environment.');
+                }
                 continue;
             }
             $question = "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";

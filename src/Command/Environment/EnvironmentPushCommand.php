@@ -163,7 +163,7 @@ class EnvironmentPushCommand extends CommandBase
         if ($targetEnvironment) {
             $environmentLabel = $this->api()->getEnvironmentLabel($targetEnvironment, $mayBeProduction ? 'comment' : 'info');
             $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment %s of project %s', $source, $environmentLabel, $projectLabel));
-            if ($activateRequested && !$targetEnvironment->isActive()) {
+            if ($activateRequested && !$targetEnvironment->isActive() && $targetEnvironment->status !== 'paused') {
                 $this->stdErr->writeln('The environment will be activated.');
             }
         } else {
@@ -367,7 +367,7 @@ class EnvironmentPushCommand extends CommandBase
                     $targetEnvironment->update($updates)->getActivities()
                 );
             }
-            if (!$targetEnvironment->isActive()) {
+            if (!$targetEnvironment->isActive() && $targetEnvironment->status !== 'paused') {
                 $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
             }
             $this->api()->clearEnvironmentsCache($project->id);
