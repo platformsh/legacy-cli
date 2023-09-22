@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "01d8140f899702d1f473c9f9abc9d20d",
+    "content-hash": "a5e8abe4441dcef3a9e0d48d2a04a449",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -918,16 +918,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "0.76.0",
+            "version": "0.77.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "aff396802370f5278ec65fc08bb4d11847425606"
+                "reference": "9d602227e8d1cc02f6290249865dd6df4b75f22f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/aff396802370f5278ec65fc08bb4d11847425606",
-                "reference": "aff396802370f5278ec65fc08bb4d11847425606",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/9d602227e8d1cc02f6290249865dd6df4b75f22f",
+                "reference": "9d602227e8d1cc02f6290249865dd6df4b75f22f",
                 "shasum": ""
             },
             "require": {
@@ -959,9 +959,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.76.0"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.77.0"
             },
-            "time": "2023-09-06T11:00:24+00:00"
+            "time": "2023-09-18T18:39:51+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -4108,5 +4108,5 @@
     "platform-overrides": {
         "php": "5.5.9"
     },
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.2.0"
 }

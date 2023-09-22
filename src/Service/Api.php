@@ -528,6 +528,27 @@ class Api
     }
 
     /**
+     * Checks whether a project matches a configured vendor filter.
+     *
+     * @param string|string[]|null $filters
+     * @param BasicProjectInfo $project
+     * @return bool
+     */
+    private function matchesVendorFilter($filters, BasicProjectInfo $project)
+    {
+        if (empty($filters)) {
+            return true;
+        }
+        if (in_array($project->vendor, (array) $filters)) {
+            return true;
+        }
+        if (empty($project->vendor)) {
+            return in_array($this->config->get('service.slug'), (array) $filters);
+        }
+        return false;
+    }
+
+    /**
      * Returns the project list for the current user.
      *
      * @param bool|null $refresh
@@ -537,20 +558,28 @@ class Api
     public function getMyProjects($refresh = null)
     {
         $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.projects_list_new');
-        $cacheKey = sprintf('%s:my-projects%s', $this->config->getSessionId(), $new ? ':new' : '');
+        $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
+        $cacheKey = sprintf('%s:my-projects%s:%s', $this->config->getSessionId(), $new ? ':new' : '', is_array($vendorFilter) ? implode(',', $vendorFilter) : (string) $vendorFilter);
         $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh === false && !$cached) {
             return [];
         } elseif ($refresh || !$cached) {
+            $projects = [];
             if ($new) {
                 $this->debug('Loading extended access information to fetch the projects list');
-                $projects = $this->getClient()->getMyProjects();
+                foreach ($this->getClient()->getMyProjects() as $project) {
+                    if ($this->matchesVendorFilter($vendorFilter, $project)) {
+                        $projects[] = $project;
+                    }
+                }
             } else {
                 $this->debug('Loading account information to fetch the projects list');
-                $projects = [];
                 foreach ($this->getClient()->getProjectStubs((bool) $refresh) as $stub) {
-                    $projects[] = BasicProjectInfo::fromStub($stub);
+                    $project = BasicProjectInfo::fromStub($stub);
+                    if ($this->matchesVendorFilter($vendorFilter, $project)) {
+                        $projects[] = $project;
+                    }
                 }
             }
             $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
