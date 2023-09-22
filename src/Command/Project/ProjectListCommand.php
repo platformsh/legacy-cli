@@ -40,7 +40,8 @@ class ProjectListCommand extends CommandBase
             ->setAliases(['projects', 'pro'])
             ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. Disables pagination.')
-            ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Filter by region hostname (exact match)')
+            ->addOption('region', null, InputOption::VALUE_REQUIRED, 'Filter by region (exact match)')
+            ->addHiddenOption('host', null, InputOption::VALUE_REQUIRED, 'Deprecated: replaced by --region')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Filter by title (case-insensitive search)')
             ->addOption('my', null, InputOption::VALUE_NONE, 'Display only the projects you own' . ($organizationsEnabled ? ' (through organizations you own)' : ''))
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list', 1)
@@ -59,6 +60,8 @@ class ProjectListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['host'], 'The option --host is deprecated and replaced by --region. It will be removed in a future version.');
+
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
         // Fetch the list of projects.
@@ -69,8 +72,8 @@ class ProjectListCommand extends CommandBase
 
         // Filter the list of projects.
         $filters = [];
-        if ($host = $input->getOption('host')) {
-            $filters['host'] = $host;
+        if ($region = $input->getOption('region') ?: $input->getOption('host')) {
+            $filters['region'] = $region;
         }
         if (($title = $input->getOption('title')) !== null) {
             $filters['title'] = $title;
@@ -221,9 +224,9 @@ class ProjectListCommand extends CommandBase
     {
         foreach ($filters as $filter => $value) {
             switch ($filter) {
-                case 'host':
+                case 'region':
                     $projects = array_filter($projects, function (BasicProjectInfo $project) use ($value) {
-                        return $value === parse_url($project->endpoint, PHP_URL_HOST);
+                        return strcasecmp($value, $project->region) === 0;
                     });
                     break;
 
