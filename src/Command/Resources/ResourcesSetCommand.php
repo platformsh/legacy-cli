@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\Resources;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Wildcard;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
@@ -66,7 +67,16 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $environment = $this->getSelectedEnvironment();
-        $nextDeployment = $this->loadNextDeployment($environment);
+
+        try {
+            $nextDeployment = $this->loadNextDeployment($environment);
+        } catch (EnvironmentStateException $e) {
+            if ($environment->status === 'inactive') {
+                $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                return 1;
+            }
+            throw $e;
+        }
 
         $services = $this->allServices($nextDeployment);
         if (empty($services)) {

@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Resources;
 
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -46,9 +47,18 @@ class ResourcesGetCommand extends ResourcesCommandBase
         }
 
         $environment = $this->getSelectedEnvironment();
-        $next = $this->loadNextDeployment($environment);
 
-        $services = $this->allServices($next);
+        try {
+            $nextDeployment = $this->loadNextDeployment($environment);
+        } catch (EnvironmentStateException $e) {
+            if ($environment->status === 'inactive') {
+                $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                return 1;
+            }
+            throw $e;
+        }
+
+        $services = $this->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -72,7 +82,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
         $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
 
-        $containerProfiles = $next->container_profiles;
+        $containerProfiles = $nextDeployment->container_profiles;
 
         $rows = [];
         foreach ($services as $name => $service) {
