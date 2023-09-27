@@ -123,10 +123,9 @@ class EnvironmentPushCommand extends CommandBase
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
 
         // Determine whether to activate the environment.
-        $activateRequested = false;
+        $activateRequested = $input->getOption('branch') || $input->getOption('activate');
         $parentId = $type = null;
         if ($target !== $project->default_branch) {
-            $activateRequested = $input->getOption('branch') || $input->getOption('activate');
             if (!$activateRequested && (!$targetEnvironment || $targetEnvironment->status === 'inactive') && $input->isInteractive()) {
                 $questionText = $targetEnvironment
                     ? sprintf('Do you want to activate the target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment, 'info', false))
@@ -163,8 +162,19 @@ class EnvironmentPushCommand extends CommandBase
         if ($targetEnvironment) {
             $environmentLabel = $this->api()->getEnvironmentLabel($targetEnvironment, $mayBeProduction ? 'comment' : 'info');
             $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment %s of project %s', $source, $environmentLabel, $projectLabel));
-            if ($activateRequested && !$targetEnvironment->isActive() && $targetEnvironment->status !== 'paused') {
-                $this->stdErr->writeln('The environment will be activated.');
+            if ($activateRequested) {
+                if (!$targetEnvironment->has_code || $targetEnvironment->operationAvailable('activate', true)) {
+                    $this->stdErr->writeln('The environment will be activated.');
+                } else {
+                    $statusMessages = [
+                        'dirty' => 'The environment cannot be activated as another activity is in progress.',
+                        'deleting' => 'The environment cannot be activated as it is being deleted.',
+                        'paused' => 'The environment is currently paused.',
+                        'active' => 'The environment is already active.',
+                        'default' => 'The environment cannot be activated (operation not available).',
+                    ];
+                    $this->stdErr->writeln(isset($statusMessages[$targetEnvironment->status]) ? $statusMessages[$targetEnvironment->status] : $statusMessages['default']);
+                }
             }
         } else {
             $targetLabel = $mayBeProduction ? '<comment>' . $target . '</comment>' : '<info>' . $target . '</info>';
@@ -367,7 +377,7 @@ class EnvironmentPushCommand extends CommandBase
                     $targetEnvironment->update($updates)->getActivities()
                 );
             }
-            if (!$targetEnvironment->isActive() && $targetEnvironment->status !== 'paused') {
+            if ($targetEnvironment->operationAvailable('activate')) {
                 $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
             }
             $this->api()->clearEnvironmentsCache($project->id);
