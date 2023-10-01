@@ -6,8 +6,10 @@ use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\Bot;
+use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
@@ -22,6 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectCreateCommand extends CommandBase
 {
     private $plansCache;
+    private $regionsCache;
 
     /**
      * {@inheritdoc}
@@ -40,19 +43,19 @@ class ProjectCreateCommand extends CommandBase
         $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository. This is the default if no remote project is already set.');
         $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
 
-        $this->addOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
-            ->addOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
+        $this->addHiddenOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
+            ->addHiddenOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
 
         $this->setHelp(<<<EOF
 Use this command to create a new project.
 
-An interactive form will be presented with the available options. But if the
+An interactive form will be presented with the available options. If the
 command is run non-interactively (with --yes), the form will not be displayed,
 and the --region option will be required.
 
-A project subscription will be requested, and then checked periodically (every 3
-seconds) until the project has been activated, or until the process times out
-(after 15 minutes by default).
+A project subscription will be requested, and then checked periodically (every
+1.5 seconds) until the project has been activated, or until the process times
+out (15 minutes by default).
 
 If known, the project ID will be output to STDOUT. All other output will be sent
 to STDERR.
@@ -218,8 +221,8 @@ EOF
 
         $bot = new Bot($this->stdErr);
         $timedOut = false;
-        $start = $lastCheck = time();
-        $checkInterval = 3;
+        $start = $lastCheck = microtime(true);
+        $checkInterval = 1.5;
         $checkTimeout = $this->getTimeOption($input, 'check-timeout', 1, 3600);
         $totalTimeout = $this->getTimeOption($input, 'timeout', 0, 3600);
         while ($subscription->isPending() && !$timedOut) {
@@ -229,7 +232,7 @@ EOF
             // which allows the server a little more leeway to act on the
             // initial request.
             if (time() - $lastCheck >= $checkInterval) {
-                $lastCheck = time();
+                $lastCheck = microtime(true);
                 try {
                     // The API call will timeout after $checkTimeout seconds.
                     $subscription->refresh(['timeout' => $checkTimeout]);
@@ -239,11 +242,19 @@ EOF
                     } else {
                         throw $e;
                     }
+                } catch (BadResponseException $e) {
+                    if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [502, 503, 524])) {
+                        $this->debug($e->getMessage());
+                    } else {
+                        throw $e;
+                    }
                 }
             }
+            usleep(200000);
             // Check the total timeout.
-            $timedOut = $totalTimeout ? time() - $start > $totalTimeout : false;
+            $timedOut = $totalTimeout && microtime(true) - $start > $totalTimeout;
         }
+
         $this->stdErr->writeln('');
 
         if (!$subscription->isActive()) {
@@ -262,6 +273,45 @@ EOF
             return 1;
         }
 
+        $progressMessage = new ProgressMessage($this->stdErr);
+        $checkInterval = 1;
+        $lastCheck = time();
+        $progressMessage->show('Loading project information...');
+        $project = false;
+        while (true) {
+            if (time() - $lastCheck >= $checkInterval) {
+                $lastCheck = time();
+                try {
+                    $project = $this->api()->getProject($subscription->project_id);
+                    if ($project !== false) {
+                        break;
+                    } else {
+                        $this->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
+                    }
+                } catch (ConnectException $e) {
+                    if (strpos($e->getMessage(), 'timed out') !== false) {
+                        $this->debug($e->getMessage());
+                    } else {
+                        throw $e;
+                    }
+                } catch (BadResponseException $e) {
+                    if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
+                        $this->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
+                    } else {
+                        throw $e;
+                    }
+                }
+                usleep(200000);
+            }
+            if ($totalTimeout && time() - $start > $totalTimeout) {
+                $progressMessage->done();
+                $this->stdErr->writeln(sprintf('The subscription is active but the project <error>%s</error> could not be fetched.', $subscription->project_id));
+                $this->stdErr->writeln('The project may be accessible momentarily. Otherwise, please contact support.');
+                return 1;
+            }
+        }
+        $progressMessage->done();
+
         $this->stdErr->writeln("The project is now ready!");
         $output->writeln($subscription->project_id);
         $this->stdErr->writeln('');
@@ -271,28 +321,9 @@ EOF
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
         $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
 
-        $project = $this->api()->getProject($subscription->project_id);
-        if ($project !== false) {
-            $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
+        $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
 
-            // Temporary workaround for the default environment's title.
-            /** @todo remove this from API version 12 */
-            if ($project->default_branch !== 'master') {
-                try {
-                    $env = $project->getEnvironment($project->default_branch);
-                    if ($env->title === 'Master') {
-                        $prev = $env->title;
-                        $new = $project->default_branch;
-                        $this->debug(\sprintf('Updating the title of environment %s from %s to %s', $env->id, $prev, $new));
-                        $env->update(['title' => $new]);
-                    }
-                } catch (\Exception $e) {
-                    $this->debug('Error: ' . $e->getMessage());
-                }
-            }
-        }
-
-        if ($setRemote && $gitRoot !== false && $project !== false) {
+        if ($setRemote && $gitRoot !== false) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Setting the remote project for this repository to: %s',
@@ -302,6 +333,11 @@ EOF
             /** @var \Platformsh\Cli\Local\LocalProject $localProject */
             $localProject = $this->getService('local.project');
             $localProject->mapDirectory($gitRoot, $project);
+        }
+
+        if ($gitRoot === false) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('To clone the project locally, run: <info>%s get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($project->id)));
         }
 
         return 0;
@@ -357,7 +393,9 @@ EOF
      */
     protected function getAvailableRegions(SetupOptions $setupOptions = null)
     {
-        $regions = $this->api()->getClient()->getRegions();
+        $regions = $this->regionsCache !== null
+            ? $this->regionsCache
+            : $this->regionsCache = $this->api()->getClient()->getRegions();
         $available = [];
         if (isset($setupOptions)) {
             $available = $setupOptions->regions;
