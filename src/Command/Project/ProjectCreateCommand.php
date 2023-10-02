@@ -54,7 +54,7 @@ command is run non-interactively (with --yes), the form will not be displayed,
 and the --region option will be required.
 
 A project subscription will be requested, and then checked periodically (every
-1.5 seconds) until the project has been activated, or until the process times
+3 seconds) until the project has been activated, or until the process times
 out (15 minutes by default).
 
 If known, the project ID will be output to STDOUT. All other output will be sent
@@ -221,8 +221,8 @@ EOF
 
         $bot = new Bot($this->stdErr);
         $timedOut = false;
-        $start = $lastCheck = microtime(true);
-        $checkInterval = 1.5;
+        $start = $lastCheck = time();
+        $checkInterval = 3;
         $checkTimeout = $this->getTimeOption($input, 'check-timeout', 1, 3600);
         $totalTimeout = $this->getTimeOption($input, 'timeout', 0, 3600);
         while ($subscription->isPending() && !$timedOut) {
@@ -232,7 +232,7 @@ EOF
             // which allows the server a little more leeway to act on the
             // initial request.
             if (time() - $lastCheck >= $checkInterval) {
-                $lastCheck = microtime(true);
+                $lastCheck = time();
                 try {
                     // The API call will timeout after $checkTimeout seconds.
                     $subscription->refresh(['timeout' => $checkTimeout]);
@@ -252,7 +252,7 @@ EOF
             }
             usleep(200000);
             // Check the total timeout.
-            $timedOut = $totalTimeout && microtime(true) - $start > $totalTimeout;
+            $timedOut = $totalTimeout && time() - $start > $totalTimeout;
         }
 
         $this->stdErr->writeln('');
