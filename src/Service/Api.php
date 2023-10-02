@@ -343,6 +343,8 @@ class Api
         \parse_str($body, $parsed);
         if (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token') {
             $this->stdErr->writeln('<comment>The API token is invalid.</comment>');
+        } elseif (isset($parsed['error_hint']) && strpos($parsed['error_hint'], 'SSO session has expired') !== false) {
+            $this->stdErr->writeln('<comment>Your SSO session has expired. You have been logged out.</comment>');
         } else {
             $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
         }
