@@ -38,10 +38,6 @@ class ProjectSetRemoteCommand extends CommandBase
             $projectId = $result['projectId'];
         }
 
-        if (!$unset) {
-            $project = $this->selectProject($projectId, null, false);
-        }
-
         /** @var \Platformsh\Cli\Service\Git $git */
         $git = $this->getService('git');
         $root = $git->getRoot(getcwd());
@@ -105,17 +101,26 @@ class ProjectSetRemoteCommand extends CommandBase
             return 0;
         }
 
-        try {
-            $currentProject = $this->getCurrentProject();
-        } catch (ProjectNotFoundException $e) {
-            $currentProject = false;
-        } catch (BadResponseException $e) {
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
-                $currentProject = false;
-            } else {
-                throw $e;
+        $currentProject = $this->getCurrentProject(true);
+        if ($currentProject) {
+            $this->stdErr->writeln(sprintf(
+                'This repository is already linked to the remote project: %s',
+                $this->api()->getProjectLabel($currentProject, 'comment')
+            ));
+            if (!$questionHelper->confirm('Are you sure you want to change it?')) {
+                return 1;
             }
+            $this->stdErr->writeln('');
+            $this->chooseProjectText = 'Enter a number to choose another project:';
+            $this->enterProjectText = 'Enter the ID of another project';
         }
+
+        $asking = $projectId === null;
+        $project = $this->selectProject($projectId, null, false);
+        if ($asking) {
+            $this->stdErr->writeln('');
+        }
+
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
                 'The remote project for this repository is already set as: %s',
