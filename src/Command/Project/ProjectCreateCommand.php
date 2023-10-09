@@ -98,6 +98,21 @@ EOF
             try {
                 $organization = $this->validateOrganizationInput($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
+                $account_id = $this->api()->getMyUserId();
+                $organization = $this->validateOrganizationInput($input);
+                $org_owner_id = $organization->owner_id;
+
+                if ($account_id == $org_owner_id) {
+                    $this->stdErr->writeln("If you have a trial organization, please create your first project through the console UI. Otherwise, please confirm your organization's billing details.");
+                    /*   if (org has trial)
+                    *          indicate verification needed via console
+                    * 
+                    *      else
+                    *          indicate billing details need verified
+                    */
+                    return 1;
+                }
+
                 $this->stdErr->writeln('You do not yet own nor belong to an organization in which you can create a project.');
                 if ($input->isInteractive() && $this->config()->isCommandEnabled('organization:create') && $questionHelper->confirm('Do you want to create an organization now?')) {
                     if ($this->runOtherCommand('organization:create') !== 0) {
