@@ -19,6 +19,7 @@ use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Platformsh\Cli\Service\PropertyFormatter;
 
 class ProjectCreateCommand extends CommandBase
 {
@@ -103,13 +104,19 @@ EOF
                 $org_owner_id = $organization->owner_id;
 
                 if ($account_id == $org_owner_id) {
-                    $this->stdErr->writeln("If you have a trial organization, please create your first project through the console UI. Otherwise, please confirm your organization's billing details.");
-                    /*   if (org has trial)
-                    *          indicate verification needed via console
-                    * 
-                    *      else
-                    *          indicate billing details need verified
-                    */
+                    // requesting account is the organization owner
+                    $trial = getOrgProfileCurrentTrial($input);
+                    $url = '';
+                    if (!$trial) {
+                        // no trial present, something is wrong with billing, like failed payments
+                        $url = $this->config()->get('service.console_url') . '/-/billing-details';
+                        $this->stdErr->writeln('Your organization requires an update of billing details. Please open the following URL in a browser:');
+                    } else {
+                        // org has a trial object, 
+                        $url = $this->config()->get('service.console_url') . '/create-project';
+                        $this->stdErr->writeln('Your organization requires verification. Please open the following URL and complete the verification prompt during project creation:');
+                    }
+                    $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                     return 1;
                 }
 
@@ -487,5 +494,16 @@ EOF
         }
 
         return $value;
+    }
+
+    private function getOrgProfileCurrentTrial(InputInterface $input) {
+        $property = 'current_trial';
+
+        // get organization and its profile
+        $org = $this->validateOrganizationInput($input, 'orders');
+        $profile = $org->getProfile();
+
+        // retrieve the current_trial property
+        return $profile->getProperties()[$property];
     }
 }
