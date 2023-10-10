@@ -108,9 +108,9 @@ EOF
                     $trial = getOrgProfileCurrentTrial($input);
                     $url = '';
                     if (!$trial) {
-                        // no trial present, something is wrong with billing, like failed payments
+                        // no trial present, something is wrong with billing, like no billing details or failed payments
                         $url = $this->config()->get('service.console_url') . '/-/billing-details';
-                        $this->stdErr->writeln('Your organization requires an update of billing details. Please open the following URL in a browser:');
+                        $this->stdErr->writeln('Your organization requires an addition or update of billing details. Please open the following URL in a browser:');
                     } else {
                         // org has a trial object, 
                         $url = $this->config()->get('service.console_url') . '/create-project';
