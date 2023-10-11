@@ -71,7 +71,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $stdErr;
 
     protected $envArgName = 'environment';
+    protected $chooseProjectText = 'Enter a number to choose a project:';
     protected $chooseEnvText = 'Enter a number to choose an environment:';
+    protected $enterProjectText = 'Enter a project ID';
     protected $enterEnvText = 'Enter an environment ID';
     protected $hiddenInList = false;
     protected $stability = self::STABILITY_STABLE;
@@ -1425,12 +1427,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * Offer the user an interactive choice of projects.
      *
      * @param BasicProjectInfo[] $projectInfos
-     * @param string $text
      *
      * @return string
      *   The chosen project ID.
      */
-    final protected function offerProjectChoice(array $projectInfos, $text = 'Enter a number to choose a project:')
+    private function offerProjectChoice(array $projectInfos)
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
@@ -1449,7 +1450,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
             }
             asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
-            return $questionHelper->askInput('Enter a project ID', null, array_values($autocomplete), function ($value) use ($autocomplete) {
+            return $questionHelper->askInput($this->enterProjectText, null, array_values($autocomplete), function ($value) use ($autocomplete) {
                 list($id, ) = explode(' - ', $value);
                 if (empty(trim($id))) {
                     throw new ConsoleInvalidArgumentException('A project ID is required');
@@ -1467,7 +1468,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
-        return $questionHelper->choose($projectList, $text, null, false);
+        return $questionHelper->choose($projectList, $this->chooseProjectText, null, false);
     }
 
     /**
