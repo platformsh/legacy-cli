@@ -163,8 +163,10 @@ class EnvironmentPushCommand extends CommandBase
         if ($targetEnvironment) {
             $environmentLabel = $this->api()->getEnvironmentLabel($targetEnvironment, $mayBeProduction ? 'comment' : 'info');
             $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment %s of project %s', $source, $environmentLabel, $projectLabel));
-            if ($activateRequested && !$targetEnvironment->isActive() && $targetEnvironment->status !== 'paused') {
+            if ($activateRequested && $targetEnvironment->status === 'inactive') {
                 $this->stdErr->writeln('The environment will be activated.');
+            } elseif ($activateRequested && $targetEnvironment->status === 'dirty') {
+                $this->stdErr->writeln('The environment currently has an in-progress activity (it was likely already activated).');
             }
         } else {
             $targetLabel = $mayBeProduction ? '<comment>' . $target . '</comment>' : '<info>' . $target . '</info>';
@@ -367,7 +369,10 @@ class EnvironmentPushCommand extends CommandBase
                     $targetEnvironment->update($updates)->getActivities()
                 );
             }
-            if (!$targetEnvironment->isActive() && $targetEnvironment->status !== 'paused') {
+            if ($targetEnvironment->status === 'dirty') {
+                $targetEnvironment->refresh();
+            }
+            if ($targetEnvironment->status === 'inactive') {
                 $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
             }
             $this->api()->clearEnvironmentsCache($project->id);
