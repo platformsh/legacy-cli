@@ -41,6 +41,7 @@ class EnvironmentUrlCommand extends CommandBase
             $routes = Route::fromVariables($decoded);
         } else {
             $this->debug('Reading URLs from the API');
+            $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
             $this->validateInput($input);
             $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
             $routes = Route::fromDeploymentApi($deployment->routes);

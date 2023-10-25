@@ -92,8 +92,12 @@ class QuestionHelper extends BaseQuestionHelper
      */
     public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null, $skipOnOne = true)
     {
-        if (count($items) === 1 && $skipOnOne) {
-            return key($items);
+        if (count($items) === 1) {
+            if ($skipOnOne) {
+                return key($items);
+            } elseif ($default === null) {
+                $default = key($items);
+            }
         }
         $itemList = array_values($items);
         $defaultKey = $default !== null && isset($items[$default]) ? array_search($items[$default], $itemList, true) : null;
@@ -142,8 +146,12 @@ class QuestionHelper extends BaseQuestionHelper
      */
     public function chooseAssoc(array $items, $text = 'Choose an item:', $default = null, $skipOnOne = true, $newLine = true)
     {
-        if (count($items) === 1 && $skipOnOne) {
-            return key($items);
+        if (count($items) === 1) {
+            if ($skipOnOne) {
+                return key($items);
+            } elseif ($default === null) {
+                $default = key($items);
+            }
         }
         $question = new ChoiceQuestion($text, $items, $default);
         $question->setMaxAttempts(5);

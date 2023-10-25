@@ -58,6 +58,7 @@ EOF
             return 1;
         }
 
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input);
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();

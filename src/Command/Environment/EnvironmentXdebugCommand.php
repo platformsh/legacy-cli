@@ -76,6 +76,7 @@ class EnvironmentXdebugCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input);
         $this->getSelectedEnvironment();
 

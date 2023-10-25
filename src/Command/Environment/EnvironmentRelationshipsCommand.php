@@ -35,6 +35,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
     {
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
         $relationshipsService = $this->getService('relationships');
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
         $relationships = $relationshipsService->getRelationships($host, $input->getOption('refresh'));

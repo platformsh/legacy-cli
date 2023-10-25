@@ -41,6 +41,7 @@ class DbSqlCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
         if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
             $this->validateInput($input);

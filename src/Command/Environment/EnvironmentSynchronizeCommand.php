@@ -38,6 +38,7 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input);
 
         $selectedEnvironment = $this->getSelectedEnvironment();

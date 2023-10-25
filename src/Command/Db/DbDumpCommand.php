@@ -45,6 +45,7 @@ class DbDumpCommand extends CommandBase
 
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
         if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
+            $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
             $this->validateInput($input, true);
         }
 
