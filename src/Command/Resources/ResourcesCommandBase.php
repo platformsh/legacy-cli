@@ -64,7 +64,7 @@ class ResourcesCommandBase extends CommandBase
         // All services have a disk except 3 types.
         if ($service instanceof Service) {
             list($prefix) = explode(':', $service->type, 2);
-            $diskless = ['chrome_headless', 'memcached', 'redis'];
+            $diskless = ['chrome_headless', 'memcached', 'redis', 'varnish'];
             return !in_array($prefix, $diskless, true);
         }
         // Apps have a disk if they have mounts.
