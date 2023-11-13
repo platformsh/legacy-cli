@@ -18,6 +18,7 @@ use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
@@ -1255,7 +1256,14 @@ class Api
         }
         $data = $this->cache->fetch($cacheKey);
         if ($data === false || $refresh) {
-            $deployment = $environment->getCurrentDeployment($required);
+            try {
+                $deployment = $environment->getCurrentDeployment($required);
+            } catch (EnvironmentStateException $e) {
+                if ($e->getEnvironment()->status === 'inactive') {
+                    throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+                }
+                throw $e;
+            }
             if (!$required && $deployment === false) {
                 return self::$deploymentsCache[$cacheKey] = false;
             }

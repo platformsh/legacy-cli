@@ -52,6 +52,7 @@ class DbSizeCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');
 
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input);
         $container = $this->selectRemoteContainer($input);
 

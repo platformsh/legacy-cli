@@ -27,6 +27,7 @@ EOF;
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active', 'dirty']);
         $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();

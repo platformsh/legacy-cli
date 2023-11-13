@@ -75,6 +75,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $chooseEnvText = 'Enter a number to choose an environment:';
     protected $enterProjectText = 'Enter a project ID';
     protected $enterEnvText = 'Enter an environment ID';
+    protected $chooseEnvFilter;
     protected $hiddenInList = false;
     protected $stability = self::STABILITY_STABLE;
     protected $local = false;
@@ -1105,6 +1106,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
+     * Returns an environment filter to select only environments that are not 'inactive'.
+     *
+     * @param string[] $allowedStates
+     *
+     * @return callable
+     */
+    protected function filterEnvsByState(array $allowedStates)
+    {
+        return function (Environment $e) use ($allowedStates) {
+            return \in_array($e->status, $allowedStates, true);
+        };
+    }
+
+    /**
      * Select the current environment for the user.
      *
      * @throws \RuntimeException If the current environment cannot be found.
@@ -1118,10 +1133,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *   Whether to select a default environment.
      * @param bool $detectCurrentEnv
      *   Whether to detect the current environment from Git.
-     * @param bool $devOnly
-     *   If an interactive choice is given, filter the choice to only dev (non-production) environments.
+     * @param null|callable $filter
+     *   If an interactive choice is given, filter the choice of environments.
+     *   This is a callback accepting an Environment and returning a boolean.
+     *   Defaults to the $chooseEnvFilter property.
      */
-    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false, $detectCurrentEnv = true, $devOnly = false)
+    protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false, $detectCurrentEnv = true, $filter = null)
     {
         $envPrefix = $this->config()->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -1164,7 +1181,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->debug('No environment specified or detected: finding a default...');
             $environment = $this->api()->getDefaultEnvironment($this->project);
             if ($environment) {
-                $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api()->getEnvironmentLabel($environment)));
+                $this->stdErr->writeln(\sprintf('Selected default environment: %s', $this->api()->getEnvironmentLabel($environment)));
                 $this->printedSelectedEnvironment = true;
                 $this->environment = $environment;
                 return;
@@ -1173,15 +1190,21 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
             $environments = $this->api()->getEnvironments($this->project);
-            if ($devOnly) {
-                $defaultBranch = $this->project->default_branch;
-                $environments = array_filter($environments, function (Environment $e) use ($defaultBranch) {
-                    return $e->type !== 'production' && $e->id !== $defaultBranch;
-                });
+            if ($filter === null && $this->chooseEnvFilter !== null) {
+                $filter = $this->chooseEnvFilter;
+            }
+            if ($filter !== null) {
+                $environments = array_filter($environments, $filter);
+            }
+            if (count($environments) === 1) {
+                $only = reset($environments);
+                $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api()->getEnvironmentLabel($only)));
+                $this->environment = $only;
+                return;
             }
             if (count($environments) > 0) {
                 $this->debug('No environment specified or detected: offering a choice...');
-                $this->environment = $this->offerEnvironmentChoice($environments, $this->chooseEnvText, $devOnly);
+                $this->environment = $this->offerEnvironmentChoice($environments, $filter === null);
                 return;
             }
         }
@@ -1475,12 +1498,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * Offers a choice of environments.
      *
      * @param Environment[] $environments
-     * @param string $text
-     * @param bool $devOnly
+     * @param bool $autoDefault Whether to pick a default environment for the project.
      *
      * @return Environment
      */
-    final protected function offerEnvironmentChoice(array $environments, $text, $devOnly = false)
+    final protected function offerEnvironmentChoice(array $environments, $autoDefault = true)
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
@@ -1488,11 +1510,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if ($devOnly) {
-            $defaultEnvironmentId = null;
-        } else {
+        if ($autoDefault) {
             $defaultEnvironment = $this->api()->getDefaultEnvironment($this->project);
             $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
+        } else {
+            $defaultEnvironmentId = null;
         }
 
         if (count($environments) > (new Terminal())->getHeight() / 2) {
@@ -1513,11 +1535,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
 
+            $text = $this->chooseEnvText;
             if ($defaultEnvironmentId) {
                 $text .= "\n" . 'Default: <question>' . $defaultEnvironmentId . '</question>';
             }
 
-            $id = $questionHelper->choose($environmentList, $text, $defaultEnvironmentId);
+            $id = $questionHelper->choose($environmentList, $text, $defaultEnvironmentId, false);
         }
 
         return $environments[$id];
@@ -2049,6 +2072,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($remoteContainer === null) {
             if (!$this->hasSelectedEnvironment()) {
+                $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
                 $this->validateInput($input);
             }
             $remoteContainer = $this->selectRemoteContainer($input, $includeWorkers);

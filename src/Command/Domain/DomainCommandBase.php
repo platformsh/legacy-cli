@@ -5,6 +5,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -61,7 +62,9 @@ abstract class DomainCommandBase extends CommandBase
             $supportsNonProduction = $this->supportsNonProductionDomains($project);
 
             if ($forEnvironment) {
-                $this->selectEnvironment($input->getOption('environment'), true, false, true, true);
+                $this->selectEnvironment($input->getOption('environment'), true, false, true, function (Environment $e) use ($project) {
+                    return $e->type !== 'production' && $e->id !== $project->default_branch;
+                });
                 $environment = $this->getSelectedEnvironment();
                 $this->environmentIsProduction = $environment->id === $project->default_branch;
                 $this->ensurePrintSelectedEnvironment(true);

@@ -41,6 +41,7 @@ class EnvironmentScpCommand extends CommandBase
             throw new InvalidArgumentException('No files specified');
         }
 
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input);
 
         $container = $this->selectRemoteContainer($input);

@@ -26,6 +26,7 @@ class EnvironmentActivateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->chooseEnvFilter = $this->filterEnvsByState(['inactive', 'paused']);
         $this->validateInput($input);
 
         if ($this->hasSelectedEnvironment()) {
