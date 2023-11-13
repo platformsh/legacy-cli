@@ -156,7 +156,6 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 $ensureHeader();
                 $new = isset($properties['resources']['profile_size']) ? 'a new' : 'a';
                 $profileSizes = $containerProfiles[$properties['container_profile']];
-                $default = isset($properties['resources']['profile_size']) ? $properties['resources']['profile_size'] : null;
                 $options = [];
                 foreach ($profileSizes as $profileSize => $sizeInfo) {
                     // Skip showing sizes that are below the minimum for this service.
@@ -171,11 +170,21 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     }
                     $options[$profileSize] = $description;
                 }
+
+                $defaultProfileSize = '0.5'; // TODO pick this from the API when exposed
+                if (isset($properties['resources']['profile_size'])) {
+                    $defaultOption = $properties['resources']['profile_size'];
+                } elseif (isset($options[$defaultProfileSize])) {
+                    $defaultOption = $defaultProfileSize;
+                } else {
+                    $defaultOption = null;
+                }
+
                 if (!isset($properties['resources']['profile_size']) && empty($options)) {
                     $this->stdErr->writeln(sprintf('No profile size can be found for the %s <comment>%s</comment> which satisfies its minimum resources.', $type, $name));
                     $errored = true;
                 } else {
-                    $profileSize = $questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $default, false, false);
+                    $profileSize = $questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $defaultOption, false, false);
                     if (!isset($properties['resources']['profile_size']) || $profileSize != $properties['resources']['profile_size']) {
                         $updates[$group][$name]['resources']['profile_size'] = $profileSize;
                     }
@@ -212,7 +221,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     }
                 } elseif ($showCompleteForm || (empty($service->disk) && $input->isInteractive())) {
                     $ensureHeader();
-                    $default = $service->disk;
+                    $default = $service->disk ?: '512';
                     $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  function ($v) use ($name, $service) {
                         return $this->validateDiskSize($v, $name, $service);
                     });
