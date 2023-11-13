@@ -149,6 +149,9 @@ service:
   # Optional URL to help about runtime operations.
   runtime_operations_help_url: null
 
+  # Optional URL to help about managing resources.
+  resources_help_url: null
+
 # Configuration relating to API calls.
 # This can be overridden in the user config file.
 api:

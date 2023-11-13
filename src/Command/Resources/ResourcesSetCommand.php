@@ -49,6 +49,10 @@ class ResourcesSetCommand extends ResourcesCommandBase
             '',
             'If the same service and resource is specified on the command line multiple times, only the final value will be used.'
         ];
+        if ($this->config()->has('service.resources_help_url')) {
+            $helpLines[] = '';
+            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config()->get('service.resources_help_url') . '</info>';
+        }
         $this->setHelp(implode("\n", $helpLines));
 
         $this->addExample('Set profile sizes for two apps and a service', '--size frontend:0.1,backend:.25,database:1');
