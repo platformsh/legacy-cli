@@ -26,7 +26,7 @@ services:
 
     api:
         class:     '\Platformsh\Cli\Service\Api'
-        arguments: ['@config', '@cache', '@output', '@token_config']
+        arguments: ['@config', '@cache', '@output', '@token_config', '@file_lock']
 
     app_finder:
       class:     '\Platformsh\Cli\Local\ApplicationFinder'
@@ -43,7 +43,7 @@ services:
 
     certifier:
       class:     '\Platformsh\Cli\SshCert\Certifier'
-      arguments: ['@api', '@config', '@shell', '@fs', '@output']
+      arguments: ['@api', '@config', '@shell', '@fs', '@output', '@file_lock']
 
     config:
         class:     '\Platformsh\Cli\Service\Config'
@@ -55,6 +55,10 @@ services:
     drush:
         class:     '\Platformsh\Cli\Service\Drush'
         arguments: ['@config', '@shell', '@local.project', '@api', '@app_finder']
+
+    file_lock:
+        class:     '\Platformsh\Cli\Service\FileLock'
+        arguments: ['@config']
 
     fs:
         class:     '\Platformsh\Cli\Service\Filesystem'

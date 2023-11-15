@@ -52,7 +52,7 @@ class AuthInfoCommand extends CommandBase
 
         // Exit early if it's the user ID.
         if ($property === 'id' && $this->api()->authApiEnabled()) {
-            $userId = $this->api()->getMyUserId();
+            $userId = $this->api()->getMyUserId($input->getOption('refresh'));
             if ($userId === false) {
                 $this->stdErr->writeln('The current session is not associated with a user ID');
                 return 1;
@@ -61,7 +61,7 @@ class AuthInfoCommand extends CommandBase
             return 0;
         }
 
-        $info = $this->api()->getMyAccount();
+        $info = $this->api()->getMyAccount($input->getOption('refresh'));
 
         $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'phone_number_verified'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));
