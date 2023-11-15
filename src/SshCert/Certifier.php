@@ -80,7 +80,7 @@ class Certifier
             }
             $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
             sleep(1);
-            if (($cert = $this->getExistingCertificate()) && $cert->metadata()->getValidAfter() > $start && $this->isValid($cert)) {
+            if (($cert = $this->getExistingCertificate()) && $cert->metadata()->getValidAfter() >= $start && $this->isValid($cert)) {
                 $this->fs->remove($lockFilename);
                 return $cert;
             }
