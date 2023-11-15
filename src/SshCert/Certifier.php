@@ -60,27 +60,29 @@ class Certifier
         // logout, which wipes keys).
         $apiClient = $this->api->getClient();
 
+        // Wait for an existing lock for up to 15 seconds, and then acquire a lock.
         $lockFilename = $dir . DIRECTORY_SEPARATOR . 'lock';
-        if (file_exists($lockFilename)) {
-            $timeLimit = 15;
-            $start = time();
-            while (true) {
-                $lockContents = file_get_contents($lockFilename);
-                if ($lockContents === false) {
-                    throw new \RuntimeException('Failed to read lock file: ' . $lockFilename);
-                }
-                $lockTime = min(intval(trim($lockContents)), $start);
-                $now = time();
-                $passed = $now - $lockTime ?: 0;
-                if ($passed > $timeLimit) {
-                    break;
-                }
-                $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
-                sleep(1);
-                if (($cert = $this->getExistingCertificate()) && $cert->metadata()->getValidAfter() > $start && $this->isValid($cert)) {
-                    $this->fs->remove($lockFilename);
-                    return $cert;
-                }
+        $timeLimit = 15;
+        $start = time();
+        while (true) {
+            if (!file_exists($lockFilename)) {
+                break;
+            }
+            $lockContents = file_get_contents($lockFilename);
+            if ($lockContents === false) {
+                throw new \RuntimeException('Failed to read lock file: ' . $lockFilename);
+            }
+            $lockTime = min(intval(trim($lockContents)), $start);
+            $now = time();
+            $passed = $now - $lockTime ?: 0;
+            if ($passed > $timeLimit) {
+                break;
+            }
+            $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
+            sleep(1);
+            if (($cert = $this->getExistingCertificate()) && $cert->metadata()->getValidAfter() > $start && $this->isValid($cert)) {
+                $this->fs->remove($lockFilename);
+                return $cert;
             }
         }
         $this->fs->writeFile($lockFilename, (string) time(), false);
