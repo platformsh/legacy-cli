@@ -60,10 +60,31 @@ class Certifier
         // logout, which wipes keys).
         $apiClient = $this->api->getClient();
 
+        $lockFilename = $dir . DIRECTORY_SEPARATOR . 'lock';
+        if (file_exists($lockFilename)) {
+            $timeLimit = 15;
+            while (true) {
+                $lockContents = file_get_contents($lockFilename);
+                if (!$lockContents) {
+                    throw new \RuntimeException('Failed to read lock file: ' . $lockFilename);
+                }
+                if (time() - intval(trim($lockContents)) > $timeLimit) {
+                    break;
+                }
+                trigger_error('Waiting for SSH certificate generation lock');
+                sleep(1);
+                if (($cert = $this->getExistingCertificate()) && $this->isValid($cert)) {
+                    $this->fs->remove($lockFilename);
+                    return $cert;
+                }
+            }
+        }
+        $this->fs->writeFile($lockFilename, (string) time(), false);
+
         $sshPair = $this->generateSshKey($dir, true);
         $publicContents = file_get_contents($sshPair['public']);
         if (!$publicContents) {
-            throw new \RuntimeException('Failed to read public key file: ' . $publicContents);
+            throw new \RuntimeException('Failed to read public key file: ' . $sshPair['public']);
         }
 
         $certificateFilename = $sshPair['private'] . '-cert.pub';
@@ -73,20 +94,24 @@ class Certifier
             $this->fs->remove($certificateFilename);
         }
 
-        $this->stdErr->writeln('Requesting certificate from the API', OutputInterface::VERBOSITY_VERBOSE);
-        $certificate = $apiClient->getSshCertificate($publicContents);
+        try {
+            $this->stdErr->writeln('Requesting certificate from the API', OutputInterface::VERBOSITY_VERBOSE);
+            $certificate = $apiClient->getSshCertificate($publicContents);
 
-        $this->fs->writeFile($certificateFilename, $certificate);
-        $this->chmod($certificateFilename, 0600);
+            $this->fs->writeFile($certificateFilename, $certificate);
+            $this->chmod($certificateFilename, 0600);
 
-        $certificate = new Certificate($certificateFilename, $sshPair['private']);
+            $certificate = new Certificate($certificateFilename, $sshPair['private']);
 
-        // Add the key to the SSH agent, if possible, silently.
-        // In verbose mode the full command will be printed, so the user can
-        // re-run it to check error details.
-        if ($this->config->getWithDefault('api.add_to_ssh_agent', false)) {
-            $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
-            $this->shell->execute(['ssh-add', '-t', $lifetime, $sshPair['private']], null, false, !$this->stdErr->isVerbose());
+            // Add the key to the SSH agent, if possible, silently.
+            // In verbose mode the full command will be printed, so the user can
+            // re-run it to check error details.
+            if ($this->config->getWithDefault('api.add_to_ssh_agent', false)) {
+                $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
+                $this->shell->execute(['ssh-add', '-t', $lifetime, $sshPair['private']], null, false, !$this->stdErr->isVerbose());
+            }
+        } finally {
+            $this->fs->remove($lockFilename);
         }
 
         return $certificate;
