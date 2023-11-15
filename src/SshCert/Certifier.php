@@ -63,17 +63,21 @@ class Certifier
         $lockFilename = $dir . DIRECTORY_SEPARATOR . 'lock';
         if (file_exists($lockFilename)) {
             $timeLimit = 15;
+            $start = time();
             while (true) {
                 $lockContents = file_get_contents($lockFilename);
-                if (!$lockContents) {
+                if ($lockContents === false) {
                     throw new \RuntimeException('Failed to read lock file: ' . $lockFilename);
                 }
-                if (time() - intval(trim($lockContents)) > $timeLimit) {
+                $lockTime = min(intval(trim($lockContents)), $start);
+                $now = time();
+                $passed = $now - $lockTime ?: 0;
+                if ($passed > $timeLimit) {
                     break;
                 }
-                trigger_error('Waiting for SSH certificate generation lock');
+                $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
                 sleep(1);
-                if (($cert = $this->getExistingCertificate()) && $this->isValid($cert)) {
+                if (($cert = $this->getExistingCertificate()) && $cert->metadata()->getValidAfter() > $start && $this->isValid($cert)) {
                     $this->fs->remove($lockFilename);
                     return $cert;
                 }
