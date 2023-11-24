@@ -138,7 +138,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
             $header = '<options=bold>' . ucfirst($type) . ': </><options=bold,underscore>' . $name . '</>';
             $headerShown = false;
-            $ensureHeader = function () use (&$headerShown, $header) {
+            $ensureHeader = function () use (&$headerShown, &$header) {
                 if (!$headerShown) {
                     $this->stdErr->writeln($header);
                     $this->stdErr->writeln('');
@@ -153,6 +153,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 }
             } elseif ($showCompleteForm
                 || (!isset($properties['resources']['profile_size']) && $input->isInteractive())) {
+                if (isset($properties['container_profile'])) {
+                    $header .= "\n" . sprintf('Container profile: <info>%s</info>', $properties['container_profile']);
+                }
                 $ensureHeader();
                 $new = isset($properties['resources']['profile_size']) ? 'a new' : 'a';
                 $profileSizes = $containerProfiles[$properties['container_profile']];
