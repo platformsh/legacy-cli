@@ -60,32 +60,22 @@ class Certifier
         // logout, which wipes keys).
         $apiClient = $this->api->getClient();
 
-        // Wait for an existing lock for up to 15 seconds, and then acquire a lock.
+        // Acquire a lock to prevent certificates being requested (or keys
+        // generated) at the same time in different CLI processes.
         $lockFilename = $dir . DIRECTORY_SEPARATOR . 'lock';
-        $timeLimit = 15;
         $start = time();
-        while (true) {
-            if (!file_exists($lockFilename)) {
-                break;
-            }
-            $lockContents = file_get_contents($lockFilename);
-            if ($lockContents === false) {
-                throw new \RuntimeException('Failed to read lock file: ' . $lockFilename);
-            }
-            $lockTime = min(intval(trim($lockContents)), $start);
-            $now = time();
-            $passed = $now - $lockTime ?: 0;
-            if ($passed > $timeLimit) {
-                break;
-            }
-            $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
-            sleep(1);
-            if (($cert = $this->getExistingCertificate()) && $cert->metadata()->getValidAfter() >= $start && $this->isValid($cert)) {
-                $this->fs->remove($lockFilename);
-                return $cert;
-            }
+        $result = $this->lock($lockFilename, function () {
+            $this->stdErr->writeln('Waiting for SSH certificate generation lock');
+        }, function () use ($start) {
+            // While waiting for the lock, check if a new certificate has
+            // already been generated elsewhere.
+            $cert = $this->getExistingCertificate();
+            return $cert && $cert->metadata()->getValidAfter() >= $start && $this->isValid($cert)
+                ? $cert : null;
+        });
+        if ($result !== null) {
+            return $result;
         }
-        $this->fs->writeFile($lockFilename, (string) time(), false);
 
         $sshPair = $this->generateSshKey($dir, true);
         $publicContents = file_get_contents($sshPair['public']);
@@ -121,6 +111,55 @@ class Certifier
         }
 
         return $certificate;
+    }
+
+    /**
+     * Waits for a lock file, if it exists, or creates one.
+     *
+     * @param string $lockFilename
+     *   The absolute path for a lock filename.
+     * @param callable|null $onWait
+     *   A function to run when waiting starts.
+     * @param callable|null $check
+     *   A function to run each time the interval has passed. If it returns a
+     *   non-null value, waiting will stop, and the value will be returned
+     *   from this method.
+     * @param int $interval
+     *   A waiting interval in seconds.
+     * @param int $timeLimit
+     *   A time limit in seconds.
+     *
+     * @return mixed|null
+     */
+    private function lock($lockFilename, callable $onWait = null, callable $check = null, $interval = 1, $timeLimit = 15)
+    {
+        $start = \time();
+        $runOnWait = false;
+        while (true) {
+            if (!\file_exists($lockFilename)) {
+                break;
+            }
+            $lockContents = \file_get_contents($lockFilename);
+            $lockedAt = $lockContents !== false ? \intval(\trim($lockContents)) : 0;
+            $lockedAt = $lockedAt ?: $start;
+            if (\time() - $lockedAt > $timeLimit) {
+                break;
+            }
+            if ($onWait !== null && !$runOnWait) {
+                $onWait();
+                $runOnWait = true;
+            }
+            \sleep($interval);
+            if ($check !== null) {
+                $result = $check();
+                if ($result !== null) {
+                    $this->fs->remove($lockFilename);
+                    return $result;
+                }
+            }
+        }
+        $this->fs->writeFile($lockFilename, (string) \time(), false);
+        return null;
     }
 
     /**
