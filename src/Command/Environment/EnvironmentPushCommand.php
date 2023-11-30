@@ -261,7 +261,7 @@ class EnvironmentPushCommand extends CommandBase
                 $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
             }
             if ($resourcesInit !== null) {
-                $gitArgs[] = '--push-option=environment.resources.init=' . $resourcesInit;
+                $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
             }
         }
 
