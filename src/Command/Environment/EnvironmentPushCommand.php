@@ -99,9 +99,9 @@ class EnvironmentPushCommand extends CommandBase
 
         // Validate the --resources-init option.
         $resourcesInit = $input->getOption('resources-init');
-        if ($resourcesInit !== null && !preg_match('/^[a-z0-9-]+$/', $resourcesInit)) {
-            $this->stdErr->writeln('The value for <error>--resources-init</error> is not valid.');
-            $this->stdErr->writeln('It can be one of: default, parent, minimum, or manual.');
+        $resourcesInitOptions = ['default', 'parent', 'minimum', 'manual'];
+        if ($resourcesInit !== null && !\in_array($resourcesInit, $resourcesInitOptions, true)) {
+            $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $resourcesInitOptions));
             return 1;
         }
 
