@@ -33,6 +33,9 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the new environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
+        if ($this->config()->get('api.git_push_options')) {
+            $this->addOption('resources-init', null, InputOption::VALUE_REQUIRED, 'Set the resources to use for new services: default, parent, minimum, or manual');
+        }
         $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
@@ -93,6 +96,14 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         $this->debug(sprintf('Source revision: %s', $sourceRevision));
+
+        // Validate the --resources-init option.
+        $resourcesInit = $input->getOption('resources-init');
+        $resourcesInitOptions = ['default', 'parent', 'minimum', 'manual'];
+        if ($resourcesInit !== null && !\in_array($resourcesInit, $resourcesInitOptions, true)) {
+            $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $resourcesInitOptions));
+            return 1;
+        }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
@@ -248,6 +259,9 @@ class EnvironmentPushCommand extends CommandBase
             }
             if ($input->getOption('no-clone-parent')) {
                 $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
+            }
+            if ($resourcesInit !== null) {
+                $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
             }
         }
 
