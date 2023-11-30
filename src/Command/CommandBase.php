@@ -1762,12 +1762,33 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         /** @var Command $command */
         $command = $application->find($name);
 
-        // Pass on interactivity arguments to the other command.
-        if (isset($this->input) && $command->getDefinition()->hasOption('yes')) {
-            $arguments += [
-                '--yes' => $this->input->getOption('yes'),
-                '--no' => $this->input->getOption('no'),
-            ];
+        if (isset($this->input)) {
+            // Pass on interactivity arguments to the other command.
+            if ($command->getDefinition()->hasOption('yes')) {
+                $arguments += [
+                    '--yes' => $this->input->getOption('yes'),
+                    '--no' => $this->input->getOption('no'),
+                ];
+            }
+
+            // Pass arguments that can be added to the command dynamically using ->add*Options() methods
+            foreach ([
+                'app',
+                'environment',
+                'host',
+                'instance',
+                'no-wait',
+                'org',
+                'project',
+                'wait',
+                'worker',
+            ] as $option) {
+                if ($command->getDefinition()->hasOption($option) && null !== $this->input->getOption($option)) {
+                    $arguments += [
+                        sprintf('--%s', $option) => $this->input->getOption($option),
+                    ];
+                }
+            }
         }
 
         $cmdInput = new ArrayInput(['command' => $name] + $arguments);
