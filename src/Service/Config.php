@@ -357,6 +357,7 @@ class Config
             'COPY_ON_WINDOWS' => 'local.copy_on_windows',
             'DEBUG' => 'api.debug',
             'DISABLE_CACHE' => 'api.disable_cache',
+            'DISABLE_LOCKS' => 'api.disable_locks',
             'DRUSH' => 'local.drush_executable',
             'SESSION_ID' => 'api.session_id',
             'SKIP_SSL' => 'api.skip_ssl',

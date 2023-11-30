@@ -232,6 +232,10 @@ api:
   # Overridden by the {application.env_prefix}DISABLE_CACHE env var.
   disable_cache: false
 
+  # Disable local file-based locking for concurrency control.
+  # Overridden by the {application.env_prefix}DISABLE_LOCKS env var.
+  disable_locks: false
+
   # Disable SSL verification (not recommended).
   # Overridden by the {application.env_prefix}SKIP_SSL env var.
   skip_ssl: false

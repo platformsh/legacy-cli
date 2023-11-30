@@ -64,6 +64,9 @@ class Api
     /** @var TokenConfig */
     private $tokenConfig;
 
+    /** @var FileLock */
+    private $fileLock;
+
     /**
      * The library's API client object.
      *
@@ -138,18 +141,21 @@ class Api
      * @param OutputInterface|null $output
      * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
+     * @param FileLock|null $fileLock
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
         OutputInterface $output = null,
         TokenConfig $tokenConfig = null,
+        FileLock $fileLock = null,
         EventDispatcherInterface $dispatcher = null
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
         $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
+        $this->fileLock = $fileLock ?: new FileLock($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
     }
@@ -281,6 +287,25 @@ class Api
 
         $connectorOptions['token_url'] = $this->config->get('api.oauth2_token_url');
         $connectorOptions['revoke_url'] = $this->config->get('api.oauth2_revoke_url');
+
+        // Acquire a lock to prevent tokens being refreshed at the same time in
+        // different CLI processes.
+        $refreshLockName = 'refresh--' . $this->config->getSessionIdSlug();
+        $connectorOptions['on_refresh_start'] = function ($originalRefreshToken) use ($refreshLockName) {
+            $connector = $this->getClient(false)->getConnector();
+            return $this->fileLock->acquireOrWait($refreshLockName, function () {
+                $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
+            }, function () use ($connector, $originalRefreshToken) {
+                $session = $connector->getSession();
+                $session->load(true);
+                $accessToken = $this->tokenFromSession($session);
+                return $accessToken && $accessToken->getRefreshToken() !== $originalRefreshToken
+                    ? $accessToken : null;
+            });
+        };
+        $connectorOptions['on_refresh_end'] = function () use ($refreshLockName) {
+            $this->fileLock->release($refreshLockName);
+        };
 
         $connectorOptions['on_refresh_error'] = function (BadResponseException $e) {
             return $this->onRefreshError($e);

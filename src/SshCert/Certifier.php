@@ -4,6 +4,7 @@ namespace Platformsh\Cli\SshCert;
 
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\FileLock;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Util\Jwt;
@@ -20,14 +21,16 @@ class Certifier
     private $shell;
     private $fs;
     private $stdErr;
+    private $fileLock;
 
-    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output)
+    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output, FileLock $fileLock)
     {
         $this->api = $api;
         $this->config = $config;
         $this->shell = $shell;
         $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $this->fileLock = $fileLock;
     }
 
     /**
@@ -47,6 +50,39 @@ class Certifier
      */
     public function generateCertificate()
     {
+        // Acquire a lock to prevent race conditions when certificate and key
+        // files are changed at the same time in different CLI processes.
+        $lockName = 'ssh-cert--' . $this->config->getSessionIdSlug();
+        $start = time();
+        $result = $this->fileLock->acquireOrWait($lockName, function () {
+            $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
+        }, function () use ($start) {
+            // While waiting for the lock, check if a new certificate has
+            // already been generated elsewhere.
+            $cert = $this->getExistingCertificate();
+            return $cert && $cert->metadata()->getValidAfter() >= $start && $this->isValid($cert)
+                ? $cert : null;
+        });
+        if ($result !== null) {
+            return $result;
+        }
+
+        try {
+            return $this->doGenerateCertificate();
+        } finally {
+            $this->fileLock->release($lockName);
+        }
+    }
+
+    /**
+     * Inner function to generate the actual certificate.
+     *
+     * @see self::generateCertificate()
+     *
+     * @return Certificate
+     */
+    private function doGenerateCertificate()
+    {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
 
@@ -63,7 +99,7 @@ class Certifier
         $sshPair = $this->generateSshKey($dir, true);
         $publicContents = file_get_contents($sshPair['public']);
         if (!$publicContents) {
-            throw new \RuntimeException('Failed to read public key file: ' . $publicContents);
+            throw new \RuntimeException('Failed to read public key file: ' . $sshPair['public']);
         }
 
         $certificateFilename = $sshPair['private'] . '-cert.pub';
@@ -186,11 +222,9 @@ class Certifier
             $this->stdErr->writeln('Reusing local key pair', OutputInterface::VERBOSITY_VERBOSE);
             return $sshInfo;
         }
+        // Delete the keys if they exist.
+        $this->fs->remove([$sshInfo['private'], $sshInfo['public']]);
         $this->stdErr->writeln('Generating local key pair', OutputInterface::VERBOSITY_VERBOSE);
-        // Delete the keys if they exist, to avoid interaction in the ssh-keygen command.
-        if (file_exists($sshInfo['private']) || file_exists($sshInfo['public'])) {
-            $this->fs->remove($sshInfo);
-        }
         // Generate new keys and set permissions.
         $args = [
             'ssh-keygen',
@@ -199,7 +233,11 @@ class Certifier
             '-N', '', // No passphrase
             '-C', $this->config->get('application.slug') . '-temporary-cert', // Key comment
         ];
-        $this->shell->execute($args, null, true);
+        // The "y\n" input is passed to avoid an error or prompt if ssh-keygen
+        // encounters existing keys. This seems to be necessary during race
+        // conditions despite having deleted the keys with $this->fs->remove()
+        // above.
+        $this->shell->execute($args, null, true, true, [], 60, "y\n");
         $this->chmod($sshInfo['private'], 0600);
         $this->chmod($sshInfo['public'], 0600);
 
