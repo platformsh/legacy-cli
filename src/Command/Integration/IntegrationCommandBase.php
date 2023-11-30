@@ -397,6 +397,22 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
                 'description' => 'Delete branches that do not exist on the remote',
             ]),
+            'environment_init_resources' => new OptionsField('Initialization resources', [
+                'conditions' => [
+                    'type' => [
+                        'bitbucket',
+                        'bitbucket_server',
+                        'github',
+                        'gitlab',
+                    ],
+                ],
+                'optionName' => 'resources-init',
+                'description' => 'The resources to use when initializing a new service',
+                'options' => ['minimum', 'default', 'manual', 'parent'],
+                'default' => 'parent',
+                'required' => false,
+                'avoidQuestion' => true,
+            ]),
             'url' => new UrlField('URL', [
                 'conditions' => ['type' => [
                     'health.webhook',
