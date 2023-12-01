@@ -98,7 +98,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->debug(sprintf('Source revision: %s', $sourceRevision));
 
         // Validate the --resources-init option.
-        $resourcesInit = $input->getOption('resources-init');
+        $resourcesInit = $input->hasOption('resource-init') ? $input->getOption('resources-init') : null;
         $resourcesInitOptions = ['default', 'parent', 'minimum', 'manual'];
         if ($resourcesInit !== null && !\in_array($resourcesInit, $resourcesInitOptions, true)) {
             $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $resourcesInitOptions));
