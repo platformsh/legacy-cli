@@ -9,6 +9,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Message\ResponseInterface;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
@@ -365,11 +366,11 @@ class Api
 
         $this->logout();
 
-        $body = (string) $e->getRequest()->getBody();
-        \parse_str($body, $parsed);
+        $reqBody = (string) $e->getRequest()->getBody();
+        \parse_str($reqBody, $parsed);
         if (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token') {
             $this->stdErr->writeln('<comment>The API token is invalid.</comment>');
-        } elseif (isset($parsed['error_hint']) && strpos($parsed['error_hint'], 'SSO session has expired') !== false) {
+        } elseif ($this->isSsoSessionExpired($response)) {
             $this->stdErr->writeln('<comment>Your SSO session has expired. You have been logged out.</comment>');
         } else {
             $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
@@ -385,6 +386,23 @@ class Api
         $session = $this->getClient(false)->getConnector()->getSession();
 
         return $this->tokenFromSession($session);
+    }
+
+    /**
+     * Tests if an HTTP response from refreshing a token indicates that the user's SSO session has expired.
+     *
+     * @param ResponseInterface|null $response
+     * @return bool
+     */
+    private function isSsoSessionExpired(ResponseInterface $response = null)
+    {
+        if (!$response || $response->getStatusCode() !== 400) {
+            return false;
+        }
+        $respBody = (string) $response->getBody();
+        $errDetails = \json_decode($respBody, true);
+        return isset($errDetails['error_hint'])
+            && strpos($errDetails['error_hint'], 'SSO session has expired') !== false;
     }
 
     /**
