@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.11.1",
-        "sha1": "1535120f57457f1d6f1697a4406d298ee6c399c3",
-        "sha256": "e86b66c0ec19ad771d2bc5f5b561fa67cb05de69e8b5030a59961f42bda42e4a",
+        "version": "4.11.2",
+        "sha1": "28c21f1d4e52c065e94fadcbe8c95a8b07496faf",
+        "sha256": "3297bffb9e08d61cedb156eb63037403c2b0fe5f2f572350280cd54eddea6869",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.11.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.11.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -40,7 +40,8 @@
             "4.10.3": "* Avoid an exception if resources commands are used on an inactive environment\r\n* Bump giggsey/libphonenumber-for-php from 8.13.20 to 8.13.21 (#1329)",
             "4.10.4": "* Fix failure to push to a \"dirty\" environment with `push --activate`\n* Confirm before changing a project in set-remote\n* Improve `project:create` (`create`) command:\n  - Hide timeout options in help\n  - Wait and retry while fetching the project\n  - Recommend the `get` command afterwards\n  - Avoid fetching `/regions` twice\n* Clarify when the SSO session expired\n* Add varnish to the list of \"diskless\" services for the `resources:set` command\n* Bump giggsey/libphonenumber-for-php from 8.13.21 to 8.13.22 (#1334)",
             "4.11.0": "New features for Upsun projects (those using flexible resources):\r\n\r\n* Add `--resources-init` option for code source integrations (bitbucket,\r\n  bitbucket_server, github, and gitlab).\r\n* Add `--resources-init` option to the `push` command when Git push options are\r\n  enabled (they are currently disabled by default).\r\n* Show a link to resources docs in command help.\r\n* Show the container profile name when setting profile sizes.\r\n* Default to size 0.5, disk 512 MB when setting resources.\r\n* Validate against the service's minimum sizes.\r\n\r\nOther changes:\r\n\r\n* Lock while refreshing OAuth2 tokens or SSH certificates.\r\n  This behavior can be disabled using the environment variable\r\n  `{PREFIX}DISABLE_LOCKS` or the config entry `api.disable_locks`.\r\n* Filter the interactive choice of environments, to avoid suggesting\r\n  environments that are in the wrong state.\r\n* Improve error message when the current deployment is not found, when this is\r\n  caused by the environment being inactive.\r\n* Forward dynamic options when running a sub command.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.22 to 8.13.26 (#1350)",
-            "4.11.1": "* Revert \"Forward dynamic options when running a sub command\"\n    This reverts commit 1fcd5a91a1ea6d0f9a3e29dce4151e3d21c9a240."
+            "4.11.1": "* Revert \"Forward dynamic options when running a sub command\"\n    This reverts commit 1fcd5a91a1ea6d0f9a3e29dce4151e3d21c9a240.",
+            "4.11.2": "* Fix push command when push options are disabled"
         }
     },
     {
