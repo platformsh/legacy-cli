@@ -35,6 +35,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 'Set the disk size (in MB) of apps or services.'
                 . "\nItems are in the format <info>name:value</info> as above."
             )
+            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything')
             ->addProjectOption()
             ->addEnvironmentOption()
@@ -134,11 +135,16 @@ class ResourcesSetCommand extends ResourcesCommandBase
             && $input->getOption('disk') === [];
 
         $updates = [];
+        $current = [];
         foreach ($services as $name => $service) {
             $type = $this->typeName($service);
             $group = $this->group($service);
 
             $properties = $service->getProperties();
+            $current[$group][$name]['resources']['profile_size'] = $properties['resources']['profile_size'];
+            $current[$group][$name]['instance_count'] = $properties['instance_count'];
+            $current[$group][$name]['disk'] = $properties['disk'];
+            $current[$group][$name]['sizes'] = $containerProfiles[$properties['container_profile']];
 
             $header = '<options=bold>' . ucfirst($type) . ': </><options=bold,underscore>' . $name . '</>';
             $headerShown = false;
@@ -258,6 +264,49 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->summarizeChanges($updates, $services, $containerProfiles);
 
         $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
+
+        $project = $this->getSelectedProject();
+        $organization = $this->api()->getClient()->getOrganizationById($project->getProperty('organization'));
+        $profile = $organization->getProfile();
+        if ($input->getOption('force') === false && isset($profile->resources_limit) && $profile->resources_limit) {
+            $diff = $this->computeMemoryCPUStorageDiff($updates, $current);
+            $limit = $profile->resources_limit['limit'];
+            $used = $profile->resources_limit['used']['totals'];
+
+            $this->debug('Raw diff: ' . json_encode($diff, JSON_UNESCAPED_SLASHES));
+            $this->debug('Raw limits: ' . json_encode($limit, JSON_UNESCAPED_SLASHES));
+            $this->debug('Raw used: ' . json_encode($used, JSON_UNESCAPED_SLASHES));
+
+            $errored = false;
+            if ($limit['cpu'] < $used['cpu'] + $diff['cpu']) {
+                $this->stdErr->writeln(sprintf(
+                    'The requested resources will exceed your organization\'s trial CPU limit, which is: <comment>%s</comment>.',
+                    $limit['cpu'],
+                ));
+                $errored = true;
+            }
+
+            if ($limit['memory'] < $used['memory'] + ($diff['memory'] / 1024)) {
+                $this->stdErr->writeln(sprintf(
+                    'The requested resources will exceed your organization\'s trial memory limit, which is: <comment>%sGB</comment>.',
+                    $limit['memory'],
+                ));
+                $errored = true;
+            }
+
+            if ($limit['storage'] < $used['storage'] + ($diff['disk'] / 1024)) {
+                $this->stdErr->writeln(sprintf(
+                    'The requested resources will exceed your organization\'s trial storage limit, which is: <comment>%sGB</comment>.',
+                    $limit['storage'],
+                ));
+                $errored = true;
+            }
+
+            if ($errored) {
+                $this->stdErr->writeln('Please adjust your resources or activate your subscription.');
+                return 1;
+            }
+        }
 
         if ($input->getOption('dry-run')) {
             return 0;
@@ -580,5 +629,66 @@ class ResourcesSetCommand extends ResourcesCommandBase
             }
         }
         return $ret;
+    }
+
+    /**
+     * Compute the total memory/CPU/storage diff that will occur when the given update
+     * is applied.
+     *
+     * @param array $updates
+     * @param array $current
+     *
+     * @return array
+     */
+    private function computeMemoryCPUStorageDiff(array $updates, array $current)
+    {
+        $diff = [
+            'memory' => 0,
+            'cpu' => 0,
+            'disk' => 0,
+        ];
+        foreach ($updates as $group => $groupUpdates) {
+            foreach ($groupUpdates as $serviceName => $serviceUpdates) {
+                if (isset($current[$group][$serviceName]['instance_count']) === false) {
+                    $current[$group][$serviceName]['instance_count'] = 1;
+                }
+                if (isset($current[$group][$serviceName]['disk']) === false) {
+                    $current[$group][$serviceName]['disk'] = 0;
+                }
+
+                $currentCount = $current[$group][$serviceName]['instance_count'];
+                $currentSize = $current[$group][$serviceName]['resources']['profile_size'];
+                $currentStorage = $current[$group][$serviceName]['disk'];
+
+                $newCount = $currentCount;
+                $newSize = $currentSize;
+                $newStorage = $currentStorage;
+                if (isset($serviceUpdates['instance_count'])) {
+                    $newCount = $serviceUpdates['instance_count'];
+                }
+                if (isset($serviceUpdates['resources'])) {
+                    $newSize = $serviceUpdates['resources']['profile_size'];
+                }
+                if (isset($serviceUpdates['disk'])) {
+                    $newStorage = $serviceUpdates['disk'];
+                }
+
+                $currentService = $current[$group][$serviceName];
+                $currentSize = $currentService['resources']['profile_size'];
+                $currentProfile = $currentService['sizes'][$currentSize];
+                $currentCPU = $currentCount * $currentProfile['cpu'];
+                $currentRAM = $currentCount * $currentProfile['memory'];
+
+                $newProfile = $currentService['sizes'][$newSize];
+                $newCPU = $newCount * $newProfile['cpu'];
+                $newRAM = $newCount * $newProfile['memory'];
+
+                $diff['memory'] += $newRAM - $currentRAM;
+                $diff['cpu'] += $newCPU - $currentCPU;
+                $diff['disk'] += $newStorage - $currentStorage;
+            }
+        }
+
+        return $diff;
     }
 }
