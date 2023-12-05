@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Service;
 class FileLock
 {
     private $config;
-    private $fs;
 
     private $checkIntervalMs;
     private $timeLimit;
@@ -16,7 +15,6 @@ class FileLock
     public function __construct(Config $config)
     {
         $this->config = $config;
-        $this->fs = new \Symfony\Component\Filesystem\Filesystem();
         $this->checkIntervalMs = 500;
         $this->timeLimit = 30;
         $this->disabled = (bool) $this->config->getWithDefault('api.disable_locks', false);
@@ -48,10 +46,7 @@ class FileLock
             if (!\file_exists($filename)) {
                 break;
             }
-            $content = \file_get_contents($filename);
-            if ($content === false || $content === '') {
-                break;
-            }
+            $content = $this->readWithLock($filename);
             $lockedAt = \intval($content);
             if ($lockedAt === 0 || \time() >= $lockedAt + $this->timeLimit) {
                 break;
@@ -69,7 +64,7 @@ class FileLock
                 }
             }
         }
-        $this->fs->dumpFile($filename, (string) \time());
+        $this->writeWithLock($filename, (string) \time());
         $this->locks[$lockName] = $lockName;
         return null;
     }
@@ -82,13 +77,13 @@ class FileLock
     public function release($lockName)
     {
         if (!$this->disabled && isset($this->locks[$lockName])) {
-            $this->fs->dumpFile($this->filename($lockName), '');
+            $this->writeWithLock($this->filename($lockName), '');
             unset($this->locks[$lockName]);
         }
     }
 
     /**
-     * Destructor. Release locks that still exist on exit.
+     * Destructor. Releases locks that still exist on exit.
      */
     public function __destruct()
     {
@@ -98,6 +93,8 @@ class FileLock
     }
 
     /**
+     * Finds the filename for a lock.
+     *
      * @param string $lockName
      * @return string
      */
@@ -108,5 +105,75 @@ class FileLock
             . DIRECTORY_SEPARATOR
             . preg_replace('/[^\w_-]+/', '-', $lockName)
             . '.lock';
+    }
+
+    /**
+     * Reads a file using a shared lock.
+     *
+     * @param string $filename
+     * @return string
+     */
+    private function readWithLock($filename)
+    {
+        $handle = \fopen($filename, 'r');
+        if (!$handle) {
+            throw new \RuntimeException('Failed to open file for reading: ' . $filename);
+        }
+        try {
+            if (!\flock($handle, LOCK_SH)) {
+                \trigger_error('Failed to lock file: ' . $filename, E_USER_WARNING);
+            }
+            $content = \fgets($handle);
+            if ($content === false && !\feof($handle)) {
+                throw new \RuntimeException('Failed to read file: ' . $filename);
+            }
+        } finally {
+            if (!\flock($handle, LOCK_UN)) {
+                \trigger_error('Failed to unlock file: ' . $filename, E_USER_WARNING);
+            }
+            if (!\fclose($handle)) {
+                \trigger_error('Failed to close file: ' . $filename, E_USER_WARNING);
+            }
+        }
+        return $content;
+    }
+
+    /**
+     * Writes to a file using an exclusive lock.
+     *
+     * @param string $filename
+     * @param string $content
+     * @return void
+     */
+    private function writeWithLock($filename, $content)
+    {
+        $dir = \dirname($filename);
+        if (!\is_dir($dir)) {
+            if (!\mkdir($dir, 0777, true)) {
+                throw new \RuntimeException('Failed to create directory: ' . $dir);
+            }
+        }
+        $handle = \fopen($filename, 'w');
+        if (!$handle) {
+            throw new \RuntimeException('Failed to open file for writing: ' . $filename);
+        }
+        try {
+            if (!\flock($handle, LOCK_EX)) {
+                \trigger_error('Failed to lock file: ' . $filename, E_USER_WARNING);
+            }
+            if (\fputs($handle, $content) === false) {
+                throw new \RuntimeException('Failed to write to file: ' . $filename);
+            }
+            if (!\fflush($handle)) {
+                \trigger_error('Failed to flush file: ' . $filename, E_USER_WARNING);
+            }
+        } finally {
+            if (!\flock($handle, LOCK_UN)) {
+                \trigger_error('Failed to unlock file: ' . $filename, E_USER_WARNING);
+            }
+            if (!\fclose($handle)) {
+                \trigger_error('Failed to close file: ' . $filename, E_USER_WARNING);
+            }
+        }
     }
 }
