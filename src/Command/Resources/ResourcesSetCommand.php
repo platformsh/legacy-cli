@@ -281,7 +281,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if ($limit['cpu'] < $used['cpu'] + $diff['cpu']) {
                 $this->stdErr->writeln(sprintf(
                     'The requested resources will exceed your organization\'s trial CPU limit, which is: <comment>%s</comment>.',
-                    $limit['cpu'],
+                    $limit['cpu']
                 ));
                 $errored = true;
             }
@@ -289,7 +289,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if ($limit['memory'] < $used['memory'] + ($diff['memory'] / 1024)) {
                 $this->stdErr->writeln(sprintf(
                     'The requested resources will exceed your organization\'s trial memory limit, which is: <comment>%sGB</comment>.',
-                    $limit['memory'],
+                    $limit['memory']
                 ));
                 $errored = true;
             }
@@ -297,7 +297,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if ($limit['storage'] < $used['storage'] + ($diff['disk'] / 1024)) {
                 $this->stdErr->writeln(sprintf(
                     'The requested resources will exceed your organization\'s trial storage limit, which is: <comment>%sGB</comment>.',
-                    $limit['storage'],
+                    $limit['storage']
                 ));
                 $errored = true;
             }
