@@ -164,8 +164,12 @@ class FileLock
             if (\fputs($handle, $content) === false) {
                 throw new \RuntimeException('Failed to write to file: ' . $filename);
             }
-            if (!\fflush($handle)) {
-                \trigger_error('Failed to flush file: ' . $filename, E_USER_WARNING);
+            if (PHP_VERSION_ID >= 81000) {
+                if (!\fsync($handle)) {
+                    \trigger_error('Failed to sync file (fsync): ' . $filename, E_USER_WARNING);
+                }
+            } elseif (!\fflush($handle)) {
+                \trigger_error('Failed to flush file (fflush): ' . $filename, E_USER_WARNING);
             }
         } finally {
             if (!\flock($handle, LOCK_UN)) {
