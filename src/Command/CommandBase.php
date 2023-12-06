@@ -1153,7 +1153,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($environmentId !== null) {
             if ($environmentId === self::DEFAULT_ENVIRONMENT_CODE) {
                 $this->stdErr->writeln(sprintf('Selecting default environment (indicated by <info>%s</info>)', $environmentId));
-                $environment = $this->api()->getDefaultEnvironment($this->project, true);
+                $environments = $this->api()->getEnvironments($this->project);
+                $environment = $this->api()->getDefaultEnvironment($environments, $this->project, true);
                 if (!$environment) {
                     throw new \RuntimeException('Default environment not found');
                 }
@@ -1179,7 +1180,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($selectDefaultEnv) {
             $this->debug('No environment specified or detected: finding a default...');
-            $environment = $this->api()->getDefaultEnvironment($this->project);
+            $environments = $this->api()->getEnvironments($this->project);
+            $environment = $this->api()->getDefaultEnvironment($environments, $this->project);
             if ($environment) {
                 $this->stdErr->writeln(\sprintf('Selected default environment: %s', $this->api()->getEnvironmentLabel($environment)));
                 $this->printedSelectedEnvironment = true;
@@ -1204,7 +1206,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (count($environments) > 0) {
                 $this->debug('No environment specified or detected: offering a choice...');
-                $this->environment = $this->offerEnvironmentChoice($environments, $filter === null);
+                $this->environment = $this->offerEnvironmentChoice($environments);
                 return;
             }
         }
@@ -1498,24 +1500,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * Offers a choice of environments.
      *
      * @param Environment[] $environments
-     * @param bool $autoDefault Whether to pick a default environment for the project.
      *
      * @return Environment
      */
-    final protected function offerEnvironmentChoice(array $environments, $autoDefault = true)
+    final protected function offerEnvironmentChoice(array $environments)
     {
         if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
         }
 
+        $defaultEnvironment = $this->api()->getDefaultEnvironment($environments, $this->project);
+        $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if ($autoDefault) {
-            $defaultEnvironment = $this->api()->getDefaultEnvironment($this->project);
-            $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
-        } else {
-            $defaultEnvironmentId = null;
-        }
 
         if (count($environments) > (new Terminal())->getHeight() / 2) {
             $ids = array_keys($environments);

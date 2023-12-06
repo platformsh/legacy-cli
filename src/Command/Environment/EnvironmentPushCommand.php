@@ -478,7 +478,7 @@ class EnvironmentPushCommand extends CommandBase
         if ($this->hasSelectedEnvironment()) {
             $defaultId = $this->getSelectedEnvironment()->id;
         } else {
-            $default = $this->api()->getDefaultEnvironment($project);
+            $default = $this->api()->getDefaultEnvironment($environments, $project);
             $defaultId = $default ? $default->id : null;
         }
         if (array_keys($environments) === [$defaultId]) {
