@@ -251,7 +251,7 @@ class EnvironmentPushCommand extends CommandBase
             $gitArgs[] = '--progress';
         }
         if ($gitPushOptionsEnabled) {
-            if ($input->getOption('branch') || $input->getOption('activate')) {
+            if ($activateRequested) {
                 $gitArgs[] = '--push-option=environment.status=active';
             }
             if ($parentId !== null) {
