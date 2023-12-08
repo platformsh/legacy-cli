@@ -15,8 +15,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
-    private $tableHeader = ['ID', 'Created', 'Completed', 'Description', 'Type', 'State', 'Result'];
-    private $defaultColumns = ['ID', 'Created', 'Description', 'Type', 'State', 'Result'];
+    private $tableHeader = [
+        'id' => 'ID',
+        'created' => 'Created',
+        'completed' => 'Completed',
+        'description' => 'Description',
+        'progress' => 'Progress',
+        'type' => 'Type',
+        'state' => 'State',
+        'result' => 'Result',
+        'time_execute' => 'Exec time (s)',
+        'time_wait' => 'Wait time (s)',
+        'time_build' => 'Build time (s)',
+        'time_deploy' => 'Deploy time (s)',
+    ];
+    private $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
 
     /**
      * {@inheritdoc}
@@ -75,17 +88,25 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
+        $timingTypes = ['execute', 'wait', 'build', 'deploy'];
+
         $rows = [];
         foreach ($activities as $activity) {
-            $rows[] = [
-                new AdaptiveTableCell($activity->id, ['wrap' => false]),
-                $formatter->format($activity['created_at'], 'created_at'),
-                $formatter->format($activity['completed_at'], 'completed_at'),
-                ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
-                new AdaptiveTableCell($activity->type, ['wrap' => false]),
-                ActivityMonitor::formatState($activity->state),
-                ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
+            $row = [
+                'id' => new AdaptiveTableCell($activity->id, ['wrap' => false]),
+                'created' => $formatter->format($activity['created_at'], 'created_at'),
+                'completed' => $formatter->format($activity['completed_at'], 'completed_at'),
+                'description' => ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
+                'type' => new AdaptiveTableCell($activity->type, ['wrap' => false]),
+                'progress' => $activity->getCompletionPercent() . '%',
+                'state' => ActivityMonitor::formatState($activity->state),
+                'result' => ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
             ];
+            $timings = $activity->getProperty('timings', false, false) ?: [];
+            foreach ($timingTypes as $timingType) {
+                $row['time_' . $timingType] = isset($timings[$timingType]) ? (string) $timings[$timingType] : '';
+            }
+            $rows[] = $row;
         }
 
         if (!$table->formatIsMachineReadable()) {
