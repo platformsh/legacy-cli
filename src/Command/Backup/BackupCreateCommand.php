@@ -65,7 +65,11 @@ class BackupCreateCommand extends CommandBase
 
         $live = $input->getOption('live') || $input->getOption('unsafe');
 
-        $activity = $selectedEnvironment->backup($live);
+        $result = $selectedEnvironment->runOperation('backup', 'POST', ['safe' => !$live]);
+
+        // Hold the activities as a reference as they may be updated during
+        // waitMultiple() below, allowing the backup_name to be extracted.
+        $activities = $result->getActivities();
 
         if ($live) {
             $this->stdErr->writeln("Creating a <info>live</info> backup of <info>$environmentId</info>");
@@ -83,15 +87,17 @@ class BackupCreateCommand extends CommandBase
 
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
             if (!$success) {
                 return 1;
             }
         }
 
-        if (!empty($activity['payload']['backup_name'])) {
-            $name = $activity['payload']['backup_name'];
-            $output->writeln("Backup name: <info>$name</info>");
+        foreach ($activities as $activity) {
+            if ($activity->type === 'environment.backup' && !empty($activity->payload['backup_name'])) {
+                $output->writeln(\sprintf('Backup name: <info>%s</info>', $activity->payload['backup_name']));
+                break;
+            }
         }
 
         return 0;
