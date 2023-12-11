@@ -147,10 +147,12 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
+        $project = $this->getSelectedProject();
+        $this->stdErr->writeln(sprintf('Environments in the project %s:', $this->api()->getProjectLabel($project)));
+
         $progress = new ProgressMessage($output);
         $progress->showIfOutputDecorated('Loading environments...');
 
-        $project = $this->getSelectedProject();
         $environments = $this->api()->getEnvironments($project, $refresh ? true : null);
 
         $progress->done();
@@ -218,8 +220,6 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             $table->render($this->buildEnvironmentRows($tree, false, false), $this->tableHeader, $this->defaultColumns);
             return 0;
         }
-
-        $this->stdErr->writeln("Your environments are: ");
 
         $table->render($this->buildEnvironmentRows($tree), $this->tableHeader, $this->defaultColumns);
 
