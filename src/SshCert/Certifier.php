@@ -23,6 +23,8 @@ class Certifier
     private $stdErr;
     private $fileLock;
 
+    private static $disableAutoLoad = false;
+
     public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output, FileLock $fileLock)
     {
         $this->api = $api;
@@ -40,7 +42,7 @@ class Certifier
      */
     public function isAutoLoadEnabled()
     {
-        return (bool)$this->config->getWithDefault('api.auto_load_ssh_cert', false);
+        return !self::$disableAutoLoad && $this->config->getWithDefault('api.auto_load_ssh_cert', false);
     }
 
     /**
@@ -50,6 +52,16 @@ class Certifier
      */
     public function generateCertificate()
     {
+        // Ensure the user is logged in to the API, so that an auto-login will
+        // not be triggered after we have generated keys (auto-login triggers a
+        // logout, which wipes keys).
+        try {
+            self::$disableAutoLoad = true;
+            $this->api->getClient();
+        } finally {
+            self::$disableAutoLoad = false;
+        }
+
         // Acquire a lock to prevent race conditions when certificate and key
         // files are changed at the same time in different CLI processes.
         $lockName = 'ssh-cert--' . $this->config->getSessionIdSlug();
@@ -91,9 +103,6 @@ class Certifier
             $this->shell->execute(['ssh-add', '-d', $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME], null, false, !$this->stdErr->isVeryVerbose());
         }
 
-        // Ensure the user is logged in to the API, so that an auto-login will
-        // not be triggered after we have generated keys (auto-login triggers a
-        // logout, which wipes keys).
         $apiClient = $this->api->getClient();
 
         $sshPair = $this->generateSshKey($dir, true);
