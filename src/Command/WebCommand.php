@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -41,31 +40,11 @@ class WebCommand extends CommandBase
 
         if ($this->hasSelectedProject()) {
             $project = $this->getSelectedProject();
-            if ($this->config()->has('service.console_url') && $this->config()->get('api.organizations')) {
-                // Load the organization name if possible.
-                $firstSegment = $organizationId = $project->getProperty('organization');
-                try {
-                    $organization = $this->api()->getClient()->getOrganizationById($organizationId);
-                    if ($organization) {
-                        $firstSegment = $organization->name;
-                    }
-                } catch (BadResponseException $e) {
-                    if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
-                        trigger_error($e->getMessage(), E_USER_WARNING);
-                    } else {
-                        throw $e;
-                    }
-                }
-
-                $isConsole = true;
-                $url = ltrim($this->config()->get('service.console_url'), '/') . '/' . rawurlencode($firstSegment) . '/' . rawurlencode($project->id);
-            } else {
-                $subscription = $this->api()->getClient()->getSubscription($project->getSubscriptionId());
-                $url = $subscription->project_ui;
-                $isConsole = $this->config()->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.console_domain');
-            }
+            $url = $this->api()->getConsoleURL($project);
             if ($environmentId !== null) {
                 // Console links lack the /environments path component.
+                $isConsole = ($this->config()->has('service.console_url') && $this->config()->get('api.organizations'))
+                    || ($this->config()->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.console_domain'));
                 if ($isConsole) {
                     $url .= '/' . rawurlencode($environmentId);
                 } else {
