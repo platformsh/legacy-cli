@@ -87,6 +87,9 @@ application:
   installer_url: null
   manifest_url: null
 
+  # Enable auto-creating Drush aliases for Drupal environments.
+  drush_aliases: true
+
 # Configuration for working with projects locally.
 local:
   local_dir: null         # dynamically defaults to {service.project_config_dir}

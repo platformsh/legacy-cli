@@ -236,9 +236,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->api
                 ->dispatcher
                 ->addListener('login_required', [$this, 'login']);
-            $this->api
-                ->dispatcher
-                ->addListener('environments_changed', [$this, 'updateDrushAliases']);
+            if ($this->config()->get('application.drush_aliases')) {
+                $this->api
+                    ->dispatcher
+                    ->addListener('environments_changed', [$this, 'updateDrushAliases']);
+            }
             $this->apiHasListeners = true;
         }
 
