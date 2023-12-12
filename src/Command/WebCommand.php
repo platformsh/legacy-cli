@@ -43,8 +43,8 @@ class WebCommand extends CommandBase
             $url = $this->api()->getConsoleURL($project);
             if ($environmentId !== null) {
                 // Console links lack the /environments path component.
-                $isConsole = ($this->config()->has('service.console_url') && $this->config()->get('api.organizations'))
-                    || ($this->config()->has('detection.console_domain') && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.console_domain'));
+                $isConsole = $this->config()->has('detection.console_domain')
+                    && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.console_domain');
                 if ($isConsole) {
                     $url .= '/' . rawurlencode($environmentId);
                 } else {
