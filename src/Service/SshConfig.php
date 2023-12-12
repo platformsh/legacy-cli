@@ -75,11 +75,14 @@ class SshConfig {
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
         }
 
-        $sessionIdentityFile = $this->sshKey->selectIdentity();
-        if ($sessionIdentityFile !== null) {
-            $lines[] = '# This SSH key was detected as corresponding to the session:';
-            $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
-            $lines[] = '';
+        $sessionIdentityFile = null;
+        if (!$certificate) {
+            $sessionIdentityFile = $this->sshKey->selectIdentity();
+            if ($sessionIdentityFile !== null) {
+                $lines[] = '# This SSH key was detected as corresponding to the session:';
+                $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
+                $lines[] = '';
+            }
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';

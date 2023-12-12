@@ -135,7 +135,7 @@ class Ssh implements InputConfiguringInterface
             }
         }
 
-        if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
+        if (empty($options['IdentitiesOnly']) && empty($options['CertificateFile']) && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
             $options['IdentityFile'][] = $this->sshConfig->formatFilePath($sessionIdentityFile);
         }
 

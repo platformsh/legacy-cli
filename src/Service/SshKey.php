@@ -69,8 +69,13 @@ class SshKey {
             return null;
         }
 
-        $accountKeyFingerprints = $this->listAccountKeyFingerprints();
-        if (!$accountKeyFingerprints) {
+        try {
+            $accountKeyFingerprints = $this->listAccountKeyFingerprints();
+            if (!$accountKeyFingerprints) {
+                return null;
+            }
+        } catch (\Exception $e) {
+            $this->stdErr->writeln('Failed to list SSH keys: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
             return null;
         }
 
