@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Cli\Util\StringUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -75,7 +76,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             if (!$result = $cache->fetch($cacheKey)) {
                 $result = $host->runCommand('echo -n _BEGIN_FILE_LIST_; ls -1 ' . $logDir . '/*.log; echo -n _END_FILE_LIST_');
                 if (is_string($result)) {
-                    $result = $this->extractResult($result, '_BEGIN_FILE_LIST_', '_END_FILE_LIST_');
+                    $result = trim(StringUtil::between($result, '_BEGIN_FILE_LIST_', '_END_FILE_LIST_'));
                 }
 
                 // Cache the list for 1 day.
@@ -87,7 +88,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
                 $logDir . '/access.log',
                 $logDir . '/error.log',
             ];
-            $files = $result && is_string($result) ? explode("\n", trim($result)) : $defaultFiles;
+            $files = $result && is_string($result) ? explode("\n", $result) : $defaultFiles;
 
             // Ask the user to choose a file.
             $files = array_combine($files, array_map(function ($file) {
@@ -131,26 +132,5 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         }
 
         return $values;
-    }
-
-    /**
-     * Extracts a result from 'echo' output between beginning and ending delimiters.
-     *
-     * @param string $output
-     * @param string $begin
-     * @param string $end
-     *
-     * @return string
-     */
-    private function extractResult($output, $begin, $end)
-    {
-        $first = \strpos($output, $begin);
-        $last = \strrpos($output, $end, $first);
-        if ($first === false || $last === false) {
-            return $output;
-        }
-        $offset = $first + \strlen($begin);
-        $length = $last - $first - \strlen($begin);
-        return \substr($output, $offset, $length);
     }
 }
