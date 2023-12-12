@@ -30,6 +30,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -1744,10 +1745,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Run another CLI command.
      *
-     * @param string         $name
+     * @param string $name
      *   The name of the other command.
-     * @param array          $arguments
+     * @param array $arguments
      *   Arguments for the other command.
+     *   Unambiguous options that both commands have in common will be passed
+     *   on automatically.
      * @param OutputInterface $output
      *   The output for the other command. Defaults to the current output.
      *
@@ -1760,12 +1763,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         /** @var Command $command */
         $command = $application->find($name);
 
-        // Pass on interactivity arguments to the other command.
-        if (isset($this->input) && $command->getDefinition()->hasOption('yes')) {
-            $arguments += [
-                '--yes' => $this->input->getOption('yes'),
-                '--no' => $this->input->getOption('no'),
-            ];
+        if (isset($this->input)) {
+            $this->forwardStandardOptions($arguments, $this->input, $command->getDefinition());
         }
 
         $cmdInput = new ArrayInput(['command' => $name] + $arguments);
@@ -1799,6 +1798,41 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Forwards standard (unambiguous) arguments that a source and target command have in common.
+     *
+     * @param array &$args
+     * @param InputInterface $input
+     * @param InputDefinition $targetDef
+     */
+    private function forwardStandardOptions(array &$args, InputInterface $input, InputDefinition $targetDef)
+    {
+        $stdOptions = [
+            'no',
+            'no-interaction',
+            'yes',
+
+            'no-wait',
+            'wait',
+
+            'org',
+            'host',
+            'project',
+            'environment',
+            'app',
+            'worker',
+            'instance',
+        ];
+        foreach ($stdOptions as $name) {
+            if (!\array_key_exists('--' . $name, $args) && $targetDef->hasOption($name) && $input->hasOption($name)) {
+                $value = $input->getOption($name);
+                if ($value !== null) {
+                    $args['--' . $name] = $value;
+                }
+            }
+        }
     }
 
     /**
