@@ -35,7 +35,13 @@ class LocalDrushAliasesCommand extends CommandBase
             return true;
         }
 
-        // Hide this command in the list if the project is not Drupal.
+        // Only show this command if drush_aliases are enabled.
+        if (!$this->config()->get('application.drush_aliases')) {
+            return true;
+        }
+
+        // Hide the command in the list while in a project directory, if the
+        // project is not Drupal.
         // Avoid checking if running in the home directory.
         $projectRoot = $this->getProjectRoot();
         if ($projectRoot && $this->config()->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
