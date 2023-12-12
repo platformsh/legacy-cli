@@ -1555,4 +1555,59 @@ class Api
         }
         return \sprintf($pattern, $tag, $name, $userRef->email);
     }
+
+    /**
+     * Loads an organization by ID, with caching.
+     *
+     * @param string $id
+     * @param bool $reset
+     * @return Organization|false
+     */
+    public function getOrganizationById($id, $reset = false)
+    {
+        $cacheKey = 'organization:' . $id;
+        if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
+            return new Organization($cached, $cached['_url'], $this->getHttpClient());
+        }
+        $organization = $this->getClient()->getOrganizationById($id);
+        if ($organization) {
+            $data = $organization->getData();
+            $data['_url'] = $organization->getUri();
+            $this->cache->save($cacheKey, $data, $this->config->getWithDefault('api.orgs_ttl', 3600));
+        }
+        return $organization;
+    }
+
+    /**
+     * Returns the Console URL for a project, with caching.
+     *
+     * @param Project $project
+     * @param bool $reset
+     *
+     * @return false|string
+     */
+    public function getConsoleURL(Project $project, $reset = false)
+    {
+        if ($this->config->has('service.console_url') && $this->config->get('api.organizations')) {
+            // Load the organization name if possible.
+            $firstSegment = $organizationId = $project->getProperty('organization');
+            try {
+                $organization = $this->getOrganizationById($organizationId, $reset);
+                if ($organization) {
+                    $firstSegment = $organization->name;
+                }
+            } catch (BadResponseException $e) {
+                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                } else {
+                    throw $e;
+                }
+            }
+
+            return ltrim($this->config->get('service.console_url'), '/') . '/' . rawurlencode($firstSegment) . '/' . rawurlencode($project->id);
+        }
+        $subscription = $this->loadSubscription($project->getSubscriptionId(), $project);
+        return $subscription ? $subscription->project_ui : false;
+    }
+
 }
