@@ -648,14 +648,14 @@ class Api
      */
     public function getProject($id, $host = null, $refresh = null)
     {
-        $cacheKey = sprintf('%s:project:%s:%s', $this->config->getSessionId(), $id, $host);
-        $cached = $this->cache->fetch($cacheKey);
-
         // Ignore the $host if an api.base_url is configured.
         $apiUrl = $this->config->getWithDefault('api.base_url', '');
         if ($apiUrl !== '') {
             $host = null;
         }
+
+        $cacheKey = sprintf('%s:project:%s:%s', $this->config->getSessionId(), $id, $host);
+        $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh || !$cached) {
             $scheme = 'https';
