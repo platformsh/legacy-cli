@@ -272,8 +272,9 @@ api:
   # Whether Centralized User Management is available (requires "auth" and "organizations").
   centralized_permissions: false
 
-  # Whether the projects list should be fetched from the newer "extended-access" API instead of "/me" (requires "centralized_permissions").
-  projects_list_new: false
+  # Whether the projects list should be fetched from the newer "extended-access" API instead of "/me".
+  # Ignored if "centralized_permissions" is not enabled.
+  projects_list_new: true
 
   # Filter the projects or organizations list by a vendor name.
   # This can be null for no filtering, or a string or a list of strings.
