@@ -1828,7 +1828,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         foreach ($stdOptions as $name) {
             if (!\array_key_exists('--' . $name, $args) && $targetDef->hasOption($name) && $input->hasOption($name)) {
                 $value = $input->getOption($name);
-                if ($value !== null) {
+                if ($value !== null && $value !== false) {
                     $args['--' . $name] = $value;
                 }
             }
