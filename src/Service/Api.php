@@ -1567,6 +1567,7 @@ class Api
     {
         $cacheKey = 'organization:' . $id;
         if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
+            $this->debug('Loaded organization from cache: ' . $id);
             return new Organization($cached, $cached['_url'], $this->getHttpClient());
         }
         $organization = $this->getClient()->getOrganizationById($id);
