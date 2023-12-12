@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Service;
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
+use Platformsh\Cli\Util\StringUtil;
 
 /**
  * A service for reading environment variables on a host.
@@ -61,7 +62,7 @@ class RemoteEnvVars
         $data = $this->cache->fetch($cacheKey);
         if ($refresh || $data === false || $data['last_changed'] !== $host->lastChanged()) {
             $output = $host->runCommand(\sprintf('echo -n \'%s\'"$%s"\'%s\'', $begin, $varName, $end));
-            $value = $this->extractResult($output, $begin, $end);
+            $value = StringUtil::between((string) $output, $begin, $end);
             $data = ['last_changed' => $host->lastChanged(), 'value' => $value];
             $this->cache->save($cacheKey, $data, $ttl);
         } else {
@@ -69,27 +70,6 @@ class RemoteEnvVars
         }
 
         return $value ?: '';
-    }
-
-    /**
-     * Extracts a result from 'echo' output between beginning and ending delimiters.
-     *
-     * @param string $output
-     * @param string $begin
-     * @param string $end
-     *
-     * @return string
-     */
-    private function extractResult($output, $begin, $end)
-    {
-        $first = \strpos($output, $begin);
-        $last = \strrpos($output, $end, $first);
-        if ($first === false || $last === false) {
-            return $output;
-        }
-        $offset = $first + \strlen($begin);
-        $length = $last - $first - \strlen($begin);
-        return \substr($output, $offset, $length);
     }
 
     /**
