@@ -43,12 +43,6 @@ service:
 
   runtime_operations_help_url: 'https://docs.platform.sh/create-apps/runtime-operations.html'
 
-  available_plans:
-    - development
-    - standard
-    - medium
-    - large
-
 api:
   base_url: 'https://api.platform.sh'
 
