@@ -401,8 +401,8 @@ class Api
         }
         $respBody = (string) $response->getBody();
         $errDetails = \json_decode($respBody, true);
-        return isset($errDetails['error_hint'])
-            && strpos($errDetails['error_hint'], 'SSO session has expired') !== false;
+        return isset($errDetails['error_description'])
+            && strpos($errDetails['error_description'], 'SSO session has expired') !== false;
     }
 
     /**
