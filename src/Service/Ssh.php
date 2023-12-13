@@ -136,8 +136,8 @@ class Ssh implements InputConfiguringInterface
                     $options['IdentityFile'] = [
                         $this->sshConfig->formatFilePath($sshCert->privateKeyFilename()),
                     ];
-                    foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $identityFile) {
-                        $options['IdentityFile'][] = $this->sshConfig->formatFilePath($identityFile);
+                    if ($this->certifier->useCertificateOnly()) {
+                        $options['IdentitiesOnly'] = 'yes';
                     }
                 }
             }

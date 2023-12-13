@@ -46,6 +46,16 @@ class Certifier
     }
 
     /**
+     * Whether to use the certificate only, if one is available.
+     *
+     * @return bool
+     */
+    public function useCertificateOnly()
+    {
+        return $this->config->get('ssh.cert_only');
+    }
+
+    /**
      * Generates a new certificate.
      *
      * @return Certificate

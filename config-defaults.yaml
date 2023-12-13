@@ -300,6 +300,9 @@ ssh:
   # files will be written. If both are specified, both will be used.
   host_keys: ''
 
+  # If an SSH certificate is available, configure SSH to ignore other keys.
+  cert_only: false
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   ## Required keys that must be defined elsewhere:
