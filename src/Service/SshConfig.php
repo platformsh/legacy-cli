@@ -28,6 +28,43 @@ class SshConfig {
     }
 
     /**
+     * Creates or updates config files with known host keys.
+     *
+     * @return string|null
+     *   The path to the file containing the host keys, if any.
+     */
+    public function configureHostKeys()
+    {
+        $keysSourceFile = (string) $this->config->getWithDefault('api.ssh_host_keys_file', '');
+        if (!$keysSourceFile) {
+            return null;
+        }
+        if (!(new \Symfony\Component\Filesystem\Filesystem())->isAbsolutePath($keysSourceFile)) {
+            $keysSourceFile = CLI_ROOT . DIRECTORY_SEPARATOR . $keysSourceFile;
+        }
+        $hostKeys = '';
+        if (file_exists($keysSourceFile)) {
+            $hostKeys = file_get_contents($keysSourceFile);
+        }
+        if (!$hostKeys) {
+            return null;
+        }
+
+        // Write the keys.
+        $keysFile = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'host-keys';
+        $this->writeSshIncludeFile($keysFile, $hostKeys);
+
+        // Write the config.
+        // Any .config files will be included automatically as SSH config.
+        if ($this->supportsInclude()) {
+            $keysConfigFile = $keysFile . '.config';
+            $this->writeSshIncludeFile($keysConfigFile, ['UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->formatFilePath($keysFile)]);
+        }
+
+        return $keysFile;
+    }
+
+    /**
      * Creates or updates session-specific SSH configuration.
      *
      * @return bool
@@ -151,17 +188,17 @@ class SshConfig {
      * Creates or updates an SSH config include file.
      *
      * @param string $filename
-     * @param array  $lines
+     * @param array|string $lines
      * @param bool   $allowDelete
      */
-    private function writeSshIncludeFile($filename, array $lines, $allowDelete = true)
+    private function writeSshIncludeFile($filename, $lines, $allowDelete = true)
     {
         if (empty($lines) && $allowDelete && \file_exists($filename)) {
             $this->stdErr->writeln(sprintf('Deleting SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERBOSE);
             $this->fs->remove($filename);
             return;
         }
-        $contents = implode(PHP_EOL, $lines) . PHP_EOL;
+        $contents = is_array($lines) ? implode(PHP_EOL, $lines) . PHP_EOL : $lines;
         if (!\file_exists($filename)) {
             $this->stdErr->writeln(sprintf('Creating SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERBOSE);
             $this->fs->writeFile($filename, $contents, false);

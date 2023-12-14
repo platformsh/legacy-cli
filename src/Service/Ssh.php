@@ -96,6 +96,14 @@ class Ssh implements InputConfiguringInterface
 
         $options['SendEnv'] = 'TERM';
 
+        if ($this->output->isDebug()) {
+            $options['LogLevel'] = 'DEBUG';
+        } elseif ($this->output->isVeryVerbose()) {
+            $options['LogLevel'] = 'VERBOSE';
+        } elseif ($this->output->isQuiet()) {
+            $options['LogLevel'] = 'QUIET';
+        }
+
         if ($this->input->hasOption('identity-file') && $this->input->getOption('identity-file')) {
             $file = $this->input->getOption('identity-file');
             if (!file_exists($file)) {
@@ -144,15 +152,12 @@ class Ssh implements InputConfiguringInterface
             $options['IdentityFile'] = \array_unique($options['IdentityFile']);
         }
 
-        if ($this->output->isDebug()) {
-            $options['LogLevel'] = 'DEBUG';
-        } elseif ($this->output->isVeryVerbose()) {
-            $options['LogLevel'] = 'VERBOSE';
-        } elseif ($this->output->isQuiet()) {
-            $options['LogLevel'] = 'QUIET';
+        // Configure host keys and link them.
+        if (($keysFile = $this->sshConfig->configureHostKeys()) !== null) {
+            $options['UserKnownHostsFile'] = '~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
         }
 
-        // Ensure the session SSH config is up to date.
+        // Configure or validate the session SSH config.
         $this->sshConfig->configureSessionSsh();
 
         return $options;

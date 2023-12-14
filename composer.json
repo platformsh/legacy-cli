@@ -66,6 +66,7 @@
         }
     },
     "scripts": {
-        "update-countries": "php scripts/update-countries.php"
+        "update-countries": "php scripts/update-countries.php",
+        "update-known-hosts": "php scripts/update-known-hosts.php"
     }
 }
