@@ -288,10 +288,16 @@ api:
   # The timeout in seconds for a "git push" command. Set to null for no timeout.
   git_push_timeout: 3600
 
+ssh:
   # A file containing SSH host keys to install for the user.
-  # If a relative path is given, it is considered relative to the CLI source
-  # code root. Note this will need to be built into the Phar.
-  ssh_host_keys_file: resources/ssh/host-keys
+  # The filename is relative to the CLI root. Note it would need to be built
+  # into the Phar.
+  host_keys_file: resources/ssh/host-keys
+
+  # A list of SSH host keys to install for the user.
+  # They should be set as a string (one per line).
+  # If a "host_keys_file" is also specified, both will be used.
+  host_keys: ''
 
 # How the CLI detects and configures Git repositories as projects.
 detection:

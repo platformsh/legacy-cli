@@ -35,19 +35,21 @@ class SshConfig {
      */
     public function configureHostKeys()
     {
-        $keysSourceFile = (string) $this->config->getWithDefault('api.ssh_host_keys_file', '');
-        if (!$keysSourceFile) {
-            return null;
-        }
-        if (!(new \Symfony\Component\Filesystem\Filesystem())->isAbsolutePath($keysSourceFile)) {
-            $keysSourceFile = CLI_ROOT . DIRECTORY_SEPARATOR . $keysSourceFile;
-        }
         $hostKeys = '';
-        if (file_exists($keysSourceFile)) {
-            $hostKeys = file_get_contents($keysSourceFile);
+        if ($hostKeysFile = $this->config->getWithDefault('ssh.host_keys_file', '')) {
+            $hostKeysFile = CLI_ROOT . DIRECTORY_SEPARATOR . $hostKeysFile;
+            $hostKeys = file_get_contents($hostKeysFile);
+            if ($hostKeys === false) {
+                trigger_error('Failed to load host keys file: ' . $hostKeysFile, E_USER_WARNING);
+                return null;
+            }
         }
-        if (!$hostKeys) {
-            return null;
+        if ($additionalKeys = $this->config->getWithDefault('ssh.host_keys', '')) {
+            if (!is_string($additionalKeys)) {
+                trigger_error('Invalid value for ssh.host_keys config (it must be a string)', E_USER_WARNING);
+                return null;
+            }
+            $hostKeys = rtrim($hostKeys, "\n") . "\n" . $additionalKeys;
         }
 
         // Write the keys.
