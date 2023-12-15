@@ -1,14 +1,22 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserListCommand extends CommandBase
+class UserListCommand extends UserCommandBase
 {
-    private $tableHeader = ['email' => 'Email address', 'Name', 'role' => 'Project role', 'ID'];
+    private $tableHeader = [
+        'email' => 'Email address',
+        'name' => 'Name',
+        'role' => 'Project role',
+        'id' => 'ID',
+        'granted_at' => 'Granted at',
+        'updated_at' => 'Updated at',
+    ];
+    private $defaultColumns = ['email', 'name', 'role', 'id'];
 
     protected function configure()
     {
@@ -16,7 +24,12 @@ class UserListCommand extends CommandBase
             ->setName('user:list')
             ->setAliases(['users'])
             ->setDescription('List project users');
-        Table::configureInput($this->getDefinition(), $this->tableHeader);
+
+        if ($this->centralizedPermissionsEnabled()) {
+            $this->tableHeader['permissions'] = 'Permissions';
+        }
+
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addProjectOption();
     }
 
@@ -26,24 +39,55 @@ class UserListCommand extends CommandBase
 
         $project = $this->getSelectedProject();
 
-        $rows = [];
-        $i = 0;
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
-        foreach ($this->api()->getProjectAccesses($project) as $projectAccess) {
-            $account = $this->api()->getAccount($projectAccess);
-            $role = $projectAccess->role;
-            $weight = $i++;
-            if ($project->owner === $projectAccess->id) {
-                $weight = -1;
-                if (!$table->formatIsMachineReadable()) {
-                    $role .= ' (owner)';
-                }
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+
+        $rows = [];
+
+        if ($this->centralizedPermissionsEnabled()) {
+            $result = ProjectUserAccess::getCollectionWithParent($project->getUri() . '/user-access', $this->api()->getHttpClient(), ['query' => ['page[size]' => 200]]);
+            /** @var ProjectUserAccess $item */
+            foreach ($result['items'] as $item) {
+                $info = $item->getUserInfo();
+                $rows[] = [
+                    'email' => $info->email,
+                    'name' => trim(sprintf('%s %s', $info->first_name, $info->last_name)),
+                    'role' => $item->getProjectRole(),
+                    'id' => $item->user_id,
+                    'permissions' => $formatter->format($item->permissions, 'permissions'),
+                    'granted_at' => $formatter->format($item->granted_at, 'granted_at'),
+                    'updated_at' => $formatter->format($item->updated_at, 'updated_at'),
+                ];
             }
-            $rows[$weight] = ['email' => $account['email'], $account['display_name'], 'role' => $role, $projectAccess->id];
+        } else {
+            foreach ($project->getUsers() as $projectAccess) {
+                $info = $this->legacyUserInfo($projectAccess);
+                $rows[] = [
+                    'email' => $info['email'],
+                    'name' => $info['display_name'],
+                    'role' => $projectAccess->role,
+                    'id' => $projectAccess->id,
+                    'granted_at' => $formatter->format($info['created_at'], 'granted_at'),
+                    'updated_at' => $formatter->format($info['updated_at'] ?: $info['created_at'], 'updated_at'),
+                ];
+            }
         }
 
-        ksort($rows);
+        $ownerKey = null;
+        foreach ($rows as $key => $row) {
+            if ($row['id'] === $project->owner) {
+                $ownerKey = $key;
+                break;
+            }
+        }
+        if (isset($ownerKey)) {
+            $ownerRow = $rows[$ownerKey];
+            $ownerRow['role'] .= ' (owner)';
+            unset($rows[$ownerKey]);
+            array_unshift($rows, $ownerRow);
+        }
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
@@ -52,7 +96,7 @@ class UserListCommand extends CommandBase
             ));
         }
 
-        $table->render(array_values($rows), $this->tableHeader);
+        $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');

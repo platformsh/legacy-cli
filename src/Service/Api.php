@@ -26,7 +26,6 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
-use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Ref\UserRef;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
@@ -83,24 +82,6 @@ class Api
      * @var array<string, Environment[]>
      */
     private static $environmentsCache = [];
-
-    /**
-     * A cache of account details arrays, keyed by project ID.
-     *
-     * @see Api::getAccount()
-     *
-     * @var array<string, array>
-     */
-    private static $accountsCache = [];
-
-    /**
-     * A cache of project access lists, keyed by project ID.
-     *
-     * @see Api::getProjectAccesses()
-     *
-     * @var array<string, ProjectAccess[]>
-     */
-    private static $projectAccessesCache = [];
 
     /**
      * A cache of environment deployments.
@@ -885,40 +866,6 @@ class Api
     }
 
     /**
-     * Get a user's account info.
-     *
-     * @param ProjectAccess $access
-     * @param bool          $reset
-     *
-     * @return array
-     *   An array containing 'email' and 'display_name'.
-     */
-    public function getAccount(ProjectAccess $access, $reset = false)
-    {
-        if (isset(self::$accountsCache[$access->id]) && !$reset) {
-            return self::$accountsCache[$access->id];
-        }
-
-        $cacheKey = 'account:' . $access->id;
-        $details = $this->cache->fetch($cacheKey);
-        if (!$reset && $details) {
-            $this->debug('Loaded account information from cache for: ' . $access->id);
-        } else {
-            $data = $access->getData();
-            // Use embedded user information if possible.
-            if (isset($data['_embedded']['users'][0]) && count($data['_embedded']['users']) === 1) {
-                $details = $data['_embedded']['users'][0];
-            } else {
-                $details = $access->getAccount()->getProperties();
-                $this->cache->save($cacheKey, $details, (int) $this->config->getWithDefault('api.users_ttl', 600));
-            }
-            self::$accountsCache[$access->id] = $details;
-        }
-
-        return $details;
-    }
-
-    /**
      * Get user information.
      *
      * This is from the /users API which deals with basic authentication-related data.
@@ -1041,44 +988,6 @@ class Api
     public function isLoggedIn()
     {
         return $this->getClient(false)->getConnector()->isLoggedIn();
-    }
-
-    /**
-     * Load project users ("project access" records).
-     *
-     * @param \Platformsh\Client\Model\Project $project
-     * @param bool                             $reset
-     *
-     * @return ProjectAccess[]
-     */
-    public function getProjectAccesses(Project $project, $reset = false)
-    {
-        if ($reset || !isset(self::$projectAccessesCache[$project->id])) {
-            self::$projectAccessesCache[$project->id] = $project->getUsers();
-        }
-
-        return self::$projectAccessesCache[$project->id];
-    }
-
-    /**
-     * Load a project user ("project access" record) by email address.
-     *
-     * @param Project $project
-     * @param string  $email
-     * @param bool    $reset
-     *
-     * @return ProjectAccess|false
-     */
-    public function loadProjectAccessByEmail(Project $project, $email, $reset = false)
-    {
-        foreach ($this->getProjectAccesses($project, $reset) as $user) {
-            $account = $this->getAccount($user);
-            if ($account['email'] === $email || strtolower($account['email']) === strtolower($email)) {
-                return $user;
-            }
-        }
-
-        return false;
     }
 
     /**

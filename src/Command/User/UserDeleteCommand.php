@@ -1,12 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
-use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserDeleteCommand extends CommandBase
+class UserDeleteCommand extends UserCommandBase
 {
 
     protected function configure()
@@ -22,17 +22,18 @@ class UserDeleteCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-
         $project = $this->getSelectedProject();
-
         $email = $input->getArgument('email');
-        $selectedUser = $this->api()->loadProjectAccessByEmail($project, $email);
-        if (empty($selectedUser)) {
+
+        $selection = $this->loadProjectUser($project, $email);
+        if (!$selection) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
             return 1;
         }
+        $userId = $selection instanceof ProjectUserAccess ? $selection->user_id : $selection->id;
+        $email = $selection instanceof ProjectUserAccess ? $selection->getUserInfo()->email : $this->legacyUserInfo($selection)['email'];
 
-        if ($project->owner === $selectedUser->id) {
+        if ($project->owner === $userId) {
             $this->stdErr->writeln(sprintf(
                 'The user <error>%s</error> is the owner of the project %s.',
                 $email,
@@ -49,21 +50,21 @@ class UserDeleteCommand extends CommandBase
             return 1;
         }
 
-        $result = $selectedUser->delete();
+        $result = $selection->delete();
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if (!$result->getActivities()) {
-            $this->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
+        if ($result->getActivities() && $this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);
+        } elseif (!$this->centralizedPermissionsEnabled()) {
+            $this->redeployWarning();
         }
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        if ($this->api()->getMyUserId() === $selectedUser->id) {
+        if ($this->api()->getMyUserId() === $userId) {
             $this->api()->clearProjectsCache();
         }
 
