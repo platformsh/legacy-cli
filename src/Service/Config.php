@@ -679,4 +679,14 @@ class Config
             }
         }
     }
+
+    /**
+     * Returns the base API URL.
+     *
+     * @return string
+     */
+    public function getApiUrl()
+    {
+        return (string) $this->get('api.base_url');
+    }
 }

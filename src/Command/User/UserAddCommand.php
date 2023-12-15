@@ -30,9 +30,7 @@ class UserAddCommand extends CommandBase
 
         $this->addRoleOption();
 
-        if ($this->config()->getWithDefault('api.invitations', false)) {
-            $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
-        }
+        $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
 
         $this->addProjectOption();
         $this->addWaitOptions();
@@ -319,7 +317,7 @@ class UserAddCommand extends CommandBase
         $this->stdErr->writeln('');
 
         // If the user does not already exist on the project, then use the Invitations API.
-        if (!$existingProjectAccess && $this->config()->getWithDefault('api.invitations', false)) {
+        if (!$existingProjectAccess) {
             $this->stdErr->writeln('Inviting the user to the project...');
             $permissions = [];
             foreach ($desiredTypeRoles as $type => $role) {
@@ -343,14 +341,7 @@ class UserAddCommand extends CommandBase
         }
 
         // Make the desired changes at the project level.
-        if (!$existingProjectAccess) {
-            $this->stdErr->writeln("Adding the user to the project");
-            $result = $project->addUser($email, $desiredProjectRole);
-            $activities = $result->getActivities();
-            /** @var ProjectAccess $projectAccess */
-            $projectAccess = $result->getEntity();
-            $userId = $projectAccess->id;
-        } elseif ($existingProjectAccess->role !== $desiredProjectRole) {
+        if ($existingProjectAccess->role !== $desiredProjectRole) {
             $this->stdErr->writeln("Setting the user's project role to: $desiredProjectRole");
             $result = $existingProjectAccess->update(['role' => $desiredProjectRole]);
             $activities = $result->getActivities();

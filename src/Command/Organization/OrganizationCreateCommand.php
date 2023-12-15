@@ -46,14 +46,11 @@ END_HELP;
                 'options' => $countryList,
                 'asChoice' => false,
                 'defaultCallback' => function () use ($countryList) {
-                    if ($this->api()->authApiEnabled()) {
-                        $userCountry = $this->api()->getUser()->country;
-                        if (isset($countryList[$userCountry])) {
-                            return $countryList[$userCountry];
-                        }
-                        return $userCountry ?: null;
+                    $userCountry = $this->api()->getUser()->country;
+                    if (isset($countryList[$userCountry])) {
+                        return $countryList[$userCountry];
                     }
-                    return null;
+                    return $userCountry ?: null;
                 },
                 'normalizer' => function ($value) { return $this->normalizeCountryCode($value); },
                 'validator' => function ($countryCode) use ($countryList) {

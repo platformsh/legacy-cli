@@ -51,7 +51,6 @@ api:
 
   ssh_domain_wildcards: ['*.platform.sh']
 
-  invitations: true
   organizations: true
   centralized_permissions: true
   user_verification: true

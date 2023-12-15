@@ -22,7 +22,7 @@ class OrganizationCurlCommand extends OrganizationCommandBase
     {
         $organization = $this->validateOrganizationInput($input);
 
-        $apiUrl = Url::fromString($this->config()->get('api.base_url'));
+        $apiUrl = Url::fromString($this->config()->getApiUrl());
         $absoluteUrl = $apiUrl->combine($organization->getUri())->__toString();
 
         /** @var CurlCli $curl */

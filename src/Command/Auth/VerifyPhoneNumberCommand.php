@@ -21,10 +21,7 @@ class VerifyPhoneNumberCommand extends CommandBase
 
     public function isEnabled()
     {
-        $config = $this->config();
-        if (!$config->getWithDefault('api.user_verification', false)
-            || !$config->getWithDefault('api.auth', false)
-            || !$config->getWithDefault('api.base_url', '')) {
+        if (!$this->config()->getWithDefault('api.user_verification', false)) {
             return false;
         }
         return parent::isEnabled();

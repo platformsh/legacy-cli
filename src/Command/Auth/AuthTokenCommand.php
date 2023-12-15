@@ -29,12 +29,11 @@ class AuthTokenCommand extends CommandBase
             . ' Take care not to expose the token in a shared program or system, or to send the token to the wrong API domain.'
         );
         $executable = $this->config()->get('application.executable');
+        $apiUrl = $this->config()->getApiUrl();
         $examples = [
             'Print the payload for JWT-formatted tokens' => \sprintf('%s auth:token -W | cut -d. -f2 | base64 -d', $executable),
+            'Use the token in a curl command' => \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim($apiUrl, '/')),
         ];
-        if ($apiUrl = $this->config()->getWithDefault('api.base_url', '')) {
-            $examples['Use the token in a curl command'] = \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim($apiUrl, '/'));
-        }
         $help .= "\n\n<comment>Examples:</comment>";
         foreach ($examples as $description => $example) {
             $help .= "\n\n$description:\n  <info>$example</info>";
