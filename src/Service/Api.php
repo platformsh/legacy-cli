@@ -312,7 +312,6 @@ class Api
             return $this->onRefreshError($e);
         };
 
-        $connectorOptions['auth_api_enabled'] = true;
         $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions');
 
         return $connectorOptions;
