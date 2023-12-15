@@ -264,7 +264,7 @@ class Api
      */
     private function getConnectorOptions() {
         $connectorOptions = [];
-        $connectorOptions['api_url'] = $this->config->getWithDefault('api.base_url', '');
+        $connectorOptions['api_url'] = $this->config->getApiUrl();
         if ($this->config->has('api.accounts_api_url')) {
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
         }
@@ -312,7 +312,6 @@ class Api
             return $this->onRefreshError($e);
         };
 
-        $connectorOptions['auth_api_enabled'] = $this->config->get('api.auth');
         $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions');
 
         return $connectorOptions;
@@ -641,20 +640,14 @@ class Api
      * Return the user's project with the given ID.
      *
      * @param string      $id      The project ID.
-     * @param string|null $host    The project's hostname. @deprecated no longer used if an api.base_url is configured.
+     * @param string|null $host    @deprecated no longer used
      * @param bool|null   $refresh Whether to bypass the cache.
      *
      * @return Project|false
      */
     public function getProject($id, $host = null, $refresh = null)
     {
-        // Ignore the $host if an api.base_url is configured.
-        $apiUrl = $this->config->getWithDefault('api.base_url', '');
-        if ($apiUrl !== '') {
-            $host = null;
-        }
-
-        $cacheKey = sprintf('%s:project:%s:%s', $this->config->getSessionId(), $id, $host);
+        $cacheKey = sprintf('%s:project:%s', $this->config->getSessionId(), $id);
         $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh || !$cached) {
@@ -679,10 +672,7 @@ class Api
             $project = new Project($cached, $baseUrl, $guzzleClient);
             $this->debug('Loaded project from cache: ' . $id);
         }
-        $apiUrl = $this->config->getWithDefault('api.base_url', '');
-        if ($apiUrl) {
-            $project->setApiUrl($apiUrl);
-        }
+        $project->setApiUrl($this->config->getApiUrl());
 
         return $project;
     }
@@ -839,34 +829,14 @@ class Api
      *     'last_name': string,
      *     'display_name': string,
      *     'phone_number_verified': bool,
-     *     'uuid'?: string
      * }
      */
     public function getMyAccount($reset = false)
     {
-        $info = ['id' => '', 'username' => '', 'email' => '', 'first_name' => '', 'last_name' => '', 'phone_number_verified' => false];
-        if ($this->authApiEnabled()) {
-            $user = $this->getUser(null, $reset);
-            $info = array_merge($info, $user->getProperties());
-            $info['display_name'] = trim($user->first_name . ' ' . $user->last_name);
-        } else {
-            $account = $this->getLegacyAccountInfo($reset);
-            $info = [
-                'id' => $account['id'],
-                'username' => $account['username'],
-                'email' => $account['mail'],
-                'display_name' => $account['display_name'],
-            ];
-            if (isset($account['display_name'])) {
-                $parts = \explode(' ', $account['display_name'], 2);
-                if (count($parts) === 2) {
-                    list($info['first_name'], $info['last_name']) = $parts;
-                } else {
-                    $info['last_name'] = $account['display_name'];
-                }
-            }
-        }
-        return $info;
+        $user = $this->getUser(null, $reset);
+        return $user->getProperties() + [
+            'display_name' => trim($user->first_name . ' ' . $user->last_name),
+        ];
     }
 
     /**
@@ -901,16 +871,6 @@ class Api
     }
 
     /**
-     * Determines if the Auth API can be used, e.g. the getUser() method.
-     *
-     * @return bool
-     */
-    public function authApiEnabled()
-    {
-        return $this->config->getWithDefault('api.auth', false) && $this->config->getWithDefault('api.base_url', '');
-    }
-
-    /**
      * Get the logged-in user's SSH keys.
      *
      * @param bool $reset
@@ -921,7 +881,7 @@ class Api
     {
         $data = $this->getLegacyAccountInfo($reset);
 
-        return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->get('api.base_url'), '/') . '/', $this->getHttpClient());
+        return SshKey::wrapCollection($data['ssh_keys'], rtrim($this->config->getApiUrl(), '/') . '/', $this->getHttpClient());
     }
 
     /**
@@ -963,8 +923,6 @@ class Api
      *
      * This is from the /users API which deals with basic authentication-related data.
      *
-     * @see Api::authApiEnabled()
-     *
      * @param string|null $id
      *   The user ID. Defaults to the current user.
      * @param bool $reset
@@ -973,9 +931,6 @@ class Api
      */
     public function getUser($id = null, $reset = false)
     {
-        if (!$this->config->getWithDefault('api.auth', false)) {
-            throw new \BadMethodCallException('api.auth must be enabled for this method');
-        }
         if ($id) {
             $cacheKey = 'user:' . $id;
         } else {

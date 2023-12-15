@@ -9,14 +9,6 @@ class ApiCurlCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
-    public function isEnabled() {
-        if (!$this->config()->has('api.base_url')) {
-            return false;
-        }
-
-        return parent::isEnabled();
-    }
-
     protected function configure()
     {
         $this->setName('api:curl')
@@ -27,7 +19,7 @@ class ApiCurlCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $url = $this->config()->get('api.base_url');
+        $url = $this->config()->getApiUrl();
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).

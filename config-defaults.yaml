@@ -263,16 +263,10 @@ api:
   # though a recommendation will be displayed.
   write_user_ssh_config: null
 
-  # Whether the Auth API is enabled.
-  auth: true
-
-  # Whether the API supports project invitations (requires "auth").
-  invitations: false
-
-  # Whether the Organizations API is enabled (requires "auth").
+  # Whether the Organizations API is enabled.
   organizations: false
 
-  # Whether Centralized User Management is available (requires "auth" and "organizations").
+  # Whether Centralized User Management is available (requires "organizations").
   centralized_permissions: false
 
   # Whether the projects list should be fetched from the newer "extended-access" API instead of "/me".
@@ -283,7 +277,7 @@ api:
   # This can be null for no filtering, or a string or a list of strings.
   vendor_filter: null
 
-  # Whether the User Verification APIs (/me/verification and /users/ID/phonenumber) are enabled (requires "auth").
+  # Whether the User Verification APIs (/me/verification and /users/ID/phonenumber) are enabled.
   user_verification: false
 
   # Whether the Metrics API is enabled.
