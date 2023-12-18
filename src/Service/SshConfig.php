@@ -45,7 +45,10 @@ class SshConfig {
             $this->fs->remove($legacy);
         }
 
-        $domainWildcards = $this->config->get('api.ssh_domain_wildcards');
+        $domainWildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
+        if (!$domainWildcards) {
+            return false;
+        }
 
         $lines = [];
 
@@ -102,7 +105,7 @@ class SshConfig {
             '# It is updated automatically when certain CLI commands are run.',
         ];
 
-        $wildcards = $this->config->get('api.ssh_domain_wildcards');
+        $wildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
         if (count($wildcards)) {
             $includerLines[] = 'Host ' . implode(' ', $wildcards);
             $includerLines[] = '  Include ' . $sessionSpecificFilename;
@@ -193,9 +196,9 @@ class SshConfig {
 
         $filename = $this->getUserSshConfigFilename();
 
-        $wildcards = $this->config->get('api.ssh_domain_wildcards');
+        $wildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
         if (!$wildcards) {
-            return true;
+            return false;
         }
 
         $suggestedConfig = \implode("\n", [
