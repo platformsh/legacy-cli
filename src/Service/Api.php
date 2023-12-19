@@ -602,7 +602,7 @@ class Api
      */
     public function getMyProjects($refresh = null)
     {
-        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.projects_list_new');
+        $new = $this->config->get('api.centralized_permissions');
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
         $cacheKey = sprintf('%s:my-projects%s:%s', $this->config->getSessionId(), $new ? ':new' : '', is_array($vendorFilter) ? implode(',', $vendorFilter) : (string) $vendorFilter);
         $cached = $this->cache->fetch($cacheKey);
