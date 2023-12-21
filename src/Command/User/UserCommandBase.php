@@ -200,12 +200,13 @@ abstract class UserCommandBase extends CommandBase
      * Returns a label describing a user.
      *
      * @param ProjectAccess|ProjectUserAccess $access
+     * @param bool $formatting
      *
      * @return string
      */
-    protected function getUserLabel($access)
+    protected function getUserLabel($access, $formatting = false)
     {
-        $format = '<info>%s</info> (%s)';
+        $format = $formatting ? '<info>%s</info> (%s)' : '%s (%s)';
         if ($access instanceof ProjectAccess) {
             $info = $this->legacyUserInfo($access);
 

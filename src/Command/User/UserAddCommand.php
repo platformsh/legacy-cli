@@ -118,42 +118,47 @@ class UserAddCommand extends UserCommandBase
         }
 
         // Process the [email] argument.
+        // This can be an email address or a user ID.
+        // When adding a new user, it must be a valid email address.
         $email = null;
+        $update = stripos($input->getFirstArgument(), ':u');
         if ($emailOrId = $input->getArgument('email')) {
             $selection = $this->loadProjectUser($project, $emailOrId);
-            $update = stripos($input->getFirstArgument(), ':u');
-            if ($update && !$selection) {
-                throw new InvalidArgumentException('User not found: ' . $emailOrId);
+            if (!$selection) {
+                if ($update) {
+                    throw new InvalidArgumentException('User not found: ' . $emailOrId);
+                }
+                $email = filter_var($emailOrId, FILTER_VALIDATE_EMAIL);
+                if ($email === false) {
+                    throw new InvalidArgumentException('Invalid email address: ' . $emailOrId);
+                }
+            }
+        } else if (!$input->isInteractive()) {
+            throw new InvalidArgumentException('An email address is required (in non-interactive mode).');
+        } elseif ($update) {
+            $userId = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user to update:');
+            $hasOutput = true;
+            $selection = $this->loadProjectUser($project, $userId);
+            if (!$selection) {
+                throw new InvalidArgumentException('User not found: ' . $userId);
             }
         } else {
-            $update = stripos($input->getFirstArgument(), ':u');
-            if (!$input->isInteractive()) {
-                throw new InvalidArgumentException('An email address is required (in non-interactive mode).');
-            } elseif ($update) {
-                $userId = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user to update:');
-                $hasOutput = true;
-                $selection = $this->loadProjectUser($project, $userId);
-                if (!$selection) {
-                    throw new InvalidArgumentException('User not found: ' . $userId);
+            $question = new Question("Enter the user's email address: ");
+            $question->setValidator(function ($answer) {
+                if (empty($answer)) {
+                    throw new InvalidArgumentException('An email address is required.');
                 }
-            } else {
-                $question = new Question("Enter the user's email address: ");
-                $question->setValidator(function ($answer) {
-                    if (empty($value)) {
-                        throw new InvalidArgumentException('An email address is required.');
-                    }
-                    if (!$filtered = filter_var($answer, FILTER_VALIDATE_EMAIL)) {
-                        throw new InvalidArgumentException('Invalid email address: ' . $answer);
-                    }
+                if (!$filtered = filter_var($answer, FILTER_VALIDATE_EMAIL)) {
+                    throw new InvalidArgumentException('Invalid email address: ' . $answer);
+                }
 
-                    return $filtered;
-                });
-                $question->setMaxAttempts(5);
-                $email = $questionHelper->ask($input, $this->stdErr, $question);
-                $hasOutput = true;
-                // A user may or may not already exist with this email address.
-                $selection = $this->loadProjectUser($project, $email);
-            }
+                return $filtered;
+            });
+            $question->setMaxAttempts(5);
+            $email = $questionHelper->ask($input, $this->stdErr, $question);
+            $hasOutput = true;
+            // A user may or may not already exist with this email address.
+            $selection = $this->loadProjectUser($project, $email);
         }
 
         $existingTypeRoles = [];
@@ -163,13 +168,13 @@ class UserAddCommand extends UserCommandBase
 
         if ($selection instanceof ProjectAccess) {
             $existingUserId = $selection->id;
-            $existingUserLabel = $this->getUserLabel($selection);
+            $existingUserLabel = $this->getUserLabel($selection, true);
             $existingProjectRole = $selection->role;
             $existingTypeRoles = $this->getTypeRoles($selection, $environmentTypes);
             $email = $this->legacyUserInfo($selection)['email'];
         } elseif ($selection) {
             $existingUserId = $selection->user_id;
-            $existingUserLabel = $this->getUserLabel($selection);
+            $existingUserLabel = $this->getUserLabel($selection, true);
             $existingProjectRole = $selection->getProjectRole();
             $existingTypeRoles = $selection->getEnvironmentTypeRoles();
             $email = $selection->getUserInfo()->email;
