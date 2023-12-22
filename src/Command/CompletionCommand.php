@@ -74,21 +74,9 @@ class CompletionCommand extends ParentCompletionCommand
             ),
             new Completion(
                 'user:role',
-                'email',
-                Completion::TYPE_ARGUMENT,
-                [$this, 'getUserEmails']
-            ),
-            new Completion(
-                'user:role',
                 'level',
                 Completion::TYPE_OPTION,
                 ['project', 'environment']
-            ),
-            new Completion(
-                'user:delete',
-                'email',
-                Completion::TYPE_ARGUMENT,
-                [$this, 'getUserEmails']
             ),
             new Completion\ShellPathCompletion(
                 'ssh-key:add',
@@ -286,27 +274,6 @@ class CompletionCommand extends ParentCompletionCommand
         }
 
         return array_keys($this->api->getEnvironments($project, false, false));
-    }
-
-    /**
-     * Get a list of user email addresses.
-     *
-     * @return string[]
-     */
-    public function getUserEmails()
-    {
-        $project = $this->getProject();
-        if (!$project) {
-            return [];
-        }
-
-        $emails = [];
-        foreach ($this->api->getProjectAccesses($project) as $projectAccess) {
-            $account = $this->api->getAccount($projectAccess);
-            $emails[] = $account['email'];
-        }
-
-        return $emails;
     }
 
     /**

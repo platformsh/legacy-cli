@@ -1,14 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\ProjectAccess;
+use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserGetCommand extends CommandBase
+class UserGetCommand extends UserCommandBase
 {
     protected function configure()
     {
@@ -59,22 +59,18 @@ class UserGetCommand extends CommandBase
         // Load the user.
         $email = $input->getArgument('email');
         if ($email === null && $input->isInteractive()) {
-            $choices = [];
-            foreach ($this->api()->getProjectAccesses($project) as $access) {
-                $account = $this->api()->getAccount($access);
-                $choices[$account['email']] = sprintf('%s (%s)', $account['display_name'], $account['email']);
-            }
-            $email = $questionHelper->choose($choices, 'Enter a number to choose a user:');
+            $email = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user:');
         }
-        $projectAccess = $this->api()->loadProjectAccessByEmail($project, $email);
-        if (!$projectAccess) {
+
+        $selection = $this->loadProjectUser($project, $email);
+        if (!$selection) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
 
             return 1;
         }
 
         if ($input->getOption('pipe')) {
-            $this->displayRole($projectAccess, $level, $output);
+            $this->displayRole($selection, $level, $output);
 
             return 0;
         }
@@ -89,17 +85,23 @@ class UserGetCommand extends CommandBase
     }
 
     /**
-     * @param \Platformsh\Client\Model\ProjectAccess            $projectAccess
-     * @param string                                            $level
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param ProjectAccess|ProjectUserAccess $user
+     * @param string $level
+     * @param OutputInterface $output
      */
-    private function displayRole(ProjectAccess $projectAccess, $level, OutputInterface $output)
+    private function displayRole($user, $level, OutputInterface $output)
     {
-        if ($level !== 'environment') {
-            $currentRole = $projectAccess->role;
+        if ($level === 'environment') {
+            if ($user instanceof ProjectAccess) {
+                $access = $this->getSelectedEnvironment()->getUser($user->id);
+                $currentRole = $access ? $access->role : 'none';
+            } else {
+                $typeRoles = $user->getEnvironmentTypeRoles();
+                $envType = $this->getSelectedEnvironment()->type;
+                $currentRole = isset($typeRoles[$envType]) ? $typeRoles[$envType] : 'none';
+            }
         } else {
-            $access = $this->getSelectedEnvironment()->getUser($projectAccess->id);
-            $currentRole = $access ? $access->role : 'none';
+            $currentRole = $user instanceof ProjectAccess ? $user->role : $user->getProjectRole();
         }
         $output->writeln($currentRole);
     }
