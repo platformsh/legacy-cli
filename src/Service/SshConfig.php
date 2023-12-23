@@ -51,6 +51,9 @@ class SshConfig {
             }
             $hostKeys = rtrim($hostKeys, "\n") . "\n" . $additionalKeys;
         }
+        if (empty($hostKeys)) {
+            return null;
+        }
 
         // Write the keys.
         $keysFile = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'host-keys';
