@@ -87,7 +87,7 @@ class SshConfig {
             $this->fs->remove($legacy);
         }
 
-        $domainWildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
+        $domainWildcards = $this->config->getWithDefault('ssh.domain_wildcards', []);
         if (!$domainWildcards) {
             return false;
         }
@@ -247,7 +247,7 @@ class SshConfig {
 
         $filename = $this->getUserSshConfigFilename();
 
-        $wildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
+        $wildcards = $this->config->getWithDefault('ssh.domain_wildcards', []);
         if (!$wildcards) {
             return false;
         }

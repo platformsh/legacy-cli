@@ -155,7 +155,7 @@ class SshDiagnostics
             return false;
         }
         // Check against the wildcard list.
-        foreach ($this->config->getWithDefault('api.ssh_domain_wildcards', []) as $wildcard) {
+        foreach ($this->config->getWithDefault('ssh.domain_wildcards', []) as $wildcard) {
             if (\strpos($host, \str_replace('*.', '', $wildcard)) !== false) {
                 return true;
             }
