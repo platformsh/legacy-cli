@@ -2132,9 +2132,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $client = $this->api()->getClient(false, true);
         $this->stdErr->writeln('You are logged in.');
 
-        // Generate a new certificate from the certifier API.
         /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
         $sshConfig = $this->getService('ssh_config');
+
+        // Configure SSH host keys.
+        $sshConfig->configureHostKeys();
+
+        // Generate a new certificate from the certifier API.
         /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
         $certifier = $this->getService('certifier');
         if ($certifier->isAutoLoadEnabled() && $sshConfig->checkRequiredVersion()) {
@@ -2149,10 +2153,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
 
-        // Write SSH configuration.
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        // Write session-based SSH configuration.
         if ($sshConfig->configureSessionSsh()) {
+            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+            $questionHelper = $this->getService('question_helper');
             $sshConfig->addUserSshConfig($questionHelper);
         }
 
