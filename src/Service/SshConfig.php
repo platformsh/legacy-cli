@@ -261,7 +261,9 @@ class SshConfig {
         $manualMessage = 'To configure SSH, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
 
-        $writeUserSshConfig = $this->config->getWithDefault('api.write_user_ssh_config', null);
+        $writeUserSshConfig = $this->config->has('api.write_user_ssh_config')
+                ? $this->config->get('api.write_user_ssh_config')
+                : $this->config->getWithDefault('ssh.write_user_config', null);
         if ($writeUserSshConfig === false) {
             $this->stdErr->writeln($manualMessage);
             return true;
