@@ -374,6 +374,7 @@ class Config
             'USER_AGENT' => 'api.user_agent',
             'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
             'API_WRITE_USER_SSH_CONFIG' => 'ssh.write_user_config',
+            'API_ADD_TO_SSH_AGENT' => 'ssh.add_to_agent',
         ]);
 
         foreach ($overrideMap as $var => $key) {
@@ -637,6 +638,9 @@ class Config
         }
         if (!isset($this->config['service']['applications_config_file'])) {
             $this->config['service']['applications_config_file'] = $this->get('service.project_config_dir') . '/applications.yaml';
+        }
+        if (isset($this->config['api']['add_to_ssh_agent'])) {
+            $this->config['ssh']['add_to_agent'] = $this->config['api']['add_to_ssh_agent'];
         }
     }
 

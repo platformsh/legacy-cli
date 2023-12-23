@@ -246,10 +246,6 @@ api:
   # Overridden by the {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
-  # Whether auto-generated SSH certificate identities should be added to the SSH agent.
-  # Enabling this may be useful for those who use agent forwarding.
-  add_to_ssh_agent: false
-
   # Whether to auto-load an SSH certificate on login and SSH commands.
   # Overridden by the {application.env_prefix}AUTO_LOAD_SSH_CERT env var
   auto_load_ssh_cert: true
@@ -302,6 +298,10 @@ ssh:
   # null means the user will be asked, false means it will not be touched
   # though a recommendation will be displayed.
   write_user_config: null
+
+  # Whether auto-generated SSH certificate identities should be added to the SSH agent.
+  # Enabling this may be useful for those who use agent forwarding.
+  add_to_agent: false
 
 # How the CLI detects and configures Git repositories as projects.
 detection:
