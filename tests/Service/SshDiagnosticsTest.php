@@ -14,7 +14,7 @@ class SshDiagnosticsTest extends \PHPUnit_Framework_TestCase {
         $container = Container::instance();
         $container->set('input', new ArrayInput([]));
         $container->set('config', (new Config())->withOverrides([
-            'api.ssh_domain_wildcards' => ['*.ssh.example.com'],
+            'ssh.domain_wildcards' => ['*.ssh.example.com'],
         ]));
         /** @var SshDiagnostics $this->sd */
         $this->sd = $container->get('ssh_diagnostics');
