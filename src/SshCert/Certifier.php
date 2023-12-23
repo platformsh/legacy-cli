@@ -42,7 +42,17 @@ class Certifier
      */
     public function isAutoLoadEnabled()
     {
-        return !self::$disableAutoLoad && $this->config->getWithDefault('api.auto_load_ssh_cert', false);
+        return !self::$disableAutoLoad && $this->config->getWithDefault('ssh.auto_load_cert', false);
+    }
+
+    /**
+     * Whether to use the certificate only, if one is available.
+     *
+     * @return bool
+     */
+    public function useCertificateOnly()
+    {
+        return $this->config->get('ssh.cert_only');
     }
 
     /**
@@ -99,7 +109,7 @@ class Certifier
         $this->fs->mkdir($dir, 0700);
 
         // Remove the old certificate and key from the SSH agent.
-        if ($this->config->getWithDefault('api.add_to_ssh_agent', false)) {
+        if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
             $this->shell->execute(['ssh-add', '-d', $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME], null, false, !$this->stdErr->isVeryVerbose());
         }
 
@@ -129,7 +139,7 @@ class Certifier
         // Add the key to the SSH agent, if possible, silently.
         // In verbose mode the full command will be printed, so the user can
         // re-run it to check error details.
-        if ($this->config->getWithDefault('api.add_to_ssh_agent', false)) {
+        if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
             $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
             $this->shell->execute(['ssh-add', '-t', $lifetime, $sshPair['private']], null, false, !$this->stdErr->isVerbose());
         }

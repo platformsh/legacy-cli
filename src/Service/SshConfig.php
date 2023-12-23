@@ -87,38 +87,50 @@ class SshConfig {
             $this->fs->remove($legacy);
         }
 
-        $domainWildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
+        $domainWildcards = $this->config->getWithDefault('ssh.domain_wildcards', []);
         if (!$domainWildcards) {
             return false;
         }
 
         $lines = [];
 
-        if ($certificate = $this->certifier->getExistingCertificate()) {
+        $certificate = $this->certifier->getExistingCertificate();
+        $onlyCertificate = $certificate !== null && $this->certifier->useCertificateOnly();
+        if ($certificate) {
             $executable = $this->config->get('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
             if (!OsUtil::isWindows()) {
                 $refreshCommand .= ' 2>/dev/null';
             }
             // Use Match solely to run the refresh command.
-            $lines[] = '# Auto-refresh the SSH certificate:';
+            $lines[] = '# Auto-refresh the SSH certificate.';
             $lines[] = sprintf('Match host "%s" exec "%s"', \implode(',', $domainWildcards), $refreshCommand);
+
+            $lines[] = '';
+            $lines[] = '# Cancel the Match, so that the following configuration will apply regardless of';
+            $lines[] = "# the command's execution.";
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
 
-            // Indentation in the SSH config is for readability (it has no other effect).
             $lines[] = '';
-            $lines[] = '# Include the certificate and its key:';
+            $lines[] = '# Include the certificate and its key.';
             $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
             $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($certificate->privateKeyFilename()));
+            if ($onlyCertificate) {
+                $lines[] = 'IdentitiesOnly yes';
+            }
         } else {
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
         }
 
-        $sessionIdentityFile = $this->sshKey->selectIdentity();
-        if ($sessionIdentityFile !== null) {
-            $lines[] = '';
-            $lines[] = '# This SSH key was detected as corresponding to the session:';
-            $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
+        $sessionIdentityFile = null;
+        if (!$onlyCertificate) {
+            $sessionIdentityFile = $this->sshKey->selectIdentity();
+            if ($sessionIdentityFile !== null) {
+                $lines[] = '';
+                $lines[] = '# This SSH key was detected as corresponding to the session.';
+                $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
+                $lines[] = '';
+            }
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
@@ -131,7 +143,7 @@ class SshConfig {
         }
 
         // Add default files if there is no preferred session identity file.
-        if ($sessionIdentityFile === null && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
+        if ($sessionIdentityFile === null && !$onlyCertificate && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
             $lines[] = '';
             $lines[] = '# Include SSH "default" identity files:';
             foreach ($defaultFiles as $identityFile) {
@@ -147,15 +159,12 @@ class SshConfig {
             '# It is updated automatically when certain CLI commands are run.',
         ];
 
-        $wildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
-        if (count($wildcards)) {
-            $includerLines[] = 'Host ' . implode(' ', $wildcards);
-            $includerLines[] = '  Include ' . $sessionSpecificFilename;
-            $this->writeSshIncludeFile(
-                $includerFilename,
-                $includerLines
-            );
-        }
+        $includerLines[] = 'Host ' . implode(' ', $domainWildcards);
+        $includerLines[] = '  Include ' . $sessionSpecificFilename;
+        $this->writeSshIncludeFile(
+            $includerFilename,
+            $includerLines
+        );
 
         return true;
     }
@@ -238,7 +247,7 @@ class SshConfig {
 
         $filename = $this->getUserSshConfigFilename();
 
-        $wildcards = $this->config->getWithDefault('api.ssh_domain_wildcards', []);
+        $wildcards = $this->config->getWithDefault('ssh.domain_wildcards', []);
         if (!$wildcards) {
             return false;
         }
@@ -252,7 +261,9 @@ class SshConfig {
         $manualMessage = 'To configure SSH, add the following lines to: <comment>' . $filename . '</comment>'
             . "\n" . $suggestedConfig;
 
-        $writeUserSshConfig = $this->config->getWithDefault('api.write_user_ssh_config', null);
+        $writeUserSshConfig = $this->config->has('api.write_user_ssh_config')
+                ? $this->config->get('api.write_user_ssh_config')
+                : $this->config->getWithDefault('ssh.write_user_config', null);
         if ($writeUserSshConfig === false) {
             $this->stdErr->writeln($manualMessage);
             return true;

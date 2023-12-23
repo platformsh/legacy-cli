@@ -49,14 +49,15 @@ api:
   auth_url: 'https://auth.api.platform.sh'
   oauth2_client_id: 'platform-cli'
 
-  ssh_domain_wildcards: ['*.platform.sh']
-
   organizations: true
   centralized_permissions: true
   user_verification: true
   metrics: true
 
   vendor_filter: 'platformsh'
+
+ssh:
+  domain_wildcards: ['*.platform.sh']
 
 detection:
   git_remote_name: 'platform'

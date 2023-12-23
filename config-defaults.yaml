@@ -198,12 +198,6 @@ api:
   ##
   # certifier_url: 'https://auth.example.com'
 
-  ## Wildcard domains for SSH configuration.
-  ## This is also used to detect whether to run diagnostics on an SSH connection error.
-  ## Can be replaced by a single value using the {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
-  ##
-  # ssh_domain_wildcards: ['*.example.com']
-
   # The maximum lifetime (TTL) of objects in the local cache, in seconds.
   projects_ttl: 600
   environments_ttl: 120
@@ -246,23 +240,6 @@ api:
   # Overridden by the {application.env_prefix}SESSION_ID env var.
   session_id: 'default'
 
-  # Whether auto-generated SSH certificate identities should be added to the SSH agent.
-  # Enabling this may be useful for those who use agent forwarding.
-  add_to_ssh_agent: false
-
-  # Whether to auto-load an SSH certificate on login and SSH commands.
-  # Overridden by the {application.env_prefix}AUTO_LOAD_SSH_CERT env var
-  auto_load_ssh_cert: true
-
-  # Whether the user's SSH config file (~/.ssh/config) can be written automatically.
-  #
-  # The file is validated when SSH certificates are installed or refreshed.
-  #
-  # Setting this to true means it will be created or updated automatically,
-  # null means the user will be asked, false means it will not be touched
-  # though a recommendation will be displayed.
-  write_user_ssh_config: null
-
   # Whether the Organizations API is enabled.
   organizations: false
 
@@ -289,6 +266,12 @@ api:
   git_push_timeout: 3600
 
 ssh:
+  ## Wildcard domains for SSH configuration.
+  ## This is also used to detect whether to run diagnostics on an SSH connection error.
+  ## Can be replaced by a single value using the {application.env_prefix}SSH_DOMAIN_WILDCARD env var.
+  ##
+  # domain_wildcards: ['*.example.com']
+
   # A file containing SSH host keys to install for the user.
   # The filename is relative to the CLI root. Note it would need to be built
   # into the Phar.
@@ -299,6 +282,26 @@ ssh:
   # If "host_keys_file" and "host_keys" are both empty or omitted, no extra
   # files will be written. If both are specified, both will be used.
   host_keys: ''
+
+  # If an SSH certificate is available, configure SSH to ignore other keys.
+  cert_only: false
+
+  # Whether the user's SSH config file (~/.ssh/config) can be written automatically.
+  #
+  # The file is validated when SSH certificates are installed or refreshed.
+  #
+  # Setting this to true means it will be created or updated automatically,
+  # null means the user will be asked, false means it will not be touched
+  # though a recommendation will be displayed.
+  write_user_config: null
+
+  # Whether auto-generated SSH certificate identities should be added to the SSH agent.
+  # Enabling this may be useful for those who use agent forwarding.
+  add_to_agent: false
+
+  # Whether to auto-load an SSH certificate on login and SSH commands.
+  # Overridden by the {application.env_prefix}AUTO_LOAD_SSH_CERT env var
+  auto_load_cert: true
 
 # How the CLI detects and configures Git repositories as projects.
 detection:

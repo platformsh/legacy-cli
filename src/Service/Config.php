@@ -370,9 +370,12 @@ class Config
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
             'CERTIFIER_URL' => 'api.certifier_url',
-            'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
+            'AUTO_LOAD_SSH_CERT' => 'ssh.auto_load_cert',
+            'API_AUTO_LOAD_SSH_CERT' => 'ssh.auto_load_cert',
             'USER_AGENT' => 'api.user_agent',
             'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
+            'API_WRITE_USER_SSH_CONFIG' => 'ssh.write_user_config',
+            'API_ADD_TO_SSH_AGENT' => 'ssh.add_to_agent',
         ]);
 
         foreach ($overrideMap as $var => $key) {
@@ -382,9 +385,9 @@ class Config
             }
         }
 
-        // Special case: replace the list api.ssh_domain_wildcards with the value of {PREFIX}SSH_DOMAIN_WILDCARD.
+        // Special case: replace the list ssh.domain_wildcards with the value of {PREFIX}SSH_DOMAIN_WILDCARD.
         if (($value = $this->getEnv('SSH_DOMAIN_WILDCARD')) !== false) {
-            $this->config['api']['ssh_domain_wildcards'] = [$value];
+            $this->config['ssh']['domain_wildcards'] = [$value];
         }
 
         // Special case: {PREFIX}NO_LEGACY_WARNING disables the migration prompt.
@@ -636,6 +639,17 @@ class Config
         }
         if (!isset($this->config['service']['applications_config_file'])) {
             $this->config['service']['applications_config_file'] = $this->get('service.project_config_dir') . '/applications.yaml';
+        }
+
+        // Migrate renamed config keys.
+        if (isset($this->config['api']['add_to_ssh_agent'])) {
+            $this->config['ssh']['add_to_agent'] = $this->config['api']['add_to_ssh_agent'];
+        }
+        if (isset($this->config['api']['auto_load_ssh_cert'])) {
+            $this->config['ssh']['auto_load_cert'] = $this->config['api']['auto_load_ssh_cert'];
+        }
+        if (isset($this->config['api']['ssh_domain_wildcards'])) {
+            $this->config['ssh']['domain_wildcards'] = $this->config['api']['ssh_domain_wildcards'];
         }
     }
 
