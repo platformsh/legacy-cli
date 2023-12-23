@@ -370,7 +370,8 @@ class Config
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
             'CERTIFIER_URL' => 'api.certifier_url',
-            'AUTO_LOAD_SSH_CERT' => 'api.auto_load_ssh_cert',
+            'AUTO_LOAD_SSH_CERT' => 'ssh.auto_load_cert',
+            'API_AUTO_LOAD_SSH_CERT' => 'ssh.auto_load_cert',
             'USER_AGENT' => 'api.user_agent',
             'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
             'API_WRITE_USER_SSH_CONFIG' => 'ssh.write_user_config',
@@ -641,6 +642,9 @@ class Config
         }
         if (isset($this->config['api']['add_to_ssh_agent'])) {
             $this->config['ssh']['add_to_agent'] = $this->config['api']['add_to_ssh_agent'];
+        }
+        if (isset($this->config['api']['auto_load_ssh_cert'])) {
+            $this->config['ssh']['auto_load_cert'] = $this->config['api']['auto_load_ssh_cert'];
         }
     }
 
