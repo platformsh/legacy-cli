@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use Platformsh\Cli\Command\User\UserAddCommand;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
 
 class UserAddCommandTest extends \PHPUnit_Framework_TestCase
@@ -84,6 +85,11 @@ class UserAddCommandTest extends \PHPUnit_Framework_TestCase
     {
         // Set up a mock command to make the private method accessible.
         $command = new UserAddCommand();
+        // Fake running the command to set I/O properties.
+        $cwd = getcwd();
+        chdir('/tmp');
+        try { $command->run(new ArrayInput([]), new NullOutput()); } catch (\RuntimeException $e) {}
+        chdir($cwd);
         $m = new \ReflectionMethod($command, 'getSpecifiedTypeRoles');
         $m->setAccessible(true);
 
@@ -93,36 +99,24 @@ class UserAddCommandTest extends \PHPUnit_Framework_TestCase
             [
                 ['staging:viewer', 'stg:admin', 'viewer'],
                 ['staging' => 'viewer'],
-                true,
-                '',
                 ['stg:admin', 'viewer'],
             ],
             [
                 ['development:viewer', 'nonexistent:viewer', 'stg:admin'],
-                [],
-                false,
-                'No environment type IDs match: nonexistent',
+                ['development' => 'viewer'],
+                ['nonexistent:viewer', 'stg:admin'],
             ],
             [
                 ['dev%:v', 'prod:admin'],
                 ['development' => 'viewer'],
-                true,
-                '',
                 ['prod:admin'],
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($roles, $expectedRoles, $ignoreErrors) = $case;
-            $expectedErrorMessage = isset($case[3]) ? $case[3] : '';
-            $expectedRemainingRoles = isset($case[4]) ? $case[4] : [];
-            try {
-                $result = $m->invokeArgs($command, [&$roles, $this->mockTypes, $ignoreErrors]);
-                $this->assertEquals($expectedRoles, $result, "case $i roles");
-                $this->assertEquals($expectedErrorMessage, '', "case $i error message");
-                $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
-            } catch (\InvalidArgumentException $e) {
-                $this->assertEquals($expectedErrorMessage, $e->getMessage(), "case $i error message");
-            }
+            list($roles, $expectedRoles, $expectedRemainingRoles) = $case;
+            $result = $m->invokeArgs($command, [&$roles, $this->mockTypes]);
+            $this->assertEquals($expectedRoles, $result, "case $i roles");
+            $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
         }
     }
 
