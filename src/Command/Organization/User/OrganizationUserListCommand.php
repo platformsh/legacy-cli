@@ -166,11 +166,14 @@ class OrganizationUserListCommand extends OrganizationCommandBase
      */
     private function parsePageId($pageId)
     {
-        if (strpos($pageId, 'a') !== 0 && strpos($pageId, 'b') !== 0) {
+        $types = ['a' => 'after', 'b' => 'before'];
+        if (!isset($types[$pageId[0]])) {
             throw new InvalidArgumentException('Invalid page ID: ' . $pageId);
         }
+        $key = 'page[' . $types[$pageId[0]] . ']';
+        $value = substr($pageId, 1);
 
-        return [$pageId[0] === 'a' ? 'page[after]' : 'page[before]' => substr($pageId, 1)];
+        return [$key => $value];
     }
 
     /**
