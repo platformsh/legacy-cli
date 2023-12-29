@@ -94,6 +94,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         } finally {
             $progress->done();
         }
+        $total = $this->total($members);
 
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
@@ -126,35 +127,31 @@ class OrganizationUserListCommand extends OrganizationCommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
-            $more = false;
-            if (!$fetchAllPages) {
+        $moreAvailable = !$fetchAllPages && ($total > count($members) || isset($result['next']) || isset($result['previous']));
+        if ($moreAvailable) {
+            if (!$table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
                 $this->stdErr->writeln('');
-                if (($total = $this->total($members)) && $total > count($members)) {
-                    $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
-                    $more = true;
-                } elseif (isset($result['next']) || isset($result['previous'])) {
-                    $this->stdErr->writeln('More users are available');
-                    $more = true;
-                }
             }
-            $this->stdErr->writeln('');
-            if ($more) {
-                $this->stdErr->writeln('Show all users with: <info>--count 0</info>');
-                if (isset($result['next']) && ($pageId = $this->pageId($result['next'], 'after'))) {
-                    $this->stdErr->writeln(sprintf('View the next page with: <info>--page %s</info>', OsUtil::escapeShellArg($pageId)));
-                }
-                if (isset($result['previous']) && ($pageId = $this->pageId($result['previous'], 'before'))) {
-                    $this->stdErr->writeln(sprintf('View the previous page with: <info>--page %s</info>', OsUtil::escapeShellArg($pageId)));
-                }
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln(\sprintf('To get full user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', '[email]')));
+            if ($total !== null) {
+                $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
             } else {
-                $this->stdErr->writeln(\sprintf('To get full user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', '[email]')));
-                $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:add', '[email]')));
-                $this->stdErr->writeln(\sprintf('To update a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:update', '[email]')));
-                $this->stdErr->writeln(\sprintf('To remove a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:delete', '[email]')));
+                $this->stdErr->writeln('More users are available');
             }
+            $this->stdErr->writeln('Show all users with: <info>--count 0</info>');
+            if (isset($result['next']) && ($pageId = $this->pageId($result['next'], 'after'))) {
+                $this->stdErr->writeln(sprintf('View the next page with: <info>--page %s</info>', OsUtil::escapeShellArg($pageId)));
+            }
+            if (isset($result['previous']) && ($pageId = $this->pageId($result['previous'], 'before'))) {
+                $this->stdErr->writeln(sprintf('View the previous page with: <info>--page %s</info>', OsUtil::escapeShellArg($pageId)));
+            }
+        }
+
+        if (!$table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(\sprintf('To get full user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', '[email]')));
+            $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:add', '[email]')));
+            $this->stdErr->writeln(\sprintf('To update a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:update', '[email]')));
+            $this->stdErr->writeln(\sprintf('To remove a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:delete', '[email]')));
         }
 
         return 0;
