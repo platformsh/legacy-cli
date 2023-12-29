@@ -122,8 +122,7 @@ class EnvironmentXdebugCommand extends CommandBase
         // Set up the tunnel
         $port = $input->getOption('port');
 
-        $sshOptions = [];
-        $sshOptions['ExitOnForwardFailure'] = 'yes';
+        $sshOptions = ['ExitOnForwardFailure yes'];
 
         $listenAddress = '127.0.0.1:' . $port;
         $commandTunnel = $ssh->getSshCommand($sshOptions) . ' -TNR ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);

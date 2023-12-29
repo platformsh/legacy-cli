@@ -40,7 +40,7 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns arguments for an SSH command.
      *
-     * @param array $extraOptions
+     * @param string[] $extraOptions
      * @param string|null $uri
      * @param string[]|string|null $remoteCommand
      *
@@ -51,16 +51,9 @@ class Ssh implements InputConfiguringInterface
         $options = array_merge($this->getSshOptions(), $extraOptions);
 
         $args = [];
-        foreach ($options as $name => $value) {
-            if (is_array($value)) {
-                foreach ($value as $item) {
-                    $args[] = '-o';
-                    $args[] = $name . ' ' . $item;
-                }
-                continue;
-            }
+        foreach ($options as $option) {
             $args[] = '-o';
-            $args[] = $name . ' ' . $value;
+            $args[] = $option;
         }
 
         if ($uri !== null) {
@@ -88,20 +81,20 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an array of SSH options, based on the input options.
      *
-     * @return array<string, string|string[]> An array of SSH options.
+     * @return string[] An array of SSH options.
      */
-    protected function getSshOptions()
+    private function getSshOptions()
     {
         $options = [];
 
-        $options['SendEnv'] = 'TERM';
+        $options[] = 'SendEnv TERM';
 
         if ($this->output->isDebug()) {
-            $options['LogLevel'] = 'DEBUG';
+            $options[] = 'LogLevel DEBUG';
         } elseif ($this->output->isVeryVerbose()) {
-            $options['LogLevel'] = 'VERBOSE';
+            $options[] = 'LogLevel VERBOSE';
         } elseif ($this->output->isQuiet()) {
-            $options['LogLevel'] = 'QUIET';
+            $options[] = 'LogLevel QUIET';
         }
 
         if ($this->input->hasOption('identity-file') && $this->input->getOption('identity-file')) {
@@ -109,10 +102,8 @@ class Ssh implements InputConfiguringInterface
             if (!file_exists($file)) {
                 throw new \InvalidArgumentException('Identity file not found: ' . $file);
             }
-            $options['IdentitiesOnly'] = 'yes';
-            $options['IdentityFile'] = [
-                $this->sshConfig->formatFilePath($file),
-            ];
+            $options[] = 'IdentitiesOnly yes';
+            $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
         } else {
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
@@ -131,30 +122,23 @@ class Ssh implements InputConfiguringInterface
 
                 if ($sshCert) {
                     if ($this->sshConfig->supportsCertificateFile()) {
-                        $options['CertificateFile'] = $this->sshConfig->formatFilePath($sshCert->certificateFilename());
+                        $options[] = 'CertificateFile ' . $this->sshConfig->formatFilePath($sshCert->certificateFilename());
                     }
-                    $options['IdentityFile'] = [
-                        $this->sshConfig->formatFilePath($sshCert->privateKeyFilename()),
-                    ];
+                    $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sshCert->privateKeyFilename());
                     if ($this->certifier->useCertificateOnly()) {
-                        $options['IdentitiesOnly'] = 'yes';
+                        $options[] = 'IdentitiesOnly yes';
                     }
                 }
             }
         }
 
         if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
-            $options['IdentityFile'][] = $this->sshConfig->formatFilePath($sessionIdentityFile);
-        }
-
-        // For neatness, do not repeat IdentityFile values.
-        if (isset($options['IdentityFile']) && \is_array($options['IdentityFile'])) {
-            $options['IdentityFile'] = \array_unique($options['IdentityFile']);
+            $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
         }
 
         // Configure host keys and link them.
         if (($keysFile = $this->sshConfig->configureHostKeys()) !== null) {
-            $options['UserKnownHostsFile'] = '~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+            $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
         }
 
         // Configure or validate the session SSH config.
@@ -166,7 +150,7 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an SSH command line.
      *
-     * @param array $extraOptions
+     * @param string[] $extraOptions
      * @param string|null $uri
      * @param string|null $remoteCommand
      *

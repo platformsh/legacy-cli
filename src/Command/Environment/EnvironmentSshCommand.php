@@ -74,18 +74,9 @@ class EnvironmentSshCommand extends CommandBase
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        $sshOptions = [];
-        foreach ($input->getOption('option') as $option) {
-            $parts = explode(' ', $option, 2);
-            if (count($parts) < 2) {
-                throw new InvalidArgumentException('The option name and value must be separated by a space');
-            }
-            $sshOptions[$parts[0]] = $parts[1];
-        }
-
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $command = $ssh->getSshCommand($sshOptions, $sshUrl, $remoteCommand);
+        $command = $ssh->getSshCommand($input->getOption('option'), $sshUrl, $remoteCommand);
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
