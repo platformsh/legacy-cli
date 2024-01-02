@@ -54,6 +54,7 @@ class MongoShellCommand extends CommandBase
             $command .= ' --verbose';
         }
 
+        // Force TTY output when the input is a terminal.
         if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
             $host->setExtraSshArgs(['-t']);
         }
