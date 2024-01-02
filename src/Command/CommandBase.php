@@ -1354,17 +1354,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Prompt the user to choose between the app(s) or worker(s) that have
         // been found.
-        $default = null;
         $appNames = $appOption !== null
             ? [$appOption]
             : array_map(function (WebApp $app) { return $app->name; }, $deployment->webapps);
-        if (count($appNames) === 1) {
-            $default = reset($appNames);
-            $choices = [];
-            $choices[$default] = $default . ' (default)';
-        } else {
-            $choices = array_combine($appNames, $appNames);
-        }
+        $choices = array_combine($appNames, $appNames);
         $choicesIncludeWorkers = false;
         if ($includeWorkers) {
             $servicesWithSsh = [];
@@ -1389,29 +1382,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (count($choices) === 0) {
             throw new \RuntimeException('Failed to find apps or workers for environment: ' . $environment->id);
         }
-        ksort($choices, SORT_NATURAL);
-        if (count($choices) === 1) {
-            $choice = key($choices);
+        if (count($appNames) === 1) {
+            $choice = reset($appNames);
         } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             if ($choicesIncludeWorkers) {
-                $text = sprintf('Enter a number to choose %s app or %s worker:',
-                    count($appNames) === 1 ? 'the' : 'an',
+                $text = sprintf('Enter a number to choose an app or %s worker:',
                     count($choices) === 2 ? 'its' : 'a'
                 );
             } else {
-                $text = sprintf('Enter a number to choose %s app:',
-                    count($appNames) === 1 ? 'the' : 'an'
-                );
+                $text = 'Enter a number to choose an app:';
             }
-            $choice = $questionHelper->choose(
-                $choices,
-                $text,
-                $default
-            );
-        } elseif (count($appNames) === 1) {
-            $choice = reset($appNames);
+            ksort($choices, SORT_NATURAL);
+            $choice = $questionHelper->choose($choices, $text);
         } else {
             throw new ConsoleInvalidArgumentException(
                 $includeWorkers
