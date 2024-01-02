@@ -1285,6 +1285,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
             // No worker option specified so select app directly.
             if ($workerOption === null) {
+                $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $webApp->name), OutputInterface::VERBOSITY_VERBOSE);
+
                 return $this->remoteContainer = new RemoteContainer\App($webApp, $environment);
             }
 
@@ -1313,6 +1315,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 } catch (\InvalidArgumentException $e) {
                     throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption . ' (in app: ' . $appOption . ')');
                 }
+                $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $worker->name), OutputInterface::VERBOSITY_VERBOSE);
 
                 return $this->remoteContainer = new RemoteContainer\Worker($worker, $environment);
             }
@@ -1332,6 +1335,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (count($workerNames) === 1) {
                 $workerName = reset($workerNames);
+                $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
                 return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
             }
@@ -1348,6 +1352,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $workerNames,
                 'Enter a number to choose a worker:'
             );
+            $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
             return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
         }
@@ -1406,8 +1411,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Match the choice to a worker or app destination.
         if (strpos($choice, '--') !== false) {
+            $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
             return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
         }
+
+        $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
 
         return $this->remoteContainer = new RemoteContainer\App($deployment->getWebApp($choice), $environment);
     }
