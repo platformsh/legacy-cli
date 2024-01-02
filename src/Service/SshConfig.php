@@ -111,8 +111,13 @@ class SshConfig {
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
 
             $lines[] = '';
-            $lines[] = '# Include the certificate and its key.';
-            $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
+            if ($this->supportsCertificateFile()) {
+                $lines[] = '# Include the certificate and its key.';
+                $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
+            } else {
+                $lines[] = '# Include the certificate, via its key.';
+                $lines[] = '# The CertificateFile keyword could be used with OpenSSH 7.2 or later.';
+            }
             $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($certificate->privateKeyFilename()));
             if ($onlyCertificate) {
                 $lines[] = 'IdentitiesOnly yes';
