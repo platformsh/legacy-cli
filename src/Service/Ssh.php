@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\SshCert\Certifier;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -35,7 +36,7 @@ class Ssh implements InputConfiguringInterface
     public static function configureInput(InputDefinition $definition)
     {
         $definition->addOption(
-            new InputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'An SSH identity (private key) to use')
+            new HiddenInputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated: an SSH identity (private key) to use. The auto-generated certificate is recommended instead.')
         );
     }
 
@@ -99,11 +100,7 @@ class Ssh implements InputConfiguringInterface
             $options[] = 'LogLevel QUIET';
         }
 
-        if ($this->input->hasOption('identity-file') && $this->input->getOption('identity-file')) {
-            $file = $this->input->getOption('identity-file');
-            if (!file_exists($file)) {
-                throw new \InvalidArgumentException('Identity file not found: ' . $file);
-            }
+        if ($this->input->hasOption('identity-file') && ($file = $this->input->getOption('identity-file'))) {
             $options[] = 'IdentitiesOnly yes';
             $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
         } else {
