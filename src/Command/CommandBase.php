@@ -1199,6 +1199,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (count($environments) === 1) {
                 $only = reset($environments);
                 $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api()->getEnvironmentLabel($only)));
+                $this->printedSelectedEnvironment = true;
                 $this->environment = $only;
                 return;
             }
