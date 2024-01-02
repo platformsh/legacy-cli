@@ -100,9 +100,11 @@ class Ssh implements InputConfiguringInterface
             $options[] = 'LogLevel QUIET';
         }
 
+        $hasIdentity = false;
         if ($this->input->hasOption('identity-file') && ($file = $this->input->getOption('identity-file'))) {
-            $options[] = 'IdentitiesOnly yes';
             $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
+            $options[] = 'IdentitiesOnly yes';
+            $hasIdentity = true;
         } else {
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
@@ -127,11 +129,12 @@ class Ssh implements InputConfiguringInterface
                     if ($this->certifier->useCertificateOnly()) {
                         $options[] = 'IdentitiesOnly yes';
                     }
+                    $hasIdentity = true;
                 }
             }
         }
 
-        if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
+        if (!$hasIdentity && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
             $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
         }
 
