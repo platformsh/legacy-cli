@@ -14,14 +14,16 @@ class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;
+    protected $config;
     protected $certifier;
     protected $sshConfig;
     protected $sshKey;
 
-    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
+    public function __construct(InputInterface $input, OutputInterface $output, Config $config, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
     {
         $this->input = $input;
         $this->output = $output;
+        $this->config = $config;
         $this->sshKey = $sshKey;
         $this->certifier = $certifier;
         $this->sshConfig = $sshConfig;
@@ -139,6 +141,10 @@ class Ssh implements InputConfiguringInterface
         // Configure host keys and link them.
         if (($keysFile = $this->sshConfig->configureHostKeys()) !== null) {
             $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+        }
+
+        if ($configuredOptions = $this->config->get('ssh.options')) {
+            $options = array_merge($options, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
         }
 
         // Configure or validate the session SSH config.

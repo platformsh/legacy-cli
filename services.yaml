@@ -134,7 +134,7 @@ services:
 
     ssh:
         class:     '\Platformsh\Cli\Service\Ssh'
-        arguments: ['@input', '@output', '@certifier', '@ssh_config', '@ssh_key']
+        arguments: ['@input', '@output', '@config', '@certifier', '@ssh_config', '@ssh_key']
 
     ssh_config:
         class:     '\Platformsh\Cli\Service\SshConfig'

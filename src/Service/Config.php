@@ -376,6 +376,8 @@ class Config
             'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
             'API_WRITE_USER_SSH_CONFIG' => 'ssh.write_user_config',
             'API_ADD_TO_SSH_AGENT' => 'ssh.add_to_agent',
+            'SSH_OPTIONS' => 'ssh.options',
+            'SSH_HOST_KEYS' => 'ssh.host_keys',
         ]);
 
         foreach ($overrideMap as $var => $key) {
