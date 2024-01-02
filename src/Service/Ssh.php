@@ -15,6 +15,7 @@ class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;
+    protected $stdErr;
     protected $config;
     protected $certifier;
     protected $sshConfig;
@@ -28,6 +29,7 @@ class Ssh implements InputConfiguringInterface
         $this->sshKey = $sshKey;
         $this->certifier = $certifier;
         $this->sshConfig = $sshConfig;
+        $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
     }
 
     /**
@@ -109,15 +111,13 @@ class Ssh implements InputConfiguringInterface
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
-                $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
-
                 if ((!$sshCert || !$this->certifier->isValid($sshCert)) && $this->sshConfig->checkRequiredVersion()) {
-                    $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
+                    $this->stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
                     try {
                         $sshCert = $this->certifier->generateCertificate();
-                        $stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
+                        $this->stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
                     } catch (\Exception $e) {
-                        $stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));
+                        $this->stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));
                     }
                 }
 
@@ -139,16 +139,18 @@ class Ssh implements InputConfiguringInterface
         }
 
         // Configure host keys and link them.
-        if (($keysFile = $this->sshConfig->configureHostKeys()) !== null) {
-            $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+        try {
+            $keysFile = $this->sshConfig->configureHostKeys();
+            if ($keysFile !== null) {
+                $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+            }
+        } catch (\Exception $e) {
+            $this->stdErr->writeln('Error configuring host keys: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
         }
 
         if ($configuredOptions = $this->config->get('ssh.options')) {
             $options = array_merge($options, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
         }
-
-        // Configure or validate the session SSH config.
-        $this->sshConfig->configureSessionSsh();
 
         return $options;
     }
@@ -159,15 +161,25 @@ class Ssh implements InputConfiguringInterface
      * @param string[] $extraOptions
      * @param string|null $uri
      * @param string|null $remoteCommand
+     * @param bool $autoConfigure
      *
      * @return string
      */
-    public function getSshCommand(array $extraOptions = [], $uri = null, $remoteCommand = null)
+    public function getSshCommand(array $extraOptions = [], $uri = null, $remoteCommand = null, $autoConfigure = true)
     {
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
         if (!empty($args)) {
             $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
+        }
+
+        // Configure or validate the session SSH config.
+        if ($autoConfigure) {
+            try {
+                $this->sshConfig->configureSessionSsh();
+            } catch (\Exception $e) {
+                $this->stdErr->writeln('Error configuring SSH: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
+            }
         }
 
         return $command;
