@@ -105,16 +105,12 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         $rows = [];
         foreach ($members as $member) {
             $userInfo = $member->getUserInfo();
-            if (!$userInfo) {
-                trigger_error(sprintf('User info not found for member: %s', $member->id), E_USER_WARNING);
-                continue;
-            }
             $row = [
                 'id' => $member->id,
-                'first_name' => $userInfo->first_name,
-                'last_name' => $userInfo->last_name,
-                'email' => $userInfo->email,
-                'username' => $userInfo->username,
+                'first_name' => $userInfo ? $userInfo->first_name : '',
+                'last_name' => $userInfo ? $userInfo->last_name : '',
+                'email' => $userInfo ? $userInfo->email : '',
+                'username' => $userInfo ? $userInfo->username : '',
                 'owner' => $formatter->format($member->owner, 'owner'),
                 'permissions' => $formatter->format($member->permissions, 'permissions'),
                 'updated_at' => $formatter->format($member->updated_at, 'updated_at'),
