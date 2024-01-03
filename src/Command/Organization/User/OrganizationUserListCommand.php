@@ -86,10 +86,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             do {
                 $result = Member::getCollectionWithParent($url, $httpClient, $options);
                 $members = array_merge($members, $result['items']);
-                $url = $result['collection']->hasNextPage()
-                    // TODO make a method for this
-                    ? $result['collection']->getData()['_links']['next']['href']
-                    : null;
+                $url = $result['collection']->getNextPageUrl();
             } while (!empty($url) && $fetchAllPages);
         } finally {
             $progress->done();
@@ -127,7 +124,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        $total = (int) $result['collection']->getData()['count'];
+        $total = $result['collection']->getTotalCount();
         $moreAvailable = !$fetchAllPages && $total > count($members);
         if ($moreAvailable) {
             if (!$table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
