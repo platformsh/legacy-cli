@@ -7,7 +7,6 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Member;
-use Platformsh\Client\Model\Resource;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -85,14 +84,20 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         $progress->showIfOutputDecorated('Loading users...');
         try {
             do {
-                $result = Member::getPagedCollection($url, $httpClient, $options);
+                $result = Member::getCollectionWithParent($url, $httpClient, $options);
                 $members = array_merge($members, $result['items']);
-                $url = $result['next'];
+                $url = $result['collection']->hasNextPage()
+                    // TODO make a method for this
+                    ? $result['collection']->getData()['_links']['next']['href']
+                    : null;
             } while (!empty($url) && $fetchAllPages);
         } finally {
             $progress->done();
         }
-        $total = $this->total($members);
+        if (empty($members)) {
+            $this->stdErr->writeln('No users found');
+            return 1;
+        }
 
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
@@ -126,16 +131,13 @@ class OrganizationUserListCommand extends OrganizationCommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        $moreAvailable = !$fetchAllPages && ($total > count($members) || isset($result['next']) || isset($result['previous']));
+        $total = (int) $result['collection']->getData()['count'];
+        $moreAvailable = !$fetchAllPages && $total > count($members);
         if ($moreAvailable) {
             if (!$table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
                 $this->stdErr->writeln('');
             }
-            if ($total !== null) {
-                $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
-            } else {
-                $this->stdErr->writeln('More users are available');
-            }
+            $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
             $this->stdErr->writeln('Show all users with: <info>--count 0</info>');
         }
 
@@ -148,23 +150,5 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * Finds the total count in a list of resources, if any.
-     *
-     * @param Resource[] $resources
-     * @return ?int
-     */
-    private function total($resources)
-    {
-        $res = end($resources);
-        if ($res && ($collection = $res->getParentCollection())) {
-            $collectionData = $collection->getData();
-            if (isset($collectionData['count'])) {
-                return $collectionData['count'];
-            }
-        }
-        return null;
     }
 }
