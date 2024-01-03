@@ -32,7 +32,8 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         $this->setName('organization:user:list')
             ->setDescription('List organization users')
             ->addOption('count', null, InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
-            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at). Prepend "-" to sort in descending order.', 'created_at')
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
             ->setAliases(['org:users'])
             ->setHiddenAliases(['organization:users'])
             ->addOrganizationOptions();
@@ -61,7 +62,12 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             $itemsPerPage = $count;
         }
 
-        $options['query']['sort'] = $input->getOption('sort');
+        if ($sort = $input->getOption('sort')) {
+            if ($input->getOption('reverse')) {
+                $sort = '-' . $sort;
+            }
+            $options['query']['sort'] = $sort;
+        }
 
         $options['query']['page[size]'] = $itemsPerPage;
         $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
