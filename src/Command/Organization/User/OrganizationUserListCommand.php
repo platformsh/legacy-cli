@@ -103,7 +103,8 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         foreach ($members as $member) {
             $userInfo = $member->getUserInfo();
             if (!$userInfo) {
-                throw new \RuntimeException('Member user info not found');
+                trigger_error(sprintf('User info not found for member: %s', $member->id), E_USER_WARNING);
+                continue;
             }
             $row = [
                 'id' => $member->id,
