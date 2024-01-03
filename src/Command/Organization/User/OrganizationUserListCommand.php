@@ -2,15 +2,12 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
-use GuzzleHttp\Url;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Organization\Member;
 use Platformsh\Client\Model\Resource;
-use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -36,7 +33,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             ->setDescription('List organization users')
             ->addOption('count', null, InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at). Prepend "-" to sort in descending order.', 'created_at')
-            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Show a specific page')
             ->setAliases(['org:users'])
             ->setHiddenAliases(['organization:users'])
             ->addOrganizationOptions();
@@ -72,10 +68,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         if ($count === '0') {
             $fetchAllPages = true;
             $options['query']['page[size]'] = 100;
-        }
-
-        if (!$fetchAllPages && ($pageId = $input->getOption('page'))) {
-            $options['query'] += $this->parsePageId($pageId);
         }
 
         $httpClient = $this->api()->getHttpClient();
@@ -139,12 +131,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
                 $this->stdErr->writeln('More users are available');
             }
             $this->stdErr->writeln('Show all users with: <info>--count 0</info>');
-            if (isset($result['next']) && ($pageId = $this->pageId($result['next'], 'after'))) {
-                $this->stdErr->writeln(sprintf('View the next page with: <info>--page %s</info>', OsUtil::escapeShellArg($pageId)));
-            }
-            if (isset($result['previous']) && ($pageId = $this->pageId($result['previous'], 'before'))) {
-                $this->stdErr->writeln(sprintf('View the previous page with: <info>--page %s</info>', OsUtil::escapeShellArg($pageId)));
-            }
         }
 
         if (!$table->formatIsMachineReadable()) {
@@ -156,40 +142,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * @param string $pageId
-     * @return array<string, string> A list of parameters to add to the URL.
-     */
-    private function parsePageId($pageId)
-    {
-        $types = ['a' => 'after', 'b' => 'before'];
-        if (!isset($types[$pageId[0]])) {
-            throw new InvalidArgumentException('Invalid page ID: ' . $pageId);
-        }
-        $key = 'page[' . $types[$pageId[0]] . ']';
-        $value = substr($pageId, 1);
-
-        return [$key => $value];
-    }
-
-    /**
-     * Generates an identifier for another page.
-     *
-     * @param string $url
-     *   The URL returned as the next or previous page.
-     * @param string $rel
-     *   The page type ('before' or 'after').
-     * @return string|null
-     */
-    private function pageId($url, $rel)
-    {
-        $page = Url::fromString($url)->getQuery()->get('page');
-        if (isset($page[$rel])) {
-            return $rel[0] . $page[$rel];
-        }
-        return null;
     }
 
     /**
