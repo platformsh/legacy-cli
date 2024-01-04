@@ -311,13 +311,6 @@ detection:
   # git_domain: 'example.com'
   # site_domains: ['example.com', 'example.site']
 
-  ## End of the API domain.
-  ##
-  ## Authentication errors (401s) are ignored while detecting the local project,
-  ## if the domain does not match (e.g. development or white-label domains).
-  ##
-  # api_domain_suffix: 'example.com'
-
   ## Domain of a Console instance.
   ##
   ## Dynamically defaults to the hostname of {service.console_url} if set.

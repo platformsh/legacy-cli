@@ -63,7 +63,6 @@ detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh' # matches git.eu-5.platform.sh, etc.
   site_domains: ['platform.sh', 'platformsh.site', 'tst.site']
-  api_domain_suffix: 'platform.sh' # matches api.platform.sh, eu-5.platform.sh, etc.
 
 migrate:
   prompt: true
