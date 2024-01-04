@@ -18,7 +18,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
     {
         $this->setName('organization:billing:profile')
             ->setDescription("View or change an organization's billing profile")
-            ->addOrganizationOptions()
+            ->addOrganizationOptions(true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
         PropertyFormatter::configureInput($this->getDefinition());

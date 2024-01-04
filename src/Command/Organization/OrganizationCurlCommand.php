@@ -14,7 +14,7 @@ class OrganizationCurlCommand extends OrganizationCommandBase
     {
         $this->setName('organization:curl')
             ->setDescription("Run an authenticated cURL request on an organization's API")
-            ->addOrganizationOptions();
+            ->addOrganizationOptions(true);
         CurlCli::configureInput($this->getDefinition());
     }
 

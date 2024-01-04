@@ -2199,13 +2199,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Adds the --org (-o) organization name option.
      *
+     * @param bool $includeProjectOption
+     *   Adds a --project option which means the organization may be
+     *   auto-selected based on the current or specified project.
+     *
      * @return self
      */
-    protected function addOrganizationOptions()
+    protected function addOrganizationOptions($includeProjectOption = false)
     {
         if ($this->config()->getWithDefault('api.organizations', false)) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)');
-            if (!$this->getDefinition()->hasOption('project')) {
+            if ($includeProjectOption && !$this->getDefinition()->hasOption('project')) {
                 $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL, to auto-select the organization if --org is not used');
             }
         }
@@ -2215,20 +2219,23 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Returns the selected organization according to the --org option.
      *
-     * @see CommandBase::addOrganizationOptions()
-     *
      * @param InputInterface $input
      * @param string $filterByLink
-     *   If no organization is specified, this filters the list of the organizations presented, by the name of a HAL
+     *   If no organization is specified, this filters the list of the organizations presented by the name of a HAL
      *   link. For example, 'create-subscription' will list organizations under which the user has the permission to
      *   create a subscription.
-     *
-     * @throws \InvalidArgumentException if no organization is specified
-     * @throws NoOrganizationsException if the user does not have any organizations matching the filter
+     * @param string $filterByCapability
+     *  If no organization is specified, this filters the list of the organizations presented to those with the given
+     *  capability.
      *
      * @return Organization
+     * @throws NoOrganizationsException if the user does not have any organizations matching the filter
+     *
+     * @throws \InvalidArgumentException if no organization is specified
+     * @see CommandBase::addOrganizationOptions()
+     *
      */
-    protected function validateOrganizationInput(InputInterface $input, $filterByLink = '')
+    protected function validateOrganizationInput(InputInterface $input, $filterByLink = '', $filterByCapability = '')
     {
         if (!$this->config()->getWithDefault('api.organizations', false)) {
             throw new \BadMethodCallException('Organizations are not enabled');
@@ -2237,9 +2244,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $client = $this->api()->getClient();
 
         if ($identifier = $input->getOption('org')) {
-            if ($input->hasOption('project') && $input->getOption('project')) {
-                throw new ConsoleInvalidArgumentException('The --org and --project options cannot be used together.');
-            }
             // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
             // So it's easy to distinguish one from the other.
             /** @link https://github.com/ulid/spec */
@@ -2252,6 +2256,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if (!$organization) {
                 throw new ConsoleInvalidArgumentException('Organization not found: ' . $identifier);
             }
+
+            // Check for a conflict between the --org and the --project options.
+            if ($input->hasOption('project')
+                && ($projectId = $input->getOption('project'))
+                && ($project = $this->api()->getProject($projectId))
+                && $project->getProperty('organization', true, false) !== $organization->id) {
+                throw new ConsoleInvalidArgumentException("The project $project->id is not part of the organization $organization->id");
+            }
+
             return $organization;
         }
 
@@ -2295,7 +2308,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new ConsoleInvalidArgumentException('An organization name or ID (--org) is required.');
         }
         if (!$organizations) {
-            throw new NoOrganizationsException('No organizations found.');
+            throw new NoOrganizationsException('No organizations found.', 0);
         }
 
         $this->api()->sortResources($organizations, 'name');
@@ -2306,6 +2319,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($filterByLink !== '' && !$organization->hasLink($filterByLink)) {
                 continue;
             }
+            if ($filterByCapability !== '' && !in_array($filterByCapability, $organization->capabilities, true)) {
+                continue;
+            }
             $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
             $byId[$organization->id] = $organization;
             if ($organization->owner_id === $userId) {
@@ -2313,7 +2329,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
         if (empty($options)) {
-            throw new NoOrganizationsException('An organization name or ID (--org) is required.');
+            $message = 'No organizations found.';
+            $filters = [];
+            if ($filterByLink !== '') {
+                $filters[] = sprintf('access to the link "%s"', $filterByLink);
+            }
+            if ($filterByCapability !== '') {
+                $filters[] = sprintf('capability "%s"', $filterByCapability);
+            }
+            if ($filters) {
+                $message = sprintf('No organizations found (filtered by %s).', implode(' and ', $filters));
+            }
+            throw new NoOrganizationsException($message, count($organizations));
         }
         if (count($byId) === 1) {
             /** @var Organization $organization */

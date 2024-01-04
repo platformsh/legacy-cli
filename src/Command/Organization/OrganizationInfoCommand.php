@@ -17,7 +17,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     {
         $this->setName('organization:info')
             ->setDescription('View or change organization details')
-            ->addOrganizationOptions()
+            ->addOrganizationOptions(true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
         PropertyFormatter::configureInput($this->getDefinition());

@@ -20,7 +20,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
     {
         $this->setName('organization:billing:address')
             ->setDescription("View or change an organization's billing address")
-            ->addOrganizationOptions()
+            ->addOrganizationOptions(true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs');

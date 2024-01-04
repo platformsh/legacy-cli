@@ -48,7 +48,7 @@ class OrganizationUserAddCommand extends OrganizationCommandBase
             $permissions = \preg_split('/[,\s]+/', $permissions[0]) ?: [];
         }
 
-        if (($member = $this->loadMemberByEmail($organization, $email)) !== null) {
+        if (($member = $this->api()->loadMemberByEmail($organization, $email)) !== null) {
             $this->stdErr->writeln(\sprintf('The user <info>%s</info> already exists on the organization %s', $email, $this->api()->getOrganizationLabel($organization)));
             if ($member->permissions != $permissions && !empty($permissions) && !$member->owner) {
                 $this->stdErr->writeln('');

@@ -31,7 +31,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             ->setDescription('List subscriptions within an organization')
             ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination. Ignored if --page is specified.')
-            ->addOrganizationOptions();
+            ->addOrganizationOptions(true);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 

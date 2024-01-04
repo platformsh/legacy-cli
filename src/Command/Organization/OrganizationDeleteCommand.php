@@ -11,7 +11,7 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
     {
         $this->setName('organization:delete')
             ->setDescription('Delete an organization')
-            ->addOrganizationOptions();
+            ->addOrganizationOptions(true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
