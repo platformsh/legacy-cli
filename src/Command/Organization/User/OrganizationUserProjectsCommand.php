@@ -4,10 +4,11 @@ namespace Platformsh\Cli\Command\Organization\User;
 
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
+use Platformsh\Cli\Model\ProjectRoles;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
-use Platformsh\Client\Model\CentralizedPermissions\UserProjectAccess;
+use Platformsh\Client\Model\CentralizedPermissions\UserExtendedAccess;
 use Platformsh\Client\Model\Ref\UserRef;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,11 +32,9 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
 
     public function isEnabled()
     {
-        if (!$this->config()->getWithDefault('api.organizations', false)
-            || !$this->config()->getWithDefault('api.centralized_permissions', false)) {
-            return false;
-        }
-        return parent::isEnabled();
+        return $this->config()->get('api.centralized_permissions')
+            && $this->config()->get('api.organizations')
+            && parent::isEnabled();
     }
 
     protected function configure()
@@ -43,8 +42,8 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         $this->setName('organization:user:projects')
             ->setAliases(['oups'])
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
-            ->addOption('sort-granted', null, InputOption::VALUE_NONE, 'Sort the list by "granted_at" (instead of "updated_at") and display the column')
-            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order');
+            ->addHiddenOption('sort-granted', null, InputOption::VALUE_NONE, 'Deprecated option: unused')
+            ->addHiddenOption('reverse', null, InputOption::VALUE_NONE, 'Deprecated option: unused');
         $this->setDescription('List the projects a user can access');
         $this->addOrganizationOptions();
         $this->addOption('list-all', null, InputOption::VALUE_NONE, 'List access across all organizations');
@@ -69,7 +68,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
                 $userId = $user->id;
                 $userRef = UserRef::fromData($user->getData());
             } else {
-                $member = $this->loadMemberByEmail($organization, $email);
+                $member = $this->api()->loadMemberByEmail($organization, $email);
                 if (!$member) {
                     $this->stdErr->writeln('User not found for email address: ' . $email);
                     return 1;
@@ -87,26 +86,21 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         }
 
         $options = [];
-        $reverse = $input->getOption('reverse');
-        if ($input->getOption('sort-granted')) {
-            $options['query']['sort'] = $reverse ? '-granted_at' : 'granted_at';
-            $input->setOption('columns', $input->getOption('columns') + ['+granted_at']);
-        } else {
-            $options['query']['sort'] = $reverse ? '-updated_at' : 'updated_at';
-        }
         if ($organization) {
             $options['query']['filter[organization_id]'] = $organization->id;
         }
 
+        $options['query']['filter[resource_type]'] = 'project';
+
         $httpClient = $this->api()->getHttpClient();
-        /** @var UserProjectAccess[] $items */
+        /** @var UserExtendedAccess[] $items */
         $items = [];
-        $url = '/users/' . rawurlencode($userId) . '/project-access';
+        $url = '/users/' . rawurlencode($userId) . '/extended-access';
         $progress = new ProgressMessage($output);
         $pageNumber = 1;
         while (true) {
             $progress->showIfOutputDecorated(\sprintf('Loading projects (page %d)...', $pageNumber));
-            $collection = UserProjectAccess::getPagedCollection($url, $httpClient, $options);
+            $collection = UserExtendedAccess::getPagedCollection($url, $httpClient, $options);
             $progress->done();
             $items = \array_merge($items, $collection['items']);
             if (count($collection['items']) > 0 && isset($collection['next']) && $collection['next'] !== $url) {
@@ -135,12 +129,14 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
 
+        $rolesUtil = new ProjectRoles();
+
         $rows = [];
         foreach ($items as $item) {
             $row = [];
             $row['organization_id'] = $item->organization_id;
-            $row['project_id'] = $item->project_id;
-            $row['roles'] = $this->formatPermissions($item->permissions, $table->formatIsMachineReadable());
+            $row['project_id'] = $item->resource_id;
+            $row['roles'] = $rolesUtil->formatPermissions($item->permissions, $table->formatIsMachineReadable());
             $row['granted_at'] = $formatter->format($item->granted_at, 'granted_at');
             $row['updated_at'] = $formatter->format($item->updated_at, 'updated_at');
             $projectInfo = $item->getProjectInfo();
@@ -179,42 +175,5 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * @param string[] $permissions
-     * @param bool $machineReadable
-     * @return string
-     */
-    protected function formatPermissions(array $permissions, $machineReadable)
-    {
-        if (empty($permissions)) {
-            return '';
-        }
-        if ($machineReadable) {
-            return json_encode($permissions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        }
-        if (in_array('admin', $permissions, true)) {
-            return 'Project: admin';
-        }
-        $byType = ['production' => '', 'staging' => '', 'development' => ''];
-        foreach ($permissions as $permission) {
-            $parts = explode(':', $permission, 2);
-            if (count($parts) === 2) {
-                list($environmentType, $role) = $parts;
-                $byType[$environmentType] = $role;
-            }
-        }
-        $lines = [];
-        if (in_array('viewer', $permissions, true)) {
-            $lines[] = 'Project: viewer';
-        }
-        if ($byType = array_filter($byType)) {
-            $lines[] = 'Environment types:';
-            foreach ($byType as $envType => $role) {
-                $lines[] = sprintf('- %s: %s', ucfirst($envType), $role);
-            }
-        }
-        return implode("\n", $lines);
     }
 }

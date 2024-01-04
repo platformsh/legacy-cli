@@ -50,7 +50,6 @@ api:
   oauth2_client_id: 'platform-cli'
 
   organizations: true
-  centralized_permissions: true
   user_verification: true
   metrics: true
 

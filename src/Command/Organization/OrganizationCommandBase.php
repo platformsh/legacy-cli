@@ -6,7 +6,6 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Organization\Member;
 use Platformsh\Client\Model\Organization\Organization;
-use Platformsh\Client\Model\Ref\UserRef;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 
@@ -104,55 +103,6 @@ class OrganizationCommandBase extends CommandBase
     }
 
     /**
-     * Loads an organization user by email, by paging through all the users in the organization.
-     *
-     * @TODO replace this with a more efficient API when available
-     *
-     * @param Organization $organization
-     * @param string $email
-     * @return Member|null
-     */
-    protected function loadMemberByEmail(Organization $organization, $email)
-    {
-        $client = $this->api()->getHttpClient();
-
-        $progress = new ProgressMessage($this->stdErr);
-        $progress->showIfOutputDecorated('Loading user information...');
-        $endpointUrl = $organization->getUri() . '/members';
-        $collection = Member::getCollectionWithParent($endpointUrl, $client, [
-            'query' => ['page[size]' => 100],
-        ])['collection'];
-        $userRef = null;
-        while (true) {
-            $data = $collection->getData();
-            if (!empty($data['ref:users'])) {
-                foreach ($data['ref:users'] as $candidate) {
-                    /** @var ?UserRef $candidate */
-                    if ($candidate && ($candidate->email === $email || strtolower($candidate->email) === strtolower($email))) {
-                        $userRef = $candidate;
-                        break;
-                    }
-                }
-            }
-            if (isset($userRef)) {
-                foreach ($data['items'] as $itemData) {
-                    if (isset($itemData['user_id']) && $itemData['user_id'] === $userRef->id) {
-                        $itemData['ref:users'][$userRef->id] = $userRef;
-                        $progress->done();
-                        return new Member($itemData, $endpointUrl, $client);
-                    }
-                }
-            }
-            if (!$collection->hasNextPage()) {
-                break;
-            }
-            $collection = $collection->fetchNextPage();
-        }
-        $progress->done();
-        return null;
-    }
-
-    /**
      * Presents an interactive choice to pick a member in the organization.
      *
      * @param Organization $organization
@@ -184,7 +134,7 @@ class OrganizationCommandBase extends CommandBase
                 continue;
             }
             $emailAddresses[$member->user_id] = $member->getUserInfo()->email;
-            $choices[$member->user_id] = $this->getMemberLabel($member);
+            $choices[$member->user_id] = $this->api()->getMemberLabel($member);
             $byId[$member->user_id] = $member;
         }
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
@@ -205,15 +155,5 @@ class OrganizationCommandBase extends CommandBase
             });
         }
         return $byId[$userId];
-    }
-
-    protected function getMemberLabel(Member $member)
-    {
-        if ($userInfo = $member->getUserInfo()) {
-            $label = sprintf('%s (%s)', trim($userInfo->first_name . ' ' . $userInfo->last_name), $userInfo->email);
-        } else {
-            $label = $member->user_id;
-        }
-        return $label;
     }
 }

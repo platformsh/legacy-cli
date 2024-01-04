@@ -24,12 +24,15 @@ use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
+use Platformsh\Client\Model\Organization\Member;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\Ref\UserRef;
 use Platformsh\Client\Model\Resource as ApiResource;
 use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\Model\Subscription;
+use Platformsh\Client\Model\Team\TeamMember;
+use Platformsh\Client\Model\Team\TeamProjectAccess;
 use Platformsh\Client\Model\User;
 use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
@@ -293,7 +296,7 @@ class Api
             return $this->onRefreshError($e);
         };
 
-        $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions');
+        $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
 
         return $connectorOptions;
     }
@@ -583,7 +586,7 @@ class Api
      */
     public function getMyProjects($refresh = null)
     {
-        $new = $this->config->get('api.centralized_permissions');
+        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
         $cacheKey = sprintf('%s:my-projects%s:%s', $this->config->getSessionId(), $new ? ':new' : '', is_array($vendorFilter) ? implode(',', $vendorFilter) : (string) $vendorFilter);
         $cached = $this->cache->fetch($cacheKey);
@@ -1001,20 +1004,44 @@ class Api
     /**
      * Returns a project label.
      *
-     * @param Project|BasicProjectInfo $project
+     * @param Project|BasicProjectInfo|\Platformsh\Client\Model\Organization\Project|TeamProjectAccess|string $project
      * @param string|false $tag
      *
      * @return string
      */
     public function getProjectLabel($project, $tag = 'info')
     {
-        $title = $project->title;
+        static $titleCache = [];
+        if ($project instanceof Project || $project instanceof BasicProjectInfo || $project instanceof \Platformsh\Client\Model\Organization\Project) {
+            $title = $project->title;
+            $id = $project->id;
+            $titleCache[$id] = $title;
+        } elseif ($project instanceof TeamProjectAccess) {
+            $title = $project->project_title;
+            $id = $project->project_id;
+            $titleCache[$id] = $title;
+        } elseif (is_string($project)) {
+            if (isset($titleCache[$project])) {
+                $title = $titleCache[$project];
+                $id = $project;
+            } else {
+                $projectObj = $this->getProject($project);
+                if (!$projectObj) {
+                    throw new \InvalidArgumentException('Project not found: ' . $project);
+                }
+                $title = $projectObj->title;
+                $id = $projectObj->id;
+                $titleCache[$id] = $title;
+            }
+        } else {
+            throw new \InvalidArgumentException('Invalid type for $project');
+        }
         $pattern = strlen($title) > 0 ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
             $pattern = strlen($title) > 0 ? '<%1$s>%2$s</%1$s> (%3$s)' : '<%1$s>%3$s</%1$s>';
         }
 
-        return sprintf($pattern, $tag, $title, $project->id);
+        return sprintf($pattern, $tag, $title, $id);
     }
 
     /**
@@ -1483,4 +1510,63 @@ class Api
         return $subscription ? $subscription->project_ui : false;
     }
 
+    /**
+     * Loads an organization member by email, by paging through all the members in the organization.
+     *
+     * @TODO replace this with a more efficient API when available
+     *
+     * @param Organization $organization
+     * @param string $email
+     * @return Member|null
+     */
+    public function loadMemberByEmail(Organization $organization, $email)
+    {
+        foreach ($this->listMembers($organization) as $member) {
+            if ($member->getUserInfo() && strcasecmp($member->getUserInfo()->email, $email) === 0) {
+                return $member;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Loads organization members (with static caching).
+     *
+     * @param bool $reset
+     * @return Member[]
+     */
+    public function listMembers(Organization $organization, $reset = false)
+    {
+        static $cache = [];
+        $cacheKey = $organization->id;
+        if (!$reset && isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+        /** @var Member[] $members */
+        $members = [];
+        $httpClient = $this->getHttpClient();
+        $url = $organization->getLink('members');
+        while ($url) {
+            $result = Member::getCollectionWithParent($url, $httpClient);
+            $members = array_merge($members, $result['items']);
+            $url = $result['collection']->getNextPageUrl();
+        }
+        return $cache[$cacheKey] = $members;
+    }
+
+    /**
+     * Returns a label for an organization or team member.
+     *
+     * @param Member|TeamMember $member
+     * @return string
+     */
+    public function getMemberLabel($member)
+    {
+        if ($userInfo = $member->getUserInfo()) {
+            $label = sprintf('%s (%s)', trim($userInfo->first_name . ' ' . $userInfo->last_name), $userInfo->email);
+        } else {
+            $label = $member->user_id;
+        }
+        return $label;
+    }
 }

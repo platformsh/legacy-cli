@@ -251,6 +251,17 @@ class Application extends ParentApplication
         $commands[] = new Command\SshKey\SshKeyDeleteCommand();
         $commands[] = new Command\SshKey\SshKeyListCommand();
         $commands[] = new Command\SubscriptionInfoCommand();
+        $commands[] = new Command\Team\TeamCreateCommand();
+        $commands[] = new Command\Team\TeamDeleteCommand();
+        $commands[] = new Command\Team\TeamGetCommand();
+        $commands[] = new Command\Team\TeamListCommand();
+        $commands[] = new Command\Team\TeamUpdateCommand();
+        $commands[] = new Command\Team\Project\TeamProjectAddCommand();
+        $commands[] = new Command\Team\Project\TeamProjectDeleteCommand();
+        $commands[] = new Command\Team\Project\TeamProjectListCommand();
+        $commands[] = new Command\Team\User\TeamUserAddCommand();
+        $commands[] = new Command\Team\User\TeamUserDeleteCommand();
+        $commands[] = new Command\Team\User\TeamUserListCommand();
         $commands[] = new Command\Tunnel\TunnelCloseCommand();
         $commands[] = new Command\Tunnel\TunnelInfoCommand();
         $commands[] = new Command\Tunnel\TunnelListCommand();

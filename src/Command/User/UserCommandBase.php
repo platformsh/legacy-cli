@@ -19,7 +19,8 @@ abstract class UserCommandBase extends CommandBase
      */
     protected function centralizedPermissionsEnabled()
     {
-        return (bool) $this->config()->get('api.centralized_permissions');
+        return $this->config()->get('api.centralized_permissions')
+            && $this->config()->get('api.organizations');
     }
 
     /**

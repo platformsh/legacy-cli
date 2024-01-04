@@ -46,7 +46,7 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
 
         $email = $input->getArgument('email');
         if (!empty($email)) {
-            $member = $this->loadMemberByEmail($organization, $email);
+            $member = $this->api()->loadMemberByEmail($organization, $email);
             if (!$member) {
                 $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
                 return 1;

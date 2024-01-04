@@ -243,8 +243,13 @@ api:
   # Whether the Organizations API is enabled.
   organizations: false
 
-  # Whether Centralized User Management is available (requires "organizations").
-  centralized_permissions: false
+  # Whether Centralized User Management is available.
+  # Ignored if "organizations" is disabled.
+  centralized_permissions: true
+
+  # Whether the Teams API (and teams commands) are enabled.
+  # Ignored if "centralized_permissions" is disabled.
+  teams: false
 
   # Filter the projects or organizations list by a vendor name.
   # This can be null for no filtering, or a string or a list of strings.
