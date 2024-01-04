@@ -259,6 +259,17 @@ class BrowserLoginCommand extends CommandBase
 
         $this->finalizeLogin();
 
+        if (empty($token['refresh_token'])) {
+            $this->stdErr->writeln('');
+            $clientId = $this->config()->get('api.oauth2_client_id');
+            $this->stdErr->writeln([
+                '<options=bold;fg=yellow>Warning:</fg>',
+                'No refresh token is available. This will cause frequent login errors.',
+                'Please contact support.',
+                "For internal use: the OAuth 2 client is probably misconfigured (client ID: <comment>$clientId</comment>).",
+            ]);
+        }
+
         return 0;
     }
 
