@@ -42,6 +42,9 @@ class EnvironmentSshCommand extends CommandBase
         $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input);
         $environment = $this->getSelectedEnvironment();
+        if ($environment->type === 'production') {
+            $this->ensurePrintSelectedEnvironment();
+        }
 
         if ($input->getOption('all')) {
             $output->writeln(array_values($environment->getSshUrls()));
