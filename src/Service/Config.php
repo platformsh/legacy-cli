@@ -373,7 +373,6 @@ class Config
             'AUTO_LOAD_SSH_CERT' => 'ssh.auto_load_cert',
             'API_AUTO_LOAD_SSH_CERT' => 'ssh.auto_load_cert',
             'USER_AGENT' => 'api.user_agent',
-            'API_DOMAIN_SUFFIX' => 'detection.api_domain_suffix',
             'API_WRITE_USER_SSH_CONFIG' => 'ssh.write_user_config',
             'API_ADD_TO_SSH_AGENT' => 'ssh.add_to_agent',
         ]);
@@ -629,12 +628,6 @@ class Config
             $consoleDomain = parse_url($this->config['service']['console_url'], PHP_URL_HOST);
             if ($consoleDomain !== false) {
                 $this->config['detection']['console_domain'] = $consoleDomain;
-            }
-        }
-        if (!isset($this->config['detection']['api_domain_suffix']) && isset($this->config['api']['base_url'])) {
-            $host = parse_url($this->config['api']['base_url'], PHP_URL_HOST);
-            if ($host !== false) {
-                $this->config['detection']['api_domain_suffix'] = $host;
             }
         }
         if (!isset($this->config['service']['applications_config_file'])) {
