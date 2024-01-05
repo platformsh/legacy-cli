@@ -78,10 +78,11 @@ class SshCertLoadCommand extends CommandBase
 
     private function displayCertificate(Certificate $cert)
     {
+        $validBefore = $cert->metadata()->getValidBefore();
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
-        $expires = $formatter->formatUnixTimestamp($cert->metadata()->getValidBefore());
-        $expiresWithColor = $expires < time() ? '<fg=green>' . $expires . '</>' : $expires;
+        $expires = $formatter->formatUnixTimestamp($validBefore);
+        $expiresWithColor = $validBefore > time() ? '<fg=green>' . $expires . '</>' : $expires;
         $mfaWithColor = $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified';
         $interactivityMode = '<fg=green>' . ($cert->isApp() ? 'app' : 'interactive') . '</>';
         $this->stdErr->writeln([
