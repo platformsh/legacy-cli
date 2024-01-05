@@ -199,12 +199,11 @@ class ProjectListCommand extends CommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        $executable = $this->config()->get('application.executable');
-
         if ($page->pageCount > 1 && $itemsPerPage !== 0) {
-            $this->stdErr->writeln('List all projects by running: <info>' . $executable . ' projects --count 0</info>');
+            $this->stdErr->writeln('List all projects with: <info>--count 0</info> (<info>-c0</info>)');
         }
 
+        $executable = $this->config()->get('application.executable');
         $this->stdErr->writeln([
             '',
             'Get a project by running: <info>' . $executable . ' get [id]</info>',

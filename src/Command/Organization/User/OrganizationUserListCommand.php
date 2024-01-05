@@ -30,7 +30,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
     {
         $this->setName('organization:user:list')
             ->setDescription('List organization users')
-            ->addOption('count', null, InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
             ->setAliases(['org:users'])
@@ -131,7 +131,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
                 $this->stdErr->writeln('');
             }
             $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
-            $this->stdErr->writeln('Show all users with: <info>--count 0</info>');
+            $this->stdErr->writeln('Show all users with: <info>--count 0</info> (<info>-c0</info>)');
         }
 
         if (!$table->formatIsMachineReadable()) {
