@@ -45,6 +45,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     const STABILITY_STABLE = 'STABLE';
     const STABILITY_BETA = 'BETA';
+    const STABILITY_DEPRECATED = 'DEPRECATED';
 
     const DEFAULT_ENVIRONMENT_CODE = '.';
 
@@ -565,7 +566,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        $message = "<comment>Warning:</comment>"
+        $message = "<options=bold;fg=yellow>Warning:</>"
             . "\nRunning the CLI directly under PHP is now referred to as the \"Legacy CLI\", and is no longer recommended.";
         if ($config->has('migrate.docs_url')) {
             $message .= "\nInstall the latest release for your operating system by following these instructions: "
@@ -2062,7 +2063,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $description = parent::getDescription();
 
         if ($this->stability !== self::STABILITY_STABLE) {
-            $prefix = '<fg=white;bg=red> ' . strtoupper($this->stability) . ' </> ';
+            $tag = $this->stability === self::STABILITY_DEPRECATED ? '<fg=black;bg=yellow>' : '<fg=white;bg=red>';
+            $prefix = $tag . strtoupper($this->stability) . '</> ';
             $description = $prefix . $description;
         }
 

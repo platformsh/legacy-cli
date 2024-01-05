@@ -64,7 +64,7 @@ class DomainDeleteCommand extends DomainCommandBase
             })) > 0;
             if ($hasNonProductionActiveEnvs) {
                 $this->stdErr->writeln([
-                    '<options=bold>Warning</>',
+                    '<options=bold>Warning:</>',
                     'If this domain has non-production domains attached to it, they will also be deleted.',
                     'Non-production environments will not be automatically redeployed.',
                     'Consider redeploying these environments so that routes are updated correctly.',

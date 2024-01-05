@@ -106,7 +106,7 @@ class CurlCli implements InputConfiguringInterface {
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', str_replace($token, '[token]', $commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
         if ($output->isVeryVerbose()) {
-            $stdErr->writeln("\n<fg=yellow;options=bold>Warning</>\nVerbose mode is enabled. Do not copy and paste the output as it may contain sensitive headers.\n");
+            $stdErr->writeln("\n<fg=yellow;options=bold>Warning:</>\nVerbose mode is enabled. Do not copy and paste the output as it may contain sensitive headers.\n");
         }
 
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);

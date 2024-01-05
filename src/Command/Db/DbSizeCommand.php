@@ -36,7 +36,11 @@ class DbSizeCommand extends CommandBase
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
         $help = self::ESTIMATE_WARNING;
         if ($this->config()->getWithDefault('api.metrics', false)) {
-            $help .= "\n\n" . \sprintf('To see more accurate disk usage, run: <info>%s disk</info>', $this->config()->get('application.executable'));
+            $this->stability = self::STABILITY_DEPRECATED;
+            $help .= "\n\n";
+            $help .= '<options=bold;fg=yellow>Deprecated:</>';
+            $help .= "\nThis command is deprecated and will be removed in a future version.\n";
+            $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config()->get('application.executable'));
         }
         $this->setHelp($help);
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
@@ -211,21 +215,19 @@ class DbSizeCommand extends CommandBase
     private function showWarnings($percentageUsed) {
         if ($percentageUsed > self::RED_WARNING_THRESHOLD) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=bold;fg=red>Warning</>');
+            $this->stdErr->writeln('<options=bold;fg=red>Warning:</>');
             $this->stdErr->writeln('Databases tend to need extra space for starting up and temporary storage when running large queries.');
             $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config()->get('service.project_config_dir') . '/services.yaml'));
         }
 
-        if ($this->config()->getWithDefault('api.metrics', false)
-            && ($data = $this->getSelectedEnvironment()->getData())
-            && isset($data['_links']['#metrics'])) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=bold;fg=yellow>Notice</>');
-            $this->stdErr->writeln('This environment supports the Metrics API');
-            $this->stdErr->writeln(\sprintf('You can see disk usage much more accurately by running: <info>%s disk</info>', $this->config()->get('application.executable')));
+        $this->stdErr->writeln('');
+
+        if ($this->config()->getWithDefault('api.metrics', false) && $this->config()->isCommandEnabled('metrics:disk')) {
+            $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
+            $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
+            $this->stdErr->writeln(\sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config()->get('application.executable')));
         } else {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=bold;fg=yellow>Warning</>');
+            $this->stdErr->writeln('<options=bold;fg=yellow>Warning:</>');
             $this->stdErr->writeln(self::ESTIMATE_WARNING);
         }
     }

@@ -38,15 +38,21 @@ class MountSizeCommand extends CommandBase
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addRemoteContainerOptions();
-        $this->setHelp(<<<EOF
+        $help = <<<EOF
 Use this command to check the disk size and usage for an application's mounts.
 
 Mounts are directories mounted into the application from a persistent, writable
 filesystem. They are configured in the <info>mounts</info> key in the application configuration.
 
 The filesystem's total size is determined by the <info>disk</info> key in the same file.
-EOF
-);
+EOF;
+        if ($this->config()->getWithDefault('api.metrics', false)) {
+            $this->stability = self::STABILITY_DEPRECATED;
+            $help .= "\n\n";
+            $help .= '<options=bold;fg=yellow>Deprecated:</>';
+            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config()->get('application.executable'));
+        }
+        $this->setHelp($help);
     }
 
     /**
@@ -159,6 +165,13 @@ EOF
             $this->stdErr->writeln(
                 'To increase the available space, edit the <info>disk</info> key in the application configuration.'
             );
+
+            if ($this->config()->getWithDefault('api.metrics', false) && $this->config()->isCommandEnabled('metrics:disk')) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
+                $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
+                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config()->get('application.executable')));
+            }
         }
 
         return 0;
