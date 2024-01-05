@@ -44,10 +44,9 @@ class SshConfig {
                 return null;
             }
         }
-        if ($additionalKeys = $this->config->getWithDefault('ssh.host_keys', '')) {
-            if (!is_string($additionalKeys)) {
-                trigger_error('Invalid value for ssh.host_keys config (it must be a string)', E_USER_WARNING);
-                return null;
+        if ($additionalKeys = $this->config->getWithDefault('ssh.host_keys', [])) {
+            if (!is_array($additionalKeys)) {
+                $additionalKeys = explode("\n", $additionalKeys);
             }
             $hostKeys = rtrim($hostKeys, "\n") . "\n" . $additionalKeys;
         }
@@ -112,8 +111,13 @@ class SshConfig {
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
 
             $lines[] = '';
-            $lines[] = '# Include the certificate and its key.';
-            $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
+            if ($this->supportsCertificateFile()) {
+                $lines[] = '# Include the certificate and its key.';
+                $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
+            } else {
+                $lines[] = '# Include the certificate, via its key.';
+                $lines[] = '# The CertificateFile keyword could be used with OpenSSH 7.2 or later.';
+            }
             $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($certificate->privateKeyFilename()));
             if ($onlyCertificate) {
                 $lines[] = 'IdentitiesOnly yes';
@@ -145,10 +149,17 @@ class SshConfig {
         // Add default files if there is no preferred session identity file.
         if ($sessionIdentityFile === null && !$onlyCertificate && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
             $lines[] = '';
-            $lines[] = '# Include SSH "default" identity files:';
+            $lines[] = '# Include SSH "default" identity files.';
             foreach ($defaultFiles as $identityFile) {
                 $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($identityFile));
             }
+        }
+
+        // Add other configured options.
+        if ($configuredOptions = $this->config->get('ssh.options')) {
+            $lines[] = '';
+            $lines[] = "# Other options from the CLI's configuration.";
+            $lines = array_merge($lines, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
         }
 
         $this->writeSshIncludeFile($sessionSpecificFilename, $lines);

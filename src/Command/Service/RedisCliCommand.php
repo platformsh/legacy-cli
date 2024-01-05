@@ -59,6 +59,7 @@ class RedisCliCommand extends CommandBase
             sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel())
         );
 
+        // Force TTY output when the input is a terminal.
         if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
             $host->setExtraSshArgs(['-t']);
         }

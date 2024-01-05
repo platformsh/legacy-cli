@@ -62,12 +62,12 @@ class SshCertLoadCommand extends CommandBase
             $this->displayCertificate($sshCert);
         }
 
-        $sshConfig->configureHostKeys();
-        $hasSessionConfig = $sshConfig->configureSessionSsh();
-
         if ($input->getOption('refresh-only')) {
             return 0;
         }
+
+        $sshConfig->configureHostKeys();
+        $hasSessionConfig = $sshConfig->configureSessionSsh();
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

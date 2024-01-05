@@ -278,10 +278,17 @@ ssh:
   host_keys_file: resources/ssh/host-keys
 
   # A list of SSH host keys to install for the user.
-  # They should be set as a string (one per line).
+  # They can be set as an array or a string (one per line).
   # If "host_keys_file" and "host_keys" are both empty or omitted, no extra
   # files will be written. If both are specified, both will be used.
-  host_keys: ''
+  host_keys: []
+
+  # A list of SSH configuration options.
+  # These will be passed to the SSH client appended to the CLI's other options.
+  # Options are an array of strings, each being a keyword and value separated
+  # by an equals sign or whitespace, e.g. "RequestTTY force". Alternatively
+  # they can be a single string (one per line).
+  options: []
 
   # If an SSH certificate is available, configure SSH to ignore other keys.
   cert_only: false

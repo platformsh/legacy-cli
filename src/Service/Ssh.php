@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\SshCert\Certifier;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -14,17 +15,21 @@ class Ssh implements InputConfiguringInterface
 {
     protected $input;
     protected $output;
+    protected $stdErr;
+    protected $config;
     protected $certifier;
     protected $sshConfig;
     protected $sshKey;
 
-    public function __construct(InputInterface $input, OutputInterface $output, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
+    public function __construct(InputInterface $input, OutputInterface $output, Config $config, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
     {
         $this->input = $input;
         $this->output = $output;
+        $this->config = $config;
         $this->sshKey = $sshKey;
         $this->certifier = $certifier;
         $this->sshConfig = $sshConfig;
+        $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
     }
 
     /**
@@ -33,14 +38,14 @@ class Ssh implements InputConfiguringInterface
     public static function configureInput(InputDefinition $definition)
     {
         $definition->addOption(
-            new InputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'An SSH identity (private key) to use')
+            new HiddenInputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated: an SSH identity (private key) to use. The auto-generated certificate is recommended instead.')
         );
     }
 
     /**
      * Returns arguments for an SSH command.
      *
-     * @param array $extraOptions
+     * @param string[] $extraOptions
      * @param string|null $uri
      * @param string[]|string|null $remoteCommand
      *
@@ -51,16 +56,9 @@ class Ssh implements InputConfiguringInterface
         $options = array_merge($this->getSshOptions(), $extraOptions);
 
         $args = [];
-        foreach ($options as $name => $value) {
-            if (is_array($value)) {
-                foreach ($value as $item) {
-                    $args[] = '-o';
-                    $args[] = $name . ' ' . $item;
-                }
-                continue;
-            }
+        foreach ($options as $option) {
             $args[] = '-o';
-            $args[] = $name . ' ' . $value;
+            $args[] = $option;
         }
 
         if ($uri !== null) {
@@ -88,77 +86,71 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an array of SSH options, based on the input options.
      *
-     * @return array<string, string|string[]> An array of SSH options.
+     * @return string[] An array of SSH options.
      */
-    protected function getSshOptions()
+    private function getSshOptions()
     {
         $options = [];
 
-        $options['SendEnv'] = 'TERM';
+        $options[] = 'SendEnv TERM';
 
         if ($this->output->isDebug()) {
-            $options['LogLevel'] = 'DEBUG';
+            $options[] = 'LogLevel DEBUG';
         } elseif ($this->output->isVeryVerbose()) {
-            $options['LogLevel'] = 'VERBOSE';
+            $options[] = 'LogLevel VERBOSE';
         } elseif ($this->output->isQuiet()) {
-            $options['LogLevel'] = 'QUIET';
+            $options[] = 'LogLevel QUIET';
         }
 
-        if ($this->input->hasOption('identity-file') && $this->input->getOption('identity-file')) {
-            $file = $this->input->getOption('identity-file');
-            if (!file_exists($file)) {
-                throw new \InvalidArgumentException('Identity file not found: ' . $file);
-            }
-            $options['IdentitiesOnly'] = 'yes';
-            $options['IdentityFile'] = [
-                $this->sshConfig->formatFilePath($file),
-            ];
+        $hasIdentity = false;
+        if ($this->input->hasOption('identity-file') && ($file = $this->input->getOption('identity-file'))) {
+            $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
+            $options[] = 'IdentitiesOnly yes';
+            $hasIdentity = true;
         } else {
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
-                $stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
-
                 if ((!$sshCert || !$this->certifier->isValid($sshCert)) && $this->sshConfig->checkRequiredVersion()) {
-                    $stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
+                    $this->stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
                     try {
                         $sshCert = $this->certifier->generateCertificate();
-                        $stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
+                        $this->stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
                     } catch (\Exception $e) {
-                        $stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));
+                        $this->stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));
                     }
                 }
 
                 if ($sshCert) {
                     if ($this->sshConfig->supportsCertificateFile()) {
-                        $options['CertificateFile'] = $this->sshConfig->formatFilePath($sshCert->certificateFilename());
+                        $options[] = 'CertificateFile ' . $this->sshConfig->formatFilePath($sshCert->certificateFilename());
                     }
-                    $options['IdentityFile'] = [
-                        $this->sshConfig->formatFilePath($sshCert->privateKeyFilename()),
-                    ];
+                    $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sshCert->privateKeyFilename());
                     if ($this->certifier->useCertificateOnly()) {
-                        $options['IdentitiesOnly'] = 'yes';
+                        $options[] = 'IdentitiesOnly yes';
                     }
+                    $hasIdentity = true;
                 }
             }
         }
 
-        if (empty($options['IdentitiesOnly']) && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
-            $options['IdentityFile'][] = $this->sshConfig->formatFilePath($sessionIdentityFile);
-        }
-
-        // For neatness, do not repeat IdentityFile values.
-        if (isset($options['IdentityFile']) && \is_array($options['IdentityFile'])) {
-            $options['IdentityFile'] = \array_unique($options['IdentityFile']);
+        if (!$hasIdentity && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
+            $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
         }
 
         // Configure host keys and link them.
-        if (($keysFile = $this->sshConfig->configureHostKeys()) !== null) {
-            $options['UserKnownHostsFile'] = '~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+        try {
+            $keysFile = $this->sshConfig->configureHostKeys();
+            if ($keysFile !== null) {
+                $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+            }
+        } catch (\Exception $e) {
+            $this->stdErr->writeln('Error configuring host keys: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
         }
 
-        // Configure or validate the session SSH config.
-        $this->sshConfig->configureSessionSsh();
+        if ($configuredOptions = $this->config->get('ssh.options')) {
+            $options = array_merge($options, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
+        }
 
         return $options;
     }
@@ -166,18 +158,28 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an SSH command line.
      *
-     * @param array $extraOptions
+     * @param string[] $extraOptions
      * @param string|null $uri
      * @param string|null $remoteCommand
+     * @param bool $autoConfigure
      *
      * @return string
      */
-    public function getSshCommand(array $extraOptions = [], $uri = null, $remoteCommand = null)
+    public function getSshCommand(array $extraOptions = [], $uri = null, $remoteCommand = null, $autoConfigure = true)
     {
         $command = 'ssh';
         $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
         if (!empty($args)) {
             $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
+        }
+
+        // Configure or validate the session SSH config.
+        if ($autoConfigure) {
+            try {
+                $this->sshConfig->configureSessionSsh();
+            } catch (\Exception $e) {
+                $this->stdErr->writeln('Error configuring SSH: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
+            }
         }
 
         return $command;

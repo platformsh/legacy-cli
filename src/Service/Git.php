@@ -519,7 +519,7 @@ class Git
     /**
      * Sets extra options to pass to the underlying SSH command.
      *
-     * @param array $options
+     * @param string[] $options
      */
     public function setExtraSshOptions(array $options)
     {

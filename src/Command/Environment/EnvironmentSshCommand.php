@@ -23,14 +23,16 @@ class EnvironmentSshCommand extends CommandBase
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to run on the environment.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
+            ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH')
             ->setDescription('SSH to the current environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open a shell over SSH');
+        $this->addExample('Pass an extra option to SSH', "-o 'RequestTTY force'");
         $this->addExample('List files', 'ls');
-        $this->addExample("Monitor the app log (use '--' before options)", 'tail /var/log/app.log -- -n50 -f');
+        $this->addExample("Monitor the app log (use '--' before flags)", 'tail /var/log/app.log -- -n50 -f');
         $envPrefix = $this->config()->get('service.env_prefix');
         $this->addExample('Display relationships (use quotes for complex syntax)', "'echo \${$envPrefix}RELATIONSHIPS | base64 --decode'");
     }
@@ -74,11 +76,7 @@ class EnvironmentSshCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $sshOptions = [];
-        if ($this->isTerminal(STDIN)) {
-            $sshOptions['RequestTTY'] = 'force';
-        }
-        $command = $ssh->getSshCommand($sshOptions, $sshUrl, $remoteCommand);
+        $command = $ssh->getSshCommand($input->getOption('option'), $sshUrl, $remoteCommand);
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
