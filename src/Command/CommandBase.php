@@ -1283,6 +1283,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
             // No worker option specified so select app directly.
             if ($workerOption === null) {
+                $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $webApp->name), OutputInterface::VERBOSITY_VERBOSE);
+
                 return $this->remoteContainer = new RemoteContainer\App($webApp, $environment);
             }
 
@@ -1311,6 +1313,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 } catch (\InvalidArgumentException $e) {
                     throw new ConsoleInvalidArgumentException('Worker not found: ' . $workerOption . ' (in app: ' . $appOption . ')');
                 }
+                $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $worker->name), OutputInterface::VERBOSITY_VERBOSE);
 
                 return $this->remoteContainer = new RemoteContainer\Worker($worker, $environment);
             }
@@ -1330,6 +1333,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (count($workerNames) === 1) {
                 $workerName = reset($workerNames);
+                $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
                 return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
             }
@@ -1346,23 +1350,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $workerNames,
                 'Enter a number to choose a worker:'
             );
+            $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
             return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
         }
 
         // Prompt the user to choose between the app(s) or worker(s) that have
         // been found.
-        $default = null;
         $appNames = $appOption !== null
             ? [$appOption]
             : array_map(function (WebApp $app) { return $app->name; }, $deployment->webapps);
-        if (count($appNames) === 1) {
-            $default = reset($appNames);
-            $choices = [];
-            $choices[$default] = $default . ' (default)';
-        } else {
-            $choices = array_combine($appNames, $appNames);
-        }
+        $choices = array_combine($appNames, $appNames);
         $choicesIncludeWorkers = false;
         if ($includeWorkers) {
             $servicesWithSsh = [];
@@ -1387,29 +1385,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (count($choices) === 0) {
             throw new \RuntimeException('Failed to find apps or workers for environment: ' . $environment->id);
         }
-        ksort($choices, SORT_NATURAL);
-        if (count($choices) === 1) {
-            $choice = key($choices);
+        if (count($appNames) === 1) {
+            $choice = reset($appNames);
         } elseif ($input->isInteractive()) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');
             if ($choicesIncludeWorkers) {
-                $text = sprintf('Enter a number to choose %s app or %s worker:',
-                    count($appNames) === 1 ? 'the' : 'an',
+                $text = sprintf('Enter a number to choose an app or %s worker:',
                     count($choices) === 2 ? 'its' : 'a'
                 );
             } else {
-                $text = sprintf('Enter a number to choose %s app:',
-                    count($appNames) === 1 ? 'the' : 'an'
-                );
+                $text = 'Enter a number to choose an app:';
             }
-            $choice = $questionHelper->choose(
-                $choices,
-                $text,
-                $default
-            );
-        } elseif (count($appNames) === 1) {
-            $choice = reset($appNames);
+            ksort($choices, SORT_NATURAL);
+            $choice = $questionHelper->choose($choices, $text);
         } else {
             throw new ConsoleInvalidArgumentException(
                 $includeWorkers
@@ -1420,8 +1409,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Match the choice to a worker or app destination.
         if (strpos($choice, '--') !== false) {
+            $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
             return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
         }
+
+        $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
 
         return $this->remoteContainer = new RemoteContainer\App($deployment->getWebApp($choice), $environment);
     }
