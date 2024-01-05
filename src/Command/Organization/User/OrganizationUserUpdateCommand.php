@@ -44,38 +44,18 @@ class OrganizationUserUpdateCommand extends OrganizationCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $members = $organization->getMembers();
         $email = $input->getArgument('email');
-        $member = false;
-        if ($email) {
-            foreach ($members as $m) {
-                if ($info = $m->getUserInfo()) {
-                    if ($info->email === $email) {
-                        $member = $m;
-                        break;
-                    }
-                }
-            }
+        if (!empty($email)) {
+            $member = $this->loadMemberByEmail($organization, $email);
             if (!$member) {
                 $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
                 return 1;
             }
         } elseif (!$input->isInteractive()) {
-            $this->stdErr->writeln('A user email address is required.');
+            $this->stdErr->writeln('You must specify the email address of a user to update (in non-interactive mode).');
             return 1;
         } else {
-            $choices = [];
-            $byId = [];
-            foreach ($members as $m) {
-                $choices[$m->id] = $this->memberLabel($m);
-                $byId[$m->id] = $m;
-            }
-            if (!$choices) {
-                $this->stdErr->writeln('No users found.');
-                return 1;
-            }
-            $memberId = $questionHelper->choose($choices, 'Enter a number to choose a user to update:');
-            $member = $byId[$memberId];
+            $member = $this->chooseMember($organization);
         }
 
         $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api()->getOrganizationLabel($organization)));

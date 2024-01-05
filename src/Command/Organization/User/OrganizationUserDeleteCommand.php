@@ -24,16 +24,7 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
 
         $email = $input->getArgument('email');
 
-        $members = $organization->getMembers();
-        $member = false;
-        foreach ($members as $m) {
-            if ($info = $m->getUserInfo()) {
-                if ($info->email === $email) {
-                    $member = $m;
-                    break;
-                }
-            }
-        }
+        $member = $this->loadMemberByEmail($organization, $email);
         if (!$member) {
             $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
             return 1;

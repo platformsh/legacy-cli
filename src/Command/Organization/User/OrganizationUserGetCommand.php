@@ -35,17 +35,9 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
             return 1;
         }
 
-        $member = false;
         $email = $input->getArgument('email');
         if (!empty($email)) {
-            foreach ($organization->getMembers() as $m) {
-                if ($info = $m->getUserInfo()) {
-                    if ($info->email === $email) {
-                        $member = $m;
-                        break;
-                    }
-                }
-            }
+            $member = $this->loadMemberByEmail($organization, $email);
             if (!$member) {
                 $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
                 return 1;
@@ -54,17 +46,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
             $this->stdErr->writeln('You must specify the email address of a user to view (in non-interactive mode).');
             return 1;
         } else {
-            $options = [];
-            $byID = [];
-            foreach ($organization->getMembers() as $m) {
-                $byID[$m->id] = $m;
-                $info = $m->getUserInfo();
-                $options[$m->id] = $info ? \sprintf('%s (%s)', \trim($info->first_name . ' ' . $info->last_name), $info->email) : $m->user_id;
-            }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $id = $questionHelper->choose($options, 'Enter a number to choose a user:');
-            $member = $byID[$id];
+            $member = $this->chooseMember($organization);
         }
 
         /** @var PropertyFormatter $formatter */

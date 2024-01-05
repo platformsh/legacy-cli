@@ -62,8 +62,6 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
                 return 1;
             }
         }
-        $userRef = null;
-        $userId = null;
         if ($email = $input->getArgument('email')) {
             if (!$organization) {
                 $this->debug('Finding user by email address');
@@ -71,37 +69,18 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
                 $userId = $user->id;
                 $userRef = UserRef::fromData($user->getData());
             } else {
-                foreach ($organization->getMembers() as $member) {
-                    $userRef = $member->getUserInfo();
-                    if ($userRef && strtolower($userRef->email) === strtolower($email)) {
-                        $this->debug('Selecting user: ' . $this->api()->getUserRefLabel($userRef));
-                        $userId = $member->user_id;
-                        break;
-                    }
-                }
-                if (!$userId) {
+                $member = $this->loadMemberByEmail($organization, $email);
+                if (!$member) {
                     $this->stdErr->writeln('User not found for email address: ' . $email);
                     return 1;
                 }
+                $userId = $member->user_id;
+                $userRef = $member->getUserInfo();
             }
         } elseif ($input->isInteractive() && $organization !== null) {
-            $refsById = [];
-            $choices = [];
-            foreach ($organization->getMembers() as $member) {
-                $userRef = $member->getUserInfo();
-                $label = $userRef ? $this->api()->getUserRefLabel($userRef, false) : $member->user_id;
-                $choices[$member->user_id] = $label;
-                $refsById[$member->user_id] = $userRef;
-            }
-            $default = null;
-            if (isset($choices[$organization->owner_id])) {
-                $choices[$organization->owner_id] .= ' (<info>owner - default</info>)';
-                $default = $organization->owner_id;
-            }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $userId = $questionHelper->choose($choices, 'Enter a number to choose a user:', $default);
-            $userRef = $refsById[$userId];
+            $member = $this->chooseMember($organization);
+            $userId = $member->user_id;
+            $userRef = $member->getUserInfo();
         } else {
             $this->stdErr->writeln('A user email address is required.');
             return 1;
