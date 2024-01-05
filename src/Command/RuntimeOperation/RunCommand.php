@@ -15,8 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class RunCommand extends CommandBase
 {
-    protected $stability = self::STABILITY_BETA;
-
     protected function configure()
     {
         $this->setName('operation:run')

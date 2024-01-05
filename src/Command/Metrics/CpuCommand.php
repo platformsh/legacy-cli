@@ -10,8 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class CpuCommand extends MetricsCommandBase
 {
-    protected $stability = self::STABILITY_BETA;
-
     private $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',

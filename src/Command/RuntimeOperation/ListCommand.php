@@ -18,8 +18,6 @@ class ListCommand extends CommandBase
 {
     const COMMAND_MAX_LENGTH = 24;
 
-    protected $stability = self::STABILITY_BETA;
-
     private $tableHeader = ['service' => 'Service', 'name' => 'Operation name', 'start' => 'Start command', 'stop' => 'Stop command', 'role' => 'Role'];
     private $defaultColumns = ['service', 'name', 'start'];
 
