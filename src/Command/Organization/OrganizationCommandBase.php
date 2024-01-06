@@ -163,6 +163,7 @@ class OrganizationCommandBase extends CommandBase
         $httpClient = $this->api()->getHttpClient();
         $options = ['query' => ['page[size]' => 100]];
         $url = $organization->getUri() . '/members';
+        /** @var Member[] $members */
         $members = [];
         $progress = new ProgressMessage($this->stdErr);
         $progress->showIfOutputDecorated('Loading users...');
@@ -178,7 +179,7 @@ class OrganizationCommandBase extends CommandBase
         $byId = [];
         $choices = [];
         $emailAddresses = [];
-        foreach ($organization->getMembers() as $member) {
+        foreach ($members as $member) {
             if (!$member->getUserInfo()) {
                 continue;
             }

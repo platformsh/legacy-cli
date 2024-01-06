@@ -48,22 +48,17 @@ class OrganizationUserAddCommand extends OrganizationCommandBase
             $permissions = \preg_split('/[,\s]+/', $permissions[0]) ?: [];
         }
 
-        $members = $organization->getMembers();
-        foreach ($members as $member) {
-            if ($info = $member->getUserInfo()) {
-                if ($info->email === $email) {
-                    $this->stdErr->writeln(\sprintf('The user <info>%s</info> already exists on the organization %s', $email, $this->api()->getOrganizationLabel($organization)));
-                    if ($member->permissions != $permissions && !empty($permissions) && !$member->owner) {
-                        $this->stdErr->writeln('');
-                        $this->stdErr->writeln(\sprintf(
-                            "To change the user's permissions, run:\n<comment>%s</comment>",
-                            $this->otherCommandExample($input, 'org:user:update', \escapeshellarg($email) . ' --permission ' . \escapeshellarg(implode(', ', $permissions)))
-                        ));
-                        return 1;
-                    }
-                    return 0;
-                }
+        if (($member = $this->loadMemberByEmail($organization, $email)) !== null) {
+            $this->stdErr->writeln(\sprintf('The user <info>%s</info> already exists on the organization %s', $email, $this->api()->getOrganizationLabel($organization)));
+            if ($member->permissions != $permissions && !empty($permissions) && !$member->owner) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(\sprintf(
+                    "To change the user's permissions, run:\n<comment>%s</comment>",
+                    $this->otherCommandExample($input, 'org:user:update', \escapeshellarg($email) . ' --permission ' . \escapeshellarg(implode(', ', $permissions)))
+                ));
+                return 1;
             }
+            return 0;
         }
 
         if (!$questionHelper->confirm(\sprintf('Are you sure you want to invite %s to the organization %s?', $email, $this->api()->getOrganizationLabel($organization)))) {
