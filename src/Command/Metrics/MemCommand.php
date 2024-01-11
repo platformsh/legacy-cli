@@ -43,12 +43,13 @@ class MemCommand extends MetricsCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $timeSpec = $this->validateTimeInput($input);
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+        $this->validateInput($input, false, true);
+
+        $timeSpec = $this->validateTimeInput($input, $this->getSelectedEnvironment());
         if ($timeSpec === false) {
             return 1;
         }
-
-        $this->validateInput($input, false, true);
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');

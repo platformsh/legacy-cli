@@ -53,7 +53,10 @@ class DiskUsageCommand extends MetricsCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $timeSpec = $this->validateTimeInput($input);
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+        $this->validateInput($input, false, true);
+
+        $timeSpec = $this->validateTimeInput($input, $this->getSelectedEnvironment());
         if ($timeSpec === false) {
             return 1;
         }
@@ -65,8 +68,6 @@ class DiskUsageCommand extends MetricsCommandBase
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->removeDeprecatedColumns(['interval'], '', $input, $output);
-
-        $this->validateInput($input, false, true);
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();

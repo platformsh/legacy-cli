@@ -22,6 +22,7 @@ class CurlCommand extends MetricsCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
         $this->validateInput($input, false, true);
 
         // Initialize the API service so that it gets CommandBase's event listeners
