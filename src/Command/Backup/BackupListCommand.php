@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,11 +59,6 @@ class BackupListCommand extends CommandBase
             $this->stdErr->writeln('No backups found');
             return 1;
         }
-
-        /**
-         * @todo this is a workaround for an API bug where backups are sorted by ID - remove this when the API is fixed
-         */
-        Api::sortResources($backups, 'created_at', true);
 
         $table->replaceDeprecatedColumns(['created' => 'created_at', 'name' => 'id'], $input, $output);
         $table->removeDeprecatedColumns(['progress', 'state', 'result'], '[deprecated]', $input, $output);
