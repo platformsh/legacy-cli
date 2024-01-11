@@ -2,7 +2,6 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,6 +20,7 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'The type of the new environment')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
+            ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -62,8 +62,12 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
+        $projectRoot = $this->getProjectRoot();
+        $dryRun = $input->getOption('dry-run');
+        $checkoutLocally = $projectRoot && !$input->getOption('no-checkout');
+
         if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
-            if (!$this->getProjectRoot()) {
+            if (!$checkoutLocally || $dryRun) {
                 $this->stdErr->writeln("The environment <comment>$branchName</comment> already exists.");
 
                 return 1;
@@ -115,10 +119,14 @@ class EnvironmentBranchCommand extends CommandBase
             : 'Settings will be copied and data cloned from the parent environment: %s';
         $this->stdErr->writeln(sprintf($parentMessage, $this->api()->getEnvironmentLabel($parentEnvironment, 'info', false)));
 
-        $dryRun = $input->getOption('dry-run');
         if ($dryRun) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('<comment>Dry-run mode:</comment> skipping branch operation.');
+            if ($checkoutLocally) {
+                $this->stdErr->writeln('<comment>Dry-run mode:</comment> skipping branching and local checkout.');
+                $checkoutLocally = false;
+            } else {
+                $this->stdErr->writeln('<comment>Dry-run mode:</comment> skipping branch operation.');
+            }
 
             $activities = [];
         } else {
@@ -141,11 +149,8 @@ class EnvironmentBranchCommand extends CommandBase
         $git = $this->getService('git');
 
         $createdNew = false;
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && !$dryRun) {
-            // If the Git branch already exists locally, just check it out.
-            $existsLocally = $git->branchExists($branchName, $projectRoot);
-            if ($existsLocally) {
+        if ($checkoutLocally) {
+            if ($git->branchExists($branchName, $projectRoot)) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
                 if (!$git->checkOut($branchName, $projectRoot)) {
                     $this->stdErr->writeln('Failed to check out branch locally: <error>' . $branchName . '</error>');
@@ -160,16 +165,6 @@ class EnvironmentBranchCommand extends CommandBase
                 }
                 $createdNew = true;
             }
-        } elseif (!$projectRoot) {
-            $this->stdErr->writeln([
-                '',
-                'This command was run from outside a local project root, so the new branch cannot be checked out automatically.',
-                sprintf(
-                    'To switch to the branch when inside a repository run: <comment>%s checkout %s</comment>',
-                    $this->config()->get('application.executable'),
-                    OsUtil::escapeShellArg($branchName)
-                ),
-            ]);
         }
 
         $remoteSuccess = true;
@@ -181,7 +176,7 @@ class EnvironmentBranchCommand extends CommandBase
             // If a new local branch has been created, set it to track the
             // remote branch. This requires first fetching the new branch from
             // the remote.
-            if ($remoteSuccess && $projectRoot && $createdNew) {
+            if ($remoteSuccess && $checkoutLocally && $createdNew) {
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
                 $git->fetch($upstreamRemote, $branchName, $projectRoot);
                 $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
