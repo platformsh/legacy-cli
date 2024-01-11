@@ -26,8 +26,8 @@ class DomainAddCommand extends DomainCommandBase
             ->addWaitOptions();
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
-            'Add the domain secure.example.com with SSL enabled',
-            'secure.example.com --cert secure-example-com.crt --key secure-example-com.key'
+            'Add the domain example.org with a custom SSL/TLS certificate',
+            'example.org --cert example-org.crt --key example-org.key'
         );
     }
 

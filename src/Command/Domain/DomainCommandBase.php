@@ -163,9 +163,9 @@ abstract class DomainCommandBase extends CommandBase
     protected function addDomainOptions()
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The domain name')
-             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file for this domain')
-             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key file for the provided certificate.')
-             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file or files for the provided certificate');
+             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to a custom certificate file')
+             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the private key for the custom certificate')
+             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the chain file(s) for the custom certificate');
     }
 
     /**

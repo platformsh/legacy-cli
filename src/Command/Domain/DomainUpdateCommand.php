@@ -21,8 +21,8 @@ class DomainUpdateCommand extends DomainCommandBase
             ->addEnvironmentOption()
             ->addWaitOptions();
         $this->addExample(
-            'Update the certificate for the domain example.com',
-            'example.com --cert secure-example-com.crt --key secure-example-com.key'
+            'Update the custom certificate for the domain example.org',
+            'example.org --cert example-org.crt --key example-org.key'
         );
     }
 
