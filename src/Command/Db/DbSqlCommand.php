@@ -125,7 +125,7 @@ class DbSqlCommand extends CommandBase
         }
 
         // Enable tabular output when the input is a terminal.
-        if ($host instanceof RemoteHost && $this->isTerminal(STDIN)) {
+        if (!$input->getOption('raw') && $host instanceof RemoteHost && $this->isTerminal(STDIN)) {
             $host->setExtraSshArgs(['-t']);
         }
 
