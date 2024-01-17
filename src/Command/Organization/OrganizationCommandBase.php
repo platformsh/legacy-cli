@@ -128,7 +128,7 @@ class OrganizationCommandBase extends CommandBase
             if (!empty($data['ref:users'])) {
                 foreach ($data['ref:users'] as $candidate) {
                     /** @var ?UserRef $candidate */
-                    if ($candidate && $candidate->email === $email || strtolower($candidate->email) === strtolower($email)) {
+                    if ($candidate && ($candidate->email === $email || strtolower($candidate->email) === strtolower($email))) {
                         $userRef = $candidate;
                         break;
                     }
