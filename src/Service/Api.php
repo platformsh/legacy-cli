@@ -659,8 +659,7 @@ class Api
             $project = new Project($cached, $baseUrl, $guzzleClient);
             $this->debug('Loaded project from cache: ' . $id);
         }
-        $apiUrl = $this->config->getWithDefault('api.base_url', '');
-        if ($apiUrl) {
+        if ($apiUrl !== '') {
             $project->setApiUrl($apiUrl);
         }
 
