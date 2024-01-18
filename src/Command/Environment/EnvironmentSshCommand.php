@@ -62,7 +62,13 @@ class EnvironmentSshCommand extends CommandBase
             }
             throw $e;
         }
-        $sshUrl = $container->getSshUrl($input->getOption('instance'));
+
+        try {
+            $sshUrl = $container->getSshUrl($input->getOption('instance'));
+        } catch (\InvalidArgumentException $e) {
+            // Use Symfony's exception to print usage information.
+            throw new InvalidArgumentException($e->getMessage());
+        }
 
         if ($input->getOption('pipe')) {
             $output->write($sshUrl);

@@ -1297,7 +1297,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($appOption !== null
                 && strpos($workerOption, '--') !== false
                 && stripos($workerOption, $appOption . '--') !== 0) {
-                throw new \InvalidArgumentException(sprintf(
+                throw new ConsoleInvalidArgumentException(sprintf(
                     'App name "%s" conflicts with worker name "%s"',
                     $appOption,
                     $workerOption
@@ -2102,7 +2102,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($input->hasOption('instance') && $instanceId !== null) {
             $instances = $this->getSelectedEnvironment()->getSshInstanceURLs($remoteContainer->getName());
             if ((!empty($instances) || $instanceId !== '0') && !isset($instances[$instanceId])) {
-                throw new \InvalidArgumentException("Instance not found: $instanceId. Available instances: " . implode(', ', array_keys($instances)));
+                throw new ConsoleInvalidArgumentException("Instance not found: $instanceId. Available instances: " . implode(', ', array_keys($instances)));
             }
         }
 
@@ -2250,7 +2250,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $organization = $client->getOrganizationByName($identifier);
             }
             if (!$organization) {
-                throw new \InvalidArgumentException('Organization not found: ' . $identifier);
+                throw new ConsoleInvalidArgumentException('Organization not found: ' . $identifier);
             }
             return $organization;
         }
@@ -2292,7 +2292,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $organizations = $client->listOrganizationsWithMember($userId);
 
         if (!$input->isInteractive()) {
-            throw new \InvalidArgumentException('An organization name or ID (--org) is required.');
+            throw new ConsoleInvalidArgumentException('An organization name or ID (--org) is required.');
         }
         if (!$organizations) {
             throw new NoOrganizationsException('No organizations found.');
