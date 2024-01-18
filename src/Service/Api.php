@@ -621,13 +621,19 @@ class Api
      * Return the user's project with the given ID.
      *
      * @param string      $id      The project ID.
-     * @param string|null $host    @deprecated no longer used
+     * @param string|null $host The project's hostname. @deprecated no longer used if an api.base_url is configured.
      * @param bool|null   $refresh Whether to bypass the cache.
      *
      * @return Project|false
      */
     public function getProject($id, $host = null, $refresh = null)
     {
+        // Ignore the $host if an api.base_url is configured.
+        $apiUrl = $this->config->getWithDefault('api.base_url', '');
+        if ($apiUrl !== '') {
+            $host = null;
+        }
+
         $cacheKey = sprintf('%s:project:%s', $this->config->getSessionId(), $id);
         $cached = $this->cache->fetch($cacheKey);
 
@@ -653,7 +659,10 @@ class Api
             $project = new Project($cached, $baseUrl, $guzzleClient);
             $this->debug('Loaded project from cache: ' . $id);
         }
-        $project->setApiUrl($this->config->getApiUrl());
+        $apiUrl = $this->config->getWithDefault('api.base_url', '');
+        if ($apiUrl) {
+            $project->setApiUrl($apiUrl);
+        }
 
         return $project;
     }
