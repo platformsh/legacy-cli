@@ -199,11 +199,14 @@ class ProjectListCommand extends CommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
+        $executable = $this->config()->get('application.executable');
+
         if ($page->pageCount > 1 && $itemsPerPage !== 0) {
-            $this->stdErr->writeln('List all projects with: <info>--count 0</info> (<info>-c0</info>)');
+            // State the command name explicitly here, as it may be displaying
+            // within the 'welcome' command.
+            $this->stdErr->writeln(sprintf('List all projects by running: <info>%s projects -c0</info>', $executable));
         }
 
-        $executable = $this->config()->get('application.executable');
         $this->stdErr->writeln([
             '',
             'Get a project by running: <info>' . $executable . ' get [id]</info>',
