@@ -154,6 +154,7 @@ class OrganizationCommandBase extends CommandBase
                 return $key;
             });
         }
+        $this->stdErr->writeln('');
         return $byId[$userId];
     }
 }

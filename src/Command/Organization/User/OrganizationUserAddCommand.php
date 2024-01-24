@@ -2,15 +2,14 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
-use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
+use Platformsh\Cli\Console\ArrayArgument;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
 
-class OrganizationUserAddCommand extends OrganizationCommandBase
+class OrganizationUserAddCommand extends OrganizationUserCommandBase
 {
     protected function configure()
     {
@@ -18,7 +17,7 @@ class OrganizationUserAddCommand extends OrganizationCommandBase
             ->setDescription('Invite a user to an organization')
             ->addOrganizationOptions()
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
-            ->addOption('permission', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Permission(s) for the user on the organization');
+            ->addPermissionOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -28,58 +27,125 @@ class OrganizationUserAddCommand extends OrganizationCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $email = $input->getArgument('email');
-        if ($email) {
-            $email = $this->validateEmail($email);
-        } elseif (!$input->isInteractive()) {
-            $this->stdErr->writeln('A user email address is required.');
-            return 1;
+        $update = get_called_class() === OrganizationUserUpdateCommand::class;
+        if ($update) {
+            $email = $input->getArgument('email');
+            if (!empty($email)) {
+                $existingMember = $this->api()->loadMemberByEmail($organization, $email);
+                if (!$existingMember) {
+                    $this->stdErr->writeln(sprintf('The user <error>%s</error> was not found in the organization %s', $email, $this->api()->getOrganizationLabel($organization, 'comment')));
+                    return 1;
+                }
+            } elseif (!$input->isInteractive()) {
+                $this->stdErr->writeln('You must specify the email address of a user to update (in non-interactive mode).');
+                return 1;
+            } else {
+                $existingMember = $this->chooseMember($organization);
+            }
         } else {
-            $question = new Question("Enter the user's email address: ");
-            $question->setValidator(function ($answer) {
-                return $this->validateEmail($answer);
-            });
-            $question->setMaxAttempts(5);
-            $email = $questionHelper->ask($input, $this->stdErr, $question);
-        }
-
-        $permissions = $input->getOption('permission');
-        if (count($permissions) === 1) {
-            $permissions = \preg_split('/[,\s]+/', $permissions[0]) ?: [];
-        }
-
-        if (($member = $this->api()->loadMemberByEmail($organization, $email)) !== null) {
-            $this->stdErr->writeln(\sprintf('The user <info>%s</info> already exists on the organization %s', $email, $this->api()->getOrganizationLabel($organization)));
-            if ($member->permissions != $permissions && !empty($permissions) && !$member->owner) {
+            $existingMember = null;
+            $email = $input->getArgument('email');
+            if ($email) {
+                $email = $this->validateEmail($email);
+            } elseif (!$input->isInteractive()) {
+                $this->stdErr->writeln('A user email address is required.');
+                return 1;
+            } else {
+                $email = $questionHelper->askInput('Enter the email address of a user to add', null, [], function ($answer) {
+                    return $this->validateEmail($answer);
+                });
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(\sprintf(
-                    "To change the user's permissions, run:\n<comment>%s</comment>",
-                    $this->otherCommandExample($input, 'org:user:update', \escapeshellarg($email) . ' --permission ' . \escapeshellarg(implode(', ', $permissions)))
-                ));
+            }
+        }
+
+        if (!$update && $this->api()->loadMemberByEmail($organization, $email)) {
+            $this->stdErr->writeln(\sprintf('The user <comment>%s</comment> already exists on the organization %s', $email, $this->api()->getOrganizationLabel($organization, 'comment')));
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('To update the user, run: <comment>%s org:user:update %s</comment>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($email)));
+            return 1;
+        }
+
+        $permissions = ArrayArgument::getOption($input, 'permission');
+        if (empty($permissions)) {
+            $this->stdErr->writeln('A user may have any of the following permissions: ' . $this->listPermissions() . '.');
+            if ($existingMember) {
+                $this->stdErr->writeln(sprintf('The user <info>%s</info> currently has the following permissions: %s.', $this->memberLabel($existingMember), $this->listPermissions($existingMember->permissions)));
+                $this->stdErr->writeln('');
+                $questionText = 'Enter a list of permissions to replace this with (separated by commas)';
+            } else {
+                $questionText = 'Optionally, enter a list of permissions to add (separated by commas)';
+            }
+            $response = $questionHelper->askInput($questionText, null, [], function ($value) {
+                foreach (ArrayArgument::split([$value]) as $permission) {
+                    if (!\in_array($permission, self::$allPermissions)) {
+                        throw new InvalidArgumentException('Unrecognized permission: ' . $permission);
+                    }
+                }
+                return $value;
+            });
+            $permissions = ArrayArgument::split([$response]);
+            $this->stdErr->writeln('');
+        }
+
+        if ($update) {
+            if ($existingMember->permissions == $permissions) {
+                $this->stdErr->writeln(\sprintf("The user's permissions are already set to: %s", $this->listPermissions($permissions)));
+                return 0;
+            }
+
+            if ($existingMember->owner) {
+                $this->stdErr->writeln('The user is the owner of the organization, so does not need permissions.');
                 return 1;
             }
-            return 0;
-        }
 
-        if (!$questionHelper->confirm(\sprintf('Are you sure you want to invite %s to the organization %s?', $email, $this->api()->getOrganizationLabel($organization)))) {
-            return 1;
-        }
+            $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($existingMember), $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln('');
 
-        $invitation = $organization->inviteMemberByEmail($email, $permissions);
+            $this->stdErr->writeln('Summary of changes:');
 
-        switch ($invitation->state) {
-        case 'accepted':
-            $this->stdErr->writeln('The user has been successfully added to the organization.');
-            return 0;
-        case 'cancelled':
-            $this->stdErr->writeln(\sprintf('The invitation <comment>%s</comment> was cancelled.', $invitation->id));
+            $this->stdErr->writeln('  Permissions:');
+            $same = \array_intersect($existingMember->permissions, $permissions);
+            foreach ($same as $permission) {
+                $this->stdErr->writeln('      ' . $permission);
+            }
+            $remove = \array_diff($existingMember->permissions, $permissions);
+            foreach ($remove as $permission) {
+                $this->stdErr->writeln('    <fg=red>- ' . $permission . '</>');
+            }
+            $add = \array_diff($permissions, $existingMember->permissions);
+            foreach ($add as $permission) {
+                $this->stdErr->writeln('    <fg=green>+ ' . $permission . '</>');
+            }
+
+            $this->stdErr->writeln('');
+
+            if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
+                return 1;
+            }
+
+            $result = $existingMember->update(['permissions' => $permissions]);
+            $new = $result->getProperty('permissions', false) ?: [];
+
+            $this->stdErr->writeln(\sprintf("The user's permissions are now: %s", $this->listPermissions($new)));
+        } elseif (!$questionHelper->confirm(\sprintf('Are you sure you want to invite <info>%s</info> to the organization %s?', $email, $this->api()->getOrganizationLabel($organization)))) {
             return 1;
-        case 'error':
-            $this->stdErr->writeln(\sprintf('The invitation <error>%s</error> errored.', $invitation->id));
-            return 1;
-        default:
-            $this->stdErr->writeln('The user has been successfully invited to the organization.');
-            return 0;
+        } else {
+            $invitation = $organization->inviteMemberByEmail($email, $permissions);
+
+            switch ($invitation->state) {
+                case 'accepted':
+                    $this->stdErr->writeln('The user has been successfully added to the organization.');
+                    return 0;
+                case 'cancelled':
+                    $this->stdErr->writeln(\sprintf('The invitation <comment>%s</comment> was cancelled.', $invitation->id));
+                    return 1;
+                case 'error':
+                    $this->stdErr->writeln(\sprintf('The invitation <error>%s</error> errored.', $invitation->id));
+                    return 1;
+                default:
+                    $this->stdErr->writeln('The user has been successfully invited to the organization.');
+                    return 0;
+            }
         }
     }
 
