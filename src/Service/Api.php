@@ -277,6 +277,7 @@ class Api
         // different CLI processes.
         $refreshLockName = 'refresh--' . $this->config->getSessionIdSlug();
         $connectorOptions['on_refresh_start'] = function ($originalRefreshToken) use ($refreshLockName) {
+            $this->debug('Refreshing access token');
             $connector = $this->getClient(false)->getConnector();
             return $this->fileLock->acquireOrWait($refreshLockName, function () {
                 $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
