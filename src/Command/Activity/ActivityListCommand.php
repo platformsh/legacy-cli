@@ -113,7 +113,6 @@ class ActivityListCommand extends ActivityCommandBase
 
         $rows = [];
         foreach ($activities as $activity) {
-            $timings = $activity->getProperty('timings', false, false) ?: [];
             $row = [
                 'id' => new AdaptiveTableCell($activity->id, ['wrap' => false]),
                 'created' => $formatter->format($activity['created_at'], 'created_at'),
