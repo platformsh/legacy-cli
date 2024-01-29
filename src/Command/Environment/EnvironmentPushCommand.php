@@ -32,9 +32,7 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
-        if ($this->config()->get('api.git_push_options')) {
-            $this->addResourcesInitOption();
-        }
+        $this->addResourcesInitOption();
         $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
@@ -194,22 +192,6 @@ class EnvironmentPushCommand extends CommandBase
         $this->stdErr->writeln('');
 
         $activities = [];
-        $gitPushOptionsEnabled = $this->config()->get('api.git_push_options');
-
-        // Activate or branch the target environment.
-        //
-        // The deployment activity from 'git push' will queue up behind
-        // whatever other activities are created here.
-        //
-        // If Git Push Options are enabled, this will be skipped, and the
-        // activation will happen automatically on the server side.
-        if ($activateRequested && !$gitPushOptionsEnabled) {
-            $activities = $this->ensureActive($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
-            if ($activities === false) {
-                return 1;
-            }
-            $this->stdErr->writeln('');
-        }
 
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');
@@ -250,19 +232,17 @@ class EnvironmentPushCommand extends CommandBase
             if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
                 $gitArgs[] = '--progress';
             }
-            if ($gitPushOptionsEnabled) {
-                if ($activateRequested) {
-                    $gitArgs[] = '--push-option=environment.status=active';
-                }
-                if ($parentId !== null) {
-                    $gitArgs[] = '--push-option=environment.parent=' . $parentId;
-                }
-                if ($input->getOption('no-clone-parent')) {
-                    $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
-                }
-                if ($resourcesInit !== null) {
-                    $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
-                }
+            if ($activateRequested) {
+                $gitArgs[] = '--push-option=environment.status=active';
+            }
+            if ($parentId !== null) {
+                $gitArgs[] = '--push-option=environment.parent=' . $parentId;
+            }
+            if ($input->getOption('no-clone-parent')) {
+                $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
+            }
+            if ($resourcesInit !== null) {
+                $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
             }
 
             // Build the SSH command to use with Git.
@@ -328,9 +308,8 @@ class EnvironmentPushCommand extends CommandBase
             }
         }
 
-        // Compensate for push options not being able to take effect if no
-        // changes were made.
-        if ($gitPushOptionsEnabled && $activateRequested) {
+        // Ensure the environment is activated or resumed.
+        if ($activateRequested) {
             $activities = $this->ensureActive($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
             if ($activities === false) {
                 return 1;
