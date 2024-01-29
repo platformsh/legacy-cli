@@ -2122,7 +2122,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function finalizeLogin()
     {
         // Reset the API client so that it will use the new tokens.
-        $client = $this->api()->getClient(false, true);
+        $this->api()->getClient(false, true);
         $this->stdErr->writeln('You are logged in.');
 
         /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
@@ -2154,11 +2154,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Show user account info.
-        $info = $client->getAccountInfo();
+        $account = $this->api()->getMyAccount(true);
         $this->stdErr->writeln(sprintf(
             "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
-            $info['username'],
-            $info['mail']
+            $account['username'],
+            $account['email']
         ));
     }
 
