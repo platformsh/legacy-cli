@@ -5,7 +5,6 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
-use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;

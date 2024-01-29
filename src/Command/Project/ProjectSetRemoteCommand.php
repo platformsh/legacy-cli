@@ -1,9 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
