@@ -31,7 +31,7 @@ class TeamUserDeleteCommand extends TeamCommandBase
         $organization = $this->api()->getOrganizationById($team->organization_id);
         if (!$organization) {
             $this->stdErr->writeln(sprintf('Failed to load team organization: <error>%s</error>.', $team->organization_id));
-            return false;
+            return 1;
         }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
