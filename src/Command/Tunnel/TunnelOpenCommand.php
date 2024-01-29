@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -38,20 +39,24 @@ EOF
         );
     }
 
+    public function isHidden()
+    {
+        return parent::isHidden() || OsUtil::isWindows();
+    }
+
     /**
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $requiredExtensions = ['pcntl', 'posix'];
-        $missingExtensions = [];
-        foreach ($requiredExtensions as $requiredExtension) {
-            if (!extension_loaded($requiredExtension)) {
-                $missingExtensions[] = $requiredExtension;
-                $this->stdErr->writeln(sprintf('The <error>%s</error> PHP extension is required.', $requiredExtension));
-            }
+        if (OsUtil::isWindows()) {
+            $this->stdErr->writeln('This command does not work on Windows, as the required PHP extensions are unavailable.');
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('You can use the <info>tunnel:single</info> command instead.');
+            return 1;
         }
-        if (!empty($missingExtensions)) {
+        if ($missingExtensions = $this->missingExtensions()) {
+            $this->stdErr->writeln(sprintf('The following required PHP extension(s) are missing or not enabled: <error>%s</error>', implode('</error>, <error>', $missingExtensions)));
             $this->stdErr->writeln('');
             $this->stdErr->writeln('The alternative <info>tunnel:single</info> command does not require these extensions.');
 
@@ -212,5 +217,21 @@ EOF
         $processManager->monitor($log);
 
         return 0;
+    }
+
+    /**
+     * Checks if any required PHP extensions are unavailable.
+     *
+     * @return string[]
+     */
+    private function missingExtensions()
+    {
+        $missing = [];
+        foreach (['pcntl', 'posix'] as $ext) {
+            if (!\extension_loaded($ext)) {
+                $missing[] = $ext;
+            }
+        }
+        return $missing;
     }
 }
