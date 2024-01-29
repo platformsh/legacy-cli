@@ -2,6 +2,9 @@
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
+use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -51,12 +54,11 @@ class BackupCreateCommand extends CommandBase
                 $this->stdErr->writeln('The environment is not active.');
             } else {
                 try {
-                    $access = $selectedEnvironment->getUser($this->api()->getMyUserId());
-                    if ($access->role !== 'admin') {
+                    if ($this->isUserAdmin($this->getSelectedProject(), $selectedEnvironment, $this->api()->getMyUserId())) {
                         $this->stdErr->writeln('You must be an administrator to create a backup.');
                     }
-                } catch (\InvalidArgumentException $e) {
-                    // Suppress exceptions when the 'access' API is not available for this environment.
+                } catch (\Exception $e) {
+                    $this->debug('Error while checking access: ' . $e->getMessage());
                 }
             }
 
@@ -101,5 +103,28 @@ class BackupCreateCommand extends CommandBase
         }
 
         return 0;
+    }
+
+    private function isUserAdmin(Project $project, Environment $environment, $userId)
+    {
+        if ($this->config()->get('api.centralized_permissions') && $this->config()->get('api.organizations')) {
+            $client = $this->api()->getHttpClient();
+            $endpointUrl = $project->getUri() . '/user-access';
+            $userAccess = ProjectUserAccess::get($userId, $endpointUrl, $client);
+            if (!$userAccess) {
+                return false;
+            }
+            $roles = $userAccess->getEnvironmentTypeRoles();
+            $role = isset($roles[$environment->type]) ? $roles[$environment->type] : $userAccess->getProjectRole();
+            return $role === 'admin';
+        }
+
+        $type = $project->getEnvironmentType($environment->type);
+        if (!$type) {
+            throw new \RuntimeException('Failed to load environment type: ' . $environment->type);
+        }
+        $access = $type->getUser($userId);
+
+        return $access && $access->role === 'admin';
     }
 }
