@@ -1571,7 +1571,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Set the --app option.
-        if ($input->hasOption('app') && !$input->getOption('app')) {
+        if ($input->hasOption('app') && !$input->getOption('app') && !$this->getDefinition()->getOption('app')->isArray()) {
             // An app ID might be provided from the parsed project URL.
             if (isset($result['appId'])) {
                 $input->setOption('app', $result['appId']);
