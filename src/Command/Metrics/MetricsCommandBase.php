@@ -100,7 +100,7 @@ abstract class MetricsCommandBase extends CommandBase
         $duration = new Duration();
         $this->addOption('range', 'r', InputOption::VALUE_REQUIRED,
             'The time range. Metrics will be loaded for this duration until the end time (--to).'
-            . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
+            . "\n" . 'You can specify units: s (seconds), m (minutes), h (hours), d (days), w (weeks), or y (years).'
             . "\n" . \sprintf(
                 'Minimum <comment>%s</comment>, maximum <comment>8h</comment> or more (depending on the project), default <comment>%s</comment>.',
                 $duration->humanize(self::MIN_RANGE),
@@ -123,7 +123,7 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * Returns the metrics URL and collection information for the selected environment.
      *
-     * @return array{'href': string, 'collection': string}|false
+     * @return array{href: string, collection: string, max_range: string}|false
      *   The link data or false on failure.
      */
     protected function getMetricsLink(Environment $environment)
@@ -332,10 +332,11 @@ abstract class MetricsCommandBase extends CommandBase
      * @see self::startTime, self::$endTime, self::$interval
      *
      * @param InputInterface $input
+     * @param Environment $environment
      *
      * @return TimeSpec|false
      */
-    protected function validateTimeInput(InputInterface $input)
+    protected function validateTimeInput(InputInterface $input, Environment $environment)
     {
         $interval = null;
         if ($intervalStr = $input->getOption('interval')) {
@@ -361,13 +362,24 @@ abstract class MetricsCommandBase extends CommandBase
             $endTime = time();
         }
         if ($rangeStr = $input->getOption('range')) {
-            $rangeSeconds = (new Duration())->toSeconds($rangeStr);
+            $rangeDuration = $this->parseDuration($rangeStr);
+            if (!$rangeDuration) {
+                $this->stdErr->writeln('Invalid --range: <error>' . $rangeStr . '</error>');
+                return false;
+            }
+            $rangeSeconds = $rangeDuration->toSeconds();
             if (empty($rangeSeconds)) {
                 $this->stdErr->writeln('Invalid --range: <error>' . $rangeStr . '</error>');
                 return false;
             } elseif ($rangeSeconds < self::MIN_RANGE) {
                 $this->stdErr->writeln(\sprintf('The --range <error>%s</error> is too short: it must be at least %d seconds (%s).', $rangeStr, self::MIN_RANGE, (new Duration())->humanize(self::MIN_RANGE)));
                 return false;
+            } elseif (($link = $this->getMetricsLink($environment)) && isset($link['max_range'])) {
+                $maxRange = $this->parseDuration($link['max_range']);
+                if ($rangeSeconds > $maxRange->toSeconds()) {
+                    $this->stdErr->writeln(\sprintf('The --range <error>%s</error> is too long: the maximum is %s.', $rangeStr, $link['max_range']));
+                    return false;
+                }
             }
             $rangeSeconds = \intval($rangeSeconds);
         } else {
@@ -404,10 +416,9 @@ abstract class MetricsCommandBase extends CommandBase
      */
     private function defaultInterval($range)
     {
-        $divisor = 5; // Number of points per time range.
-        // Number of seconds to round to:
-        $granularity = 10;
-        foreach ([3600*24, 3600*6, 3600*3, 3600, 600, 300, 60, 30] as $level) {
+        $divisor = 6; // Minimum number of points per time range.
+        $granularity = 10; // Number of seconds to round to.
+        foreach ([3600*24*365, 3600*24*90, 3600*24*30, 3600*24*7, 3600*24, 3600*6, 3600*3, 3600, 600, 300, 60, 30] as $level) {
             if ($range >= $level * $divisor) {
                 $granularity = $level;
                 break;
@@ -419,6 +430,26 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         return (int) $interval;
+    }
+
+    /**
+     * Parses a duration.
+     *
+     * Supports 'y' and 'w' in addition to the Duration class's suffixes of
+     * 'h', 'm', and 'd'.
+     *
+     * @param string $duration
+     * @return Duration|false
+     */
+    private function parseDuration($duration)
+    {
+        if (preg_match('/^([0-9.]+)\s*y$/i', $duration, $matches) === 1) {
+            return new Duration(floatval($matches[1]) * 365.25 * 86400);
+        }
+        if (preg_match('/^([0-9.]+)\s*w$/i', $duration, $matches) === 1) {
+            return new Duration(floatval($matches[1]) * 7 * 86400);
+        }
+        return (new Duration())->parse($duration);
     }
 
     /**
