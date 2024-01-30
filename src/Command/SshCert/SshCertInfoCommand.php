@@ -42,7 +42,7 @@ class SshCertInfoCommand extends CommandBase
                 return 1;
             }
             // Generate a new certificate.
-            $cert = $certifier->generateCertificate();
+            $cert = $certifier->generateCertificate($cert);
         }
 
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */

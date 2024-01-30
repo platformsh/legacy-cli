@@ -8,6 +8,7 @@ class Certificate {
     private $certFile;
     private $privateKeyFile;
     private $metadata;
+    private $contents;
 
     /**
      * Certificate constructor.
@@ -19,6 +20,23 @@ class Certificate {
     {
         $this->certFile = $certFile;
         $this->privateKeyFile = $privateKeyFile;
+        $this->contents = \file_get_contents($this->certFile);
+        if (!$this->contents) {
+            throw new \RuntimeException('Failed to read certificate file: ' . $this->certFile);
+        }
+        $this->metadata = new Metadata($this->contents);
+    }
+
+    /**
+     * Returns if two certificates are identical.
+     *
+     * @param Certificate $cert
+     *
+     * @return bool
+     */
+    public function isIdentical(Certificate $cert)
+    {
+        return $cert->contents === $this->contents;
     }
 
     /**
@@ -40,20 +58,11 @@ class Certificate {
     /**
      * Returns certificate metadata.
      *
-     * @throws \RuntimeException if the certificate file cannot be read
-     *
      * @return Metadata
      */
     public function metadata()
     {
-        if (isset($this->metadata)) {
-            return $this->metadata;
-        }
-        $contents = \file_get_contents($this->certFile);
-        if (!$contents) {
-            throw new \RuntimeException('Failed to read certificate file: ' . $this->certFile);
-        }
-        return $this->metadata = new Metadata($contents);
+        return $this->metadata;
     }
 
     /**
@@ -66,7 +75,7 @@ class Certificate {
      * @return bool
      */
     public function hasExpired($buffer = 120) {
-        return $this->metadata()->getValidBefore() - $buffer < \time();
+        return $this->metadata->getValidBefore() - $buffer < \time();
     }
 
     /**
@@ -75,7 +84,7 @@ class Certificate {
      * @return bool
      */
     public function hasMfa() {
-        return \array_key_exists('has-mfa@platform.sh', $this->metadata()->getExtensions());
+        return \array_key_exists('has-mfa@platform.sh', $this->metadata->getExtensions());
     }
 
     /**
@@ -84,6 +93,6 @@ class Certificate {
      * @return bool
      */
     public function isApp() {
-        return \array_key_exists('is-app@platform.sh', $this->metadata()->getExtensions());
+        return \array_key_exists('is-app@platform.sh', $this->metadata->getExtensions());
     }
 }

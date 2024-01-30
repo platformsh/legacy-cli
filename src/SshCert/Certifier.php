@@ -58,9 +58,11 @@ class Certifier
     /**
      * Generates a new certificate.
      *
+     * @param Certificate|null $previousCert
+     *
      * @return Certificate
      */
-    public function generateCertificate()
+    public function generateCertificate($previousCert, $forceNewKey = false)
     {
         // Ensure the user is logged in to the API, so that an auto-login will
         // not be triggered after we have generated keys (auto-login triggers a
@@ -75,22 +77,20 @@ class Certifier
         // Acquire a lock to prevent race conditions when certificate and key
         // files are changed at the same time in different CLI processes.
         $lockName = 'ssh-cert--' . $this->config->getSessionIdSlug();
-        $start = time();
         $result = $this->fileLock->acquireOrWait($lockName, function () {
             $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
-        }, function () use ($start) {
+        }, function () use ($previousCert) {
             // While waiting for the lock, check if a new certificate has
             // already been generated elsewhere.
-            $cert = $this->getExistingCertificate();
-            return $cert && $cert->metadata()->getValidAfter() >= $start && $this->isValid($cert)
-                ? $cert : null;
+            $newCert = $this->getExistingCertificate();
+            return $newCert && (!$previousCert || !$previousCert->isIdentical($newCert)) ? $newCert : null;
         });
         if ($result !== null) {
             return $result;
         }
 
         try {
-            return $this->doGenerateCertificate();
+            return $this->doGenerateCertificate($forceNewKey);
         } finally {
             $this->fileLock->release($lockName);
         }
@@ -99,49 +99,76 @@ class Certifier
     /**
      * Inner function to generate the actual certificate.
      *
-     * @see self::generateCertificate()
-     *
+     * @param bool $forceNewKey
      * @return Certificate
+     *
+     * @see self::generateCertificate()
      */
-    private function doGenerateCertificate()
+    private function doGenerateCertificate($forceNewKey = false)
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
 
+        $privateKeyFilename = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
+        $certificateFilename = $privateKeyFilename . '-cert.pub';
+        $publicKeyFilename = $privateKeyFilename . '.pub';
+        $tempPrivateKeyFilename = $privateKeyFilename . '_tmp';
+        $tempCertificateFilename = $tempPrivateKeyFilename . '-cert.pub';
+        $tempPublicKeyFilename = $tempPrivateKeyFilename . '.pub';
+
         // Remove the old certificate and key from the SSH agent.
         if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
-            $this->shell->execute(['ssh-add', '-d', $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME], null, false, !$this->stdErr->isVeryVerbose());
+            $this->shell->execute(['ssh-add', '-d', $privateKeyFilename], null, false, !$this->stdErr->isVeryVerbose());
         }
 
         $apiClient = $this->api->getClient();
 
-        $sshPair = $this->generateSshKey($dir, true);
-        $publicContents = file_get_contents($sshPair['public']);
-        if (!$publicContents) {
-            throw new \RuntimeException('Failed to read public key file: ' . $sshPair['public']);
-        }
+        $keyTtl = (int) $this->config->get('ssh.cert_key_ttl');
+        $regenerateKey = $forceNewKey || !file_exists($privateKeyFilename) || !file_exists($publicKeyFilename)
+            || ($keyTtl !== 0 && ($mtime = filemtime($privateKeyFilename)) && time() - $mtime > $keyTtl);
 
-        $certificateFilename = $sshPair['private'] . '-cert.pub';
-        // Remove the existing certificate before generating a new one, so as
-        // not to leave an invalid key/cert set.
-        if (\file_exists($certificateFilename)) {
-            $this->fs->remove($certificateFilename);
+        if ($regenerateKey) {
+            $this->generateSshKey($tempPrivateKeyFilename);
+
+            $publicContents = file_get_contents($tempPublicKeyFilename);
+            if (!$publicContents) {
+                throw new \RuntimeException('Failed to read public key file: ' . $tempPublicKeyFilename);
+            }
+        } else {
+            $publicContents = file_get_contents($publicKeyFilename);
+            if (!$publicContents) {
+                throw new \RuntimeException('Failed to read public key file: ' . $publicKeyFilename);
+            }
         }
 
         $this->stdErr->writeln('Requesting certificate from the API', OutputInterface::VERBOSITY_VERBOSE);
         $certificate = $apiClient->getSshCertificate($publicContents);
 
-        $this->fs->writeFile($certificateFilename, $certificate);
-        $this->chmod($certificateFilename, 0600);
+        if (!file_put_contents($tempCertificateFilename, $certificate)) {
+            throw new \RuntimeException('Failed to write file: ' . $tempCertificateFilename);
+        }
 
-        $certificate = new Certificate($certificateFilename, $sshPair['private']);
+        if (!chmod($tempCertificateFilename, 0600)) {
+            throw new \RuntimeException('Failed to change permissions on file: ' . $tempCertificateFilename);
+        }
+
+        // Rename the files as simultaneously as possible so they can replace
+        // the existing certificate while causing minimal confusion to OpenSSH.
+        // TODO is there really no way to make this atomic?
+        $this->rename($tempCertificateFilename, $certificateFilename);
+        if ($regenerateKey) {
+            $this->rename($tempPrivateKeyFilename, $privateKeyFilename);
+            $this->rename($tempPublicKeyFilename, $publicKeyFilename);
+        }
+
+        $certificate = new Certificate($certificateFilename, $privateKeyFilename);
 
         // Add the key to the SSH agent, if possible, silently.
         // In verbose mode the full command will be printed, so the user can
         // re-run it to check error details.
         if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
             $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
-            $this->shell->execute(['ssh-add', '-t', $lifetime, $sshPair['private']], null, false, !$this->stdErr->isVerbose());
+            $this->shell->execute(['ssh-add', '-t', $lifetime, $privateKeyFilename], null, false, !$this->stdErr->isVerbose());
         }
 
         return $certificate;
@@ -222,61 +249,40 @@ class Certifier
     }
 
     /**
-     * Generate a temporary ssh key pair to request a new certificate.
+     * Generate an SSH key pair to request a new certificate.
      *
-     * @param string $dir
-     *   The certificate directory.
-     * @param bool $recreate
-     *   Whether to delete and recreate the keys if they already exist.
-     *
-     * @return array
-     *   The paths to the private and public key (keyed by 'private' and 'public').
+     * @param string $filename
+     *   The private key filename.
      */
-    private function generateSshKey($dir, $recreate)
+    private function generateSshKey($filename)
     {
-        $sshInfo = [];
-        $sshInfo['private'] = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
-        $sshInfo['public'] = $sshInfo['private'] . '.pub';
-        if (!$recreate && is_file($sshInfo['private']) && is_file($sshInfo['public'])) {
-            $this->stdErr->writeln('Reusing local key pair', OutputInterface::VERBOSITY_VERBOSE);
-            return $sshInfo;
-        }
-        // Delete the keys if they exist.
-        $this->fs->remove([$sshInfo['private'], $sshInfo['public']]);
         $this->stdErr->writeln('Generating local key pair', OutputInterface::VERBOSITY_VERBOSE);
-        // Generate new keys and set permissions.
+
         $args = [
             'ssh-keygen',
             '-t', self::KEY_ALGORITHM,
-            '-f', $sshInfo['private'],
+            '-f', $filename,
             '-N', '', // No passphrase
             '-C', $this->config->get('application.slug') . '-temporary-cert', // Key comment
         ];
+
         // The "y\n" input is passed to avoid an error or prompt if ssh-keygen
         // encounters existing keys. This seems to be necessary during race
-        // conditions despite having deleted the keys with $this->fs->remove()
-        // above.
+        // conditions despite deleting keys in advance with $this->fs->remove().
+        $this->fs->remove([$filename, $filename . '.pub']);
         $this->shell->execute($args, null, true, true, [], 60, "y\n");
-        $this->chmod($sshInfo['private'], 0600);
-        $this->chmod($sshInfo['public'], 0600);
-
-        return $sshInfo;
     }
 
     /**
-     * Change file permissions and emit a warning on failure.
+     * Rename a file (allowing overwriting) and throw an exception on failure.
      *
-     * @param string $filename
-     * @param int $mode
-     *
-     * @return bool
+     * @param string $source
+     * @param string $target
      */
-    private function chmod($filename, $mode)
+    private function rename($source, $target)
     {
-        if (!@chmod($filename, $mode)) {
-            $this->stdErr->writeln('Warning: failed to change permissions on file: <comment>' . $filename . '</comment>');
-            return false;
+        if (!\rename($source, $target)) {
+            throw new \RuntimeException(sprintf('Failed to rename file from %s to %s', $source, $target));
         }
-        return true;
     }
 }

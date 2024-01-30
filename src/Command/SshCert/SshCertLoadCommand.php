@@ -15,7 +15,7 @@ class SshCertLoadCommand extends CommandBase
             ->setName('ssh-cert:load')
             ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate, if necessary (do not write SSH config)')
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
-            ->addOption('new-key', null, InputOption::VALUE_NONE, '[Deprecated] Use --new instead')
+            ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force a new key pair to be generated')
             ->setDescription('Generate an SSH certificate');
         $help = 'This command checks if a valid SSH certificate is present, and generates a new one if necessary.';
         if ($this->config()->getWithDefault('ssh.auto_load_cert', false)) {
@@ -58,7 +58,7 @@ class SshCertLoadCommand extends CommandBase
                 return 1;
             }
             $this->stdErr->writeln('Generating SSH certificate...');
-            $sshCert = $certifier->generateCertificate();
+            $sshCert = $certifier->generateCertificate($sshCert, $input->getOption('new-key'));
             $this->displayCertificate($sshCert);
         }
 
