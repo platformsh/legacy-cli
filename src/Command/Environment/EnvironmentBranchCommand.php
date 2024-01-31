@@ -37,7 +37,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->envArgName = 'parent';
         $this->chooseEnvText = 'Enter a number to choose a parent environment:';
         $this->enterEnvText = 'Enter the ID of the parent environment';
-        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $branchName = $input->getArgument('id');
         $this->validateInput($input, $branchName === null);
         $selectedProject = $this->getSelectedProject();

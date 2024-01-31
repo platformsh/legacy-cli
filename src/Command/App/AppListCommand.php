@@ -33,7 +33,7 @@ class AppListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input);
 
         // Find a list of deployed web apps.

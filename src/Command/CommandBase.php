@@ -1103,16 +1103,28 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Returns an environment filter to select only environments that are not 'inactive'.
+     * Returns an environment filter to select environments by status.
      *
-     * @param string[] $allowedStates
+     * @param string[] $statuses
      *
      * @return callable
      */
-    protected function filterEnvsByState(array $allowedStates)
+    protected function filterEnvsByStatus(array $statuses)
     {
-        return function (Environment $e) use ($allowedStates) {
-            return \in_array($e->status, $allowedStates, true);
+        return function (Environment $e) use ($statuses) {
+            return \in_array($e->status, $statuses, true);
+        };
+    }
+
+    /**
+     * Filters environments to those that may be active.
+     *
+     * @return callable
+     */
+    protected function filterEnvsMaybeActive()
+    {
+        return function (Environment $e) {
+            return \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
         };
     }
 
@@ -1207,6 +1219,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->environment = $this->offerEnvironmentChoice($environments);
                 return;
             }
+            throw new ConsoleInvalidArgumentException( 'Could not select an environment automatically.'
+                . "\n" . 'Specify one manually using --environment (-e).');
         }
 
         if ($required && !$this->environment) {
@@ -2092,7 +2106,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($remoteContainer === null) {
             if (!$this->hasSelectedEnvironment()) {
-                $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+                $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
                 $this->validateInput($input);
             }
             $remoteContainer = $this->selectRemoteContainer($input, $includeWorkers);

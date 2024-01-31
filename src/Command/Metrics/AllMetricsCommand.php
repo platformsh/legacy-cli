@@ -72,7 +72,7 @@ class AllMetricsCommand extends MetricsCommandBase
             return 1;
         }
 
-        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input, false, true);
 
         /** @var \Platformsh\Cli\Service\Table $table */

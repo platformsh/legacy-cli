@@ -20,7 +20,7 @@ class EnvironmentResumeCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->chooseEnvFilter = $this->filterEnvsByState(['paused']);
+        $this->chooseEnvFilter = $this->filterEnvsByStatus(['paused']);
         $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();

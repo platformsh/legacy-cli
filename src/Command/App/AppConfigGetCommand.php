@@ -41,7 +41,7 @@ class AppConfigGetCommand extends CommandBase
             }
             $appConfig = new AppConfig($decoded);
         } else {
-            $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+            $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
             $this->validateInput($input);
             $this->warnAboutDeprecatedOptions(['identity-file']);
 

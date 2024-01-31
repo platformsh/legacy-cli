@@ -38,7 +38,7 @@ class ListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->chooseEnvFilter = $this->filterEnvsByState(['active']);
+        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input);
         $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
 
