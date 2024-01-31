@@ -1117,13 +1117,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Filters environments to those that are 'active' and 'dirty'.
+     * Filters environments to those that may be active.
      *
      * @return callable
      */
     protected function filterEnvsMaybeActive()
     {
-        return $this->filterEnvsByStatus(['active', 'dirty']);
+        return function (Environment $e) {
+            return \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
+        };
     }
 
     /**
