@@ -1217,6 +1217,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->environment = $this->offerEnvironmentChoice($environments);
                 return;
             }
+            throw new ConsoleInvalidArgumentException( 'Could not select an environment automatically.'
+                . "\n" . 'Specify one manually using --environment (-e).');
         }
 
         if ($required && !$this->environment) {
