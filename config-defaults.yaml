@@ -265,7 +265,7 @@ api:
   sizing: false
 
   # Whether Git Push Options are enabled.
-  git_push_options: false
+  git_push_options: true
 
   # The timeout in seconds for a "git push" command. Set to null for no timeout.
   git_push_timeout: 3600
