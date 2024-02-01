@@ -315,6 +315,16 @@ ssh:
   # Overridden by the {application.env_prefix}AUTO_LOAD_SSH_CERT env var
   auto_load_cert: true
 
+  # The lifetime of an automatically generated SSH key pair (in seconds).
+  #
+  # Set to 0 for the key pair never to expire or -1 for it to be regenerated
+  # every time the certificate is refreshed.
+  #
+  # Persisting the keys for longer can reduce errors from regenerating keys at
+  # the same time as an SSH connection. Conversely, regenerating the keys more
+  # often provides a weak security benefit.
+  cert_key_ttl: 86400
+
 # How the CLI detects and configures Git repositories as projects.
 detection:
   ## Required keys that must be defined elsewhere:

@@ -114,7 +114,7 @@ class Ssh implements InputConfiguringInterface
                 if ((!$sshCert || !$this->certifier->isValid($sshCert)) && $this->sshConfig->checkRequiredVersion()) {
                     $this->stdErr->writeln('Generating SSH certificate...', OutputInterface::VERBOSITY_VERBOSE);
                     try {
-                        $sshCert = $this->certifier->generateCertificate();
+                        $sshCert = $this->certifier->generateCertificate($sshCert);
                         $this->stdErr->writeln("A new SSH certificate has been generated.\n", OutputInterface::VERBOSITY_VERBOSE);
                     } catch (\Exception $e) {
                         $this->stdErr->writeln(sprintf("Failed to generate SSH certificate: <error>%s</error>\n", $e->getMessage()));

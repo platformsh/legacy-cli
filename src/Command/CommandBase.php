@@ -2152,7 +2152,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Generating SSH certificate...');
             try {
-                $certifier->generateCertificate();
+                $certifier->generateCertificate(null);
                 $this->stdErr->writeln('A new SSH certificate has been generated.');
                 $this->stdErr->writeln('It will be automatically refreshed when necessary.');
             } catch (\Exception $e) {

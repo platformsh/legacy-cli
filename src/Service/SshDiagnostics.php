@@ -200,7 +200,7 @@ class SshDiagnostics
 
         if ($this->connectionFailedDueToCertificateValidity($failedProcess)) {
             $this->stdErr->writeln('The SSH connection failed because the SSH certificate is no longer valid.');
-            $this->certifier->generateCertificate();
+            $this->certifier->generateCertificate($cert);
             $this->stdErr->writeln('A new SSH certificate has been generated. Please try again.');
             return;
         }
