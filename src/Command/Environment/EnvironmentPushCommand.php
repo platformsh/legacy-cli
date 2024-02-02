@@ -33,7 +33,7 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
         if ($this->config()->get('api.git_push_options')) {
-            $this->addOption('resources-init', null, InputOption::VALUE_REQUIRED, 'Set the resources to use for new services: default, parent, minimum, or manual');
+            $this->addResourcesInitOption();
         }
         $this->addWaitOptions();
         $this->addProjectOption()
@@ -67,6 +67,12 @@ class EnvironmentPushCommand extends CommandBase
         $this->ensurePrintSelectedProject();
         $this->stdErr->writeln('');
 
+        // Validate the --resources-init option.
+        $resourcesInit = $this->validateResourcesInitInput($input, $project);
+        if ($resourcesInit === false) {
+            return 1;
+        }
+
         if ($currentProject && $currentProject->id !== $project->id) {
             $this->stdErr->writeln('The current repository is linked to another project: ' . $this->api()->getProjectLabel($currentProject, 'comment'));
             if ($input->getOption('set-upstream')) {
@@ -95,14 +101,6 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         $this->debug(sprintf('Source revision: %s', $sourceRevision));
-
-        // Validate the --resources-init option.
-        $resourcesInit = $input->hasOption('resources-init') ? $input->getOption('resources-init') : null;
-        $resourcesInitOptions = ['default', 'parent', 'minimum', 'manual'];
-        if ($resourcesInit !== null && !\in_array($resourcesInit, $resourcesInitOptions, true)) {
-            $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $resourcesInitOptions));
-            return 1;
-        }
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

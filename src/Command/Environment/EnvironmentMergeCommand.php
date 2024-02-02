@@ -16,6 +16,7 @@ class EnvironmentMergeCommand extends CommandBase
             ->setAliases(['merge'])
             ->setDescription('Merge an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
+        $this->addResourcesInitOption('child');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -47,6 +48,12 @@ class EnvironmentMergeCommand extends CommandBase
             return 1;
         }
 
+        // Validate the --resources-init option.
+        $resourcesInit = $this->validateResourcesInitInput($input, $this->getSelectedProject(), ['child', 'default', 'minimum', 'manual']);
+        if ($resourcesInit === false) {
+            return 1;
+        }
+
         $parentId = $selectedEnvironment->parent;
 
         $confirmText = sprintf(
@@ -68,7 +75,12 @@ class EnvironmentMergeCommand extends CommandBase
 
         $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
 
-        $result = $selectedEnvironment->runOperation('merge');
+        $params = [];
+        if ($resourcesInit !== null) {
+            $params['resources']['init'] = $resourcesInit;
+        }
+
+        $result = $selectedEnvironment->runOperation('merge', 'POST', $params);
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');

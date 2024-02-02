@@ -2375,4 +2375,61 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):', $default);
         return $byId[$id];
     }
+
+    /**
+     * Adds a --resources-init option to commands that support it.
+     *
+     * The option will only be added if the api.sizing feature is enabled.
+     *
+     * @param string $apiDefault
+     *   The default that the API would use if the option is not specified.
+     *
+     * @return self
+     *
+     * @see CommandBase::validateResourcesInitInput()
+     */
+    protected function addResourcesInitOption($apiDefault = 'default')
+    {
+        if (!$this->config()->get('api.sizing')) {
+            return $this;
+        }
+        $descriptionPerDefault = [
+            'default' => 'Set the resources to use for new services: default, parent, minimum, or manual.',
+            'parent' => 'Set the resources to use for new services: parent (default), default, minimum, or manual.',
+            'child' => 'Set the resources to use for new services: child (default), default, minimum, or manual.',
+        ];
+        $description = isset($descriptionPerDefault[$apiDefault]) ? $descriptionPerDefault[$apiDefault] : $descriptionPerDefault['default'];
+        $this->addOption('resources-init', null, InputOption::VALUE_REQUIRED, $description);
+
+        return $this;
+    }
+
+    /**
+     * Validates and returns the --resources-init input, if any.
+     *
+     * @param InputInterface $input
+     * @param Project $project
+     * @param string[] $options
+     *
+     * @return string|false|null
+     *   The input value, or false if there was a validation error, or null if
+     *   nothing was specified or the input option didn't exist.
+     *
+     * @see CommandBase::addResourcesInitOption()
+     */
+    protected function validateResourcesInitInput(InputInterface $input, Project $project, $options = ['default', 'parent', 'minimum', 'manual'])
+    {
+        $resourcesInit = $input->hasOption('resources-init') ? $input->getOption('resources-init') : null;
+        if ($resourcesInit !== null) {
+            if (!\in_array($resourcesInit, $options, true)) {
+                $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $options));
+                return false;
+            }
+            if (!$this->api()->supportsSizingApi($project)) {
+                $this->stdErr->writeln('The <comment>--resources-init</comment> option cannot be used as the project does not support flexible resources.');
+                return false;
+            }
+        }
+        return $resourcesInit;
+    }
 }

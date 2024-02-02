@@ -20,6 +20,7 @@ class BackupRestoreCommand extends CommandBase
             ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
             ->addOption('restore-code', null, InputOption::VALUE_NONE, 'Whether code should be restored as well as data');
+        $this->addResourcesInitOption('parent');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -66,6 +67,12 @@ class BackupRestoreCommand extends CommandBase
         if ($branchFrom !== null && !$this->api()->getEnvironment($branchFrom, $project)) {
             $this->stdErr->writeln(sprintf('Environment not found (in --branch-from): <error>%s</error>', $branchFrom));
 
+            return 1;
+        }
+
+        // Validate the --resources-init option.
+        $resourcesInit = $this->validateResourcesInitInput($input, $project);
+        if ($resourcesInit === false) {
             return 1;
         }
 
@@ -117,6 +124,7 @@ class BackupRestoreCommand extends CommandBase
                 ->setEnvironmentName($targetName)
                 ->setBranchFrom($branchFrom)
                 ->setRestoreCode($input->getOption('restore-code'))
+                ->setResourcesInit($resourcesInit)
         );
 
         if ($this->shouldWait($input) && $result->countActivities()) {

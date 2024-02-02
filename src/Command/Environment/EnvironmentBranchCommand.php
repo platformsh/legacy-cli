@@ -22,6 +22,7 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
             ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
+        $this->addResourcesInitOption('parent');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -101,6 +102,12 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
+        // Validate the --resources-init option.
+        $resourcesInit = $this->validateResourcesInitInput($input, $selectedProject);
+        if ($resourcesInit === false) {
+            return 1;
+        }
+
         $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
         $newLabel = strlen($title) > 0 && $title !== $branchName
@@ -114,10 +121,15 @@ class EnvironmentBranchCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Creating a new environment: %s', $newLabel));
         $this->stdErr->writeln('');
+
         $parentMessage = $input->getOption('no-clone-parent')
             ? 'Settings will be copied from the parent environment: %s'
             : 'Settings will be copied and data cloned from the parent environment: %s';
         $this->stdErr->writeln(sprintf($parentMessage, $this->api()->getEnvironmentLabel($parentEnvironment, 'info', false)));
+
+        if ($resourcesInit === 'parent') {
+            $this->stdErr->writeln('Resource sizes will be inherited from the parent environment.');
+        }
 
         if ($dryRun) {
             $this->stdErr->writeln('');
@@ -137,6 +149,9 @@ class EnvironmentBranchCommand extends CommandBase
             ];
             if ($type !== null) {
                 $params['type'] = $type;
+            }
+            if ($resourcesInit !== null) {
+                $params['resources']['init'] = $resourcesInit;
             }
             $result = $parentEnvironment->runOperation('branch', 'POST', $params);
             $activities = $result->getActivities();
