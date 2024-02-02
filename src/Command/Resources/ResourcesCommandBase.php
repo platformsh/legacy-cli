@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
-use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -13,7 +12,6 @@ use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Deployment\Worker;
 use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 
 class ResourcesCommandBase extends CommandBase
@@ -97,31 +95,6 @@ class ResourcesCommandBase extends CommandBase
             $progress->done();
         }
         return self::$cachedNextDeployment[$cacheKey] = $next;
-    }
-
-    /**
-     * Checks if a project supports the Flexible Resources API, AKA Sizing API.
-     *
-     * @param Project $project
-     * @param EnvironmentDeployment|null $deployment
-     * @return bool
-     */
-    protected function supportsSizingApi(Project $project, EnvironmentDeployment $deployment = null)
-    {
-        if (isset($deployment->project_info['settings'])) {
-            return !empty($deployment->project_info['settings']['sizing_api_enabled']);
-        }
-        /** @var CacheProvider $cacheService */
-        $cacheService = $this->getService('cache');
-        $cacheKey = 'project-settings:' . $project->id;
-        $cachedSettings = $cacheService->fetch($cacheKey);
-        if (!empty($cachedSettings['sizing_api_enabled'])) {
-            return true;
-        }
-        $httpClient = $this->api()->getHttpClient();
-        $settings = $httpClient->get($project->getUri() . '/settings')->json();
-        $cacheService->save($cacheKey, $settings, $this->config()->get('api.projects_ttl'));
-        return !empty($settings['sizing_api_enabled']);
     }
 
     /**

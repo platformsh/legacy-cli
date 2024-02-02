@@ -1570,4 +1570,26 @@ class Api
         }
         return $label;
     }
+
+    /**
+     * Checks if a project supports the Flexible Resources API, AKA Sizing API.
+     *
+     * @param Project $project
+     * @param EnvironmentDeployment|null $deployment
+     * @return bool
+     */
+    public function supportsSizingApi(Project $project, EnvironmentDeployment $deployment = null)
+    {
+        if (isset($deployment->project_info['settings'])) {
+            return !empty($deployment->project_info['settings']['sizing_api_enabled']);
+        }
+        $cacheKey = 'project-settings:' . $project->id;
+        $cachedSettings = $this->cache->fetch($cacheKey);
+        if (!empty($cachedSettings['sizing_api_enabled'])) {
+            return true;
+        }
+        $settings = $this->getHttpClient()->get($project->getUri() . '/settings')->json();
+        $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
+        return !empty($settings['sizing_api_enabled']);
+    }
 }

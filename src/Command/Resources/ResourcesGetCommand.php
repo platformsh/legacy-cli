@@ -44,7 +44,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
-        if (!$this->supportsSizingApi($this->getSelectedProject())) {
+        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
             $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
             return 1;
         }
