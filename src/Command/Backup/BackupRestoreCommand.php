@@ -2,7 +2,7 @@
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\Model\Activity;
+use Platformsh\Client\Model\Backups\RestoreOptions;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -16,9 +16,10 @@ class BackupRestoreCommand extends CommandBase
         $this
             ->setName('backup:restore')
             ->setDescription('Restore an environment backup')
-            ->addArgument('backup', InputArgument::OPTIONAL, 'The name of the backup. Defaults to the most recent one')
+            ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
-            ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment');
+            ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
+            ->addOption('restore-code', null, InputOption::VALUE_NONE, 'Whether code should be restored as well as data');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -32,77 +33,54 @@ class BackupRestoreCommand extends CommandBase
         $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
-
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $project = $this->getSelectedProject();
 
         $backupName = $input->getArgument('backup');
         if (!empty($backupName)) {
-            $backupActivities = $loader->load($environment, null, ['environment.backup'], null, 'complete', null, function (Activity $activity) use ($backupName) {
-                return $activity->payload['backup_name'] === $backupName;
-            });
-            // Find the specified backup.
-            foreach (\array_reverse($backupActivities) as $activity) {
-                if ($activity['payload']['backup_name'] == $backupName) {
-                    $selectedActivity = $activity;
-                    break;
-                }
-            }
-            if (empty($selectedActivity)) {
+            $backup = $environment->getBackup($backupName);
+            if (!$backup) {
                 $this->stdErr->writeln("Backup not found: <error>$backupName</error>");
 
                 return 1;
             }
         } else {
-            // Find the most recent backup.
-            $environmentId = $environment->id;
-            $this->stdErr->writeln("Finding the most recent backup for the environment <info>$environmentId</info>");
-            $backupActivities = $environment->getActivities(1, 'environment.backup');
-            $backupActivities = array_filter($backupActivities, function (Activity $activity) {
-                return $activity->result === Activity::RESULT_SUCCESS;
-            });
-            if (!$backupActivities) {
+            $this->stdErr->writeln(\sprintf('Finding the most recent backup for the environment %s', $this->api()->getEnvironmentLabel($environment)));
+            $backups = $environment->getBackups();
+            $this->stdErr->writeln('');
+            if (!$backups) {
                 $this->stdErr->writeln("No backups found");
 
                 return 1;
             }
-            /** @var \Platformsh\Client\Model\Activity $selectedActivity */
-            $selectedActivity = reset($backupActivities);
+            $backup = reset($backups);
         }
 
-        if (!$selectedActivity->operationAvailable('restore', true)) {
-            if (!$selectedActivity->isComplete()) {
-                $this->stdErr->writeln("The backup is not complete, so it cannot be restored");
-            } else {
-                $this->stdErr->writeln("The backup cannot be restored");
-            }
+        if (!$backup->restorable) {
+            $this->stdErr->writeln(\sprintf('The backup <error>%s</error> cannot be restored', $backup->id));
 
             return 1;
         }
 
         // Validate the --branch-from option.
         $branchFrom = $input->getOption('branch-from');
-        if ($branchFrom !== null && !$this->api()->getEnvironment($branchFrom, $this->getSelectedProject())) {
+        if ($branchFrom !== null && !$this->api()->getEnvironment($branchFrom, $project)) {
             $this->stdErr->writeln(sprintf('Environment not found (in --branch-from): <error>%s</error>', $branchFrom));
 
             return 1;
         }
 
-        // Process the --target option.
+        // Process the --target option, which does not have to be an existing environment.
         $target = $input->getOption('target');
-        $targetEnvironment = $target !== null
-            ? $this->api()->getEnvironment($target, $this->getSelectedProject())
-            : $environment;
+        $targetEnvironment = $target !== null ? $this->api()->getEnvironment($target, $project) : $environment;
+        $targetName = $target !== null ? $target : $environment->name;
         $targetLabel = $targetEnvironment
             ? $this->api()->getEnvironmentLabel($targetEnvironment)
             : '<info>' . $target . '</info>';
 
         // Do not allow restoring with --target on legacy regions: it can
         // overwrite the wrong branch. This is a (hopefully) temporary measure.
-        $region = $this->getSelectedProject()->region;
-        if ((!$targetEnvironment || $targetEnvironment->id !== $environment->id)
-            && \preg_match('#^us\.m#', $region)) {
-            $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region: <comment>' . $region . '</comment>');
+        if ($targetName !== $environment->name && \preg_match('#^us\.m#', $project->region)) {
+            $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region: <comment>' . $project->region . '</comment>');
             $this->stdErr->writeln('Please contact support.');
 
             return 1;
@@ -110,21 +88,41 @@ class BackupRestoreCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        $name = $selectedActivity['payload']['backup_name'];
-        $date = date('c', strtotime($selectedActivity['created_at']));
-        if (!$questionHelper->confirm(
-            "Are you sure you want to restore the backup <comment>$name</comment> from <comment>$date</comment> to environment $targetLabel?"
-        )) {
-            return 1;
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+        $this->stdErr->writeln(\sprintf('Backup ID: <comment>%s</comment>', $backup->id));
+        $this->stdErr->writeln(\sprintf('Created at: <comment>%s</comment>', $formatter->format($backup->created_at, 'created_at')));
+
+        $differentTarget = $backup->environment !== $targetName;
+        if ($differentTarget) {
+            $original = $this->api()->getEnvironment($backup->environment, $project);
+            $originalLabel = $original ? $this->api()->getEnvironmentLabel($original, 'comment') : '<comment>' . $backup->environment . '</comment>';
+            $this->stdErr->writeln(\sprintf('Original environment: %s', $originalLabel));
+            $this->stdErr->writeln('');
+            if (!$questionHelper->confirm(\sprintf('Are you sure you want to restore this backup to the environment %s?', $targetLabel))) {
+                return 1;
+            }
+        } else {
+            $this->stdErr->writeln('');
+            if (!$questionHelper->confirm('Are you sure you want to restore this backup?')) {
+                return 1;
+            }
         }
+        $this->stdErr->writeln('');
 
-        $this->stdErr->writeln("Restoring backup <info>$name</info> to $targetLabel");
+        $this->stdErr->writeln("Restoring backup <info>$backup->id</info> to $targetLabel");
 
-        $activity = $selectedActivity->restore($target, $branchFrom);
-        if ($this->shouldWait($input)) {
+        $result = $backup->restore(
+            (new RestoreOptions())
+                ->setEnvironmentName($targetName)
+                ->setBranchFrom($branchFrom)
+                ->setRestoreCode($input->getOption('restore-code'))
+        );
+
+        if ($this->shouldWait($input) && $result->countActivities()) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitAndLog($activity);
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
             if (!$success) {
                 return 1;
             }
