@@ -36,12 +36,12 @@ abstract class MetricsCommandBase extends CommandBase
     private $fields = [
         // Grid.
         'local' => [
-            'cpu_used' => "SUM((`cpu.user` + `cpu.kernel`) / `interval`, 'service')",
-            'cpu_percent' => "SUM(100 * (`cpu.user` + `cpu.kernel`) / (`interval` * `cpu.cores`), 'service')",
-            'cpu_limit' => "AVG(`cpu.cores`, 'service')",
+            'cpu_used' => "AVG(SUM((`cpu.user` + `cpu.kernel`) / `interval`, 'service', 'instance'), 'service')",
+            'cpu_percent' => "AVG(100 * SUM((`cpu.user` + `cpu.kernel`) / (`interval` * `cpu.cores`), 'service', 'instance'), 'service')",
+            'cpu_limit' => "SUM(`cpu.cores`, 'service')",
 
-            'mem_used' => "SUM(`memory.apps` + `memory.kernel` + `memory.buffers`, 'service')",
-            'mem_percent' => "SUM(100 * (`memory.apps` + `memory.kernel` + `memory.buffers`) / `memory.limit`, 'service')",
+            'mem_used' => "AVG(SUM(`memory.apps` + `memory.kernel` + `memory.buffers`, 'service', 'instance'), 'service')",
+            'mem_percent' => "AVG(100 * SUM((`memory.apps` + `memory.kernel` + `memory.buffers`) / `memory.limit`, 'service', 'instance'), 'service')",
             'mem_limit' => "AVG(`memory.limit`, 'service')",
 
             'disk_used' => "AVG(`disk.space.used`, 'mountpoint', 'service')",
