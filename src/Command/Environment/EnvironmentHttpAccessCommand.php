@@ -124,9 +124,20 @@ class EnvironmentHttpAccessCommand extends CommandBase
         if ($address == 'any') {
             return;
         }
-        $extractIp = preg_match('#^([^/]+)(/([0-9]{1,2}))?$#', $address, $matches);
-        if (!$extractIp || !filter_var($matches[1], FILTER_VALIDATE_IP) || (isset($matches[3]) && $matches[3] > 32)) {
+        $extractIp = preg_match('#^([^/]+)(/([0-9]{1,3}))?$#', $address, $matches);
+        $is_valid_ip = filter_var($matches[1], FILTER_VALIDATE_IP);
+        $is_valid_ipv4 = filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+        $is_valid_ipv6 = filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+        if (!$extractIp || !$is_valid_ip) {
             $message = sprintf('The address "<error>%s</error>" is not a valid IP address or CIDR', $address);
+            throw new InvalidArgumentException($message);
+        }
+        if ($is_valid_ipv4 && isset($matches[3]) && $matches[3] > 32) {
+            $message = sprintf('The address "<error>%s</error>" is not a valid IPv4 address or CIDR', $address);
+            throw new InvalidArgumentException($message);
+        }
+        if ($is_valid_ipv6 && isset($matches[3]) && $matches[3] > 128) {
+            $message = sprintf('The address "<error>%s</error>" is not a valid IPv6 address or CIDR', $address);
             throw new InvalidArgumentException($message);
         }
     }
