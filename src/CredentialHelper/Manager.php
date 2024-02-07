@@ -178,15 +178,13 @@ class Manager {
             throw new \RuntimeException('Failed to download credentials helper from URL: ' . $helper['url']);
         }
 
-        // Work in a temporary file.
         $fs = new Filesystem();
-        $tmpFile = $fs->tempnam(sys_get_temp_dir(), 'cli-helper-extracted');
+
+        // Work in a temporary file.
+        $tmpFile = $destination . '-tmp';
         try {
             // Write the file.
-            $bytes = file_put_contents($tmpFile, $contents);
-            if (!$bytes) {
-                throw new \RuntimeException(sprintf('Failed to write downloaded helper file to: %s', $tmpFile));
-            }
+            $fs->dumpFile($tmpFile, $contents);
 
             // Verify the file hash.
             $hash = hash_file('sha256', $tmpFile);
@@ -196,7 +194,6 @@ class Manager {
 
             // Make the file executable and move it into place.
             $fs->chmod($tmpFile, 0700);
-            $fs->mkdir(dirname($destination), 0700);
             $fs->rename($tmpFile, $destination, true);
         } finally {
             $fs->remove($tmpFile);
