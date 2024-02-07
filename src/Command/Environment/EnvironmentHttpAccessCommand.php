@@ -125,9 +125,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
             return;
         }
         $extractIp = preg_match('#^([^/]+)(/([0-9]{1,3}))?$#', $address, $matches);
-        $is_valid_ip = filter_var($matches[1], FILTER_VALIDATE_IP);
-        $is_valid_ipv4 = filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
-        $is_valid_ipv6 = filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+        $is_valid_ip = $extractIp && filter_var($matches[1], FILTER_VALIDATE_IP);
+        $is_valid_ipv4 = $is_valid_ip && filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+        $is_valid_ipv6 = $is_valid_ip && filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
         if (!$extractIp || !$is_valid_ip) {
             $message = sprintf('The address "<error>%s</error>" is not a valid IP address or CIDR', $address);
             throw new InvalidArgumentException($message);
