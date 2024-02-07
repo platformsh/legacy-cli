@@ -108,7 +108,15 @@ class EnvironmentHttpAccessCommand extends CommandBase
         if ($address == 'any') {
             $address = '0.0.0.0/0';
         } elseif ($address && !strpos($address, '/')) {
-            $address .= '/32';
+            $is_valid_ipv4 = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+            $is_valid_ipv6 = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+
+            if ($is_valid_ipv4) {
+                $address .= '/32';
+            }
+            if ($is_valid_ipv6) {
+                $address .= '/128';
+            }
         }
 
         return ["address" => $address, "permission" => $permission];
