@@ -225,7 +225,7 @@ class Manager {
                     $command = 'unzip ' . escapeshellarg($tmpFile) . ' -d ' . escapeshellarg($tmpDir);
                     $this->shell->execute($command, null, true);
                 } else {
-                    throw new \RuntimeException('Failed to extract zip: unzip is not installed');
+                    throw new \RuntimeException('Failed to extract zip: either the PHP zip extension or an unzip command are required.');
                 }
             } else {
                 $command = 'tar -xzp -f ' . escapeshellarg($tmpFile) . ' -C ' . escapeshellarg($tmpDir);
@@ -291,6 +291,9 @@ class Manager {
         }
 
         if (OsUtil::isWindows()) {
+            if (!class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
+                throw new \RuntimeException('Unable to find a credentials helper for this system (either the PHP zip extension or an unzip command are required)');
+            }
             return $helpers['wincred'];
         }
 
