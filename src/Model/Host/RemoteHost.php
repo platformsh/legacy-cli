@@ -49,7 +49,7 @@ class RemoteHost implements HostInterface
     public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
     {
         try {
-            return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, [], 3600, $input);
+            return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, $this->sshService->getEnv(), 3600, $input);
         } catch (ProcessFailedException $e) {
             $this->sshDiagnostics->diagnoseFailure($this->sshUrl, $e->getProcess());
             throw new ProcessFailedException($e->getProcess(), false);
@@ -77,7 +77,7 @@ class RemoteHost implements HostInterface
     public function runCommandDirect($commandLine, $append = '')
     {
         $start = \time();
-        $exitCode = $this->shell->executeSimple($this->wrapCommandLine($commandLine) . $append);
+        $exitCode = $this->shell->executeSimple($this->wrapCommandLine($commandLine) . $append, null, $this->sshService->getEnv());
         $this->sshDiagnostics->diagnoseFailureWithTest($this->sshUrl, $start, $exitCode);
         return $exitCode;
     }

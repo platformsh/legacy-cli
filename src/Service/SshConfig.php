@@ -97,10 +97,24 @@ class SshConfig {
         $onlyCertificate = $certificate !== null && $this->certifier->useCertificateOnly();
         if ($certificate) {
             $executable = $this->config->get('application.executable');
-            $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
+            $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes', $executable);
+
+            // On shells where it might work (POSIX compliant), skip refreshing
+            // the certificate when the CLI_SSH_NO_REFRESH env var is set to 1.
+            // This skips unnecessary CLI bootstrapping while running SSH from
+            // the CLI itself.
+            /** @see Ssh::getEnv() */
+            if (in_array(basename(getenv('SHELL')), ['bash', 'csh', 'dash', 'fish', 'ksh', 'tcsh', 'zsh'], true)) {
+                // Literal double-quotes do not appear to be possible in SSH config.
+                // So the condition here uses single quotes after the variable
+                // to allow it to be treated as an empty string when not set.
+                $refreshCommand = sprintf("[ \${%s}'' = '1' ] || %s", Ssh::SSH_NO_REFRESH_ENV_VAR, $refreshCommand);
+            }
+
             if (!OsUtil::isWindows()) {
                 $refreshCommand .= ' 2>/dev/null';
             }
+
             // Use Match solely to run the refresh command.
             $lines[] = '# Auto-refresh the SSH certificate.';
             $lines[] = sprintf('Match host "%s" exec "%s"', \implode(',', $domainWildcards), $refreshCommand);

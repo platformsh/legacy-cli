@@ -89,7 +89,7 @@ class EnvironmentSshCommand extends CommandBase
 
         $start = \time();
 
-        $exitCode = $shell->executeSimple($command);
+        $exitCode = $shell->executeSimple($command, null, $ssh->getEnv());
         if ($exitCode !== 0) {
             /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
             $diagnostics = $this->getService('ssh_diagnostics');

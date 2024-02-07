@@ -37,6 +37,7 @@ class Rsync
         $env = [];
         if ($this->ssh->getSshArgs() !== []) {
             $env['RSYNC_RSH'] = $this->ssh->getSshCommand();
+            $env += $this->ssh->getEnv();
         }
 
         return $env;

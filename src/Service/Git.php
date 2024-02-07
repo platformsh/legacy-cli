@@ -547,9 +547,9 @@ class Git
             if (!isset($this->sshCommandFile) || \file_get_contents($this->sshCommandFile) !== $contents) {
                 $this->sshCommandFile = $this->writeSshFile($contents);
             }
-            return ['GIT_SSH' => $this->sshCommandFile];
+            return ['GIT_SSH' => $this->sshCommandFile] + $this->ssh->getEnv();
         }
-        return ['GIT_SSH_COMMAND' => $this->sshCommand];
+        return ['GIT_SSH_COMMAND' => $this->sshCommand] + $this->ssh->getEnv();
     }
 
     /**
