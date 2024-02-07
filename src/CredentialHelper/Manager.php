@@ -171,7 +171,9 @@ class Manager {
         }
 
         // Download from the URL.
-        $contents = file_get_contents($helper['url'], false, \stream_context_create($this->config->getStreamContextOptions(60)));
+        $contextOptions = $this->config->getStreamContextOptions(60);
+        $contextOptions['http']['follow_location'] = 1;
+        $contents = file_get_contents($helper['url'], false, \stream_context_create($contextOptions));
         if (!$contents) {
             throw new \RuntimeException('Failed to download credentials helper from URL: ' . $helper['url']);
         }
@@ -180,12 +182,16 @@ class Manager {
         $fs = new Filesystem();
         $tmpFile = $fs->tempnam(sys_get_temp_dir(), 'cli-helper-extracted');
         try {
-            // Extract the archive.
-            $this->extractBinFromArchive($contents, substr($helper['url'], -4) === '.zip', $helper['filename'], $tmpFile);
+            // Write the file.
+            $bytes = file_put_contents($tmpFile, $contents);
+            if (!$bytes) {
+                throw new \RuntimeException(sprintf('Failed to write downloaded helper file to: %s', $tmpFile));
+            }
 
             // Verify the file hash.
-            if (hash_file('sha256', $tmpFile) !== $helper['sha256']) {
-                throw new \RuntimeException('Failed to verify downloaded file for helper: ' . $helper['url']);
+            $hash = hash_file('sha256', $tmpFile);
+            if ($hash !== $helper['sha256']) {
+                throw new \RuntimeException(sprintf('Failed to verify downloaded file for helper: %s (size: %d, hash: %s, expected: %s)', $helper['url'], $bytes, $hash, $helper['sha256']));
             }
 
             // Make the file executable and move it into place.
@@ -198,72 +204,45 @@ class Manager {
     }
 
     /**
-     * Extracts the internal file from the package and moves it to a destination.
-     *
-     * @param string $archiveContents
-     * @param bool   $zip
-     * @param string $internalFilename
-     * @param string $destination
-     */
-    private function extractBinFromArchive($archiveContents, $zip, $internalFilename, $destination) {
-        $fs = new Filesystem();
-        $tmpDir = $tmpFile = $fs->tempnam(sys_get_temp_dir(), 'cli-helpers');
-        $fs->remove($tmpFile);
-        $fs->mkdir($tmpDir);
-        try {
-            $tmpFile = $fs->tempnam($tmpDir, 'cli-helper');
-            if (!file_put_contents($tmpFile, $archiveContents)) {
-                throw new \RuntimeException('Failed to write credentials helper to file: ' . $tmpFile);
-            }
-            if ($zip) {
-                if (class_exists('\\ZipArchive')) {
-                    $zip = new \ZipArchive();
-                    if (!$zip->open($tmpFile) || !$zip->extractTo($tmpDir) || !$zip->close()) {
-                        throw new \RuntimeException('Failed to extract zip: ' . ($zip->getStatusString() ?: 'unknown error'));
-                    }
-                } elseif ($this->shell->commandExists('unzip')) {
-                    $command = 'unzip ' . escapeshellarg($tmpFile) . ' -d ' . escapeshellarg($tmpDir);
-                    $this->shell->execute($command, null, true);
-                } else {
-                    throw new \RuntimeException('Failed to extract zip: either the PHP zip extension or an unzip command are required.');
-                }
-            } else {
-                $command = 'tar -xzp -f ' . escapeshellarg($tmpFile) . ' -C ' . escapeshellarg($tmpDir);
-                $this->shell->execute($command, null, true);
-            }
-            if (!file_exists($tmpDir . DIRECTORY_SEPARATOR . $internalFilename)) {
-                throw new \RuntimeException('File not found: ' . $tmpDir . DIRECTORY_SEPARATOR . $internalFilename);
-            }
-            $fs->rename($tmpDir . DIRECTORY_SEPARATOR . $internalFilename, $destination, true);
-        } finally {
-            $fs->remove($tmpDir);
-        }
-    }
-
-    /**
      * @return array
      */
     private function getHelpers() {
         return [
-            'wincred' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-wincred-v0.6.4-amd64.zip',
-                'filename' => 'docker-credential-wincred.exe',
-                'sha256' => 'a4e7885d3d469b2e3c92ab72c729e35df94ed1952bc8090272107fef0652e474',
+            'windows' => [
+                'amd64' => [
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-wincred-v0.8.1.windows-amd64.exe',
+                    'filename' => 'docker-credential-wincred.exe',
+                    'sha256' => '86c3aa9120ad136e5f7d669267a8e271f0d9ec2879c75908f20a769351043a28',
+                ],
+                'arm64' => [
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-wincred-v0.8.1.windows-arm64.exe',
+                    'filename' => 'docker-credential-wincred.exe',
+                    'sha256' => 'a83bafb13c168de1ecae48dbfc5e6f220808be86dd4258dd72fd9bcefdf5a63c',
+                ],
             ],
-            'secretservice' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-secretservice-v0.6.4-amd64.tar.gz',
-                'filename' => 'docker-credential-secretservice',
-                'sha256' => '1bddcc1da7ea4d6f50d8e21ba3f0d2ae518c04d90553f543e683af62e9c7c9a8',
+            'linux' => [
+                'amd64' => [
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-secretservice-v0.8.1.linux-amd64',
+                    'filename' => 'docker-credential-secretservice',
+                    'sha256' => '9a5875bc9435c2c8f9544419c249f866b372b054294f169444f66bb925d96edc',
+                ],
+                'arm64' => [
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-secretservice-v0.8.1.linux-arm64',
+                    'filename' => 'docker-credential-secretservice',
+                    'sha256' => '1093ff44716b9d8c3715d0e5322ba453fd1a77faad8b7e1ba3ad159bf6e10887',
+                ],
             ],
-            'osxkeychain' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-amd64.tar.gz',
-                'filename' => 'docker-credential-osxkeychain',
-                'sha256' => '76c4088359bbbcd25b8d0ff8436086742b6184aba6380ae57d39e5513f723b74',
-            ],
-            'osxkeychain-arm64' => [
-                'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-arm64.tar.gz',
-                'filename' => 'docker-credential-osxkeychain',
-                'sha256' => '902e8237747aac0eca61efa1875e65aa8552b7c95fc406cf0d2aef733dda41de',
+            'darwin' => [
+                'amd64' => [
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-osxkeychain-v0.8.1.darwin-amd64',
+                    'filename' => 'docker-credential-osxkeychain',
+                    'sha256' => '7acd433a8ab95c3180ef740ce30aa3d21d2877f4ceb35de797e4eb595168e3c8',
+                ],
+                'arm64' => [
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-osxkeychain-v0.8.1.darwin-arm64',
+                    'filename' => 'docker-credential-osxkeychain',
+                    'sha256' => '0db0f8e7e3db93a720da55760bbe26e1266648515b8a0a9539185a5503d03449',
+                ],
             ],
         ];
     }
@@ -275,29 +254,30 @@ class Manager {
      */
     private function getHelper() {
         $arch = php_uname('m');
+        if ($arch === 'ARM64') {
+            $arch = 'arm64';
+        } elseif (\in_array($arch, ['x86_64', 'amd64', 'AMD64'])) {
+            $arch = 'amd64';
+        }
 
         $helpers = $this->getHelpers();
 
-        if (OsUtil::isOsX()) {
-            if ($arch === 'arm64') {
-                return $helpers['osxkeychain-arm64'];
-            } elseif (\in_array($arch, ['x86_64', 'amd64', 'AMD64'])) {
-                return $helpers['osxkeychain'];
-            }
-        }
-
-        if (!in_array($arch, ['x86_64', 'amd64', 'AMD64'])) {
-            throw new \RuntimeException('Unable to find a credentials helper for this system architecture');
-        }
-
         if (OsUtil::isWindows()) {
-            if (!class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
-                throw new \RuntimeException('Unable to find a credentials helper for this system (either the PHP zip extension or an unzip command are required)');
-            }
-            return $helpers['wincred'];
+            $os = 'windows';
+        } elseif (OsUtil::isLinux()) {
+            $os = 'linux';
+        } elseif (OsUtil::isOsX()) {
+            $os = 'darwin';
         }
 
-        if (OsUtil::isLinux()) {
+        if (!isset($os) || !isset($helpers[$os])) {
+            throw new \RuntimeException('Unable to find a credentials helper for this operating system');
+        }
+        if (!isset($helpers[$os][$arch])) {
+            throw new \RuntimeException(sprintf('Unable to find a credentials helper for this operating system (%s) and architecture (%s)', $os, $arch));
+        }
+
+        if ($os === 'linux') {
             // The Linux helper probably needs an X display.
             if (in_array(getenv('DISPLAY'), [false, 'none'], true)) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (no DISPLAY)');
@@ -318,11 +298,9 @@ class Manager {
             if (!$this->shell->execute('ldconfig --print-cache | grep -q libsecret')) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (libsecret is not installed)');
             }
-
-            return $helpers['secretservice'];
         }
 
-        throw new \RuntimeException('Unable to find a credentials helper for this system');
+        return $helpers[$os][$arch];
     }
 
     /**
