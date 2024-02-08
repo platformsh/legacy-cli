@@ -95,7 +95,11 @@ class Ssh implements InputConfiguringInterface
         $options[] = 'SendEnv TERM';
 
         if ($this->output->isDebug()) {
-            $options[] = 'LogLevel DEBUG';
+            if ($this->config->get('api.debug')) {
+                $options[] = 'LogLevel DEBUG3';
+            } else {
+                $options[] = 'LogLevel DEBUG';
+            }
         } elseif ($this->output->isVeryVerbose()) {
             $options[] = 'LogLevel VERBOSE';
         } elseif ($this->output->isQuiet()) {
