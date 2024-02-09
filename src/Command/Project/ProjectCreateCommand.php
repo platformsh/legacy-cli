@@ -432,17 +432,18 @@ EOF
      */
     private function regionInfo(Region $region)
     {
+        $green = !empty($region->environmental_impact['green']);
         if (!empty($region->datacenter['location'])) {
-            $info = $region->datacenter['location'];
+            $info = $green ? '<fg=green>' . $region->datacenter['location'] . '</>' : $region->datacenter['location'];
         } else {
             $info = $region->id;
         }
         if (!empty($region->provider['name'])) {
-            $info .= \sprintf(' (%s)', $region->provider['name']);
+            $info .= ' ' .\sprintf('(%s)', $region->provider['name']);
         }
         if (!empty($region->environmental_impact['carbon_intensity'])) {
-            $color = !empty($region->environmental_impact['green']) ? 'green' : 'yellow';
-            $info .= \sprintf(' [<fg=%s>%d</> gC02eq/kWh]', $color, $region->environmental_impact['carbon_intensity']);
+            $format = $green ? ' [<options=bold;fg=green>%d</> gC02eq/kWh]' : ' [%d gC02eq/kWh]';
+            $info .= ' ' . \sprintf($format, $region->environmental_impact['carbon_intensity']);
         }
 
         return $info;
