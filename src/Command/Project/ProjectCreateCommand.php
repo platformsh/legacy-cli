@@ -438,10 +438,11 @@ EOF
             $info = $region->id;
         }
         if (!empty($region->provider['name'])) {
-            $info .= \sprintf(' (<fg=cyan>%s</>)', $region->provider['name']);
+            $info .= \sprintf(' (%s)', $region->provider['name']);
         }
         if (!empty($region->environmental_impact['carbon_intensity'])) {
-            $info .= \sprintf(' [<fg=green>%s</> gC02eq/kWh]', $region->environmental_impact['carbon_intensity']);
+            $color = !empty($region->environmental_impact['green']) ? 'green' : 'yellow';
+            $info .= \sprintf(' [<fg=%s>%d</> gC02eq/kWh]', $color, $region->environmental_impact['carbon_intensity']);
         }
 
         return $info;
