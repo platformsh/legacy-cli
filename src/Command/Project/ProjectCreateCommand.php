@@ -432,16 +432,18 @@ EOF
      */
     private function regionInfo(Region $region)
     {
+        $green = !empty($region->environmental_impact['green']);
         if (!empty($region->datacenter['location'])) {
-            $info = $region->datacenter['location'];
+            $info = $green ? '<fg=green>' . $region->datacenter['location'] . '</>' : $region->datacenter['location'];
         } else {
             $info = $region->id;
         }
         if (!empty($region->provider['name'])) {
-            $info .= \sprintf(' (<fg=cyan>%s</>)', $region->provider['name']);
+            $info .= ' ' .\sprintf('(%s)', $region->provider['name']);
         }
         if (!empty($region->environmental_impact['carbon_intensity'])) {
-            $info .= \sprintf(' [<fg=green>%s</> gC02eq/kWh]', $region->environmental_impact['carbon_intensity']);
+            $format = $green ? ' [<options=bold;fg=green>%d</> gC02eq/kWh]' : ' [%d gC02eq/kWh]';
+            $info .= ' ' . \sprintf($format, $region->environmental_impact['carbon_intensity']);
         }
 
         return $info;
@@ -463,7 +465,7 @@ EOF
           ]),
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
-            'description' => 'The region where the project will be hosted',
+            'description' => trim("The region where the project will be hosted.\n" . $this->config()->getWithDefault('messages.region_discount', '')),
             'optionsCallback' => function () use ($setupOptions) {
                 return $this->getAvailableRegions($setupOptions);
             },
