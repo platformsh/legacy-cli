@@ -13,6 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Ssh implements InputConfiguringInterface
 {
+    const SSH_NO_REFRESH_ENV_VAR = 'CLI_SSH_NO_REFRESH';
+
     protected $input;
     protected $output;
     protected $stdErr;
@@ -187,5 +189,16 @@ class Ssh implements InputConfiguringInterface
         }
 
         return $command;
+    }
+
+    /**
+     * Returns environment variables to set on SSH commands.
+     *
+     * @return array<string, string>
+     */
+    public function getEnv()
+    {
+        // Suppress refreshing the certificate while SSH is running through the CLI.
+        return [self::SSH_NO_REFRESH_ENV_VAR => '1'];
     }
 }

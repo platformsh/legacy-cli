@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\SshCert;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\SshCert\Certificate;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -41,6 +42,11 @@ class SshCertLoadCommand extends CommandBase
         $sshCert = $certifier->getExistingCertificate();
 
         $refresh = true;
+        if (getenv(Ssh::SSH_NO_REFRESH_ENV_VAR)) {
+            $this->stdErr->writeln(sprintf('Not refreshing SSH certificate (<comment>%s</comment> variable is set)', Ssh::SSH_NO_REFRESH_ENV_VAR));
+            $refresh = false;
+        }
+
         if ($sshCert
             && !$input->getOption('new')
             && !$input->getOption('new-key')
