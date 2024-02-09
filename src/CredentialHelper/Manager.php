@@ -183,13 +183,17 @@ class Manager {
         // Work in a temporary file.
         $tmpFile = $destination . '-tmp';
         try {
-            // Write the file.
-            $fs->dumpFile($tmpFile, $contents);
+            // Write the file, either directly or via extracting its archive.
+            if (preg_match('/(\.tar\.gz|\.tgz|\.zip)$/', $helper['url']) === 1) {
+                $this->extractBinFromArchive($contents, substr($helper['url'], -4) === '.zip', $helper['filename'], $tmpFile);
+            } else {
+                $fs->dumpFile($tmpFile, $contents);
+            }
 
             // Verify the file hash.
             $hash = hash_file('sha256', $tmpFile);
             if ($hash !== $helper['sha256']) {
-                throw new \RuntimeException(sprintf('Failed to verify downloaded file for helper: %s (size: %d, hash: %s, expected: %s)', $helper['url'], $bytes, $hash, $helper['sha256']));
+                throw new \RuntimeException(sprintf('Failed to verify downloaded file for helper: %s (hash: %s, expected: %s)', $helper['url'], $hash, $helper['sha256']));
             }
 
             // Make the file executable and move it into place.
@@ -197,6 +201,50 @@ class Manager {
             $fs->rename($tmpFile, $destination, true);
         } finally {
             $fs->remove($tmpFile);
+        }
+    }
+
+    /**
+     * Extracts the internal file from a package archive and moves it to a destination.
+     *
+     * @param string $archiveContents
+     * @param bool   $zip
+     * @param string $internalFilename
+     * @param string $destination
+     */
+    private function extractBinFromArchive($archiveContents, $zip, $internalFilename, $destination)
+    {
+        $fs = new Filesystem();
+        $tmpDir = $tmpFile = $fs->tempnam(sys_get_temp_dir(), 'cli-helpers');
+        $fs->remove($tmpFile);
+        $fs->mkdir($tmpDir);
+        try {
+            $tmpFile = $fs->tempnam($tmpDir, 'cli-helper');
+            if (!file_put_contents($tmpFile, $archiveContents)) {
+                throw new \RuntimeException('Failed to write credentials helper to file: ' . $tmpFile);
+            }
+            if ($zip) {
+                if (class_exists('\\ZipArchive')) {
+                    $zip = new \ZipArchive();
+                    if (!$zip->open($tmpFile) || !$zip->extractTo($tmpDir) || !$zip->close()) {
+                        throw new \RuntimeException('Failed to extract zip: ' . ($zip->getStatusString() ?: 'unknown error'));
+                    }
+                } elseif ($this->shell->commandExists('unzip')) {
+                    $command = 'unzip ' . escapeshellarg($tmpFile) . ' -d ' . escapeshellarg($tmpDir);
+                    $this->shell->execute($command, null, true);
+                } else {
+                    throw new \RuntimeException('Failed to extract zip: unzip is not installed');
+                }
+            } else {
+                $command = 'tar -xzp -f ' . escapeshellarg($tmpFile) . ' -C ' . escapeshellarg($tmpDir);
+                $this->shell->execute($command, null, true);
+            }
+            if (!file_exists($tmpDir . DIRECTORY_SEPARATOR . $internalFilename)) {
+                throw new \RuntimeException('File not found: ' . $tmpDir . DIRECTORY_SEPARATOR . $internalFilename);
+            }
+            $fs->rename($tmpDir . DIRECTORY_SEPARATOR . $internalFilename, $destination, true);
+        } finally {
+            $fs->remove($tmpDir);
         }
     }
 
@@ -231,14 +279,14 @@ class Manager {
             ],
             'darwin' => [
                 'amd64' => [
-                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-osxkeychain-v0.8.1.darwin-amd64',
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-amd64.tar.gz',
                     'filename' => 'docker-credential-osxkeychain',
-                    'sha256' => '7acd433a8ab95c3180ef740ce30aa3d21d2877f4ceb35de797e4eb595168e3c8',
+                    'sha256' => '76c4088359bbbcd25b8d0ff8436086742b6184aba6380ae57d39e5513f723b74',
                 ],
                 'arm64' => [
-                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.8.1/docker-credential-osxkeychain-v0.8.1.darwin-arm64',
+                    'url' => 'https://github.com/docker/docker-credential-helpers/releases/download/v0.6.4/docker-credential-osxkeychain-v0.6.4-arm64.tar.gz',
                     'filename' => 'docker-credential-osxkeychain',
-                    'sha256' => '0db0f8e7e3db93a720da55760bbe26e1266648515b8a0a9539185a5503d03449',
+                    'sha256' => '902e8237747aac0eca61efa1875e65aa8552b7c95fc406cf0d2aef733dda41de',
                 ],
             ],
         ];
@@ -295,6 +343,10 @@ class Manager {
             if (!$this->shell->execute('ldconfig --print-cache | grep -q libsecret')) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (libsecret is not installed)');
             }
+        }
+
+        if (substr($helpers[$os][$arch]['url'], -4) === 'zip' && !class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
+            throw new \RuntimeException('Unable to install a credentials helper for this system (it is a .zip file and the zip extension is unavailable)');
         }
 
         return $helpers[$os][$arch];
