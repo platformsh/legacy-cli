@@ -387,6 +387,11 @@ warnings:
   # without the capability.
   non_production_domains_msg: null
 
+# Configuration for informational messages.
+messages:
+  # A message about discounts where a region choice is displayed.
+  region_discount: null
+
 # Configure experimental features.
 experimental:
 

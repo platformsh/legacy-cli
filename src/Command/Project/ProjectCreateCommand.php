@@ -464,7 +464,7 @@ EOF
           ]),
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
-            'description' => 'The region where the project will be hosted',
+            'description' => trim("The region where the project will be hosted.\n" . $this->config()->getWithDefault('messages.region_discount', '')),
             'optionsCallback' => function () use ($setupOptions) {
                 return $this->getAvailableRegions($setupOptions);
             },
