@@ -345,7 +345,7 @@ class Manager {
             }
         }
 
-        if (substr($helpers[$os][$arch]['url'], -4) === 'zip' && !class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
+        if (substr($helpers[$os][$arch]['url'], -4) === '.zip' && !class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
             throw new \RuntimeException('Unable to install a credentials helper for this system (it is a .zip file and the zip extension is unavailable)');
         }
 
