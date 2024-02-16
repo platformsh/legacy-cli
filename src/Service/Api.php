@@ -305,17 +305,19 @@ class Api
     /**
      * Returns the path to the CA bundle or file detected by Composer.
      *
-     * Composer stores the path statically, so this function can be run
-     * multiple times safely. If a system CA bundle cannot be detected,
-     * Composer will use its bundled file. It will copy the file to a
-     * temporary directory if necessary (when running inside a Phar).
+     * If a system CA bundle cannot be detected, Composer will use its bundled
+     * file. It will copy the file to a temporary directory if necessary (when
+     * running inside a Phar).
      *
      * @return string
      */
     private function caBundlePath()
     {
-        $path = CaBundle::getSystemCaRootBundlePath();
-        $this->debug('Determined CA bundle path: ' . $path);
+        static $path;
+        if ($path === null) {
+            $path = CaBundle::getSystemCaRootBundlePath();
+            $this->debug('Determined CA bundle path: ' . $path);
+        }
         return $path;
     }
 
