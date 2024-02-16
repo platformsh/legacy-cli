@@ -22,14 +22,14 @@ class EnvironmentPushCommand extends CommandBase
             ->setName('environment:push')
             ->setAliases(['push'])
             ->setDescription('Push code to an environment')
-            ->addArgument('source', InputArgument::OPTIONAL, 'The source ref: a branch name or commit hash', 'HEAD')
+            ->addArgument('source', InputArgument::OPTIONAL, 'The Git source ref, e.g. a branch name or a commit hash.', 'HEAD')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name. Defaults to the current branch.')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
             ->addOption('force-with-lease', null, InputOption::VALUE_NONE, 'Allow non-fast-forward updates, if the remote-tracking branch is up to date')
             ->addOption('set-upstream', 'u', InputOption::VALUE_NONE, 'Set the target environment as the upstream for the source branch. This will also set the target project as the remote for the local repository.')
-            ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment before pushing')
+            ->addOption('activate', null, InputOption::VALUE_NONE, 'Activate the environment. Paused environments will be resumed. This will ensure the environment is active even if no changes were pushed.')
             ->addHiddenOption('branch', null, InputOption::VALUE_NONE, 'DEPRECATED: alias of --activate')
-            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the new environment parent (only used with --activate)')
+            ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
         if ($this->config()->get('api.git_push_options')) {
@@ -42,7 +42,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->addExample('Push code to the current environment');
         $this->addExample('Push code, without waiting for deployment', '--no-wait');
         $this->addExample(
-            'Push code, first branching or activating the environment as a child of \'develop\'',
+            'Push code, branching or activating the environment as a child of \'develop\'',
             '--activate --parent develop'
         );
     }
@@ -133,33 +133,21 @@ class EnvironmentPushCommand extends CommandBase
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
 
         // Determine whether to activate the environment.
-        $activateRequested = false;
+        $activateRequested = $this->determineShouldActivate($input, $project, $target, $targetEnvironment);
         $parentId = $type = null;
-        if ($target !== $project->default_branch) {
-            $activateRequested = $input->getOption('branch') || $input->getOption('activate');
-            if (!$activateRequested && (!$targetEnvironment || $targetEnvironment->status === 'inactive') && $input->isInteractive()) {
-                $questionText = $targetEnvironment
-                    ? sprintf('Do you want to activate the target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment, 'info', false))
-                    : sprintf('Create <info>%s</info> as an active environment?', $target);
-                $activateRequested = $questionHelper->confirm($questionText);
-                $this->stdErr->writeln('');
-            }
-            if ($activateRequested) {
-                // If activating, determine what the environment's parent should be.
-                $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment);
+        if ($activateRequested) {
+            // If activating, determine what the environment's parent should be.
+            $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment);
 
-                // Determine the environment type.
-                $type = $input->getOption('type');
-                if ($type !== null && !$project->getEnvironmentType($type)) {
-                    $this->stdErr->writeln('Environment type not found: <error>' . $type . '</error>');
-                    return 1;
-                } elseif ($targetEnvironment) {
-                    $type = $targetEnvironment->type;
-                } elseif ($type === null && $input->isInteractive()) {
-                    $type = $this->askEnvironmentType($project);
-                }
-
-                $this->stdErr->writeln('');
+            // Determine the environment type.
+            $type = $input->getOption('type');
+            if ($type !== null && !$project->getEnvironmentType($type)) {
+                $this->stdErr->writeln('Environment type not found: <error>' . $type . '</error>');
+                return 1;
+            } elseif ($targetEnvironment) {
+                $type = $targetEnvironment->type;
+            } elseif ($type === null && $input->isInteractive()) {
+                $type = $this->askEnvironmentType($project);
             }
         }
 
@@ -169,12 +157,24 @@ class EnvironmentPushCommand extends CommandBase
             || ($type === null && !$targetEnvironment && in_array($target, ['main', 'master', 'production', $project->default_branch], true));
         $otherProject = $currentProject && $currentProject->id !== $project->id;
 
+        $codeAlreadyUpToDate = $sourceRevision === $targetEnvironment->head_commit;
+
         $projectLabel = $this->api()->getProjectLabel($project, $otherProject ? 'comment' : 'info');
         if ($targetEnvironment) {
-            $environmentLabel = $this->api()->getEnvironmentLabel($targetEnvironment, $mayBeProduction ? 'comment' : 'info');
-            $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment %s of project %s', $source, $environmentLabel, $projectLabel));
+            if ($codeAlreadyUpToDate) {
+                $environmentLabel = $this->api()->getEnvironmentLabel($targetEnvironment);
+                $this->stdErr->writeln(sprintf('The environment %s is already up to date with the source ref, <info>%s</info>.', $environmentLabel, $source));
+                if (!$activateRequested || !in_array($targetEnvironment->status, ['inactive', 'paused'])) {
+                    return 0;
+                }
+            } else {
+                $environmentLabel = $this->api()->getEnvironmentLabel($targetEnvironment, $mayBeProduction ? 'comment' : 'info');
+                $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the environment %s.', $source, $environmentLabel));
+            }
             if ($activateRequested && $targetEnvironment->status === 'inactive') {
                 $this->stdErr->writeln('The environment will be activated.');
+            } elseif ($activateRequested && $targetEnvironment->status === 'paused') {
+                $this->stdErr->writeln('The environment will be resumed.');
             } elseif ($activateRequested && $targetEnvironment->status === 'dirty') {
                 $this->stdErr->writeln('The environment currently has an in-progress activity (it was likely already activated).');
             }
@@ -204,7 +204,7 @@ class EnvironmentPushCommand extends CommandBase
         // If Git Push Options are enabled, this will be skipped, and the
         // activation will happen automatically on the server side.
         if ($activateRequested && !$gitPushOptionsEnabled) {
-            $activities = $this->activateTarget($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
+            $activities = $this->ensureActive($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
             if ($activities === false) {
                 return 1;
             }
@@ -235,94 +235,113 @@ class EnvironmentPushCommand extends CommandBase
             $remoteRepoSpec = $project->getGitUrl();
         }
 
-        // Build the Git command.
-        $gitArgs = [
-            'push',
-            $remoteRepoSpec,
-            $source . ':refs/heads/' . $target,
-        ];
-        foreach (['force', 'force-with-lease', 'set-upstream'] as $option) {
-            if ($input->getOption($option)) {
-                $gitArgs[] = '--' . $option;
-            }
-        }
-        if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
-            $gitArgs[] = '--progress';
-        }
-        if ($gitPushOptionsEnabled) {
-            if ($activateRequested) {
-                $gitArgs[] = '--push-option=environment.status=active';
-            }
-            if ($parentId !== null) {
-                $gitArgs[] = '--push-option=environment.parent=' . $parentId;
-            }
-            if ($input->getOption('no-clone-parent')) {
-                $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
-            }
-            if ($resourcesInit !== null) {
-                $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
-            }
-        }
-
-        // Build the SSH command to use with Git.
-        $extraSshOptions = [];
-        $env = [];
-        if (!$this->shouldWait($input)) {
-            $extraSshOptions[] = 'SendEnv PLATFORMSH_PUSH_NO_WAIT';
-            $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
-        }
-        $git->setExtraSshOptions($extraSshOptions);
-
-        // Perform the push, capturing the Process object so that the STDERR
-        // output can be read.
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv(), $this->config()->get('api.git_push_timeout'));
-        if ($process->getExitCode() !== 0) {
-            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
-            $diagnostics = $this->getService('ssh_diagnostics');
-            $diagnostics->diagnoseFailure($project->getGitUrl(), $process);
-            return $process->getExitCode();
-        }
-
-        // Clear the environment cache after pushing.
-        $this->api()->clearEnvironmentsCache($project->id);
-
-        $log = $process->getErrorOutput();
-
-        // Check the push log for services that need resources configured ("flexible resources").
-        if (\strpos($log, 'Invalid deployment') !== false
-            && \strpos($log, 'Resources must be configured') !== false) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('The push completed but resources must be configured before deployment can succeed.');
-            if ($this->config()->isCommandEnabled('resources:set')) {
-                $cmd = 'resources:set';
-                if ($input->getOption('project')) {
-                    $cmd .= ' -p ' . OsUtil::escapeShellArg($input->getOption('project'));
+        $log = '';
+        if (!$codeAlreadyUpToDate) {
+            // Build the Git command.
+            $gitArgs = [
+                'push',
+                $remoteRepoSpec,
+                $source . ':refs/heads/' . $target,
+            ];
+            foreach (['force', 'force-with-lease', 'set-upstream'] as $option) {
+                if ($input->getOption($option)) {
+                    $gitArgs[] = '--' . $option;
                 }
-                if ($input->getOption('target')) {
-                    $cmd .= ' -e ' . OsUtil::escapeShellArg($input->getOption('target'));
-                } elseif ($input->getOption('environment')) {
-                    $cmd .= ' -e ' . OsUtil::escapeShellArg($input->getOption('environment'));
-                }
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf(
-                    'Configure resources for the environment by running: <comment>%s %s</comment>',
-                    $this->config()->get('application.executable'),
-                    $cmd
-                ));
             }
-            return self::PUSH_FAILURE_EXIT_CODE;
-        }
+            if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
+                $gitArgs[] = '--progress';
+            }
+            if ($gitPushOptionsEnabled) {
+                if ($activateRequested) {
+                    $gitArgs[] = '--push-option=environment.status=active';
+                }
+                if ($parentId !== null) {
+                    $gitArgs[] = '--push-option=environment.parent=' . $parentId;
+                }
+                if ($input->getOption('no-clone-parent')) {
+                    $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
+                }
+                if ($resourcesInit !== null) {
+                    $gitArgs[] = '--push-option=resources.init=' . $resourcesInit;
+                }
+            }
 
-        // Check the push log for other possible deployment error messages.
-        $messages = $this->config()->getWithDefault('detection.push_deploy_error_messages', []);
-        foreach ($messages as $message) {
-            if (\strpos($log, $message) !== false) {
+            // Build the SSH command to use with Git.
+            $extraSshOptions = [];
+            $env = [];
+            if (!$this->shouldWait($input)) {
+                $extraSshOptions[] = 'SendEnv PLATFORMSH_PUSH_NO_WAIT';
+                $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
+            }
+            $git->setExtraSshOptions($extraSshOptions);
+
+            // Perform the push, capturing the Process object so that the STDERR
+            // output can be read.
+            /** @var \Platformsh\Cli\Service\Shell $shell */
+            $shell = $this->getService('shell');
+            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv(), $this->config()->get('api.git_push_timeout'));
+            if ($process->getExitCode() !== 0) {
+                /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
+                $diagnostics = $this->getService('ssh_diagnostics');
+                $diagnostics->diagnoseFailure($project->getGitUrl(), $process);
+                return $process->getExitCode();
+            }
+
+            // Clear the environment cache after pushing.
+            $this->api()->clearEnvironmentsCache($project->id);
+
+            $log = $process->getErrorOutput();
+
+            // Check the push log for services that need resources configured ("flexible resources").
+            if (\strpos($log, 'Invalid deployment') !== false
+                && \strpos($log, 'Resources must be configured') !== false) {
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(\sprintf('The push completed but there was a deployment error ("<error>%s</error>").', $message));
-
+                $this->stdErr->writeln('The push completed but resources must be configured before deployment can succeed.');
+                if ($this->config()->isCommandEnabled('resources:set')) {
+                    $cmd = 'resources:set';
+                    if ($input->getOption('project')) {
+                        $cmd .= ' -p ' . OsUtil::escapeShellArg($input->getOption('project'));
+                    }
+                    if ($input->getOption('target')) {
+                        $cmd .= ' -e ' . OsUtil::escapeShellArg($input->getOption('target'));
+                    } elseif ($input->getOption('environment')) {
+                        $cmd .= ' -e ' . OsUtil::escapeShellArg($input->getOption('environment'));
+                    }
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf(
+                        'Configure resources for the environment by running: <comment>%s %s</comment>',
+                        $this->config()->get('application.executable'),
+                        $cmd
+                    ));
+                }
                 return self::PUSH_FAILURE_EXIT_CODE;
+            }
+
+            // Check the push log for other possible deployment error messages.
+            $messages = $this->config()->getWithDefault('detection.push_deploy_error_messages', []);
+            foreach ($messages as $message) {
+                if (\strpos($log, $message) !== false) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(\sprintf('The push completed but there was a deployment error ("<error>%s</error>").', $message));
+
+                    return self::PUSH_FAILURE_EXIT_CODE;
+                }
+            }
+
+            // The "Everything up-to-date" string might have dodgy
+            // punctuation, but it is here to stay.
+            // See: https://github.com/git/git/commit/80bdaba894b9868a74fa5931e3ce1ca074353b24
+            if (strpos($log, "Everything up-to-date\n", $log) !== false) {
+                $codeAlreadyUpToDate = true;
+            }
+        }
+
+        // Compensate for push options not being able to take effect if no
+        // changes were made.
+        if ($gitPushOptionsEnabled && $activateRequested && $codeAlreadyUpToDate) {
+            $activities = $this->ensureActive($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
+            if ($activities === false) {
+                return 1;
             }
         }
 
@@ -347,7 +366,10 @@ class EnvironmentPushCommand extends CommandBase
     }
 
     /**
-     * Branches the target environment or activates it with the given parent.
+     * Ensures the target environment is active.
+     *
+     * This may branch (creating a new environment), or resume or activate,
+     * depending on the current state.
      *
      * @param string $target
      * @param string $parentId
@@ -357,7 +379,7 @@ class EnvironmentPushCommand extends CommandBase
      *
      * @return false|array A list of activities, or false on failure.
      */
-    private function activateTarget($target, $parentId, Project $project, $cloneParent, $type) {
+    private function ensureActive($target, $parentId, Project $project, $cloneParent, $type) {
         $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
         if (!$parentEnvironment) {
             throw new \RuntimeException("Parent environment not found: $parentId");
@@ -377,6 +399,7 @@ class EnvironmentPushCommand extends CommandBase
                 $updates['type'] = $type;
             }
             if (!empty($updates)) {
+                $this->debug('Updating environment ' . $targetEnvironment->id . ' with properties: ' . json_encode($updates));
                 $activities = array_merge(
                     $activities,
                     $targetEnvironment->update($updates)->getActivities()
@@ -386,7 +409,11 @@ class EnvironmentPushCommand extends CommandBase
                 $targetEnvironment->refresh();
             }
             if ($targetEnvironment->status === 'inactive') {
+                $this->debug('Activating inactive environment ' . $targetEnvironment->id);
                 $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
+            } elseif ($targetEnvironment->status === 'paused') {
+                $this->debug('Resuming paused environment ' . $targetEnvironment->id);
+                $activities = array_merge($activities, $targetEnvironment->runOperation('resume')->getActivities());
             }
             $this->api()->clearEnvironmentsCache($project->id);
 
@@ -456,8 +483,9 @@ class EnvironmentPushCommand extends CommandBase
             $ids[] = $type->id;
         }
         $questionHelper = $this->getService('question_helper');
-
-        return $questionHelper->askInput('Environment type', $defaultId, $ids);
+        $type = $questionHelper->askInput('Environment type', $defaultId, $ids);
+        $this->stdErr->writeln('');
+        return $type;
     }
 
     /**
@@ -484,7 +512,48 @@ class EnvironmentPushCommand extends CommandBase
             return $defaultId;
         }
         $questionHelper = $this->getService('question_helper');
+        $parent = $questionHelper->askInput('Parent environment', $defaultId, array_keys($environments));
+        $this->stdErr->writeln('');
+        return $parent;
+    }
 
-        return $questionHelper->askInput('Parent environment', $defaultId, array_keys($environments));
+    /**
+     * Checks if the target environment should be activated, based on the user input or interactivity.
+     *
+     * @param InputInterface $input
+     * @param Project $project
+     * @param string $target
+     * @param Environment|null $targetEnvironment
+     *
+     * @return bool
+     */
+    private function determineShouldActivate(InputInterface $input, Project $project, $target, Environment $targetEnvironment = null)
+    {
+        if ($target === $project->default_branch || ($targetEnvironment && $targetEnvironment->is_main)) {
+            return false;
+        }
+        if ($input->getOption('branch') || $input->getOption('activate')) {
+            return true;
+        }
+        if (!$input->isInteractive()) {
+            return false;
+        }
+        if ($targetEnvironment && $targetEnvironment->is_dirty) {
+            $targetEnvironment->refresh();
+        }
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$targetEnvironment) {
+            $questionText = sprintf('Create <info>%s</info> as an active environment?', $target);
+        } elseif ($targetEnvironment->status === 'inactive') {
+            $questionText = sprintf('Do you want to activate the target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment, 'info', false));
+        } elseif ($targetEnvironment->status === 'paused') {
+            $questionText = sprintf('Do you want to resume the paused target environment %s?', $this->api()->getEnvironmentLabel($targetEnvironment, 'info', false));
+        } else {
+            return false;
+        }
+        $activateRequested = $questionHelper->confirm($questionText);
+        $this->stdErr->writeln('');
+        return $activateRequested;
     }
 }
