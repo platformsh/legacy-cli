@@ -18,6 +18,7 @@ class EnvironmentActivateCommand extends CommandBase
             ->setDescription('Activate an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
+        $this->addResourcesInitOption('parent');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -41,7 +42,7 @@ class EnvironmentActivateCommand extends CommandBase
             }
         }
 
-        $success = $this->activateMultiple($toActivate, $input, $this->stdErr);
+        $success = $this->activateMultiple($toActivate, $input, $this->stdErr, $resourcesInit);
 
         return $success ? 0 : 1;
     }
@@ -59,6 +60,12 @@ class EnvironmentActivateCommand extends CommandBase
         if ($parentId && !$this->api()->getEnvironment($parentId, $this->getSelectedProject())) {
             $this->stdErr->writeln(sprintf('Parent environment not found: <error>%s</error>', $parentId));
             return false;
+        }
+
+        // Validate the --resources-init option.
+        $resourcesInit = $this->validateResourcesInitInput($input, $this->getSelectedProject());
+        if ($resourcesInit === false) {
+            return 1;
         }
 
         $count = count($environments);
@@ -107,6 +114,12 @@ class EnvironmentActivateCommand extends CommandBase
             }
             $process[$environment->id] = $environment;
         }
+
+        $params = [];
+        if ($resourcesInit !== null) {
+            $params['resources']['init'] = $resourcesInit;
+        }
+
         $activities = [];
         /** @var Environment $environment */
         foreach ($process as $environmentId => $environment) {
@@ -124,7 +137,7 @@ class EnvironmentActivateCommand extends CommandBase
                     'Activating environment <info>%s</info>',
                     $environmentId
                 ));
-                $activities = array_merge($activities, $environment->runOperation('activate')->getActivities());
+                $activities = array_merge($activities, $environment->runOperation('activate', 'POST', $params)->getActivities());
                 $processed++;
             } catch (\Exception $e) {
                 $output->writeln($e->getMessage());
