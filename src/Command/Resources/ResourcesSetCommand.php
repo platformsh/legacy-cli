@@ -26,6 +26,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 . "\nItems are in the format <info>name:value</info> and may be comma-separated."
                 . "\nThe % or * characters may be used as a wildcard for the name."
                 . "\nList available sizes with the <info>resources:sizes</info> command."
+                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
             )
             ->addOption('count', 'C', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
                 'Set the instance count of apps or workers.'
@@ -34,6 +35,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             ->addOption('disk', 'D', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
                 'Set the disk size (in MB) of apps or services.'
                 . "\nItems are in the format <info>name:value</info> as above."
+                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
             )
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything')
@@ -169,6 +171,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 $ensureHeader();
                 $new = isset($properties['resources']['profile_size']) ? 'a new' : 'a';
                 $profileSizes = $containerProfiles[$properties['container_profile']];
+                if (isset($properties['resources']['profile_size'])) {
+                    $defaultOption = $properties['resources']['profile_size'];
+                } elseif (isset($properties['resources']['default']['profile_size'])) {
+                    $defaultOption = $properties['resources']['default']['profile_size'];
+                } else {
+                    $defaultOption = null;
+                }
                 $options = [];
                 foreach ($profileSizes as $profileSize => $sizeInfo) {
                     // Skip showing sizes that are below the minimum for this service.
@@ -180,17 +189,10 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     if (isset($properties['resources']['profile_size'])
                         && $profileSize == $properties['resources']['profile_size']) {
                         $description .= ' <question>(current)</question>';
+                    } elseif ($defaultOption !== null && $defaultOption === $profileSize) {
+                        $description .= ' <question>(default)</question>';
                     }
                     $options[$profileSize] = $description;
-                }
-
-                $defaultProfileSize = '0.5'; // TODO pick this from the API when exposed
-                if (isset($properties['resources']['profile_size'])) {
-                    $defaultOption = $properties['resources']['profile_size'];
-                } elseif (isset($options[$defaultProfileSize])) {
-                    $defaultOption = $defaultProfileSize;
-                } else {
-                    $defaultOption = null;
                 }
 
                 if (!isset($properties['resources']['profile_size']) && empty($options)) {
@@ -234,7 +236,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     }
                 } elseif ($showCompleteForm || (empty($service->disk) && $input->isInteractive())) {
                     $ensureHeader();
-                    $default = $service->disk ?: '512';
+                    if ($service->disk) {
+                        $default = $service->disk;
+                    } else {
+                        $default = isset($properties['resources']['default']['disk']) ? $properties['resources']['default']['disk'] : '512';
+                    }
                     $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  function ($v) use ($name, $service) {
                         return $this->validateDiskSize($v, $name, $service);
                     });
@@ -502,11 +508,23 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 'Invalid disk size <error>%s</error>: it must be an integer in MB.', $value
             ));
         }
-        $resources = $service->getProperty('resources', false);
-        if (isset($resources['minimum']['disk']) && $value < $resources['minimum']['disk']) {
+        $properties = $service->getProperties();
+        if ($value === 'default') {
+            if (!isset($properties['resources']['default']['disk'])) {
+                throw new \RuntimeException(sprintf('Default disk size not found for service %s', $serviceName));
+            }
+            return $properties['resources']['default']['disk'];
+        }
+        if ($value === 'minimum' || $value === 'min') {
+            if (!isset($properties['resources']['minimum']['disk'])) {
+                throw new \RuntimeException(sprintf('Minimum disk size not found for service %s', $serviceName));
+            }
+            return $properties['resources']['minimum']['disk'];
+        }
+        if (isset($properties['resources']['minimum']['disk']) && $value < $properties['resources']['minimum']['disk']) {
             throw new InvalidArgumentException(sprintf(
                 'Invalid disk size <error>%s</error>: the minimum size for this %s is <error>%d</error> MB.',
-                $value, $this->typeName($service), $resources['minimum']['disk']
+                $value, $this->typeName($service), $properties['resources']['minimum']['disk']
             ));
         }
         return $size;
@@ -527,6 +545,18 @@ class ResourcesSetCommand extends ResourcesCommandBase
     protected function validateProfileSize($value, $serviceName, $service, EnvironmentDeployment $deployment)
     {
         $properties = $service->getProperties();
+        if ($value === 'default') {
+            if (!isset($properties['resources']['default']['profile_size'])) {
+                throw new \RuntimeException(sprintf('Default profile size not found for service %s', $serviceName));
+            }
+            return $properties['resources']['default']['profile_size'];
+        }
+        if ($value === 'minimum' || $value === 'min') {
+            if (!isset($properties['resources']['minimum']['profile_size'])) {
+                throw new \RuntimeException(sprintf('Minimum profile size not found for service %s', $serviceName));
+            }
+            return $properties['resources']['minimum']['profile_size'];
+        }
         $containerProfile = $properties['container_profile'];
         if (!isset($deployment->container_profiles[$containerProfile])) {
             throw new \RuntimeException(sprintf('Container profile %s for service %s not found', $containerProfile, $serviceName));
