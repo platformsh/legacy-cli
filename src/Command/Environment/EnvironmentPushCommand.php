@@ -235,7 +235,6 @@ class EnvironmentPushCommand extends CommandBase
             $remoteRepoSpec = $project->getGitUrl();
         }
 
-        $log = '';
         if (!$codeAlreadyUpToDate) {
             // Build the Git command.
             $gitArgs = [
