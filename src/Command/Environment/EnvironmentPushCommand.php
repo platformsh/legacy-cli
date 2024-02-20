@@ -520,11 +520,11 @@ class EnvironmentPushCommand extends CommandBase
      * @param InputInterface $input
      * @param Project $project
      * @param string $target
-     * @param Environment|null $targetEnvironment
+     * @param Environment|false $targetEnvironment
      *
      * @return bool
      */
-    private function determineShouldActivate(InputInterface $input, Project $project, $target, Environment $targetEnvironment = null)
+    private function determineShouldActivate(InputInterface $input, Project $project, $target, $targetEnvironment)
     {
         if ($target === $project->default_branch || ($targetEnvironment && $targetEnvironment->is_main)) {
             return false;
