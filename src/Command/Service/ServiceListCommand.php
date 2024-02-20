@@ -54,11 +54,14 @@ class ServiceListCommand extends CommandBase
             return 0;
         }
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+
         $rows = [];
         foreach ($services as $name => $service) {
             $row = [
                 $name,
-                $service->type,
+                $formatter->format($service->type, 'service_type'),
                 'disk' => $service->disk !== null ? $service->disk : '',
                 $service->size,
             ];

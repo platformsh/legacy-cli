@@ -75,6 +75,12 @@ class PropertyFormatter implements InputConfiguringInterface
             case 'permissions':
                 $value = implode(', ', $value);
                 break;
+
+            case 'service_type':
+                if (substr_count($value, ':') === 2) {
+                    $value = substr($value, 0, strrpos($value, ':'));
+                }
+                break;
         }
 
         if (!is_string($value)) {

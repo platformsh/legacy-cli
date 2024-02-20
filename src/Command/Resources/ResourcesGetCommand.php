@@ -92,7 +92,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
             $properties = $service->getProperties();
             $row = [
                 'service' => $name,
-                'type' => $service->type,
+                'type' => $formatter->format($service->type, 'service_type'),
                 'profile' => $properties['container_profile'] ?: $empty,
                 'profile_size' => $empty,
                 'base_memory' => $empty,
