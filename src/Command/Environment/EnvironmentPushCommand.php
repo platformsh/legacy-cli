@@ -328,7 +328,7 @@ class EnvironmentPushCommand extends CommandBase
             // The "Everything up-to-date" string might have dodgy
             // punctuation, but it is here to stay.
             // See: https://github.com/git/git/commit/80bdaba894b9868a74fa5931e3ce1ca074353b24
-            if (strpos($log, "Everything up-to-date\n", $log) !== false) {
+            if (strpos($log, "Everything up-to-date\n") !== false) {
                 $codeAlreadyUpToDate = true;
             }
         }
