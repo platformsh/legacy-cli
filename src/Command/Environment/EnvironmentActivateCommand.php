@@ -42,7 +42,7 @@ class EnvironmentActivateCommand extends CommandBase
             }
         }
 
-        $success = $this->activateMultiple($toActivate, $input, $this->stdErr, $resourcesInit);
+        $success = $this->activateMultiple($toActivate, $input, $this->stdErr);
 
         return $success ? 0 : 1;
     }
