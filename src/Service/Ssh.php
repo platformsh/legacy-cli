@@ -135,13 +135,23 @@ class Ssh implements InputConfiguringInterface
                     if ($this->certifier->useCertificateOnly()) {
                         $options[] = 'IdentitiesOnly yes';
                     }
-                    $hasIdentity = true;
                 }
+            }
+            if (!$sshCert && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
+                $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
             }
         }
 
-        if (!$hasIdentity && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
-            $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
+        // Add default identity files to the options.
+        //
+        // If any IdentityFile has already been specified, and the user is not
+        // running an SSH agent, then these default identity files would not
+        // otherwise be used. They are needed as the user may be connecting to
+        // an external URI.
+        if (!$hasIdentity && !$this->certifier->useCertificateOnly()) {
+            foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $file) {
+                $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
+            }
         }
 
         // Configure host keys and link them.
@@ -158,7 +168,8 @@ class Ssh implements InputConfiguringInterface
             $options = array_merge($options, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
         }
 
-        return $options;
+        // Avoid repeating options.
+        return array_unique($options);
     }
 
     /**
