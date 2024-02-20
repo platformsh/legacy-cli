@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.15.1",
-        "sha1": "ba2462676715cb4d39174bf41b54a0eb6b485722",
-        "sha256": "f8fbf33e6bd71406edeb08216b4574a70fdcbbf5517910c65a11dff8d4135e13",
+        "version": "4.15.2",
+        "sha1": "978c10aa90c869fd5a4a1e567efa5b2d985b95fe",
+        "sha256": "d4291f6f5de70af4cdc6a6f0fb589ffb792fc2ceb41835d84d64c12708d71129",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.15.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.15.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -53,7 +53,8 @@
             "4.14.1": "* Reduce errors from SSH connections simultaneous with certificate refreshes:\r\n  - Do not regenerate the SSH key pair every time.\r\n  - Save the new key pair immediately after the new certificate.\r\n  - Add a config parameter `ssh.cert_key_ttl`, and corresponding environment\r\n    variable `PLATFORMSH_CLI_SSH_CERT_KEY_TTL`, defining the lifetime in\r\n    seconds of a key pair. Set to 0 for the key pair never to expire or -1 for\r\n    it to be regenerated every time the certificate is refreshed. So the\r\n    previous behavior can be restored with:\r\n    `export PLATFORMSH_CLI_SSH_CERT_KEY_TTL=-1`\r\n* Enable git push options by default.\r\n  Restore the previous behavior with:\r\n  `export PLATFORMSH_CLI_API_GIT_PUSH_OPTIONS=0`\r\n* Include more environments in filtered interactive choices: \"dirty\" (building)\r\n  environments, and those with SSH URLs, as well as active environments.\r\n* Improve the error message if filtering returns no environments.\r\n* Fix type conflict in `resources` commands between separate `--app` options.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.28 to 8.13.29 (#1395)\r\n* Clarify missing extensions error for `tunnel:open` on Windows.\r\n* Replace `/me` call with `/users/me` on login.\r\n* Print a debug message when refreshing the access token.\r\n* Remove use of legacy access API in `backup:create` command.\r\n* Fix exit code when failing to load the organization for a team.",
             "4.14.2": "* Skip rerunning SSH cert check when SSHing from the CLI.\n* Highlight green regions in the project:create (create) command.\n* Support IPV6 ip address validation (#1405) (thanks @hanoii).\n* Set SSH log level to DEBUG3 when the CLI is in debug mode.\n* Fix metrics for multi-instance grid hosting.\n* Use the new backups API for restoring.",
             "4.15.0": "Features relating to the sizing API (Upsun):\r\n\r\n* Support \"resources\" in the environment:sync (sync) command.\r\n* Add --resources-init option to five more commands:\r\n  - `backup:restore`\r\n  - `environment:activate`\r\n  - `environment:branch` (`branch`)\r\n  - `environment:merge` (`merge`)\r\n  - `environment:synchronize` (`sync`)\r\n* At \"default\" and \"minimum\" as keywords for the resources:set command (use\r\n  the newly exposed defaults in the API).\r\n\r\nOther changes:\r\n\r\n* Make `push --activate` ensure an environment is active, even when no changes\r\n  were pushed.\r\n* Fix \"Failed to extract zip\" on Windows (by updating credential helpers).\r\n* Print PHP built-in warnings by default (without needing -v).\r\n* Avoid printing \"Determined CA bundle path\" more than once.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.29 to 8.13.30.",
-            "4.15.1": "* Fix TypeError on pushing to a new target environment"
+            "4.15.1": "* Fix TypeError on pushing to a new target environment",
+            "4.15.2": "* Fix another type warning in push command for new environments\n* Remove undefined variable in activate command\n* Fix warning about strpos() after pushing"
         }
     },
     {
