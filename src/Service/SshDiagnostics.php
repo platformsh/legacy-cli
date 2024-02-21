@@ -97,56 +97,11 @@ class SshDiagnostics
     private function testConnection($uri, $timeout = 5)
     {
         $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
-        $process = new Process($this->ssh->getSshCommand([], $uri, 'exit', false), null, $this->ssh->getEnv());
+        $process = new Process($this->ssh->getSshCommand($uri, [], 'exit', false, false), null, $this->ssh->getEnv());
         $process->setTimeout($timeout);
         $process->run();
         $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
         return $process;
-    }
-
-    /**
-     * Hackily finds a host from an SSH URI.
-     *
-     * @param string $uri
-     *
-     * @return string|false
-     */
-    private function getHost($uri)
-    {
-        // Parse the SSH URI to get the hostname.
-        if (\strpos($uri, '@') !== false) {
-            list(, $uri) = \explode('@', $uri, 2);
-        }
-        if (\strpos($uri, '://') !== false) {
-            list(, $uri) = \explode('://', $uri, 2);
-        }
-        if (\strpos($uri, ':') !== false) {
-            list($uri, ) = \explode(':', $uri, 2);
-        }
-        return \parse_url('ssh://' . $uri, PHP_URL_HOST);
-    }
-
-    /**
-     * Checks if an SSH URI is for an internal (first-party) SSH server.
-     *
-     * @param string $uri
-     *
-     * @return bool
-     *  True if the URI is for an internal server, false if it's external or it cannot be determined.
-     */
-    public function sshHostIsInternal($uri)
-    {
-        $host = $this->getHost($uri);
-        if ($host === false) {
-            return false;
-        }
-        // Check against the wildcard list.
-        foreach ($this->config->getWithDefault('ssh.domain_wildcards', []) as $wildcard) {
-            if (\strpos($host, \str_replace('*.', '', $wildcard)) !== false) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -159,7 +114,7 @@ class SshDiagnostics
      */
     public function diagnoseFailure($uri, Process $failedProcess)
     {
-        if (!$this->sshHostIsInternal($uri)) {
+        if (!$this->ssh->hostIsInternal($uri)) {
             return;
         }
         $cmdLine = $failedProcess->getCommandLine();
@@ -246,7 +201,7 @@ class SshDiagnostics
      */
     public function diagnoseFailureWithTest($uri, $startTime, $exitCode)
     {
-        if ($exitCode !== self::_SSH_ERROR_EXIT_CODE || !$this->sshHostIsInternal($uri)) {
+        if ($exitCode !== self::_SSH_ERROR_EXIT_CODE || !$this->ssh->hostIsInternal($uri)) {
             return;
         }
         // Do not make a test connection if too much time has passed. More than 3 seconds would indicate either some

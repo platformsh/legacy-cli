@@ -82,7 +82,7 @@ class EnvironmentSshCommand extends CommandBase
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $command = $ssh->getSshCommand($input->getOption('option'), $sshUrl, $remoteCommand);
+        $command = $ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');

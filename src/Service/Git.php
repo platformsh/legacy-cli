@@ -20,9 +20,6 @@ class Git
     private $repositoryDir = null;
 
     /** @var string|null */
-    private $sshCommand;
-
-    /** @var string|null */
     private $sshCommandFile;
 
     /** @var array */
@@ -118,6 +115,7 @@ class Git
      *   Suppress command output.
      * @param array             $env
      * @param bool              $online
+     * @param string            $uri
      *
      * @throws \Symfony\Component\Process\Exception\RuntimeException
      *   If the command fails and $mustRun is enabled.
@@ -126,7 +124,7 @@ class Git
      *   The command output, true if there is no output, or false if the command
      *   fails.
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $online = false)
+    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $online = false, $uri = '')
     {
         // If enabled, set the working directory to the repository.
         if ($dir !== false) {
@@ -134,7 +132,7 @@ class Git
         }
         // Set up SSH, if the Git command might connect to a remote.
         if ($online) {
-            $env += $this->setupSshEnv();
+            $env += $this->setupSshEnv($uri);
         }
         // Run the command.
         array_unshift($args, 'git');
@@ -185,7 +183,7 @@ class Git
         if ($ref !== null) {
             $args[] = $ref;
         }
-        $result = $this->execute($args, false, true, true, [], true);
+        $result = $this->execute($args, false, true, true, [], true, $url);
 
         return !is_bool($result) && strlen($result) > 0;
     }
@@ -254,27 +252,28 @@ class Git
             $args[] = $upstream;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false, [], true);
+        return (bool) $this->execute($args, $dir, $mustRun, false);
     }
 
     /**
      * Fetch from the Git remote.
      *
-     * @param string      $remote
+     * @param string $remote
      * @param string|null $branch
+     * @param string $uri
      * @param string|null $dir
-     * @param bool        $mustRun
+     * @param bool $mustRun
      *
      * @return bool
      */
-    public function fetch($remote, $branch = null, $dir = null, $mustRun = false)
+    public function fetch($remote, $branch = null, $uri = '', $dir = null, $mustRun = false)
     {
         $args = ['fetch', $remote];
         if ($branch !== null) {
             $args[] = $branch;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false, [], true);
+        return (bool) $this->execute($args, $dir, $mustRun, false, [], true, $uri);
     }
 
     /**
@@ -297,7 +296,7 @@ class Git
             $args[] = $ref;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, $quiet, [], true);
+        return (bool) $this->execute($args, $dir, $mustRun, $quiet, [], true, $repository);
     }
 
     /**
@@ -402,8 +401,8 @@ class Git
      *
      * A ProcessFailedException will be thrown if the command fails.
      *
-     * @param string $url
-     *   The Git repository URL.
+     * @param string $urlOrPath
+     *   The Git repository URL or file path.
      * @param string $destination
      *   A directory name to clone into.
      * @param array  $args
@@ -413,14 +412,14 @@ class Git
      *
      * @return bool
      */
-    public function cloneRepo($url, $destination = null, array $args = [], $mustRun = false)
+    public function cloneRepo($urlOrPath, $destination = null, array $args = [], $mustRun = false)
     {
-        $args = array_merge(['clone', $url], $args);
+        $args = array_merge(['clone', $urlOrPath], $args);
         if ($destination) {
             $args[] = $destination;
         }
 
-        return (bool) $this->execute($args, false, $mustRun, false, [], true);
+        return (bool) $this->execute($args, false, $mustRun, false, [], $urlOrPath[0] !== '/', $urlOrPath);
     }
 
     /**
@@ -532,24 +531,27 @@ class Git
      * This will use GIT_SSH_COMMAND if supported, or GIT_SSH (and a temporary
      * file) otherwise.
      *
+     * @param string $gitUri
+     *
      * @return array
      */
-    public function setupSshEnv()
+    public function setupSshEnv($gitUri)
     {
-        if (isset($this->ssh) && !isset($this->sshCommand)) {
-            $this->sshCommand = $this->ssh->getSshCommand($this->extraSshOptions);
+        if (!isset($this->ssh)) {
+            return [];
         }
-        if (empty($this->sshCommand) || $this->sshCommand === 'ssh') {
+        $sshCommand = $this->ssh->getSshCommand($gitUri, $this->extraSshOptions, null, true);
+        if (empty($sshCommand) || $sshCommand === 'ssh') {
             return [];
         }
         if (!$this->supportsGitSshCommand()) {
-            $contents = $this->sshCommand . ' "$@"' . "\n";
+            $contents = $sshCommand . ' "$@"' . "\n";
             if (!isset($this->sshCommandFile) || \file_get_contents($this->sshCommandFile) !== $contents) {
                 $this->sshCommandFile = $this->writeSshFile($contents);
             }
             return ['GIT_SSH' => $this->sshCommandFile] + $this->ssh->getEnv();
         }
-        return ['GIT_SSH_COMMAND' => $this->sshCommand] + $this->ssh->getEnv();
+        return ['GIT_SSH_COMMAND' => $sshCommand] + $this->ssh->getEnv();
     }
 
     /**

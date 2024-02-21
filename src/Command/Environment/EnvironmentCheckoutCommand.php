@@ -81,7 +81,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         // Fetch the branch from the upstream remote.
-        $git->fetch($upstreamRemote, $branch);
+        $git->fetch($upstreamRemote, $branch, $originRemoteUrl);
 
         $upstream = $upstreamRemote . '/' . $branch;
 

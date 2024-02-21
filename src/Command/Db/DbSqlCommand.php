@@ -126,7 +126,7 @@ class DbSqlCommand extends CommandBase
 
         // Enable tabular output when the input is a terminal.
         if (!$input->getOption('raw') && $host instanceof RemoteHost && $this->isTerminal(STDIN)) {
-            $host->setExtraSshArgs(['-t']);
+            $host->setExtraSshOptions(['RequestTTY yes']);
         }
 
         return $host->runCommandDirect($sqlCommand);

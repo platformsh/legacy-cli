@@ -34,7 +34,7 @@ class SslUtil
 
         // Validate the certificate and the key together, if openssl is enabled.
         if (\extension_loaded('openssl')) {
-            $certResource = openssl_x509_read($sslCert);
+            $certResource = @openssl_x509_read($sslCert);
             if (!$certResource) {
                 throw new \InvalidArgumentException('The certificate file is not a valid X509 certificate: ' . $certPath);
             }

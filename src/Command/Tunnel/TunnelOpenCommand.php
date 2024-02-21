@@ -104,7 +104,7 @@ EOF
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $sshArgs = $ssh->getSshArgs($sshOptions);
+        $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
 

@@ -193,7 +193,7 @@ class EnvironmentBranchCommand extends CommandBase
             // the remote.
             if ($remoteSuccess && $checkoutLocally && $createdNew) {
                 $upstreamRemote = $this->config()->get('detection.git_remote_name');
-                $git->fetch($upstreamRemote, $branchName, $projectRoot);
+                $git->fetch($upstreamRemote, $branchName, $selectedProject->getGitUrl(), $projectRoot);
                 $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
             }
 
