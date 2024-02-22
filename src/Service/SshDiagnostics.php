@@ -30,17 +30,17 @@ class SshDiagnostics
     }
 
     /**
-     * Checks whether SSH authentication succeeded and there was a message.
+     * Checks whether SSH authentication succeeded, but the service doesn't exist or the user does not have access.
      *
      * @param Process $failedProcess
      *
      * @return string
      */
-    private function authenticationSucceededMessage(Process $failedProcess)
+    private function noServiceAccessMessage(Process $failedProcess)
     {
         $errorOutput = $failedProcess->getErrorOutput();
         if (stripos($errorOutput, "you successfully authenticated") !== false) {
-            if (preg_match('/^Hello[^,]+, you successfully authenticated, but.+$/m', $errorOutput, $matches)) {
+            if (preg_match('/^Hello[^,]+, you successfully authenticated, but could not connect to service [^ ]+ \(reason: service doesn\'t exist or you do not have access$/m', $errorOutput, $matches)) {
                 return $matches[0];
             }
         }
@@ -83,20 +83,6 @@ class SshDiagnostics
     private function keyAuthenticationFailed(Process $failedProcess)
     {
         return stripos($failedProcess->getErrorOutput(), "Permission denied (publickey)") !== false;
-    }
-
-    /**
-     * Checks if SSH certificate authentication failed due to its validity.
-     *
-     * This may mean the linked access token was revoked.
-     *
-     * @param Process $failedProcess
-     *
-     * @return bool
-     */
-    private function connectionFailedDueToCertificateValidity(Process $failedProcess)
-    {
-        return stripos($failedProcess->getErrorOutput(), 'the SSH certificate is no longer valid') !== false;
     }
 
     /**
@@ -189,22 +175,7 @@ class SshDiagnostics
 
         $executable = $this->config->get('application.executable');
 
-        if ($msg = $this->authenticationSucceededMessage($failedProcess)) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('The server responded:');
-            $this->stdErr->writeln('  ' . $msg);
-            return;
-        }
-
         $mfaVerified = ($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa();
-
-        if ($this->connectionFailedDueToCertificateValidity($failedProcess)) {
-            $this->stdErr->writeln('The SSH connection failed because the SSH certificate is no longer valid.');
-            $this->certifier->generateCertificate($cert);
-            $this->stdErr->writeln('A new SSH certificate has been generated. Please try again.');
-            return;
-        }
-
         if (!$mfaVerified && $this->connectionFailedDueToMFA($failedProcess)) {
             $this->stdErr->writeln('');
 
@@ -232,6 +203,13 @@ class SshDiagnostics
         if ($this->hostKeyVerificationFailed($failedProcess)) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('SSH was unable to verify the host key.');
+            return;
+        }
+
+        if ($msg = $this->noServiceAccessMessage($failedProcess)) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln('SSH authentication worked, but there was an access problem:');
+            $this->stdErr->writeln('  ' . $msg);
             return;
         }
 
