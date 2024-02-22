@@ -296,7 +296,7 @@ EOF
                 case 'inactive':
                     if ($input->getOption('no-delete-branch')) {
                         if ($isSingle) {
-                            $this->stdErr->writeln('The environment %s is inactive and <comment>--no-delete-branch</comment> was specified, so it will not be deleted.', $this->api()->getEnvironmentLabel(reset($environments), 'comment'));
+                            $this->stdErr->writeln(sprintf('The environment %s is inactive and <comment>--no-delete-branch</comment> was specified, so it will not be deleted.', $this->api()->getEnvironmentLabel(reset($environments), 'comment')));
                         } elseif ($isSubSet) {
                             $this->stdErr->writeln('The following environment(s) are inactive and <comment>--no-delete-branch</comment> was specified, so they will not be deleted: ' . $this->listEnvironments($environments, 'comment'));
                         } else {
