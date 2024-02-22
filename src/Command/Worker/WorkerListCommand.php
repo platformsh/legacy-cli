@@ -59,7 +59,7 @@ class WorkerListCommand extends CommandBase
         $rows = [];
         foreach ($workers as $worker) {
             $commands = isset($worker->worker['commands']) ? $worker->worker['commands'] : [];
-            $rows[] = [$worker->name, $worker->type, $formatter->format($commands)];
+            $rows[] = [$worker->name, $formatter->format($worker->type, 'service_type'), $formatter->format($commands)];
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */

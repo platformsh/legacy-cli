@@ -86,9 +86,12 @@ class AppListCommand extends CommandBase
             $defaultColumns[] = 'path';
         }
 
+        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
+        $formatter = $this->getService('property_formatter');
+
         $rows = [];
         foreach ($apps as $app) {
-            $row = [$app->name, $app->type, 'disk' => $app->disk, $app->size];
+            $row = [$app->name, $formatter->format($app->type, 'service_type'), 'disk' => $app->disk, $app->size];
             if ($showLocalPath) {
                 $row['path'] = $getLocalPath($app->name);
             }

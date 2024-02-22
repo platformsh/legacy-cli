@@ -495,7 +495,7 @@ abstract class MetricsCommandBase extends CommandBase
                     $row = [];
                     $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, ['wrap' => false]);
                     $row['service'] = $service;
-                    $row['type'] = $type;
+                    $row['type'] = $formatter->format($type, 'service_type');
                     foreach ($fields as $columnName => $field) {
                         /** @var Field $field */
                         $fieldName = $field->getName();
