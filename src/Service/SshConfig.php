@@ -267,12 +267,10 @@ class SshConfig {
             'Host *',
         ]);
 
-        $manualMessage = 'To configure SSH, add the following lines to: <comment>' . $filename . '</comment>'
+        $manualMessage = 'To configure SSH, add the following lines to <comment>' . $filename . '</comment>:'
             . "\n" . $suggestedConfig;
 
-        $writeUserSshConfig = $this->config->has('api.write_user_ssh_config')
-                ? $this->config->get('api.write_user_ssh_config')
-                : $this->config->getWithDefault('ssh.write_user_config', null);
+        $writeUserSshConfig = $this->shouldWriteUserSshConfig();
         if ($writeUserSshConfig === false) {
             $this->stdErr->writeln($manualMessage);
             return true;
@@ -318,6 +316,26 @@ class SshConfig {
         $this->chmod($filename, 0600);
 
         return true;
+    }
+
+    /**
+     * Returns whether the user's SSH configuration should be written to.
+     *
+     * @return bool|null
+     *   True for yes, false for no, null to prompt the user.
+     */
+    private function shouldWriteUserSshConfig()
+    {
+        $value = $this->config->has('api.write_user_ssh_config')
+            ? $this->config->get('api.write_user_ssh_config')
+            : $this->config->getWithDefault('ssh.write_user_config', null);
+
+        // Consider an empty string (or null) as null, otherwise cast to bool.
+        //
+        // The original YAML config may have been overridden by an environment
+        // variable (which is how it could be a string).
+        // TODO this could be replaced if the config had schema validation
+        return $value === null || $value === '' ? null : (bool) $value;
     }
 
     /**
