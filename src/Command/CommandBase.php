@@ -191,11 +191,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             error_reporting(false);
             ini_set('display_errors', '0');
         } else {
-            // Display errors and warnings by default. In verbose mode, display
-            // all PHP error levels except deprecations. Deprecations will only
-            // be displayed while in debug mode and only if this is enabled via
+            // Display errors by default. In verbose mode, display all PHP
+            // error levels except deprecations. Deprecations will only be
+            // displayed while in debug mode and only if this is enabled via
             // the CLI_REPORT_DEPRECATIONS environment variable.
-            $error_level = ($output->isVerbose() ? E_ALL : E_PARSE | E_ERROR | E_WARNING) & ~E_DEPRECATED;
+            $error_level = ($output->isVerbose() ? E_ALL : E_PARSE | E_ERROR) & ~E_DEPRECATED;
             $report_deprecations = getenv('CLI_REPORT_DEPRECATIONS') || getenv($envPrefix . 'REPORT_DEPRECATIONS');
             if ($report_deprecations && $output->isDebug()) {
                 $error_level |= E_DEPRECATED;
