@@ -295,9 +295,6 @@ ssh:
   # they can be a single string (one per line).
   options: []
 
-  # If an SSH certificate is available, configure SSH to ignore other keys.
-  cert_only: false
-
   # Whether the user's SSH config file (~/.ssh/config) can be written automatically.
   #
   # The file is validated when SSH certificates are installed or refreshed.

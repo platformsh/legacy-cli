@@ -94,7 +94,6 @@ class SshConfig {
         $lines = [];
 
         $certificate = $this->certifier->getExistingCertificate();
-        $onlyCertificate = $certificate !== null && $this->certifier->useCertificateOnly();
         if ($certificate) {
             $executable = $this->config->get('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes', $executable);
@@ -133,22 +132,16 @@ class SshConfig {
                 $lines[] = '# The CertificateFile keyword could be used with OpenSSH 7.2 or later.';
             }
             $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($certificate->privateKeyFilename()));
-            if ($onlyCertificate) {
-                $lines[] = 'IdentitiesOnly yes';
-            }
         } else {
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
         }
 
-        $sessionIdentityFile = null;
-        if (!$onlyCertificate) {
-            $sessionIdentityFile = $this->sshKey->selectIdentity();
-            if ($sessionIdentityFile !== null) {
-                $lines[] = '';
-                $lines[] = '# This SSH key was detected as corresponding to the session.';
-                $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
-                $lines[] = '';
-            }
+        $sessionIdentityFile = $this->sshKey->selectIdentity();
+        if ($sessionIdentityFile !== null) {
+            $lines[] = '';
+            $lines[] = '# This SSH key was detected as corresponding to the session.';
+            $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
+            $lines[] = '';
         }
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
@@ -158,15 +151,6 @@ class SshConfig {
                 $this->fs->remove([$includerFilename, $sessionSpecificFilename]);
             }
             return false;
-        }
-
-        // Add default files if there is no preferred session identity file.
-        if ($sessionIdentityFile === null && !$onlyCertificate && ($defaultFiles = $this->getUserDefaultSshIdentityFiles())) {
-            $lines[] = '';
-            $lines[] = '# Include SSH "default" identity files.';
-            foreach ($defaultFiles as $identityFile) {
-                $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($identityFile));
-            }
         }
 
         // Add other configured options.
@@ -409,32 +393,6 @@ class SshConfig {
     private function getUserSshConfigFilename()
     {
         return $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . 'config';
-    }
-
-    /**
-     * Returns the user's default SSH identity files (if they exist).
-     *
-     * @todo prioritise account-specific identity files
-     *
-     * @see SshKey::defaultKeyNames()
-     *
-     * @return array
-     */
-    public function getUserDefaultSshIdentityFiles()
-    {
-        $dir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
-        if (!\is_dir($dir)) {
-            return [];
-        }
-        $files = [];
-        foreach ($this->sshKey->defaultKeyNames() as $basename) {
-            $filename = $dir . DIRECTORY_SEPARATOR . $basename;
-            if (\file_exists($filename) && \file_exists($filename . '.pub')) {
-                $files[] = $filename;
-            }
-        }
-
-        return $files;
     }
 
     /**

@@ -51,7 +51,7 @@ class EnvironmentScpCommand extends CommandBase
         $ssh = $this->getService('ssh');
         $command = 'scp';
 
-        if ($sshArgs = $ssh->getSshArgs()) {
+        if ($sshArgs = $ssh->getSshArgs($sshUrl)) {
             $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $sshArgs));
         }
 

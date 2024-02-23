@@ -79,7 +79,7 @@ class TunnelSingleCommand extends TunnelCommandBase
 
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $sshArgs = $ssh->getSshArgs($sshOptions);
+        $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
 
         $remoteHost = $service['host'];
         $remotePort = $service['port'];

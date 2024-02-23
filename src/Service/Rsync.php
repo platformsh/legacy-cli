@@ -31,16 +31,14 @@ class Rsync
     /**
      * Returns environment variables for configuring rsync.
      *
+     * @param string $sshUrl
+     *
      * @return array
      */
-    private function env() {
-        $env = [];
-        if ($this->ssh->getSshArgs() !== []) {
-            $env['RSYNC_RSH'] = $this->ssh->getSshCommand();
-            $env += $this->ssh->getEnv();
-        }
-
-        return $env;
+    private function env($sshUrl) {
+        return [
+            'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, [], null, true),
+        ] + $this->ssh->getEnv();
     }
 
     /**
@@ -76,7 +74,7 @@ class Rsync
         $from = rtrim($localDir, '/') . '/';
         $to = sprintf('%s:%s', $sshUrl, $remoteDir);
         try {
-            $this->doSync($from, $to, $options);
+            $this->doSync($from, $to, $sshUrl, $options);
         } catch (ProcessFailedException $e) {
             $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess());
             throw new ProcessFailedException($e->getProcess(), false);
@@ -96,7 +94,7 @@ class Rsync
         $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
         $to = $localDir;
         try {
-            $this->doSync($from, $to, $options);
+            $this->doSync($from, $to, $sshUrl, $options);
         } catch (ProcessFailedException $e) {
             $this->sshDiagnostics->diagnoseFailure($sshUrl, $e->getProcess());
             throw new ProcessFailedException($e->getProcess(), false);
@@ -108,9 +106,10 @@ class Rsync
      *
      * @param string $from
      * @param string $to
-     * @param array  $options
+     * @param string $sshUrl
+     * @param array $options
      */
-    private function doSync($from, $to, array $options = [])
+    private function doSync($from, $to, $sshUrl, array $options = [])
     {
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 
@@ -147,6 +146,6 @@ class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, $this->env(), null);
+        $this->shell->execute($params, null, true, false, $this->env($sshUrl), null);
     }
 }

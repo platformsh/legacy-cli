@@ -248,7 +248,7 @@ class DbDumpCommand extends CommandBase
         } elseif ($host instanceof RemoteHost) {
             // If dump compression is not enabled, data can still be compressed
             // transparently as it's streamed over the SSH connection.
-            $host->setExtraSshArgs(['-C']);
+            $host->setExtraSshOptions(['Compression yes']);
         }
 
         $append = '';

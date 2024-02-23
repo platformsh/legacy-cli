@@ -6,7 +6,6 @@ use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\SshDiagnostics;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
 
 class RemoteHost implements HostInterface
@@ -15,7 +14,7 @@ class RemoteHost implements HostInterface
     private $environment;
     private $sshService;
     private $shell;
-    private $extraSshArgs = [];
+    private $extraSshOptions = [];
     private $sshDiagnostics;
 
     public function __construct($sshUrl, Environment $environment, Ssh $sshService, Shell $shell, SshDiagnostics $sshDiagnostics)
@@ -36,11 +35,11 @@ class RemoteHost implements HostInterface
     }
 
     /**
-     * @param array $args
+     * @param string[] $options
      */
-    public function setExtraSshArgs(array $args)
+    public function setExtraSshOptions(array $options)
     {
-        $this->extraSshArgs = $args;
+        $this->extraSshOptions = $options;
     }
 
     /**
@@ -65,10 +64,7 @@ class RemoteHost implements HostInterface
      */
     private function wrapCommandLine($commandLine)
     {
-        return $this->sshService->getSshCommand()
-            . ($this->extraSshArgs ? ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $this->extraSshArgs)) : '')
-            . ' ' . escapeshellarg($this->sshUrl)
-            . ' ' . escapeshellarg($commandLine);
+        return $this->sshService->getSshCommand($this->sshUrl, $this->extraSshOptions, $commandLine);
     }
 
     /**

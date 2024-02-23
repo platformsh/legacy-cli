@@ -82,7 +82,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         if (!$output->isVerbose()) {
             $command .= ' --quiet';
             if ($host instanceof RemoteHost) {
-                $host->setExtraSshArgs(['-q']);
+                $host->setExtraSshOptions(['LogLevel QUIET']);
             }
         } elseif ($output->isDebug()) {
             $command .= ' --verbose';

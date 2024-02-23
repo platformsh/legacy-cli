@@ -56,7 +56,7 @@ class MongoShellCommand extends CommandBase
 
         // Force TTY output when the input is a terminal.
         if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
-            $host->setExtraSshArgs(['-t']);
+            $host->setExtraSshOptions(['RequestTTY yes']);
         }
 
         $this->stdErr->writeln(

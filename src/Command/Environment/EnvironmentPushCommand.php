@@ -89,6 +89,8 @@ class EnvironmentPushCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
+        $gitUrl = $project->getGitUrl();
+
         // Validate the source argument.
         $source = $input->getArgument('source');
         if ($source === '') {
@@ -223,14 +225,14 @@ class EnvironmentPushCommand extends CommandBase
             $remoteRepoSpec = $remoteName;
         } elseif ($currentProject && $currentProject->id === $project->id) {
             // Ensure the current project's Git remote conforms.
-            $localProject->ensureGitRemote($gitRoot, $project->getGitUrl());
+            $localProject->ensureGitRemote($gitRoot, $gitUrl);
             $remoteRepoSpec = $remoteName;
-        } elseif ($git->getConfig("remote.$remoteName.url") === $project->getGitUrl()) {
+        } elseif ($git->getConfig("remote.$remoteName.url") === $gitUrl) {
             $remoteRepoSpec = $remoteName;
         } else {
             // If pushing to a project that isn't set as the current one, then
             // push directly to its URL instead of using a named Git remote.
-            $remoteRepoSpec = $project->getGitUrl();
+            $remoteRepoSpec = $gitUrl;
         }
 
         if (!$codeAlreadyUpToDate) {
@@ -276,7 +278,7 @@ class EnvironmentPushCommand extends CommandBase
             // output can be read.
             /** @var \Platformsh\Cli\Service\Shell $shell */
             $shell = $this->getService('shell');
-            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv(), $this->config()->get('api.git_push_timeout'));
+            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv($gitUrl), $this->config()->get('api.git_push_timeout'));
             if ($process->getExitCode() !== 0) {
                 /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
                 $diagnostics = $this->getService('ssh_diagnostics');

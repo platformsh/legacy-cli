@@ -47,15 +47,19 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns arguments for an SSH command.
      *
+     * @param string $uri
+     *   The SSH URI. This is required for detecting whether authentication
+     *   should be added. It will not be returned as one of the arguments.
      * @param string[] $extraOptions
-     * @param string|null $uri
+     *   Extra SSH options in the OpenSSH config format, e.g. 'RequestTTY yes'.
      * @param string[]|string|null $remoteCommand
+     *   A command to run on the remote host.
      *
      * @return array
      */
-    public function getSshArgs(array $extraOptions = [], $uri = null, $remoteCommand = null)
+    public function getSshArgs($uri, array $extraOptions = [], $remoteCommand = null)
     {
-        $options = array_merge($this->getSshOptions(), $extraOptions);
+        $options = array_merge($this->getSshOptions($this->hostIsInternal($uri)), $extraOptions);
 
         $args = [];
         foreach ($options as $option) {
@@ -63,9 +67,6 @@ class Ssh implements InputConfiguringInterface
             $args[] = $option;
         }
 
-        if ($uri !== null) {
-            $args[] = $uri;
-        }
         if (!empty($remoteCommand)) {
             // The remote command may be provided as 1 argument (escaped
             // according to the user), or as multiple arguments, in which case
@@ -88,9 +89,11 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an array of SSH options, based on the input options.
      *
+     * @param bool|null $hostIsInternal
+     *
      * @return string[] An array of SSH options.
      */
-    private function getSshOptions()
+    private function getSshOptions($hostIsInternal)
     {
         $options = [];
 
@@ -108,12 +111,10 @@ class Ssh implements InputConfiguringInterface
             $options[] = 'LogLevel QUIET';
         }
 
-        $hasIdentity = false;
         if ($this->input->hasOption('identity-file') && ($file = $this->input->getOption('identity-file'))) {
             $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
             $options[] = 'IdentitiesOnly yes';
-            $hasIdentity = true;
-        } else {
+        } elseif ($hostIsInternal !== false) {
             // Inject the SSH certificate.
             $sshCert = $this->certifier->getExistingCertificate();
             if ($sshCert || $this->certifier->isAutoLoadEnabled()) {
@@ -132,36 +133,29 @@ class Ssh implements InputConfiguringInterface
                         $options[] = 'CertificateFile ' . $this->sshConfig->formatFilePath($sshCert->certificateFilename());
                     }
                     $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sshCert->privateKeyFilename());
-                    if ($this->certifier->useCertificateOnly()) {
+                    if ($hostIsInternal) {
                         $options[] = 'IdentitiesOnly yes';
                     }
                 }
             }
             if (!$sshCert && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
                 $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
-            }
-        }
-
-        // Add default identity files to the options.
-        //
-        // If any IdentityFile has already been specified, and the user is not
-        // running an SSH agent, then these default identity files would not
-        // otherwise be used. They are needed as the user may be connecting to
-        // an external URI.
-        if (!$hasIdentity && !$this->certifier->useCertificateOnly()) {
-            foreach ($this->sshConfig->getUserDefaultSshIdentityFiles() as $file) {
-                $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
+                if ($hostIsInternal) {
+                    $options[] = 'IdentitiesOnly yes';
+                }
             }
         }
 
         // Configure host keys and link them.
-        try {
-            $keysFile = $this->sshConfig->configureHostKeys();
-            if ($keysFile !== null) {
-                $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+        if ($hostIsInternal !== false) {
+            try {
+                $keysFile = $this->sshConfig->configureHostKeys();
+                if ($keysFile !== null) {
+                    $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+                }
+            } catch (\Exception $e) {
+                $this->stdErr->writeln('Error configuring host keys: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
             }
-        } catch (\Exception $e) {
-            $this->stdErr->writeln('Error configuring host keys: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
         }
 
         if ($configuredOptions = $this->config->get('ssh.options')) {
@@ -175,23 +169,34 @@ class Ssh implements InputConfiguringInterface
     /**
      * Returns an SSH command line.
      *
+     * @param string $url
+     *   The SSH URL. Use $omitUrl to control whether this should be added to
+     *   the command line.
      * @param string[] $extraOptions
-     * @param string|null $uri
+     *   SSH options, e.g. 'RequestTTY yes'.
      * @param string|null $remoteCommand
+     *   A remote command to run on the host.
+     * @param bool $omitUrl
+     *   Omit the URL from the command. Use this if the URL is specified in
+     *   another way (e.g. when providing the command to rsync or Git).
      * @param bool $autoConfigure
+     *   Write or validate SSH configuration automatically after building the
+     *   command.
      *
      * @return string
      */
-    public function getSshCommand(array $extraOptions = [], $uri = null, $remoteCommand = null, $autoConfigure = true)
+    public function getSshCommand($url, array $extraOptions = [], $remoteCommand = null, $omitUrl = false, $autoConfigure = true)
     {
         $command = 'ssh';
-        $args = $this->getSshArgs($extraOptions, $uri, $remoteCommand);
-        if (!empty($args)) {
+        if (!$omitUrl) {
+            $command .= ' ' . OsUtil::escapeShellArg($url);
+        }
+        if ($args = $this->getSshArgs($url, $extraOptions, $remoteCommand)) {
             $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
         }
 
         // Configure or validate the session SSH config.
-        if ($autoConfigure) {
+        if ($autoConfigure && $this->hostIsInternal($url) !== false) {
             try {
                 $this->sshConfig->configureSessionSsh();
             } catch (\Exception $e) {
@@ -211,5 +216,56 @@ class Ssh implements InputConfiguringInterface
     {
         // Suppress refreshing the certificate while SSH is running through the CLI.
         return [self::SSH_NO_REFRESH_ENV_VAR => '1'];
+    }
+
+    /**
+     * Finds a host from an SSH URI.
+     *
+     * @param string $uri
+     *
+     * @return string|false|null
+     */
+    private function getHost($uri)
+    {
+        if (\strpos($uri, '@') !== false) {
+            list(, $uri) = \explode('@', $uri, 2);
+        }
+        if (\strpos($uri, '://') !== false) {
+            list(, $uri) = \explode('://', $uri, 2);
+        }
+        if (\strpos($uri, ':') !== false) {
+            list($uri, ) = \explode(':', $uri, 2);
+        }
+        if (!preg_match('@^[\p{Ll}0-9-]+\.[\p{Ll}0-9-]+@', $uri)) {
+            return false;
+        }
+        return \parse_url('ssh://' . $uri, PHP_URL_HOST);
+    }
+
+    /**
+     * Checks if an SSH URI is for an internal (first-party) SSH server.
+     *
+     * @param string $uri
+     *
+     * @return bool|null
+     *  True if the URI is for an internal server, false if it's external, or null if it cannot be determined.
+     */
+    public function hostIsInternal($uri)
+    {
+        $host = $this->getHost($uri);
+        if (!$host) {
+            return null;
+        }
+        // Check against the wildcard list.
+        $wildcards = $this->config->getWithDefault('ssh.domain_wildcards', []);
+        if (!$wildcards) {
+            return null;
+        }
+        foreach ($wildcards as $wildcard) {
+            if (\strpos($host, \str_replace('*.', '', $wildcard)) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 }
