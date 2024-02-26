@@ -126,7 +126,7 @@ class ActivityLoader
     public function load(HasActivitiesInterface $apiResource, $limit = null, array $types = [], $startsAt = null, $state = null, $result = null, callable $stopCondition = null)
     {
         $progress = new ProgressBar($this->getProgressOutput());
-        $progress->setMessage($types === ['environment.backup'] ? 'Loading backups...' : 'Loading activities...');
+        $progress->setMessage('Loading activities...');
         $progress->setFormat($limit === null ? '%message% %current%' : '%message% %current%/%max%');
         $progress->start($limit);
 
