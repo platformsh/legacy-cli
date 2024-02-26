@@ -67,17 +67,25 @@ class BackupCreateCommand extends CommandBase
 
         $live = $input->getOption('live') || $input->getOption('unsafe');
 
+        $this->stdErr->writeln(sprintf(
+            'Creating a %s of %s.',
+            $live ? '<info>live</info> backup' : 'backup',
+            $this->api()->getEnvironmentLabel($selectedEnvironment, 'info', false)
+        ));
+        $this->stdErr->writeln('Note: this may delete an older backup if the quota has been reached.');
+        $this->stdErr->writeln('');
+
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+            return 1;
+        }
+
         $result = $selectedEnvironment->runOperation('backup', 'POST', ['safe' => !$live]);
 
         // Hold the activities as a reference as they may be updated during
         // waitMultiple() below, allowing the backup_name to be extracted.
         $activities = $result->getActivities();
-
-        if ($live) {
-            $this->stdErr->writeln("Creating a <info>live</info> backup of <info>$environmentId</info>");
-        } else {
-            $this->stdErr->writeln("Creating a backup of <info>$environmentId</info>");
-        }
 
         if ($this->shouldWait($input)) {
             // Strongly recommend using --no-wait in a cron job.
