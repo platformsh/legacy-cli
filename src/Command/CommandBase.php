@@ -19,6 +19,7 @@ use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Cli\Util\StringUtil;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\WebApp;
@@ -97,6 +98,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @var bool
      */
     protected $printedSelectedEnvironment = false;
+
+    /**
+     * @var string[] The valid values for --resources-init on this command.
+     *
+     * @see CommandBase::addResourcesInitOption()
+     */
+    protected $validResourcesInitValues = [];
 
     private static $container;
 
@@ -2382,24 +2390,25 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * The option will only be added if the api.sizing feature is enabled.
      *
-     * @param string $apiDefault
-     *   The default that the API would use if the option is not specified.
+     * @param string[] $values
+     *   The possible values, with the default as the first element.
      *
      * @return self
      *
      * @see CommandBase::validateResourcesInitInput()
      */
-    protected function addResourcesInitOption($apiDefault = 'default')
+    protected function addResourcesInitOption($values, $description = '')
     {
         if (!$this->config()->get('api.sizing')) {
             return $this;
         }
-        $descriptionPerDefault = [
-            'default' => 'Set the resources to use for new services: default, parent, minimum, or manual.',
-            'parent' => 'Set the resources to use for new services: parent (default), default, minimum, or manual.',
-            'child' => 'Set the resources to use for new services: child (default), default, minimum, or manual.',
-        ];
-        $description = isset($descriptionPerDefault[$apiDefault]) ? $descriptionPerDefault[$apiDefault] : $descriptionPerDefault['default'];
+        $this->validResourcesInitValues = $values;
+        if ($description === '') {
+            $description = 'Set the resources to use for new services';
+            $description .= ': ' . StringUtil::formatItemList($values);
+            $default = array_shift($values);
+            $description .= ".\n" . sprintf('If not set, "%s" will be used.', $default);
+        }
         $this->addOption('resources-init', null, InputOption::VALUE_REQUIRED, $description);
 
         return $this;
@@ -2410,7 +2419,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param InputInterface $input
      * @param Project $project
-     * @param string[] $options
      *
      * @return string|false|null
      *   The input value, or false if there was a validation error, or null if
@@ -2418,12 +2426,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @see CommandBase::addResourcesInitOption()
      */
-    protected function validateResourcesInitInput(InputInterface $input, Project $project, $options = ['default', 'parent', 'minimum', 'manual'])
+    protected function validateResourcesInitInput(InputInterface $input, Project $project)
     {
         $resourcesInit = $input->hasOption('resources-init') ? $input->getOption('resources-init') : null;
         if ($resourcesInit !== null) {
-            if (!\in_array($resourcesInit, $options, true)) {
-                $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $options));
+            if (!\in_array($resourcesInit, $this->validResourcesInitValues, true)) {
+                $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $this->validResourcesInitValues));
                 return false;
             }
             if (!$this->api()->supportsSizingApi($project)) {

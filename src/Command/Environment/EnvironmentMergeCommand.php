@@ -16,7 +16,7 @@ class EnvironmentMergeCommand extends CommandBase
             ->setAliases(['merge'])
             ->setDescription('Merge an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
-        $this->addResourcesInitOption('child');
+        $this->addResourcesInitOption(['child', 'default', 'minimum', 'manual']);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
@@ -49,7 +49,7 @@ class EnvironmentMergeCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $this->getSelectedProject(), ['child', 'default', 'minimum', 'manual']);
+        $resourcesInit = $this->validateResourcesInitInput($input, $this->getSelectedProject());
         if ($resourcesInit === false) {
             return 1;
         }
