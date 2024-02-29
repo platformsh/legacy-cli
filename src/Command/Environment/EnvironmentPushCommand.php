@@ -372,6 +372,11 @@ class EnvironmentPushCommand extends CommandBase
      * @return false|array A list of activities, or false on failure.
      */
     private function ensureActive($target, $parentId, Project $project, $cloneParent, $type) {
+        $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
+        if (!$parentEnvironment) {
+            throw new \RuntimeException("Parent environment not found: $parentId");
+        }
+
         $targetEnvironment = $this->api()->getEnvironment($target, $project);
         if ($targetEnvironment) {
             $activities = [];
@@ -405,11 +410,6 @@ class EnvironmentPushCommand extends CommandBase
             $this->api()->clearEnvironmentsCache($project->id);
 
             return $activities;
-        }
-
-        $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
-        if (!$parentEnvironment) {
-            throw new \RuntimeException("Parent environment not found: $parentId");
         }
 
         // For new environments, use branch() to create them as active in the first place.
