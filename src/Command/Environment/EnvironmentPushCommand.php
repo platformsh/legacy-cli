@@ -326,18 +326,11 @@ class EnvironmentPushCommand extends CommandBase
                     return self::PUSH_FAILURE_EXIT_CODE;
                 }
             }
-
-            // The "Everything up-to-date" string might have dodgy
-            // punctuation, but it is here to stay.
-            // See: https://github.com/git/git/commit/80bdaba894b9868a74fa5931e3ce1ca074353b24
-            if (strpos($log, "Everything up-to-date\n") !== false) {
-                $codeAlreadyUpToDate = true;
-            }
         }
 
         // Compensate for push options not being able to take effect if no
         // changes were made.
-        if ($gitPushOptionsEnabled && $activateRequested && $codeAlreadyUpToDate) {
+        if ($gitPushOptionsEnabled && $activateRequested) {
             $activities = $this->ensureActive($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
             if ($activities === false) {
                 return 1;
@@ -407,10 +400,10 @@ class EnvironmentPushCommand extends CommandBase
             if ($targetEnvironment->status === 'dirty') {
                 $targetEnvironment->refresh();
             }
-            if ($targetEnvironment->status === 'inactive') {
+            if ($targetEnvironment->status === 'inactive' && $targetEnvironment->operationAvailable('activate')) {
                 $this->debug('Activating inactive environment ' . $targetEnvironment->id);
                 $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
-            } elseif ($targetEnvironment->status === 'paused') {
+            } elseif ($targetEnvironment->status === 'paused' && $targetEnvironment->operationAvailable('resume')) {
                 $this->debug('Resuming paused environment ' . $targetEnvironment->id);
                 $activities = array_merge($activities, $targetEnvironment->runOperation('resume')->getActivities());
             }
