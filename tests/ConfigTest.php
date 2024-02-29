@@ -45,7 +45,6 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     public function testEnvironmentOverrides()
     {
         $config = new Config([], $this->configFile);
-        $this->assertFalse($config->has('service.slug'));
         putenv('MOCK_CLI_DISABLE_CACHE=0');
         $config = new Config([
             'MOCK_CLI_APPLICATION_NAME' => 'Overridden application name',

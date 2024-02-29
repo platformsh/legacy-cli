@@ -22,7 +22,6 @@ local:
 
 service:
   name: 'Platform.sh'
-  slug: 'platformsh'
   env_prefix: 'PLATFORM_'
   header_prefix: 'X-Platform'
 
