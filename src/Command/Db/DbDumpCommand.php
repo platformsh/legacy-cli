@@ -209,7 +209,10 @@ class DbDumpCommand extends CommandBase
                 break;
 
             default:
-                $cmdName = $relationships->supportsMariaDBCommands($database) ? 'mariadb-dump' : 'mysqldump';
+                $cmdType = $relationships->isMariaDB($database) ? 'mariadb-dump' : 'mysqldump';
+                $cmdName = $cmdType === 'mariadb-dump'
+                    ? 'command_name="$(command -v mariadb-dump || echo -n mysqldump)"; "$command_name"'
+                    : 'mysql';
                 $dumpCommand = $cmdName . ' --single-transaction '
                     . $relationships->getDbCommandArgs($cmdName, $database, $schema);
                 if ($schemaOnly) {
