@@ -219,20 +219,37 @@ class Relationships implements InputConfiguringInterface
     }
 
     /**
-     * Returns whether the database supports MariaDB command names (added in MariaDB 10.4.6).
-     *
-     * See: https://jira.mariadb.org/browse/MDEV-21303
+     * Returns whether the database is MariaDB.
      *
      * @param array $database The database definition from the relationships.
      * @return bool
      */
-    public function supportsMariaDBCommands(array $database)
+    public function isMariaDB(array $database)
     {
-        if (isset($database['type']) && (strpos($database['type'], 'mariadb:') === 0 || strpos($database['type'], 'mysql:') === 0)) {
-            list(, $version) = explode(':', $database['type'], 2);
-            return version_compare($version, '10.5', '>=');
+        return isset($database['type']) && (\strpos($database['type'], 'mariadb:') === 0 || \strpos($database['type'], 'mysql:') === 0);
+    }
+
+    /**
+     * Returns the correct command to use with a MariaDB client.
+     *
+     * MariaDB now needs MariaDB-specific command names. But these were added
+     * in the MariaDB client 10.4.6, and we cannot efficiently check the client
+     * version, at least not before we are already running the command.
+     * See: https://jira.mariadb.org/browse/MDEV-21303
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public function mariaDbCommandWithFallback($cmd)
+    {
+        if ($cmd === 'mariadb') {
+            return 'cmd="$(command -v mariadb || echo -n mysql)"; "$cmd"';
         }
-        return false;
+        if ($cmd === 'mariadb-dump') {
+            return 'cmd="$(command -v mariadb-dump || echo -n mysqldump)"; "$cmd"';
+        }
+        return $cmd;
     }
 
     /**
