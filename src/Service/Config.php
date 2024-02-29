@@ -637,14 +637,17 @@ class Config
         }
 
         // Migrate renamed config keys.
-        if (isset($this->config['api']['add_to_ssh_agent'])) {
+        if (isset($this->config['api']['add_to_ssh_agent']) && !isset($this->config['ssh']['add_to_agent'])) {
             $this->config['ssh']['add_to_agent'] = $this->config['api']['add_to_ssh_agent'];
         }
-        if (isset($this->config['api']['auto_load_ssh_cert'])) {
+        if (isset($this->config['api']['auto_load_ssh_cert']) && !isset($this->config['ssh']['auto_load_cert'])) {
             $this->config['ssh']['auto_load_cert'] = $this->config['api']['auto_load_ssh_cert'];
         }
-        if (isset($this->config['api']['ssh_domain_wildcards'])) {
+        if (isset($this->config['api']['ssh_domain_wildcards']) && !isset($this->config['ssh']['domain_wildcards'])) {
             $this->config['ssh']['domain_wildcards'] = $this->config['api']['ssh_domain_wildcards'];
+        }
+        if (isset($this->config['service']['header_prefix']) && !isset($this->config['detection']['cluster_header'])) {
+            $this->config['detection']['cluster_header'] = $this->config['service']['header_prefix'] . '-Cluster';
         }
     }
 

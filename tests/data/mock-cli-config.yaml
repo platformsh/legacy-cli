@@ -11,10 +11,11 @@ service:
   project_config_dir: .mock
   console_url: https://console.example.com
 
+  header_prefix: 'X-Mock' # this is the legacy config key; it will be moved to detection.cluster_header
+
 api:
   base_url: https://api.example.com
   disable_cache: true
 
 detection:
-  use_site_headers: false
   site_domains: [example.site]
