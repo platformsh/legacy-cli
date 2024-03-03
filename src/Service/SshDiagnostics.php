@@ -40,7 +40,7 @@ class SshDiagnostics
     {
         $errorOutput = $failedProcess->getErrorOutput();
         if (stripos($errorOutput, "you successfully authenticated") !== false) {
-            if (preg_match('/^Hello[^,]+, you successfully authenticated, but could not connect to service [^ ]+ \(reason: service doesn\'t exist or you do not have access$/m', $errorOutput, $matches)) {
+            if (preg_match('/^Hello[^,]+, you successfully authenticated, but could not connect to service [^ ]+ \(reason: service doesn\'t exist or you do not have access to it\)$/m', $errorOutput, $matches)) {
                 return $matches[0];
             }
         }
@@ -178,7 +178,7 @@ class SshDiagnostics
                 ));
                 return;
             }
-            if ($this->config->isCommandEnabled('ssh-key:add')) {
+            if ($this->config->isCommandEnabled('ssh-key:add') && !$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate()) {
                 $this->stdErr->writeln(\sprintf(
                     'You may need to add an SSH key, by running: <comment>%s ssh-key:add</comment>',
                     $executable
