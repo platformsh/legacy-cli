@@ -174,7 +174,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
      */
     private function askNewKeyPath(QuestionHelper $questionHelper)
     {
-        $basename = 'id_ed25519-' . $this->config()->get('service.slug') . '-' . $this->api()->getMyAccount()['username'];
+        $basename = 'id_ed25519-' . $this->config()->get('application.slug') . '-' . $this->api()->getMyAccount()['username'];
         $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
         for ($i = 2; \file_exists($sshDir . DIRECTORY_SEPARATOR . $basename); $i++) {
             $basename .= $i;

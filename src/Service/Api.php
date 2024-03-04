@@ -574,9 +574,6 @@ class Api
         if (in_array($project->vendor, (array) $filters)) {
             return true;
         }
-        if (empty($project->vendor)) {
-            return in_array($this->config->get('service.slug'), (array) $filters);
-        }
         return false;
     }
 

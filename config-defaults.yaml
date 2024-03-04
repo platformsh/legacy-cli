@@ -113,7 +113,6 @@ service:
   ## Required keys that must be defined elsewhere:
   ##
   # name: 'Example Service Name'
-  # slug: 'example-service'
   # env_prefix: 'EXAMPLE_'
   # header_prefix: 'X-Example'
   # project_config_dir: '.example'
