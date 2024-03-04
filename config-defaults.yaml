@@ -114,7 +114,6 @@ service:
   ##
   # name: 'Example Service Name'
   # env_prefix: 'EXAMPLE_'
-  # header_prefix: 'X-Example'
   # project_config_dir: '.example'
 
   ## Config file for multiple applications.
@@ -328,6 +327,9 @@ detection:
   # git_remote_name: 'platform'
   # git_domain: 'example.com'
   # site_domains: ['example.com', 'example.site']
+
+  ## Site header which reports the cluster.
+  # cluster_header: 'X-Platform-Cluster'
 
   ## Domain of a Console instance.
   ##

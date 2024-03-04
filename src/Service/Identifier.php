@@ -49,7 +49,7 @@ class Identifier
     public function identify($url)
     {
         $result = $this->parseProjectId($url);
-        if (empty($result['projectId']) && strpos($url, '.') !== false && $this->config->getWithDefault('detection.use_site_headers', true)) {
+        if (empty($result['projectId']) && strpos($url, '.') !== false && $this->config->has('detection.cluster_header')) {
             $result = $this->identifyFromHeaders($url);
         }
         if (empty($result['projectId'])) {
@@ -171,6 +171,9 @@ class Identifier
      */
     private function getClusterHeader($url)
     {
+        if (!$this->config->has('detection.cluster_header')) {
+            return false;
+        }
         $cacheKey = 'project-cluster:' . $url;
         $cluster = $this->cache ? $this->cache->fetch($cacheKey) : false;
         if ($cluster === false) {
@@ -193,7 +196,7 @@ class Identifier
                     return false;
                 }
             }
-            $cluster = $response->getHeaderAsArray($this->config->get('service.header_prefix') . '-cluster');
+            $cluster = $response->getHeaderAsArray($this->config->get('detection.cluster_header'));
             $canCache = !empty($cluster)
                 || ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
             if ($canCache) {

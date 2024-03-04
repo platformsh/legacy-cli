@@ -81,6 +81,7 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('mock-cli', $config->get('api.oauth2_client_id'));
         $this->assertEquals('console.example.com', $config->get('detection.console_domain'));
         $this->assertEquals('.mock/applications.yaml', $config->get('service.applications_config_file'));
+        $this->assertEquals('X-Mock-Cluster', $config->get('detection.cluster_header'));
     }
 
     /**

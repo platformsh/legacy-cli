@@ -23,7 +23,6 @@ local:
 service:
   name: 'Platform.sh'
   env_prefix: 'PLATFORM_'
-  header_prefix: 'X-Platform'
 
   project_config_dir: '.platform'
   app_config_file: '.platform.app.yaml'
@@ -61,6 +60,7 @@ detection:
   git_remote_name: 'platform'
   git_domain: 'platform.sh' # matches git.eu-5.platform.sh, etc.
   site_domains: ['platform.sh', 'platformsh.site', 'tst.site']
+  cluster_header: 'X-Platform-Cluster'
 
 migrate:
   prompt: true
