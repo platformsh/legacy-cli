@@ -219,11 +219,46 @@ class Relationships implements InputConfiguringInterface
     }
 
     /**
+     * Returns whether the database is MariaDB.
+     *
+     * @param array $database The database definition from the relationships.
+     * @return bool
+     */
+    public function isMariaDB(array $database)
+    {
+        return isset($database['type']) && (\strpos($database['type'], 'mariadb:') === 0 || \strpos($database['type'], 'mysql:') === 0);
+    }
+
+    /**
+     * Returns the correct command to use with a MariaDB client.
+     *
+     * MariaDB now needs MariaDB-specific command names. But these were added
+     * in the MariaDB client 10.4.6, and we cannot efficiently check the client
+     * version, at least not before we are already running the command.
+     * See: https://jira.mariadb.org/browse/MDEV-21303
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public function mariaDbCommandWithFallback($cmd)
+    {
+        if ($cmd === 'mariadb') {
+            return 'cmd="$(command -v mariadb || echo -n mysql)"; "$cmd"';
+        }
+        if ($cmd === 'mariadb-dump') {
+            return 'cmd="$(command -v mariadb-dump || echo -n mysqldump)"; "$cmd"';
+        }
+        return $cmd;
+    }
+
+    /**
      * Returns command-line arguments to connect to a database.
      *
      * @param string      $command        The command that will need arguments
      *                                    (one of 'psql', 'pg_dump', 'mysql',
-     *                                    or 'mysqldump').
+     *                                    'mysqldump', 'mariadb' or
+     *                                    'mariadb-dump').
      * @param array       $database       The database definition from the
      *                                    relationship.
      * @param string|null $schema         The name of a database schema, or
@@ -256,6 +291,8 @@ class Relationships implements InputConfiguringInterface
 
                 return OsUtil::escapePosixShellArg($url);
 
+            case 'mariadb':
+            case 'mariadb-dump':
             case 'mysql':
             case 'mysqldump':
                 $args = sprintf(

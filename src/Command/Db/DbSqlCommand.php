@@ -114,7 +114,9 @@ class DbSqlCommand extends CommandBase
                 break;
 
             default:
-                $sqlCommand = 'mysql --no-auto-rehash ' . $relationships->getDbCommandArgs('mysql', $database, $schema);
+                $cmdName = $relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
+                $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);
+                $sqlCommand = $cmdInvocation . ' --no-auto-rehash ' . $relationships->getDbCommandArgs($cmdName, $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';
