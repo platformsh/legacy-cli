@@ -107,7 +107,7 @@ class SshConfig {
                 // Literal double-quotes do not appear to be possible in SSH config.
                 // So the condition here uses single quotes after the variable
                 // to allow it to be treated as an empty string when not set.
-                $refreshCommand = sprintf("[ \${%s}'' = '1' ] || %s", Ssh::SSH_NO_REFRESH_ENV_VAR, $refreshCommand);
+                $refreshCommand = sprintf("[ \$%s'' = '1' ] || %s", Ssh::SSH_NO_REFRESH_ENV_VAR, $refreshCommand);
             }
 
             if (!OsUtil::isWindows()) {
