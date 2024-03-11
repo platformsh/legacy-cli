@@ -31,7 +31,11 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
-        $this->addResourcesInitOption();
+        $this->addResourcesInitOption(
+            ['parent', 'default', 'minimum', 'manual'],
+            'Set the resources to use for new services: parent, default, minimum, or manual.'
+            . "\n" . 'Currently the default is "default" but this will change to "parent" in future.'
+        );
         $this->addWaitOptions();
         $this->addProjectOption()
             ->addEnvironmentOption();
