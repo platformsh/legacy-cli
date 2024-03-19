@@ -21,6 +21,8 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         'username' => 'Username',
         'permissions' => 'Permissions',
         'owner' => 'Owner?',
+        'mfa_enabled' => 'MFA enabled?',
+        'sso_enabled' => 'SSO enabled?',
         'created_at' => 'Created at',
         'updated_at' => 'Updated at',
     ];
@@ -109,6 +111,8 @@ class OrganizationUserListCommand extends OrganizationCommandBase
                 'email' => $userInfo ? $userInfo->email : '',
                 'username' => $userInfo ? $userInfo->username : '',
                 'owner' => $formatter->format($member->owner, 'owner'),
+                'mfa_enabled' => $userInfo && isset($userInfo->mfa_enabled) ? $formatter->format($userInfo->mfa_enabled, 'mfa_enabled') : '',
+                'sso_enabled' => $userInfo && isset($userInfo->sso_enabled) ? $formatter->format($userInfo->sso_enabled, 'sso_enabled') : '',
                 'permissions' => $formatter->format($member->permissions, 'permissions'),
                 'updated_at' => $formatter->format($member->updated_at, 'updated_at'),
                 'created_at' => $formatter->format($member->created_at, 'created_at'),
