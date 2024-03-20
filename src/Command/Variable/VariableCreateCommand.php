@@ -75,17 +75,15 @@ class VariableCreateCommand extends VariableCommandBase
                 $arguments = [
                     '--allow-no-change' => true,
                     '--project' => $this->getSelectedProject()->id,
+                    'name' => $name,
                 ];
                 if ($this->hasSelectedEnvironment()) {
                     $arguments['--environment'] = $this->getSelectedEnvironment()->id;
                 }
                 foreach ($this->form->getFields() as $field) {
-                    $value = $field->getValueFromInput($input, false);
                     $argName = '--' . $field->getOptionName();
-                    if ($argName === '--name') {
-                        $argName = 'name';
-                    }
-                    if ($value !== null && !in_array($argName, ['--level', '--prefix'])) {
+                    $value = $field->getValueFromInput($input, false);
+                    if ($value !== null && !in_array($argName, ['--name', '--level', '--prefix'])) {
                         $arguments[$argName] = $value;
                     }
                 }
