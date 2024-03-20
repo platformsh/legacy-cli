@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -132,21 +131,14 @@ class EnvironmentPushCommand extends CommandBase
 
         // Determine whether to activate the environment.
         $activateRequested = $this->determineShouldActivate($input, $project, $target, $targetEnvironment);
-        $parentId = $type = null;
-        if ($activateRequested) {
-            // If activating, determine what the environment's parent should be.
-            $parentId = $input->getOption('parent') ?: $this->findTargetParent($project, $targetEnvironment);
 
-            // Determine the environment type.
-            $type = $input->getOption('type');
-            if ($type !== null && !$project->getEnvironmentType($type)) {
-                $this->stdErr->writeln('Environment type not found: <error>' . $type . '</error>');
-                return 1;
-            } elseif ($targetEnvironment) {
-                $type = $targetEnvironment->type;
-            } elseif ($type === null && $input->isInteractive()) {
-                $type = $this->askEnvironmentType($project);
-            }
+        // Determine the parent and type for the environment, if any are
+        // specified, or if the environment already exists.
+        $parentId = $input->getOption('parent');
+        $type = $input->getOption('type');
+        if ($targetEnvironment) {
+            $parentId = $parentId !== null ? $parentId : $targetEnvironment->parent;
+            $type = $type != null ? $type : $targetEnvironment->type;
         }
 
         // Check if the environment may be a production one.
@@ -310,10 +302,16 @@ class EnvironmentPushCommand extends CommandBase
 
         // Ensure the environment is activated or resumed.
         if ($activateRequested) {
-            $activities = $this->ensureActive($target, $parentId, $project, !$input->getOption('no-clone-parent'), $type);
-            if ($activities === false) {
-                return 1;
+            if ($targetEnvironment) {
+                $targetEnvironment->refresh();
+            } else {
+                $targetEnvironment = $this->api()->getEnvironment($target, $project);
+                if (!$targetEnvironment) {
+                    $this->stdErr->writeln('Failed to load target environment: ' . $target);
+                    return 1;
+                }
             }
+            $activities = $this->ensureActive($targetEnvironment, $parentId, !$input->getOption('no-clone-parent'), $type);
         }
 
         // Wait if there are still activities.
@@ -342,150 +340,45 @@ class EnvironmentPushCommand extends CommandBase
      * This may branch (creating a new environment), or resume or activate,
      * depending on the current state.
      *
-     * @param string $target
-     * @param string $parentId
-     * @param Project $project
+     * @param Environment $targetEnvironment
+     * @param string|null $parentId
      * @param bool $cloneParent
      * @param string|null $type
      *
-     * @return false|array A list of activities, or false on failure.
+     * @return array A list of activities, if any.
      */
-    private function ensureActive($target, $parentId, Project $project, $cloneParent, $type) {
-        $parentEnvironment = $this->api()->getEnvironment($parentId, $project);
-        if (!$parentEnvironment) {
-            throw new \RuntimeException("Parent environment not found: $parentId");
+    private function ensureActive(Environment $targetEnvironment, $parentId, $cloneParent, $type) {
+        $activities = [];
+        $updates = [];
+        if ($parentId !== null && $targetEnvironment->parent !== $parentId) {
+            $updates['parent'] = $parentId;
         }
-
-        $targetEnvironment = $this->api()->getEnvironment($target, $project);
-        if ($targetEnvironment) {
-            $activities = [];
-            $updates = [];
-            if ($targetEnvironment->parent !== $parentId) {
-                $updates['parent'] = $parentId;
-            }
-            if (!$cloneParent && $targetEnvironment->getProperty('clone_parent_on_create', false, false)) {
-                $updates['clone_parent_on_create'] = false;
-            }
-            if ($type !== null && $targetEnvironment->type !== $type) {
-                $updates['type'] = $type;
-            }
-            if (!empty($updates)) {
-                $this->debug('Updating environment ' . $targetEnvironment->id . ' with properties: ' . json_encode($updates));
-                $activities = array_merge(
-                    $activities,
-                    $targetEnvironment->update($updates)->getActivities()
-                );
-            }
-            if ($targetEnvironment->status === 'dirty') {
-                $targetEnvironment->refresh();
-            }
-            if ($targetEnvironment->status === 'inactive' && $targetEnvironment->operationAvailable('activate')) {
-                $this->debug('Activating inactive environment ' . $targetEnvironment->id);
-                $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
-            } elseif ($targetEnvironment->status === 'paused' && $targetEnvironment->operationAvailable('resume')) {
-                $this->debug('Resuming paused environment ' . $targetEnvironment->id);
-                $activities = array_merge($activities, $targetEnvironment->runOperation('resume')->getActivities());
-            }
-            $this->api()->clearEnvironmentsCache($project->id);
-
-            return $activities;
+        if (!$cloneParent && $targetEnvironment->getProperty('clone_parent_on_create', false, false)) {
+            $updates['clone_parent_on_create'] = false;
         }
-
-        // For new environments, use branch() to create them as active in the first place.
-        if (!$parentEnvironment->operationAvailable('branch', true)) {
-            $this->stdErr->writeln(sprintf(
-                'Operation not available: the environment %s cannot be branched.',
-                $this->api()->getEnvironmentLabel($parentEnvironment, 'error')
-            ));
-
-            if ($parentEnvironment->is_dirty) {
-                $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
-            } elseif (!$parentEnvironment->isActive()) {
-                $this->stdErr->writeln('The environment is not active.');
-            }
-
-            return false;
+        if ($type !== null && $targetEnvironment->type !== $type) {
+            $updates['type'] = $type;
         }
-
-        $params = [
-            'name' => $target,
-            'title' => $target,
-            'clone_parent' => $cloneParent,
-        ];
-        if ($type !== null) {
-            $params['type'] = $type;
+        if (!empty($updates)) {
+            $this->debug('Updating environment ' . $targetEnvironment->id . ' with properties: ' . json_encode($updates));
+            $activities = array_merge(
+                $activities,
+                $targetEnvironment->update($updates)->getActivities()
+            );
         }
-        $result = $parentEnvironment->runOperation('branch', 'POST', $params);
-        $this->stdErr->writeln(sprintf(
-            'Branched <info>%s</info>%s from parent %s',
-            $target,
-            $type !== null ? ' (type: <info>' . $type . '</info>)' : '',
-            $this->api()->getEnvironmentLabel($parentEnvironment)
-        ));
-
-        $this->api()->clearEnvironmentsCache($project->id);
-
-        return $result->getActivities();
-    }
-
-    /**
-     * Asks the user for the environment type.
-     *
-     * @param Project $project
-     *
-     * @return string|null
-     */
-    private function askEnvironmentType(Project $project) {
-        try {
-            $types = $this->api()->getEnvironmentTypes($project);
-        } catch (BadResponseException $e) {
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
-                $this->debug('Cannot list environment types. The project probably does not yet support them.');
-                return null;
-            }
-            throw $e;
+        if ($targetEnvironment->status === 'dirty') {
+            $targetEnvironment->refresh();
         }
-        $defaultId = null;
-        $ids = [];
-        foreach ($types as $type) {
-            if ($type->id === 'development') {
-                $defaultId = $type->id;
-            }
-            $ids[] = $type->id;
+        if ($targetEnvironment->status === 'inactive' && $targetEnvironment->operationAvailable('activate')) {
+            $this->debug('Activating inactive environment ' . $targetEnvironment->id);
+            $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
+        } elseif ($targetEnvironment->status === 'paused' && $targetEnvironment->operationAvailable('resume')) {
+            $this->debug('Resuming paused environment ' . $targetEnvironment->id);
+            $activities = array_merge($activities, $targetEnvironment->runOperation('resume')->getActivities());
         }
-        $questionHelper = $this->getService('question_helper');
-        $type = $questionHelper->askInput('Environment type', $defaultId, $ids);
-        $this->stdErr->writeln('');
-        return $type;
-    }
+        $this->api()->clearEnvironmentsCache($targetEnvironment->project);
 
-    /**
-     * Determines the parent of the target environment (for activate / branch).
-     *
-     * @param Project          $project
-     * @param Environment|false $targetEnvironment
-     *
-     * @return string The parent environment ID.
-     */
-    private function findTargetParent(Project $project, $targetEnvironment) {
-        if ($targetEnvironment && $targetEnvironment->parent) {
-            return $targetEnvironment->parent;
-        }
-
-        $environments = $this->api()->getEnvironments($project);
-        if ($this->hasSelectedEnvironment()) {
-            $defaultId = $this->getSelectedEnvironment()->id;
-        } else {
-            $default = $this->api()->getDefaultEnvironment($environments, $project);
-            $defaultId = $default ? $default->id : null;
-        }
-        if (array_keys($environments) === [$defaultId]) {
-            return $defaultId;
-        }
-        $questionHelper = $this->getService('question_helper');
-        $parent = $questionHelper->askInput('Parent environment', $defaultId, array_keys($environments));
-        $this->stdErr->writeln('');
-        return $parent;
+        return $activities;
     }
 
     /**
