@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.16.0",
-        "sha1": "8fdec7213291fe47e944f207cf558f9c2a1779da",
-        "sha256": "b9840ed75a77ae107a7872c46a06a3e4940b4ff7705aff880c25d6007165f19b",
+        "version": "4.17.0",
+        "sha1": "0d58d8edfcf89438065b4f7256fb55d16c0fbc46",
+        "sha256": "61119e2562731648296ed81cf05f610c7c972e0ba99811ac53adae9e94f50619",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.16.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.17.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -56,7 +56,8 @@
             "4.15.1": "* Fix TypeError on pushing to a new target environment",
             "4.15.2": "* Fix another type warning in push command for new environments\n* Remove undefined variable in activate command\n* Fix warning about strpos() after pushing",
             "4.15.3": "* Fix support for the environment variable `{PREFIX}SSH_WRITE_USER_CONFIG`.\n* Skip automatic SSH auth when the host is external. This fixes an issue where \n  the default SSH identity files (e.g. `~/.ssh/id_rsa`) were not being used for \n  external hosts, e.g. GitHub (it affected those not running an SSH agent). The \n  problem was introduced in v4.12.0 (commit 3b8bfbf4fde63d15c9079986e6bf9dbbc).\n* Improve SSH error reporting after authentication.\n* Revert \"Print PHP built-in warnings by default (without needing -v)\".\n* Hide the service image version.\n* Fix TypeError thrown when running `env:delete --no-delete-branch` on an \n  inactive environment.",
-            "4.16.0": "New features:\r\n\r\n* Add a confirmation step before creating a backup.  \r\n  Non-interactive scripts must use `-y` or `--yes` or `--no-interaction`.\r\n  For more detail, see: https://github.com/platformsh/legacy-cli/pull/1414\r\n* Use MariaDB-specific command names in \"db:\" commands.\r\n* Make `push --activate` ensure the environment status after pushing, whether or\r\n  not new commits were pushed.\r\n\r\nOther changes:\r\n\r\n* Use git push options always.\r\n* Configuration changes:\r\n  - Move config `service.header_prefix` to `detection.cluster_header` and make\r\n    it optional.\r\n  - Remove the need for a `service.slug` config key.\r\n* Fix recommending an SSH key when not needed.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.30 to 8.13.31\r\n* Bump composer/ca-bundle from 1.4.0 to 1.4.1"
+            "4.16.0": "New features:\r\n\r\n* Add a confirmation step before creating a backup.  \r\n  Non-interactive scripts must use `-y` or `--yes` or `--no-interaction`.\r\n  For more detail, see: https://github.com/platformsh/legacy-cli/pull/1414\r\n* Use MariaDB-specific command names in \"db:\" commands.\r\n* Make `push --activate` ensure the environment status after pushing, whether or\r\n  not new commits were pushed.\r\n\r\nOther changes:\r\n\r\n* Use git push options always.\r\n* Configuration changes:\r\n  - Move config `service.header_prefix` to `detection.cluster_header` and make\r\n    it optional.\r\n  - Remove the need for a `service.slug` config key.\r\n* Fix recommending an SSH key when not needed.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.30 to 8.13.31\r\n* Bump composer/ca-bundle from 1.4.0 to 1.4.1",
+            "4.17.0": "Significant changes:\n\n* Add `mfa_enabled` and `sso_enabled` columns to the `org:users` command.\n* In the `push` command, do not set a parent if none is specified.  \n  This also removes the interactive questions for the environment parent and \n  type.\n* Remove `manual` value from `--resources-init` in 3 commands.  \n  Affects Upsun only, in commands: `activate`, `backup:restore`, and `branch`.\n\nSmaller changes:\n\n* Fix \"Variables cannot be bracketed\" error with SSH in fish.\n* Fix resolution of variable name during `variable:create --update`.\n* Fix obtaining GitHub token in the `self:release` command.\n* Dependency updates:\n  - Bump composer/ca-bundle from 1.4.1 to 1.4.2 (#1424)\n  - Bump phpseclib/phpseclib from 2.0.31 to 2.0.47 in /vendor-bin/box (#1422)\n  - Bump giggsey/libphonenumber-for-php from 8.13.31 to 8.13.32 (#1425)"
         }
     },
     {
