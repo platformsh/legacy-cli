@@ -18,7 +18,7 @@ class EnvironmentActivateCommand extends CommandBase
             ->setDescription('Activate an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
-        $this->addResourcesInitOption('parent');
+        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

@@ -20,7 +20,7 @@ class BackupRestoreCommand extends CommandBase
             ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
             ->addOption('restore-code', null, InputOption::VALUE_NONE, 'Whether code should be restored as well as data');
-        $this->addResourcesInitOption('parent');
+        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

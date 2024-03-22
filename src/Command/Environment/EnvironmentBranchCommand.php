@@ -22,7 +22,7 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
             ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
-        $this->addResourcesInitOption('parent');
+        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
