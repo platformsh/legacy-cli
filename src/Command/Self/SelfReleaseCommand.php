@@ -75,17 +75,18 @@ class SelfReleaseCommand extends CommandBase
             }
         }
 
-        if (getenv('GITHUB_TOKEN')) {
+        if ($shell->commandExists('gh')) {
+            $process = $shell->executeCaptureProcess('gh auth status --show-token', null, true);
+            if (!preg_match('/Token: (\S+)/', $process->getOutput(), $matches)) {
+                $this->stdErr->writeln('Unable to obtain a GitHub token.');
+                $this->stdErr->writeln('Log in to the GitHub CLI with: <info>gh auth login</info>');
+                return 1;
+            }
+            $gitHubToken = $matches[1];
+        } elseif (getenv('GITHUB_TOKEN')) {
             $gitHubToken = getenv('GITHUB_TOKEN');
         } else {
-            $this->stdErr->writeln('The GITHUB_TOKEN environment variable must be set.');
-            $this->stdErr->writeln(
-                "\nIf you have the GitHub CLI installed (gh, https://github.com/cli/cli), and if you're signed in, you can set the token by running:"
-            );
-            $this->stdErr->writeln(
-                "  export GITHUB_TOKEN=$(gh auth status --show-token 2>&1 | grep Token: | cut -d' ' -f5)"
-            );
-
+            $this->stdErr->writeln('The GITHUB_TOKEN environment variable should be set, or the gh CLI should be installed.');
             return 1;
         }
 
