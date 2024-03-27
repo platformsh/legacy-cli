@@ -54,7 +54,7 @@ class ResourcesCommandBase extends CommandBase
         if ($service instanceof Worker) {
             return false;
         }
-        return isset($service->getProperties()['resources']['disk']['minimum']);
+        return isset($service->getProperties()['resources']['minimum']['disk']);
     }
 
     /**
