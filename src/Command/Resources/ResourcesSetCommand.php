@@ -503,7 +503,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             ));
         }
         $size = (int) $value;
-        if ($size != $value || $value <= 0) {
+        if ($size != $value || $value < 0) {
             throw new InvalidArgumentException(sprintf(
                 'Invalid disk size <error>%s</error>: it must be an integer in MB.', $value
             ));
