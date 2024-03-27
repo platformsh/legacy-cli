@@ -50,6 +50,10 @@ class ResourcesCommandBase extends CommandBase
      */
     protected function supportsDisk($service)
     {
+        // Workers use the disk of their parent app.
+        if ($service instanceof Worker) {
+            return false;
+        }
         return isset($service->getProperties()['resources']['disk']['minimum']);
     }
 
