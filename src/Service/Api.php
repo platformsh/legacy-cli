@@ -1146,7 +1146,8 @@ class Api
         // automatically obtains a token and saves it to the session.
         if (!$token || $expires < time()) {
             $this->getUser(null, true);
-            if (!$token = $session->get('accessToken')) {
+            $newSession = $this->getClient()->getConnector()->getSession();
+            if (!$token = $newSession->get('accessToken')) {
                 throw new \RuntimeException('No access token found');
             }
         }
