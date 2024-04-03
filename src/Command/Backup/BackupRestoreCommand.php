@@ -19,7 +19,10 @@ class BackupRestoreCommand extends CommandBase
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
-            ->addOption('restore-code', null, InputOption::VALUE_NONE, 'Whether code should be restored as well as data');
+            ->addOption('restore-code', null, InputOption::VALUE_NONE,
+                "Restore code as well as data."
+                . "\nNote: code would be restored to the environment but not to the Git repository; use Git to revert code permanently.")
+            ->addOption('no-restore-code', null, InputOption::VALUE_NONE, 'Do not restore code, only data.');
         $this->addResourcesInitOption(['parent', 'default', 'minimum']);
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -93,12 +96,27 @@ class BackupRestoreCommand extends CommandBase
             return 1;
         }
 
+        $restoreCode = null;
+        if ($input->getOption('restore-code')) {
+            $restoreCode = true;
+        }
+        if ($input->getOption('no-restore-code')) {
+            $restoreCode = false;
+        }
+
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
+
+        // Display a summary of the backup.
         $this->stdErr->writeln(\sprintf('Backup ID: <comment>%s</comment>', $backup->id));
         $this->stdErr->writeln(\sprintf('Created at: <comment>%s</comment>', $formatter->format($backup->created_at, 'created_at')));
+        if ($restoreCode === true) {
+            $this->stdErr->writeln('Code and data will be restored.');
+        } elseif ($restoreCode === false) {
+            $this->stdErr->writeln('Only data, not code, will be restored.');
+        }
 
         $differentTarget = $backup->environment !== $targetName;
         if ($differentTarget) {
@@ -123,7 +141,7 @@ class BackupRestoreCommand extends CommandBase
             (new RestoreOptions())
                 ->setEnvironmentName($targetName)
                 ->setBranchFrom($branchFrom)
-                ->setRestoreCode($input->getOption('restore-code'))
+                ->setRestoreCode($restoreCode)
                 ->setResourcesInit($resourcesInit)
         );
 
