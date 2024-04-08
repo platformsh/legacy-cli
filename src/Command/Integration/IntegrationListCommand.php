@@ -5,6 +5,7 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Integration;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class IntegrationListCommand extends IntegrationCommandBase
@@ -19,7 +20,8 @@ class IntegrationListCommand extends IntegrationCommandBase
         $this
             ->setName('integration:list')
             ->setAliases(['integrations'])
-            ->setDescription('View a list of project integration(s)');
+            ->setDescription('View a list of project integration(s)')
+            ->addOption('type', 't', InputOption::VALUE_REQUIRED, 'Filter by type');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption();
     }
@@ -34,6 +36,12 @@ class IntegrationListCommand extends IntegrationCommandBase
             $this->stdErr->writeln('No integrations found');
 
             return 1;
+        }
+
+        if ($type = $input->getOption('type')) {
+            $integrations = array_filter($integrations, function (Integration $i) use ($type) {
+                return $i->type === $type;
+            });
         }
 
         /** @var \Platformsh\Cli\Service\Table $table */
