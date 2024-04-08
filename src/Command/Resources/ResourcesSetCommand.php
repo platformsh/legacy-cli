@@ -229,7 +229,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             }
 
             // Set the disk size.
-            if ($this->needsDisk($service)) {
+            if ($this->supportsDisk($service)) {
                 if (isset($givenDiskSizes[$name])) {
                     if ($givenDiskSizes[$name] !== $service->disk) {
                         $updates[$group][$name]['disk'] = $givenDiskSizes[$name];
@@ -497,9 +497,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
      */
     protected function validateDiskSize($value, $serviceName, $service)
     {
-        if (!$this->needsDisk($service)) {
+        if (!$this->supportsDisk($service)) {
             throw new InvalidArgumentException(sprintf(
-                'The %s <error>%s</error> does not have a persistent disk.', $this->typeName($service), $serviceName
+                'The %s <error>%s</error> does not support a persistent disk.', $this->typeName($service), $serviceName
             ));
         }
         $size = (int) $value;

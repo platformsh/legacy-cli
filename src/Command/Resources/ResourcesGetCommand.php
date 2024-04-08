@@ -118,7 +118,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
                 }
             }
 
-            if (!$this->needsDisk($service)) {
+            if (!$this->supportsDisk($service)) {
                 $row['disk'] = $notApplicable;
             } elseif (array_key_exists('disk', $properties)) {
                 if (empty($properties['disk'])) {

@@ -45,28 +45,16 @@ class ResourcesCommandBase extends CommandBase
     /**
      * Checks whether a service needs a persistent disk.
      *
-     * @todo replace this when the API has support for finding which services need a disk property
-     *
      * @param WebApp|Service|Worker $service
      * @return bool
      */
-    protected function needsDisk($service)
+    protected function supportsDisk($service)
     {
-        if (!empty($service->disk)) {
-            return true;
-        }
         // Workers use the disk of their parent app.
         if ($service instanceof Worker) {
             return false;
         }
-        // All services have a disk except 3 types.
-        if ($service instanceof Service) {
-            list($prefix) = explode(':', $service->type, 2);
-            $diskless = ['chrome_headless', 'memcached', 'redis', 'varnish'];
-            return !in_array($prefix, $diskless, true);
-        }
-        // Apps have a disk if they have mounts.
-        return !empty($service->mounts);
+        return isset($service->getProperties()['resources']['minimum']['disk']);
     }
 
     /**
