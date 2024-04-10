@@ -19,7 +19,8 @@ class BackupRestoreCommand extends CommandBase
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, "The environment to restore to. Defaults to the backup's current environment")
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
-            ->addOption('restore-code', null, InputOption::VALUE_NONE, 'Whether code should be restored as well as data');
+            ->addOption('no-code', null, InputOption::VALUE_NONE, 'Do not restore code, only data.')
+            ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
         $this->addResourcesInitOption(['parent', 'default', 'minimum']);
         $this->addProjectOption()
              ->addEnvironmentOption()
@@ -31,6 +32,8 @@ class BackupRestoreCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->warnAboutDeprecatedOptions(['restore-code']);
+
         $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
@@ -97,8 +100,13 @@ class BackupRestoreCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
+
+        // Display a summary of the backup.
         $this->stdErr->writeln(\sprintf('Backup ID: <comment>%s</comment>', $backup->id));
         $this->stdErr->writeln(\sprintf('Created at: <comment>%s</comment>', $formatter->format($backup->created_at, 'created_at')));
+        if ($input->getOption('no-code')) {
+            $this->stdErr->writeln('Only data, not code, will be restored.');
+        }
 
         $differentTarget = $backup->environment !== $targetName;
         if ($differentTarget) {
@@ -123,7 +131,7 @@ class BackupRestoreCommand extends CommandBase
             (new RestoreOptions())
                 ->setEnvironmentName($targetName)
                 ->setBranchFrom($branchFrom)
-                ->setRestoreCode($input->getOption('restore-code'))
+                ->setRestoreCode($input->getOption('no-code') ? false : null)
                 ->setResourcesInit($resourcesInit)
         );
 
