@@ -48,6 +48,9 @@ application:
   release_branch: 'main'
 
   # Whether to prompt to run the self:install command if it wasn't already.
+  #
+  # The prompt is never shown under the Go wrapper, nor if multiple CLI
+  # instances are installed.
   prompt_self_install: true
 
   # The default interactive login method: either 'browser' or 'api-token'.

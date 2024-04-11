@@ -5,6 +5,8 @@
  * This is the front/entry script for the CLI.
  */
 
+const CLI_FILE = __FILE__;
+
 // Send errors to stderr, not stdout.
 ini_set('display_errors', 'stderr');
 
