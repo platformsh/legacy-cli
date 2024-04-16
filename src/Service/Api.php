@@ -1380,10 +1380,9 @@ class Api
 
         // Use the project's organization, if known.
         $organizationId = null;
-        if (isset($project) && $project->hasProperty('organization_id')) {
-            $organizationId = $project->getProperty('organization_id', false, false);
-        }
-        if (empty($organizationId)) {
+        if (isset($project)) {
+            $organizationId = $project->getProperty('organization', false, false);
+        } else {
             foreach ($this->getMyProjects() as $info) {
                 if ($info->subscription_id === $id && (!isset($project) || $project->id === $info->id)) {
                     $organizationId = !empty($info->organization_ref->id) ? $info->organization_ref->id : false;
@@ -1391,36 +1390,22 @@ class Api
                 }
             }
         }
-        if (!empty($organizationId) && ($organization = $this->getClient()->getOrganizationById($organizationId))) {
-            if ($subscription = $organization->getSubscription($id)) {
-                $this->debug("Loaded the subscription via the project's organization: " . $this->getOrganizationLabel($organization));
-                return $subscription;
-            }
+        if (empty($organizationId)) {
+            $this->debug('Failed to find the organization ID for the subscription: ' . $id);
+            return false;
+        }
+        $organization = $this->getOrganizationById($organizationId);
+        if (!$organization) {
+            $this->debug('Project organization not found: ' . $organizationId);
+            return false;
+        }
+        $subscription = $organization->getSubscription($id);
+        if (!$subscription) {
+            $this->debug('Failed to load subscription: ' . $id);
+            return false;
         }
 
-        // Load the user's organizations and try to load the subscription through each one.
-        /** @var BadResponseException[] $exceptions */
-        $exceptions = [];
-        foreach ($this->getClient()->listOrganizationsWithMember($this->getMyUserId()) as $organization) {
-            try {
-                $subscription = $organization->getSubscription($id);
-                if ($subscription) {
-                    $this->debug("Loaded the subscription through organization: " . $this->getOrganizationLabel($organization));
-                    return $subscription;
-                }
-            } catch (BadResponseException $e) {
-                if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
-                    throw $e;
-                }
-                $exceptions[] = $e;
-            }
-        }
-        // Throw a 403 exception if the subscription could not be loaded as a
-        // result of permission errors.
-        foreach ($exceptions as $exception) {
-            throw $exception;
-        }
-        return false;
+        return $subscription;
     }
 
     /**
