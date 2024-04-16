@@ -57,7 +57,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /** @var ?bool */
     private static $checkedMigrate;
     /** @var ?bool */
-    private static $checkedBothCLIsInstalled;
+    private static $promptedDeleteOldCli;
 
     /** @var ?bool */
     private static $printedApiTokenWarning;
@@ -339,7 +339,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->checkSelfInstall();
         // Run migration steps if configured.
         if ($this->config()->getWithDefault('migrate.prompt', false)) {
-            $this->checkBothCLIsInstalled();
+            $this->promptDeleteOldCli();
             $this->checkMigrateToNewCLI();
         }
     }
@@ -365,6 +365,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Avoid if already installed.
         if (file_exists($config->getUserConfigDir() . DIRECTORY_SEPARATOR . SelfInstallCommand::INSTALLED_FILENAME)) {
+            return;
+        }
+
+        // Avoid if other CLIs are installed.
+        if ($this->isWrapped() || $this->otherCLIsInstalled()) {
             return;
         }
 
@@ -486,66 +491,88 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->stdErr->writeln('');
     }
 
+    private function cliPath()
+    {
+        $thisPath = CLI_ROOT . '/bin/platform';
+        if (defined('CLI_FILE')) {
+            $thisPath = CLI_FILE;
+        }
+        if (extension_loaded('Phar') && ($pharPath = \Phar::running(false))) {
+            $thisPath = $pharPath;
+        }
+        return $thisPath;
+    }
+
+    /**
+     * Returns whether other instances are installed of the CLI.
+     *
+     * Finds programs with the same executable name in the PATH.
+     *
+     * @return bool
+     */
+    private function otherCLIsInstalled()
+    {
+        static $otherPaths;
+        if ($otherPaths === null) {
+            $thisPath = $this->cliPath();
+            $paths = (new OsUtil())->findExecutables($this->config()->get('application.executable'));
+            $otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath) {
+                $realpath = realpath($p);
+                return $realpath && $realpath !== $thisPath;
+            }));
+            if (!empty($otherPaths)) {
+                $this->debug('Other CLI(s) found: ' . implode(", ", $otherPaths));
+            }
+        }
+        return !empty($otherPaths);
+    }
+
     /**
      * Check if both CLIs are installed to prompt the user to delete the old one.
      */
-    protected function checkBothCLIsInstalled()
+    private function promptDeleteOldCli()
     {
         // Avoid checking more than once in this process.
-        if (self::$checkedBothCLIsInstalled) {
+        if (self::$promptedDeleteOldCli) {
             return;
         }
-        self::$checkedBothCLIsInstalled = true;
+        self::$promptedDeleteOldCli = true;
 
-        // Check that the Phar extension is available.
-        if (!extension_loaded('Phar')) {
+        if ($this->isWrapped() || !$this->otherCLIsInstalled()) {
             return;
         }
-
-        $config = $this->config();
-        // Avoid if running within the new CLI.
-        if ($this->isWrapped()) {
-            return;
-        }
-
-        $appName = $config->get('application.executable');
-        $paths = (new OsUtil())->findExecutables($appName);
         $pharPath = \Phar::running(false);
-        $paths = array_unique(array_filter(array_map('realpath', $paths)));
-        $paths = array_diff($paths, [$pharPath]);
-        if (count($paths)) {
-            // Avoid deleting random directories in path
-            $legacyDir = dirname(dirname($pharPath));
-            if ($legacyDir !== $config->getUserConfigDir()) {
-                return;
-            }
+        if (!$pharPath || !is_file($pharPath) || !is_writable($pharPath)) {
+            return;
+        }
 
-            // Check if the path is a regular, writable file.
-            if (!is_file($pharPath) || !is_writable($pharPath)) {
-                return;
-            }
+        // Avoid deleting random directories in path
+        $legacyDir = dirname(dirname($pharPath));
+        if ($legacyDir !== $this->config()->getUserConfigDir()) {
+            return;
+        }
 
-            $message = "\n<comment>Warning:</comment> Both the Legacy (PHP) CLI and the New CLI are installed on your system."
-                . "\nTo migrate fully, delete the Legacy CLI."
-                . "\n"
-                . "\n<comment>Remove the following file completely</comment>: $pharPath"
-                . "\nThis operation is safe and doesn't delete any data."
-                . "\n";
-            $this->stdErr->writeln($message);
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            if ($questionHelper->confirm('Do you want to remove this file now?')) {
-                if (unlink($pharPath)) {
-                    $this->stdErr->writeln('File successfully removed! Open a new terminal for the changes to take effect.');
-                    // Exit because no further Phar classes can be loaded.
-                    // This uses a non-zero code because the original command
-                    // technically failed.
-                    exit(1);
-                } else {
-                    $this->stdErr->writeln('<error>Error:</error> Failed to delete the file.');
-                }
-                $this->stdErr->writeln('');
+        $message = "\n<comment>Warning:</comment> Multiple CLI instances are installed."
+            . "\nThis is probably due to migration between the Legacy CLI and the new CLI."
+            . "\nIf so, delete this (Legacy) CLI instance to complete the migration."
+            . "\n"
+            . "\n<comment>Remove the following file completely</comment>: $pharPath"
+            . "\nThis operation is safe and doesn't delete any data."
+            . "\n";
+        $this->stdErr->writeln($message);
+        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
+        $questionHelper = $this->getService('question_helper');
+        if ($questionHelper->confirm('Do you want to remove this file now?')) {
+            if (unlink($pharPath)) {
+                $this->stdErr->writeln('File successfully removed! Open a new terminal for the changes to take effect.');
+                // Exit because no further Phar classes can be loaded.
+                // This uses a non-zero code because the original command
+                // technically failed.
+                exit(1);
+            } else {
+                $this->stdErr->writeln('<error>Error:</error> Failed to delete the file.');
             }
+            $this->stdErr->writeln('');
         }
     }
 
