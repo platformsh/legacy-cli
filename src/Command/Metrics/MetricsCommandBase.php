@@ -429,11 +429,12 @@ abstract class MetricsCommandBase extends CommandBase
      */
     private function getDeploymentType(Environment $environment)
     {
-        if (isset($environmentData['embedded']['deployments'][0]['type'])) {
-            return $environmentData['embedded']['deployments'][0]['type'];
-        }
         if (in_array($environment->deployment_target, ['local', 'enterprise', 'dedicated'])) {
             return $environment->deployment_target;
+        }
+        $data = $environment->getData();
+        if (isset($data['_embedded']['deployments'][0]['type'])) {
+            return $data['_embedded']['deployments'][0]['type'];
         }
         throw new \RuntimeException('Failed to determine the deployment type');
     }
