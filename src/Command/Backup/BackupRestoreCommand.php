@@ -87,15 +87,6 @@ class BackupRestoreCommand extends CommandBase
             ? $this->api()->getEnvironmentLabel($targetEnvironment)
             : '<info>' . $target . '</info>';
 
-        // Do not allow restoring with --target on legacy regions: it can
-        // overwrite the wrong branch. This is a (hopefully) temporary measure.
-        if ($targetName !== $environment->name && \preg_match('#^us\.m#', $project->region)) {
-            $this->stdErr->writeln('Backups cannot be automatically restored to another environment on this region: <comment>' . $project->region . '</comment>');
-            $this->stdErr->writeln('Please contact support.');
-
-            return 1;
-        }
-
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
