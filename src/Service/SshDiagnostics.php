@@ -111,8 +111,10 @@ class SshDiagnostics
      *   The SSH connection URI.
      * @param Process $failedProcess
      *   The failed SSH process.
+     * @param bool $newline
+     *   Whether to add a new line before messages.
      */
-    public function diagnoseFailure($uri, Process $failedProcess)
+    public function diagnoseFailure($uri, Process $failedProcess, $newline = true)
     {
         if (!$this->ssh->hostIsInternal($uri)) {
             return;
@@ -132,7 +134,9 @@ class SshDiagnostics
 
         $mfaVerified = ($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa();
         if (!$mfaVerified && $this->connectionFailedDueToMFA($failedProcess)) {
-            $this->stdErr->writeln('');
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
 
             if (!$this->certifier->getExistingCertificate() && !$this->certifier->isAutoLoadEnabled()) {
                 $this->stdErr->writeln('The SSH connection failed. An SSH certificate is required.');
@@ -142,34 +146,51 @@ class SshDiagnostics
 
             $this->stdErr->writeln('The SSH connection failed because access requires MFA (multi-factor authentication).');
 
-            if ($this->api->getUser()->mfa_enabled) {
+            $user = $this->api->getUser();
+            if ($user->mfa_enabled) {
                 $this->stdErr->writeln('MFA is currently enabled on your account, but reverification is required.');
                 $this->stdErr->writeln(\sprintf('Log in again with: <comment>%s login -f</comment>', $executable));
-            } else {
-                $this->stdErr->writeln('MFA is not yet enabled on your account.');
-                if ($this->config->has('api.mfa_setup_url')) {
-                    $this->stdErr->writeln(\sprintf('Set up MFA at: <comment>%s</comment>', $this->config->get('api.mfa_setup_url')));
-                }
-                $this->stdErr->writeln(\sprintf('Then log in again with: <comment>%s login -f</comment>', $executable));
+                return;
             }
+
+            if ($user->sso_enabled) {
+                $this->stdErr->writeln('Reverification may be required.');
+                $this->stdErr->writeln(\sprintf('Log in again with: <comment>%s login -f</comment>', $executable));
+                return;
+            }
+
+            $this->stdErr->writeln('MFA is not yet enabled on your account.');
+            if ($this->config->has('api.mfa_setup_url')) {
+                $this->stdErr->writeln(\sprintf('Set up MFA at: <comment>%s</comment>', $this->config->get('api.mfa_setup_url')));
+                $this->stdErr->writeln(\sprintf('Then log in again with: <comment>%s login -f</comment>', $executable));
+                return;
+            }
+
+            $this->stdErr->writeln(\sprintf('Set up MFA, then log in again with: <comment>%s login -f</comment>', $executable));
             return;
         }
 
         if ($this->hostKeyVerificationFailed($failedProcess)) {
-            $this->stdErr->writeln('');
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
             $this->stdErr->writeln('SSH was unable to verify the host key.');
             return;
         }
 
         if ($msg = $this->noServiceAccessMessage($failedProcess)) {
-            $this->stdErr->writeln('');
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
             $this->stdErr->writeln('SSH authentication worked, but there was an access problem:');
             $this->stdErr->writeln('  ' . $msg);
             return;
         }
 
         if ($this->keyAuthenticationFailed($failedProcess) && !$this->sshKey->hasLocalKey()) {
-            $this->stdErr->writeln('');
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
             $this->stdErr->writeln('The SSH connection failed.');
             if (!$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate() && $this->config->isCommandEnabled('ssh-cert:load')) {
                 $this->stdErr->writeln(\sprintf(

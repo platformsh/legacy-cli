@@ -50,7 +50,7 @@ class RemoteHost implements HostInterface
         try {
             return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, $this->sshService->getEnv(), 3600, $input);
         } catch (ProcessFailedException $e) {
-            $this->sshDiagnostics->diagnoseFailure($this->sshUrl, $e->getProcess());
+            $this->sshDiagnostics->diagnoseFailure($this->sshUrl, $e->getProcess(), !$quiet);
             throw new ProcessFailedException($e->getProcess(), false);
         }
     }
