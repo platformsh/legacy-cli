@@ -100,7 +100,7 @@ class SessionStorage implements SessionStorageInterface
         $list = $this->manager->listAll();
 
         return array_filter(array_keys($list), function ($url) {
-            return strpos($url, $this->serverUrlBase) === 0;
+            return strpos($url, $this->serverUrlBase . '/') === 0;
         });
     }
 
