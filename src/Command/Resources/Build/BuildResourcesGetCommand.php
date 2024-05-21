@@ -18,7 +18,8 @@ class BuildResourcesGetCommand extends CommandBase
     protected function configure()
     {
         $this->setName('resources:build:get')
-            ->setAliases(['build-resources:get'])
+            ->setAliases(['build-resources:get', 'build-resources'])
+            ->setHiddenAliases(['resources:build', 'res:build'])
             ->setDescription('View the build resources of a project')
             ->addProjectOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
