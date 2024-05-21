@@ -174,8 +174,8 @@ class ResourcesCommandBase extends CommandBase
     /**
      * Formats a change in a value.
      *
-     * @param int|float|null $previousValue
-     * @param int|float|null $newValue
+     * @param int|float|string|null $previousValue
+     * @param int|float|string|null $newValue
      * @param string $suffix A unit suffix e.g. ' MB'
      *
      * @return string
@@ -191,5 +191,18 @@ class ResourcesCommandBase extends CommandBase
             $previousValue, $suffix,
             $newValue, $suffix
         );
+    }
+
+    /**
+     * Formats a CPU amount.
+     *
+     * @param int|float|string $unformatted
+     *
+     * @return string
+     *   A numeric (still comparable) string with 1 decimal place.
+     */
+    protected function formatCPU($unformatted)
+    {
+        return sprintf('%.1f', $unformatted);
     }
 }

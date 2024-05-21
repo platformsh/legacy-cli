@@ -376,8 +376,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $newProperties = array_replace_recursive($properties, $updates);
             $newSizeInfo = $this->sizeInfo($newProperties, $containerProfiles);
             $this->stdErr->writeln('    CPU: ' . $this->formatChange(
-                $sizeInfo ? $sizeInfo['cpu'] : null,
-                $newSizeInfo['cpu']
+                $this->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
+                $this->formatCPU($newSizeInfo['cpu'])
             ));
             $this->stdErr->writeln('    Memory: ' . $this->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,

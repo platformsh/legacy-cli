@@ -169,14 +169,15 @@ class QuestionHelper extends BaseQuestionHelper
      * @param mixed    $default
      * @param array    $autoCompleterValues
      * @param callable $validator
+     * @param string   $defaultLabel
      *
      * @return string
      *   The user's answer.
      */
-    public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null)
+    public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null, $defaultLabel = 'default: ')
     {
         if ($default !== null) {
-            $questionText .= ' (default: <question>' . $default . '</question>)';
+            $questionText .= sprintf(' (%s<question>%s</question>)', $defaultLabel, $default);
         }
         $questionText .= ': ';
         $question = new Question($questionText, $default);

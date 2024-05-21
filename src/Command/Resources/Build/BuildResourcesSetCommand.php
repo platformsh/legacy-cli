@@ -62,9 +62,10 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         } else {
             $cpuOption = $questionHelper->askInput(
                 'CPU size',
-                $settings['build_resources']['cpu'],
+                $this->formatCPU($settings['build_resources']['cpu']),
                 [],
-                $validateCpu
+                $validateCpu,
+                'current: '
             );
             $newline = true;
         }
@@ -76,7 +77,8 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
                 'Memory size in MB',
                 $settings['build_resources']['memory'],
                 [],
-                $validateMemory
+                $validateMemory,
+                'current: '
             );
             $newline = true;
         }
@@ -125,8 +127,8 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
     {
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
         $this->stdErr->writeln('  CPU: ' . $this->formatChange(
-            $current['cpu'],
-            isset($updates['cpu']) ? $updates['cpu'] : $current['cpu']
+            $this->formatCPU($current['cpu']),
+            $this->formatCPU(isset($updates['cpu']) ? $updates['cpu'] : $current['cpu'])
         ));
         $this->stdErr->writeln('  Memory: ' . $this->formatChange(
             $current['memory'],
