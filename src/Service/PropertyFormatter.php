@@ -83,7 +83,7 @@ class PropertyFormatter implements InputConfiguringInterface
                 break;
         }
 
-        if (!is_string($value)) {
+        if (!is_string($value) && !is_float($value)) {
             $value = rtrim(Yaml::dump($value, 2));
         }
 
