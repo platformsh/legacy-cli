@@ -401,28 +401,6 @@ class ResourcesSetCommand extends ResourcesCommandBase
     }
 
     /**
-     * Formats a change in a value.
-     *
-     * @param int|float|null $previousValue
-     * @param int|float|null $newValue
-     * @param string $suffix A unit suffix e.g. ' MB'
-     *
-     * @return string
-     */
-    protected function formatChange($previousValue, $newValue, $suffix = '')
-    {
-        if ($previousValue === null || $newValue === $previousValue) {
-            return sprintf('<info>%s%s</info>', $newValue, $suffix);
-        }
-        return sprintf(
-            '%s from %s%s to <info>%s%s</info>',
-            $newValue > $previousValue ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>',
-            $previousValue, $suffix,
-            $newValue, $suffix
-        );
-    }
-
-    /**
      * Returns the group for a service (where it belongs in the deployment object).
      *
      * @param Service|WebApp|Worker $service
