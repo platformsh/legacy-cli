@@ -87,8 +87,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $this->stdErr->writeln('');
 
-        $newline = false;
-        if ($cpuOption === null) {
+        if ($cpuOption === null && $memoryOption === null) {
             $cpuOption = $questionHelper->askInput(
                 'CPU size',
                 $this->formatCPU($settings['build_resources']['cpu']),
@@ -96,9 +95,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
                 $validateCpu,
                 'current: '
             );
-            $newline = true;
-        }
-        if ($memoryOption === null) {
+
             $memoryOption = $questionHelper->askInput(
                 'Memory size in MB',
                 $settings['build_resources']['memory'],
@@ -106,17 +103,14 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
                 $validateMemory,
                 'current: '
             );
-            $newline = true;
-        }
-        if ($newline) {
             $this->stdErr->writeln('');
         }
 
         $updates = [];
-        if ($cpuOption !== $settings['build_resources']['cpu']) {
+        if ($cpuOption !== null && $cpuOption !== $settings['build_resources']['cpu']) {
             $updates['build_resources']['cpu'] = $cpuOption;
         }
-        if ($memoryOption !== $settings['build_resources']['memory']) {
+        if ($memoryOption !== null && $memoryOption !== $settings['build_resources']['memory']) {
             $updates['build_resources']['memory'] = $memoryOption;
         }
 
