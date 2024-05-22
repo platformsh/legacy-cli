@@ -248,7 +248,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
-        $token = $this->getAccessToken($code, $codeVerifier, $localUrl);
+        $token = $this->getAccessToken($code, $codeVerifier, isset($response['redirect_uri']) ? $response['redirect_uri'] : $localUrl);
 
         // Finalize login: log out and save the new credentials.
         $this->api()->logout();

@@ -69,7 +69,7 @@ class Listener
                 $this->reportError('Invalid returned code_challenge parameter');
                 return;
             }
-            if (!$this->sendToTerminal(['code' => $_GET['code']])) {
+            if (!$this->sendToTerminal(['code' => $_GET['code'], 'redirect_uri' => $this->localUrl])) {
                 $this->reportError('Failed to send authorization code back to terminal');
                 return;
             }
