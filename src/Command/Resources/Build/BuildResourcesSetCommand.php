@@ -3,7 +3,7 @@
 namespace Platformsh\Cli\Command\Resources\Build;
 
 use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
-use Symfony\Component\Console\Exception\RuntimeException;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -29,37 +29,66 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         }
 
         $project = $this->getSelectedProject();
-        $settings = $project->getSettings();
+        $capabilities = $project->getCapabilities();
 
-        $cpuOption = $input->getOption('cpu');
-        $memoryOption = $input->getOption('memory');
+        $capability = $capabilities->getProperty('build_resources', false);
+        $maxCpu = $capability ? $capability['max_cpu'] : null;
+        $maxMemory = $capability ? $capability['max_memory'] : null;
+
+        $settings = $project->getSettings();
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $validateCpu = function ($v) {
+        $validateCpu = function ($v) use ($maxCpu) {
             $f = (float) $v;
             if ($f != $v) {
-                throw new RuntimeException('The CPU value must be a number');
+                throw new InvalidArgumentException('The CPU value must be a number');
+            }
+            if ($f < 0.1) {
+                throw new InvalidArgumentException(sprintf('The minimum allowed CPU is %.1f', 0.1));
+            }
+            if ($f > $maxCpu) {
+                throw new InvalidArgumentException(sprintf('The maximum allowed CPU is %.1f', $maxCpu));
             }
             return $f;
         };
-        $validateMemory = function ($v) {
+        $validateMemory = function ($v) use ($maxMemory) {
             $i = (int) $v;
             if ($i != $v) {
-                throw new RuntimeException('The memory value must be an integer');
+                throw new InvalidArgumentException('The memory value must be an integer');
+            }
+            if ($i < 64) {
+                throw new InvalidArgumentException(sprintf('The minimum allowed memory is %d MB', 64));
+            }
+            if ($i > $maxMemory) {
+                throw new InvalidArgumentException(sprintf('The maximum allowed memory is %d MB', $maxMemory));
             }
             return $i;
         };
 
         $this->stdErr->writeln('Update the build resources on the project: ' . $this->api()->getProjectLabel($project));
+
+        $cpuOption = $input->getOption('cpu');
+        $memoryOption = $input->getOption('memory');
+
+        try {
+            if ($cpuOption !== null) {
+                $cpuOption = $validateCpu($cpuOption);
+            }
+            if ($memoryOption !== null) {
+                $memoryOption = $validateMemory($memoryOption);
+            }
+        } catch (InvalidArgumentException $e) {
+            $this->stdErr->writeln('');
+            $this->stdErr->writeln(sprintf('<error>%s</error>', rtrim($e->getMessage(), '.')));
+            return 1;
+        }
+
         $this->stdErr->writeln('');
 
         $newline = false;
-
-        if ($cpuOption !== null) {
-            $cpuOption = $validateCpu($cpuOption);
-        } else {
+        if ($cpuOption === null) {
             $cpuOption = $questionHelper->askInput(
                 'CPU size',
                 $this->formatCPU($settings['build_resources']['cpu']),
@@ -69,10 +98,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
             );
             $newline = true;
         }
-        if ($memoryOption !== null) {
-            $memoryOption = $validateMemory($memoryOption);
-        }
-        else {
+        if ($memoryOption === null) {
             $memoryOption = $questionHelper->askInput(
                 'Memory size in MB',
                 $settings['build_resources']['memory'],
