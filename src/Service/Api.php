@@ -13,6 +13,8 @@ use GuzzleHttp\Message\ResponseInterface;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Event\LoginRequiredEvent;
+use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\GuzzleDebugSubscriber;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
@@ -41,6 +43,7 @@ use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -297,6 +300,10 @@ class Api
             return $this->onRefreshError($e);
         };
 
+        $connectorOptions['on_step_up_auth_response'] = function (ResponseInterface $response) {
+            return $this->onStepUpAuthResponse($response);
+        };
+
         $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
 
         return $connectorOptions;
@@ -334,6 +341,34 @@ class Api
         }
     }
 
+    private function onStepUpAuthResponse(ResponseInterface $response) {
+        if ($this->inLoginCheck) {
+            return null;
+        }
+
+        if ($this->stdErr->isVeryVerbose()) {
+            $this->stdErr->writeln(ApiResponseException::getErrorDetails($response));
+        }
+
+        $session = $this->getClient(false)->getConnector()->getSession();
+        $previousAccessToken = $session->get('accessToken');
+
+        $body = $response->json();
+        $authMethods = isset($body['amr']) ? $body['amr'] : [];
+        $maxAge = isset($body['max_age']) ? $body['max_age'] : null;
+
+        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent($authMethods, $maxAge));
+
+        $this->stdErr->writeln('');
+        $session = $this->getClient(false)->getConnector()->getSession();
+        $newAccessToken = $this->tokenFromSession($session);
+        if ($newAccessToken && $newAccessToken->getToken() !== $previousAccessToken) {
+            return $newAccessToken;
+        }
+
+        return null;
+    }
+
     /**
      * Logs out and prompts for re-authentication after a token refresh error.
      *
@@ -368,7 +403,7 @@ class Api
 
         $this->stdErr->writeln('');
 
-        $this->dispatcher->dispatch('login_required');
+        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent());
         $session = $this->getClient(false)->getConnector()->getSession();
 
         return $this->tokenFromSession($session);
@@ -506,7 +541,7 @@ class Api
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
-                $this->dispatcher->dispatch('login_required');
+                $this->dispatcher->dispatch('login_required', new LoginRequiredEvent());
             }
 
             try {

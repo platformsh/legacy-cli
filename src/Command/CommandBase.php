@@ -7,6 +7,7 @@ use Platformsh\Cli\Command\Self\SelfInstallCommand;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
+use Platformsh\Cli\Event\LoginRequiredEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\NoOrganizationsException;
 use Platformsh\Cli\Exception\ProjectNotFoundException;
@@ -660,9 +661,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * This is called via the 'login_required' event.
      *
+     * @param LoginRequiredEvent $event
      * @see Api::getClient()
      */
-    public function login()
+    public function login(LoginRequiredEvent $event)
     {
         $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
@@ -678,7 +680,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 /** @var \Platformsh\Cli\Service\Url $url */
                 $urlService = $this->getService('url');
                 if ($urlService->canOpenUrls()) {
-                    $this->stdErr->writeln('Authentication is required.');
+                    $this->stdErr->writeln($event->getMessage());
                     $this->stdErr->writeln('');
                     if ($sessionAdvice) {
                         $this->stdErr->writeln($sessionAdvice);
@@ -688,7 +690,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     $questionHelper = $this->getService('question_helper');
                     if ($questionHelper->confirm('Log in via a browser?')) {
                         $this->stdErr->writeln('');
-                        $exitCode = $this->runOtherCommand('auth:browser-login');
+                        $exitCode = $this->runOtherCommand('auth:browser-login', $event->getLoginOptions());
                         $this->stdErr->writeln('');
                         $success = $exitCode === 0;
                     }
@@ -696,7 +698,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
         if (!$success) {
-            throw new LoginRequiredException();
+            $e = new LoginRequiredException();
+            $e->setMessageFromEvent($event);
+            throw $e;
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Exception;
 
+use Platformsh\Cli\Event\LoginRequiredEvent;
 use Platformsh\Cli\Service\Config;
 
 class LoginRequiredException extends HttpException
@@ -24,5 +25,16 @@ class LoginRequiredException extends HttpException
             . "\n\nTo authenticate non-interactively, configure an API token using the {$envPrefix}TOKEN environment variable.";
 
         parent::__construct($message, $previous);
+    }
+
+    public function setMessageFromEvent(LoginRequiredEvent $event)
+    {
+        $this->message = $event->getMessage();
+        $executable = $this->config->get('application.executable');
+        $cmd = 'login';
+        if ($options = $event->getLoginOptionsCmdLine()) {
+            $cmd .= ' ' . $options;
+        }
+        $this->message .= "\n\nPlease log in by running:\n    $executable $cmd";
     }
 }
