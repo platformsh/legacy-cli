@@ -27,6 +27,9 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Environment(s) not to delete.\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('exclude-type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment type(s) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('inactive', null, InputOption::VALUE_NONE, 'Delete all inactive environments (adding to any others selected)')
+            ->addOption('status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Delete all environments of a status (adding to any others selected)' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('only-status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only delete environments of a specific status' . "\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('exclude-status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment status(es) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)')
             ->addOption('allow-delete-parent', null, InputOption::VALUE_NONE, 'Allow environments that have children to be deleted');
         $this->addProjectOption()
@@ -143,6 +146,19 @@ EOF
             $this->stdErr->writeln('');
         }
 
+        // Gather environments with the specified --status (can be multiple).
+        if ($statuses = ArrayArgument::getOption($input, 'status')) {
+            $anythingSpecified = true;
+            $withStatuses = [];
+            foreach ($environments as $environment) {
+                if (\in_array($environment->status, $statuses)) {
+                    $selectedEnvironments[$environment->id] = $withStatuses[$environment->id] = $environment;
+                }
+            }
+            $this->stdErr->writeln($this->formatPlural(count($withStatuses), 'environment') . ' found with the status(es): ' . implode(', ', $statuses));
+            $this->stdErr->writeln('');
+        }
+
         // Add the current environment if nothing is otherwise specified.
         if (!$anythingSpecified
             && empty($selectedEnvironments)
@@ -166,6 +182,24 @@ EOF
         });
         if (($numExcluded = count($selectedEnvironments) - count($filtered)) > 0) {
             $this->stdErr->writeln($this->formatPlural($numExcluded, 'environment') . ' excluded by type.');
+            $this->stdErr->writeln('');
+        }
+        $selectedEnvironments = $filtered;
+
+        // Exclude environment status(es) specified via --exclude-status or --only-status.
+        $excludeStatuses = ArrayArgument::getOption($input, 'exclude-status');
+        $onlyStatuses = ArrayArgument::getOption($input, 'only-status');
+        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeStatuses, $onlyStatuses) {
+            if (\in_array($environment->status, $excludeStatuses, true)) {
+                return false;
+            }
+            if (!empty($onlyStatuses) && !\in_array($environment->status, $onlyStatuses, true)) {
+                return false;
+            }
+            return true;
+        });
+        if (($numExcluded = count($selectedEnvironments) - count($filtered)) > 0) {
+            $this->stdErr->writeln($this->formatPlural($numExcluded, 'environment') . ' excluded by status.');
             $this->stdErr->writeln('');
         }
         $selectedEnvironments = $filtered;

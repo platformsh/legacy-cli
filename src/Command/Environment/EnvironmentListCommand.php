@@ -37,6 +37,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             ->setAliases(['environments', 'env'])
             ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
+            ->addOption('status', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter environments by status (active, inactive, dirty, paused, deleting).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
@@ -162,6 +163,9 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         }
         if ($types = ArrayArgument::getOption($input, 'type')) {
             $filters['type'] = $types;
+        }
+        if ($statuses = ArrayArgument::getOption($input, 'status')) {
+            $filters['status'] = $statuses;
         }
         $this->filterEnvironments($environments, $filters);
 
@@ -300,6 +304,11 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         if (!empty($filters['type'])) {
             $environments = array_filter($environments, function (Environment $environment) use ($filters) {
                 return \in_array($environment->type, $filters['type']);
+            });
+        }
+        if (!empty($filters['status'])) {
+            $environments = array_filter($environments, function (Environment $environment) use ($filters) {
+                return \in_array($environment->status, $filters['status']);
             });
         }
     }
