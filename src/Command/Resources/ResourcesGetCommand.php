@@ -105,7 +105,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
 
             if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {
                 $profileInfo = $containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']];
-                $row['cpu'] = isset($profileInfo['cpu']) ? $profileInfo['cpu'] : '';
+                $row['cpu'] = isset($profileInfo['cpu']) ? $this->formatCPU($profileInfo['cpu']) : '';
                 $row['memory'] = isset($profileInfo['cpu']) ? $profileInfo['memory'] : '';
             }
 

@@ -376,8 +376,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $newProperties = array_replace_recursive($properties, $updates);
             $newSizeInfo = $this->sizeInfo($newProperties, $containerProfiles);
             $this->stdErr->writeln('    CPU: ' . $this->formatChange(
-                $sizeInfo ? $sizeInfo['cpu'] : null,
-                $newSizeInfo['cpu']
+                $this->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
+                $this->formatCPU($newSizeInfo['cpu'])
             ));
             $this->stdErr->writeln('    Memory: ' . $this->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,
@@ -398,28 +398,6 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 ' MB'
             ));
         }
-    }
-
-    /**
-     * Formats a change in a value.
-     *
-     * @param int|float|null $previousValue
-     * @param int|float|null $newValue
-     * @param string $suffix A unit suffix e.g. ' MB'
-     *
-     * @return string
-     */
-    protected function formatChange($previousValue, $newValue, $suffix = '')
-    {
-        if ($previousValue === null || $newValue === $previousValue) {
-            return sprintf('<info>%s%s</info>', $newValue, $suffix);
-        }
-        return sprintf(
-            '%s from %s%s to <info>%s%s</info>',
-            $newValue > $previousValue ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>',
-            $previousValue, $suffix,
-            $newValue, $suffix
-        );
     }
 
     /**

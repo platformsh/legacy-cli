@@ -170,4 +170,39 @@ class ResourcesCommandBase extends CommandBase
         }
         return null;
     }
+
+    /**
+     * Formats a change in a value.
+     *
+     * @param int|float|string|null $previousValue
+     * @param int|float|string|null $newValue
+     * @param string $suffix A unit suffix e.g. ' MB'
+     *
+     * @return string
+     */
+    protected function formatChange($previousValue, $newValue, $suffix = '')
+    {
+        if ($previousValue === null || $newValue === $previousValue) {
+            return sprintf('<info>%s%s</info>', $newValue, $suffix);
+        }
+        return sprintf(
+            '%s from %s%s to <info>%s%s</info>',
+            $newValue > $previousValue ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>',
+            $previousValue, $suffix,
+            $newValue, $suffix
+        );
+    }
+
+    /**
+     * Formats a CPU amount.
+     *
+     * @param int|float|string $unformatted
+     *
+     * @return string
+     *   A numeric (still comparable) string with 1 decimal place.
+     */
+    protected function formatCPU($unformatted)
+    {
+        return sprintf('%.1f', $unformatted);
+    }
 }

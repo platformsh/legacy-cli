@@ -241,6 +241,8 @@ class Application extends ParentApplication
         $commands[] = new Command\Resources\ResourcesGetCommand();
         $commands[] = new Command\Resources\ResourcesSizeListCommand();
         $commands[] = new Command\Resources\ResourcesSetCommand();
+        $commands[] = new Command\Resources\Build\BuildResourcesGetCommand();
+        $commands[] = new Command\Resources\Build\BuildResourcesSetCommand();
         $commands[] = new Command\RuntimeOperation\ListCommand();
         $commands[] = new Command\RuntimeOperation\RunCommand();
         $commands[] = new Command\SourceOperation\ListCommand();

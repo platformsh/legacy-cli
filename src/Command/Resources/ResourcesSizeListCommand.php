@@ -79,7 +79,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
 
         $rows = [];
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            $rows[] = ['size' => $sizeName, 'cpu' => $sizeInfo['cpu'], 'memory' => $sizeInfo['memory']];
+            $rows[] = ['size' => $sizeName, 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
         }
 
         if (!$table->formatIsMachineReadable()) {
