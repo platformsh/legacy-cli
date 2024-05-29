@@ -13,6 +13,8 @@ class Listener
     private $codeChallenge;
     private $prompt;
     private $scope;
+    private $authMethods;
+    private $maxAge;
 
     public function __construct() {
         $required = [
@@ -35,6 +37,8 @@ class Listener
         $this->scope = isset($_ENV['CLI_OAUTH_SCOPE']) ? $_ENV['CLI_OAUTH_SCOPE'] : '';
         $this->localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
+        $this->authMethods = isset($_ENV['CLI_OAUTH_METHODS']) ? $_ENV['CLI_OAUTH_METHODS'] : '';
+        $this->maxAge = isset($_ENV['CLI_OAUTH_MAX_AGE']) ? $_ENV['CLI_OAUTH_MAX_AGE'] : null;
     }
 
     /**
@@ -42,7 +46,7 @@ class Listener
      */
     private function getOAuthUrl()
     {
-        return $this->authUrl . '?' . http_build_query([
+        $params = [
             'redirect_uri' => $this->localUrl,
             'state' => $this->state,
             'client_id' => $this->clientId,
@@ -51,7 +55,16 @@ class Listener
             'code_challenge' => $this->codeChallenge,
             'code_challenge_method' => 'S256',
             'scope' => $this->scope,
-        ], '', '&', PHP_QUERY_RFC3986);
+        ];
+
+        if (!empty($this->authMethods)) {
+            $params['amr'] = $this->authMethods;
+        }
+        if ($this->maxAge !== null && $this->maxAge !== '') {
+            $params['max_age'] = $this->maxAge;
+        }
+
+        return $this->authUrl . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
 
     /**

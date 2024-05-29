@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c8954eaa7696ef050e10916cc7b4fee5",
+    "content-hash": "10a71f98d1b34e7a7ea8562facce2adf",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -873,16 +873,16 @@
         },
         {
             "name": "pjcdawkins/guzzle-oauth2-plugin",
-            "version": "v2.3.3",
+            "version": "v2.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pjcdawkins/guzzle-oauth2-plugin.git",
-                "reference": "8409e94266896da3b5eb9e8231a267783466af66"
+                "reference": "affdff1cfe962c436b7e725607d03f971602c249"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pjcdawkins/guzzle-oauth2-plugin/zipball/8409e94266896da3b5eb9e8231a267783466af66",
-                "reference": "8409e94266896da3b5eb9e8231a267783466af66",
+                "url": "https://api.github.com/repos/pjcdawkins/guzzle-oauth2-plugin/zipball/affdff1cfe962c436b7e725607d03f971602c249",
+                "reference": "affdff1cfe962c436b7e725607d03f971602c249",
                 "shasum": ""
             },
             "require": {
@@ -915,22 +915,22 @@
             ],
             "description": "An OAuth2 plugin (subscriber) for Guzzle (forked from commerceguys/guzzle-oauth2-plugin)",
             "support": {
-                "source": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/tree/v2.3.3"
+                "source": "https://github.com/pjcdawkins/guzzle-oauth2-plugin/tree/v2.4.1"
             },
-            "time": "2023-05-22T15:13:44+00:00"
+            "time": "2024-05-23T15:23:52+00:00"
         },
         {
             "name": "platformsh/client",
-            "version": "0.83.0",
+            "version": "0.84.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/platformsh/platformsh-client-php.git",
-                "reference": "5c059693034c20c93bbf408222f6103cabe91b21"
+                "reference": "6a3920df8de4588e911a575d0c9b6e4293c33bb3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/5c059693034c20c93bbf408222f6103cabe91b21",
-                "reference": "5c059693034c20c93bbf408222f6103cabe91b21",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/6a3920df8de4588e911a575d0c9b6e4293c33bb3",
+                "reference": "6a3920df8de4588e911a575d0c9b6e4293c33bb3",
                 "shasum": ""
             },
             "require": {
@@ -939,7 +939,7 @@
                 "guzzlehttp/cache-subscriber": "~0.1",
                 "guzzlehttp/guzzle": "~5.3",
                 "php": ">=5.5.9",
-                "pjcdawkins/guzzle-oauth2-plugin": ">=2.3.3 <=3.0"
+                "pjcdawkins/guzzle-oauth2-plugin": ">=2.4.0 <=3.0"
             },
             "require-dev": {
                 "phpunit/phpunit": "~4.5"
@@ -962,9 +962,9 @@
             "description": "Platform.sh API client",
             "support": {
                 "issues": "https://github.com/platformsh/platformsh-client-php/issues",
-                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.83.0"
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.84.0"
             },
-            "time": "2024-05-21T12:55:28+00:00"
+            "time": "2024-05-23T15:33:40+00:00"
         },
         {
             "name": "platformsh/console-form",

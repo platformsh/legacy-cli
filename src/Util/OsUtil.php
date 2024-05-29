@@ -43,7 +43,7 @@ class OsUtil
     {
         // Skip quoting the argument if it only contains safe characters.
         // This uses a fairly conservative allow-list.
-        if (preg_match('/^[a-z0-9_.@%-]+$/i', $arg) === 1) {
+        if (preg_match('/^[a-z0-9_.@%:-]+$/i', $arg) === 1) {
             return $arg;
         }
         return "'" . str_replace("'", "'\\''", $arg) . "'";

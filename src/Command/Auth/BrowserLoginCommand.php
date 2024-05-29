@@ -5,6 +5,7 @@ use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
@@ -29,7 +30,9 @@ class BrowserLoginCommand extends CommandBase
         }
 
         $this->setDescription('Log in to ' . $service . ' via a browser')
-            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in');
+            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in')
+            ->addOption('method', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Authentication method reference (AMR) values')
+            ->addOption('max-age', null, InputOption::VALUE_REQUIRED, 'The maximum age (in seconds) of the authentication session');
         Url::configureInput($this->getDefinition());
 
         $executable = $this->config()->get('application.executable');
@@ -61,7 +64,7 @@ class BrowserLoginCommand extends CommandBase
         }
         $connector = $this->api()->getClient(false)->getConnector();
         $force = $input->getOption('force');
-        if (!$force && $connector->isLoggedIn()) {
+        if (!$force && $input->getOption('method') === [] && $input->getOption('max-age') === null && $connector->isLoggedIn()) {
             // Get account information, simultaneously checking whether the API
             // login is still valid. If the request works, then do not log in
             // again (unless --force is used). If the request fails, proceed
@@ -154,6 +157,8 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_PROMPT' => $force ? 'consent select_account' : 'consent',
             'CLI_OAUTH_SCOPE' => 'offline_access',
             'CLI_OAUTH_FILE' => $responseFile,
+            'CLI_OAUTH_METHODS' => implode(' ', ArrayArgument::getOption($input, 'method')),
+            'CLI_OAUTH_MAX_AGE' => $input->getOption('max-age'),
         ] + $this->getParentEnv());
         $process->setTimeout(null);
         $this->stdErr->writeln('Starting local web server with command: <info>' . $process->getCommandLine() . '</info>', OutputInterface::VERBOSITY_VERY_VERBOSE);
