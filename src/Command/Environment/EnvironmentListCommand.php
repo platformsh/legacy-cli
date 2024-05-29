@@ -118,8 +118,8 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
                 $row[] = $environment->title;
             }
 
-            $row[] = $this->formatEnvironmentStatus($environment->status);
-            $row[] = $environment->type;
+            $row[] = new AdaptiveTableCell($this->formatEnvironmentStatus($environment->status), ['wrap' => false]);
+            $row[] = new AdaptiveTableCell($environment->type, ['wrap' => false]);
 
             $row[] = $this->formatter->format($environment->created_at, 'created_at');
             $row[] = $this->formatter->format($environment->updated_at, 'updated_at');
