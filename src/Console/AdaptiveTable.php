@@ -162,9 +162,10 @@ class AdaptiveTable extends Table
         // Account for left-indented cells.
         if (strpos($contents, ' ') === 0) {
             $trimmed = ltrim($contents, ' ');
-            $indent = Helper::strlen($contents) - Helper::strlen($trimmed);
+            $indentAmount = Helper::strlen($contents) - Helper::strlen($trimmed);
+            $indent = str_repeat(' ', $indentAmount);
 
-            return str_repeat(' ', $indent) . $this->wrapWithDecoration($trimmed, $width - $indent);
+            return preg_replace('/^/m', $indent, $this->wrapWithDecoration($trimmed, $width - $indentAmount));
         }
 
         return $this->wrapWithDecoration($contents, $width);

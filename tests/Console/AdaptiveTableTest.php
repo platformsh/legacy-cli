@@ -57,6 +57,52 @@ EOT;
     }
 
     /**
+     * Test that the left-indent of cells is preserved.
+     */
+    public function testAdaptedRowsWithIndent()
+    {
+        $maxTableWidth = 75;
+        $buffer = new BufferedOutput();
+        $table = new AdaptiveTable($buffer, $maxTableWidth);
+        $table->setHeaders([
+            ['Row', 'Lorem', 'ipsum', 'dolor', 'Indented'],
+        ]);
+        $table->setRows([
+            ['#1', 'amet', 'consectetur', 'adipiscing elit', '  Quisque pulvinar'],
+            ['#2', 'tellus sit amet', 'sollicitudin', 'tincidunt', '  risus'],
+            new TableSeparator(),
+            ['#3', 'risus', 'sem', 'mattis', '  ex'],
+            ['#4', 'quis', 'luctus metus', 'lorem cursus', '  ligula'],
+        ]);
+        $table->render();
+        $result = $buffer->fetch();
+
+        // Test that the table fits into the maximum width.
+        $lineWidths = [];
+        foreach (explode(PHP_EOL, $result) as $line) {
+            $lineWidths[] = strlen($line);
+        }
+        $this->assertLessThanOrEqual($maxTableWidth, max($lineWidths));
+
+        $expected = <<<'EOT'
++-----+------------+-------------+--------------+------------+
+| Row | Lorem      | ipsum       | dolor        | Indented   |
++-----+------------+-------------+--------------+------------+
+| #1  | amet       | consectetur | adipiscing   |   Quisque  |
+|     |            |             | elit         |   pulvinar |
+| #2  | tellus sit | sollicitudi | tincidunt    |   risus    |
+|     | amet       | n           |              |            |
++-----+------------+-------------+--------------+------------+
+| #3  | risus      | sem         | mattis       |   ex       |
+| #4  | quis       | luctus      | lorem cursus |   ligula   |
+|     |            | metus       |              |            |
++-----+------------+-------------+--------------+------------+
+
+EOT;
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
      * Test a non-wrapping table cell.
      */
     public function testAdaptedRowsWithNonWrappingCell()
