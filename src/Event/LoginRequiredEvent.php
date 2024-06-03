@@ -14,7 +14,7 @@ class LoginRequiredEvent extends Event
      * @param string[] $authMethods
      * @param int|null $maxAge
      */
-    public function __construct(array $authMethods = [], $maxAge = 0)
+    public function __construct(array $authMethods = [], $maxAge = null)
     {
         $this->authMethods = $authMethods;
         $this->maxAge = $maxAge;
