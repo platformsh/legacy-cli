@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.19.0",
-        "sha1": "fc28ba87423e750851170faacc4d7d2120655a90",
-        "sha256": "af8bdf2e13b1482a22bd5f1c795a33295ccedebc08b63853d6fa4365b3d8cd3e",
+        "version": "4.19.1",
+        "sha1": "6f39c83b9c0fecbb3b489d3920ecad18074f0c41",
+        "sha256": "5d91ce0b6d6dfae34369e27eb96c37b9d42af0fac02dda2e912f0f7eccf24d72",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.19.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.19.1/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -60,7 +60,8 @@
             "4.17.0": "Significant changes:\n\n* Add `mfa_enabled` and `sso_enabled` columns to the `org:users` command.\n* In the `push` command, do not set a parent if none is specified.  \n  This also removes the interactive questions for the environment parent and \n  type.\n* Remove `manual` value from `--resources-init` in 3 commands.  \n  Affects Upsun only, in commands: `activate`, `backup:restore`, and `branch`.\n\nSmaller changes:\n\n* Fix \"Variables cannot be bracketed\" error with SSH in fish.\n* Fix resolution of variable name during `variable:create --update`.\n* Fix obtaining GitHub token in the `self:release` command.\n* Dependency updates:\n  - Bump composer/ca-bundle from 1.4.1 to 1.4.2 (#1424)\n  - Bump phpseclib/phpseclib from 2.0.31 to 2.0.47 in /vendor-bin/box (#1422)\n  - Bump giggsey/libphonenumber-for-php from 8.13.31 to 8.13.32 (#1425)",
             "4.18.0": "New features:\n\n* Add --no-code option to backup:restore, and deprecate --restore-code\n\nOther changes:\n\n* Improvements to disk sizing in the resources:set command:\n  - Use the API to validate whether a service can have a disk\n  - Allow a disk size of 0\n* Fix \"No access token found\" after auto-login in auth:token command\n* Bump giggsey/libphonenumber-for-php from 8.13.32 to 8.13.34",
             "4.18.1": "* Add `--type` filter to the `integration:list` command.\n* Fix deployment type detection in `metrics` commands.\n* Fix loading a subscription through the wrong org.\n* Avoid prompting for `self:install` when not the only instance.\n* Fix `--gateway-ports` option in tunnel commands.",
-            "4.19.0": "New features:\r\n\r\n* Add options for listing environments by status:\r\n  - Add `--status` filter option to the `environment:list` command.\r\n  - Add `--status`, `--only-status` and `--exclude-status` options to the\r\n    `environment:delete` command.\r\n* Add commands to get and set build resources:\r\n  - `resources:build:get` (or `build-resources:get`)\r\n  - `resources:build:set` (or `build-resources:set`)\r\n\r\nOther changes:\r\n\r\n* Allow local OAuth listener to succeed on an alternative port.\r\n* Support RFC 9470 step-up authentication.\r\n* Disable wrapping on status and type columns in the environment list.\r\n* Remove YAML formatting when displaying floats.\r\n* Avoid misidentifying sessions from alternative configs.\r\n* Improve SSH/MFA error message.\r\n* Remove legacy region check in `backup:restore` command.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.34 to 8.13.37."
+            "4.19.0": "New features:\r\n\r\n* Add options for listing environments by status:\r\n  - Add `--status` filter option to the `environment:list` command.\r\n  - Add `--status`, `--only-status` and `--exclude-status` options to the\r\n    `environment:delete` command.\r\n* Add commands to get and set build resources:\r\n  - `resources:build:get` (or `build-resources:get`)\r\n  - `resources:build:set` (or `build-resources:set`)\r\n\r\nOther changes:\r\n\r\n* Allow local OAuth listener to succeed on an alternative port.\r\n* Support RFC 9470 step-up authentication.\r\n* Disable wrapping on status and type columns in the environment list.\r\n* Remove YAML formatting when displaying floats.\r\n* Avoid misidentifying sessions from alternative configs.\r\n* Improve SSH/MFA error message.\r\n* Remove legacy region check in `backup:restore` command.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.34 to 8.13.37.",
+            "4.19.1": "* Fix misleading \"More recent authentication is required\" message\n* Preserve left indent for all lines in a table"
         }
     },
     {
