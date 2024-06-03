@@ -38,8 +38,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
     {
         $this
             ->setName('integration:activity:list')
-            ->setAliases(['int:act'])
-            ->setHiddenAliases(['integration:activities', 'i:act'])
+            ->setAliases(['integration:activities'])
+            ->setHiddenAliases(['int:act', 'i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter activities by type.'
