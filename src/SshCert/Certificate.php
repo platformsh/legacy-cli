@@ -10,6 +10,9 @@ class Certificate {
     private $metadata;
     private $contents;
 
+    private $tokenClaims;
+    private $inlineAccess;
+
     /**
      * Certificate constructor.
      *
@@ -84,7 +87,11 @@ class Certificate {
      * @return bool
      */
     public function hasMfa() {
-        return \array_key_exists('has-mfa@platform.sh', $this->metadata->getExtensions());
+        if (\array_key_exists('has-mfa@platform.sh', $this->metadata->getExtensions())) {
+            return true;
+        }
+        $claims = $this->tokenClaims();
+        return isset($claims['amr']) && in_array('mfa', $claims['amr'], true);
     }
 
     /**
@@ -94,5 +101,60 @@ class Certificate {
      */
     public function isApp() {
         return \array_key_exists('is-app@platform.sh', $this->metadata->getExtensions());
+    }
+
+    /**
+     * Returns token claims that were embedded in the certificate.
+     *
+     * @return array{
+     *     auth_time?: int,
+     *     amr?: string[],
+     *     grant?: string,
+     *     scp?: string[],
+     *     act?: array{sub?: string, src?: string}
+     * }
+     */
+    public function tokenClaims() {
+        if (!isset($this->tokenClaims)) {
+            $ext = $this->metadata->getExtensions();
+            $this->tokenClaims = isset($ext['token-claims@platform.sh'])
+                ? json_decode($ext['token-claims@platform.sh'], true)
+                : [];
+        }
+        return $this->tokenClaims;
+    }
+
+    /**
+     * Returns a list of SSO providers that were used for authentication.
+     *
+     * @return string[]
+     */
+    public function ssoProviders() {
+        $tokenClaims = $this->tokenClaims();
+        if (!isset($tokenClaims['amr'])) {
+            return [];
+        }
+        $ssoProviders = [];
+        foreach ($tokenClaims['amr'] as $authMethod) {
+            if (strpos($authMethod, 'sso:') === 0) {
+                $ssoProviders[] = substr($authMethod, 4);
+            }
+        }
+        return $ssoProviders;
+    }
+
+    /**
+     * Returns access info embedded in the certificate.
+     *
+     * @return array
+     */
+    public function inlineAccess() {
+        if (!isset($this->inlineAccess)) {
+            $ext = $this->metadata->getExtensions();
+            $this->inlineAccess = isset($ext['access@platform.sh'])
+                ? json_decode($ext['access@platform.sh'], true)
+                : [];
+        }
+        return $this->inlineAccess;
     }
 }

@@ -96,6 +96,10 @@ class SshCertLoadCommand extends CommandBase
             "  Multi-factor authentication: $mfaWithColor",
             "  Mode: $interactivityMode",
         ]);
+        if ($ssoProviders = $cert->ssoProviders()) {
+            $this->stdErr->writeln("  SSO provider(s): <fg=green>" . implode('</>, <fg=green>', $ssoProviders) . '</>');
+        }
+
         $this->stdErr->writeln('The certificate will be automatically refreshed when necessary.');
     }
 }

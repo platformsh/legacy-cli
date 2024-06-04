@@ -216,7 +216,7 @@ class Certifier
     public function certificateConflictsWithJwt(Certificate $certificate, $jwt = null)
     {
         $extensions = $certificate->metadata()->getExtensions();
-        if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh'])) {
+        if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh']) && !isset($extensions['token-claims@platform.sh'])) {
             // Only access-related claims matter. The token ID is allowed to differ.
             return false;
         }
@@ -229,10 +229,16 @@ class Certifier
         if (isset($extensions['access-id@platform.sh']) && (!isset($claims['access_id']) || $claims['access_id'] !== $extensions['access-id@platform.sh'])) {
             return true;
         }
-        if (isset($extensions['access@platform.sh'])) {
-            $certAccess = json_decode($extensions['access@platform.sh'], true);
-            if (!isset($claims['access']) || $claims['access'] != $certAccess) {
-                return true;
+        $certAccess = $certificate->inlineAccess();
+        if ($certAccess !== [] && (!isset($claims['access']) || $claims['access'] != $certAccess)) {
+            return true;
+        }
+        $certTokenClaims = $certificate->tokenClaims();
+        if ($certTokenClaims !== []) {
+            foreach ($certTokenClaims as $key => $value) {
+                if (!isset($claims[$key]) || $claims[$key] != $value) {
+                    return true;
+                }
             }
         }
         return false;

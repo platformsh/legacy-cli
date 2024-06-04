@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Event\LoginRequiredEvent;
 use Platformsh\Cli\SshCert\Certifier;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,6 +46,26 @@ class SshDiagnostics
             }
         }
         return '';
+    }
+
+    /**
+     * Returns step-up authentication parameters in the SSH error response.
+     *
+     * @param Process $failedProcess
+     *
+     * @return array{amr?: string[], max_age?: int}
+     */
+    private function stepUpAuthenticationParams(Process $failedProcess)
+    {
+        $errorOutput = $failedProcess->getErrorOutput();
+        if (strpos($errorOutput, 'Error: Access denied') === false) {
+            return [];
+        }
+        if (preg_match('/^Parameters: ({.+)$/m', $errorOutput, $matches)) {
+            $params = json_decode($matches[1], true);
+            return $params ?: [];
+        }
+        return [];
     }
 
     /**
@@ -131,6 +152,16 @@ class SshDiagnostics
         }
 
         $executable = $this->config->get('application.executable');
+
+        if ($params = $this->stepUpAuthenticationParams($failedProcess)) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null);
+            $this->stdErr->writeln($loginRequiredEvent->getMessage());
+            $this->stdErr->writeln(\sprintf('Log in again with: <comment>%s login %s</comment>', $executable, $loginRequiredEvent->getLoginOptionsCmdLine()));
+            return;
+        }
 
         $mfaVerified = ($cert = $this->certifier->getExistingCertificate()) && $cert->hasMfa();
         if (!$mfaVerified && $this->connectionFailedDueToMFA($failedProcess)) {
