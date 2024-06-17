@@ -311,7 +311,7 @@ class EnvironmentPushCommand extends CommandBase
             } else {
                 $targetEnvironment = $this->api()->getEnvironment($target, $project);
                 if (!$targetEnvironment) {
-                    $this->stdErr->writeln('Failed to load target environment: ' . $target);
+                    $this->stdErr->writeln('The target environment <error>' . $target . '</error> cannot be activated as it does not exist.');
                     return 1;
                 }
             }
@@ -406,6 +406,18 @@ class EnvironmentPushCommand extends CommandBase
         if (!$input->isInteractive()) {
             return false;
         }
+
+        // The environment cannot be created via a push if the Git host is
+        // external. This would indicate that a code source integration is
+        // enabled on the project (e.g. with GitHub, GitLab or Bitbucket).
+        if (!$targetEnvironment && ($gitUrl = $project->getGitUrl())) {
+            /** @var \Platformsh\Cli\Service\Ssh $ssh */
+            $ssh = $this->getService('ssh');
+            if ($ssh->hostIsInternal($gitUrl) === false) {
+                return false;
+            }
+        }
+
         if ($targetEnvironment && $targetEnvironment->is_dirty) {
             $targetEnvironment->refresh();
         }
