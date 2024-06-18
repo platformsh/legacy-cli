@@ -7,6 +7,9 @@
 
 const CLI_FILE = __FILE__;
 
+// Disable the memory limit.
+ini_set('memory_limit', '-1');
+
 // Send errors to stderr, not stdout.
 ini_set('display_errors', 'stderr');
 
