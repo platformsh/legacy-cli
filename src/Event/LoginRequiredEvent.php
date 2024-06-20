@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Event;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\EventDispatcher\Event;
 
@@ -9,15 +10,18 @@ class LoginRequiredEvent extends Event
 {
     private $authMethods;
     private $maxAge;
+    private $hasApiToken;
 
     /**
      * @param string[] $authMethods
      * @param int|null $maxAge
+     * @param bool $hasApiToken
      */
-    public function __construct(array $authMethods = [], $maxAge = null)
+    public function __construct(array $authMethods = [], $maxAge = null, $hasApiToken = false)
     {
         $this->authMethods = $authMethods;
         $this->maxAge = $maxAge;
+        $this->hasApiToken = $hasApiToken;
     }
 
     public function getMessage()
@@ -35,6 +39,24 @@ class LoginRequiredEvent extends Event
         } elseif ($this->maxAge !== null) {
             $message = 'More recent authentication is required.';
         }
+        return $message;
+    }
+
+    public function getExtendedMessage(Config $config)
+    {
+        $message = $this->getMessage();
+        if ($this->hasApiToken) {
+            if ($this->authMethods === ['mfa']) {
+                $message .= "\n\nThe API token may need to be re-created after enabling MFA.";
+            }
+            return $message;
+        }
+        $executable = $config->get('application.executable');
+        $cmd = 'login';
+        if ($options = $this->getLoginOptionsCmdLine()) {
+            $cmd .= ' ' . $options;
+        }
+        $message .= "\n\nPlease log in by running:\n    $executable $cmd";
         return $message;
     }
 
@@ -62,5 +84,13 @@ class LoginRequiredEvent extends Event
             $args[] = OsUtil::escapeShellArg(is_array($value) ? implode(',', $value) : $value);
         }
         return implode(' ', $args);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasApiToken()
+    {
+        return $this->hasApiToken;
     }
 }

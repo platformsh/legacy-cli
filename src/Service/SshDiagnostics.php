@@ -192,9 +192,8 @@ class SshDiagnostics
                 }
             }
 
-            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null);
-            $this->stdErr->writeln($loginRequiredEvent->getMessage());
-            $this->stdErr->writeln(\sprintf('Log in again with: <comment>%s login %s</comment>', $executable, $loginRequiredEvent->getLoginOptionsCmdLine()));
+            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null, $this->api->hasApiToken());
+            $this->stdErr->writeln($loginRequiredEvent->getExtendedMessage($this->config));
             return;
         }
 
