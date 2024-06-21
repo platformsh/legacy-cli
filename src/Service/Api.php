@@ -777,6 +777,7 @@ class Api
             return false;
         }
 
+        $environmentsRefreshed = $refresh === true || ($refresh === null && empty(static::$environmentsCache[$project->id]) && !$this->cache->fetch('environments:' . $project->id));
         $environments = $this->getEnvironments($project, $refresh);
 
         // Look for the environment by ID.
@@ -794,7 +795,7 @@ class Api
         }
 
         // Retry directly if the environment was not found in the cache.
-        if ($refresh === null) {
+        if (!$environmentsRefreshed) {
             if ($environment = $project->getEnvironment($id)) {
                 // If the environment was found directly, the cache must be out
                 // of date.
