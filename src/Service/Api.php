@@ -1613,4 +1613,21 @@ class Api
         $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
         return !empty($settings['sizing_api_enabled']);
     }
+
+    /**
+     * Loads the code source integration for a project.
+     *
+     * @param Project $project
+     * @return \Platformsh\Client\Model\Integration|null
+     */
+    public function getCodeSourceIntegration(Project $project)
+    {
+        $codeSourceIntegrationTypes = ['github', 'gitlab', 'bitbucket', 'bitbucket_server'];
+        foreach ($project->getIntegrations() as $integration) {
+            if (in_array($integration->type, $codeSourceIntegrationTypes)) {
+                return $integration;
+            }
+        }
+        return null;
+    }
 }

@@ -264,6 +264,12 @@ EOF
             }
         }
 
+        $codeSourceIntegration = null;
+        if (!$this->allEnvironmentsLocal($selectedEnvironments)) {
+            $codeSourceIntegration = $this->api()->getCodeSourceIntegration($this->getSelectedProject());
+        }
+        $integrationPrunesBranches = $codeSourceIntegration && $codeSourceIntegration->getProperty('prune_branches', false);
+
         foreach ($byStatus as $status => $environments) {
             if (count($environments) === 0) {
                 continue;
@@ -319,7 +325,7 @@ EOF
                             } else {
                                 $toDeleteBranch += $environments;
                             }
-                        } elseif ($shouldWait && $input->isInteractive() && !$input->getOption('no-delete-branch') && $questionHelper->confirm($deleteConfirmText)) {
+                        } elseif ($shouldWait && $input->isInteractive() && !$input->getOption('no-delete-branch') && !$integrationPrunesBranches && $questionHelper->confirm($deleteConfirmText)) {
                             $toDeleteBranch += $environments;
                         }
                     } else {
@@ -337,6 +343,12 @@ EOF
                             $this->stdErr->writeln('The environment(s) are inactive and <comment>--no-delete-branch</comment> was specified, so they will not be deleted.');
                         }
                         $this->stdErr->writeln('');
+                        break;
+                    }
+                    if ($codeSourceIntegration && $integrationPrunesBranches) {
+                        $this->stdErr->writeln(sprintf('The project has a <comment>%s</comment> integration with the <comment>prune_branches</comment> feature enabled, so inactive environments cannot be deleted directly.', $codeSourceIntegration->type));
+                        $this->stdErr->writeln('');
+                        $error = true;
                         break;
                     }
                     if ($isSingle) {
@@ -378,6 +390,25 @@ EOF
         $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
 
         return $success ? 0 : 1;
+    }
+
+    /**
+     * Tests whether a project has no code source integration based on the has_remote property of the environments.
+     *
+     * This avoids having to fetch the project's integrations.
+     *
+     * @param Environment[] $environments
+     * @return bool
+     */
+    private function allEnvironmentsLocal(array $environments)
+    {
+        $local = null;
+        foreach ($environments as $environment) {
+            if ($local !== false) {
+                $local = $environment->getProperty('has_remote', false, false) === false;
+            }
+        }
+        return $local === true;
     }
 
     /**

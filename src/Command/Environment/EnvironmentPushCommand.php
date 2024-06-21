@@ -312,7 +312,7 @@ class EnvironmentPushCommand extends CommandBase
                 $targetEnvironment = $this->api()->getEnvironment($target, $project);
                 if (!$targetEnvironment) {
                     $this->stdErr->writeln('The target environment <error>' . $target . '</error> cannot be activated (not found).');
-                    if ($this->hasExternalGitHost($project) && ($integration = $this->getCodeSourceIntegration($project))) {
+                    if ($this->hasExternalGitHost($project) && ($integration = $this->api()->getCodeSourceIntegration($project))) {
                         $this->stdErr->writeln(sprintf("Environments may be created through the project's <info>%s</info> integration.", $integration->type));
                         if ($this->config()->isCommandEnabled('integration:get')) {
                             $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
@@ -389,21 +389,6 @@ class EnvironmentPushCommand extends CommandBase
         $this->api()->clearEnvironmentsCache($targetEnvironment->project);
 
         return $activities;
-    }
-
-    /**
-     * @param Project $project
-     * @return \Platformsh\Client\Model\Integration|null
-     */
-    private function getCodeSourceIntegration(Project $project)
-    {
-        $codeSourceIntegrationTypes = ['github', 'gitlab', 'bitbucket', 'bitbucket_server'];
-        foreach ($project->getIntegrations() as $integration) {
-            if (in_array($integration->type, $codeSourceIntegrationTypes)) {
-                return $integration;
-            }
-        }
-        return null;
     }
 
     /**
