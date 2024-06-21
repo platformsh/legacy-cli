@@ -103,8 +103,9 @@ class SshConfig {
             // This skips unnecessary CLI bootstrapping while running SSH from
             // the CLI itself.
             /** @see Ssh::getEnv() */
-            if (in_array(basename(getenv('SHELL')), ['bash', 'csh', 'dash', 'fish', 'ksh', 'tcsh', 'zsh'], true)) {
+            if (in_array(basename(getenv('SHELL')), ['bash', 'csh', 'dash', 'ksh', 'tcsh', 'zsh'], true)) {
                 // Literal double-quotes do not appear to be possible in SSH config.
+                // See: https://bugzilla.mindrot.org/show_bug.cgi?id=3474
                 // So the condition here uses single quotes after the variable
                 // to allow it to be treated as an empty string when not set.
                 $refreshCommand = sprintf("[ \$%s'' = '1' ] || %s", Ssh::SSH_NO_REFRESH_ENV_VAR, $refreshCommand);
