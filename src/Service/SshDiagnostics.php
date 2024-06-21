@@ -126,6 +126,26 @@ class SshDiagnostics
     }
 
     /**
+     * Checks whether the methods match between a step-up authentication challenge and the current auth methods.
+     *
+     * @param string[] $challengeMethods
+     * @param string[] $currentMethods
+     * @return bool
+     */
+    private function authMethodsMatch(array $challengeMethods, array $currentMethods)
+    {
+        $unmatched = array_diff($challengeMethods, $currentMethods);
+        if (in_array('sso:*', $currentMethods, TRUE)) {
+            foreach ($unmatched as $key => $method) {
+                if (strpos($method, 'sso:') === 0) {
+                    unset($unmatched[$key]);
+                }
+            }
+        }
+        return $unmatched === [];
+    }
+
+    /**
      * Diagnoses and reports reasons for an SSH command failure.
      *
      * @param string $uri
@@ -157,9 +177,23 @@ class SshDiagnostics
             if ($newline) {
                 $this->stdErr->writeln('');
             }
-            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null);
-            $this->stdErr->writeln($loginRequiredEvent->getMessage());
-            $this->stdErr->writeln(\sprintf('Log in again with: <comment>%s login %s</comment>', $executable, $loginRequiredEvent->getLoginOptionsCmdLine()));
+
+            // Check if the step-up authentication challenge occurred just
+            // because the current token was revoked. This may be the case if
+            // the certificate's auth methods match those required in the
+            // challenge. If so, refresh the certificate.
+            if (($cert = $this->certifier->getExistingCertificate())) {
+                $claims = $cert->tokenClaims();
+                if (isset($params['amr'], $claims['amr']) && $this->authMethodsMatch($params['amr'], $claims['amr'])) {
+                    $this->stdErr->writeln('The SSH certificate is out of date. Refreshing...');
+                    $this->certifier->generateCertificate($cert);
+                    $this->stdErr->writeln('Please try again.');
+                    return;
+                }
+            }
+
+            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null, $this->api->hasApiToken());
+            $this->stdErr->writeln($loginRequiredEvent->getExtendedMessage($this->config));
             return;
         }
 

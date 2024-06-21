@@ -29,12 +29,6 @@ class LoginRequiredException extends HttpException
 
     public function setMessageFromEvent(LoginRequiredEvent $event)
     {
-        $this->message = $event->getMessage();
-        $executable = $this->config->get('application.executable');
-        $cmd = 'login';
-        if ($options = $event->getLoginOptionsCmdLine()) {
-            $cmd .= ' ' . $options;
-        }
-        $this->message .= "\n\nPlease log in by running:\n    $executable $cmd";
+        $this->message = $event->getExtendedMessage($this->config);
     }
 }

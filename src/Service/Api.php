@@ -357,7 +357,7 @@ class Api
         $authMethods = isset($body['amr']) ? $body['amr'] : [];
         $maxAge = isset($body['max_age']) ? $body['max_age'] : null;
 
-        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent($authMethods, $maxAge));
+        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent($authMethods, $maxAge, $this->hasApiToken()));
 
         $this->stdErr->writeln('');
         $session = $this->getClient(false)->getConnector()->getSession();
@@ -403,7 +403,7 @@ class Api
 
         $this->stdErr->writeln('');
 
-        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent());
+        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
         $session = $this->getClient(false)->getConnector()->getSession();
 
         return $this->tokenFromSession($session);
@@ -541,7 +541,7 @@ class Api
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
-                $this->dispatcher->dispatch('login_required', new LoginRequiredEvent());
+                $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
             }
 
             try {
