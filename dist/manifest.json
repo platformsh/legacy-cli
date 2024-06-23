@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.19.1",
-        "sha1": "6f39c83b9c0fecbb3b489d3920ecad18074f0c41",
-        "sha256": "5d91ce0b6d6dfae34369e27eb96c37b9d42af0fac02dda2e912f0f7eccf24d72",
+        "version": "4.19.2",
+        "sha1": "d0b7d5013585cc66cf450fb460b3e87a0d7a132f",
+        "sha256": "cf13d86fafe92b90c0b82e26845b6548083197e8aa2d0a1c0a478d8efa81bd2d",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.19.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.19.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -61,7 +61,8 @@
             "4.18.0": "New features:\n\n* Add --no-code option to backup:restore, and deprecate --restore-code\n\nOther changes:\n\n* Improvements to disk sizing in the resources:set command:\n  - Use the API to validate whether a service can have a disk\n  - Allow a disk size of 0\n* Fix \"No access token found\" after auto-login in auth:token command\n* Bump giggsey/libphonenumber-for-php from 8.13.32 to 8.13.34",
             "4.18.1": "* Add `--type` filter to the `integration:list` command.\n* Fix deployment type detection in `metrics` commands.\n* Fix loading a subscription through the wrong org.\n* Avoid prompting for `self:install` when not the only instance.\n* Fix `--gateway-ports` option in tunnel commands.",
             "4.19.0": "New features:\r\n\r\n* Add options for listing environments by status:\r\n  - Add `--status` filter option to the `environment:list` command.\r\n  - Add `--status`, `--only-status` and `--exclude-status` options to the\r\n    `environment:delete` command.\r\n* Add commands to get and set build resources:\r\n  - `resources:build:get` (or `build-resources:get`)\r\n  - `resources:build:set` (or `build-resources:set`)\r\n\r\nOther changes:\r\n\r\n* Allow local OAuth listener to succeed on an alternative port.\r\n* Support RFC 9470 step-up authentication.\r\n* Disable wrapping on status and type columns in the environment list.\r\n* Remove YAML formatting when displaying floats.\r\n* Avoid misidentifying sessions from alternative configs.\r\n* Improve SSH/MFA error message.\r\n* Remove legacy region check in `backup:restore` command.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.34 to 8.13.37.",
-            "4.19.1": "* Fix misleading \"More recent authentication is required\" message\n* Preserve left indent for all lines in a table"
+            "4.19.1": "* Fix misleading \"More recent authentication is required\" message\n* Preserve left indent for all lines in a table",
+            "4.19.2": "* Improve handling of `push --activate` with a code source integration.\n* Avoid prompting to delete inactive branches when an integration with\n  `prune_branches` is enabled.\n* Avoid an unnecessary fetch when an environment does not exist.\n* Avoid selecting an SSH key if a certificate exists.\n* Fix SSH error in fish shell: \"Missing argument at index 3\".\n* Expose the `integration:activities` alias in help.\n* Support SSH step-up authentication features.\n* Accommodate API tokens when showing step-up auth messages.\n* Disable the PHP memory limit (if any).\n* Bump giggsey/libphonenumber-for-php from 8.13.37 to 8.13.39."
         }
     },
     {
