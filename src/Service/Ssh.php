@@ -23,6 +23,8 @@ class Ssh implements InputConfiguringInterface
     protected $sshConfig;
     protected $sshKey;
 
+    private $configuredSession = false;
+
     public function __construct(InputInterface $input, OutputInterface $output, Config $config, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
     {
         $this->input = $input;
@@ -196,9 +198,10 @@ class Ssh implements InputConfiguringInterface
         }
 
         // Configure or validate the session SSH config.
-        if ($autoConfigure && $this->hostIsInternal($url) !== false) {
+        if ($autoConfigure && !$this->configuredSession && $this->hostIsInternal($url) !== false) {
             try {
                 $this->sshConfig->configureSessionSsh();
+                $this->configuredSession = true;
             } catch (\Exception $e) {
                 $this->stdErr->writeln('Error configuring SSH: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);
             }
