@@ -21,7 +21,10 @@ class BackupRestoreCommand extends CommandBase
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
             ->addOption('no-code', null, InputOption::VALUE_NONE, 'Do not restore code, only data.')
             ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
-        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
+        if ($this->config()->get('api.sizing')) {
+            $this->addOption('no-resources', null, InputOption::VALUE_NONE, "Do not override the target's existing resource settings.");
+            $this->addResourcesInitOption(['backup', 'parent', 'default', 'minimum']);
+        }
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();
