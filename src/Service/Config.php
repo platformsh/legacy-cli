@@ -340,6 +340,7 @@ class Config
     private function applyEnvironmentOverrides()
     {
         $overrideMap = [];
+        $types = [];
         foreach ($this->config as $section => $sub_config) {
             if (\is_array($sub_config)) {
                 foreach ($sub_config as $sub_section => $value) {
@@ -347,6 +348,7 @@ class Config
                         $varName = \strtoupper($section . '_' . $sub_section);
                         $accessorName = $section . '.' . $sub_section;
                         $overrideMap[$varName] = $accessorName;
+                        $types[$varName] = gettype($value);
                     }
                 }
             }
@@ -382,6 +384,17 @@ class Config
         foreach ($overrideMap as $var => $key) {
             $value = $this->getEnv($var);
             if ($value !== false) {
+                // Environment variables can only be strings. Attempt to
+                // convert the type of numeric ones.
+                if (isset($types[$var]) && is_numeric($value)) {
+                    if ($types[$var] === 'boolean') {
+                        $value = (bool) $value;
+                    } elseif ($types[$var] === 'integer') {
+                        $value = (int) $value;
+                    } elseif ($types[$var] === 'double') {
+                        $value = (float) $value;
+                    }
+                }
                 NestedArrayUtil::setNestedArrayValue($this->config, explode('.', $key), $value, true);
             }
         }
