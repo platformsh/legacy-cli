@@ -373,8 +373,12 @@ class Relationships implements InputConfiguringInterface
             $parts['query'] = (new Query($parts['query']))->__toString();
         }
 
+        // Special cases for Solr.
         if (isset($parts['scheme']) && $parts['scheme'] === 'solr') {
             $parts['scheme'] = 'http';
+            if (isset($parts['path']) && \dirname($parts['path']) === '/solr') {
+                $parts['path'] = '/solr/';
+            }
         }
 
         return \GuzzleHttp\Url::buildUrl($parts);
