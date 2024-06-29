@@ -66,6 +66,8 @@ class AuthInfoCommand extends CommandBase
         $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'phone_number_verified'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));
 
+        $info['session_storage'] = $this->api()->getSessionStorageType();
+
         if ($property) {
             if (!isset($info[$property])) {
                 // Backwards compatibility.
