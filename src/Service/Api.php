@@ -202,6 +202,22 @@ class Api
     }
 
     /**
+     * Returns the session storage type ('file' or 'credential_helper').
+     *
+     * @return string
+     */
+    public function getSessionStorageType()
+    {
+        $this->getClient(false);
+        if ($this->sessionStorage instanceof File) {
+            return 'file';
+        } elseif ($this->sessionStorage instanceof SessionStorage) {
+            return 'credential_helper';
+        }
+        return '';
+    }
+
+    /**
      * Logs out of the current session.
      */
     public function logout()
