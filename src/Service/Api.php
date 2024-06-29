@@ -14,7 +14,6 @@ use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Event\LoginRequiredEvent;
-use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\GuzzleDebugSubscriber;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
@@ -43,7 +42,6 @@ use Platformsh\Client\Session\Storage\File;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
