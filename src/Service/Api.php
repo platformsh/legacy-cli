@@ -10,10 +10,12 @@ use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Message\ResponseInterface;
+use Platformsh\Cli\CredentialHelper\KeyringUnavailableException;
 use Platformsh\Cli\CredentialHelper\Manager;
-use Platformsh\Cli\CredentialHelper\SessionStorage;
+use Platformsh\Cli\CredentialHelper\SessionStorage as CredentialHelperStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Event\LoginRequiredEvent;
+use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\GuzzleDebugSubscriber;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
@@ -44,6 +46,7 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 
 /**
  * Decorates the PlatformClient API client to provide aggressive caching.
@@ -168,7 +171,7 @@ class Api
     public function listSessionIds()
     {
         $ids = [];
-        if ($this->sessionStorage instanceof SessionStorage) {
+        if ($this->sessionStorage instanceof CredentialHelperStorage) {
             $ids = $this->sessionStorage->listSessionIds();
         }
         $dir = $this->config->getSessionDir();
@@ -192,7 +195,7 @@ class Api
      */
     public function anySessionsExist()
     {
-        if ($this->sessionStorage instanceof SessionStorage && $this->sessionStorage->hasAnySessions()) {
+        if ($this->sessionStorage instanceof CredentialHelperStorage && $this->sessionStorage->hasAnySessions()) {
             return true;
         }
         $dir = $this->config->getSessionDir();
@@ -231,7 +234,7 @@ class Api
      */
     public function deleteAllSessions()
     {
-        if ($this->sessionStorage instanceof SessionStorage) {
+        if ($this->sessionStorage instanceof CredentialHelperStorage) {
             $this->sessionStorage->deleteAll();
         }
         $dir = $this->config->getSessionDir();
@@ -550,8 +553,20 @@ class Api
             // (unless an access token was set directly).
             if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
                 $this->initSessionStorage();
-                // This will load from the session for the first time.
-                $session->setStorage($this->sessionStorage);
+                $this->debug('Loading session');
+                try {
+                    $session->setStorage($this->sessionStorage);
+                } catch (\RuntimeException $e) {
+                    if ($this->sessionStorage instanceof CredentialHelperStorage) {
+                        $previous = $e->getPrevious();
+                        if ($previous instanceof ProcessTimedOutException) {
+                            throw KeyringUnavailableException::fromTimeout($previous);
+                        } elseif ($previous instanceof ProcessFailedException) {
+                            throw KeyringUnavailableException::fromFailure($previous);
+                        }
+                    }
+                    throw $e;
+                }
             }
 
             $connector = new Connector($options, $session);
@@ -584,16 +599,24 @@ class Api
      * Initializes session credential storage.
      */
     private function initSessionStorage() {
-        // Attempt to use the docker-credential-helpers.
-        $manager = new Manager($this->config);
-        if ($manager->isSupported()) {
-            $manager->install();
-            $this->sessionStorage = new SessionStorage($manager, $this->config->get('application.slug'));
-            return;
-        }
+        if (!isset($this->sessionStorage)) {
+            // Attempt to use the docker-credential-helpers.
+            $manager = new Manager($this->config);
+            if ($manager->isSupported()) {
+                if ($manager->isInstalled()) {
+                    $this->debug('Using Docker credential helper for session storage');
+                } else {
+                    $this->debug('Installing Docker credential helper for session storage');
+                    $manager->install();
+                }
+                $this->sessionStorage = new CredentialHelperStorage($manager, $this->config->get('application.slug'));
+                return;
+            }
 
-        // Fall back to file storage.
-        $this->sessionStorage = new File($this->config->getSessionDir());
+            // Fall back to file storage.
+            $this->debug('Using filesystem for session storage');
+            $this->sessionStorage = new File($this->config->getSessionDir());
+        }
     }
 
     /**
@@ -961,9 +984,9 @@ class Api
             }
             $this->cache->save($cacheKey, $user->getData(), (int) $this->config->getWithDefault('api.users_ttl', 600));
         } else {
+            $this->debug('Loaded user info from cache: ' . $id);
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
-            $this->debug('Loaded user info from cache: ' . $id);
         }
         return $user;
     }
@@ -1273,8 +1296,8 @@ class Api
             $data['_uri'] = $deployment->getUri();
             $this->cache->save($cacheKey, $data);
         } else {
-            $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
             $this->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
+            $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
         return self::$deploymentsCache[$cacheKey] = $deployment;
