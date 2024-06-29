@@ -19,7 +19,7 @@ class EnvironmentPushCommand extends CommandBase
     {
         $this
             ->setName('environment:push')
-            ->setAliases(['push'])
+            ->setAliases(['deploy', 'push'])
             ->setDescription('Push code to an environment')
             ->addArgument('source', InputArgument::OPTIONAL, 'The Git source ref, e.g. a branch name or a commit hash.', 'HEAD')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name. Defaults to the current branch.')
