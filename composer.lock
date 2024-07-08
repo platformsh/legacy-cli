@@ -76,16 +76,16 @@
         },
         {
             "name": "composer/ca-bundle",
-            "version": "1.4.2",
+            "version": "1.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/ca-bundle.git",
-                "reference": "18fc0ab083a48f85bfee31f3786537353b8a8403"
+                "reference": "031d14d579d2fa090b8049586325faf746abd1ca"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/ca-bundle/zipball/18fc0ab083a48f85bfee31f3786537353b8a8403",
-                "reference": "18fc0ab083a48f85bfee31f3786537353b8a8403",
+                "url": "https://api.github.com/repos/composer/ca-bundle/zipball/031d14d579d2fa090b8049586325faf746abd1ca",
+                "reference": "031d14d579d2fa090b8049586325faf746abd1ca",
                 "shasum": ""
             },
             "require": {
@@ -132,7 +132,7 @@
             "support": {
                 "irc": "irc://irc.freenode.org/composer",
                 "issues": "https://github.com/composer/ca-bundle/issues",
-                "source": "https://github.com/composer/ca-bundle/tree/1.4.2"
+                "source": "https://github.com/composer/ca-bundle/tree/1.4.3"
             },
             "funding": [
                 {
@@ -148,7 +148,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-03-14T13:20:33+00:00"
+            "time": "2024-07-08T15:22:14+00:00"
         },
         {
             "name": "doctrine/cache",
