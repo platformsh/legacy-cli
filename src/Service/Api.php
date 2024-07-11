@@ -385,11 +385,9 @@ class Api
 
         $this->logout();
 
-        $reqBody = (string) $e->getRequest()->getBody();
-        \parse_str($reqBody, $parsed);
-        if ($this->isSsoSessionExpired($response)) {
+        if ($this->isSsoSessionExpired($e)) {
             $this->stdErr->writeln('<comment>Your SSO session has expired. You have been logged out.</comment>');
-        } elseif (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token' && $response && $this->isApiTokenInvalid($response)) {
+        } elseif ($this->isApiTokenInvalid($e)) {
             $this->stdErr->writeln('<comment>The API token is invalid.</comment>');
         } else {
             $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
@@ -410,12 +408,12 @@ class Api
     /**
      * Tests if an HTTP response from refreshing a token indicates that the user's SSO session has expired.
      *
-     * @param ResponseInterface|null $response
+     * @param BadResponseException $e
      * @return bool
      */
-    private function isSsoSessionExpired(ResponseInterface $response = null)
+    private function isSsoSessionExpired(BadResponseException $e)
     {
-        if (!$response || $response->getStatusCode() !== 400) {
+        if (!($response = $e->getResponse()) || $response->getStatusCode() !== 400) {
             return false;
         }
         $respBody = (string) $response->getBody();
@@ -425,17 +423,25 @@ class Api
     }
 
     /**
-     * Tests if an HTTP response from refreshing a token indicates that the user's API token is invalid.
+     * Tests if an error from refreshing a token indicates that the user's API token is invalid.
      *
-     * @param ResponseInterface $response
+     * @param BadResponseException $e
      * @return bool
      */
-    private function isApiTokenInvalid(ResponseInterface $response)
+    private function isApiTokenInvalid(BadResponseException $e)
     {
-        $respBody = (string) $response->getBody();
-        $errDetails = \json_decode($respBody, true);
-        return isset($errDetails['error_description'])
-            && strpos($errDetails['error_description'], 'API token') !== false;
+        if (!$response = $e->getResponse()) {
+            return false;
+        }
+        $reqBody = (string) $e->getRequest()->getBody();
+        \parse_str($reqBody, $parsed);
+        if (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token') {
+            $respBody = (string) $response->getBody();
+            $errDetails = \json_decode($respBody, true);
+            return isset($errDetails['error_description'])
+                && strpos($errDetails['error_description'], 'API token') !== false;
+        }
+        return false;
     }
 
     /**
