@@ -217,7 +217,7 @@ class Certifier
     {
         $extensions = $certificate->metadata()->getExtensions();
         if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh']) && !isset($extensions['token-claims@platform.sh'])) {
-            // Only access-related claims matter. The token ID is allowed to differ.
+            // Only access-related claims matter.
             return false;
         }
         $jwt = $jwt ?: $this->api->getAccessToken();
@@ -226,13 +226,27 @@ class Certifier
             trigger_error('Unable to parse access token claims', E_USER_WARNING);
             return false;
         }
+
+        // Check for a mismatch of access ID.
         if (isset($extensions['access-id@platform.sh']) && (!isset($claims['access_id']) || $claims['access_id'] !== $extensions['access-id@platform.sh'])) {
             return true;
         }
+
+        // If the JWT contains any auth methods other than "pwd", check that
+        // the SSH cert represents the same token. This may sometimes mean the
+        // cert will be refreshed more often than necessary, but it will reduce
+        // errors related to MFA and SSO enforcement.
+        if (isset($claims['amr'], $claims['jti'], $extensions['token-id@platform.sh']) && $claims['amr'] !== ['pwd'] && $extensions['token-id@platform.sh'] !== $claims['jti']) {
+            return true;
+        }
+
+        // Check for a mismatch of inline access document.
         $certAccess = $certificate->inlineAccess();
         if ($certAccess !== [] && (!isset($claims['access']) || $claims['access'] != $certAccess)) {
             return true;
         }
+
+        // Check for a mismatch of any other token claims.
         $certTokenClaims = $certificate->tokenClaims();
         if ($certTokenClaims !== []) {
             foreach ($certTokenClaims as $key => $value) {
@@ -241,6 +255,7 @@ class Certifier
                 }
             }
         }
+
         return false;
     }
 
