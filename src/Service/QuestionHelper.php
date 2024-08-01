@@ -105,6 +105,11 @@ class QuestionHelper extends BaseQuestionHelper
         $question = new ChoiceQuestion($text, $itemList, $defaultKey);
         $question->setMaxAttempts(5);
 
+        // By default the ChoiceQuestion populates the autocomplete with the
+        // array values. However this can mean values starting with a number
+        // can autocomplete and prevent the user typing the index number.
+        $question->setAutocompleterValues(array_merge(array_keys($itemList), array_values($items)));
+
         if (!$this->input->isInteractive()) {
             if (!isset($defaultKey)) {
                 return null;
