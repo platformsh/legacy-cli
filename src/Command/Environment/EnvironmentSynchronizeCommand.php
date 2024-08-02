@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\StringUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
@@ -178,7 +179,20 @@ EOT;
             $params['synchronize_resources'] = true;
         }
 
-        $result = $selectedEnvironment->runOperation('synchronize', 'POST', $params);
+        try {
+            $result = $selectedEnvironment->runOperation('synchronize', 'POST', $params);
+        } catch (BadResponseException $e) {
+            // Translate validation error messages.
+            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+                $data = \json_decode((string) $body, true);
+                if (\is_array($data) && !empty($data['detail']['error'])) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln("<error>Error:</error>: " . $data['detail']['error']);
+                    return 1;
+                }
+            }
+            throw $e;
+        }
         if ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
