@@ -249,14 +249,13 @@ class Shell
     {
         try {
             $process->mustRun(function ($type, $buffer) use ($quiet) {
-                $output = $type === Process::ERR ? $this->output : $this->stdErr;
-                if ($quiet) {
-                    // Always show stderr output in debug mode.
-                    if ($type !== Process::ERR || !$output->isDebug()) {
-                        return;
-                    }
+                $output = $type === Process::ERR ? $this->stdErr : $this->output;
+                // Show the output if $quiet is false, and always show stderr
+                // output in debug mode.
+                if (!$quiet || ($type === Process::ERR && $output->isDebug())) {
+                    // Indent the output by 2 spaces.
+                    $output->write(preg_replace('/(^|[\n\r]+)(.)/', '$1  $2', $buffer));
                 }
-                $output->write(preg_replace('/(^|[\n\r]+)(.)/', '$1  $2', $buffer));
             });
         } catch (ProcessFailedException $e) {
             if (!$mustRun) {
