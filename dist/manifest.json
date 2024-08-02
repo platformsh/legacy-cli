@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.19.3",
-        "sha1": "83f3dc7f03de4d8ce7951ee8181d9e7ce2c47404",
-        "sha256": "bacc7bf3bb7514a6cfde3b69e8ffcabdadd67cb927930a90085b1819af66fa44",
+        "version": "4.20.0",
+        "sha1": "4f814b185bba4a4bdf32031f4af31c78378e3b59",
+        "sha256": "2d20c3b6e5914b52030fa4727950099b6e5469e9a2e17dab0293950bf5ea1fe7",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.19.3/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -63,7 +63,8 @@
             "4.19.0": "New features:\r\n\r\n* Add options for listing environments by status:\r\n  - Add `--status` filter option to the `environment:list` command.\r\n  - Add `--status`, `--only-status` and `--exclude-status` options to the\r\n    `environment:delete` command.\r\n* Add commands to get and set build resources:\r\n  - `resources:build:get` (or `build-resources:get`)\r\n  - `resources:build:set` (or `build-resources:set`)\r\n\r\nOther changes:\r\n\r\n* Allow local OAuth listener to succeed on an alternative port.\r\n* Support RFC 9470 step-up authentication.\r\n* Disable wrapping on status and type columns in the environment list.\r\n* Remove YAML formatting when displaying floats.\r\n* Avoid misidentifying sessions from alternative configs.\r\n* Improve SSH/MFA error message.\r\n* Remove legacy region check in `backup:restore` command.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.34 to 8.13.37.",
             "4.19.1": "* Fix misleading \"More recent authentication is required\" message\n* Preserve left indent for all lines in a table",
             "4.19.2": "* Improve handling of `push --activate` with a code source integration.\n* Avoid prompting to delete inactive branches when an integration with\n  `prune_branches` is enabled.\n* Avoid an unnecessary fetch when an environment does not exist.\n* Avoid selecting an SSH key if a certificate exists.\n* Fix SSH error in fish shell: \"Missing argument at index 3\".\n* Expose the `integration:activities` alias in help.\n* Support SSH step-up authentication features.\n* Accommodate API tokens when showing step-up auth messages.\n* Disable the PHP memory limit (if any).\n* Bump giggsey/libphonenumber-for-php from 8.13.37 to 8.13.39.",
-            "4.19.3": "* Convert environment variable types when applying config overrides.\n* Refresh the SSH cert if the JTI differs (for smoother MFA/SSO).\n* Avoid saying the API token is invalid for other refresh errors (e.g. SSO \n  expiry).\n* Avoid updating SSH session config twice in the same command.\n* Bump giggsey/libphonenumber-for-php from 8.13.39 to 8.13.40 (#1463)\n* Bump composer/ca-bundle from 1.4.2 to 1.4.3 (#1464)"
+            "4.19.3": "* Convert environment variable types when applying config overrides.\n* Refresh the SSH cert if the JTI differs (for smoother MFA/SSO).\n* Avoid saying the API token is invalid for other refresh errors (e.g. SSO \n  expiry).\n* Avoid updating SSH session config twice in the same command.\n* Bump giggsey/libphonenumber-for-php from 8.13.39 to 8.13.40 (#1463)\n* Bump composer/ca-bundle from 1.4.2 to 1.4.3 (#1464)",
+            "4.20.0": "* Update backup:restore command resources options (Upsun):\n  - Add a `--no-resources` option to avoid restoring resources from the backup.\n  - Update the default for `--resources-init` to `backup` (previously `parent`).\n* Format the validation error message in the sync command.\n* Fix choice question autocomplete conflicting with index number.\n* Bump giggsey/libphonenumber-for-php from 8.13.40 to 8.13.42 (#1468)"
         }
     },
     {
