@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.20.0",
-        "sha1": "4f814b185bba4a4bdf32031f4af31c78378e3b59",
-        "sha256": "2d20c3b6e5914b52030fa4727950099b6e5469e9a2e17dab0293950bf5ea1fe7",
+        "version": "4.20.1",
+        "sha1": "a71e094d007c7159d957984b6d5bcede9ef08f90",
+        "sha256": "c5e4608722386bd1b877fe63bf43dae1d5c0b888f2eebc93b06a0ea034605c99",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.1/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -64,7 +64,8 @@
             "4.19.1": "* Fix misleading \"More recent authentication is required\" message\n* Preserve left indent for all lines in a table",
             "4.19.2": "* Improve handling of `push --activate` with a code source integration.\n* Avoid prompting to delete inactive branches when an integration with\n  `prune_branches` is enabled.\n* Avoid an unnecessary fetch when an environment does not exist.\n* Avoid selecting an SSH key if a certificate exists.\n* Fix SSH error in fish shell: \"Missing argument at index 3\".\n* Expose the `integration:activities` alias in help.\n* Support SSH step-up authentication features.\n* Accommodate API tokens when showing step-up auth messages.\n* Disable the PHP memory limit (if any).\n* Bump giggsey/libphonenumber-for-php from 8.13.37 to 8.13.39.",
             "4.19.3": "* Convert environment variable types when applying config overrides.\n* Refresh the SSH cert if the JTI differs (for smoother MFA/SSO).\n* Avoid saying the API token is invalid for other refresh errors (e.g. SSO \n  expiry).\n* Avoid updating SSH session config twice in the same command.\n* Bump giggsey/libphonenumber-for-php from 8.13.39 to 8.13.40 (#1463)\n* Bump composer/ca-bundle from 1.4.2 to 1.4.3 (#1464)",
-            "4.20.0": "* Update backup:restore command resources options (Upsun):\n  - Add a `--no-resources` option to avoid restoring resources from the backup.\n  - Update the default for `--resources-init` to `backup` (previously `parent`).\n* Format the validation error message in the sync command.\n* Fix choice question autocomplete conflicting with index number.\n* Bump giggsey/libphonenumber-for-php from 8.13.40 to 8.13.42 (#1468)"
+            "4.20.0": "* Update backup:restore command resources options (Upsun):\n  - Add a `--no-resources` option to avoid restoring resources from the backup.\n  - Update the default for `--resources-init` to `backup` (previously `parent`).\n* Format the validation error message in the sync command.\n* Fix choice question autocomplete conflicting with index number.\n* Bump giggsey/libphonenumber-for-php from 8.13.40 to 8.13.42 (#1468)",
+            "4.20.1": "* Fix bug which flipped the stderr and stdout streams of subprocesses"
         }
     },
     {
