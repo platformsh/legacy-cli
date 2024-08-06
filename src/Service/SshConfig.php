@@ -197,11 +197,21 @@ class SshConfig {
      */
     public function formatFilePath($path)
     {
-        // Escape paths containing a space.
+        // Convert absolute Windows paths (e.g. beginning "C:\") to Unix paths.
+        // OpenSSH apparently treats the Windows format as a relative path.
+        if (OsUtil::isWindows() && $this->config->getWithDefault('ssh.convert_windows_paths', true)) {
+            if (\strlen($path) >= 2 && $path[1] === ':' && \preg_match('#^[A-Z]#', $path)) {
+                $path = '/' . \strtolower($path[0]) . '/' . \ltrim(\substr($path, 2), '\\/');
+                $path = \str_replace('\\', '/', $path);
+            }
+        }
+
+        // Quote all paths containing a space.
         if (\strpos($path, ' ') !== false) {
             // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
-            return '"' . \str_replace('"', '"""', $path) . '"';
+            $path = '"' . \str_replace('"', '"""', $path) . '"';
         }
+
         return $path;
     }
 
