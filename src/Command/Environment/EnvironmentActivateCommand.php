@@ -103,7 +103,11 @@ class EnvironmentActivateCommand extends CommandBase
                 $output->writeln(
                     "Operation not available: The environment " . $this->api()->getEnvironmentLabel($environment, 'error') . " can't be activated."
                 );
-                if ($environment->is_dirty) {
+                if ($environment->is_main && !$environment->has_code) {
+                    $output->writeln('');
+                    $output->writeln('The environment has no code yet. Push some code to the environment to activate it.');
+                } elseif ($environment->is_dirty) {
+                    $output->writeln('');
                     $output->writeln('An activity is currently in progress on the environment.');
                 }
                 continue;
