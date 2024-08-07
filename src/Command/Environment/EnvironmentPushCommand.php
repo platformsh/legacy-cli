@@ -136,14 +136,9 @@ class EnvironmentPushCommand extends CommandBase
         // Determine whether to activate the environment.
         $activateRequested = $this->determineShouldActivate($input, $project, $target, $targetEnvironment);
 
-        // Determine the parent and type for the environment, if any are
-        // specified, or if the environment already exists.
+        // Determine the parent and type for the environment, which may be not specified.
         $parentId = $input->getOption('parent');
         $type = $input->getOption('type');
-        if ($targetEnvironment) {
-            $parentId = $parentId !== null ? $parentId : $targetEnvironment->parent;
-            $type = $type != null ? $type : $targetEnvironment->type;
-        }
 
         // Check if the environment may be a production one.
         $mayBeProduction = $type === 'production'
@@ -233,6 +228,9 @@ class EnvironmentPushCommand extends CommandBase
             }
             if ($parentId !== null) {
                 $gitArgs[] = '--push-option=environment.parent=' . $parentId;
+            }
+            if ($type !== null) {
+                $gitArgs[] = '--push-option=environment.type=' . $type;
             }
             if ($input->getOption('no-clone-parent')) {
                 $gitArgs[] = '--push-option=environment.clone_parent_on_create=false';
