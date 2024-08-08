@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.20.1",
-        "sha1": "a71e094d007c7159d957984b6d5bcede9ef08f90",
-        "sha256": "c5e4608722386bd1b877fe63bf43dae1d5c0b888f2eebc93b06a0ea034605c99",
+        "version": "4.20.2",
+        "sha1": "8caf516bd8beb82cb1b592eb778feaf85f86a33f",
+        "sha256": "5f208a232102752e8ac93b371b32bca04ef3526daba3f1eee6e2a25c511755c2",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.2/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -65,7 +65,8 @@
             "4.19.2": "* Improve handling of `push --activate` with a code source integration.\n* Avoid prompting to delete inactive branches when an integration with\n  `prune_branches` is enabled.\n* Avoid an unnecessary fetch when an environment does not exist.\n* Avoid selecting an SSH key if a certificate exists.\n* Fix SSH error in fish shell: \"Missing argument at index 3\".\n* Expose the `integration:activities` alias in help.\n* Support SSH step-up authentication features.\n* Accommodate API tokens when showing step-up auth messages.\n* Disable the PHP memory limit (if any).\n* Bump giggsey/libphonenumber-for-php from 8.13.37 to 8.13.39.",
             "4.19.3": "* Convert environment variable types when applying config overrides.\n* Refresh the SSH cert if the JTI differs (for smoother MFA/SSO).\n* Avoid saying the API token is invalid for other refresh errors (e.g. SSO \n  expiry).\n* Avoid updating SSH session config twice in the same command.\n* Bump giggsey/libphonenumber-for-php from 8.13.39 to 8.13.40 (#1463)\n* Bump composer/ca-bundle from 1.4.2 to 1.4.3 (#1464)",
             "4.20.0": "* Update backup:restore command resources options (Upsun):\n  - Add a `--no-resources` option to avoid restoring resources from the backup.\n  - Update the default for `--resources-init` to `backup` (previously `parent`).\n* Format the validation error message in the sync command.\n* Fix choice question autocomplete conflicting with index number.\n* Bump giggsey/libphonenumber-for-php from 8.13.40 to 8.13.42 (#1468)",
-            "4.20.1": "* Fix bug which flipped the stderr and stdout streams of subprocesses"
+            "4.20.1": "* Fix bug which flipped the stderr and stdout streams of subprocesses",
+            "4.20.2": "* Explain failing to activate the default branch when it has no code\n* Improvements to the `push` command:\n  - Omit the parent and type from the git push options if they are not specified.  \n    This avoids an error when pushing to a non-default branch for the second \n    time, when the default branch has no code.\n  - Fix setting the type via git push options."
         }
     },
     {
