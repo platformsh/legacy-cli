@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.20.2",
-        "sha1": "8caf516bd8beb82cb1b592eb778feaf85f86a33f",
-        "sha256": "5f208a232102752e8ac93b371b32bca04ef3526daba3f1eee6e2a25c511755c2",
+        "version": "4.20.3",
+        "sha1": "85d1647cd18bf88cc894e9ff7f12e92564c2fc7e",
+        "sha256": "552e7b702dbdab42a7bd928dcdaea155b9dd16b4730c1b675501a3c8cdff9b60",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.2/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.3/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -66,7 +66,8 @@
             "4.19.3": "* Convert environment variable types when applying config overrides.\n* Refresh the SSH cert if the JTI differs (for smoother MFA/SSO).\n* Avoid saying the API token is invalid for other refresh errors (e.g. SSO \n  expiry).\n* Avoid updating SSH session config twice in the same command.\n* Bump giggsey/libphonenumber-for-php from 8.13.39 to 8.13.40 (#1463)\n* Bump composer/ca-bundle from 1.4.2 to 1.4.3 (#1464)",
             "4.20.0": "* Update backup:restore command resources options (Upsun):\n  - Add a `--no-resources` option to avoid restoring resources from the backup.\n  - Update the default for `--resources-init` to `backup` (previously `parent`).\n* Format the validation error message in the sync command.\n* Fix choice question autocomplete conflicting with index number.\n* Bump giggsey/libphonenumber-for-php from 8.13.40 to 8.13.42 (#1468)",
             "4.20.1": "* Fix bug which flipped the stderr and stdout streams of subprocesses",
-            "4.20.2": "* Explain failing to activate the default branch when it has no code\n* Improvements to the `push` command:\n  - Omit the parent and type from the git push options if they are not specified.  \n    This avoids an error when pushing to a non-default branch for the second \n    time, when the default branch has no code.\n  - Fix setting the type via git push options."
+            "4.20.2": "* Explain failing to activate the default branch when it has no code\n* Improvements to the `push` command:\n  - Omit the parent and type from the git push options if they are not specified.  \n    This avoids an error when pushing to a non-default branch for the second \n    time, when the default branch has no code.\n  - Fix setting the type via git push options.",
+            "4.20.3": "* Fix 'The no-resources option does not exist.' in the backup:restore command.\n* Use stderr for showing current state in the resources:set command."
         }
     },
     {
