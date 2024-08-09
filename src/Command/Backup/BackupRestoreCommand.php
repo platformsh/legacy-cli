@@ -126,7 +126,7 @@ class BackupRestoreCommand extends CommandBase
                 ->setEnvironmentName($targetName)
                 ->setBranchFrom($branchFrom)
                 ->setRestoreCode($input->getOption('no-code') ? false : null)
-                ->setRestoreResources($input->getOption('no-resources') ? false : null)
+                ->setRestoreResources($input->hasOption('no-resources') && $input->getOption('no-resources') ? false : null)
                 ->setResourcesInit($resourcesInit)
         );
 
