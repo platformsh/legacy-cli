@@ -120,7 +120,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         if (($exitCode = $this->runOtherCommand('resources:get', [
                 '--project' => $environment->project,
                 '--environment' => $environment->id,
-            ])) !== 0) {
+            ], $this->stdErr)) !== 0) {
             return $exitCode;
         }
         $this->stdErr->writeln('');
