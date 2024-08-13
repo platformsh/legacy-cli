@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 
 class CurlCli implements InputConfiguringInterface {
 
@@ -105,12 +106,18 @@ class CurlCli implements InputConfiguringInterface {
 
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', str_replace($token, '[token]', $commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
-        if ($output->isVeryVerbose()) {
-            $stdErr->writeln("\n<fg=yellow;options=bold>Warning:</>\nVerbose mode is enabled. Do not copy and paste the output as it may contain sensitive headers.\n");
-        }
+        $process = new Process($commandline);
+        $process->run(function ($type, $buffer) use ($output, $stdErr) {
+            if ($type === Process::ERR) {
+                if (stripos($buffer, 'Authorization: ') !== false) {
+                    $buffer = preg_replace('/(Authorization:( [a-z0-9-]+)?) \S+/i', '$1 [credentials]', $buffer);
+                }
+                $stdErr->write($buffer);
+            }
+        });
 
-        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
+        $output->writeln($process->getOutput());
 
-        return proc_close($process);
+        return $process->getExitCode();
     }
 }
