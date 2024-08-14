@@ -112,7 +112,7 @@ class CurlCli implements InputConfiguringInterface {
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
         $process = new Process($commandline);
-        $process->run(function ($type, $buffer) use ($stdErr, $censor, $output) {
+        $process->run(function ($type, $buffer) use ($censor, $output, $stdErr) {
             if ($type === Process::ERR) {
                 $stdErr->write($censor($buffer));
             } else {
