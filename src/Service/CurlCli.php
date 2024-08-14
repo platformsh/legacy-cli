@@ -104,12 +104,17 @@ class CurlCli implements InputConfiguringInterface {
             $commandline .= ' --silent --show-error';
         }
 
-        $stdErr->writeln(sprintf('Running command: <info>%s</info>', str_replace($token, '[token]', $commandline)), OutputInterface::VERBOSITY_VERBOSE);
+        // Censor the access token: this can be applied to verbose output.
+        $censor = function ($str) use ($token) {
+            return str_replace($token, '[token]', $str);
+        };
+
+        $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
         $process = new Process($commandline);
-        $process->run(function ($type, $buffer) use ($stdErr, $token, $output) {
+        $process->run(function ($type, $buffer) use ($stdErr, $censor, $output) {
             if ($type === Process::ERR) {
-                $stdErr->write(str_replace($token, '[token]', $buffer));
+                $stdErr->write($censor($buffer));
             } else {
                 $output->write($buffer);
             }
