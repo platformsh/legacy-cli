@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 
 class CurlCli implements InputConfiguringInterface {
 
@@ -103,14 +104,22 @@ class CurlCli implements InputConfiguringInterface {
             $commandline .= ' --silent --show-error';
         }
 
-        $stdErr->writeln(sprintf('Running command: <info>%s</info>', str_replace($token, '[token]', $commandline)), OutputInterface::VERBOSITY_VERBOSE);
+        // Censor the access token: this can be applied to verbose output.
+        $censor = function ($str) use ($token) {
+            return str_replace($token, '[token]', $str);
+        };
 
-        if ($output->isVeryVerbose()) {
-            $stdErr->writeln("\n<fg=yellow;options=bold>Warning:</>\nVerbose mode is enabled. Do not copy and paste the output as it may contain sensitive headers.\n");
-        }
+        $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
-        $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes);
+        $process = new Process($commandline);
+        $process->run(function ($type, $buffer) use ($censor, $output, $stdErr) {
+            if ($type === Process::ERR) {
+                $stdErr->write($censor($buffer));
+            } else {
+                $output->write($buffer);
+            }
+        });
 
-        return proc_close($process);
+        return $process->getExitCode();
     }
 }
