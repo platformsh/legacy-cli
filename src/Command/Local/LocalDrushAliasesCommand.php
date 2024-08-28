@@ -8,6 +8,7 @@ use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Drush;
+use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -140,6 +141,8 @@ class LocalDrushAliasesCommand extends CommandBase
                         } else {
                             throw $e;
                         }
+                    } catch (EnvironmentStateException $_) {
+                        $this->debug('Current deployment not found.');
                     }
                 }
 
