@@ -45,12 +45,8 @@ END_HELP;
                 'description' => 'The organization country. Used as the default for the billing address.',
                 'options' => $countryList,
                 'asChoice' => false,
-                'defaultCallback' => function () use ($countryList) {
-                    $userCountry = $this->api()->getUser()->country;
-                    if (isset($countryList[$userCountry])) {
-                        return $countryList[$userCountry];
-                    }
-                    return $userCountry ?: null;
+                'defaultCallback' => function () {
+                    return $this->api()->getUser()->country ?: null;
                 },
                 'normalizer' => function ($value) { return $this->normalizeCountryCode($value); },
                 'validator' => function ($countryCode) use ($countryList) {
