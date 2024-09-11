@@ -114,7 +114,9 @@ class Ssh implements InputConfiguringInterface
         }
 
         if ($this->input->hasOption('identity-file') && ($file = $this->input->getOption('identity-file'))) {
-            $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($file);
+            foreach ($this->sshConfig->formattedPaths($file) as $path) {
+                $options[] = 'IdentityFile ' . $path;
+            }
             $options[] = 'IdentitiesOnly yes';
         } elseif ($hostIsInternal !== false) {
             // Inject the SSH certificate.
@@ -132,16 +134,22 @@ class Ssh implements InputConfiguringInterface
 
                 if ($sshCert) {
                     if ($this->sshConfig->supportsCertificateFile()) {
-                        $options[] = 'CertificateFile ' . $this->sshConfig->formatFilePath($sshCert->certificateFilename());
+                        foreach ($this->sshConfig->formattedPaths($sshCert->certificateFilename()) as $path) {
+                            $options[] = 'CertificateFile ' . $path;
+                        }
                     }
-                    $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sshCert->privateKeyFilename());
+                    foreach ($this->sshConfig->formattedPaths($sshCert->privateKeyFilename()) as $path) {
+                        $options[] = 'IdentityFile ' . $path;
+                    }
                     if ($hostIsInternal) {
                         $options[] = 'IdentitiesOnly yes';
                     }
                 }
             }
             if (!$sshCert && ($sessionIdentityFile = $this->sshKey->selectIdentity())) {
-                $options[] = 'IdentityFile ' . $this->sshConfig->formatFilePath($sessionIdentityFile);
+                foreach ($this->sshConfig->formattedPaths($sessionIdentityFile) as $path) {
+                    $options[] = 'IdentityFile ' . $path;
+                }
                 if ($hostIsInternal) {
                     $options[] = 'IdentitiesOnly yes';
                 }
@@ -153,7 +161,7 @@ class Ssh implements InputConfiguringInterface
             try {
                 $keysFile = $this->sshConfig->configureHostKeys();
                 if ($keysFile !== null) {
-                    $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->sshConfig->formatFilePath($keysFile);
+                    $options[] = 'UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . implode(' ', $this->sshConfig->formattedPaths($keysFile));
                 }
             } catch (\Exception $e) {
                 $this->stdErr->writeln('Error configuring host keys: ' . $e->getMessage(), OutputInterface::VERBOSITY_VERBOSE);

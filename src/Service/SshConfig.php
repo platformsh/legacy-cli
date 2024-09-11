@@ -62,7 +62,7 @@ class SshConfig {
         // Any .config files will be included automatically as SSH config.
         if ($this->supportsInclude()) {
             $keysConfigFile = $keysFile . '.config';
-            $this->writeSshIncludeFile($keysConfigFile, ['UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . $this->formatFilePath($keysFile)]);
+            $this->writeSshIncludeFile($keysConfigFile, ['UserKnownHostsFile ~/.ssh/known_hosts ~/.ssh/known_hosts2 ' . implode(' ', $this->formattedPaths($keysFile))]);
         }
 
         return $keysFile;
@@ -127,12 +127,16 @@ class SshConfig {
             $lines[] = '';
             if ($this->supportsCertificateFile()) {
                 $lines[] = '# Include the certificate and its key.';
-                $lines[] = sprintf('CertificateFile %s', $this->formatFilePath($certificate->certificateFilename()));
+                foreach ($this->formattedPaths($certificate->certificateFilename()) as $path) {
+                    $lines[] = 'CertificateFile ' . $path;
+                }
             } else {
                 $lines[] = '# Include the certificate, via its key.';
                 $lines[] = '# The CertificateFile keyword could be used with OpenSSH 7.2 or later.';
             }
-            $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($certificate->privateKeyFilename()));
+            foreach ($this->formattedPaths($certificate->privateKeyFilename()) as $path) {
+                $lines[] = 'IdentityFile ' . $path;
+            }
         } else {
             $lines[] = 'Host ' . implode(' ', $domainWildcards);
 
@@ -140,7 +144,9 @@ class SshConfig {
             if ($sessionIdentityFile !== null) {
                 $lines[] = '';
                 $lines[] = '# This SSH key was detected as corresponding to the session.';
-                $lines[] = sprintf('IdentityFile %s', $this->formatFilePath($sessionIdentityFile));
+                foreach ($this->formattedPaths($sessionIdentityFile) as $path) {
+                    $lines[] = 'IdentityFile ' . $path;
+                }
                 $lines[] = '';
             }
         }
@@ -170,7 +176,9 @@ class SshConfig {
         ];
 
         $includerLines[] = 'Host ' . implode(' ', $domainWildcards);
-        $includerLines[] = '  Include ' . $sessionSpecificFilename;
+        foreach ($this->formattedPaths($sessionSpecificFilename) as $path) {
+            $includerLines[] = '  Include ' . $path;
+        }
         $this->writeSshIncludeFile(
             $includerFilename,
             $includerLines
@@ -180,7 +188,44 @@ class SshConfig {
     }
 
     /**
-     * Formats a file path for an SSH config option.
+     * Transforms a file path into a list of formatted paths.
+     *
+     * More than one path format may be used for shell compatibility, which is
+     * why this returns an array.
+     *
+     * @param string $path
+     *
+     * @return string[]
+     */
+    public function formattedPaths($path)
+    {
+        // Convert absolute Windows paths (e.g. beginning "C:\") to Unix paths.
+        // OpenSSH apparently treats the Windows format as a relative path.
+        $isWindowsPath = OsUtil::isWindows() && \strlen($path) >= 2 && $path[1] === ':' && \preg_match('#^[A-Z]#', $path);
+        if ($isWindowsPath) {
+            $convertedPath = '/' . \strtolower($path[0]) . '/' . \ltrim(\substr($path, 2), '\\/');
+            $convertedPath = \str_replace('\\', '/', $convertedPath);
+            switch ($setting = $this->config->getWithDefault('ssh.windows_paths', 'both')) {
+                case 'raw':
+                    return [$this->quoteFilePath($path)];
+
+                case 'windows':
+                    return [$this->quoteFilePath($convertedPath)];
+
+                case 'both':
+                    return [$this->quoteFilePath($convertedPath), $this->quoteFilePath($path)];
+
+                default:
+                    trigger_error(sprintf('Invalid configuration value for ssh.windows_paths: %s (expected "both", "windows", or "raw)', $setting), E_USER_WARNING);
+                    return [$this->quoteFilePath($convertedPath), $this->quoteFilePath($path)];
+            }
+        }
+
+        return [$this->quoteFilePath($path)];
+    }
+
+    /**
+     * Quotes a file path for an SSH config option.
      *
      * This should be applied to the IdentityFile and CertificateFile option
      * values. See the ssh_config(5) man page: https://www.freebsd.org/cgi/man.cgi?ssh_config%285%29
@@ -195,13 +240,14 @@ class SshConfig {
      *
      * @return string
      */
-    public function formatFilePath($path)
+    private function quoteFilePath($path)
     {
-        // Escape paths containing a space.
+        // Quote all paths containing a space.
         if (\strpos($path, ' ') !== false) {
             // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
             return '"' . \str_replace('"', '"""', $path) . '"';
         }
+
         return $path;
     }
 
@@ -262,11 +308,14 @@ class SshConfig {
             return false;
         }
 
-        $suggestedConfig = \implode("\n", [
-            'Host ' . \implode(' ', $wildcards),
-            '  Include ' . $this->getCliSshDir() . DIRECTORY_SEPARATOR . '*.config',
-            'Host *',
-        ]);
+        $lines = [];
+        $lines[] = 'Host ' . \implode(' ', $wildcards);
+        foreach ($this->formattedPaths($this->getCliSshDir() . DIRECTORY_SEPARATOR . '*.config') as $path) {
+            $lines[] = '  Include ' . $path;
+        }
+        $lines[] = 'Host *';
+
+        $suggestedConfig = \implode("\n", $lines);
 
         $manualMessage = 'To configure SSH, add the following lines to <comment>' . $filename . '</comment>:'
             . "\n" . $suggestedConfig;
