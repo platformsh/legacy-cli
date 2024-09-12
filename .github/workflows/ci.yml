@@ -8,16 +8,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Get Composer Cache Directory
       id: composer-cache
       run: |
-        echo "::set-output name=dir::$(composer config cache-files-dir)"
+        echo "cache_dir=$(composer config cache-files-dir)" >> $GITHUB_ENV
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
-        path: ${{ steps.composer-cache.outputs.dir }}
+        path: ${{ env.cache_dir }}
         key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
         restore-keys: |
           ${{ runner.os }}-composer-
@@ -41,7 +41,7 @@ jobs:
         CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | head -c8)
         ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_REF_NAME"-"$CI_COMMIT_SHORT_SHA" --output platform.phar
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: cli-phar
         path: platform.phar
