@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.20.3",
-        "sha1": "85d1647cd18bf88cc894e9ff7f12e92564c2fc7e",
-        "sha256": "552e7b702dbdab42a7bd928dcdaea155b9dd16b4730c1b675501a3c8cdff9b60",
+        "version": "4.20.4",
+        "sha1": "1b660795f9b3e9eaa65be56d2d9dd2a9fc790951",
+        "sha256": "ac4cea6b39b294515ec2702fa00248ebc05ac5e1a1124cc7dc19b4d05eb933ee",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.3/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.4/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -67,7 +67,8 @@
             "4.20.0": "* Update backup:restore command resources options (Upsun):\n  - Add a `--no-resources` option to avoid restoring resources from the backup.\n  - Update the default for `--resources-init` to `backup` (previously `parent`).\n* Format the validation error message in the sync command.\n* Fix choice question autocomplete conflicting with index number.\n* Bump giggsey/libphonenumber-for-php from 8.13.40 to 8.13.42 (#1468)",
             "4.20.1": "* Fix bug which flipped the stderr and stdout streams of subprocesses",
             "4.20.2": "* Explain failing to activate the default branch when it has no code\n* Improvements to the `push` command:\n  - Omit the parent and type from the git push options if they are not specified.  \n    This avoids an error when pushing to a non-default branch for the second \n    time, when the default branch has no code.\n  - Fix setting the type via git push options.",
-            "4.20.3": "* Fix 'The no-resources option does not exist.' in the backup:restore command.\n* Use stderr for showing current state in the resources:set command."
+            "4.20.3": "* Fix 'The no-resources option does not exist.' in the backup:restore command.\n* Use stderr for showing current state in the resources:set command.",
+            "4.20.4": "* Add Unix paths for OpenSSH on Windows.\r\n  If Windows-style paths are added to SSH configuration, this also adds a\r\n  Unix-style path, as OpenSSH appears to have no support for Windows paths.\r\n  Restore the previous behavior by setting the environment variable\r\n  `PLATFORMSH_CLI_SSH_WINDOWS_PATHS` to `raw`.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.42 to 8.13.45.\r\n* Extend the request timeout for /environments requests.\r\n* Fix invalid organization country code when picking a default.\r\n* Handle `EnvironmentStateException` when generating Drush aliases.\r\n* Auto-censor the Authorization header in `curl` commands."
         }
     },
     {
