@@ -302,6 +302,13 @@ ssh:
   # though a recommendation will be displayed.
   write_user_config: null
 
+  # Whether to convert file paths from Windows to UNIX format in SSH config.
+  #
+  # Valid values: 'both' (configure both Windows and UNIX paths for higher
+  # compatibility), 'convert' (only configure in UNIX format), or 'raw' (do
+  # not convert filenames).
+  windows_paths: both
+
   # Whether auto-generated SSH certificate identities should be added to the SSH agent.
   # Enabling this may be useful for those who use agent forwarding.
   add_to_agent: false
