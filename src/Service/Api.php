@@ -745,13 +745,14 @@ class Api
         if ($refresh === false && !$cached) {
             return [];
         } elseif ($refresh || !$cached) {
-            $toCache = [];
-
             // Fetch environments with double the default timeout.
-            $environments = Environment::getCollection($project->getLink('environments'), 0, [
+            $list = Environment::getCollection($project->getLink('environments'), 0, [
                 'timeout' => 2 * $this->config->getWithDefault('api.default_timeout', 30),
             ], $this->getHttpClient());
-            foreach ($environments as $environment) {
+            $environments = [];
+            $toCache = [];
+            foreach ($list as $environment) {
+                // Key the list by ID.
                 $environments[$environment->id] = $environment;
                 $toCache[$environment->id] = $environment->getData();
             }
