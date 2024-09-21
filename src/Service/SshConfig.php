@@ -111,10 +111,6 @@ class SshConfig {
                 $refreshCommand = sprintf("[ \$%s'' = '1' ] || %s", Ssh::SSH_NO_REFRESH_ENV_VAR, $refreshCommand);
             }
 
-            if (!OsUtil::isWindows()) {
-                $refreshCommand .= ' 2>/dev/null';
-            }
-
             // Use Match solely to run the refresh command.
             $lines[] = '# Auto-refresh the SSH certificate.';
             $lines[] = sprintf('Match host "%s" exec "%s"', \implode(',', $domainWildcards), $refreshCommand);

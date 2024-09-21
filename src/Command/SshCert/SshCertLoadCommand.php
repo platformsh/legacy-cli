@@ -14,7 +14,9 @@ class SshCertLoadCommand extends CommandBase
     {
         $this
             ->setName('ssh-cert:load')
-            ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate, if necessary (do not write SSH config)')
+            ->addOption('refresh-only', null, InputOption::VALUE_NONE,
+                'Only refresh the certificate, if necessary (do not write SSH config).'
+                . ' Unless verbose mode is used, this will not output messages.')
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
             ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force a new key pair to be generated')
             ->setDescription('Generate an SSH certificate');
@@ -41,8 +43,13 @@ class SshCertLoadCommand extends CommandBase
 
         $sshCert = $certifier->getExistingCertificate();
 
+        $refreshOnly = $input->getOption('refresh-only');
+
         $refresh = true;
         if (getenv(Ssh::SSH_NO_REFRESH_ENV_VAR)) {
+            if ($refreshOnly && !$this->stdErr->isVerbose()) {
+                return 0;
+            }
             $this->stdErr->writeln(sprintf('Not refreshing SSH certificate (<comment>%s</comment> variable is set)', Ssh::SSH_NO_REFRESH_ENV_VAR));
             $refresh = false;
         }
@@ -51,6 +58,9 @@ class SshCertLoadCommand extends CommandBase
             && !$input->getOption('new')
             && !$input->getOption('new-key')
             && $certifier->isValid($sshCert)) {
+            if ($refreshOnly && !$this->stdErr->isVerbose()) {
+                return 0;
+            }
             $this->stdErr->writeln('A valid SSH certificate exists');
             $this->displayCertificate($sshCert);
             $refresh = false;
@@ -63,12 +73,16 @@ class SshCertLoadCommand extends CommandBase
             if (!$sshConfig->checkRequiredVersion()) {
                 return 1;
             }
+            if ($refreshOnly && !$this->stdErr->isVerbose()) {
+                $certifier->generateCertificate($sshCert, $input->getOption('new-key'));
+                return 0;
+            }
             $this->stdErr->writeln('Generating SSH certificate...');
             $sshCert = $certifier->generateCertificate($sshCert, $input->getOption('new-key'));
             $this->displayCertificate($sshCert);
         }
 
-        if ($input->getOption('refresh-only')) {
+        if ($refreshOnly) {
             return 0;
         }
 
