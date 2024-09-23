@@ -190,29 +190,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->environment = null;
         $this->remoteContainer = null;
 
-        $envPrefix = $this->config()->get('application.env_prefix');
-        if (getenv('CLI_DEBUG') || getenv($envPrefix . 'DEBUG')) {
-            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
-        }
-
-        // Tune error reporting.
-        if ($output->isQuiet()) {
-            error_reporting(false);
-            ini_set('display_errors', '0');
-        } else {
-            // Display errors by default. In verbose mode, display all PHP
-            // error levels except deprecations. Deprecations will only be
-            // displayed while in debug mode and only if this is enabled via
-            // the CLI_REPORT_DEPRECATIONS environment variable.
-            $error_level = ($output->isVerbose() ? E_ALL : E_PARSE | E_ERROR) & ~E_DEPRECATED;
-            $report_deprecations = getenv('CLI_REPORT_DEPRECATIONS') || getenv($envPrefix . 'REPORT_DEPRECATIONS');
-            if ($report_deprecations && $output->isDebug()) {
-                $error_level |= E_DEPRECATED;
-            }
-            error_reporting($error_level);
-            ini_set('display_errors', 'stderr');
-        }
-
         $this->promptLegacyMigrate();
 
         if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config()->get('application.env_prefix') . 'TOKEN') || $this->api()->hasApiToken(false))) {
@@ -221,15 +198,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
             $this->stdErr->writeln('');
             self::$printedApiTokenWarning = true;
-        }
-
-        // Deprecate the -n flag as a shortcut for --no.
-        // It is confusing as it's a shortcut for --no-interaction in other Symfony Console commands.
-        if ($this->input->hasOption('no') && $this->input->getOption('no') && !$this->input->hasParameterOption('--no')) {
-            $this->labeledMessage(
-                'DEPRECATED',
-                'The -n flag (as a shortcut for --no) is deprecated. It will be removed or changed in a future version.'
-            );
         }
     }
 
