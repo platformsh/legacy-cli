@@ -98,7 +98,7 @@ class EnvironmentBranchCommand extends CommandBase
                 && ($integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject()))
                 && $integration->getProperty('prune_branches', false) === true) {
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf("Branches are managed externally through the project's <info>%s</info> integration.", $integration->type));
+                $this->stdErr->writeln(sprintf("The project's branches are managed externally through its <info>%s</info> integration.", $integration->type));
                 if ($this->config()->isCommandEnabled('integration:get')) {
                     $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
                 }
