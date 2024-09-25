@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
@@ -84,6 +85,14 @@ EOT;
 
         $rebase = (bool) $input->getOption('rebase');
 
+        $integrationManagingCode = null;
+        if ($selectedEnvironment->getProperty('has_remote', false)) {
+            $integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject());
+            if ($integration && $integration->getProperty('fetch_branches') === true) {
+                $integrationManagingCode = $integration;
+            }
+        }
+
         if ($synchronize = $input->getArgument('synchronize')) {
             $validOptions = $this->config()->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
             $toSync = [];
@@ -99,6 +108,15 @@ EOT;
                 }
             }
             $toSync = array_unique($toSync);
+
+            if (in_array('code', $toSync) && $integrationManagingCode) {
+                $this->stdErr->writeln(sprintf("Code cannot be synchronized as it is managed by the project's <error>%s</error> integration.", $integrationManagingCode->type));
+                if ($this->config()->isCommandEnabled('integration:get')) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integrationManagingCode->id)));
+                }
+                return 1;
+            }
 
             if (in_array('resources', $toSync) && !$this->api()->supportsSizingApi($this->getSelectedProject())) {
                 $this->stdErr->writeln('Resources cannot be synchronized as the project does not support flexible resources.');
@@ -123,24 +141,26 @@ EOT;
         } else {
             $toSync = [];
 
-            $syncCode = $questionHelper->confirm(
-                "Do you want to synchronize <options=underscore>code</> from <info>$parentId</info> to <info>$environmentId</info>?",
-                false
-            );
+            if (!$integrationManagingCode) {
+                $syncCode = $questionHelper->confirm(
+                    "Do you want to synchronize <options=underscore>code</> from <info>$parentId</info> to <info>$environmentId</info>?",
+                    false
+                );
 
-            if ($syncCode) {
-                $toSync[] = 'code';
-                if (!$rebase) {
-                    $rebase = $questionHelper->confirm(
-                        "Do you want to synchronize code by rebasing instead of merging?",
-                        false
-                    );
+                if ($syncCode) {
+                    $toSync[] = 'code';
+                    if (!$rebase) {
+                        $rebase = $questionHelper->confirm(
+                            "Do you want to synchronize code by rebasing instead of merging?",
+                            false
+                        );
+                    }
+                } elseif ($rebase) {
+                    $this->stdErr->writeln('<comment>Note:</comment> you specified the <comment>--rebase</comment> option, but this only applies to synchronizing code.');
                 }
-            } elseif ($rebase) {
-                $this->stdErr->writeln('<comment>Note:</comment> you specified the <comment>--rebase</comment> option, but this only applies to synchronizing code.');
-            }
 
-            $this->stdErr->writeln('');
+                $this->stdErr->writeln('');
+            }
 
             if ($questionHelper->confirm(
                 "Do you want to synchronize <options=underscore>data</> from <info>$parentId</info> to <info>$environmentId</info>?",
