@@ -63,6 +63,7 @@ EOT;
 
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
+        $parentId = $selectedEnvironment->parent;
 
         if (!$selectedEnvironment->operationAvailable('synchronize', true)) {
             $this->stdErr->writeln(
@@ -73,12 +74,17 @@ EOT;
                 $this->stdErr->writeln('The environment does not have a parent.');
             } elseif ($selectedEnvironment->is_dirty) {
                 $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
+            } elseif (!$selectedEnvironment->isActive()) {
+                $this->stdErr->writeln('The environment is not active.');
+            } else {
+                $parentEnvironment = $this->api()->getEnvironment($parentId, $this->getSelectedProject(), false);
+                if ($parentEnvironment && !$parentEnvironment->isActive()) {
+                    $this->stdErr->writeln(sprintf('The parent environment <error>%s</error> is not active.', $parentId));
+                }
             }
 
             return 1;
         }
-
-        $parentId = $selectedEnvironment->parent;
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
