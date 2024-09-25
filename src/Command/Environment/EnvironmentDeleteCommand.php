@@ -346,7 +346,7 @@ EOF
                         break;
                     }
                     if ($codeSourceIntegration && $integrationPrunesBranches) {
-                        $this->stdErr->writeln(sprintf('The project has a <comment>%s</comment> integration with the <comment>prune_branches</comment> feature enabled, so inactive environments cannot be deleted directly.', $codeSourceIntegration->type));
+                        $this->stdErr->writeln(sprintf("The project's branches are managed externally through its <comment>%s</comment> integration, so inactive environments cannot be deleted directly.", $codeSourceIntegration->type));
                         $this->stdErr->writeln('');
                         $error = true;
                         break;
