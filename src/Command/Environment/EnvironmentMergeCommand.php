@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -39,9 +40,19 @@ class EnvironmentMergeCommand extends CommandBase
                 $environmentId
             ));
 
-            if ($selectedEnvironment->parent === null) {
+            if ($selectedEnvironment->getProperty('has_remote', false) === true
+                && ($integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject()))
+                && $integration->getProperty('fetch_branches', false) === true) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf("The environment's code is managed externally through the project's <info>%s</info> integration.", $integration->type));
+                if ($this->config()->isCommandEnabled('integration:get')) {
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                }
+            } elseif ($selectedEnvironment->parent === null) {
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('The environment does not have a parent.');
             } elseif ($selectedEnvironment->is_dirty) {
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
             }
 
