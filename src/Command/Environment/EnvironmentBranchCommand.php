@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -90,12 +91,22 @@ class EnvironmentBranchCommand extends CommandBase
 
         if (!$parentEnvironment->operationAvailable('branch', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($parentEnvironment, 'error') . " can't be branched."
+                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched."
             );
 
-            if ($parentEnvironment->is_dirty) {
+            if ($parentEnvironment->getProperty('has_remote', false) === true
+                && ($integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject()))
+                && $integration->getProperty('prune_branches', false) === true) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf("Branches are managed externally through the project's <info>%s</info> integration.", $integration->type));
+                if ($this->config()->isCommandEnabled('integration:get')) {
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                }
+            } elseif ($parentEnvironment->is_dirty) {
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('An activity is currently pending or in progress on the environment.');
             } elseif (!$parentEnvironment->isActive()) {
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('The environment is not active.');
             }
 
