@@ -91,6 +91,12 @@ class EnvironmentSshCommand extends CommandBase
 
         $exitCode = $shell->executeSimple($command, null, $ssh->getEnv());
         if ($exitCode !== 0) {
+            if ($this->getSelectedProject()->isSuspended()) {
+                $this->stdErr->writeln('');
+                $this->warnIfSuspended($this->getSelectedProject());
+                return $exitCode;
+            }
+
             /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
             $diagnostics = $this->getService('ssh_diagnostics');
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
