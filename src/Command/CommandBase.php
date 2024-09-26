@@ -2264,7 +2264,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($this->config()->getWithDefault('api.organizations', false)) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)');
             if ($includeProjectOption && !$this->getDefinition()->hasOption('project')) {
-                $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL, to auto-select the organization if --org is not used');
+                $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL, which auto-selects the organization if --org is not used');
             }
         }
         return $this;
@@ -2295,7 +2295,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new \BadMethodCallException('Organizations are not enabled');
         }
 
-        $client = $this->api()->getClient();
+        if (($input->hasOption('project') && $input->getOption('project')) || $this->getCurrentProject(true)) {
+            $this->validateInput($input);
+        }
 
         if ($identifier = $input->getOption('org')) {
             // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
@@ -2303,18 +2305,17 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             /** @link https://github.com/ulid/spec */
             if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
                 $this->debug('Detected organization ID format (ULID): ' . $identifier);
-                $organization = $client->getOrganizationById($identifier);
+                $organization = $this->api()->getOrganizationById($identifier);
             } else {
-                $organization = $client->getOrganizationByName($identifier);
+                $organization = $this->api()->getOrganizationByName($identifier);
             }
             if (!$organization) {
                 throw new ConsoleInvalidArgumentException('Organization not found: ' . $identifier);
             }
 
             // Check for a conflict between the --org and the --project options.
-            if ($input->hasOption('project')
-                && ($projectId = $input->getOption('project'))
-                && ($project = $this->api()->getProject($projectId))
+            if ($this->hasSelectedProject()
+                && ($project = $this->getSelectedProject())
                 && $project->getProperty('organization', true, false) !== $organization->id) {
                 throw new ConsoleInvalidArgumentException("The project $project->id is not part of the organization $organization->id");
             }
@@ -2322,10 +2323,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return $organization;
         }
 
-        if ($input->hasOption('project') && ($id = $input->getOption('project'))) {
-            $project = $this->selectProject($id);
+        if ($this->hasSelectedProject()) {
+            $project = $this->getSelectedProject();
             $this->ensurePrintSelectedProject();
-            $organization = $client->getOrganizationById($project->getProperty('organization'));
+            $organization = $this->api()->getOrganizationById($project->getProperty('organization'));
             if ($organization) {
                 $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
                 return $organization;
@@ -2333,7 +2334,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } elseif (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
             $organizationId = $currentProject->getProperty('organization');
             try {
-                $organization = $client->getOrganizationById($organizationId);
+                $organization = $this->api()->getOrganizationById($organizationId);
             } catch (BadResponseException $e) {
                 $this->debug('Error when fetching project organization: ' . $e->getMessage());
                 $organization = false;
@@ -2356,7 +2357,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $userId = $this->api()->getMyUserId();
-        $organizations = $client->listOrganizationsWithMember($userId);
+        $organizations = $this->api()->getClient()->listOrganizationsWithMember($userId);
 
         if (!$input->isInteractive()) {
             throw new ConsoleInvalidArgumentException('An organization name or ID (--org) is required.');

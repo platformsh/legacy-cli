@@ -50,6 +50,7 @@ api:
   organizations: true
   user_verification: true
   metrics: true
+  teams: true
 
   vendor_filter: 'platformsh'
 

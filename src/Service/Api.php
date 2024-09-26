@@ -1032,11 +1032,11 @@ class Api
     public static function sortResources(array &$resources, $propertyPath, $reverse = false)
     {
         uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath, $reverse) {
-            $cmp = Sort::compare(
+            return Sort::compare(
                 static::getNestedProperty($a, $propertyPath, false),
-                static::getNestedProperty($b, $propertyPath, false)
+                static::getNestedProperty($b, $propertyPath, false),
+                $reverse
             );
-            return $reverse ? -$cmp : $cmp;
         });
     }
 
@@ -1541,9 +1541,21 @@ class Api
         if ($organization) {
             $data = $organization->getData();
             $data['_url'] = $organization->getUri();
-            $this->cache->save($cacheKey, $data, $this->config->getWithDefault('api.orgs_ttl', 3600));
+            $this->cache->save($cacheKey, $data, $this->config->getWithDefault('api.orgs_ttl', 600));
         }
         return $organization;
+    }
+
+    /**
+     * Loads an organization by name, with caching.
+     *
+     * @param string $name
+     * @param bool $reset
+     * @return Organization|false
+     */
+    public function getOrganizationByName($name, $reset = false)
+    {
+        return $this->getOrganizationById('name=' . $name, $reset);
     }
 
     /**

@@ -12,15 +12,18 @@ final class Sort
      *
      * @param mixed $a
      * @param mixed $b
+     * @param bool $reverse
      * @return int
      */
-    public static function compare($a, $b)
+    public static function compare($a, $b, $reverse = false)
     {
         if (\is_string($a)) {
-            return \strnatcasecmp($a, $b);
+            $value = \strnatcasecmp($a, $b);
+        } else {
+            // TODO replace with spaceship operator for PHP 7+
+            $value = $a == $b ? 0 : ($a > $b ? 1 : -1);
         }
-        // TODO replace with spaceship operator for PHP 7+
-        return $a == $b ? 0 : ($a > $b ? 1 : -1);
+        return $reverse ? -$value : $value;
     }
 
     /**
@@ -58,8 +61,7 @@ final class Sort
             if (!property_exists($a, $property) || !property_exists($b, $property)) {
                 throw new \InvalidArgumentException('Cannot sort: property not found: ' . $property);
             }
-            $cmp = self::compare($a->$property, $b->$property);
-            return $reverse ? -$cmp : $cmp;
+            return self::compare($a->$property, $b->$property, $reverse);
         });
     }
 }
