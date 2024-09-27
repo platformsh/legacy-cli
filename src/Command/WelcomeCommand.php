@@ -66,9 +66,14 @@ class WelcomeCommand extends CommandBase
      */
     private function welcomeForLocalProjectDir(Project $project)
     {
-        $this->stdErr->writeln("Project title: <info>{$project->title}</info>");
-        $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
-        $this->stdErr->writeln("Project dashboard: <info>" . $this->api()->getConsoleURL($project) . "</info>\n");
+        $this->stdErr->writeln("Project: " . $this->api()->getProjectLabel($project));
+        if ($this->config()->get('api.organizations')) {
+            $org = $this->api()->getOrganizationById($project->getProperty('organization'));
+            if ($org) {
+                $this->stdErr->writeln("Organization: " . $this->api()->getOrganizationLabel($org));
+            }
+        }
+        $this->stdErr->writeln("Console URL: <info>" . $this->api()->getConsoleURL($project) . "</info>\n");
 
         // Show the environments.
         $this->runOtherCommand('environments', [
