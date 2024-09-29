@@ -21,6 +21,7 @@ hooks:
 
     mv dist/dev-build-index.php web/index.php
     mv dist/installer.php web/installer
+    [ -f config.yaml ] && cp config.yaml web/config.yaml
     export sha256="$(sha256sum web/platform.phar | cut -f1 -d' ')"
     cat <<EOF > web/manifest.json
     [
