@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -70,32 +71,17 @@ class WelcomeCommand extends CommandBase
         $this->stdErr->writeln("Project ID: <info>{$project->id}</info>");
         $this->stdErr->writeln("Project dashboard: <info>" . $this->api()->getConsoleURL($project) . "</info>\n");
 
-        // Show the environments.
-        $this->runOtherCommand('environments', [
-            '--project' => $project->id,
-        ]);
+        if ($project->isSuspended()) {
+            $this->warnIfSuspended($project);
+        } else {
+            // Show the environments.
+            $this->runOtherCommand('environments', [
+                '--project' => $project->id,
+            ]);
+        }
+
         $executable = $this->config()->get('application.executable');
         $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>");
-    }
-
-    /**
-     * Warn the user if a project is suspended.
-     *
-     * @param \Platformsh\Client\Model\Project $project
-     */
-    private function warnIfSuspended(Project $project)
-    {
-        if ($project->isSuspended()) {
-            $messages = [];
-            $messages[] = '<comment>This project is suspended.</comment>';
-            if ($this->config()->getWithDefault('warnings.project_suspended_payment', true)) {
-                if ($project->owner === $this->api()->getMyUserId()) {
-                    $messages[] = '<comment>Update your payment details to re-activate it</comment>';
-                }
-            }
-            $messages[] = '';
-            $this->stdErr->writeln($messages);
-        }
     }
 
     /**
@@ -128,7 +114,10 @@ class WelcomeCommand extends CommandBase
                 $this->stdErr->writeln('Application name: <info>' . $appName . '</info>');
             }
 
-            $this->warnIfSuspended($project);
+            if ($project->isSuspended()) {
+                $this->warnIfSuspended($project);
+                return;
+            }
         } else {
             $this->stdErr->writeln('Project ID: <info>' . $projectId . '</info>');
             if ($environmentId) {

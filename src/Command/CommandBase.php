@@ -2472,4 +2472,31 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
         return $resourcesInit;
     }
+
+    /**
+     * Warn the user if a project is suspended.
+     *
+     * @param \Platformsh\Client\Model\Project $project
+     */
+    protected function warnIfSuspended(Project $project)
+    {
+        if ($project->isSuspended()) {
+            $this->stdErr->writeln('This project is <error>suspended</error>.');
+            if ($this->config()->getWithDefault('warnings.project_suspended_payment', true)) {
+                $orgId = $project->getProperty('organization', false);
+                if ($orgId) {
+                    try {
+                        $organization = $this->api()->getClient()->getOrganizationById($orgId);
+                    } catch (BadResponseException $e) {
+                        $organization = false;
+                    }
+                    if ($organization && $organization->hasLink('payment-source')) {
+                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->api()->getOrganizationLabel($organization, 'comment')));
+                    }
+                } elseif ($project->owner === $this->api()->getMyUserId()) {
+                    $this->stdErr->writeln('To re-activate it, update your payment details.');
+                }
+            }
+        }
+    }
 }
