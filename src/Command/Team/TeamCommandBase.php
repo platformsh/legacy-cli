@@ -143,7 +143,7 @@ class TeamCommandBase extends CommandBase
     protected function loadTeams(Organization $organization, $fetchAllPages = true, $params = [])
     {
         $httpClient = $this->api()->getHttpClient();
-        $options = ['query' => ['filter[organization_id]' => $organization->id] + $params];
+        $options = ['query' => array_merge(['filter[organization_id]' => $organization->id, 'sort' => 'label'], $params)];
         $url = '/teams';
         /** @var Team[] $teams */
         $teams = [];

@@ -203,6 +203,7 @@ api:
   projects_ttl: 600
   environments_ttl: 120
   users_ttl: 600
+  orgs_ttl: 600
 
   # The default timeout for API requests, in seconds.
   # Overridden by the {application.env_prefix}DEFAULT_TIMEOUT env var.
