@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.20.5",
-        "sha1": "a6afe8f23bd240dc1de3a1174ab49239724ebe05",
-        "sha256": "189f0b56743d636023137ecf22742705506b6e8145acc65364d06a45b2f4b7ac",
+        "version": "4.21.0",
+        "sha1": "a3ebeec56b4cee1111483def851153f70b5c45ad",
+        "sha256": "0f816c972d728e1cd10fdc14c8e3b145c3a4ac2056c763a44f4290f0b431e86e",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.20.5/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.21.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -69,7 +69,8 @@
             "4.20.2": "* Explain failing to activate the default branch when it has no code\n* Improvements to the `push` command:\n  - Omit the parent and type from the git push options if they are not specified.  \n    This avoids an error when pushing to a non-default branch for the second \n    time, when the default branch has no code.\n  - Fix setting the type via git push options.",
             "4.20.3": "* Fix 'The no-resources option does not exist.' in the backup:restore command.\n* Use stderr for showing current state in the resources:set command.",
             "4.20.4": "* Add Unix paths for OpenSSH on Windows.\r\n  If Windows-style paths are added to SSH configuration, this also adds a\r\n  Unix-style path, as OpenSSH appears to have no support for Windows paths.\r\n  Restore the previous behavior by setting the environment variable\r\n  `PLATFORMSH_CLI_SSH_WINDOWS_PATHS` to `raw`.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.42 to 8.13.45.\r\n* Extend the request timeout for /environments requests.\r\n* Fix invalid organization country code when picking a default.\r\n* Handle `EnvironmentStateException` when generating Drush aliases.\r\n* Auto-censor the Authorization header in `curl` commands.",
-            "4.20.5": "* Fix environments listing by ID"
+            "4.20.5": "* Fix environments listing by ID",
+            "4.21.0": "New features:\n\n* Support listing teams for a single project.\n  - The `team:list` (`teams`) command will now filter the teams list to those \n    with access to the selected project, if any. The project is selected in the \n    normal way, e.g. by `--project` (`-p`), or the current Git repository.\n  - Use the `--all` option to list all the teams in the organization.\n  - Add the `granted_at` column (`--columns +granted_at`) to see when the team \n    was added to the project.\n\nOther changes:\n\n* Print necessary output in `--quiet` mode:  \n  Previously, the `--quiet` (`-q`) flag hid ALL output, on stderr and stdout.  \n  It now only hides message/error output (stderr), and continues to print \n  necessary output (stdout).\n* Cache organization data locally (for up to 10 minutes by default).\n* Display the project's organization in the welcome command.\n* Silence output from `ssh-cert:load --refresh-only` (in non-verbose mode).\n* Add debug info for session storage.\n* Explain various actions being unavailable with a code source integration:\n  synchronizing code, branching and merging.\n* Explain synchronizing being unavailable when the env or its parent is inactive.\n* Explain SSH unavailability when an env is paused.\n* Fix and improve project suspension warnings.\n* Improve formatting of Solr and PostgreSQL URLs.\n* Bump giggsey/libphonenumber-for-php from 8.13.45 to 8.13.46 (#1490)"
         }
     },
     {
