@@ -15,6 +15,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\StreamableInputInterface;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -66,8 +68,9 @@ class Application extends ParentApplication
         return new InputDefinition([
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
             new InputOption('--help', '-h', InputOption::VALUE_NONE, 'Display this help message'),
-            new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages'),
             new InputOption('--version', '-V', InputOption::VALUE_NONE, 'Display this application version'),
+            new InputOption('--verbose', '-v|vv|vvv', InputOption::VALUE_NONE, 'Increase the verbosity of messages'),
+            new InputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Only print necessary output; suppress other messages and errors. This implies --no-interaction. It is ignored in verbose mode.'),
             new InputOption('--yes', '-y', InputOption::VALUE_NONE, 'Answer "yes" to confirmation questions; accept the default value for other questions; disable interaction'),
             new InputOption(
                 '--no-interaction',
@@ -78,9 +81,7 @@ class Application extends ParentApplication
             ),
             new HiddenInputOption('--ansi', '', InputOption::VALUE_NONE, 'Force ANSI output'),
             new HiddenInputOption('--no-ansi', '', InputOption::VALUE_NONE, 'Disable ANSI output'),
-            // TODO deprecate the following options?
             new HiddenInputOption('--no', '-n', InputOption::VALUE_NONE, 'Answer "no" to confirmation questions; accept the default value for other questions; disable interaction'),
-            new HiddenInputOption('--quiet', '-q', InputOption::VALUE_NONE, 'Do not output any message'),
         ]);
     }
 
@@ -320,14 +321,6 @@ class Application extends ParentApplication
      */
     protected function configureIO(InputInterface $input, OutputInterface $output)
     {
-        // Set the input to non-interactive if the yes or no options are used,
-        // or if the PLATFORMSH_CLI_NO_INTERACTION variable is not empty.
-        // The --no-interaction option is handled in the parent method.
-        if ($input->hasParameterOption(['--yes', '-y', '--no', '-n'])
-          || getenv($this->envPrefix . 'NO_INTERACTION')) {
-            $input->setInteractive(false);
-        }
-
         // Allow the NO_COLOR, CLICOLOR_FORCE, and TERM environment variables to
         // override whether colors are used in the output.
         // See: https://no-color.org
@@ -342,7 +335,80 @@ class Application extends ParentApplication
             $output->setDecorated(false);
         }
 
-        parent::configureIO($input, $output);
+        if ($input->hasParameterOption('--ansi', true)) {
+            $output->setDecorated(true);
+        } elseif ($input->hasParameterOption('--no-ansi', true)) {
+            $output->setDecorated(false);
+        }
+
+        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+
+        if ($input->hasParameterOption(['--yes', '-y', '--no-interaction', '-n', '--no'], true)
+            || getenv($this->envPrefix . 'NO_INTERACTION')) {
+            $input->setInteractive(false);
+
+            // Deprecate the -n flag as a shortcut for --no.
+            // It is confusing as it's a shortcut for --no-interaction in other Symfony Console commands.
+            if ($input->hasParameterOption('-n', true)) {
+                $stdErr->writeln('<options=reverse>DEPRECATED</> The -n flag (as a shortcut for --no) is deprecated. It will be removed or changed in a future version.');
+            }
+        } elseif (\function_exists('posix_isatty')) {
+            $inputStream = null;
+
+            if ($input instanceof StreamableInputInterface) {
+                $inputStream = $input->getStream();
+            }
+
+            if (!@posix_isatty($inputStream) && false === getenv('SHELL_INTERACTIVE')) {
+                $input->setInteractive(false);
+            }
+        }
+
+        switch ($shellVerbosity = (int) getenv('SHELL_VERBOSITY')) {
+            case -1: $stdErr->setVerbosity(OutputInterface::VERBOSITY_QUIET); break;
+            case 1: $output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE); break;
+            case 2: $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE); break;
+            case 3: $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG); break;
+            default: $shellVerbosity = 0; break;
+        }
+
+        if ($input->hasParameterOption('-vvv', true)
+            || getenv('CLI_DEBUG') || getenv($this->envPrefix . 'DEBUG')) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+            $shellVerbosity = 3;
+        } elseif ($input->hasParameterOption('-vv', true)) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+            $shellVerbosity = 2;
+        } elseif ($input->hasParameterOption(['-v', '--verbose'], true)) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+            $shellVerbosity = 1;
+        } elseif ($input->hasParameterOption(['--quiet', '-q'], true)) {
+            $stdErr->setVerbosity(OutputInterface::VERBOSITY_QUIET);
+            $input->setInteractive(false);
+            $shellVerbosity = -1;
+        }
+
+        putenv('SHELL_VERBOSITY='.$shellVerbosity);
+        $_ENV['SHELL_VERBOSITY'] = $shellVerbosity;
+        $_SERVER['SHELL_VERBOSITY'] = $shellVerbosity;
+
+        // Turn off error reporting in quiet mode.
+        if ($shellVerbosity === -1) {
+            error_reporting(false);
+            ini_set('display_errors', '0');
+        } else {
+            // Display errors by default. In verbose mode, display all PHP
+            // error levels except deprecations. Deprecations will only be
+            // displayed while in debug mode and only if this is enabled via
+            // the CLI_REPORT_DEPRECATIONS environment variable.
+            $error_level = ($shellVerbosity >= 1 ? E_ALL : E_PARSE | E_ERROR) & ~E_DEPRECATED;
+            $report_deprecations = getenv('CLI_REPORT_DEPRECATIONS') || getenv($this->envPrefix . 'REPORT_DEPRECATIONS');
+            if ($report_deprecations && $shellVerbosity >= 3) {
+                $error_level |= E_DEPRECATED;
+            }
+            error_reporting($error_level);
+            ini_set('display_errors', 'stderr');
+        }
     }
 
     /**
