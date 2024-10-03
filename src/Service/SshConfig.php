@@ -96,7 +96,7 @@ class SshConfig {
         $certificate = $this->certifier->getExistingCertificate();
         if ($certificate) {
             $executable = $this->config->get('application.executable');
-            $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes', $executable);
+            $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
 
             // On shells where it might work (POSIX compliant), skip refreshing
             // the certificate when the CLI_SSH_NO_REFRESH env var is set to 1.
