@@ -2468,4 +2468,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
     }
+
+    /**
+     * Tests if a project's Git host is external (e.g. Bitbucket, GitHub, GitLab, etc.).
+     *
+     * @param Project $project
+     * @return bool
+     */
+    protected function hasExternalGitHost(Project $project)
+    {
+        /** @var \Platformsh\Cli\Service\Ssh $ssh */
+        $ssh = $this->getService('ssh');
+
+        return $ssh->hostIsInternal($project->getGitUrl()) === false;
+    }
 }

@@ -390,20 +390,6 @@ class EnvironmentPushCommand extends CommandBase
     }
 
     /**
-     * Tests if a project's Git host is external (e.g. Bitbucket, GitHub, GitLab, etc.).
-     *
-     * @param Project $project
-     * @return bool
-     */
-    private function hasExternalGitHost(Project $project)
-    {
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-
-        return $ssh->hostIsInternal($project->getGitUrl()) === false;
-    }
-
-    /**
      * Checks if the target environment should be activated, based on the user input or interactivity.
      *
      * @param InputInterface $input

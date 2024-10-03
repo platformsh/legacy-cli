@@ -265,7 +265,7 @@ EOF
         }
 
         $codeSourceIntegration = null;
-        if (!$this->allEnvironmentsLocal($selectedEnvironments)) {
+        if ($this->hasExternalGitHost($this->getSelectedProject())) {
             $codeSourceIntegration = $this->api()->getCodeSourceIntegration($this->getSelectedProject());
         }
         $integrationPrunesBranches = $codeSourceIntegration && $codeSourceIntegration->getProperty('prune_branches', false);
@@ -390,25 +390,6 @@ EOF
         $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
 
         return $success ? 0 : 1;
-    }
-
-    /**
-     * Tests whether a project has no code source integration based on the has_remote property of the environments.
-     *
-     * This avoids having to fetch the project's integrations.
-     *
-     * @param Environment[] $environments
-     * @return bool
-     */
-    private function allEnvironmentsLocal(array $environments)
-    {
-        $local = null;
-        foreach ($environments as $environment) {
-            if ($local !== false) {
-                $local = $environment->getProperty('has_remote', false, false) === false;
-            }
-        }
-        return $local === true;
     }
 
     /**
