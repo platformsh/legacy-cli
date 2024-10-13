@@ -2249,6 +2249,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @param string $filterByCapability
      *  If no organization is specified, this filters the list of the organizations presented to those with the given
      *  capability.
+     * @param bool $skipCache
      *
      * @return Organization
      * @throws NoOrganizationsException if the user does not have any organizations matching the filter
@@ -2257,7 +2258,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @see CommandBase::addOrganizationOptions()
      *
      */
-    protected function validateOrganizationInput(InputInterface $input, $filterByLink = '', $filterByCapability = '')
+    protected function validateOrganizationInput(InputInterface $input, $filterByLink = '', $filterByCapability = '', $skipCache = false)
     {
         if (!$this->config()->getWithDefault('api.organizations', false)) {
             throw new \BadMethodCallException('Organizations are not enabled');
@@ -2273,9 +2274,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             /** @link https://github.com/ulid/spec */
             if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
                 $this->debug('Detected organization ID format (ULID): ' . $identifier);
-                $organization = $this->api()->getOrganizationById($identifier);
+                $organization = $this->api()->getOrganizationById($identifier, $skipCache);
             } else {
-                $organization = $this->api()->getOrganizationByName($identifier);
+                $organization = $this->api()->getOrganizationByName($identifier, $skipCache);
             }
             if (!$organization) {
                 throw new ConsoleInvalidArgumentException('Organization not found: ' . $identifier);
@@ -2294,7 +2295,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($this->hasSelectedProject()) {
             $project = $this->getSelectedProject();
             $this->ensurePrintSelectedProject();
-            $organization = $this->api()->getOrganizationById($project->getProperty('organization'));
+            $organization = $this->api()->getOrganizationById($project->getProperty('organization'), $skipCache);
             if ($organization) {
                 $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
                 return $organization;
@@ -2302,7 +2303,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } elseif (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
             $organizationId = $currentProject->getProperty('organization');
             try {
-                $organization = $this->api()->getOrganizationById($organizationId);
+                $organization = $this->api()->getOrganizationById($organizationId, $skipCache);
             } catch (BadResponseException $e) {
                 $this->debug('Error when fetching project organization: ' . $e->getMessage());
                 $organization = false;

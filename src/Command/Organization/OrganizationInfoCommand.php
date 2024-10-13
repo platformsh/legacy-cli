@@ -8,6 +8,7 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Organization;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class OrganizationInfoCommand extends OrganizationCommandBase
@@ -19,7 +20,8 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             ->setDescription('View or change organization details')
             ->addOrganizationOptions(true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
-            ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
+            ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addExample('View the organization "acme"', '--org acme')
@@ -29,18 +31,19 @@ class OrganizationInfoCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $organization = $this->validateOrganizationInput($input);
+        $property = $input->getArgument('property');
+        $value = $input->getArgument('value');
+        $skipCache = $value !== null || $input->getOption('refresh');
+        $organization = $this->validateOrganizationInput($input, '', '', $skipCache);
 
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $property = $input->getArgument('property');
         if ($property === null) {
             $this->listProperties($organization);
             return 0;
         }
 
-        $value = $input->getArgument('value');
         if ($value === null) {
             $formatter->displayData($output, $this->getProperties($organization), $property);
             return 0;
@@ -119,6 +122,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             }
             throw $e;
         }
+        $this->api()->clearOrganizationCache($organization);
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,

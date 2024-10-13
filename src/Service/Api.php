@@ -1559,6 +1559,18 @@ class Api
     }
 
     /**
+     * Clears the cache for an organization.
+     *
+     * @param Organization $org
+     * @return void
+     */
+    public function clearOrganizationCache(Organization $org)
+    {
+        $this->cache->delete('organization:' . $org->id);
+        $this->cache->delete('organization:name=' . $org->name);
+    }
+
+    /**
      * Returns the Console URL for a project, with caching.
      *
      * @param Project $project
