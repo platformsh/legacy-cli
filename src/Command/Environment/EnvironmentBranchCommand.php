@@ -64,9 +64,15 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
+        /** @var \Platformsh\Cli\Service\Git $git */
+        $git = $this->getService('git');
+
         $projectRoot = $this->getProjectRoot();
         $dryRun = $input->getOption('dry-run');
         $checkoutLocally = $projectRoot && !$input->getOption('no-checkout');
+        if ($checkoutLocally) {
+            $git->ensureInstalled();
+        }
 
         if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
             if (!$checkoutLocally || $dryRun) {
@@ -171,9 +177,6 @@ class EnvironmentBranchCommand extends CommandBase
             $this->api()->clearEnvironmentsCache($selectedProject->id);
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
-
         $createdNew = false;
         if ($checkoutLocally) {
             if ($git->branchExists($branchName, $projectRoot)) {
@@ -198,17 +201,37 @@ class EnvironmentBranchCommand extends CommandBase
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
-
-            // If a new local branch has been created, set it to track the
-            // remote branch. This requires first fetching the new branch from
-            // the remote.
-            if ($remoteSuccess && $checkoutLocally && $createdNew) {
-                $upstreamRemote = $this->config()->get('detection.git_remote_name');
-                $git->fetch($upstreamRemote, $branchName, $selectedProject->getGitUrl(), $projectRoot);
-                $git->setUpstream($upstreamRemote . '/' . $branchName, $branchName, $projectRoot);
-            }
-
             $this->api()->clearEnvironmentsCache($selectedProject->id);
+        }
+
+        // If a new local branch has been created, set its upstream.
+        $remoteName = $this->config()->get('detection.git_remote_name');
+        $gitUrl = $selectedProject->getGitUrl();
+        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
+        $localProject = $this->getService('local_project');
+        if ($remoteSuccess && $checkoutLocally && $createdNew && $remoteName && $gitUrl) {
+            // Ensure a remote is configured, then fetch the new branch from
+            // the remote, then set the upstream.
+            $localProject->ensureGitRemote($projectRoot, $gitUrl);
+            if ($git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
+                $this->stdErr->writeln(sprintf(
+                    'Setting the upstream for the local git branch to: <info>%s/%s</info>',
+                    $remoteName, $branchName
+                ));
+                $git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);
+            } else {
+                $this->stdErr->writeln('To set the upstream for the local branch, run:');
+                $this->stdErr->writeln(sprintf(
+                    '  git fetch %s %s',
+                    OsUtil::escapeShellArg($remoteName),
+                    OsUtil::escapeShellArg($branchName)
+                ));
+                $this->stdErr->writeln(sprintf(
+                    '  git branch --set-upstream-to=%s %s',
+                    OsUtil::escapeShellArg($remoteName . '/' . $branchName),
+                    OsUtil::escapeShellArg($branchName)
+                ));
+            }
         }
 
         return $remoteSuccess ? 0 : 1;
