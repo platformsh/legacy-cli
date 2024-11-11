@@ -184,7 +184,7 @@ class Ssh implements InputConfiguringInterface
      *   the command line.
      * @param string[] $extraOptions
      *   SSH options, e.g. 'RequestTTY yes'.
-     * @param string|null $remoteCommand
+     * @param string[]|string|null $remoteCommand
      *   A remote command to run on the host.
      * @param bool $omitUrl
      *   Omit the URL from the command. Use this if the URL is specified in

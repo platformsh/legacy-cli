@@ -18,7 +18,7 @@ class RedisCliCommand extends CommandBase
         $this->setName('service:redis-cli');
         $this->setAliases(['redis']);
         $this->setDescription('Access the Redis CLI');
-        $this->addArgument('args', InputArgument::OPTIONAL, 'Arguments to add to the Redis command');
+        $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addProjectOption()
@@ -52,17 +52,19 @@ class RedisCliCommand extends CommandBase
             $service['port']
         );
         if ($args = $input->getArgument('args')) {
-            $redisCommand .= ' ' . $args;
+            if (count($args) === 1) {
+                $redisCommand .= ' ' . $args[0];
+            } else {
+                $redisCommand .= ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $args));
+            }
+        } elseif ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+            // Force TTY output when the input is a terminal.
+            $host->setExtraSshOptions(['RequestTTY yes']);
         }
 
         $this->stdErr->writeln(
             sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel())
         );
-
-        // Force TTY output when the input is a terminal.
-        if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
-            $host->setExtraSshOptions(['RequestTTY yes']);
-        }
 
         return $host->runCommandDirect($redisCommand);
     }
