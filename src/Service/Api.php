@@ -662,9 +662,7 @@ class Api
      */
     public function getMyProjects($refresh = null)
     {
-        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
-        $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
-        $cacheKey = sprintf('%s:my-projects%s:%s', $this->config->getSessionId(), $new ? ':new' : '', is_array($vendorFilter) ? implode(',', $vendorFilter) : (string) $vendorFilter);
+        $cacheKey = $this->myProjectsCacheKey();
         $cached = $this->cache->fetch($cacheKey);
 
         if ($refresh === false && !$cached) {
@@ -1010,12 +1008,23 @@ class Api
     }
 
     /**
-     * Clear the projects cache.
+     * Calculates a cache key for the projects list.
+     *
+     * @return string
+     */
+    private function myProjectsCacheKey()
+    {
+        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
+        $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
+        return sprintf('%s:my-projects%s:%s', $this->config->getSessionId(), $new ? ':new' : '', is_array($vendorFilter) ? implode(',', $vendorFilter) : (string) $vendorFilter);
+    }
+
+    /**
+     * Clears the projects cache.
      */
     public function clearProjectsCache()
     {
-        $this->cache->delete(sprintf('%s:project-stubs', $this->config->getSessionId()));
-        $this->cache->delete(sprintf('%s:my-account', $this->config->getSessionId()));
+        $this->cache->delete($this->myProjectsCacheKey());
     }
 
     /**
