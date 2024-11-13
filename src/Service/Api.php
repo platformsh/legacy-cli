@@ -1506,6 +1506,16 @@ class Api
     }
 
     /**
+     * Returns whether the user is allowed to create a project under an organization.
+     *
+     * @return array{'can_create': bool, 'message': string, 'required_action': ?array{'action': string, 'type': string}}
+     */
+    public function checkCanCreate(Organization $org)
+    {
+        return $this->getHttpClient()->get( $org->getUri() . '/subscriptions/can-create')->json();
+    }
+
+    /**
      * Returns a descriptive label for a referenced user.
      *
      * @param UserRef $userRef
