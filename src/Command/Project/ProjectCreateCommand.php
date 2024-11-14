@@ -16,6 +16,7 @@ use Platformsh\Client\Model\SetupOptions;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
+use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -40,8 +41,8 @@ class ProjectCreateCommand extends CommandBase
 
         Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());
 
-        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for this repository. This is the default if no remote project is already set.');
-        $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote for this repository');
+        $this->addOption('set-remote', null, InputOption::VALUE_NONE, 'Set the new project as the remote for the local project directory. This is the default if no remote is already set.');
+        $this->addOption('no-set-remote', null, InputOption::VALUE_NONE, 'Do not set the new project as the remote');
 
         $this->addHiddenOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addHiddenOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
@@ -132,7 +133,7 @@ EOF
         $projectRoot = $this->getProjectRoot();
         $gitRoot = $projectRoot !== false ? $projectRoot : $git->getRoot();
         if ($setRemote && $gitRoot === false) {
-            $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository.');
+            $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository directory.');
             $this->stdErr->writeln('Use <info>git init<info> to create a repository.');
 
             return 1;
@@ -154,27 +155,35 @@ EOF
                 }
             }
 
-            $this->stdErr->writeln('Git repository detected: <info>' . $gitRoot . '</info>');
+            $this->stdErr->writeln('Local Git repository detected: <info>' . $gitRoot . '</info>');
             if ($currentProject) {
                 $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject, 'comment')));
             }
             $this->stdErr->writeln('');
 
             if ($setRemote) {
-                $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository.', $options['title']));
+                $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository directory.', $options['title']));
             } elseif ($currentProject) {
                 $setRemote = $questionHelper->confirm(sprintf(
-                    'Switch the remote project for this repository from <comment>%s</comment> to the new project <comment>%s</comment>?',
+                    'Switch the remote project for this repository directory from <comment>%s</comment> to the new project <comment>%s</comment>?',
                     $this->api()->getProjectLabel($currentProject, false),
                     $options['title']
                 ), false);
             } else {
                 $setRemote = $questionHelper->confirm(sprintf(
-                    'Set the new project <info>%s</info> as the remote for this repository?',
+                    'Set the new project <info>%s</info> as the remote for this repository directory?',
                     $options['title']
                 ));
             }
             $this->stdErr->writeln('');
+        }
+
+        $options_custom = null;
+        if ($options['init_repo'] !== null) {
+            $this->stdErr->writeln('The project will be initialized with the repository URL: <info>' . $options['init_repo'] . '</info>');
+            $this->stdErr->writeln('');
+            $options_custom = [];
+            $options_custom['initialize']['repository'] = $options['init_repo'];
         }
 
         $estimate = $this->api()
@@ -204,6 +213,7 @@ EOF
                 'plan' => $options['plan'],
                 'storage' => (int) $options['storage'] * 1024,
                 'environments' => (int) $options['environments'],
+                'options_custom' => $options_custom,
             ]));
 
         $this->api()->clearProjectsCache();
@@ -511,6 +521,33 @@ EOF
             'description' => 'The default Git branch name for the project (the production environment)',
             'required' => false,
             'default' => 'main',
+          ]),
+          'init_repo' => new UrlField('Initialize repository', [
+            'optionName' => 'init-repo',
+            'description' => 'URL of a Git repository to use for initialization. A GitHub path such as "platformsh-templates/nuxtjs" can be used.',
+            'required' => false,
+            'avoidQuestion' => true,
+            'normalizer' => function ($url) {
+                // Provide GitHub as a default.
+                if (strpos($url, 'github.com') === 0) {
+                    return 'https://github.com' . substr($url, 10);
+                }
+                if (strpos($url, '//') === false && preg_match('#^[a-z0-9-]+/[a-z0-9-]+$#', $url)) {
+                    return 'https://github.com/' . $url;
+                }
+                return $url;
+            },
+            'validator' => function ($url) {
+                if (strpos($url, 'https://') !== 0 && parse_url($url, PHP_URL_SCHEME) !== 'https') {
+                    return 'The initialize repository URL must start with "https://".';
+                }
+                $response = $this->api()->getExternalHttpClient()->get($url, ['exceptions' => false]);
+                $code = $response->getStatusCode();
+                if ($code >= 400) {
+                    return sprintf('The initialize repository URL "%s" returned status code %d. The repository must be public.', $url, $code);
+                }
+                return true;
+            },
           ]),
         ];
     }
