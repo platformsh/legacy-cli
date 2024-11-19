@@ -2283,8 +2283,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
 
             // Check for a conflict between the --org and the --project options.
-            if ($this->hasSelectedProject()
-                && ($project = $this->getSelectedProject())
+            if (($input->hasOption('project') && $input->getOption('project'))
+                && $this->hasSelectedProject() && ($project = $this->getSelectedProject())
                 && $project->getProperty('organization', true, false) !== $organization->id) {
                 throw new ConsoleInvalidArgumentException("The project $project->id is not part of the organization $organization->id");
             }
