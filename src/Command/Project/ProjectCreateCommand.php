@@ -352,7 +352,6 @@ EOF
                 return false;
             }
             if ($canCreate['required_action']['action'] === 'verification') {
-                $this->stdErr->writeln('');
                 return $this->requireVerification($canCreate['required_action']['type'], $input);
             }
         }
@@ -369,6 +368,7 @@ EOF
     private function requireVerification($type, InputInterface $input)
     {
         if ($type === 'phone') {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Phone number verification is required before creating a project.');
             if ($input->isInteractive()) {
                 $this->stdErr->writeln('');
@@ -384,7 +384,8 @@ EOF
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                 return false;
             }
-        } else {
+        } elseif ($type === 'ticket' || $type === 'support') {
+            $this->stdErr->writeln('');
             $this->stdErr->writeln('Verification via Support is required before creating a project.');
             if ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/support';
@@ -392,6 +393,8 @@ EOF
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
             }
         }
+        // There is another possible type of verification, 'credit-card', but nothing can be done about that from the
+        // CLI currently other than the message that will already have been printed.
         return false;
     }
 
