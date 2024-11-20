@@ -9,7 +9,7 @@ if [ ! -d vendor ]; then
   composer install
 fi
 if [ ! -d vendor-bin/box/vendor ]; then
-  composer bin all install
+  composer -d vendor-bin/box install
 fi
 
 function cleanup {

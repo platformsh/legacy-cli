@@ -1,6 +1,9 @@
 name: app
-type: php:7.3
-disk: 128
+type: php:7.4
+
+dependencies:
+  php:
+    composer/composer: "^2"
 
 hooks:
   build: |
@@ -9,7 +12,13 @@ hooks:
 
     export version=dev-"$PLATFORM_TREE_ID"
 
-    composer bin all install
+    composer install -a --no-dev --no-interaction
+
+    composer install -d vendor-bin/box --no-interaction
+
+    mkdir -p vendor/bin
+    ln -s "$(realpath vendor-bin/box/vendor/bin/box)" vendor/bin/box
+
     ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$version" --output web/platform.phar
 
     cat << EOF > .environment
