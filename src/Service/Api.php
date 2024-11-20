@@ -662,6 +662,8 @@ class Api
      */
     public function getMyProjects($refresh = null)
     {
+        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
+        $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
         $cacheKey = $this->myProjectsCacheKey();
         $cached = $this->cache->fetch($cacheKey);
 
