@@ -388,10 +388,10 @@ EOF
                 return false;
             }
         } elseif ($type === 'ticket' || $type === 'support') {
-            $this->stdErr->writeln('Verification via support is required before creating a project.');
+            $this->stdErr->writeln('Verification via a support ticket is required before creating a project.');
             if ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/support';
-                $this->stdErr->writeln('Please open the following URL in a browser to open a ticket with Support:');
+                $this->stdErr->writeln('Please open the following URL in a browser to open a ticket:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
             }
         } elseif ($message !== '') {
