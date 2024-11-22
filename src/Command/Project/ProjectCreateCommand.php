@@ -363,6 +363,13 @@ EOF
                 $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim($consoleUrl, '/'), $organization->name));
                 return false;
             }
+            if ($consoleUrl && $canCreate['required_action']['action'] === 'ticket') {
+                $this->stdErr->writeln($canCreate['message']);
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Please open the following URL in a browser to create a ticket:');
+                $this->stdErr->writeln(sprintf('<info>%s/support</info>', rtrim($consoleUrl, '/')));
+                return false;
+            }
             if ($canCreate['required_action']['action'] === 'verification') {
                 return $this->requireVerification($canCreate['required_action']['type'], $canCreate['message'], $input);
             }
@@ -409,7 +416,7 @@ EOF
             if ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/support';
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln('Please open the following URL in a browser to open a ticket:');
+                $this->stdErr->writeln('Please open the following URL in a browser to create a ticket:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
             }
         } else {
