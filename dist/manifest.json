@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.21.1",
-        "sha1": "478ccdb2221e4857ad45401f93e9803e86fc5f08",
-        "sha256": "9048fa973e0a61590a02dec20f67faabb1ed552f3bf90669709d04da53e14a39",
+        "version": "4.22.0",
+        "sha1": "ec4359c0c6f353190466bab61901ca30fad2f86b",
+        "sha256": "911a4b3420533b2eeecd5fa6e54c7c5bcb1baf41c170627f1c29ea3b6c7f7cf5",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.21.1/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.22.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -71,7 +71,8 @@
             "4.20.4": "* Add Unix paths for OpenSSH on Windows.\r\n  If Windows-style paths are added to SSH configuration, this also adds a\r\n  Unix-style path, as OpenSSH appears to have no support for Windows paths.\r\n  Restore the previous behavior by setting the environment variable\r\n  `PLATFORMSH_CLI_SSH_WINDOWS_PATHS` to `raw`.\r\n* Bump giggsey/libphonenumber-for-php from 8.13.42 to 8.13.45.\r\n* Extend the request timeout for /environments requests.\r\n* Fix invalid organization country code when picking a default.\r\n* Handle `EnvironmentStateException` when generating Drush aliases.\r\n* Auto-censor the Authorization header in `curl` commands.",
             "4.20.5": "* Fix environments listing by ID",
             "4.21.0": "New features:\n\n* Support listing teams for a single project.\n  - The `team:list` (`teams`) command will now filter the teams list to those \n    with access to the selected project, if any. The project is selected in the \n    normal way, e.g. by `--project` (`-p`), or the current Git repository.\n  - Use the `--all` option to list all the teams in the organization.\n  - Add the `granted_at` column (`--columns +granted_at`) to see when the team \n    was added to the project.\n\nOther changes:\n\n* Print necessary output in `--quiet` mode:  \n  Previously, the `--quiet` (`-q`) flag hid ALL output, on stderr and stdout.  \n  It now only hides message/error output (stderr), and continues to print \n  necessary output (stdout).\n* Cache organization data locally (for up to 10 minutes by default).\n* Display the project's organization in the welcome command.\n* Silence output from `ssh-cert:load --refresh-only` (in non-verbose mode).\n* Add debug info for session storage.\n* Explain various actions being unavailable with a code source integration:\n  synchronizing code, branching and merging.\n* Explain synchronizing being unavailable when the env or its parent is inactive.\n* Explain SSH unavailability when an env is paused.\n* Fix and improve project suspension warnings.\n* Improve formatting of Solr and PostgreSQL URLs.\n* Bump giggsey/libphonenumber-for-php from 8.13.45 to 8.13.46 (#1490)",
-            "4.21.1": "* Re-allow output from \"ssh-cert:load --refresh-only\", now that quiet mode works (#1491)\n    This partially reverts 29a92850a2ce8a4f583e23bba75dcf1fdaad44c3\n* After branching, only set the upstream if the remote exists\n* Skip the cache when updating an org via the org:info command\n* Do not require SSH permission to list mounts\n* Handle old envs with outdated \"has_remote\" in the env:delete command"
+            "4.21.1": "* Re-allow output from \"ssh-cert:load --refresh-only\", now that quiet mode works (#1491)\n    This partially reverts 29a92850a2ce8a4f583e23bba75dcf1fdaad44c3\n* After branching, only set the upstream if the remote exists\n* Skip the cache when updating an org via the org:info command\n* Do not require SSH permission to list mounts\n* Handle old envs with outdated \"has_remote\" in the env:delete command",
+            "4.22.0": "New features:\n\n* Add `--init-repo` option for the `create` (`project:create`) command, as a \n  shortcut for creating a project from code in a public repository.\n* Before creating a project, check the organization's permissions. This uses the \n  `can-create` API endpoint, which supports more potential action prompts than \n  the previous version (which only supported phone verification), e.g. to create \n  a support ticket or to update the organization's billing details.\n\nOther changes:\n\n* Make `redis` and `ssh` args consistent; allow multiple args in the `redis` command.\n* Fix error after creating a new organization from a project directory.\n* Fix the project list cache not clearing automatically."
         }
     },
     {
