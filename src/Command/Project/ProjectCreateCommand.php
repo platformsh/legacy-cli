@@ -74,7 +74,7 @@ EOF
         // Check if the user needs phone verification before creating a project.
         if (!$organizationsEnabled) {
             $needsVerify = $this->api()->checkUserVerification();
-            if ($needsVerify['state'] && !$this->requireVerification($needsVerify['type'], $input)) {
+            if ($needsVerify['state'] && !$this->requireVerification($needsVerify['type'], '', $input)) {
                 return 1;
             }
         }
@@ -344,18 +344,20 @@ EOF
         if ($canCreate['can_create']) {
             return true;
         }
-        $this->stdErr->writeln($canCreate['message']);
         if ($canCreate['required_action']) {
             $consoleUrl = $this->config()->getWithDefault('service.console_url', '');
             if ($consoleUrl && $canCreate['required_action']['action'] === 'billing_details') {
-                $this->stdErr->writeln('');
+                $this->stdErr->writeln($canCreate['message']);
                 $this->stdErr->writeln('View or update billing details at:');
                 $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim($consoleUrl, '/'), $organization->name));
                 return false;
             }
             if ($canCreate['required_action']['action'] === 'verification') {
-                return $this->requireVerification($canCreate['required_action']['type'], $input);
+                return $this->requireVerification($canCreate['required_action']['type'], $canCreate['message'], $input);
             }
+        }
+        if (!empty($canCreate['message'])) {
+            $this->stdErr->writeln($canCreate['message']);
         }
         return false;
     }
@@ -364,13 +366,13 @@ EOF
      * Requires phone or support verification.
      *
      * @param string $type
+     * @param string $message
      * @param InputInterface $input
      * @return bool True if verification succeeded, false otherwise.
      */
-    private function requireVerification($type, InputInterface $input)
+    private function requireVerification($type, $message, InputInterface $input)
     {
         if ($type === 'phone') {
-            $this->stdErr->writeln('');
             $this->stdErr->writeln('Phone number verification is required before creating a project.');
             if ($input->isInteractive()) {
                 $this->stdErr->writeln('');
@@ -379,21 +381,21 @@ EOF
                     $this->stdErr->writeln('');
                     return true;
                 }
-            } else if ($this->config()->has('service.console_url')) {
-                $this->stdErr->writeln('');
+            } elseif ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/-/phone-verify';
                 $this->stdErr->writeln('Please open the following URL in a browser to verify your phone number:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                 return false;
             }
         } elseif ($type === 'ticket' || $type === 'support') {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('Verification via Support is required before creating a project.');
+            $this->stdErr->writeln('Verification via support is required before creating a project.');
             if ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/support';
                 $this->stdErr->writeln('Please open the following URL in a browser to open a ticket with Support:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
             }
+        } elseif ($message !== '') {
+            $this->stdErr->writeln($message);
         }
         // There is another possible type of verification, 'credit-card', but nothing can be done about that from the
         // CLI currently other than the message that will already have been printed.
