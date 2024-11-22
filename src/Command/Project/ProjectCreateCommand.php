@@ -357,9 +357,7 @@ EOF
                 return $this->requireVerification($canCreate['required_action']['type'], $canCreate['message'], $input);
             }
         }
-        if (!empty($canCreate['message'])) {
-            $this->stdErr->writeln($canCreate['message']);
-        }
+        $this->stdErr->writeln($canCreate['message']);
         return false;
     }
 
@@ -389,14 +387,6 @@ EOF
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                 return false;
             }
-        } elseif ($type === 'ticket' || $type === 'support') {
-            $this->stdErr->writeln('Verification via a support ticket is required before creating a project.');
-            if ($this->config()->has('service.console_url')) {
-                $url = $this->config()->get('service.console_url') . '/support';
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln('Please open the following URL in a browser to open a ticket:');
-                $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
-            }
         } elseif ($type === 'credit-card') {
             $this->stdErr->writeln('Credit card verification is required before creating a project.');
             if ($this->config()->has('service.console_url')) {
@@ -404,7 +394,15 @@ EOF
                 $this->stdErr->writeln('Please use Console to create your first project:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $this->config()->get('service.console_url')));
             }
-        } elseif ($message !== '') {
+        } elseif ($type === 'support' || $type === 'ticket') {
+            $this->stdErr->writeln('Verification via a support ticket is required before creating a project.');
+            if ($this->config()->has('service.console_url')) {
+                $url = $this->config()->get('service.console_url') . '/support';
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Please open the following URL in a browser to open a ticket:');
+                $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
+            }
+        } else {
             $this->stdErr->writeln($message);
         }
         return false;
