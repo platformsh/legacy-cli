@@ -348,6 +348,7 @@ EOF
             $consoleUrl = $this->config()->getWithDefault('service.console_url', '');
             if ($consoleUrl && $canCreate['required_action']['action'] === 'billing_details') {
                 $this->stdErr->writeln($canCreate['message']);
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('View or update billing details at:');
                 $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim($consoleUrl, '/'), $organization->name));
                 return false;
@@ -383,6 +384,7 @@ EOF
                 }
             } elseif ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/-/phone-verify';
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to verify your phone number:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
                 return false;
@@ -391,6 +393,7 @@ EOF
             $this->stdErr->writeln('Verification via a support ticket is required before creating a project.');
             if ($this->config()->has('service.console_url')) {
                 $url = $this->config()->get('service.console_url') . '/support';
+                $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to open a ticket:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
             }
