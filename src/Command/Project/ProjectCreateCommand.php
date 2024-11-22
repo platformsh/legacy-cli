@@ -397,11 +397,16 @@ EOF
                 $this->stdErr->writeln('Please open the following URL in a browser to open a ticket:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
             }
+        } elseif ($type === 'credit-card') {
+            $this->stdErr->writeln('Credit card verification is required before creating a project.');
+            if ($this->config()->has('service.console_url')) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('Please use Console to create your first project:');
+                $this->stdErr->writeln(sprintf('<info>%s</info>', $this->config()->get('service.console_url')));
+            }
         } elseif ($message !== '') {
             $this->stdErr->writeln($message);
         }
-        // There is another possible type of verification, 'credit-card', but nothing can be done about that from the
-        // CLI currently other than the message that will already have been printed.
         return false;
     }
 
