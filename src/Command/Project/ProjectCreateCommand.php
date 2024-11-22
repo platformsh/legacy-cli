@@ -72,9 +72,11 @@ EOF
         $organizationsEnabled = $this->config()->getWithDefault('api.organizations', false);
 
         // Check if the user needs phone verification before creating a project.
-        $needsVerify = !$organizationsEnabled && $this->api()->checkUserVerification();
-        if ($needsVerify['state'] && !$this->requireVerification($needsVerify['type'], $input)) {
-            return 1;
+        if (!$organizationsEnabled) {
+            $needsVerify = $this->api()->checkUserVerification();
+            if ($needsVerify['state'] && !$this->requireVerification($needsVerify['type'], $input)) {
+                return 1;
+            }
         }
 
         /** @var \Platformsh\Cli\Service\Git $git */
