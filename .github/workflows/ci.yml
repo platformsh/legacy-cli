@@ -60,6 +60,10 @@ jobs:
         export TEST_CLI_PATH=$(realpath "./platform.phar")
         chmod +x "$TEST_CLI_PATH"
         cd cli
+
+        # Temporary workaround for new test (https://github.com/platformsh/cli/pull/216).
+        git grep -q can-create || git merge af8078a84dd0ade724e88577773b098bd2527344
+
         go test ./tests -v
 
 # TODO run these when upgraded for PHP 8+ compatibility
