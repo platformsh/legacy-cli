@@ -90,6 +90,16 @@ class EnvironmentSshCommand extends CommandBase
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
+        if ($input->getOption('instance') === null && $this->stdErr->isVerbose()) {
+            $allUrls = $environment->getSshInstanceURLs($container->getName());
+            if (count($allUrls) > 1) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln('<comment>Note:</comment> connecting to a non-specific instance.');
+                $this->stdErr->writeln(sprintf('To specify an instance, use <comment>--instance</comment> (<comment>-I</comment>). Available values: <comment>%s</comment>.', implode('</comment>, <comment>', array_keys($allUrls))));
+                $this->stdErr->writeln('');
+            }
+        }
+
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
         $command = $ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
