@@ -4,7 +4,7 @@ on:
   - pull_request
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +24,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        composer install --no-dev --no-interaction
+        composer install --no-dev --no-interaction --no-scripts
         cd vendor-bin/box
         composer install --no-interaction
 
@@ -41,7 +41,34 @@ jobs:
         CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | head -c8)
         ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_REF_NAME"-"$CI_COMMIT_SHORT_SHA" --output platform.phar
 
+    - name: Clone main CLI repository
+      run: git clone https://github.com/platformsh/cli.git ./cli
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.22
+        cache-dependency-path: cli/go.sum
+
     - uses: actions/upload-artifact@v4
       with:
         name: cli-phar
         path: platform.phar
+
+    - name: Run integration tests
+      run: |
+        export TEST_CLI_PATH=$(realpath "./platform.phar")
+        chmod +x "$TEST_CLI_PATH"
+        cd cli
+
+        # Temporary workaround for new test (https://github.com/platformsh/cli/pull/216).
+        git grep -q can-create || git merge af8078a84dd0ade724e88577773b098bd2527344
+
+        go test ./tests -v
+
+# TODO run these when upgraded for PHP 8+ compatibility
+#    - name: Run unit tests
+#      run: |
+#        # Install PHPUnit
+#        composer install --no-interaction --no-scripts
+#        ./scripts/test/unit.sh
