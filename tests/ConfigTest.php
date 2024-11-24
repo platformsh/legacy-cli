@@ -2,15 +2,15 @@
 
 namespace Platformsh\Cli\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 
-class ConfigTest extends \PHPUnit_Framework_TestCase
+class ConfigTest extends TestCase
 {
-    private $configFile;
+    private string $configFile;
 
-    public function __construct($name = null, array $data = array(), $dataName = '')
+    public function setUp(): void
     {
-        parent::__construct($name, $data, $dataName);
         $this->configFile = __DIR__ . '/data/mock-cli-config.yaml';
     }
 

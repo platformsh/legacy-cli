@@ -2,16 +2,18 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Tests\Container;
 use Symfony\Component\Console\Input\ArrayInput;
 
-class SshTest extends \PHPUnit_Framework_TestCase {
+class SshTest extends TestCase {
     /** @var Ssh|null */
     private $ssh;
 
-    public function setUp() {
+    public function setUp(): void
+    {
         $container = Container::instance();
         $container->set('input', new ArrayInput([]));
         $container->set('config', (new Config())->withOverrides([
@@ -30,8 +32,8 @@ class SshTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('ssh.example.com', $method->invoke($this->ssh, 'ssh://user@ssh.example.com:foo.git'));
         $this->assertEquals('github.com', $method->invoke($this->ssh, 'user:pass@github.com:bar.git'));
         $this->assertEquals('abc.ssh.example.com', $method->invoke($this->ssh, 'abc.ssh.example.com'));
-        $this->assertEquals(false, $method->invoke($this->ssh, 'not a URL'));
-        $this->assertEquals(false, $method->invoke($this->ssh, '###'));
+        $this->assertFalse($method->invoke($this->ssh, 'not a URL'));
+        $this->assertFalse($method->invoke($this->ssh, '###'));
     }
 
     public function testHostIsInternal()

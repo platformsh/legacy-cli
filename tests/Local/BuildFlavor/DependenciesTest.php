@@ -7,7 +7,7 @@ use Platformsh\Cli\Service\Shell;
 /**
  * @group slow
  */
-class DependenciesTest extends BaseBuildFlavorTest
+class DependenciesTest extends BuildFlavorTestBase
 {
     protected $sourceDir = 'tests/data/apps/build-deps';
 

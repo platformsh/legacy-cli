@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\PortUtil;
 
-class PortUtilTest extends \PHPUnit_Framework_TestCase
+class PortUtilTest extends TestCase
 {
     public function testGetPortDoesNotReturnPortInUse()
     {
@@ -27,7 +28,7 @@ class PortUtilTest extends \PHPUnit_Framework_TestCase
     public function testGetPortDoesNotReturnUnsafePort()
     {
         $util = new PortUtil();
-        $this->assertNotEquals($util->getPort(2049), 2049);
+        $this->assertNotEquals(2049, $util->getPort(2049));
     }
 
     public function testGetPortReturnsValidPort()
@@ -36,7 +37,9 @@ class PortUtilTest extends \PHPUnit_Framework_TestCase
         $port = $util->getPort(rand(10000, 50000));
         $this->assertTrue($util->validatePort($port));
 
-        $this->setExpectedException('Exception', 'Failed to find');
+        $this->expectException('Exception');
+
+        $this->expectExceptionMessage('Failed to find');
         $util->getPort(70000);
     }
 

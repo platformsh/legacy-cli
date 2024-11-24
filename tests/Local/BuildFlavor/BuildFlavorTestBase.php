@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
@@ -11,15 +12,16 @@ use Platformsh\Cli\Tests\HasTempDirTrait;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class BaseBuildFlavorTest extends \PHPUnit_Framework_TestCase
+abstract class BuildFlavorTestBase extends TestCase
 {
     use HasTempDirTrait;
 
     /** @var ContainerInterface */
     private static $container;
 
-    /** @var \Symfony\Component\Console\Output\OutputInterface */
+    /** @var OutputInterface */
     protected static $output;
 
     /** @var CliConfig */
@@ -33,7 +35,7 @@ abstract class BaseBuildFlavorTest extends \PHPUnit_Framework_TestCase
     /**
      * {@inheritdoc}
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         $container = Container::instance();
         $container->set('input', new ArrayInput([]));
@@ -54,7 +56,7 @@ abstract class BaseBuildFlavorTest extends \PHPUnit_Framework_TestCase
     /**
      * {@inheritdoc}
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->builder = self::$container->get('local.build');
         $this->tempDirSetUp();

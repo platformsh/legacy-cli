@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\StringUtil;
 
-class StringUtilTest extends \PHPUnit_Framework_TestCase
+class StringUtilTest extends TestCase
 {
     public function testBetween()
     {

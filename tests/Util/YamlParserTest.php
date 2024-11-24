@@ -2,10 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Exception\InvalidConfigException;
 use Platformsh\Cli\Util\YamlParser;
 
-class YamlParserTest extends \PHPUnit_Framework_TestCase
+class YamlParserTest extends TestCase
 {
     public function testParseValidYaml()
     {
@@ -35,7 +36,8 @@ class YamlParserTest extends \PHPUnit_Framework_TestCase
         $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $content = file_get_contents($file);
         $content .= "\ntest: !include nonexistent.yml";
-        $this->setExpectedException(InvalidConfigException::class, 'File not found');
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage('File not found');
         (new YamlParser())->parseContent($content, $file);
     }
 
@@ -50,7 +52,6 @@ class YamlParserTest extends \PHPUnit_Framework_TestCase
   foo:
     nested: bar
 EOF;
-;
         $result = (new YamlParser())->parseContent($content, $file);
         $this->assertEquals([
             'name' => 'example-indented-yaml',

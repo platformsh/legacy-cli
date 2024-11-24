@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 /**
  * @group slow
  */
-class ComposerTest extends BaseBuildFlavorTest
+class ComposerTest extends BuildFlavorTestBase
 {
 
     public function testBuildComposer()

@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\Wildcard;
 
-class WildcardTest extends \PHPUnit_Framework_TestCase
+class WildcardTest extends TestCase
 {
     public function testSelect()
     {

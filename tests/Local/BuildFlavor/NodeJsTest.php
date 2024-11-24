@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 /**
  * @group slow
  */
-class NodeJsTest extends BaseBuildFlavorTest
+class NodeJsTest extends BuildFlavorTestBase
 {
     public function testBuildNodeJs()
     {
