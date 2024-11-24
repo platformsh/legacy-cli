@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Command\Environment;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\Environment\EnvironmentRelationshipsCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -9,9 +10,10 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @group commands
  */
-class EnvironmentRelationshipsTest extends \PHPUnit_Framework_TestCase
+class EnvironmentRelationshipsTest extends TestCase
 {
-    public function setUp() {
+    public function setUp(): void
+    {
         $mockRelationships = base64_encode(json_encode([
             'database' => [
                 0 => [
@@ -30,7 +32,8 @@ class EnvironmentRelationshipsTest extends \PHPUnit_Framework_TestCase
         putenv('PLATFORM_RELATIONSHIPS=' . $mockRelationships);
     }
 
-    public function tearDown() {
+    public function tearDown(): void
+    {
         putenv('PLATFORM_RELATIONSHIPS=');
     }
 

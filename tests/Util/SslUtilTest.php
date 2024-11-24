@@ -2,16 +2,16 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\SslUtil;
 
-class SslUtilTest extends \PHPUnit_Framework_TestCase
+class SslUtilTest extends TestCase
 {
     private $dir;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->dir = dirname(__DIR__) . '/data/ssl';
-        \PHPUnit_Framework_Error_Warning::$enabled = false;
     }
 
     public function testValidate()
@@ -24,7 +24,8 @@ class SslUtilTest extends \PHPUnit_Framework_TestCase
 
     public function testValidateWrongFilename()
     {
-        $this->setExpectedException(\InvalidArgumentException::class, 'The private key file could not be read');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The private key file could not be read');
         (new SslUtil())->validate($this->dir . '/cert.pem', $this->dir . '/nonexistent-key.pem', []);
     }
 
@@ -33,7 +34,8 @@ class SslUtilTest extends \PHPUnit_Framework_TestCase
         if (!\extension_loaded('openssl')) {
             $this->markTestIncomplete('openssl extension not loaded');
         } else {
-            $this->setExpectedException(\InvalidArgumentException::class, 'The provided certificate does not match the provided private key');
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessage('The provided certificate does not match the provided private key');
             (new SslUtil())->validate($this->dir . '/cert.pem', $this->dir . '/wrongkey.pem', []);
         }
     }
@@ -43,7 +45,8 @@ class SslUtilTest extends \PHPUnit_Framework_TestCase
         if (!\extension_loaded('openssl')) {
             $this->markTestIncomplete('openssl extension not loaded');
         } else {
-            $this->setExpectedException(\InvalidArgumentException::class, 'Private key not valid');
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessage('Private key not valid');
             (new SslUtil())->validate($this->dir . '/cert.pem', $this->dir . '/invalid-key.pem', []);
         }
     }
@@ -54,7 +57,8 @@ class SslUtilTest extends \PHPUnit_Framework_TestCase
             $this->markTestIncomplete('openssl extension not loaded');
         } else {
             $filename = $this->dir . '/invalid-cert.pem';
-            $this->setExpectedException(\InvalidArgumentException::class, 'The certificate file is not a valid X509 certificate: ' . $filename);
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessage('The certificate file is not a valid X509 certificate: ' . $filename);
             (new SslUtil())->validate($filename, $this->dir . '/key.pem', []);
         }
     }

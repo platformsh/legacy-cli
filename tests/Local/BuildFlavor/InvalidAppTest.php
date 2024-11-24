@@ -4,11 +4,12 @@ namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
 
-class InvalidAppTest extends BaseBuildFlavorTest
+class InvalidAppTest extends BuildFlavorTestBase
 {
     public function testNoAppConfigThrowsException()
     {
-        $this->setExpectedException(InvalidConfigException::class, 'Configuration file not found');
+        $this->expectException(InvalidConfigException::class);
+        $this->expectExceptionMessage('Configuration file not found');
         $this->assertBuildSucceeds('tests/data/apps/invalid', [], false);
     }
 }
