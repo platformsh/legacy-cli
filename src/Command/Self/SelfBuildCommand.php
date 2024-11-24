@@ -99,28 +99,25 @@ class SelfBuildCommand extends CommandBase
             // Wipe the vendor directory to be extra sure.
             $shell->execute(['rm', '-rf', 'vendor'], CLI_ROOT, false);
 
-            // We cannot use --no-dev, as that would exclude the
-            // composer-bin-plugin tool.
             $shell->execute([
                 'composer',
                 'install',
                 '--classmap-authoritative',
                 '--no-interaction',
                 '--no-progress',
+                '--no-dev',
             ], CLI_ROOT, true, false);
 
-            // Install composer-bin-plugin dependencies.
+            // Install Box.
             $shell->execute([
                 'composer',
-                'bin',
-                'all',
                 'install',
                 '--no-interaction',
                 '--no-progress',
-            ], CLI_ROOT, true, false);
+            ], CLI_ROOT . DIRECTORY_SEPARATOR . 'vendor-bin' . DIRECTORY_SEPARATOR . 'box', true, false);
         }
 
-        $boxArgs = [CLI_ROOT . '/vendor/bin/box', 'compile', '--no-interaction'];
+        $boxArgs = [CLI_ROOT . '/vendor-bin/box/vendor/bin/box', 'compile', '--no-interaction'];
         if ($output->isVeryVerbose()) {
             $boxArgs[] = '-vvv';
         } elseif ($output->isVerbose()) {
