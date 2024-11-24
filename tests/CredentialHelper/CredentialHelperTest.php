@@ -2,23 +2,24 @@
 
 namespace Platformsh\Cli\Tests\CredentialHelper;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Client\Session\Session;
 
-class CredentialHelperTest extends \PHPUnit_Framework_TestCase
+class CredentialHelperTest extends TestCase
 {
     private $manager;
     private $storage;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->manager = new Manager(new Config());
         $this->storage = new SessionStorage($this->manager, 'CLI Test');
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $this->storage->deleteAll();
     }
