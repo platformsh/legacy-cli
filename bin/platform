@@ -19,11 +19,6 @@ ini_set('log_errors', '0');
 // Disable early deprecation notices, e.g. those relating to Symfony Console.
 error_reporting(E_ALL & ~E_DEPRECATED);
 
-if (version_compare(PHP_VERSION, '8.2', '<')) {
-    printf("This tool requires at least PHP 8.2. You currently have %s installed. Please upgrade your PHP version.\n", PHP_VERSION);
-    exit(1);
-}
-
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require __DIR__ . '/../vendor/autoload.php';
 } elseif (file_exists(__DIR__ . '/../../../autoload.php')) {
