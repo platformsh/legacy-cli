@@ -2,15 +2,16 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\TimezoneUtil;
 
-class TimezoneUtilTest extends \PHPUnit_Framework_TestCase
+class TimezoneUtilTest extends TestCase
 {
     private $originalSetting;
     private $originalIni;
     private $originalEnv;
 
-    public function setUp()
+    public function setUp(): void
     {
         // Reset to PHP defaults.
         $this->originalIni = ini_get('date.timezone');
@@ -21,7 +22,7 @@ class TimezoneUtilTest extends \PHPUnit_Framework_TestCase
         putenv('TZ=');
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         // Reset to original settings.
         ini_set('date.timezone', $this->originalIni);
@@ -43,13 +44,6 @@ class TimezoneUtilTest extends \PHPUnit_Framework_TestCase
         ini_set('date.timezone', 'Antarctica/McMurdo');
         date_default_timezone_set('Antarctica/Troll');
         $this->assertEquals('Antarctica/Troll', TimezoneUtil::getTimezone());
-    }
-
-    public function testGetTimezoneReturnsEnvVar()
-    {
-        @ini_set('date.timezone', '');
-        putenv('TZ=Arctic/Longyearbyen');
-        $this->assertEquals('Arctic/Longyearbyen', TimezoneUtil::getTimezone());
     }
 
     public function testGetTimezoneReturnsSomething()

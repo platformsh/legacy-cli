@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\Sort;
 
-class SortTest extends \PHPUnit_Framework_TestCase
+class SortTest extends TestCase
 {
     public function testSortObjects() {
         $objects = [
