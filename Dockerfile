@@ -1,4 +1,4 @@
-FROM  php:7.4-cli
+FROM  php:8.2-cli
 
 ARG USER_ID
 ARG GROUP_ID
