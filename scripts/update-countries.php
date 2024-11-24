@@ -21,14 +21,17 @@ if (!$data) {
     throw new \RuntimeException('Failed to decode JSON in CLDR file: ' . $url);
 }
 
-if (empty($data['main']['en']['identity']['version']['_cldrVersion'])) {
-    throw new \RuntimeException('Failed to read version info in CLDR file: ' . $url);
+if (empty($data['main']['en']['identity']['language'])) {
+    throw new \RuntimeException('Failed to read language info in CLDR file: ' . $url);
+}
+if ($data['main']['en']['identity']['language'] !== 'en') {
+    throw new \RuntimeException('Unexpected language info in CLDR file: ' . $url);
 }
 if (empty($data['main']['en']['localeDisplayNames']['territories'])) {
     throw new \RuntimeException('Failed to find territories list in CLDR file: ' . $url);
 }
 
-fputs(STDERR, "Processing country data. CLDR version: " . $data['main']['en']['identity']['version']['_cldrVersion'] . "\n");
+fputs(STDERR, "Processing country data.\n");
 
 $territories = $data['main']['en']['localeDisplayNames']['territories'];
 $nonCountries = ['EU', 'EZ', 'UN', 'QO', 'XA', 'XB', 'ZZ'];
