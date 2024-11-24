@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
@@ -44,6 +44,11 @@ jobs:
         CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | head -c8)
         ./bin/platform self:build --no-composer-rebuild --yes --replace-version "$CI_COMMIT_REF_NAME"-"$CI_COMMIT_SHORT_SHA" --output platform.phar
 
+    - name: Run PHPUnit tests
+      run: |
+        composer install --no-interaction --no-scripts
+        ./scripts/test/unit.sh
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
@@ -61,10 +66,3 @@ jobs:
       with:
         name: cli-phar
         path: platform.phar
-
-# TODO run these when upgraded for PHP 8+ compatibility
-#    - name: Run unit tests
-#      run: |
-#        # Install PHPUnit
-#        composer install --no-interaction --no-scripts
-#        ./scripts/test/unit.sh

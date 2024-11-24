@@ -7,7 +7,7 @@ use Platformsh\Cli\Service\Filesystem;
 /**
  * @group slow
  */
-class DrupalTest extends BaseBuildFlavorTest
+class DrupalTest extends BuildFlavorTestBase
 {
 
     public function testBuildDrupalInProjectMode()
@@ -56,7 +56,7 @@ class DrupalTest extends BaseBuildFlavorTest
         // Build hooks are not Drupal-specific, but they can only run if the
         // build process creates a build directory outside the repository -
         // Drupal is the only current example of this.
-        $this->assertFileNotExists($webRoot . '/robots.txt');
+        $this->assertFileDoesNotExist($webRoot . '/robots.txt');
         $this->assertFileExists($webRoot . '/test.txt');
 
         // Test building the same project again.
@@ -123,8 +123,8 @@ class DrupalTest extends BaseBuildFlavorTest
             $message = "Attempt $i";
             $this->assertTrue($this->builder->build($this->buildSettings, $repository, $wwwDir), $message);
             $this->assertFileExists($wwwDir . '/sites/default/settings.php', $message);
-            $this->assertFileNotExists($wwwDir . '/sites/default/builds', $message);
-            $this->assertFileNotExists($wwwDir . '/sites/default/www', $message);
+            $this->assertFileDoesNotExist($wwwDir . '/sites/default/builds', $message);
+            $this->assertFileDoesNotExist($wwwDir . '/sites/default/www', $message);
         }
     }
 }
