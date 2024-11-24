@@ -2,11 +2,12 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Identifier;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 
-class IdentifierTest extends \PHPUnit_Framework_TestCase
+class IdentifierTest extends TestCase
 {
     private function config()
     {
@@ -118,7 +119,7 @@ class IdentifierTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $identifier->identify($url));
 
         $url = 'https://console.example.com/foo/-/xyz';
-        $this->setExpectedException(InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $identifier->identify($url);
     }
 }

@@ -2,10 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 
-class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
+class FilesystemServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
@@ -15,7 +16,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
     /**
      * @{inheritdoc}
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->fs = new Filesystem();
         $this->tempDirSetUp();
@@ -44,7 +45,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
 
         // Check that the directory can be removed.
         $this->assertTrue($this->fs->remove($testDir));
-        $this->assertFileNotExists($testDir);
+        $this->assertFileDoesNotExist($testDir);
     }
 
     /**
@@ -62,7 +63,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
         // Check that they have been copied.
         $this->assertFileExists($destination . '/test-file');
         $this->assertFileExists($destination . '/test-dir/test-file');
-        $this->assertFileNotExists($destination . '/.donotcopy');
+        $this->assertFileDoesNotExist($destination . '/.donotcopy');
     }
 
     /**
@@ -99,7 +100,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
         $path = $this->fs->makePathAbsolute('..');
         $this->assertEquals($testDir, $path);
 
-        $this->setExpectedException('InvalidArgumentException');
+        $this->expectException('InvalidArgumentException');
         $this->fs->makePathAbsolute('nonexistent/test.txt');
     }
 
@@ -113,6 +114,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
 
         // Test plain symlinking.
         $this->fs->symlinkAll($testSource, $testDestination);
+
         $this->assertFileExists($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
@@ -138,7 +140,7 @@ class FilesystemServiceTest extends \PHPUnit_Framework_TestCase
         $testDestination = $this->tempDir();
         touch($testSource . '/test-file2');
         $this->fs->symlinkAll($testSource, $testDestination, true, false, ['test-file']);
-        $this->assertFileNotExists($testDestination . '/test-file');
+        $this->assertFileDoesNotExist($testDestination . '/test-file');
         $this->assertFileExists($testDestination . '/test-dir/test-file');
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
     }

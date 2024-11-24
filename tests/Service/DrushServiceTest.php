@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Cli\Service\Filesystem;
@@ -13,7 +14,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * @group slow
  */
-class DrushServiceTest extends \PHPUnit_Framework_TestCase
+class DrushServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
@@ -29,7 +30,7 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
     /**
      * @{inheritdoc}
      */
-    public function setUp()
+    public function setUp(): void
     {
         $config = (new Config())->withOverrides(['service.app_config_file' => '_platform.app.yaml']);
         $this->drush = new Drush($config);
@@ -113,7 +114,7 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('_local', $aliases);
 
         $apps = $this->drush->getDrupalApps($projectRoot);
-        $this->assertEquals(1, count($apps));
+        $this->assertCount(1, $apps);
     }
 
     public function testCreateAliasesMultiDrupal()
@@ -131,7 +132,7 @@ class DrushServiceTest extends \PHPUnit_Framework_TestCase
         $this->drush->setHomeDir($homeDir);
 
         $apps = $this->drush->getDrupalApps($projectRoot);
-        $this->assertEquals(2, count($apps));
+        $this->assertCount(2, $apps);
 
         // Check that aliases are created.
         $result = $this->drush->createAliases($this->project, $projectRoot, $this->environments);

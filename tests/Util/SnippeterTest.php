@@ -2,16 +2,17 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\Snippeter;
 
-class SnippeterTest extends \PHPUnit_Framework_TestCase
+class SnippeterTest extends TestCase
 {
     private $begin;
     private $end;
     private $snippet;
     private $dataDir;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->begin = '# BEGIN Test snippet' . PHP_EOL;
         $this->end = PHP_EOL . '# END';

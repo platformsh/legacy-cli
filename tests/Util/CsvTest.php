@@ -2,14 +2,15 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\Csv;
 use Platformsh\Cli\Util\PlainFormat;
 
-class CsvTest extends \PHPUnit_Framework_TestCase
+class CsvTest extends TestCase
 {
     private $data = [];
 
-    public function setUp()
+    public function setUp(): void
     {
         // Data from a Wikipedia example.
         // https://en.wikipedia.org/wiki/Comma-separated_values

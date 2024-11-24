@@ -2,11 +2,12 @@
 
 namespace Platformsh\Cli\Tests\Command;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\WelcomeCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-class WelcomeCommandTest extends \PHPUnit_Framework_TestCase
+class WelcomeCommandTest extends TestCase
 {
     private function runCommand(array $args) {
         $output = new BufferedOutput();
@@ -25,11 +26,11 @@ class WelcomeCommandTest extends \PHPUnit_Framework_TestCase
         putenv('PLATFORM_ROUTES=' . base64_encode(json_encode([])));
         putenv('PLATFORMSH_CLI_SESSION_ID=test' . rand(100, 999));
         $result = $this->runCommand([]);
-        $this->assertContains(
+        $this->assertStringContainsString(
             'Project ID: test-project',
             $result
         );
-        $this->assertContains(
+        $this->assertStringContainsString(
             'Local environment commands',
             $result
         );

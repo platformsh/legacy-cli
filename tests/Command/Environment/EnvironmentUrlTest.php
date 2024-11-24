@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Command\Environment;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\Environment\EnvironmentUrlCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -10,9 +11,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @group commands
  */
-class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
+class EnvironmentUrlTest extends TestCase
 {
-    public function setUp() {
+    public function setUp(): void
+    {
         $mockRoutes = base64_encode(json_encode([
             'https://example.com' => [
                 'primary' => true,
@@ -29,7 +31,8 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
         putenv('PLATFORM_ROUTES=' . $mockRoutes);
     }
 
-    public function tearDown() {
+    public function tearDown(): void
+    {
         putenv('PLATFORM_ROUTES=');
     }
 
@@ -68,16 +71,16 @@ class EnvironmentUrlTest extends \PHPUnit_Framework_TestCase
         $result = $this->runCommand([
             '--browser' => 'nonexistent',
         ]);
-        $this->assertContains('Command not found: nonexistent', $result);
-        $this->assertContains("https://example.com\n", $result);
+        $this->assertStringContainsString('Command not found: nonexistent', $result);
+        $this->assertStringContainsString("https://example.com\n", $result);
 
         $display = getenv('DISPLAY');
         putenv('DISPLAY=none');
         $result = $this->runCommand([
             '--browser' => 'nonexistent',
         ], OutputInterface::VERBOSITY_DEBUG);
-        $this->assertContains('no display found', $result);
-        $this->assertContains("https://example.com\n", $result);
+        $this->assertStringContainsString('no display found', $result);
+        $this->assertStringContainsString("https://example.com\n", $result);
         putenv('DISPLAY=' . $display);
     }
 }
