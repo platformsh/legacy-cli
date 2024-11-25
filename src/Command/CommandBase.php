@@ -714,8 +714,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
                 if ($this->config()->has('api.base_url')
                     && $e->getResponse() && $e->getResponse()->getStatusCode() === 401
-                    && parse_url($this->config()->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getHost()) {
-                    $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getHost());
+                    && parse_url($this->config()->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
+                    $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getUri()->getHost());
                     return $this->currentProject = false;
                 }
                 throw $e;

@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\CredentialHelper;
 
-use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\SessionStorageInterface;
 
 /**
@@ -30,14 +29,14 @@ class SessionStorage implements SessionStorageInterface
     }
 
     /**
-     * @param SessionInterface $session
+     * @param string $sessionId
      *
      * @return string
      */
-    private function serverUrl(SessionInterface $session) {
+    private function serverUrl(string $sessionId): string
+    {
         // Remove the 'cli-' prefix from the session ID;
-        $sessionId = $session->getId();
-        if (strpos($sessionId, 'cli-') === 0) {
+        if (str_starts_with($sessionId, 'cli-')) {
             $sessionId = substr($sessionId, 4);
         }
 
@@ -47,17 +46,15 @@ class SessionStorage implements SessionStorageInterface
     /**
      * {@inheritdoc}
      */
-    public function load(SessionInterface $session)
+    public function load(string $sessionId): array
     {
         try {
-            $secret = $this->manager->get($this->serverUrl($session));
+            $secret = $this->manager->get($this->serverUrl($sessionId));
         } catch (\RuntimeException $e) {
             throw new \RuntimeException('Failed to load the session', 0, $e);
         }
 
-        if ($secret !== false) {
-            $session->setData($this->deserialize($secret));
-        }
+        return $secret ? $this->deserialize($secret) : [];
     }
 
     /**
@@ -107,10 +104,9 @@ class SessionStorage implements SessionStorageInterface
     /**
      * {@inheritdoc}
      */
-    public function save(SessionInterface $session)
+    public function save($sessionId, array $data): void
     {
-        $serverUrl = $this->serverUrl($session);
-        $data = $session->getData();
+        $serverUrl = $this->serverUrl($sessionId);
         if (empty($data)) {
             try {
                 $this->manager->erase($serverUrl);
@@ -120,7 +116,7 @@ class SessionStorage implements SessionStorageInterface
             return;
         }
         try {
-            $this->manager->store($this->serverUrl($session), $this->serialize($data));
+            $this->manager->store($serverUrl, $this->serialize($data));
         } catch (\RuntimeException $e) {
             throw new \RuntimeException('Failed to store the session', 0, $e);
         }

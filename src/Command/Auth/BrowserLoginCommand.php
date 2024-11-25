@@ -1,9 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
-use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Utils;
+use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\Filesystem;
@@ -301,17 +303,11 @@ class BrowserLoginCommand extends CommandBase
      */
     private function saveAccessToken(array $tokenData, SessionInterface $session)
     {
-        $token = new AccessToken($tokenData['access_token'], $tokenData['token_type'], $tokenData);
-        $session->setData([
-            'accessToken' => $token->getToken(),
-            'tokenType' => $token->getType(),
-        ]);
-        if ($token->getExpires()) {
-            $session->set('expires', $token->getExpires()->getTimestamp());
-        }
-        if ($token->getRefreshToken()) {
-            $session->set('refreshToken', $token->getRefreshToken()->getToken());
-        }
+        $token = new AccessToken($tokenData);
+        $session->set('accessToken', $token->getToken());
+        $session->set('tokenType', $tokenData['token_type'] ?: null);
+        $session->set('expires', $token->getExpires());
+        $session->set('refreshToken', $token->getRefreshToken());
         $session->save();
     }
 
@@ -342,23 +338,23 @@ class BrowserLoginCommand extends CommandBase
      */
     private function getAccessToken($authCode, $codeVerifier, $redirectUri)
     {
-        $client = new Client();
-        $request = $client->createRequest('post', $this->config()->get('api.oauth2_token_url'), [
-            'body' => [
-                'grant_type' => 'authorization_code',
-                'code' => $authCode,
-                'client_id' => $this->config()->get('api.oauth2_client_id'),
-                'redirect_uri' => $redirectUri,
-                'code_verifier' => $codeVerifier,
-            ],
-            'auth' => false,
-            'verify' => !$this->config()->getWithDefault('api.skip_ssl', false),
-        ]);
+        $client = new Client(['verify' => !$this->config()->getWithDefault('api.skip_ssl', false)]);
+        $request = new Request('POST', $this->config()->get('api.oauth2_token_url'), body: http_build_query([
+            'grant_type' => 'authorization_code',
+            'code' => $authCode,
+            'redirect_uri' => $redirectUri,
+            'code_verifier' => $codeVerifier,
+        ]));
 
         try {
-            $response = $client->send($request);
+            $response = $client->send($request, [
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ],
+                'auth' => [$this->config()->get('api.oauth2_client_id'), ''],
+            ]);
 
-            return $response->json();
+            return Utils::jsonDecode((string) $response->getBody(), true);
         } catch (BadResponseException $e) {
             throw ApiResponseException::create($request, $e->getResponse(), $e);
         }
