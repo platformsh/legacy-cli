@@ -196,7 +196,7 @@ class Identifier
                     return false;
                 }
             }
-            $cluster = $response->getHeaderAsArray($this->config->get('detection.cluster_header'));
+            $cluster = $response->getHeader($this->config->get('detection.cluster_header'));
             $canCache = !empty($cluster)
                 || ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
             if ($canCache) {

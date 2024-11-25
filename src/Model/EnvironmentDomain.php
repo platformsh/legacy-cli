@@ -3,9 +3,9 @@
 namespace Platformsh\Cli\Model;
 
 use GuzzleHttp\ClientInterface;
+use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Domain;
 use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Resource;
 
 /**
  * A domain name on a Platform.sh environment.
@@ -16,7 +16,7 @@ use Platformsh\Client\Model\Resource;
  * @property-read string $created_at
  * @property-read string $updated_at
  */
-class EnvironmentDomain extends Resource
+class EnvironmentDomain extends ApiResourceBase
 {
     public static function getList(Environment $environment, ClientInterface $client)
     {

@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;

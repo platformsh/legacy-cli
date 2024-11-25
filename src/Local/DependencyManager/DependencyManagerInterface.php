@@ -41,11 +41,11 @@ interface DependencyManagerInterface
     /**
      * Returns a list of "bin" directories in which dependencies are installed.
      *
-     * @param string $path The path prefix for the dependencies.
+     * @param string $prefix The path prefix for the dependencies.
      *
      * @return array An array of absolute paths.
      */
-    public function getBinPaths($path);
+    public function getBinPaths($prefix);
 
     /**
      * Returns a list of environment variables for using installed dependencies.

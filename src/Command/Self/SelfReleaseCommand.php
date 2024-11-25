@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\VersionUtil;
 use Symfony\Component\Console\Input\InputArgument;
@@ -353,7 +354,7 @@ class SelfReleaseCommand extends CommandBase
             ],
             'debug' => $output->isDebug(),
         ]);
-        $release = $response->json();
+        $release = Utils::jsonDecode((string) $response->getBody(), true);
         $releaseUrl = $repoApiUrl . '/releases/' . $release['id'];
         $uploadUrl = preg_replace('/\{.+?\}/', '', $release['upload_url']);
 
