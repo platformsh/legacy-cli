@@ -1,10 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
-use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Utils;
+use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Client\OAuth2\ApiToken;
+use Platformsh\OAuth2\Client\Grant\ApiToken;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
@@ -59,12 +60,10 @@ class ApiTokenLoginCommand extends CommandBase
             }
 
             try {
-                $token = (new ApiToken($tokenClient, [
-                    'client_id' => $clientId,
-                    'token_url' => $tokenUrl,
-                    'auth_location' => 'headers',
+                $provider = $this->api()->getClient()->getConnector()->getOAuth2Provider();
+                $token = $provider->getAccessToken(new ApiToken(), [
                     'api_token' => $apiToken,
-                ]))->getToken();
+                ]);
             } catch (BadResponseException $e) {
                 if ($this->exceptionMeansInvalidToken($e)) {
                     throw new \RuntimeException('Invalid API token');
@@ -121,7 +120,7 @@ class ApiTokenLoginCommand extends CommandBase
         if (!$e instanceof BadResponseException || !$e->getResponse() || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
             return false;
         }
-        $json = $e->getResponse()->json();
+        $json = Utils::jsonDecode($e->getResponse(), true);
         // Compatibility with legacy auth provider.
         if (isset($json['error'], $json['error_description'])
             && $json['error'] === 'invalid_grant'

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -25,7 +26,8 @@ class BlueGreenConcludeCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $httpClient = $this->api()->getHttpClient();
-        $data = $httpClient->get($environment->getLink('#versions'))->json();
+        $response = $httpClient->get($environment->getLink('#versions'));
+        $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) < 2) {
             $this->stdErr->writeln(sprintf('Blue/green deployments are not enabled for the environment %s.', $this->api()->getEnvironmentLabel($environment, 'error')));
             return 1;

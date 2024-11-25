@@ -2,7 +2,8 @@
 
 namespace Platformsh\Cli\Service;
 
-use GuzzleHttp\Query;
+use GuzzleHttp\Psr7\Query;
+use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Util\OsUtil;
@@ -370,7 +371,7 @@ class Relationships implements InputConfiguringInterface
         // The 'query' is expected to be a string.
         if (isset($parts['query']) && is_array($parts['query'])) {
             unset($parts['query']['is_master']);
-            $parts['query'] = (new Query($parts['query']))->__toString();
+            $parts['query'] = Query::build($parts['query']);
         }
 
         // Special case #1: Solr.
@@ -385,7 +386,7 @@ class Relationships implements InputConfiguringInterface
             $parts['scheme'] = 'postgresql';
         }
 
-        return \GuzzleHttp\Url::buildUrl($parts);
+        return Uri::fromParts($parts)->__toString();
     }
 
     /**

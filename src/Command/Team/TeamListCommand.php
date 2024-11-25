@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Team;
 
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Model\ProjectRoles;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -165,10 +166,11 @@ class TeamListCommand extends TeamCommandBase
                 $progress->showIfOutputDecorated(sprintf('Loading project teams (page %d)...', $pageNumber));
             }
             try {
-                $data = $httpClient->get($url)->json();
+                $response = $httpClient->get($url);
             } catch (BadResponseException $e) {
                 throw ApiResponseException::create($e->getRequest(), $e->getResponse(), $e);
             }
+            $data = Utils::jsonDecode((string) $response->getBody(), true);
             foreach ($data['items'] as $item) {
                 $info[$item['team_id']] = $item['granted_at'];
             }
