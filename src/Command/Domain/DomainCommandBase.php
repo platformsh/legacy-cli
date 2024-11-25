@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
 use Platformsh\Client\Model\Environment;
@@ -207,7 +208,7 @@ abstract class DomainCommandBase extends CommandBase
         }
         // @todo standardize API error parsing if the format is ever formalized
         if ($response->getStatusCode() === 400) {
-            $data = $response->json();
+            $data = Utils::jsonDecode((string) $response->getBody(), true);
             if (isset($data['detail']['error'])) {
                 $this->stdErr->writeln($data['detail']['error']);
                 return;

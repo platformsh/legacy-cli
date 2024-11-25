@@ -5,10 +5,10 @@
     "require": {
         "php": ">=8.2",
         "doctrine/cache": "~1.5",
-        "guzzlehttp/guzzle": "^5.3",
+        "guzzlehttp/guzzle": "^7",
         "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": ">=0.0.37 <2.0",
-        "platformsh/client": ">=0.87.0 <2.0",
+        "platformsh/client": "^3@beta",
         "symfony/console": "^3.0 >=3.2",
         "symfony/yaml": "^3.0 || ^2.6",
         "symfony/finder": "^3.0",
@@ -26,7 +26,8 @@
         "giggsey/libphonenumber-for-php": "^8.13",
         "symfony/polyfill-mbstring": "^1.19",
         "symfony/polyfill-iconv": "^1.19",
-        "padraic/humbug_get_contents": "dev-allow-php-8 as 1.1.3"
+        "padraic/humbug_get_contents": "dev-allow-php-8 as 1.1.3",
+        "platformsh/oauth2": "^1@beta"
     },
     "repositories": [
         {

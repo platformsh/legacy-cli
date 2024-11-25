@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Metrics;
 
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Psr7\Request;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -256,7 +257,9 @@ abstract class MetricsCommandBase extends CommandBase
 
         // Perform the metrics query.
         $client = $this->api()->getHttpClient();
-        $request = $client->createRequest('POST', $metricsQueryUrl, ['json' => $query->asArray()]);
+        $request = new Request('POST', $metricsQueryUrl, [
+            'Content-Type' => 'application/json',
+        ], json_encode($query->asArray()));
         try {
             $result = $client->send($request);
         } catch (BadResponseException $e) {

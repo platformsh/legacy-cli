@@ -1,7 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
-use GuzzleHttp\Url;
+use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -22,8 +22,8 @@ class OrganizationCurlCommand extends OrganizationCommandBase
     {
         $organization = $this->validateOrganizationInput($input);
 
-        $apiUrl = Url::fromString($this->config()->getApiUrl());
-        $absoluteUrl = $apiUrl->combine($organization->getUri())->__toString();
+        $apiUri = new Uri($this->config()->getApiUrl());
+        $absoluteUrl = $apiUri->withPath($organization->getUri());
 
         /** @var CurlCli $curl */
         $curl = $this->getService('curl_cli');

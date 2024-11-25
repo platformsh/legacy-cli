@@ -28,7 +28,8 @@ class VersionListCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $httpClient = $this->api()->getHttpClient();
-        $data = $httpClient->get($environment->getLink('#versions'))->json();
+        $response = $httpClient->get($environment->getLink('#versions'));
+        $data = \GuzzleHttp\Utils::jsonDecode((string) $response->getBody(), true);
 
         /** @var Table $table */
         $table = $this->getService('table');

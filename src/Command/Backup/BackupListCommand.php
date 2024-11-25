@@ -54,7 +54,7 @@ class BackupListCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
 
-        $backups = $environment->getBackups($input->getOption('limit'));
+        $backups = $environment->getBackups((int) $input->getOption('limit'));
         if (!$backups) {
             $this->stdErr->writeln('No backups found');
             return 1;

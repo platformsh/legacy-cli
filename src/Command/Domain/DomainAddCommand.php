@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -68,7 +69,7 @@ class DomainAddCommand extends DomainCommandBase
             if ($response) {
                 $code = $response->getStatusCode();
                 if ($code === 402) {
-                    $data = $response->json();
+                    $data = Utils::jsonDecode((string) $response->getBody(), true);
                     if (isset($data['message'], $data['detail']['environments_with_domains_limit'], $data['detail']['environments_with_domains'])) {
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln($data['message']);
@@ -79,7 +80,7 @@ class DomainAddCommand extends DomainCommandBase
                     }
                 }
                 if ($code === 409) {
-                    $data = $response->json();
+                    $data = Utils::jsonDecode((string) $response->getBody(), true);
                     if (isset($data['message'], $data['detail']['conflicting_domain']) && strpos($data['message'], 'already has a domain with the same replacement_for') !== false) {
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln(sprintf(
