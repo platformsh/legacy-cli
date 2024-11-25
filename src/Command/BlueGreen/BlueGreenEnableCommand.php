@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -32,7 +33,8 @@ class BlueGreenEnableCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $httpClient = $this->api()->getHttpClient();
-        $data = $httpClient->get($environment->getLink('#versions'))->json();
+        $response = $httpClient->get($environment->getLink('#versions'));
+        $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) > 1) {
             $this->stdErr->writeln(sprintf('Blue/green deployments are already enabled for the environment %s.', $this->api()->getEnvironmentLabel($environment)));
             $this->stdErr->writeln(sprintf('List versions by running: <info>%s versions</info>', $this->config()->get('application.executable')));

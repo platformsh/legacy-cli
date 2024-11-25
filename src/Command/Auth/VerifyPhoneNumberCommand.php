@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Utils;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
@@ -67,12 +68,13 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $httpClient = $this->api()->getHttpClient();
 
-        $sid = $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber', [
+        $response = $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber', [
             'json' => [
                 'channel' => $channel,
                 'phone_number' => $number,
             ],
-        ])->json()['sid'];
+        ]);
+        $sid = Utils::jsonDecode((string) $response->getBody(), true)['sid'];
 
         if ($channel === 'call') {
             $this->stdErr->writeln('Calling the number <info>' . $number . '</info> with a verification code.');
@@ -94,7 +96,7 @@ class VerifyPhoneNumberCommand extends CommandBase
                 ]);
             } catch (BadResponseException $e) {
                 if (($response = $e->getResponse()) && $response->getStatusCode() === 400) {
-                    $detail = $response->json();
+                    $detail = Utils::jsonDecode((string) $response->getBody(), true);
                     throw new InvalidArgumentException(isset($detail['error']) ? ucfirst($detail['error']) : 'Invalid verification code');
                 }
                 throw $e;
@@ -102,7 +104,8 @@ class VerifyPhoneNumberCommand extends CommandBase
         });
 
         $this->debug('Refreshing phone verification status');
-        $needsVerify = $httpClient->post( '/me/verification?force_refresh=1')->json();
+        $response = $httpClient->post( '/me/verification?force_refresh=1');
+        $needsVerify = Utils::jsonDecode((string) $response->getBody(), true);
         $this->stdErr->writeln('');
 
         if ($needsVerify['type'] === 'phone') {

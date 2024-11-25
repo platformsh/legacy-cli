@@ -2,21 +2,22 @@
 
 namespace Platformsh\Cli\Service;
 
-use CommerceGuys\Guzzle\Oauth2\AccessToken;
 use Composer\CaBundle\CaBundle;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Exception\BadResponseException;
-use GuzzleHttp\Message\ResponseInterface;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Utils;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\CredentialHelper\KeyringUnavailableException;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\CredentialHelper\SessionStorage as CredentialHelperStorage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Event\LoginRequiredEvent;
 use Platformsh\Cli\Exception\ProcessFailedException;
-use Platformsh\Cli\GuzzleDebugSubscriber;
+use Platformsh\Cli\GuzzleDebugMiddleware;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Platformsh\Cli\Util\Sort;
@@ -31,7 +32,7 @@ use Platformsh\Client\Model\Organization\Member;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\Ref\UserRef;
-use Platformsh\Client\Model\Resource as ApiResource;
+use Platformsh\Client\Model\ApiResourceBase as ApiResource;
 use Platformsh\Client\Model\SshKey;
 use Platformsh\Client\Model\Subscription;
 use Platformsh\Client\Model\Team\TeamMember;
@@ -41,6 +42,8 @@ use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -287,7 +290,6 @@ class Api
                 $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
             }, function () use ($connector, $originalRefreshToken) {
                 $session = $connector->getSession();
-                $session->load(true);
                 $accessToken = $this->tokenFromSession($session);
                 return $accessToken && $accessToken->getRefreshToken() !== $originalRefreshToken
                     ? $accessToken : null;
@@ -297,7 +299,7 @@ class Api
             $this->fileLock->release($refreshLockName);
         };
 
-        $connectorOptions['on_refresh_error'] = function (BadResponseException $e) {
+        $connectorOptions['on_refresh_error'] = function (IdentityProviderException $e) {
             return $this->onRefreshError($e);
         };
 
@@ -306,6 +308,22 @@ class Api
         };
 
         $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
+
+        // Add middlewares.
+        $connectorOptions['middlewares'] = [];
+        // Debug responses.
+        $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getWithDefault('api.debug', false));
+        // Handle 403 errors.
+        $connectorOptions['middlewares'][] = function (callable $handler) {
+            return function (RequestInterface $request, array $options) use ($handler) {
+                return $handler($request, $options)->then(function (ResponseInterface $response) use ($request) {
+                    if ($response->getStatusCode() === 403) {
+                        $this->on403($request);
+                    }
+                    return $response;
+                });
+            };
+        };
 
         return $connectorOptions;
     }
@@ -354,7 +372,7 @@ class Api
         $session = $this->getClient(false)->getConnector()->getSession();
         $previousAccessToken = $session->get('accessToken');
 
-        $body = $response->json();
+        $body = Utils::jsonDecode((string) $response->getBody(), true);
         $authMethods = isset($body['amr']) ? $body['amr'] : [];
         $maxAge = isset($body['max_age']) ? $body['max_age'] : null;
 
@@ -373,31 +391,30 @@ class Api
     /**
      * Logs out and prompts for re-authentication after a token refresh error.
      *
-     * @param BadResponseException $e
+     * @param IdentityProviderException $e
      *
      * @return AccessToken|null
      */
-    private function onRefreshError(BadResponseException $e) {
-        $response = $e->getResponse();
-        if ($response && !in_array($response->getStatusCode(), [400, 401])) {
-            return null;
-        }
+    private function onRefreshError(IdentityProviderException $e): ?AccessToken
+    {
         if ($this->inLoginCheck) {
             return null;
         }
+        $data = $e->getResponseBody();
+        if (!is_array($data) || !isset($data['error'])) {
+            return null;
+        }
+
+        $this->debug($e->getMessage());
 
         $this->logout();
 
-        if ($this->isSsoSessionExpired($e)) {
+        if ($this->isSsoSessionExpired($data)) {
             $this->stdErr->writeln('<comment>Your SSO session has expired. You have been logged out.</comment>');
-        } elseif ($this->isApiTokenInvalid($e)) {
+        } elseif ($this->isApiTokenInvalid($data)) {
             $this->stdErr->writeln('<comment>The API token is invalid.</comment>');
         } else {
             $this->stdErr->writeln('<comment>Your session has expired. You have been logged out.</comment>');
-        }
-
-        if ($response && $this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln($e->getMessage() . ApiResponseException::getErrorDetails($response));
         }
 
         $this->stdErr->writeln('');
@@ -410,39 +427,24 @@ class Api
 
     /**
      * Tests if an HTTP response from refreshing a token indicates that the user's SSO session has expired.
-     *
-     * @param BadResponseException $e
-     * @return bool
      */
-    private function isSsoSessionExpired(BadResponseException $e)
+    private function isSsoSessionExpired(array $data): bool
     {
-        if (!($response = $e->getResponse()) || $response->getStatusCode() !== 400) {
-            return false;
+        if (isset($data['error']) && $data['error'] === 'invalid_grant') {
+            return isset($errDetails['error_description'])
+                && str_contains($errDetails['error_description'], 'SSO session has expired');
         }
-        $respBody = (string) $response->getBody();
-        $errDetails = \json_decode($respBody, true);
-        return isset($errDetails['error_description'])
-            && strpos($errDetails['error_description'], 'SSO session has expired') !== false;
+        return false;
     }
 
     /**
      * Tests if an error from refreshing a token indicates that the user's API token is invalid.
-     *
-     * @param BadResponseException $e
-     * @return bool
      */
-    private function isApiTokenInvalid(BadResponseException $e)
+    private function isApiTokenInvalid(mixed $body): bool
     {
-        if (!$response = $e->getResponse()) {
-            return false;
-        }
-        $reqBody = (string) $e->getRequest()->getBody();
-        \parse_str($reqBody, $parsed);
-        if (isset($parsed['grant_type']) && $parsed['grant_type'] === 'api_token') {
-            $respBody = (string) $response->getBody();
-            $errDetails = \json_decode($respBody, true);
+        if (is_array($body) && isset($body['error']) && $body['error'] === 'invalid_grant') {
             return isset($errDetails['error_description'])
-                && strpos($errDetails['error_description'], 'API token') !== false;
+                && str_contains($errDetails['error_description'], 'API token');
         }
         return false;
     }
@@ -484,18 +486,17 @@ class Api
      */
     public function getGuzzleOptions() {
         $options = [
-            'defaults' => [
-                'headers' => ['User-Agent' => $this->config->getUserAgent()],
-                'debug' => false,
-                'verify' => $this->config->getWithDefault('api.skip_ssl', false) ? false : $this->caBundlePath(),
-                'proxy' => $this->guzzleProxyConfig(),
-                'timeout' => $this->config->getWithDefault('api.default_timeout', 30),
-            ],
+            'headers' => ['User-Agent' => $this->config->getUserAgent()],
+            'debug' => false,
+            'verify' => $this->config->getWithDefault('api.skip_ssl', false) ? false : $this->caBundlePath(),
+            'proxy' => $this->guzzleProxyConfig(),
+            'timeout' => $this->config->getWithDefault('api.default_timeout', 30),
         ];
 
-        if ($this->output->isVeryVerbose()) {
-            $options['defaults']['subscribers'][] = new GuzzleDebugSubscriber($this->output, $this->config->getWithDefault('api.debug', false));
-        }
+        // TODO provide this as a middleware
+        //        if ($this->output->isVeryVerbose()) {
+        //            $options['defaults']['subscribers'][] = new GuzzleDebugMiddleware($this->output, $this->config->getWithDefault('api.debug', false));
+        //        }
 
         if (extension_loaded('zlib')) {
             $options['defaults']['decode_content'] = true;
@@ -575,20 +576,6 @@ class Api
 
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
-            }
-
-            try {
-                $emitter = $connector->getClient()->getEmitter();
-                $emitter->on('error', function (ErrorEvent $event) {
-                    if ($event->getResponse() && $event->getResponse()->getStatusCode() === 403) {
-                        $this->on403($event);
-                    }
-                });
-                if ($this->output->isVeryVerbose()) {
-                    $emitter->attach(new GuzzleDebugSubscriber($this->output, $this->config->getWithDefault('api.debug', false)));
-                }
-            } catch (\RuntimeException $e) {
-                // Ignore errors if the user is not logged in at this stage.
             }
         }
 
@@ -1412,14 +1399,12 @@ class Api
 
     /**
      * React on an API 403 request.
-     *
-     * @param \GuzzleHttp\Event\ErrorEvent $event
      */
-    private function on403(ErrorEvent $event)
+    private function on403(RequestInterface $request): void
     {
-        $url = $event->getRequest()->getUrl();
+        $url = $request->getUri();
         $path = parse_url($url, PHP_URL_PATH);
-        if ($path && strpos($path, '/api/projects/') === 0) {
+        if ($path && str_starts_with($path, '/api/projects/')) {
             // Clear the environments cache for environment request errors.
             if (preg_match('#^/api/projects/([^/]+?)/environments/#', $path, $matches)) {
                 $this->clearEnvironmentsCache($matches[1]);
@@ -1513,7 +1498,9 @@ class Api
         }
 
         // Check the API to see if verification is required.
-        return $this->getHttpClient()->post( '/me/verification')->json();
+        $request = new Request('POST', '/me/verification');
+        $response = $this->getHttpClient()->send($request);
+        return Utils::jsonDecode((string) $response->getBody(), true);
     }
 
     /**
@@ -1523,7 +1510,9 @@ class Api
      */
     public function checkCanCreate(Organization $org)
     {
-        return $this->getHttpClient()->get( $org->getUri() . '/subscriptions/can-create')->json();
+        $request = new Request('GET', $org->getUri() . '/subscriptions/can-create');
+        $response = $this->getHttpClient()->send($request);
+        return Utils::jsonDecode((string) $response->getBody(), true);
     }
 
     /**
@@ -1700,7 +1689,9 @@ class Api
         if (!empty($cachedSettings['sizing_api_enabled'])) {
             return true;
         }
-        $settings = $this->getHttpClient()->get($project->getUri() . '/settings')->json();
+        $request = new Request('GET', $project->getUri() . '/settings');
+        $response = $this->getHttpClient()->send($request);
+        $settings = Utils::jsonDecode((string) $response->getBody(), true);
         $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
         return !empty($settings['sizing_api_enabled']);
     }

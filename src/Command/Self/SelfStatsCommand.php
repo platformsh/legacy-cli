@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Self;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -35,7 +36,7 @@ class SelfStatsCommand extends CommandBase
     {
         $repo = $this->config()->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
-        $releases = (new Client())
+        $response = (new Client())
             ->get('https://api.github.com/repos/' . $repoUrl . '/releases', [
                 'headers' => [
                     'Accept' => 'application/vnd.github.v3+json',
@@ -44,7 +45,8 @@ class SelfStatsCommand extends CommandBase
                     'page' => (int) $input->getOption('page'),
                     'per_page' => (int) $input->getOption('count'),
                 ],
-            ])->json();
+            ]);
+        $releases = Utils::jsonDecode((string) $response->getBody(), true);
 
         if (empty($releases)) {
             $this->stdErr->writeln('No releases found.');
