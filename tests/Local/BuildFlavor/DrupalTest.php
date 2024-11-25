@@ -3,12 +3,19 @@
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Shell;
 
 /**
  * @group slow
  */
 class DrupalTest extends BuildFlavorTestBase
 {
+    public function setUp(): void
+    {
+        if (!(new Shell())->commandExists('drush')) {
+            $this->markTestSkipped('Drush is not installed');
+        }
+    }
 
     public function testBuildDrupalInProjectMode()
     {
