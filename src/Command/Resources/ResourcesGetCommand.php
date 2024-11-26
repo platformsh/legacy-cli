@@ -4,11 +4,13 @@ namespace Platformsh\Cli\Command\Resources;
 
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:get', description: 'View the resources of apps and services on an environment', aliases: ['resources', 'res'])]
 class ResourcesGetCommand extends ResourcesCommandBase
 {
     protected $tableHeader = [
@@ -27,9 +29,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
 
     protected function configure()
     {
-        $this->setName('resources:get')
-            ->setAliases(['resources', 'res'])
-            ->setDescription('View the resources of apps and services on an environment')
+        $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service name. This can select any service, including apps and workers.')
             ->addOption('app', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by app name')
             ->addOption('worker', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by worker name')

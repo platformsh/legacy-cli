@@ -7,11 +7,13 @@ use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'mount:size', description: 'Check the disk usage of mounts')]
 class MountSizeCommand extends CommandBase
 {
     private $tableHeader = [
@@ -29,8 +31,6 @@ class MountSizeCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('mount:size')
-            ->setDescription('Check the disk usage of mounts')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         Table::configureInput($this->getDefinition(), $this->tableHeader);

@@ -10,6 +10,7 @@ use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Descriptor\XmlDescriptor;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -19,6 +20,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'help', description: 'Displays help for a command')]
 class HelpCommand extends CommandBase
 {
 
@@ -37,13 +39,11 @@ class HelpCommand extends CommandBase
         $this->ignoreValidationErrors();
 
         $this
-            ->setName('help')
             ->setDefinition([
                 new InputArgument('command_name', InputArgument::OPTIONAL, 'The command name', 'help'),
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, json, or md)', 'txt'),
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command help'),
             ])
-            ->setDescription('Displays help for a command')
             ->setHelp(<<<'EOF'
 The <info>%command.name%</info> command displays help for a given command:
 

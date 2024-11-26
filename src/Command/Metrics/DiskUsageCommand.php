@@ -5,10 +5,12 @@ use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'metrics:disk-usage', description: 'Show disk usage of an environment', aliases: ['disk'])]
 class DiskUsageCommand extends MetricsCommandBase
 {
     private $tableHeader = [
@@ -36,9 +38,7 @@ class DiskUsageCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this->setName('metrics:disk-usage')
-            ->setAliases(['disk'])
-            ->setDescription('Show disk usage of an environment')
+        $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addMetricsOptions()
             ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')')

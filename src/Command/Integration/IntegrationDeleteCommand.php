@@ -1,10 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:delete', description: 'Delete an integration from a project')]
 class IntegrationDeleteCommand extends IntegrationCommandBase
 {
     /**
@@ -13,9 +15,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:delete')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.')
-            ->setDescription('Delete an integration from a project');
+            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.');
         $this->addProjectOption()->addWaitOptions();
     }
 

@@ -2,9 +2,11 @@
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Model\EnvironmentDomain;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'domain:update', description: 'Update a domain')]
 class DomainUpdateCommand extends DomainCommandBase
 {
 
@@ -13,9 +15,6 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:update')
-            ->setDescription('Update a domain');
         $this->addDomainOptions();
         $this->addProjectOption()
             ->addEnvironmentOption()

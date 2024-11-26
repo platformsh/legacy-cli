@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'local:dir', description: 'Find the local project root', aliases: ['dir'])]
 class LocalDirCommand extends CommandBase
 {
     protected $local = true;
@@ -14,9 +16,6 @@ class LocalDirCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('local:dir')
-            ->setAliases(['dir'])
-            ->setDescription('Find the local project root')
             ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }
 

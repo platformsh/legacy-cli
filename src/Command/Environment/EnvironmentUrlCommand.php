@@ -5,19 +5,18 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Url;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:url', description: 'Get the public URLs of an environment', aliases: ['url'])]
 class EnvironmentUrlCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:url')
-            ->setAliases(['url'])
-            ->setDescription('Get the public URLs of an environment')
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()

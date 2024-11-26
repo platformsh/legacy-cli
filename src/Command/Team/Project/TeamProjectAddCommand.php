@@ -9,6 +9,7 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Organization\Project as OrgProject;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamProjectAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,12 +17,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 
+#[AsCommand(name: 'team:project:add', description: 'Add project(s) to a team')]
 class TeamProjectAddCommand extends TeamCommandBase
 {
     protected function configure()
     {
-        $this->setName('team:project:add')
-            ->setDescription('Add project(s) to a team')
+        $this
             ->addArgument('projects', InputArgument::IS_ARRAY, "The project ID(s).\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('all', null, InputOption::VALUE_NONE, 'Add all the projects that currently exist in the organization')
             ->addOrganizationOptions()

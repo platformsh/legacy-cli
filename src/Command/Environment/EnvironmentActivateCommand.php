@@ -3,19 +3,19 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Environment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:activate', description: 'Activate an environment')]
 class EnvironmentActivateCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:activate')
-            ->setDescription('Activate an environment')
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
         $this->addResourcesInitOption(['parent', 'default', 'minimum']);

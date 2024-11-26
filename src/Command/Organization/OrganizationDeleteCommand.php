@@ -1,16 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:delete', description: 'Delete an organization')]
 class OrganizationDeleteCommand extends OrganizationCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('organization:delete')
-            ->setDescription('Delete an organization')
+        $this
             ->addOrganizationOptions(true);
     }
 

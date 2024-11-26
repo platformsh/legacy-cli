@@ -9,11 +9,13 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
+#[AsCommand(name: 'local:drush-aliases', description: 'Find the project\'s Drush aliases', aliases: ['drush-aliases'])]
 class LocalDrushAliasesCommand extends CommandBase
 {
     protected $local = true;
@@ -21,12 +23,9 @@ class LocalDrushAliasesCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('local:drush-aliases')
-            ->setAliases(['drush-aliases'])
             ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
-            ->setDescription('Find the project\'s Drush aliases');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).');
         $this->addExample('Change the alias group to @example', '-g example');
     }
 

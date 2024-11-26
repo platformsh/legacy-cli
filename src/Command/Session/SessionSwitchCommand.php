@@ -3,18 +3,19 @@
 namespace Platformsh\Cli\Command\Session;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'session:switch', description: 'Switch between sessions')]
 class SessionSwitchCommand extends CommandBase {
     protected $hiddenInList = true;
     protected $stability = self::STABILITY_BETA;
 
     protected function configure()
     {
-        $this->setName('session:switch')
-            ->setDescription('Switch between sessions')
+        $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The new session ID');
         $this->setHelp(
             'Multiple session IDs allow you to be logged into multiple accounts at the same time.'

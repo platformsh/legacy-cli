@@ -6,10 +6,12 @@ use GuzzleHttp\Utils;
 use League\OAuth2\Client\Token\AccessToken;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\OAuth2\Client\Grant\ApiToken;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
+#[AsCommand(name: 'auth:api-token-login', description: 'Log in using an API token')]
 class ApiTokenLoginCommand extends CommandBase
 {
 
@@ -17,13 +19,6 @@ class ApiTokenLoginCommand extends CommandBase
     {
         $service = $this->config()->get('service.name');
         $executable = $this->config()->get('application.executable');
-
-        $this->setName('auth:api-token-login');
-        if ($this->config()->getWithDefault('application.login_method', 'browser') === 'api-token') {
-            $this->setAliases(['login']);
-        }
-
-        $this->setDescription('Log in to ' . $service . ' using an API token');
 
         $help = 'Use this command to log in to your ' . $service . ' account using an API token.';
         if ($this->config()->has('service.register_url')) {

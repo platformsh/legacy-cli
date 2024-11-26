@@ -19,10 +19,12 @@ use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Field\UrlField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:create', description: 'Create a new project', aliases: ['create'])]
 class ProjectCreateCommand extends CommandBase
 {
     private $plansCache;
@@ -33,11 +35,6 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function configure()
     {
-        $this
-          ->setName('project:create')
-          ->setAliases(['create'])
-          ->setDescription('Create a new project');
-
         $this->addOrganizationOptions();
 
         Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());

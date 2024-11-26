@@ -3,19 +3,18 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:merge', description: 'Merge an environment', aliases: ['merge'])]
 class EnvironmentMergeCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:merge')
-            ->setAliases(['merge'])
-            ->setDescription('Merge an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
         $this->addResourcesInitOption(['child', 'default', 'minimum', 'manual']);
         $this->addProjectOption()

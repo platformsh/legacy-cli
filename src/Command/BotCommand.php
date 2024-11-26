@@ -3,10 +3,12 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\Animation;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'bot', description: 'The Platform.sh Bot')]
 class BotCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -14,8 +16,7 @@ class BotCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('bot')
-            ->setDescription('The ' . $this->config()->get('service.name') . ' Bot')
+        $this
             ->addOption('party', null, InputOption::VALUE_NONE)
             ->addOption('parrot', null, InputOption::VALUE_NONE);
     }

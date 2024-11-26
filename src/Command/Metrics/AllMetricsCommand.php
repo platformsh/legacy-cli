@@ -5,10 +5,12 @@ use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'metrics:all', description: 'Show CPU, disk and memory metrics for an environment', aliases: ['metrics', 'met'])]
 class AllMetricsCommand extends MetricsCommandBase
 {
     private $tableHeader = [
@@ -48,9 +50,7 @@ class AllMetricsCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this->setName('metrics:all')
-            ->setAliases(['metrics', 'met'])
-            ->setDescription('Show CPU, disk and memory metrics for an environment')
+        $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
         $this->addExample('Show metrics in five-minute intervals over the last hour', '-i 5m -r 1h');
