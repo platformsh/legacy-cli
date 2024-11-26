@@ -5,10 +5,12 @@ use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'metrics:memory', description: 'Show memory usage of an environment', aliases: ['mem', 'memory'])]
 class MemCommand extends MetricsCommandBase
 {
     private $tableHeader = [
@@ -27,9 +29,7 @@ class MemCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this->setName('metrics:memory')
-            ->setAliases(['mem', 'memory'])
-            ->setDescription('Show memory usage of an environment')
+        $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addMetricsOptions()
             ->addProjectOption()

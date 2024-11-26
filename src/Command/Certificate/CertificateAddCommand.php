@@ -3,18 +3,18 @@ namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'certificate:add', description: 'Add an SSL certificate to the project')]
 class CertificateAddCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('certificate:add')
-            ->setDescription('Add an SSL certificate to the project')
             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to the certificate private key file')
             ->addOption('chain', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'The path to the certificate chain file');

@@ -5,6 +5,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\VersionUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\PhpExecutableFinder;
 
+#[AsCommand(name: 'self:release', description: 'Build and release a new version')]
 class SelfReleaseCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -21,8 +23,7 @@ class SelfReleaseCommand extends CommandBase
         $defaultRepo = $this->config()->get('application.github_repo');
         $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'main');
 
-        $this->setName('self:release')
-            ->setDescription('Build and release a new version')
+        $this
             ->addArgument('version', InputArgument::OPTIONAL, 'The new version number')
             ->addOption('phar', null, InputOption::VALUE_REQUIRED, 'The path to a newly built Phar file')
             ->addOption('repo', null, InputOption::VALUE_REQUIRED, 'The GitHub repository', $defaultRepo)

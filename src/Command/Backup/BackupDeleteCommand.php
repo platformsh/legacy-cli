@@ -3,18 +3,18 @@ namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Backup;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'backup:delete', description: 'Delete an environment backup')]
 class BackupDeleteCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('backup:delete')
-            ->setDescription('Delete an environment backup')
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Required in non-interactive mode.');
         $this->addProjectOption()
              ->addEnvironmentOption()

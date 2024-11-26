@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\App;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'app:config-get', description: 'View the configuration of an app')]
 class AppConfigGetCommand extends CommandBase
 {
     /**
@@ -16,8 +18,6 @@ class AppConfigGetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('app:config-get')
-            ->setDescription('View the configuration of an app')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         $this->addProjectOption();

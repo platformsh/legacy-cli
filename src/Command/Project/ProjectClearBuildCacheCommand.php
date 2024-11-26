@@ -2,16 +2,15 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:clear-build-cache', description: "Clear a project's build cache")]
 class ProjectClearBuildCacheCommand extends CommandBase
 {
     protected function configure()
     {
-        $this
-            ->setName('project:clear-build-cache')
-            ->setDescription("Clear a project's build cache");
         $this->addProjectOption();
     }
 

@@ -5,20 +5,20 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Environment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:delete', description: 'Delete one or more environments')]
 class EnvironmentDeleteCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:delete')
             ->setHiddenAliases(['environment:deactivate'])
-            ->setDescription('Delete one or more environments')
             ->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete Git branch(es) for inactive environments, without confirmation')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete any Git branch(es) (inactive environments)')

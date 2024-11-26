@@ -3,18 +3,18 @@
 namespace Platformsh\Cli\Command\Resources\Build;
 
 use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
 class BuildResourcesSetCommand extends ResourcesCommandBase
 {
     protected function configure()
     {
-        $this->setName('resources:build:set')
-            ->setAliases(['build-resources:set'])
-            ->setDescription('Set the build resources of a project')
+        $this
             ->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
             ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)')
             ->addProjectOption();

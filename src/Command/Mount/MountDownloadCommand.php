@@ -6,11 +6,13 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Model\RemoteContainer\App;
 use Platformsh\Cli\Service\Ssh;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
+#[AsCommand(name: 'mount:download', description: 'Download files from a mount, using rsync')]
 class MountDownloadCommand extends CommandBase
 {
     private $localApps;
@@ -21,8 +23,6 @@ class MountDownloadCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('mount:download')
-            ->setDescription('Download files from a mount, using rsync')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Download from all mounts')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The directory to which files will be downloaded. If --all is used, the mount path will be appended')

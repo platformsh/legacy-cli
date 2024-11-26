@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\Integration;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Integration;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:list', description: 'View a list of project integration(s)', aliases: ['integrations'])]
 class IntegrationListCommand extends IntegrationCommandBase
 {
     private $tableHeader = ['ID', 'Type', 'Summary'];
@@ -18,9 +20,6 @@ class IntegrationListCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:list')
-            ->setAliases(['integrations'])
-            ->setDescription('View a list of project integration(s)')
             ->addOption('type', 't', InputOption::VALUE_REQUIRED, 'Filter by type');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption();

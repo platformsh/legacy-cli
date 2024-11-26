@@ -3,9 +3,11 @@ namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'user:list', description: 'List project users', aliases: ['users'])]
 class UserListCommand extends UserCommandBase
 {
     private $tableHeader = [
@@ -20,11 +22,6 @@ class UserListCommand extends UserCommandBase
 
     protected function configure()
     {
-        $this
-            ->setName('user:list')
-            ->setAliases(['users'])
-            ->setDescription('List project users');
-
         if ($this->centralizedPermissionsEnabled()) {
             $this->tableHeader['permissions'] = 'Permissions';
         }

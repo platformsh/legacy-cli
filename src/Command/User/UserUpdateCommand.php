@@ -1,19 +1,19 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 
 /**
  * This command is the same as user:add, with different documentation.
  */
+#[AsCommand(name: 'user:update', description: 'Update user role(s) on a project')]
 class UserUpdateCommand extends UserAddCommand
 {
 
     protected function configure()
     {
         $this
-            ->setName('user:update')
-            ->setDescription('Update user role(s) on a project')
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();

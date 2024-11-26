@@ -9,12 +9,14 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'commit:list', description: 'List commits', aliases: ['commits'])]
 class CommitListCommand extends CommandBase
 {
 
@@ -26,9 +28,6 @@ class CommitListCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('commit:list')
-            ->setAliases(['commits'])
-            ->setDescription('List commits')
             ->addArgument('commit', InputOption::VALUE_REQUIRED, 'The starting Git commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'The number of commits to display.', 10);
         $this->addProjectOption();

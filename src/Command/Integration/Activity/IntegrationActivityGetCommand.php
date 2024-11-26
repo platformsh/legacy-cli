@@ -5,11 +5,13 @@ use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:activity:get', description: 'View detailed information on a single integration activity')]
 class IntegrationActivityGetCommand extends IntegrationCommandBase
 {
     /**
@@ -18,11 +20,9 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:activity:get')
             ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
-            ->setDescription('View detailed information on a single integration activity');
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view');
         $this->addProjectOption();
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
         Table::configureInput($this->getDefinition());

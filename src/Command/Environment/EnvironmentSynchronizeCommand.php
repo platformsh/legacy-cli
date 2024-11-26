@@ -7,24 +7,23 @@ use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:synchronize', description: "Synchronize an environment's code and/or data from its parent", aliases: ['sync'])]
 class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
 {
 
     protected function configure()
     {
-        $this
-            ->setName('environment:synchronize')
-            ->setAliases(['sync']);
         if ($this->config()->get('api.sizing')) {
-            $this->setDescription("Synchronize an environment's code, data and/or resources from its parent");
+            $this;
             $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'List what to synchronize: "code", "data", and/or "resources".');
         } else {
-            $this->setDescription("Synchronize an environment's code and/or data from its parent");
+            $this;
             $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
         }
         $this->addOption('rebase', null, InputOption::VALUE_NONE, 'Synchronize code by rebasing instead of merging');

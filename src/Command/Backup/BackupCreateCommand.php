@@ -5,20 +5,19 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'backup:create', description: 'Make a backup of an environment', aliases: ['backup'])]
 class BackupCreateCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('backup:create')
-            ->setAliases(['backup'])
-            ->setDescription('Make a backup of an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('live', null, InputOption::VALUE_NONE,
                 'Live backup: do not stop the environment.'

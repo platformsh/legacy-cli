@@ -6,11 +6,13 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'subscription:info', description: 'Read or modify subscription properties')]
 class SubscriptionInfoCommand extends CommandBase
 {
     /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
@@ -22,11 +24,9 @@ class SubscriptionInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('subscription:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
-            ->setDescription('Read or modify subscription properties');
+            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();

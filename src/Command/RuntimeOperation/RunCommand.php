@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Command\RuntimeOperation;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,12 +14,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @see \Platformsh\Cli\Command\SourceOperation\RunCommand
  */
+#[AsCommand(name: 'operation:run', description: 'Run an operation on the environment')]
 class RunCommand extends CommandBase
 {
     protected function configure()
     {
-        $this->setName('operation:run')
-            ->setDescription('Run an operation on the environment')
+        $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name');
 
         $this->addProjectOption();

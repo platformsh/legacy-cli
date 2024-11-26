@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\Service;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:list', description: 'List services in the project', aliases: ['services'])]
 class ServiceListCommand extends CommandBase
 {
     private $tableHeader = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
@@ -17,9 +19,7 @@ class ServiceListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setName('service:list')
-            ->setAliases(['services'])
-            ->setDescription('List services in the project')
+        $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of service names only');
         $this->addProjectOption()

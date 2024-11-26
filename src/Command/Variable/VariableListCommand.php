@@ -3,9 +3,11 @@ namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'variable:list', description: 'List variables', aliases: ['variables', 'var'])]
 class VariableListCommand extends VariableCommandBase
 {
     private $tableHeader = [
@@ -20,10 +22,6 @@ class VariableListCommand extends VariableCommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('variable:list')
-            ->setAliases(['variables', 'var'])
-            ->setDescription('List variables');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->addProjectOption()

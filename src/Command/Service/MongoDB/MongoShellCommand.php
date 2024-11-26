@@ -7,17 +7,16 @@ use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:mongo:shell', description: 'Use the MongoDB shell', aliases: ['mongo'])]
 class MongoShellCommand extends CommandBase
 {
     protected function configure()
     {
-        $this->setName('service:mongo:shell');
-        $this->setAliases(['mongo']);
-        $this->setDescription('Use the MongoDB shell');
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());

@@ -3,19 +3,18 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:branch', description: 'Branch an environment', aliases: ['branch'])]
 class EnvironmentBranchCommand extends CommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('environment:branch')
-            ->setAliases(['branch'])
-            ->setDescription('Branch an environment')
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID (branch name) of the new environment')
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
