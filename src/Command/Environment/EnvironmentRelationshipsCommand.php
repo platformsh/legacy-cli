@@ -31,7 +31,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $this->addExample("View the 'main' environment's database port", 'main --property database.0.port');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
         $relationshipsService = $this->getService('relationships');

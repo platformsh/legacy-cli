@@ -65,7 +65,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->addExample('Set the same instance count for all apps using a wildcard', '--count ' . OsUtil::escapeShellArg('*:3'));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
         if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {

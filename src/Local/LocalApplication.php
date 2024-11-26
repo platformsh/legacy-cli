@@ -71,7 +71,7 @@ class LocalApplication
      *
      * @return bool
      */
-    public function isSingle()
+    public function isSingle(): bool
     {
        return $this->single;
     }

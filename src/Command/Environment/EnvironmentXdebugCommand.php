@@ -29,7 +29,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         if (parent::isHidden()) {
             return true;
@@ -74,7 +74,7 @@ class EnvironmentXdebugCommand extends CommandBase
         return $isPhp;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input);
@@ -113,7 +113,7 @@ class EnvironmentXdebugCommand extends CommandBase
         // The socket is removed to prevent 'file already exists' errors.
         $commandCleanup = $ssh->getSshCommand($sshUrl, [], 'rm -rf ' . self::SOCKET_PATH);
         $this->debug("Cleanup command: " . $commandCleanup);
-        $process = new Process($commandCleanup, null, $ssh->getEnv());
+        $process = Process::fromShellCommandline($commandCleanup, null, $ssh->getEnv());
         $process->run();
 
         $this->stdErr->writeln("Opening a local tunnel for Xdebug.");
@@ -126,7 +126,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $listenAddress = '127.0.0.1:' . $port;
         $commandTunnel = $ssh->getSshCommand($sshUrl, $sshOptions) . ' -R ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
         $this->debug("Tunnel command: " . $commandTunnel);
-        $process = new Process($commandTunnel, null, $ssh->getEnv());
+        $process = Process::fromShellCommandline($commandTunnel, null, $ssh->getEnv());
         $process->setTimeout(null);
         $process->start();
 

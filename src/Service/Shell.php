@@ -133,13 +133,6 @@ class Shell
     {
         $process = new Process($args, null, null, $input, $timeout);
 
-        // Avoid adding 'exec' to every command. It is not needed in this
-        // context as we do not need to send signals to the process. Also it
-        // causes compatibility issues, at least with the shell built-in command
-        // 'command' on  Travis containers.
-        // See https://github.com/symfony/symfony/issues/23495
-        $process->setCommandLine($process->getCommandLine());
-
         if ($timeout === null) {
             set_time_limit(0);
         }

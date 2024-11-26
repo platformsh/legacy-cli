@@ -166,7 +166,6 @@ abstract class VariableCommandBase extends CommandBase
             'conditions' => [
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
-            'optionName' => false,
             'questionLine' => 'On what environment should the variable be set?',
             'optionsCallback' => function () {
                 return array_keys($this->api()->getEnvironments($this->getSelectedProject()));

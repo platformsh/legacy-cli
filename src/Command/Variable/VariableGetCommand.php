@@ -30,7 +30,7 @@ class VariableGetCommand extends VariableCommandBase
         $this->addExample('View the variable "example"', 'example');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['pipe']);
         $level = $this->getRequestedLevel($input);

@@ -29,7 +29,7 @@ class AppConfigGetCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_APPLICATION.
         $prefix = $this->config()->get('service.env_prefix');
@@ -52,5 +52,6 @@ class AppConfigGetCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');
         $formatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
+        return 0;
     }
 }

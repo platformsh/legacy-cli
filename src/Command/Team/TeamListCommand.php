@@ -51,7 +51,7 @@ class TeamListCommand extends TeamCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->selectOrganization($input);
         if (!$organization) {

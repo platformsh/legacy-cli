@@ -42,7 +42,7 @@ class BackupListCommand extends CommandBase
         $this->addExample('Display backups including the "live" and "commit_id" columns', '-c+live,commit_id');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['limit', 'start']);
         $this->validateInput($input);

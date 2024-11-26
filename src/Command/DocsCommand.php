@@ -20,14 +20,14 @@ class DocsCommand extends CommandBase
         Url::configureInput($this->getDefinition());
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->has('service.docs_url')
             && $this->config()->has('service.docs_search_url')
             && parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($searchArguments = $input->getArgument('search')) {
             $query = $this->getSearchQuery($searchArguments);
@@ -39,6 +39,7 @@ class DocsCommand extends CommandBase
         /** @var \Platformsh\Cli\Service\Url $urlService */
         $urlService = $this->getService('url');
         $urlService->openUrl($url);
+        return 0;
     }
 
     /**

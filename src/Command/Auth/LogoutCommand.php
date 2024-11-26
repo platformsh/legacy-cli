@@ -21,7 +21,7 @@ class LogoutCommand extends CommandBase
             ->setDescription('Log out of ' . $this->config()->get('service.name'));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // API tokens set via the environment or the config file cannot be
         // removed using this command.

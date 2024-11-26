@@ -30,7 +30,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         if (parent::isHidden()) {
             return true;
@@ -52,7 +52,7 @@ class LocalDrushAliasesCommand extends CommandBase
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
         $project = $this->getCurrentProject();
