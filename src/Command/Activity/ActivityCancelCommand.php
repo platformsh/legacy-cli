@@ -8,11 +8,13 @@ use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Client\Model\Activity;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'activity:cancel', description: 'Cancel an activity')]
 class ActivityCancelCommand extends ActivityCommandBase
 {
     /**
@@ -21,8 +23,6 @@ class ActivityCancelCommand extends ActivityCommandBase
     protected function configure()
     {
         $this
-            ->setName('activity:cancel')
-            ->setDescription('Cancel an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent cancellable activity.')
             ->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter by type (when selecting a default activity).'

@@ -7,10 +7,12 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'source-operation:list', description: 'List source operations on an environment', aliases: ['source-ops'])]
 class ListCommand extends CommandBase
 {
     const COMMAND_MAX_LENGTH = 24;
@@ -19,9 +21,7 @@ class ListCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('source-operation:list')
-            ->setAliases(['source-ops'])
-            ->setDescription('List source operations on an environment')
+        $this
             ->addOption('full', null, InputOption::VALUE_NONE, 'Do not limit the length of command to display. The default limit is ' . self::COMMAND_MAX_LENGTH . ' lines.');
 
         $this->addProjectOption();

@@ -4,16 +4,17 @@ namespace Platformsh\Cli\Command\Team\Project;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Client\Exception\ApiResponseException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:project:delete', description: 'Remove a project from a team')]
 class TeamProjectDeleteCommand extends TeamCommandBase
 {
     protected function configure()
     {
-        $this->setName('team:project:delete')
-            ->setDescription('Remove a project from a team')
+        $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addOrganizationOptions()
             ->addTeamOption();

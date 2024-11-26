@@ -5,11 +5,13 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\CredentialHelper\Manager;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Snippeter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:install', description: 'Install or update CLI configuration files')]
 class SelfInstallCommand extends CommandBase
 {
     const INSTALLED_FILENAME = 'self_installed';
@@ -17,8 +19,7 @@ class SelfInstallCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('self:install')
-             ->setDescription('Install or update CLI configuration files')
+        $this
              ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
         $this->setHiddenAliases(['local:install']);
         $cliName = $this->config()->get('application.name');

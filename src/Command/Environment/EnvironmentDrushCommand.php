@@ -6,20 +6,19 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 
+#[AsCommand(name: 'environment:drush', description: 'Run a drush command on the remote environment', aliases: ['drush'])]
 class EnvironmentDrushCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:drush')
-            ->setAliases(['drush'])
-            ->setDescription('Run a drush command on the remote environment')
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
         $this->addProjectOption()
              ->addEnvironmentOption()

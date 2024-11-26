@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Certificate;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'certificate:delete', description: 'Delete a certificate from the project')]
 class CertificateDeleteCommand extends CommandBase
 {
     /**
@@ -15,8 +17,6 @@ class CertificateDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('certificate:delete')
-            ->setDescription('Delete a certificate from the project')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->addProjectOption();
         $this->addWaitOptions();

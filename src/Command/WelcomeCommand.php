@@ -3,20 +3,15 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'welcome', description: 'Default (welcome) command')]
 class WelcomeCommand extends CommandBase
 {
     protected $hiddenInList = true;
     protected $local = true;
-
-    protected function configure()
-    {
-        $this
-            ->setName('welcome')
-            ->setDescription('Welcome to ' . $this->config()->get('service.name'));
-    }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

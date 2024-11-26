@@ -2,11 +2,13 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:http-access', description: 'Update HTTP access settings for an environment', aliases: ['httpaccess'])]
 class EnvironmentHttpAccessCommand extends CommandBase
 {
 
@@ -14,9 +16,6 @@ class EnvironmentHttpAccessCommand extends CommandBase
     {
         parent::configure();
         $this
-            ->setName('environment:http-access')
-            ->setAliases(['httpaccess'])
-            ->setDescription('Update HTTP access settings for an environment')
             ->addOption(
                 'access',
                 null,

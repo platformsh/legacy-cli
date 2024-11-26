@@ -1,16 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:delete', description: 'Delete a team')]
 class TeamDeleteCommand extends TeamCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('team:delete')
-            ->setDescription('Delete a team')
+        $this
             ->addOrganizationOptions()
             ->addTeamOption();
     }

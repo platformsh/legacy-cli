@@ -3,16 +3,17 @@
 namespace Platformsh\Cli\Command\Organization\User;
 
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:delete', description: 'Remove a user from an organization')]
 class OrganizationUserDeleteCommand extends OrganizationCommandBase
 {
     protected function configure()
     {
-        $this->setName('organization:user:delete')
-            ->setDescription('Remove a user from an organization')
+        $this
             ->addOrganizationOptions()
             ->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
     }

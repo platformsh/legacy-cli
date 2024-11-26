@@ -3,11 +3,13 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
+#[AsCommand(name: 'environment:xdebug', description: 'Open a tunnel to Xdebug on the environment', aliases: ['xdebug'])]
 class EnvironmentXdebugCommand extends CommandBase
 {
     const SOCKET_PATH = '/run/xdebug-tunnel.sock';
@@ -18,10 +20,7 @@ class EnvironmentXdebugCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:xdebug')
-            ->setAliases(['xdebug'])
-            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000)
-            ->setDescription('Open a tunnel to Xdebug on the environment');
+            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addRemoteContainerOptions();

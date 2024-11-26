@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:set-remote', description: 'Set the remote environment to map to a branch')]
 class EnvironmentSetRemoteCommand extends CommandBase
 {
     // @todo remove this command in v3
@@ -15,8 +17,6 @@ class EnvironmentSetRemoteCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:set-remote')
-            ->setDescription('Set the remote environment to map to a branch')
             ->addArgument(
                 'environment',
                 InputArgument::REQUIRED,

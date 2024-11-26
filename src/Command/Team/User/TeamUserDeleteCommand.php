@@ -7,16 +7,17 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamMember;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:user:delete', description: 'Remove a user from a team')]
 class TeamUserDeleteCommand extends TeamCommandBase
 {
     protected function configure()
     {
-        $this->setName('team:user:delete')
-            ->setDescription('Remove a user from a team')
+        $this
             ->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID')
             ->addOrganizationOptions()
             ->addTeamOption();

@@ -5,11 +5,13 @@ namespace Platformsh\Cli\Command\Commit;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'commit:get', description: 'Show commit details')]
 class CommitGetCommand extends CommandBase
 {
 
@@ -19,8 +21,6 @@ class CommitGetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('commit:get')
-            ->setDescription('Show commit details')
             ->addArgument('commit', InputArgument::OPTIONAL, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP, 'HEAD')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The commit property to display.');
         $this->addProjectOption();

@@ -4,20 +4,20 @@ namespace Platformsh\Cli\Command\SshCert;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\SshCert\Certificate;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'ssh-cert:load', description: 'Generate an SSH certificate')]
 class SshCertLoadCommand extends CommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('ssh-cert:load')
             ->addOption('refresh-only', null, InputOption::VALUE_NONE, 'Only refresh the certificate, if necessary (do not write SSH config)')
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
-            ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force a new key pair to be generated')
-            ->setDescription('Generate an SSH certificate');
+            ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force a new key pair to be generated');
         $help = 'This command checks if a valid SSH certificate is present, and generates a new one if necessary.';
         if ($this->config()->getWithDefault('ssh.auto_load_cert', false)) {
             $envPrefix = $this->config()->get('application.env_prefix');

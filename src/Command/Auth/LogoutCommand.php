@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:logout', description: 'Log out', aliases: ['logout'])]
 class LogoutCommand extends CommandBase
 {
     protected $local = true;
@@ -14,11 +16,8 @@ class LogoutCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('auth:logout')
-            ->setAliases(['logout'])
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')
-            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions')
-            ->setDescription('Log out of ' . $this->config()->get('service.name'));
+            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

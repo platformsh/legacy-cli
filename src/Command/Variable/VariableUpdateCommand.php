@@ -3,11 +3,13 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'variable:update', description: 'Update a variable')]
 class VariableUpdateCommand extends VariableCommandBase
 {
     /** @var Form */
@@ -19,8 +21,6 @@ class VariableUpdateCommand extends VariableCommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:update')
-            ->setDescription('Update a variable')
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addOption('allow-no-change', null, InputOption::VALUE_NONE, 'Return success (zero exit code) if no changes were provided');
         $this->addLevelOption();

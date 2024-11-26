@@ -3,19 +3,19 @@ namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'certificate:get', description: 'View a certificate')]
 class CertificateGetCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('certificate:get')
-            ->setDescription('View a certificate')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to view');
         PropertyFormatter::configureInput($this->getDefinition());

@@ -7,10 +7,12 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Team\TeamMember;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:user:list', description: 'List users in a team', aliases: ['team:users'])]
 class TeamUserListCommand extends TeamCommandBase
 {
     private $tableHeader = [
@@ -26,9 +28,7 @@ class TeamUserListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this->setName('team:user:list')
-            ->setAliases(['team:users'])
-            ->setDescription('List users in a team')
+        $this
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination')
             ->addOrganizationOptions()
             ->addTeamOption();

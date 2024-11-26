@@ -2,18 +2,18 @@
 namespace Platformsh\Cli\Command\SshKey;
 
 use Platformsh\Cli\Service\QuestionHelper;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'ssh-key:add', description: 'Add a new SSH key')]
 class SshKeyAddCommand extends SshKeyCommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('ssh-key:add')
-            ->setDescription('Add a new SSH key')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
 

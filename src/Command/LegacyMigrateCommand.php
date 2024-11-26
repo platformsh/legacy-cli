@@ -3,18 +3,18 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'legacy-migrate', description: 'Migrate from the legacy file structure')]
 class LegacyMigrateCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('legacy-migrate')
-            ->setDescription('Migrate from the legacy file structure')
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
         $cliName = $this->config()->get('application.name');
         $localDir = $this->config()->get('local.local_dir');

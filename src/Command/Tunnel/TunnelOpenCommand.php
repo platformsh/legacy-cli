@@ -4,11 +4,13 @@ namespace Platformsh\Cli\Command\Tunnel;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:open', description: "Open SSH tunnels to an app's relationships")]
 class TunnelOpenCommand extends TunnelCommandBase
 {
     /**
@@ -16,9 +18,6 @@ class TunnelOpenCommand extends TunnelCommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('tunnel:open')
-            ->setDescription("Open SSH tunnels to an app's relationships");
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
         $this->addProjectOption();
         $this->addEnvironmentOption();

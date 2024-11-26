@@ -8,6 +8,7 @@ use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,14 +16,14 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'multi', description: 'Execute a command on multiple projects')]
 class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
     protected $canBeRunMultipleTimes = false;
 
     protected function configure()
     {
-        $this->setName('multi')
-            ->setDescription('Execute a command on multiple projects')
+        $this
             ->addArgument('cmd', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The command to execute')
             ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs, separated by commas and/or whitespace')
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
