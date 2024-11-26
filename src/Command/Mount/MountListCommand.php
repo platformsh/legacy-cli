@@ -36,7 +36,7 @@ class MountListCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Service\Mount $mountService */
         $mountService = $this->getService('mount');

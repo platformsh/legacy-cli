@@ -14,7 +14,7 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
             ->addOrganizationOptions(true);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->validateOrganizationInput($input);
 

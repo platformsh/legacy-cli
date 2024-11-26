@@ -376,7 +376,7 @@ class Api
         $authMethods = isset($body['amr']) ? $body['amr'] : [];
         $maxAge = isset($body['max_age']) ? $body['max_age'] : null;
 
-        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent($authMethods, $maxAge, $this->hasApiToken()));
+        $this->dispatcher->dispatch(new LoginRequiredEvent($authMethods, $maxAge, $this->hasApiToken()), 'login_required');
 
         $this->stdErr->writeln('');
         $session = $this->getClient(false)->getConnector()->getSession();
@@ -419,7 +419,7 @@ class Api
 
         $this->stdErr->writeln('');
 
-        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
+        $this->dispatcher->dispatch(new LoginRequiredEvent([], null, $this->hasApiToken()), 'login_required');
         $session = $this->getClient(false)->getConnector()->getSession();
 
         return $this->tokenFromSession($session);
@@ -575,7 +575,7 @@ class Api
             self::$client = new PlatformClient($connector);
 
             if ($autoLogin && !$connector->isLoggedIn()) {
-                $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
+                $this->dispatcher->dispatch(new LoginRequiredEvent([], null, $this->hasApiToken()), 'login_required');
             }
         }
 
@@ -770,8 +770,8 @@ class Api
             // Dispatch an event if the list of environments has changed.
             if ($events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(
+                    new EnvironmentsChangedEvent($project, $environments),
                     'environments_changed',
-                    new EnvironmentsChangedEvent($project, $environments)
                 );
             }
 
@@ -1076,7 +1076,7 @@ class Api
     /**
      * @return bool
      */
-    public function isLoggedIn()
+    public function isLoggedIn(): bool
     {
         return $this->getClient(false)->getConnector()->isLoggedIn();
     }

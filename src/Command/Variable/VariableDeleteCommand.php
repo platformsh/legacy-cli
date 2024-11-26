@@ -24,7 +24,7 @@ class VariableDeleteCommand extends VariableCommandBase
         $this->addExample('Delete the variable "example"', 'example');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
         $this->validateInput($input, $level === self::LEVEL_PROJECT);

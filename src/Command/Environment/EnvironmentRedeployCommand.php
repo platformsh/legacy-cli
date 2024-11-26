@@ -19,7 +19,7 @@ class EnvironmentRedeployCommand extends CommandBase
         $this->addWaitOptions();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsByStatus(['active', 'paused']);
         $this->validateInput($input);

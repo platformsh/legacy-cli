@@ -88,7 +88,7 @@ abstract class MetricsCommandBase extends CommandBase
         ],
     ];
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         if (!$this->config()->getWithDefault('api.metrics', false)) {
             return false;

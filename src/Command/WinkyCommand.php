@@ -16,13 +16,13 @@ class WinkyCommand extends CommandBase
         $this->setName('winky');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $winky = new Winky($output, $this->config()->get('service.name'));
 
         if (!$output->isDecorated()) {
             $winky->render();
-            return;
+            return 0;
         }
 
         while (true) {

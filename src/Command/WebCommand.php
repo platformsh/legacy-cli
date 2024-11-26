@@ -20,7 +20,7 @@ class WebCommand extends CommandBase
              ->addEnvironmentOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Attempt to select the appropriate project and environment.
         try {

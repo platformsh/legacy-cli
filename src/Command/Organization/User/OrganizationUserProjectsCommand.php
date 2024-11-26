@@ -30,7 +30,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
     ];
     protected $defaultColumns = ['project_id', 'project_title', 'roles', 'updated_at'];
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->get('api.centralized_permissions')
             && $this->config()->get('api.organizations')
@@ -51,7 +51,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = null;
         if (!$input->getOption('list-all')) {

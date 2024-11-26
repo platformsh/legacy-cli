@@ -29,7 +29,7 @@ class SshCertLoadCommand extends CommandBase
         $this->setHelp(\wordwrap($help));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['new-key'], 'The --new-key option is deprecated. Use --new instead.');
 

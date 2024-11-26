@@ -99,7 +99,7 @@ class Certificate {
      *
      * @return bool
      */
-    public function isApp() {
+    public function isApp(): bool {
         return \array_key_exists('is-app@platform.sh', $this->metadata->getExtensions());
     }
 

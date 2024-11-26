@@ -21,7 +21,7 @@ class CompletionCommand extends ParentCompletionCommand
     /**
      * {@inheritdoc}
      */
-    public function isHidden()
+    public function isHidden(): bool
     {
         return true;
     }

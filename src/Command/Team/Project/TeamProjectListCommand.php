@@ -41,7 +41,7 @@ class TeamProjectListCommand extends TeamCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $options = [];
         $options['query']['sort'] = 'project_title';

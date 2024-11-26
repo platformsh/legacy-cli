@@ -116,7 +116,7 @@ class LocalBuildCommand extends CommandBase
         $this->addExample('Rebuild the current project without using an archive', '--no-archive');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
 

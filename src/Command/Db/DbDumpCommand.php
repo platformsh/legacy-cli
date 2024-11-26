@@ -38,7 +38,7 @@ class DbDumpCommand extends CommandBase
         $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Service\Relationships $relationships */
         $relationships = $this->getService('relationships');

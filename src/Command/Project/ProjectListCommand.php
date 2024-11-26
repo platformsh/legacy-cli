@@ -58,7 +58,7 @@ class ProjectListCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['host'], 'The option --host is deprecated and replaced by --region. It will be removed in a future version.');
 

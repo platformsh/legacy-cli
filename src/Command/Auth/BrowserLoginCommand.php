@@ -46,7 +46,7 @@ class BrowserLoginCommand extends CommandBase
         $this->setHelp(\wordwrap($help, 80));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->api()->hasApiToken(false)) {
             $this->stdErr->writeln('Cannot log in via the browser, because an API token is set via config.');

@@ -29,7 +29,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['environment']);
         $this->validateInput($input, true);

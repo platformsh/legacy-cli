@@ -18,7 +18,7 @@ class OrganizationCurlCommand extends OrganizationCommandBase
         CurlCli::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->validateOrganizationInput($input);
 

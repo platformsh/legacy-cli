@@ -56,7 +56,7 @@ class UserAddCommand extends UserCommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
         $project = $this->getSelectedProject();
