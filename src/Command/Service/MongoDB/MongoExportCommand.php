@@ -34,7 +34,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('type') === 'csv' && !$input->getOption('fields')) {
             throw new InvalidArgumentException(

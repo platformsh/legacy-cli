@@ -30,7 +30,7 @@ class LsCommand extends RepoCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input, false, true);
 

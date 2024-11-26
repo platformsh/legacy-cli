@@ -19,7 +19,7 @@ class TeamProjectDeleteCommand extends TeamCommandBase
             ->addTeamOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $team = $this->validateTeamInput($input);
         if (!$team) {

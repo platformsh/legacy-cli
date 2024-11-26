@@ -21,7 +21,7 @@ class ProjectCurlCommand extends CommandBase
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
 

@@ -34,7 +34,7 @@ class SelfReleaseCommand extends CommandBase
             ->addOption('allow-lower', null, InputOption::VALUE_NONE, 'Allow releasing with a lower version number than the last');
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->has('application.github_repo')
             && (!extension_loaded('Phar') || !\Phar::running(false));
@@ -43,7 +43,7 @@ class SelfReleaseCommand extends CommandBase
     /**
      * @throws \Exception
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

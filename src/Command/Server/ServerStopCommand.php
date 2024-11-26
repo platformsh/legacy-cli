@@ -16,7 +16,7 @@ class ServerStopCommand extends ServerCommandBase
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'Stop all servers');
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         if (!extension_loaded('posix')) {
             return false;
@@ -25,7 +25,7 @@ class ServerStopCommand extends ServerCommandBase
         return parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
         $all = $input->getOption('all');

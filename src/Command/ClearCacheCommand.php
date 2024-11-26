@@ -18,11 +18,12 @@ class ClearCacheCommand extends CommandBase
             ->setDescription('Clear the CLI cache');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Doctrine\Common\Cache\CacheProvider $cache */
         $cache = $this->getService('cache');
         $cache->flushAll();
         $this->stdErr->writeln("All caches have been cleared");
+        return 0;
     }
 }

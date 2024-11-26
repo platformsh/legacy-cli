@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Event;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Util\OsUtil;
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class LoginRequiredEvent extends Event
 {

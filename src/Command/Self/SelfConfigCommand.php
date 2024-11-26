@@ -20,7 +20,7 @@ class SelfConfigCommand extends CommandBase
             ->addArgument('value', InputArgument::OPTIONAL, 'Read a specific config value');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');

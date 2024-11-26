@@ -26,13 +26,13 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * @inheritDoc
      */
-    protected function describeApplication(Application $application, array $options = array())
+    protected function describeApplication(Application $application, array $options = array()): void
     {
         $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
         $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
         $title = sprintf('%s %s', $application->getName(), $application->getVersion());
 
-        $this->write($title."\n".str_repeat('=', Helper::strlen($title)));
+        $this->write($title."\n".str_repeat('=', Helper::width($title)));
 
         foreach ($description->getNamespaces() as $namespace) {
             if (empty($namespace['commands'])) {
@@ -58,7 +58,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeCommand(Command $command, array $options = [])
+    protected function describeCommand(Command $command, array $options = []): void
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
@@ -107,7 +107,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputArgument(InputArgument $argument, array $options = [])
+    protected function describeInputArgument(InputArgument $argument, array $options = []): void
     {
         $this->write('* `' . $argument->getName() . '`');
         $notes = [
@@ -127,7 +127,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputOption(InputOption $option, array $options = [])
+    protected function describeInputOption(InputOption $option, array $options = []): void
     {
         $this->write('* `--' . $option->getName() . '`');
         if ($shortcut = $option->getShortcut()) {

@@ -29,7 +29,7 @@ EOF
         );
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         if (parent::isHidden()) {
             return true;
@@ -40,12 +40,12 @@ EOF
         return !$localProject->getLegacyProjectRoot();
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->has('local.project_config_legacy') && parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Local\LocalProject $localProject */
         $localProject = $this->getService('local.project');

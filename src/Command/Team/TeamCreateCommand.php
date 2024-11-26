@@ -29,7 +29,7 @@ class TeamCreateCommand extends TeamCommandBase
             ->addOrganizationOptions();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $update = stripos($input->getFirstArgument(), ':u') !== false;
         if ($update) {

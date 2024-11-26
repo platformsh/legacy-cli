@@ -20,7 +20,7 @@ class BotCommand extends CommandBase
             ->addOption('parrot', null, InputOption::VALUE_NONE);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $dir = CLI_ROOT . '/resources/bot';
         $signature = $this->config()->get('service.name');
@@ -53,7 +53,7 @@ class BotCommand extends CommandBase
 
         if (!$output->isDecorated()) {
             $animation->render();
-            return;
+            return 0;
         }
 
         // Stay positive: return code 0 when the user quits.
