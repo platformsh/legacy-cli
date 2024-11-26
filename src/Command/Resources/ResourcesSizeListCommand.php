@@ -3,20 +3,20 @@
 namespace Platformsh\Cli\Command\Resources;
 
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:size:list', description: 'List container profile sizes', aliases: ['resources:sizes'])]
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
     protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
 
     protected function configure()
     {
-        $this->setName('resources:size:list')
-            ->setAliases(['resources:sizes'])
-            ->setDescription('List container profile sizes')
+        $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
         $this->addProjectOption()->addEnvironmentOption();

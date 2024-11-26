@@ -8,18 +8,18 @@ use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'db:dump', description: 'Create a local dump of the remote database')]
 class DbDumpCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this->setName('db:dump')
-            ->setDescription('Create a local dump of the remote database');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')

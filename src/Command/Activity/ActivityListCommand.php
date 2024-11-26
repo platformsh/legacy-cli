@@ -6,10 +6,12 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'activity:list', description: 'Get a list of activities for an environment or project', aliases: ['activities', 'act'])]
 class ActivityListCommand extends ActivityCommandBase
 {
     private $tableHeader = [
@@ -34,10 +36,6 @@ class ActivityListCommand extends ActivityCommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('activity:list')
-            ->setAliases(['activities', 'act']);
-
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';
         if ($this->config()->has('service.activity_type_list_url')) {
@@ -61,8 +59,7 @@ class ActivityListCommand extends ActivityCommandBase
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments')
-            ->setDescription('Get a list of activities for an environment or project');
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption()

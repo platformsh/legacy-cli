@@ -5,17 +5,18 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\ApiResponseException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:user:add', description: 'Add a user to a team')]
 class TeamUserAddCommand extends TeamCommandBase
 {
     protected function configure()
     {
-        $this->setName('team:user:add')
-            ->setDescription('Add a user to a team')
+        $this
             ->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID')
             ->addOrganizationOptions()
             ->addTeamOption();

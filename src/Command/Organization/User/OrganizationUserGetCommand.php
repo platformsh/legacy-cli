@@ -8,17 +8,18 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Ref\UserRef;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:get', description: 'View an organization user')]
 class OrganizationUserGetCommand extends OrganizationCommandBase
 {
     protected function configure()
     {
-        $this->setName('organization:user:get')
-            ->setDescription('View an organization user')
+        $this
             ->addOrganizationOptions()
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'A property to display');

@@ -7,19 +7,14 @@ use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:verify-phone-number', description: 'Verify your phone number interactively')]
 class VerifyPhoneNumberCommand extends CommandBase
 {
-    protected function configure()
-    {
-        $this
-            ->setName('auth:verify-phone-number')
-            ->setDescription('Verify your phone number interactively');
-    }
-
     public function isEnabled(): bool
     {
         if (!$this->config()->getWithDefault('api.user_verification', false)) {

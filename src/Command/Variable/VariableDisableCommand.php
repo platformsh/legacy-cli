@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use "variable:update --enabled false" instead
  */
+#[AsCommand(name: 'variable:disable', description: 'Disable an enabled environment-level variable')]
 class VariableDisableCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -20,9 +22,7 @@ class VariableDisableCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:disable')
-            ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
-            ->setDescription('Disable an enabled environment-level variable');
+            ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use: <info>variable:update --enabled false [variable]</info>"

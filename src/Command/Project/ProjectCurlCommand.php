@@ -3,18 +3,17 @@ namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:curl', description: "Run an authenticated cURL request on a project's API")]
 class ProjectCurlCommand extends CommandBase
 {
     protected $hiddenInList = true;
 
     protected function configure()
     {
-        $this->setName('project:curl')
-            ->setDescription("Run an authenticated cURL request on a project's API");
-
         CurlCli::configureInput($this->getDefinition());
 
         $this->addProjectOption();

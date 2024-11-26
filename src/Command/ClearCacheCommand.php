@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Command;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'clear-cache', description: 'Clear the CLI cache', aliases: ['cc'])]
 class ClearCacheCommand extends CommandBase
 {
     protected $local = true;
@@ -12,10 +14,7 @@ class ClearCacheCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('clear-cache')
-            ->setAliases(['cc'])
-            ->setHiddenAliases(['clearcache'])
-            ->setDescription('Clear the CLI cache');
+            ->setHiddenAliases(['clearcache']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

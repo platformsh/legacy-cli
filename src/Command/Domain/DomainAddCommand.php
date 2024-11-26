@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\Domain;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Model\EnvironmentDomain;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'domain:add', description: 'Add a new domain to the project')]
 class DomainAddCommand extends DomainCommandBase
 {
 
@@ -16,9 +18,6 @@ class DomainAddCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:add')
-            ->setDescription('Add a new domain to the project');
         $this->addDomainOptions();
         $this->addOption('attach', null, InputOption::VALUE_REQUIRED, "The production domain that this one replaces in the environment's routes. Required for non-production environment domains.");
         $this->addHiddenOption('replace', 'r', InputOption::VALUE_REQUIRED, 'Deprecated: this has been renamed to --attach');

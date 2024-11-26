@@ -7,17 +7,18 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Profile;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:billing:profile', description: "View or change an organization's billing profile")]
 class OrganizationProfileCommand extends OrganizationCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('organization:billing:profile')
-            ->setDescription("View or change an organization's billing profile")
+        $this
             ->addOrganizationOptions(true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');

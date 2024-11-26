@@ -4,17 +4,18 @@ namespace Platformsh\Cli\Command\Organization\User;
 
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:add', description: 'Invite a user to an organization')]
 class OrganizationUserAddCommand extends OrganizationUserCommandBase
 {
     protected function configure()
     {
-        $this->setName('organization:user:add')
-            ->setDescription('Invite a user to an organization')
+        $this
             ->addOrganizationOptions()
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addPermissionOption();

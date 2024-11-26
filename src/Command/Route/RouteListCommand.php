@@ -6,11 +6,13 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'route:list', description: 'List all routes for an environment', aliases: ['routes'])]
 class RouteListCommand extends CommandBase
 {
     private $tableHeader = [
@@ -27,9 +29,6 @@ class RouteListCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('route:list')
-            ->setAliases(['routes'])
-            ->setDescription('List all routes for an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);

@@ -3,19 +3,19 @@ namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'backup:get', description: 'View an environment backup')]
 class BackupGetCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('backup:get')
-            ->setDescription('View an environment backup')
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The backup property to display.');
         $this->addProjectOption()

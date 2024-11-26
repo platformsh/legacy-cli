@@ -2,18 +2,16 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:redeploy', description: 'Redeploy an environment', aliases: ['redeploy'])]
 class EnvironmentRedeployCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this
-            ->setName('environment:redeploy')
-            ->setAliases(['redeploy'])
-            ->setDescription('Redeploy an environment');
         $this->addProjectOption()
             ->addEnvironmentOption();
         $this->addWaitOptions();

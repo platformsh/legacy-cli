@@ -5,11 +5,13 @@ namespace Platformsh\Cli\Command\Mount;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
+#[AsCommand(name: 'mount:upload', description: 'Upload files to a mount, using rsync')]
 class MountUploadCommand extends CommandBase
 {
 
@@ -19,8 +21,6 @@ class MountUploadCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('mount:upload')
-            ->setDescription('Upload files to a mount, using rsync')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the mount')

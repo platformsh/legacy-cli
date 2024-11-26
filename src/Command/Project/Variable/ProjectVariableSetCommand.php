@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -10,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use variable:create and variable:update instead (with --level project)
  */
+#[AsCommand(name: 'project:variable:set', description: 'Set a variable for a project', aliases: ['pvset'])]
 class ProjectVariableSetCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -21,14 +23,11 @@ class ProjectVariableSetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('project:variable:set')
-            ->setAliases(['pvset'])
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('no-visible-build', null, InputOption::VALUE_NONE, 'Do not expose this variable at build time')
-            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime')
-            ->setDescription('Set a variable for a project');
+            ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"

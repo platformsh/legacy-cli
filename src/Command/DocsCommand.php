@@ -3,18 +3,18 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Service\Url;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'docs', description: 'Open the online documentation')]
 class DocsCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('docs')
-            ->setDescription('Open the online documentation')
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
         Url::configureInput($this->getDefinition());

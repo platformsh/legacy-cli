@@ -5,11 +5,13 @@ use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'domain:get', description: 'Show detailed information for a domain')]
 class DomainGetCommand extends DomainCommandBase
 {
 
@@ -19,8 +21,6 @@ class DomainGetCommand extends DomainCommandBase
     protected function configure()
     {
         $this
-            ->setName('domain:get')
-            ->setDescription('Show detailed information for a domain')
             ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
         Table::configureInput($this->getDefinition());

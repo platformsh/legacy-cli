@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use variable:create and variable:update instead (with --level environment)
  */
+#[AsCommand(name: 'variable:set', description: 'Set a variable for an environment', aliases: ['vset'])]
 class VariableSetCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -22,13 +24,10 @@ class VariableSetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:set')
-            ->setAliases(['vset'])
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
-            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')
-            ->setDescription('Set a variable for an environment');
+            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addWaitOptions();

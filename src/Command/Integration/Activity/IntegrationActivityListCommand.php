@@ -8,11 +8,13 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:activity:list', description: 'Get a list of activities for an integration', aliases: ['integration:activities'])]
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
     private $tableHeader = [
@@ -37,8 +39,6 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:activity:list')
-            ->setAliases(['integration:activities'])
             ->setHiddenAliases(['int:act', 'i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
@@ -54,8 +54,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
-            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
-            ->setDescription('Get a list of activities for an integration');
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();

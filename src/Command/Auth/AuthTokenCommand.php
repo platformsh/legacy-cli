@@ -2,10 +2,12 @@
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:token', description: 'Obtain an OAuth 2 access token for API requests')]
 class AuthTokenCommand extends CommandBase
 {
     const RFC6750_PREFIX = 'Authorization: Bearer ';
@@ -14,11 +16,7 @@ class AuthTokenCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('auth:token')
-            ->setDescription(sprintf(
-                'Obtain an OAuth 2 access token for requests to %s APIs',
-                $this->config()->get('service.name')
-            ))
+        $this
             ->addOption('header', 'H', InputOption::VALUE_NONE, 'Prefix the token with "' . self::RFC6750_PREFIX . '" to make an RFC 6750 header')
             ->addOption('no-warn', 'W', InputOption::VALUE_NONE, 'Suppress the warning that is printed by default to stderr.'
                 . ' This option is preferred over redirecting stderr, as that would hide other potentially useful messages.');

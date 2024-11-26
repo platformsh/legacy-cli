@@ -8,18 +8,19 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Address;
 use Platformsh\Client\Model\Organization\Organization;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:billing:address', description: "View or change an organization's billing address")]
 class OrganizationAddressCommand extends OrganizationCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('organization:billing:address')
-            ->setDescription("View or change an organization's billing address")
+        $this
             ->addOrganizationOptions(true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')

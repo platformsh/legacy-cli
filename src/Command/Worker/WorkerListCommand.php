@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\Worker;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'worker:list', description: 'Get a list of all deployed workers', aliases: ['workers'])]
 class WorkerListCommand extends CommandBase
 {
     private $tableHeader = ['Name', 'Type', 'Commands'];
@@ -17,9 +19,7 @@ class WorkerListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setName('worker:list')
-            ->setAliases(['workers'])
-            ->setDescription('Get a list of all deployed workers')
+        $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of worker names only');
         $this->addProjectOption()

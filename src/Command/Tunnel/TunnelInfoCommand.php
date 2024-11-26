@@ -1,17 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:info', description: "View relationship info for SSH tunnels")]
 class TunnelInfoCommand extends TunnelCommandBase
 {
     protected function configure()
     {
         $this
-          ->setName('tunnel:info')
-          ->setDescription("View relationship info for SSH tunnels")
           ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
           ->addOption('encode', 'c', InputOption::VALUE_NONE, 'Output as base64-encoded JSON');
         $this->addProjectOption();

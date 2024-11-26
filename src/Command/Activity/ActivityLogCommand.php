@@ -5,11 +5,13 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'activity:log', description: 'Display the log for an activity')]
 class ActivityLogCommand extends ActivityCommandBase
 {
     /**
@@ -18,8 +20,6 @@ class ActivityLogCommand extends ActivityCommandBase
     protected function configure()
     {
         $this
-            ->setName('activity:log')
-            ->setDescription('Display the log for an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption(
                 'refresh',

@@ -10,10 +10,12 @@ use Platformsh\Cli\Util\Pager\Pager;
 use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Subscription;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:list', description: 'Get a list of all active projects', aliases: ['projects', 'pro'])]
 class ProjectListCommand extends CommandBase
 {
     private $tableHeader = [
@@ -36,9 +38,6 @@ class ProjectListCommand extends CommandBase
             $this->defaultColumns[] = 'organization_name';
         }
         $this
-            ->setName('project:list')
-            ->setAliases(['projects', 'pro'])
-            ->setDescription('Get a list of all active projects')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of project IDs. Disables pagination.')
             ->addOption('region', null, InputOption::VALUE_REQUIRED, 'Filter by region (exact match)')
             ->addHiddenOption('host', null, InputOption::VALUE_REQUIRED, 'Deprecated: replaced by --region')

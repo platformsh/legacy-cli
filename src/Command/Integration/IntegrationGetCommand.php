@@ -2,11 +2,13 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:get', description: 'View details of an integration')]
 class IntegrationGetCommand extends IntegrationCommandBase
 {
     /**
@@ -15,10 +17,8 @@ class IntegrationGetCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:get')
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view')
-            ->setDescription('View details of an integration');
+            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view');
         Table::configureInput($this->getDefinition());
         $this->addProjectOption();
     }

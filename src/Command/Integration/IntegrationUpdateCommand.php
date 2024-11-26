@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:update', description: 'Update an integration')]
 class IntegrationUpdateCommand extends IntegrationCommandBase
 {
     /**
@@ -15,9 +17,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:update')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update')
-            ->setDescription('Update an integration');
+            ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();
         $this->addExample(

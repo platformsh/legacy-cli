@@ -3,19 +3,19 @@ namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:info', description: 'Display your account information')]
 class AuthInfoCommand extends CommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('auth:info')
-            ->setDescription('Display your account information')
             ->addArgument('property', InputArgument::OPTIONAL, 'The account property to view')
             ->addOption('no-auto-login', null, InputOption::VALUE_NONE, 'Skips auto login. Nothing will be output if not logged in, and the exit code will be 0, assuming no other errors.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The account property to view (alternate syntax)')

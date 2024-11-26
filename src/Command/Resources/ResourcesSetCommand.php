@@ -10,17 +10,18 @@ use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Deployment\Worker;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
     protected function configure()
     {
-        $this->setName('resources:set')
-            ->setDescription('Set the resources of apps and services on an environment')
+        $this
             ->addOption('size', 'S', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
                 'Set the profile size (CPU and memory) of apps, workers, or services.'
                 . "\nItems are in the format <info>name:value</info> and may be comma-separated."

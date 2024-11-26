@@ -6,11 +6,13 @@ use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:push', description: 'Push code to an environment', aliases: ['push'])]
 class EnvironmentPushCommand extends CommandBase
 {
     const PUSH_FAILURE_EXIT_CODE = 87;
@@ -18,9 +20,6 @@ class EnvironmentPushCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:push')
-            ->setAliases(['push'])
-            ->setDescription('Push code to an environment')
             ->addArgument('source', InputArgument::OPTIONAL, 'The Git source ref, e.g. a branch name or a commit hash.', 'HEAD')
             ->addOption('target', null, InputOption::VALUE_REQUIRED, 'The target branch name. Defaults to the current branch.')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Allow non-fast-forward updates')
