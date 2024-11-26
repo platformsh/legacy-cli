@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:config', description: 'Read CLI config')]
 class SelfConfigCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -15,8 +17,6 @@ class SelfConfigCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('self:config')
-            ->setDescription('Read CLI config')
             ->addArgument('value', InputArgument::OPTIONAL, 'Read a specific config value');
     }
 

@@ -6,9 +6,11 @@ use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Domain;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'domain:list', description: 'Get a list of all domains', aliases: ['domains'])]
 class DomainListCommand extends DomainCommandBase
 {
     private $tableHeader = [
@@ -27,10 +29,6 @@ class DomainListCommand extends DomainCommandBase
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:list')
-            ->setAliases(['domains'])
-            ->setDescription('Get a list of all domains');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addProjectOption()->addEnvironmentOption();
     }

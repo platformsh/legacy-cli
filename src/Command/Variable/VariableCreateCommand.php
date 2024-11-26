@@ -7,11 +7,13 @@ use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'variable:create', description: 'Create a variable')]
 class VariableCreateCommand extends VariableCommandBase
 {
     /** @var Form */
@@ -23,8 +25,6 @@ class VariableCreateCommand extends VariableCommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:create')
-            ->setDescription('Create a variable')
             ->addArgument('name', InputArgument::OPTIONAL, 'The variable name')
             ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update the variable if it already exists');
         $this->form = Form::fromArray($this->getFields());

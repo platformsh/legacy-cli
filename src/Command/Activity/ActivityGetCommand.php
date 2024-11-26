@@ -7,11 +7,13 @@ use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Activity;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'activity:get', description: 'View detailed information on a single activity')]
 class ActivityGetCommand extends ActivityCommandBase
 {
     /**
@@ -20,8 +22,6 @@ class ActivityGetCommand extends ActivityCommandBase
     protected function configure()
     {
         $this
-            ->setName('activity:get')
-            ->setDescription('View detailed information on a single activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view')
             ->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,

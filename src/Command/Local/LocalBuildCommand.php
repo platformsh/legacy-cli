@@ -3,12 +3,14 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'local:build', description: 'Build the current project locally', aliases: ['build'])]
 class LocalBuildCommand extends CommandBase
 {
     protected $local = true;
@@ -16,10 +18,7 @@ class LocalBuildCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('local:build')
-            ->setAliases(['build'])
             ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
-            ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
                 'a',

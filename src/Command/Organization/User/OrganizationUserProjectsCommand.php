@@ -10,11 +10,13 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\CentralizedPermissions\UserExtendedAccess;
 use Platformsh\Client\Model\Ref\UserRef;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:projects', description: 'List the projects a user can access', aliases: ['oups'])]
 class OrganizationUserProjectsCommand extends OrganizationCommandBase
 {
     protected $tableHeader = [
@@ -39,12 +41,10 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
 
     protected function configure()
     {
-        $this->setName('organization:user:projects')
-            ->setAliases(['oups'])
+        $this
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addHiddenOption('sort-granted', null, InputOption::VALUE_NONE, 'Deprecated option: unused')
             ->addHiddenOption('reverse', null, InputOption::VALUE_NONE, 'Deprecated option: unused');
-        $this->setDescription('List the projects a user can access');
         $this->addOrganizationOptions();
         $this->addOption('list-all', null, InputOption::VALUE_NONE, 'List access across all organizations');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);

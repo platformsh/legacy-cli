@@ -7,10 +7,12 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Team\TeamProjectAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:project:list', description: 'List projects in a team', aliases: ['team:projects', 'team:pro'])]
 class TeamProjectListCommand extends TeamCommandBase
 {
     const MAX_COUNT = 200;
@@ -28,9 +30,7 @@ class TeamProjectListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this->setName('team:project:list')
-            ->setAliases(['team:projects', 'team:pro'])
-            ->setDescription('List projects in a team')
+        $this
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page (max: ' . self::MAX_COUNT . '). Use 0 to disable pagination')
             ->addOrganizationOptions()
             ->addTeamOption();

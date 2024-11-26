@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Model\Git\Tree;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'repo:read', description: 'Read a directory or file in the project repository', aliases: ['read'])]
 class ReadCommand extends RepoCommandBase
 {
     /**
@@ -16,9 +18,6 @@ class ReadCommand extends RepoCommandBase
     protected function configure()
     {
         $this
-            ->setName('repo:read')
-            ->setAliases(['read'])
-            ->setDescription('Read a directory or file in the project repository')
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')
             ->addCommitOption();
         $this->addProjectOption();

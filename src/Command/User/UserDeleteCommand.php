@@ -2,18 +2,18 @@
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'user:delete', description: 'Delete a user from the project')]
 class UserDeleteCommand extends UserCommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('user:delete')
-            ->setDescription('Delete a user from the project')
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
         $this->addProjectOption()->addWaitOptions();
         $this->addExample('Delete Alice from the project', 'alice@example.com');

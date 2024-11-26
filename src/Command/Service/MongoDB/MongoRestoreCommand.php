@@ -6,18 +6,17 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:mongo:restore', description: 'Restore a binary archive dump of data into MongoDB', aliases: ['mongorestore'])]
 class MongoRestoreCommand extends CommandBase
 {
     protected function configure()
     {
-        $this->setName('service:mongo:restore');
-        $this->setAliases(['mongorestore']);
-        $this->setDescription('Restore a binary archive dump of data into MongoDB');
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());

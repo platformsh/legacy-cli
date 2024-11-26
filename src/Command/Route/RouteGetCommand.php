@@ -5,11 +5,13 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'route:get', description: 'View detailed information about a route')]
 class RouteGetCommand extends CommandBase
 {
     /**
@@ -18,8 +20,6 @@ class RouteGetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('route:get')
-            ->setDescription('View detailed information about a route')
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'A route ID to select')
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Select the primary route')

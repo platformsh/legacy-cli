@@ -2,17 +2,17 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'server:stop', description: 'Stop local project web server(s)')]
 class ServerStopCommand extends ServerCommandBase
 {
     protected function configure()
     {
         $this
-          ->setName('server:stop')
-          ->setDescription('Stop local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'Stop all servers');
     }
 

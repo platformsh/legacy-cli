@@ -5,9 +5,11 @@ use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'metrics:cpu', description: 'Show CPU usage of an environment', aliases: ['cpu'])]
 class CpuCommand extends MetricsCommandBase
 {
     private $tableHeader = [
@@ -26,9 +28,6 @@ class CpuCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this->setName('metrics:cpu')
-            ->setAliases(['cpu'])
-            ->setDescription('Show CPU usage of an environment');
         $this->addMetricsOptions()
             ->addProjectOption()
             ->addEnvironmentOption();

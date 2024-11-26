@@ -6,21 +6,20 @@ use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:logs', description: "Read an environment's logs", aliases: ['log'])]
 class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:logs')
-            ->setAliases(['log'])
-            ->setDescription("Read an environment's logs")
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');

@@ -2,9 +2,11 @@
 namespace Platformsh\Cli\Command\SshKey;
 
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'ssh-key:list', description: 'Get a list of SSH keys in your account', aliases: ['ssh-keys'])]
 class SshKeyListCommand extends SshKeyCommandBase
 {
     private $tableHeader = [
@@ -17,10 +19,6 @@ class SshKeyListCommand extends SshKeyCommandBase
 
     protected function configure()
     {
-        $this
-            ->setName('ssh-key:list')
-            ->setAliases(['ssh-keys'])
-            ->setDescription('Get a list of SSH keys in your account');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
 
         $help = 'This command lets you list SSH keys in your account.'

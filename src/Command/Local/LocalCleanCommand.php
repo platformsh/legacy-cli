@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'local:clean', description: 'Remove old project builds', aliases: ['clean'])]
 class LocalCleanCommand extends CommandBase
 {
     protected $local = true;
@@ -15,9 +17,6 @@ class LocalCleanCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('local:clean')
-            ->setAliases(['clean'])
-            ->setDescription('Remove old project builds')
             ->addOption(
                 'keep',
                 null,

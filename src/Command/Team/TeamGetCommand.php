@@ -5,17 +5,18 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:get', description: 'View a team')]
 class TeamGetCommand extends TeamCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('team:get')
-            ->setDescription('View a team')
+        $this
             ->addOrganizationOptions(true)
             ->addTeamOption()
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The name of a property to view');

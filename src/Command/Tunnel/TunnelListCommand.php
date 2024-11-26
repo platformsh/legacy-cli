@@ -2,10 +2,12 @@
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:list', description: 'List SSH tunnels', aliases: ['tunnels'])]
 class TunnelListCommand extends TunnelCommandBase
 {
     protected $tableHeader = [
@@ -21,9 +23,6 @@ class TunnelListCommand extends TunnelCommandBase
     protected function configure()
     {
         $this
-          ->setName('tunnel:list')
-          ->setAliases(['tunnels'])
-          ->setDescription('List SSH tunnels')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');
         $this->addProjectOption();
         $this->addEnvironmentOption();

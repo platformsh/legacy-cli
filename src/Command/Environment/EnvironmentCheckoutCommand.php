@@ -5,19 +5,18 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:checkout', description: 'Check out an environment', aliases: ['checkout'])]
 class EnvironmentCheckoutCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('environment:checkout')
-            ->setAliases(['checkout'])
-            ->setDescription('Check out an environment')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

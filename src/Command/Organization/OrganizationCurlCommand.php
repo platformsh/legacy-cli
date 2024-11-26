@@ -3,17 +3,18 @@ namespace Platformsh\Cli\Command\Organization;
 
 use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Service\CurlCli;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:curl', description: "Run an authenticated cURL request on an organization's API")]
 class OrganizationCurlCommand extends OrganizationCommandBase
 {
     protected $hiddenInList = true;
 
     protected function configure()
     {
-        $this->setName('organization:curl')
-            ->setDescription("Run an authenticated cURL request on an organization's API")
+        $this
             ->addOrganizationOptions(true);
         CurlCli::configureInput($this->getDefinition());
     }

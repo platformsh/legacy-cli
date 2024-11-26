@@ -5,18 +5,18 @@ use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\RuntimeException;
 
+#[AsCommand(name: 'server:run', description: 'Run a local PHP web server')]
 class ServerRunCommand extends ServerCommandBase
 {
     protected function configure()
     {
         $this
-          ->setName('server:run')
-          ->setDescription('Run a local PHP web server')
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting server')
           ->addOption('app', null, InputOption::VALUE_REQUIRED, 'The app name')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')

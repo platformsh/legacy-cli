@@ -4,17 +4,18 @@ namespace Platformsh\Cli\Command\BlueGreen;
 
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'blue-green:conclude', description: 'Conclude a blue/green deployment')]
 class BlueGreenConcludeCommand extends CommandBase
 {
     protected $stability = 'ALPHA';
 
     protected function configure()
     {
-        $this->setName('blue-green:conclude')
-            ->setDescription('Conclude a blue/green deployment')
+        $this
             ->setHelp('Use this command to delete the old version after a blue/green deployment, and return to the default deployment flow.');
         $this->addProjectOption();
         $this->addEnvironmentOption();
