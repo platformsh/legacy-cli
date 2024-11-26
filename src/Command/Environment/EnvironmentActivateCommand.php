@@ -25,7 +25,7 @@ class EnvironmentActivateCommand extends CommandBase
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsByStatus(['inactive', 'paused']);
         $this->validateInput($input);

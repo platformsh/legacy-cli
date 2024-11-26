@@ -18,7 +18,7 @@ class EnvironmentResumeCommand extends CommandBase
         $this->addWaitOptions();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsByStatus(['paused']);
         $this->validateInput($input);

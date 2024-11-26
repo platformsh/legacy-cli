@@ -26,7 +26,7 @@ class AuthInfoCommand extends CommandBase
         $this->addExample('Print your user ID (or nothing if not logged in)', 'id --no-auto-login');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
         $formatter = $this->getService('property_formatter');

@@ -18,7 +18,7 @@ class ResourcesCommandBase extends CommandBase
 {
     private static $cachedNextDeployment = [];
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         return !$this->config()->get('api.sizing') || parent::isHidden();
     }

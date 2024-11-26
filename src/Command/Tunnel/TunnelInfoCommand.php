@@ -24,7 +24,7 @@ class TunnelInfoCommand extends TunnelCommandBase
         $this->addHiddenOption('no-header', null, InputOption::VALUE_NONE, 'DEPRECATED');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
 

@@ -24,7 +24,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
     /**
      * {@inheritdoc}
      */
-    public function isAvailable()
+    public function isAvailable(): bool
     {
         return $this->shell->commandExists($this->getCommandName());
     }

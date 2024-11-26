@@ -25,7 +25,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         Table::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $org = $this->validateOrganizationInput($input, 'orders');
         $profile = $org->getProfile();

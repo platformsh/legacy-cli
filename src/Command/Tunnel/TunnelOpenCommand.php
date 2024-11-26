@@ -39,7 +39,7 @@ EOF
         );
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         return parent::isHidden() || OsUtil::isWindows();
     }
@@ -47,7 +47,7 @@ EOF
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (OsUtil::isWindows()) {
             $this->stdErr->writeln('This command does not work on Windows, as the required PHP extensions are unavailable.');

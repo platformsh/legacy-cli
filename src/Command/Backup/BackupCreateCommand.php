@@ -35,7 +35,7 @@ class BackupCreateCommand extends CommandBase
         $this->addExample('Make a backup avoiding downtime (but risking inconsistency)', '--live');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['unsafe']);
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();

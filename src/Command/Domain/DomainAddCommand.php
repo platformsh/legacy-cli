@@ -35,7 +35,7 @@ class DomainAddCommand extends DomainCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['replace'], 'The option --replace has been renamed to --attach.');
 

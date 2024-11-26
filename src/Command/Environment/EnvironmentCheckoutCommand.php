@@ -27,7 +27,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         $this->addExample('Check out the environment "develop"', 'develop');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->getCurrentProject();
         $projectRoot = $this->getProjectRoot();

@@ -37,7 +37,7 @@ class Sketch
     /**
      * @return bool
      */
-    public function isInfinite()
+    public function isInfinite(): bool
     {
         return $this->sum === 'Infinity' || $this->count === 'Infinity';
     }

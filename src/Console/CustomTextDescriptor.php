@@ -32,7 +32,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeCommand(Command $command, array $options = [])
+    protected function describeCommand(Command $command, array $options = []): void
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
@@ -91,7 +91,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeApplication(ConsoleApplication $application, array $options = [])
+    protected function describeApplication(ConsoleApplication $application, array $options = []): void
     {
         $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
         $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
@@ -239,7 +239,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputOption(InputOption $option, array $options = array())
+    protected function describeInputOption(InputOption $option, array $options = array()): void
     {
         if ($option->acceptValue() && null !== $option->getDefault() && (!is_array($option->getDefault()) || count($option->getDefault()))) {
             $default = sprintf('<comment> [default: %s]</comment>', $this->formatDefaultValue($option->getDefault()));
@@ -262,7 +262,7 @@ class CustomTextDescriptor extends TextDescriptor
             sprintf('--%s%s', $option->getName(), $value)
         );
 
-        $spacingWidth = $totalWidth - Helper::strlen($synopsis);
+        $spacingWidth = $totalWidth - Helper::width($synopsis);
 
         // Ensure the description is indented and word-wrapped to fit the
         // terminal width.
@@ -291,10 +291,10 @@ class CustomTextDescriptor extends TextDescriptor
         $totalWidth = 0;
         foreach ($options as $option) {
             // "-" + shortcut + ", --" + name
-            $nameLength = 1 + max(Helper::strlen($option->getShortcut()), 1) + 4 + Helper::strlen($option->getName());
+            $nameLength = 1 + max(Helper::width($option->getShortcut()), 1) + 4 + Helper::width($option->getName());
 
             if ($option->acceptValue()) {
-                $valueLength = 1 + Helper::strlen($option->getName()); // = + value
+                $valueLength = 1 + Helper::width($option->getName()); // = + value
                 $valueLength += $option->isValueOptional() ? 2 : 0; // [ + ]
 
                 $nameLength += $valueLength;
