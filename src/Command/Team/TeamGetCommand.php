@@ -23,7 +23,7 @@ class TeamGetCommand extends TeamCommandBase
         Table::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $team = $this->validateTeamInput($input);
         if (!$team) {

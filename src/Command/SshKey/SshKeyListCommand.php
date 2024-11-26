@@ -28,7 +28,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $keys = $this->api()->getSshKeys();
 

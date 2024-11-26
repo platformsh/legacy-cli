@@ -41,7 +41,7 @@ class MemCommand extends MetricsCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $timeSpec = $this->validateTimeInput($input);
         if ($timeSpec === false) {

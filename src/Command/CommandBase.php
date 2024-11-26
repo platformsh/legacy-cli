@@ -165,7 +165,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * {@inheritdoc}
      */
-    public function isHidden()
+    public function isHidden(): bool
     {
         return $this->hiddenInList
             || !in_array($this->stability, [self::STABILITY_STABLE, self::STABILITY_BETA])
@@ -677,7 +677,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @return bool
      */
-    public function isLocal()
+    public function isLocal(): bool
     {
         return $this->local;
     }
@@ -1877,7 +1877,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * Overrides the default method so that the description is not repeated
      * twice.
      */
-    public function getProcessedHelp()
+    public function getProcessedHelp(): string
     {
         $help = $this->getHelp();
         if ($help === '') {
@@ -2012,7 +2012,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * {@inheritdoc}
      */
-    public function getSynopsis($short = false)
+    public function getSynopsis($short = false): string
     {
         $key = $short ? 'short' : 'long';
 
@@ -2059,7 +2059,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * {@inheritdoc}
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->isCommandEnabled($this->getName());
     }
@@ -2075,13 +2075,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         $prefix = $this->config()->get('application.env_prefix');
 
-        return "To authenticate non-interactively, configure an API token using the <$tag>${prefix}TOKEN</$tag> environment variable.";
+        return "To authenticate non-interactively, configure an API token using the <$tag>{$prefix}TOKEN</$tag> environment variable.";
     }
 
     /**
      * {@inheritDoc}
      */
-    public function getDescription() {
+    public function getDescription(): string {
         $description = parent::getDescription();
 
         if ($this->stability !== self::STABILITY_STABLE) {

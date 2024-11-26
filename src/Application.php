@@ -63,7 +63,7 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    protected function getDefaultInputDefinition()
+    protected function getDefaultInputDefinition(): InputDefinition
     {
         return new InputDefinition([
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
@@ -88,7 +88,7 @@ class Application extends ParentApplication
     /**
      * @inheritdoc
      */
-    protected function getDefaultCommands()
+    protected function getDefaultCommands(): array
     {
         // Override the default commands to add a custom HelpCommand and
         // ListCommand.
@@ -295,7 +295,7 @@ class Application extends ParentApplication
     /**
      * @inheritdoc
      */
-    public function getHelp()
+    public function getHelp(): string
     {
         $messages = [
             $this->getLongVersion(),
@@ -319,7 +319,7 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    protected function configureIO(InputInterface $input, OutputInterface $output)
+    protected function configureIO(InputInterface $input, OutputInterface $output): void
     {
         // Allow the NO_COLOR, CLICOLOR_FORCE, and TERM environment variables to
         // override whether colors are used in the output.
@@ -414,7 +414,7 @@ class Application extends ParentApplication
     /**
      * {@inheritdoc}
      */
-    protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output)
+    protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output): int
     {
         $this->setCurrentCommand($command);
         if ($command instanceof MultiAwareInterface) {

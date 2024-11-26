@@ -20,7 +20,7 @@ class VerifyPhoneNumberCommand extends CommandBase
             ->setDescription('Verify your phone number interactively');
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         if (!$this->config()->getWithDefault('api.user_verification', false)) {
             return false;
@@ -28,7 +28,7 @@ class VerifyPhoneNumberCommand extends CommandBase
         return parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive use of this command is not supported.');

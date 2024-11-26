@@ -24,7 +24,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $id = $input->getArgument('id');
         if (empty($id) && $input->isInteractive()) {

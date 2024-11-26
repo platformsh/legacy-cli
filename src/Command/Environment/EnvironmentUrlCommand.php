@@ -28,7 +28,7 @@ class EnvironmentUrlCommand extends CommandBase
         $this->addExample('Print the primary route URL', '--primary --pipe');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config()->get('service.env_prefix');

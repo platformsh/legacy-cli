@@ -36,7 +36,7 @@ class ProjectInfoCommand extends CommandBase
         $this->setHiddenAliases(['project:metadata']);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
 

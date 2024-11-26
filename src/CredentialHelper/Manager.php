@@ -26,7 +26,7 @@ class Manager {
      *
      * @return bool
      */
-    public function isSupported() {
+    public function isSupported(): bool {
         if ($this->config->getWithDefault('api.disable_credential_helpers', false)) {
             return false;
         }
@@ -43,7 +43,7 @@ class Manager {
      *
      * @return bool
      */
-    public function isInstalled() {
+    public function isInstalled(): bool {
         if (self::$isInstalled) {
             return true;
         }

@@ -30,7 +30,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         $this->addExample('Set the remote environment for this branch to "pr-655"', 'pr-655');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->getCurrentProject();
         if (!$project) {

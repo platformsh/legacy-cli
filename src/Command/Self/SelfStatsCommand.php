@@ -27,12 +27,12 @@ class SelfStatsCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->has('application.github_repo');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $repo = $this->config()->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));

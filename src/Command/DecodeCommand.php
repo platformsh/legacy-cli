@@ -27,7 +27,7 @@ class DecodeCommand extends CommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $variable = $input->getArgument('value');
         if (trim($variable) === '') {

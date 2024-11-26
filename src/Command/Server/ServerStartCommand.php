@@ -26,12 +26,12 @@ class ServerStartCommand extends ServerCommandBase
         Url::configureInput($this->getDefinition());
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return ProcessManager::supported() && parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {

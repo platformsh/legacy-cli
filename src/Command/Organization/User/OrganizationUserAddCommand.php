@@ -20,7 +20,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
             ->addPermissionOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->validateOrganizationInput($input, 'create-member');
 
@@ -147,6 +147,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
                     return 0;
             }
         }
+        return 0;
     }
 
     /**

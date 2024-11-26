@@ -58,7 +58,7 @@ EOF;
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $host = $this->selectHost($input, getenv($this->config()->get('service.env_prefix') . 'APPLICATION'));
         /** @var \Platformsh\Cli\Service\Mount $mountService */

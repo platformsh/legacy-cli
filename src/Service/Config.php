@@ -269,7 +269,7 @@ class Config
      *
      * @return bool
      */
-    public function isSessionIdFromEnv()
+    public function isSessionIdFromEnv(): bool
     {
         $sessionId = $this->getSessionId();
         return $sessionId !== 'default' && $sessionId === $this->getEnv('SESSION_ID');
@@ -607,7 +607,7 @@ class Config
      *
      * @return bool
      */
-    public function isWrapped()
+    public function isWrapped(): bool
     {
         return getenv($this->get('application.env_prefix') . 'WRAPPED') === '1';
     }

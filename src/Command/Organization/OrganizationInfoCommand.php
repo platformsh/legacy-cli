@@ -29,7 +29,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             ->addExample('Change the organization label', '--org acme label "ACME Inc."');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $property = $input->getArgument('property');
         $value = $input->getArgument('value');

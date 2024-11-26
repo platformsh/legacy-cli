@@ -39,7 +39,7 @@ class LocalCleanCommand extends CommandBase
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {
@@ -71,5 +71,6 @@ class LocalCleanCommand extends CommandBase
         if ($archivesResult[0]) {
             $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
+        return 0;
     }
 }

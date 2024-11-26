@@ -50,7 +50,7 @@ EOF
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Select the current project, deliberately ignoring the 'environment'
         // argument and option, as those will be processed separately.
