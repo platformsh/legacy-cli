@@ -131,7 +131,11 @@ class Shell
      */
     private function setupProcess($args, $dir = null, array $env = [], $timeout = 3600, $input = null)
     {
-        $process = new Process($args, null, null, $input, $timeout);
+        if (is_string($args)) {
+            $process = Process::fromShellCommandline($args, null, null, $input, $timeout);
+        } else {
+            $process = new Process($args, null, null, $input, $timeout);
+        }
 
         if ($timeout === null) {
             set_time_limit(0);
