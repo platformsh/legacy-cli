@@ -56,7 +56,7 @@ END_HELP;
         ]);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Ensure login before presenting the form.
         $client = $this->api()->getClient();

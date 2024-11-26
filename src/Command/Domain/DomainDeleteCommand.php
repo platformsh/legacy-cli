@@ -27,7 +27,7 @@ class DomainDeleteCommand extends DomainCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input, true);
 

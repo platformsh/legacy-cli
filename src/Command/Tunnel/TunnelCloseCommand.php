@@ -18,7 +18,7 @@ class TunnelCloseCommand extends TunnelCommandBase
         $this->addAppOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $tunnels = $this->getTunnelInfo();
         $allTunnelsCount = count($tunnels);

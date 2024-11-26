@@ -40,7 +40,7 @@ class Certifier
      *
      * @return bool
      */
-    public function isAutoLoadEnabled()
+    public function isAutoLoadEnabled(): bool
     {
         return !self::$disableAutoLoad && $this->config->getWithDefault('ssh.auto_load_cert', false);
     }

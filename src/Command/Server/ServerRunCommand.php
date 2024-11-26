@@ -25,7 +25,7 @@ class ServerRunCommand extends ServerCommandBase
         Url::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
         if (!$projectRoot) {

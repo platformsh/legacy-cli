@@ -18,7 +18,7 @@ class WelcomeCommand extends CommandBase
             ->setDescription('Welcome to ' . $this->config()->get('service.name'));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->stdErr->writeln("Welcome to " . $this->config()->get('service.name') . "!\n");
 
@@ -48,6 +48,7 @@ class WelcomeCommand extends CommandBase
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln("To view all commands, run: <info>$executable list</info>");
+        return 0;
     }
 
     /**

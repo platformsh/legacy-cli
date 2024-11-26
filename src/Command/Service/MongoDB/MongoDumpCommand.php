@@ -30,7 +30,7 @@ class MongoDumpCommand extends CommandBase
             ->addAppOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectRoot = $this->getProjectRoot();
 

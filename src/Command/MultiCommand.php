@@ -34,7 +34,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $commandArgs = ArrayArgument::getArgument($input,'cmd');
         $commandName = reset($commandArgs);

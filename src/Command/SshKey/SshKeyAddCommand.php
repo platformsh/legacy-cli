@@ -22,7 +22,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');

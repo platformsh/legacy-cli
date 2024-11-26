@@ -31,7 +31,7 @@ class TunnelListCommand extends TunnelCommandBase
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $tunnels = $this->getTunnelInfo();
         $allTunnelsCount = count($tunnels);

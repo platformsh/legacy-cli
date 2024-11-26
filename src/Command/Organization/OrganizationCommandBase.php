@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class OrganizationCommandBase extends CommandBase
 {
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         if (!$this->config()->getWithDefault('api.organizations', false)) {
             return false;

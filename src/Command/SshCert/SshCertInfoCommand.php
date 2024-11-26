@@ -21,7 +21,7 @@ class SshCertInfoCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Initialize the API service to ensure event listeners etc.
         $this->api();

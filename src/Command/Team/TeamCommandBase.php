@@ -14,7 +14,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 class TeamCommandBase extends CommandBase
 {
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->get('api.teams')
             && $this->config()->get('api.centralized_permissions')

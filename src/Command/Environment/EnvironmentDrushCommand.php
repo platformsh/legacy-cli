@@ -31,7 +31,7 @@ class EnvironmentDrushCommand extends CommandBase
         $this->addExample('Alternative syntax (quoting the whole command)', "'user-login --mail=name@example.com'");
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         if (parent::isHidden()) {
             return true;
@@ -47,7 +47,7 @@ class EnvironmentDrushCommand extends CommandBase
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
 

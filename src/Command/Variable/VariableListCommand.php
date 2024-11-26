@@ -30,7 +30,7 @@ class VariableListCommand extends VariableCommandBase
              ->addEnvironmentOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
 

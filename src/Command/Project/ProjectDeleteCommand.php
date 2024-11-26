@@ -20,7 +20,7 @@ class ProjectDeleteCommand extends CommandBase
         $this->addProjectOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($projectId = $input->getArgument('project')) {
             if ($input->getOption('project')) {

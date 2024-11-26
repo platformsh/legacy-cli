@@ -50,7 +50,7 @@ EOF
         $this->addOption('all', null, InputOption::VALUE_NONE, 'Show all commands, including hidden ones');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $helper = new DescriptorHelper();
         $helper->register('txt', new CustomTextDescriptor());
@@ -66,5 +66,6 @@ EOF
                 'all' => $input->getOption('all'),
             ]
         );
+        return 0;
     }
 }

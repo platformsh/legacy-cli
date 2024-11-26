@@ -27,7 +27,7 @@ class BlueGreenEnableCommand extends CommandBase
         $this->addEnvironmentOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input, false, true);
         $environment = $this->getSelectedEnvironment();

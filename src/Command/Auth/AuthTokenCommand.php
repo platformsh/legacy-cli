@@ -41,7 +41,7 @@ class AuthTokenCommand extends CommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!$input->getOption('no-warn')) {
             $this->stdErr->writeln(

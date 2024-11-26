@@ -31,7 +31,7 @@ class RedisCliCommand extends CommandBase
         $this->addExample('Scan keys matching a pattern', '-- "--scan --pattern \'*-11*\'"');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->runningViaMulti && !$input->getArgument('args')) {
             throw new \RuntimeException('The redis-cli command cannot run as a shell via multi');

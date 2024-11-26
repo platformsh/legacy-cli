@@ -23,13 +23,13 @@ class SelfBuildCommand extends CommandBase
             ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         // You can't build a Phar from another Phar.
         return !extension_loaded('Phar') || !\Phar::running(false);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!file_exists(CLI_ROOT . '/vendor')) {
             $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');

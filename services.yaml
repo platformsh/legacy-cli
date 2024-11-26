@@ -34,7 +34,7 @@ services:
 
     cache:
         class:     '\Doctrine\Common\Cache\CacheProvider'
-        factory:   'cache_factory:createCacheProvider'
+        factory:   ['@cache_factory', 'createCacheProvider']
         arguments: ['@config']
 
     cache_factory:

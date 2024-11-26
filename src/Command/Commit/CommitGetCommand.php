@@ -43,7 +43,7 @@ class CommitGetCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
         $this->validateInput($input, false, true);

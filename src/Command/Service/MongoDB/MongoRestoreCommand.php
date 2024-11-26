@@ -26,7 +26,7 @@ class MongoRestoreCommand extends CommandBase
             ->addAppOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $streams = [STDIN];
         if (!stream_select($streams, $write, $except, 0)) {

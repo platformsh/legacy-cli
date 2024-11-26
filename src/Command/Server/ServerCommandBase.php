@@ -13,7 +13,7 @@ abstract class ServerCommandBase extends CommandBase
     protected $serverInfo;
     protected $local = true;
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->config()->isExperimentEnabled('enable_local_server')
             && parent::isEnabled();
