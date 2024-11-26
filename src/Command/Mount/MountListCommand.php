@@ -8,10 +8,12 @@ use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\RemoteContainer\BrokenEnv;
 use Platformsh\Cli\Model\RemoteContainer\Worker;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'mount:list', description: 'Get a list of mounts', aliases: ['mounts'])]
 class MountListCommand extends CommandBase
 {
     private $tableHeader = ['path' => 'Mount path', 'definition' => 'Definition'];
@@ -22,9 +24,6 @@ class MountListCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('mount:list')
-            ->setAliases(['mounts'])
-            ->setDescription('Get a list of mounts')
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         Table::configureInput($this->getDefinition(), $this->tableHeader);

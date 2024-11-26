@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use variable:delete instead
  */
+#[AsCommand(name: 'project:variable:delete', description: 'Delete a variable from a project')]
 class ProjectVariableDeleteCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -20,9 +22,7 @@ class ProjectVariableDeleteCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('project:variable:delete')
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
-            ->setDescription('Delete a variable from a project');
+            ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use: <info>variable:delete --level project [variable]</info>"

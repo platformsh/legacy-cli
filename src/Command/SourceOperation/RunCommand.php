@@ -6,17 +6,18 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\Variable;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'source-operation:run', description: 'Run a source operation')]
 class RunCommand extends CommandBase
 {
     protected function configure()
     {
-        $this->setName('source-operation:run')
-            ->setDescription('Run a source operation')
+        $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name')
             ->addOption('variable', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'A variable to set during the operation, in the format <info>type:name=value</info>');
 

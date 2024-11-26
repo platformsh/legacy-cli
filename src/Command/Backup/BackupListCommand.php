@@ -5,10 +5,12 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'backup:list', description: 'List available backups of an environment', aliases: ['backups'])]
 class BackupListCommand extends CommandBase
 {
 
@@ -29,9 +31,6 @@ class BackupListCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('backup:list')
-            ->setAliases(['backups'])
-            ->setDescription('List available backups of an environment')
             ->addHiddenOption('limit', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused')
             ->addHiddenOption('start', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);

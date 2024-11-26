@@ -2,19 +2,18 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:update', description: 'Update the CLI to the latest version', aliases: ['update', 'up'])]
 class SelfUpdateCommand extends CommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('self:update')
-            ->setAliases(['update', 'up'])
             ->setHiddenAliases(['self-update'])
-            ->setDescription('Update the CLI to the latest version')
             ->addOption('no-major', null, InputOption::VALUE_NONE, 'Only update between minor or patch versions')
             ->addOption('unstable', null, InputOption::VALUE_NONE, 'Update to a new unstable version, if available')
             ->addOption('manifest', null, InputOption::VALUE_REQUIRED, 'Override the manifest file location')

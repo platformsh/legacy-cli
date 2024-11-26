@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Client\Model\Environment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'domain:delete', description: 'Delete a domain from the project')]
 class DomainDeleteCommand extends DomainCommandBase
 {
     /**
@@ -15,8 +17,6 @@ class DomainDeleteCommand extends DomainCommandBase
     protected function configure()
     {
         $this
-            ->setName('domain:delete')
-            ->setDescription('Delete a domain from the project')
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->addProjectOption()
             ->addEnvironmentOption()

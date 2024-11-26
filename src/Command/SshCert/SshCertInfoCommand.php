@@ -3,10 +3,12 @@ namespace Platformsh\Cli\Command\SshCert;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'ssh-cert:info', description: 'Display information about the current SSH certificate')]
 class SshCertInfoCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -14,8 +16,6 @@ class SshCertInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('ssh-cert:info')
-            ->setDescription('Display information about the current SSH certificate')
             ->addOption('no-refresh', null, InputOption::VALUE_NONE, 'Do not refresh the certificate if it is invalid')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to display');
         PropertyFormatter::configureInput($this->getDefinition());

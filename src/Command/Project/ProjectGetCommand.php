@@ -8,6 +8,7 @@ use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,14 +16,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
+#[AsCommand(name: 'project:get', description: 'Clone a project locally', aliases: ['get'])]
 class ProjectGetCommand extends CommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('project:get')
-            ->setAliases(['get'])
-            ->setDescription('Clone a project locally')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
             ->addArgument('directory', InputArgument::OPTIONAL, 'The directory to clone to. Defaults to the project title')
             ->addOption('environment', 'e', InputOption::VALUE_REQUIRED, "The environment ID to clone. Defaults to the project default, or the first available environment")

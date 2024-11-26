@@ -4,18 +4,19 @@ namespace Platformsh\Cli\Command\BlueGreen;
 
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'blue-green:deploy', description: 'Perform a blue/green deployment')]
 class BlueGreenDeployCommand extends CommandBase
 {
     protected $stability = 'ALPHA';
 
     protected function configure()
     {
-        $this->setName('blue-green:deploy')
-            ->setDescription('Perform a blue/green deployment')
+        $this
             ->addOption('routing-percentage', null, InputOption::VALUE_REQUIRED, "Set the latest version's routing percentage", 100)
             ->setHelp('Use this command to deploy the latest (green) version, or otherwise change its routing percentage, during a blue/green deployment.');
         $this->addProjectOption();

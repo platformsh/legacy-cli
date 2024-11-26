@@ -5,10 +5,12 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Certificate;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'certificate:list', description: 'List project certificates', aliases: ['certificates', 'certs'])]
 class CertificateListCommand extends CommandBase
 {
     private $tableHeader = [
@@ -21,10 +23,6 @@ class CertificateListCommand extends CommandBase
 
     protected function configure()
     {
-        $this
-            ->setName('certificate:list')
-            ->setAliases(['certificates', 'certs'])
-            ->setDescription('List project certificates');
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
         $this->addOption('exclude-domain', null, InputOption::VALUE_REQUIRED, 'Exclude certificates, matching by domain name (case-insensitive search)');
         $this->addOption('issuer', null, InputOption::VALUE_REQUIRED, 'Filter by issuer');

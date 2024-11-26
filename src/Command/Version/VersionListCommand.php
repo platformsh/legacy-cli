@@ -5,18 +5,17 @@ namespace Platformsh\Cli\Command\Version;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'version:list', description: 'List environment versions', aliases: ['versions'])]
 class VersionListCommand extends CommandBase
 {
     protected $stability = 'ALPHA';
 
     protected function configure()
     {
-        $this->setName('version:list')
-            ->setAliases(['versions'])
-            ->setDescription('List environment versions');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         Table::configureInput($this->getDefinition());

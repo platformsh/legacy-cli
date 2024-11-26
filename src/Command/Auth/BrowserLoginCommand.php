@@ -13,25 +13,21 @@ use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Session\SessionInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
+#[AsCommand(name: 'auth:browser-login', description: 'Log in to via a browser', aliases: ['login'])]
 class BrowserLoginCommand extends CommandBase
 {
     protected function configure()
     {
-        $service = $this->config()->get('service.name');
         $applicationName = $this->config()->get('application.name');
 
-        $this->setName('auth:browser-login');
-        if ($this->config()->getWithDefault('application.login_method', 'browser') === 'browser') {
-            $this->setAliases(['login']);
-        }
-
-        $this->setDescription('Log in to ' . $service . ' via a browser')
+        $this
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in')
             ->addOption('method', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Require specific authentication method(s)')
             ->addOption('max-age', null, InputOption::VALUE_REQUIRED, 'The maximum age (in seconds) of the web authentication session');

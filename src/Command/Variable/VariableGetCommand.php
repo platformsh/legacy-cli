@@ -4,11 +4,13 @@ namespace Platformsh\Cli\Command\Variable;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'variable:get', description: 'View a variable', aliases: ['vget'])]
 class VariableGetCommand extends VariableCommandBase
 {
     /**
@@ -17,11 +19,8 @@ class VariableGetCommand extends VariableCommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:get')
-            ->setAliases(['vget'])
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property')
-            ->setDescription('View a variable');
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()

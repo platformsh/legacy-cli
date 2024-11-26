@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\Resources\Build;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:build:get', description: 'View the build resources of a project', aliases: ['build-resources:get', 'build-resources'])]
 class BuildResourcesGetCommand extends CommandBase
 {
     protected $tableHeader = [
@@ -17,9 +19,7 @@ class BuildResourcesGetCommand extends CommandBase
 
     protected function configure()
     {
-        $this->setName('resources:build:get')
-            ->setAliases(['build-resources:get', 'build-resources'])
-            ->setDescription('View the build resources of a project')
+        $this
             ->addProjectOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         if ($this->config()->has('service.resources_help_url')) {

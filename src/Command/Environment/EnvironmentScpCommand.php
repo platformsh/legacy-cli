@@ -5,12 +5,14 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:scp', description: 'Copy files to and from an environment using scp', aliases: ['scp'])]
 class EnvironmentScpCommand extends CommandBase
 {
     /**
@@ -19,11 +21,8 @@ class EnvironmentScpCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:scp')
-            ->setAliases(['scp'])
             ->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
-            ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories')
-            ->setDescription('Copy files to and from an environment using scp');
+            ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories');
         $this->addProjectOption()
             ->addEnvironmentOption()
             ->addRemoteContainerOptions();

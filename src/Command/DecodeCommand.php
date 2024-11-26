@@ -3,11 +3,13 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Util\NestedArrayUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'decode', description: 'Decode a string that was encoded with JSON and Base64')]
 class DecodeCommand extends CommandBase
 {
 
@@ -16,10 +18,8 @@ class DecodeCommand extends CommandBase
         $envPrefix = $this->config()->get('service.env_prefix');
 
         $this
-            ->setName('decode')
-            ->addArgument('value', InputArgument::REQUIRED, 'The variable value to decode')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the variable')
-            ->setDescription(sprintf('Decode an encoded string such as %sVARIABLES', $envPrefix));
+            ->addArgument('value', InputArgument::REQUIRED, 'The value to decode')
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the value');
 
         $this->addExample(
             sprintf('View "foo" in %sVARIABLES', $envPrefix),

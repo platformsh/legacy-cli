@@ -10,10 +10,12 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:list', description: 'List teams', aliases: ['teams'])]
 class TeamListCommand extends TeamCommandBase
 {
     private $tableHeader = [
@@ -33,9 +35,7 @@ class TeamListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this->setName('team:list')
-            ->setAliases(['teams'])
-            ->setDescription('List teams')
+        $this
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A team property to sort by', 'label')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order')

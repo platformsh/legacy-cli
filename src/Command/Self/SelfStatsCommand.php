@@ -6,10 +6,12 @@ use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:stats', description: 'View stats on GitHub package downloads')]
 class SelfStatsCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -19,8 +21,6 @@ class SelfStatsCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('self:stats')
-            ->setDescription('View stats on GitHub package downloads')
             ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Results per page (max: 100)', 20);
         Table::configureInput($this->getDefinition(), $this->tableHeader);

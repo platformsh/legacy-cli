@@ -2,18 +2,17 @@
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'server:list', description: 'List running local project web server(s)', aliases: ['servers'])]
 class ServerListCommand extends ServerCommandBase
 {
     protected function configure()
     {
         $this
-          ->setName('server:list')
-          ->setAliases(['servers'])
-          ->setDescription('List running local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'List all servers');
         Table::configureInput($this->getDefinition());
     }

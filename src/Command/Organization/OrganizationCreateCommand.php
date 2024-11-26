@@ -6,16 +6,16 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:create', description: 'Create a new organization')]
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('organization:create')
-            ->setDescription('Create a new organization');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $serviceName = $this->config()->get('service.name');
         $help = <<<END_HELP

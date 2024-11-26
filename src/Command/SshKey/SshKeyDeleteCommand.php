@@ -1,18 +1,18 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'ssh-key:delete', description: 'Delete an SSH key')]
 class SshKeyDeleteCommand extends SshKeyCommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('ssh-key:delete')
-            ->setDescription('Delete an SSH key')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,

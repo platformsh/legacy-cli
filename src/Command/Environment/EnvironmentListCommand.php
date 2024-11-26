@@ -9,10 +9,12 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:list', description: 'Get a list of environments', aliases: ['environments', 'env'])]
 class EnvironmentListCommand extends CommandBase implements CompletionAwareInterface
 {
     private $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
@@ -33,9 +35,6 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
     protected function configure()
     {
         $this
-            ->setName('environment:list')
-            ->setAliases(['environments', 'env'])
-            ->setDescription('Get a list of environments')
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
             ->addOption('status', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter environments by status (active, inactive, dirty, paused, deleting).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')

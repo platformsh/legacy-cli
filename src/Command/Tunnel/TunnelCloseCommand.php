@@ -1,17 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:close', description: 'Close SSH tunnels')]
 class TunnelCloseCommand extends TunnelCommandBase
 {
     protected function configure()
     {
         $this
-          ->setName('tunnel:close')
-          ->setDescription('Close SSH tunnels')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Close all tunnels');
         $this->addProjectOption();
         $this->addEnvironmentOption();

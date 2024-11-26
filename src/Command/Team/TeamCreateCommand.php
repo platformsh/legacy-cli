@@ -8,19 +8,20 @@ use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
+#[AsCommand(name: 'team:create', description: 'Create a new team')]
 class TeamCreateCommand extends TeamCommandBase
 {
 
     protected function configure()
     {
-        $this->setName('team:create')
-            ->setDescription('Create a new team')
+        $this
             ->addOption('label', null, InputOption::VALUE_REQUIRED, 'The team label')
             ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')
             ->addOption('role', 'r', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, "Set the team's project and environment type roles\n"

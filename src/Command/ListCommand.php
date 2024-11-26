@@ -9,25 +9,25 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'list', description: 'Lists commands')]
 class ListCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('list')
             ->setDefinition([
                 new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name'),
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'),
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, xml, json, or md)', 'txt'),
             ])
-            ->setDescription('Lists commands')
             ->setHelp(<<<'EOF'
 The <info>%command.name%</info> command lists all commands:
 

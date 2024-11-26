@@ -5,11 +5,13 @@ use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:activity:log', description: 'Display the log for an integration activity')]
 class IntegrationActivityLogCommand extends IntegrationCommandBase
 {
     /**
@@ -18,11 +20,9 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:activity:log')
             ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
-            ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->setDescription('Display the log for an integration activity');
+            ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addProjectOption();
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');

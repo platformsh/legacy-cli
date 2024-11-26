@@ -4,10 +4,12 @@ namespace Platformsh\Cli\Command\App;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'app:list', description: 'List apps in the project', aliases: ['apps'])]
 class AppListCommand extends CommandBase
 {
     private $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
@@ -18,9 +20,7 @@ class AppListCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->setName('app:list')
-            ->setAliases(['apps'])
-            ->setDescription('List apps in the project')
+        $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of app names only');
         $this->addProjectOption()

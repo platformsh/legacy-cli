@@ -7,20 +7,20 @@ use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'db:sql', description: 'Run SQL on the remote database', aliases: ['sql'])]
 class DbSqlCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $this->setName('db:sql')
-            ->setAliases(['sql'])
-            ->setDescription('Run SQL on the remote database')
+        $this
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to use. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');

@@ -2,11 +2,13 @@
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:build', description: 'Build a new package of the CLI')]
 class SelfBuildCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -15,8 +17,6 @@ class SelfBuildCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('self:build')
-            ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
             ->addOption('replace-version', null, InputOption::VALUE_OPTIONAL, 'Replace the version number in config.yaml')

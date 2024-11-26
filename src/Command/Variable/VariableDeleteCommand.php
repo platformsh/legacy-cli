@@ -2,10 +2,12 @@
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Client\Model\Variable;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'variable:delete', description: 'Delete a variable')]
 class VariableDeleteCommand extends VariableCommandBase
 {
     /**
@@ -14,9 +16,7 @@ class VariableDeleteCommand extends VariableCommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:delete')
-            ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
-            ->setDescription('Delete a variable');
+            ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
         $this->addLevelOption();
         $this->addProjectOption()
              ->addEnvironmentOption()

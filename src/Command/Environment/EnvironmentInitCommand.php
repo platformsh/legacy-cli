@@ -2,11 +2,13 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:init', description: 'Initialize an environment from a public Git repository')]
 class EnvironmentInitCommand extends CommandBase
 {
     /**
@@ -15,8 +17,6 @@ class EnvironmentInitCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:init')
-            ->setDescription('Initialize an environment from a public Git repository')
             ->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
 

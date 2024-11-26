@@ -2,9 +2,11 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:pause', description: 'Pause an environment')]
 class EnvironmentPauseCommand extends CommandBase
 {
 
@@ -16,9 +18,6 @@ EOF;
 
     protected function configure()
     {
-        $this
-            ->setName('environment:pause')
-            ->setDescription('Pause an environment');
         $this->addProjectOption()
             ->addEnvironmentOption();
         $this->addWaitOptions();

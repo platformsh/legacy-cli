@@ -2,19 +2,18 @@
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
+#[AsCommand(name: 'project:set-remote', description: 'Set the remote project for the current Git repository', aliases: ['set-remote'])]
 class ProjectSetRemoteCommand extends CommandBase
 {
     protected function configure()
     {
         $this
-            ->setName('project:set-remote')
-            ->setAliases(['set-remote'])
-            ->setDescription('Set the remote project for the current Git repository')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->addExample('Set the remote project for this repository to "abcdef123456"', 'abcdef123456');
         $this->addExample('Unset the remote project for this repository', '-');

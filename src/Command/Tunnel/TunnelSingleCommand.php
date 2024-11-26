@@ -5,10 +5,12 @@ use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Util\PortUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:single', description: 'Open a single SSH tunnel to an app relationship')]
 class TunnelSingleCommand extends TunnelCommandBase
 {
     /**
@@ -17,8 +19,6 @@ class TunnelSingleCommand extends TunnelCommandBase
     protected function configure()
     {
         $this
-            ->setName('tunnel:single')
-            ->setDescription('Open a single SSH tunnel to an app relationship')
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
         $this->addProjectOption();

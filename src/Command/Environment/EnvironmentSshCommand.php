@@ -5,12 +5,14 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:ssh', description: 'SSH to the current environment', aliases: ['ssh'])]
 class EnvironmentSshCommand extends CommandBase
 {
     /**
@@ -19,13 +21,10 @@ class EnvironmentSshCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('environment:ssh')
-            ->setAliases(['ssh'])
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to run on the environment.')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
-            ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH')
-            ->setDescription('SSH to the current environment');
+            ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH');
         $this->addProjectOption()
              ->addEnvironmentOption()
              ->addRemoteContainerOptions();

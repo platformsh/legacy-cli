@@ -9,11 +9,13 @@ use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Deployment\Service;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'db:size', description: 'Estimate the disk usage of a database')]
 class DbSizeCommand extends CommandBase
 {
 
@@ -30,8 +32,7 @@ class DbSizeCommand extends CommandBase
      * {@inheritDoc}
      */
     protected function configure() {
-        $this->setName('db:size')
-            ->setDescription('Estimate the disk usage of a database')
+        $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
         $help = self::ESTIMATE_WARNING;

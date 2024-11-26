@@ -3,19 +3,19 @@ namespace Platformsh\Cli\Command\Project;
 
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:delete', description: 'Delete a project')]
 class ProjectDeleteCommand extends CommandBase
 {
 
     protected function configure()
     {
         $this
-            ->setName('project:delete')
-            ->setDescription('Delete a project')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->addProjectOption();
     }

@@ -6,11 +6,13 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:info', description: 'Read or set properties for a project')]
 class ProjectInfoCommand extends CommandBase
 {
     /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
@@ -22,11 +24,9 @@ class ProjectInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('project:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-            ->setDescription('Read or set properties for a project');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->addProjectOption()->addWaitOptions();

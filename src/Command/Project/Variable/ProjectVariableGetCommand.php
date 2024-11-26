@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -11,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use variable:get and variable:list instead
  */
+#[AsCommand(name: 'project:variable:get', description: 'View variable(s) for a project', aliases: ['project-variables', 'pvget'])]
 class ProjectVariableGetCommand extends CommandBase
 {
     protected $hiddenInList = true;
@@ -22,11 +24,8 @@ class ProjectVariableGetCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('project:variable:get')
-            ->setAliases(['project-variables', 'pvget'])
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
-            ->setDescription('View variable(s) for a project');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>"
