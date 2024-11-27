@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentMergeCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -40,12 +48,12 @@ class EnvironmentMergeCommand extends CommandBase
             ));
 
             if ($selectedEnvironment->getProperty('has_remote', false) === true
-                && ($integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject()))
+                && ($integration = $this->api->getCodeSourceIntegration($this->getSelectedProject()))
                 && $integration->getProperty('fetch_branches', false) === true) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf("The project's code is managed externally through its <info>%s</info> integration.", $integration->type));
-                if ($this->config()->isCommandEnabled('integration:get')) {
-                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                if ($this->config->isCommandEnabled('integration:get')) {
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
                 }
             } elseif ($selectedEnvironment->parent === null) {
                 $this->stdErr->writeln('');
@@ -71,8 +79,7 @@ class EnvironmentMergeCommand extends CommandBase
             $environmentId,
             $parentId
         );
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
@@ -83,7 +90,7 @@ class EnvironmentMergeCommand extends CommandBase
             $parentId
         ));
 
-        $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+        $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
         $params = [];
         if ($resourcesInit !== null) {
@@ -92,8 +99,7 @@ class EnvironmentMergeCommand extends CommandBase
 
         $result = $selectedEnvironment->runOperation('merge', 'POST', $params);
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;

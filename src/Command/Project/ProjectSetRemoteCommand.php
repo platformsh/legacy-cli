@@ -1,6 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use PhpParser\Node\Identifier;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,6 +17,10 @@ use Symfony\Component\Filesystem\Filesystem;
 #[AsCommand(name: 'project:set-remote', description: 'Set the remote project for the current Git repository', aliases: ['set-remote'])]
 class ProjectSetRemoteCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly \Platformsh\Cli\Service\Filesystem $filesystem, private readonly Git $git, private readonly Identifier $identifier, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -30,13 +40,12 @@ class ProjectSetRemoteCommand extends CommandBase
 
         if ($projectId) {
             /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
+            $identifier = $this->identifier;
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        $git = $this->git;
         $root = $git->getRoot(getcwd());
         if ($root === false) {
             $this->stdErr->writeln(
@@ -48,21 +57,18 @@ class ProjectSetRemoteCommand extends CommandBase
 
         $this->debug('Git repository found: ' . $root);
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        $questionHelper = $this->questionHelper;
+        $localProject = $this->localProject;
+        $fs = $this->filesystem;
 
         if ($unset) {
-            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config()->get('local.project_config');
+            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->get('local.project_config');
             if (!\file_exists($configFilename)) {
                 $configFilename = null;
             }
             $git->ensureInstalled();
             $gitRemotes = [];
-            foreach ([$this->config()->get('detection.git_remote_name'), 'origin'] as $remote) {
+            foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
                 $url = $git->getConfig(sprintf('remote.%s.url', $remote));
                 if (\is_string($url) && $localProject->parseGitUrl($url) !== false) {
                     $gitRemotes[$remote] = $url;
@@ -102,7 +108,7 @@ class ProjectSetRemoteCommand extends CommandBase
         if ($currentProject) {
             $this->stdErr->writeln(sprintf(
                 'This repository is already linked to the remote project: %s',
-                $this->api()->getProjectLabel($currentProject, 'comment')
+                $this->api->getProjectLabel($currentProject, 'comment')
             ));
             if (!$questionHelper->confirm('Are you sure you want to change it?')) {
                 return 1;
@@ -121,21 +127,21 @@ class ProjectSetRemoteCommand extends CommandBase
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
                 'The remote project for this repository is already set as: %s',
-                $this->api()->getProjectLabel($currentProject)
+                $this->api->getProjectLabel($currentProject)
             ));
 
             return 0;
         } elseif ($currentProject) {
             $this->stdErr->writeln(sprintf(
                 'Changing the remote project for this repository from %s to %s',
-                $this->api()->getProjectLabel($currentProject),
-                $this->api()->getProjectLabel($project)
+                $this->api->getProjectLabel($currentProject),
+                $this->api->getProjectLabel($project)
             ));
             $this->stdErr->writeln('');
         } else {
             $this->stdErr->writeln(sprintf(
                 'Setting the remote project for this repository to: %s',
-                $this->api()->getProjectLabel($project)
+                $this->api->getProjectLabel($project)
             ));
             $this->stdErr->writeln('');
         }
@@ -144,12 +150,12 @@ class ProjectSetRemoteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf(
             'The remote project for this repository is now set to: %s',
-            $this->api()->getProjectLabel($project)
+            $this->api->getProjectLabel($project)
         ));
 
         if ($input->isInteractive()) {
             $currentBranch = $git->getCurrentBranch($root);
-            $currentEnvironment = $currentBranch ? $this->api()->getEnvironment($currentBranch, $project) : false;
+            $currentEnvironment = $currentBranch ? $this->api->getEnvironment($currentBranch, $project) : false;
             if ($currentBranch !== false && $currentEnvironment && $currentEnvironment->has_code) {
                 $headSha = $git->execute(['rev-parse', '--verify', 'HEAD'], $root);
                 if ($currentEnvironment->head_commit === $headSha) {

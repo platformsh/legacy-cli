@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Cocur\Slugify\Slugify;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Field\Field;
@@ -14,10 +17,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $serviceName = $this->config()->get('service.name');
+        $serviceName = $this->config->get('service.name');
         $help = <<<END_HELP
 Organizations allow you to manage your $serviceName projects, users and billing. Projects are owned by organizations.
 
@@ -46,7 +53,7 @@ END_HELP;
                 'options' => $countryList,
                 'asChoice' => false,
                 'defaultCallback' => function () {
-                    return $this->api()->getUser()->country ?: null;
+                    return $this->api->getUser()->country ?: null;
                 },
                 'normalizer' => function ($value) { return $this->normalizeCountryCode($value); },
                 'validator' => function ($countryCode) use ($countryList) {
@@ -59,10 +66,9 @@ END_HELP;
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Ensure login before presenting the form.
-        $client = $this->api()->getClient();
+        $client = $this->api->getClient();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $form = $this->getForm();
         if (($name = $input->getOption('name')) && $input->getOption('label') === null) {
             $form->getField('label')->set('default', \ucfirst($name));
@@ -83,7 +89,7 @@ END_HELP;
             throw $e;
         }
 
-        $this->stdErr->writeln(sprintf('Created organization %s', $this->api()->getOrganizationLabel($organization)));
+        $this->stdErr->writeln(sprintf('Created organization %s', $this->api->getOrganizationLabel($organization)));
 
         $this->runOtherCommand('organization:info', ['--org' => $organization->name], $this->stdErr);
 

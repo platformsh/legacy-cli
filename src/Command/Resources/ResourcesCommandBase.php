@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -16,11 +18,17 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class ResourcesCommandBase extends CommandBase
 {
+    private readonly Config $config;
     private static $cachedNextDeployment = [];
+    #[Required]
+    public function autowire(Config $config) : void
+    {
+        $this->config = $config;
+    }
 
     public function isHidden(): bool
     {
-        return !$this->config()->get('api.sizing') || parent::isHidden();
+        return !$this->config->get('api.sizing') || parent::isHidden();
     }
 
     /**

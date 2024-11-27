@@ -1,6 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\SshCert;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\SshCert\Certifier;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\SshConfig;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\SshCert\Certificate;
@@ -12,6 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'ssh-cert:load', description: 'Generate an SSH certificate')]
 class SshCertLoadCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Certifier $certifier, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly SshConfig $sshConfig)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -19,8 +29,8 @@ class SshCertLoadCommand extends CommandBase
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
             ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force a new key pair to be generated');
         $help = 'This command checks if a valid SSH certificate is present, and generates a new one if necessary.';
-        if ($this->config()->getWithDefault('ssh.auto_load_cert', false)) {
-            $envPrefix = $this->config()->get('application.env_prefix');
+        if ($this->config->getWithDefault('ssh.auto_load_cert', false)) {
+            $envPrefix = $this->config->get('application.env_prefix');
             $help .= "\n\nCertificates allow you to make SSH connections without having previously uploaded a public key. They are more secure than keys and they allow for other features."
                 . "\n\nNormally the certificate is loaded automatically during login, or when making an SSH connection. So this command is seldom needed."
                 . "\n\nIf you want to set up certificates without login and without an SSH-related command, for example if you are writing a script that uses an API token via an environment variable, then you would probably want to run this command explicitly."
@@ -34,10 +44,9 @@ class SshCertLoadCommand extends CommandBase
         $this->warnAboutDeprecatedOptions(['new-key'], 'The --new-key option is deprecated. Use --new instead.');
 
         // Initialize the API service to ensure event listeners etc.
-        $this->api();
+        $this->api;
 
-        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
-        $certifier = $this->getService('certifier');
+        $certifier = $this->certifier;
 
         $sshCert = $certifier->getExistingCertificate();
 
@@ -64,8 +73,7 @@ class SshCertLoadCommand extends CommandBase
             $refresh = false;
         }
 
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
+        $sshConfig = $this->sshConfig;
 
         if ($refresh) {
             if (!$sshConfig->checkRequiredVersion()) {
@@ -87,8 +95,7 @@ class SshCertLoadCommand extends CommandBase
         $sshConfig->configureHostKeys();
         $hasSessionConfig = $sshConfig->configureSessionSsh();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $success = !$hasSessionConfig || $sshConfig->addUserSshConfig($questionHelper);
 
         return $success ? 0 : 1;
@@ -97,8 +104,7 @@ class SshCertLoadCommand extends CommandBase
     private function displayCertificate(Certificate $cert)
     {
         $validBefore = $cert->metadata()->getValidBefore();
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         $expires = $formatter->formatUnixTimestamp($validBefore);
         $expiresWithColor = $validBefore > time() ? '<fg=green>' . $expires . '</>' : $expires;
         $mfaWithColor = $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified';

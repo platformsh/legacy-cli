@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,6 +15,10 @@ class AuthTokenCommand extends CommandBase
     const RFC6750_PREFIX = 'Authorization: Bearer ';
 
     protected $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Config $config)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -26,8 +32,8 @@ class AuthTokenCommand extends CommandBase
             . "\n\n" . 'Using this command is not generally recommended, as it increases the chance of the token being leaked.'
             . ' Take care not to expose the token in a shared program or system, or to send the token to the wrong API domain.'
         );
-        $executable = $this->config()->get('application.executable');
-        $apiUrl = $this->config()->getApiUrl();
+        $executable = $this->config->get('application.executable');
+        $apiUrl = $this->config->getApiUrl();
         $examples = [
             'Print the payload for JWT-formatted tokens' => \sprintf('%s auth:token -W | cut -d. -f2 | base64 -d', $executable),
             'Use the token in a curl command' => \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim($apiUrl, '/')),
@@ -47,7 +53,7 @@ class AuthTokenCommand extends CommandBase
             );
         }
 
-        $token = $this->api()->getAccessToken();
+        $token = $this->api->getAccessToken();
 
         $output->write($input->getOption('header') ? self::RFC6750_PREFIX . $token : $token);
 

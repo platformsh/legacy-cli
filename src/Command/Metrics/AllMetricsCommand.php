@@ -44,6 +44,10 @@ class AllMetricsCommand extends MetricsCommandBase
     ];
 
     private $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -75,8 +79,7 @@ class AllMetricsCommand extends MetricsCommandBase
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input, false, true);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
@@ -121,8 +124,7 @@ class AllMetricsCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),

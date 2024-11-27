@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
@@ -12,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:config-get', description: 'View the configuration of an app')]
 class AppConfigGetCommand extends CommandBase
 {
+    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -32,7 +38,7 @@ class AppConfigGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_APPLICATION.
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'APPLICATION') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading application config from environment variable ' . $prefix . 'APPLICATION');
             $decoded = json_decode(base64_decode(getenv($prefix . 'APPLICATION'), true), true);
@@ -49,8 +55,7 @@ class AppConfigGetCommand extends CommandBase
                 ->getConfig();
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
         return 0;
     }

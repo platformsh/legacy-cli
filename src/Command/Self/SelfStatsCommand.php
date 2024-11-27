@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Client;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
@@ -17,6 +18,10 @@ class SelfStatsCommand extends CommandBase
     protected $hiddenInList = true;
 
     private $tableHeader = ['Release', 'Date', 'Asset', 'Downloads'];
+    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -29,12 +34,12 @@ class SelfStatsCommand extends CommandBase
 
     public function isEnabled(): bool
     {
-        return $this->config()->has('application.github_repo');
+        return $this->config->has('application.github_repo');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $repo = $this->config()->get('application.github_repo');
+        $repo = $this->config->get('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
         $response = (new Client())
             ->get('https://api.github.com/repos/' . $repoUrl . '/releases', [
@@ -54,10 +59,8 @@ class SelfStatsCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($releases as $release) {
             $row = [];

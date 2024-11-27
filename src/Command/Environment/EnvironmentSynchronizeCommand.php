@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
@@ -17,9 +21,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        if ($this->config()->get('api.sizing')) {
+        if ($this->config->get('api.sizing')) {
             $this;
             $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'List what to synchronize: "code", "data", and/or "resources".');
         } else {
@@ -44,7 +52,7 @@ Synchronizing "data" means that all files in all services (including
 static files, databases, logs, search indices, etc.) will be copied from the
 parent to the child.
 EOT;
-        if ($this->config()->get('api.sizing')) {
+        if ($this->config->get('api.sizing')) {
             $help .= "\n\n" . <<<EOT
 Synchronizing "resources" means that the parent environment's resource sizes
 will be used for all corresponding apps and services in the child environment.
@@ -76,7 +84,7 @@ EOT;
             } elseif (!$selectedEnvironment->isActive()) {
                 $this->stdErr->writeln('The environment is not active.');
             } else {
-                $parentEnvironment = $this->api()->getEnvironment($parentId, $this->getSelectedProject(), false);
+                $parentEnvironment = $this->api->getEnvironment($parentId, $this->getSelectedProject(), false);
                 if ($parentEnvironment && !$parentEnvironment->isActive()) {
                     $this->stdErr->writeln(sprintf('The parent environment <error>%s</error> is not active.', $parentId));
                 }
@@ -85,21 +93,20 @@ EOT;
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $rebase = (bool) $input->getOption('rebase');
 
         $integrationManagingCode = null;
         if ($selectedEnvironment->getProperty('has_remote', false)) {
-            $integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject());
+            $integration = $this->api->getCodeSourceIntegration($this->getSelectedProject());
             if ($integration && $integration->getProperty('fetch_branches') === true) {
                 $integrationManagingCode = $integration;
             }
         }
 
         if ($synchronize = $input->getArgument('synchronize')) {
-            $validOptions = $this->config()->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
+            $validOptions = $this->config->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
             $toSync = [];
             foreach ($synchronize as $item) {
                 if (!in_array($item, $validOptions)) {
@@ -116,14 +123,14 @@ EOT;
 
             if (in_array('code', $toSync) && $integrationManagingCode) {
                 $this->stdErr->writeln(sprintf("Code cannot be synchronized as it is managed by the project's <error>%s</error> integration.", $integrationManagingCode->type));
-                if ($this->config()->isCommandEnabled('integration:get')) {
+                if ($this->config->isCommandEnabled('integration:get')) {
                     $this->stdErr->writeln('');
-                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integrationManagingCode->id)));
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integrationManagingCode->id)));
                 }
                 return 1;
             }
 
-            if (in_array('resources', $toSync) && !$this->api()->supportsSizingApi($this->getSelectedProject())) {
+            if (in_array('resources', $toSync) && !$this->api->supportsSizingApi($this->getSelectedProject())) {
                 $this->stdErr->writeln('Resources cannot be synchronized as the project does not support flexible resources.');
                 return 1;
             }
@@ -176,7 +183,7 @@ EOT;
 
             $this->stdErr->writeln('');
 
-            if ($this->config()->get('api.sizing') && $this->api()->supportsSizingApi($this->getSelectedProject())) {
+            if ($this->config->get('api.sizing') && $this->api->supportsSizingApi($this->getSelectedProject())) {
                 if ($questionHelper->confirm(
                     "Do you want to synchronize <options=underscore>resources</> from <info>$parentId</info> to <info>$environmentId</info>?",
                     false
@@ -219,8 +226,7 @@ EOT;
             throw $e;
         }
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;
@@ -236,7 +242,7 @@ EOT;
     public function completeArgumentValues($argumentName, CompletionContext $context)
     {
         if ($argumentName === 'synchronize') {
-            return $this->config()->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
+            return $this->config->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
         }
 
         return [];

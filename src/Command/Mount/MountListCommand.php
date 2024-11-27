@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
@@ -17,6 +21,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MountListCommand extends CommandBase
 {
     private $tableHeader = ['path' => 'Mount path', 'definition' => 'Definition'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Mount $mount, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -37,10 +45,9 @@ class MountListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
-        if (($applicationEnv = getenv($this->config()->get('service.env_prefix') . 'APPLICATION'))
-            && !LocalHost::conflictsWithCommandLineOptions($input, $this->config()->get('service.env_prefix'))) {
+        $mountService = $this->mount;
+        if (($applicationEnv = getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
+            && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->debug('Selected host: localhost');
             $config = json_decode(base64_decode($applicationEnv), true) ?: [];
             $mounts = $mountService->mountsFromConfig(new AppConfig($config));
@@ -49,7 +56,7 @@ class MountListCommand extends CommandBase
             if (empty($mounts)) {
                 $this->stdErr->writeln(sprintf(
                     'No mounts found in config variable: <info>%s</info>',
-                    $this->config()->get('service.env_prefix') . 'APPLICATION'
+                    $this->config->get('service.env_prefix') . 'APPLICATION'
                 ));
 
                 return 0;
@@ -62,7 +69,7 @@ class MountListCommand extends CommandBase
             if ($container instanceof BrokenEnv) {
                 $this->stdErr->writeln(sprintf(
                     'Unable to find deployment information for the environment: %s',
-                    $this->api()->getEnvironmentLabel($environment, 'error')
+                    $this->api->getEnvironmentLabel($environment, 'error')
                 ));
                 return 1;
             }
@@ -72,7 +79,7 @@ class MountListCommand extends CommandBase
             if (empty($mounts)) {
                 $this->stdErr->writeln(sprintf(
                     'No mounts found on environment %s, %s <info>%s</info>',
-                    $this->api()->getEnvironmentLabel($environment),
+                    $this->api->getEnvironmentLabel($environment),
                     $appType,
                     $appName
                 ));
@@ -88,17 +95,15 @@ class MountListCommand extends CommandBase
         }
 
         $rows = [];
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         foreach ($mounts as $path => $definition) {
             $rows[] = ['path' => $path, 'definition' => $formatter->format($definition)];
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         if ($this->hasSelectedEnvironment()) {
             $this->stdErr->writeln(sprintf('Mounts on environment %s, %s <info>%s</info>:',
-                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment()),
+                $this->api->getEnvironmentLabel($this->getSelectedEnvironment()),
                 $appType,
                 $appName
             ));

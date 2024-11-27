@@ -2,6 +2,25 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Url;
+use Platformsh\Cli\Service\State;
+use Platformsh\Cli\Service\SshDiagnostics;
+use Platformsh\Cli\Service\SshConfig;
+use Platformsh\Cli\Service\SelfUpdater;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Local\LocalProject;
+use PhpParser\Node\Identifier;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Drush;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\SshCert\Certifier;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
+use Platformsh\Cli\Model\RemoteContainer\BrokenEnv;
+use Platformsh\Cli\Model\RemoteContainer\App;
+use Platformsh\Cli\Model\RemoteContainer\Worker;
+use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
+use Platformsh\Cli\Application;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Self\SelfInstallCommand;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -43,6 +62,21 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 abstract class CommandBase extends Command implements MultiAwareInterface
 {
+    private readonly Url $url;
+    private readonly State $state;
+    private readonly SshDiagnostics $sshDiagnostics;
+    private readonly SshConfig $sshConfig;
+    private readonly Ssh $ssh;
+    private readonly Shell $shell;
+    private readonly SelfUpdater $selfUpdater;
+    private readonly QuestionHelper $questionHelper;
+    private readonly LocalProject $localProject;
+    private readonly Identifier $identifier;
+    private readonly Git $git;
+    private readonly Drush $drush;
+    private readonly Config $config;
+    private readonly Certifier $certifier;
+    private readonly Api $api;
     use HasExamplesTrait;
 
     const STABILITY_STABLE = 'STABLE';
@@ -109,7 +143,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     private static $container;
 
-    /** @var \Platformsh\Cli\Service\Api|null */
+    /** @var Api|null */
     private $api;
     /** @var ?bool */
     private $apiHasListeners;
@@ -161,6 +195,25 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @var array
      */
     private $synopsis = [];
+    #[Required]
+    public function autowire(Api $api, Certifier $certifier, Config $config, Drush $drush, Git $git, Identifier $identifier, LocalProject $localProject, QuestionHelper $questionHelper, SelfUpdater $selfUpdater, Shell $shell, Ssh $ssh, SshConfig $sshConfig, SshDiagnostics $sshDiagnostics, State $state, Url $url) : void
+    {
+        $this->api = $api;
+        $this->certifier = $certifier;
+        $this->config = $config;
+        $this->drush = $drush;
+        $this->git = $git;
+        $this->identifier = $identifier;
+        $this->localProject = $localProject;
+        $this->questionHelper = $questionHelper;
+        $this->selfUpdater = $selfUpdater;
+        $this->shell = $shell;
+        $this->ssh = $ssh;
+        $this->sshConfig = $sshConfig;
+        $this->sshDiagnostics = $sshDiagnostics;
+        $this->state = $state;
+        $this->url = $url;
+    }
 
     /**
      * {@inheritdoc}
@@ -169,7 +222,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         return $this->hiddenInList
             || !in_array($this->stability, [self::STABILITY_STABLE, self::STABILITY_BETA])
-            || $this->config()->isCommandHidden($this->getName());
+            || $this->config->isCommandHidden($this->getName());
     }
 
     /**
@@ -192,7 +245,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->promptLegacyMigrate();
 
-        if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config()->get('application.env_prefix') . 'TOKEN') || $this->api()->hasApiToken(false))) {
+        if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config->get('application.env_prefix') . 'TOKEN') || $this->api->hasApiToken(false))) {
             $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
             $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
             $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
@@ -204,18 +257,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Set up the API object.
      *
-     * @return \Platformsh\Cli\Service\Api
+     * @return Api
      */
     protected function api()
     {
         if (!isset($this->api)) {
-            $this->api = $this->getService('api');
+            $this->api = $this->api;
         }
         if (!$this->apiHasListeners && $this->output && $this->input) {
             $this->api
                 ->dispatcher
                 ->addListener('login_required', [$this, 'login']);
-            if ($this->config()->get('application.drush_aliases')) {
+            if ($this->config->get('application.drush_aliases')) {
                 $this->api
                     ->dispatcher
                     ->addListener('environments_changed', [$this, 'updateDrushAliases']);
@@ -232,7 +285,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @return bool
      */
     private function onContainer() {
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         return getenv($envPrefix . 'PROJECT') !== false
             && getenv($envPrefix . 'BRANCH') !== false
             && getenv($envPrefix . 'TREE_ID') !== false;
@@ -249,8 +302,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     private function promptLegacyMigrate()
     {
         static $asked = false;
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
             $asked = true;
 
@@ -267,15 +319,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
             $this->stdErr->writeln(sprintf(
                 'You are in a project using an old file structure, from previous versions of the %s.',
-                $this->config()->get('application.name')
+                $this->config->get('application.name')
             ));
             if ($this->input->isInteractive() && $promptMigrate) {
                 if ($projectRoot && isset($projectConfig)) {
                     $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
                     $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
                 }
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                $questionHelper = $this->questionHelper;
                 if ($questionHelper->confirm('Migrate to the new structure?')) {
                     $code = $this->runOtherCommand('legacy-migrate');
                     exit($code);
@@ -283,7 +334,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Fix this with: <comment>%s legacy-migrate</comment>',
-                    $this->config()->get('application.executable')
+                    $this->config->get('application.executable')
                 ));
             }
             $this->stdErr->writeln('');
@@ -307,7 +358,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->checkUpdates();
         $this->checkSelfInstall();
         // Run migration steps if configured.
-        if ($this->config()->getWithDefault('migrate.prompt', false)) {
+        if ($this->config->getWithDefault('migrate.prompt', false)) {
             $this->promptDeleteOldCli();
             $this->checkMigrateToNewCLI();
         }
@@ -324,7 +375,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
         self::$checkedSelfInstall = true;
 
-        $config = $this->config();
+        $config = $this->config;
 
         // Avoid if disabled.
         if (!$config->getWithDefault('application.prompt_self_install', true)
@@ -343,14 +394,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Stop if already prompted and declined.
-        /** @var \Platformsh\Cli\Service\State $state */
-        $state = $this->getService('state');
+        $state = $this->state;
         if ($state->get('self_install.last_prompted') !== false) {
             return;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $this->stdErr->writeln('CLI resource files can be installed automatically. They provide support for autocompletion and other features.');
         $questionText = 'Do you want to install these files?';
         if (file_exists($config->getUserConfigDir() . DIRECTORY_SEPARATOR . '/shell-config.rc')) {
@@ -398,7 +447,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Check if updates are configured.
-        $config = $this->config();
+        $config = $this->config;
         if (!$config->getWithDefault('updates.check', true)) {
             return;
         }
@@ -408,8 +457,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $embargoTime = $timestamp - (int) $config->getWithDefault('updates.check_interval', 604800);
 
         // Stop if updates were last checked after the embargo time.
-        /** @var \Platformsh\Cli\Service\State $state */
-        $state = $this->getService('state');
+        $state = $this->state;
         if ($state->get('updates.last_checked') > $embargoTime) {
             return;
         }
@@ -423,10 +471,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // update.
         $this->getService('question_helper');
         $this->getService('shell');
-        $currentVersion = $this->config()->getVersion();
+        $currentVersion = $this->config->getVersion();
 
-        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
-        $cliUpdater = $this->getService('self_updater');
+        $cliUpdater = $this->selfUpdater;
         $cliUpdater->setAllowMajor(true);
         $cliUpdater->setTimeout(5);
 
@@ -484,7 +531,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         static $otherPaths;
         if ($otherPaths === null) {
             $thisPath = $this->cliPath();
-            $paths = (new OsUtil())->findExecutables($this->config()->get('application.executable'));
+            $paths = (new OsUtil())->findExecutables($this->config->get('application.executable'));
             $otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath) {
                 $realpath = realpath($p);
                 return $realpath && $realpath !== $thisPath;
@@ -517,7 +564,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Avoid deleting random directories in path
         $legacyDir = dirname(dirname($pharPath));
-        if ($legacyDir !== $this->config()->getUserConfigDir()) {
+        if ($legacyDir !== $this->config->getUserConfigDir()) {
             return;
         }
 
@@ -529,8 +576,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             . "\nThis operation is safe and doesn't delete any data."
             . "\n";
         $this->stdErr->writeln($message);
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if ($questionHelper->confirm('Do you want to remove this file now?')) {
             if (unlink($pharPath)) {
                 $this->stdErr->writeln('File successfully removed! Open a new terminal for the changes to take effect.');
@@ -561,12 +607,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        $config = $this->config();
+        $config = $this->config;
 
         // Prompt the user to migrate at most once every 24 hours.
         $now = time();
         $embargoTime = $now - $config->getWithDefault('migrate.prompt_interval', 60 * 60 * 24);
-        $state = $this->getService('state');
+        $state = $this->state;
         if ($state->get('migrate.last_prompted') > $embargoTime) {
             return;
         }
@@ -603,8 +649,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        $shell = $this->shell;
 
         $originalCommand = $this->input->__toString();
         if (empty($originalCommand)) {
@@ -612,8 +657,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             exit($exitCode);
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $questionText = "\n"
             . 'Original command: <info>' . $originalCommand . '</info>'
             . "\n\n" . 'Continue?';
@@ -637,16 +681,16 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $success = false;
         if ($this->output && $this->input && $this->input->isInteractive()) {
             $sessionAdvice = [];
-            if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
-                $sessionAdvice[] = sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId());
-                if (!$this->config()->isSessionIdFromEnv()) {
-                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config()->get('application.executable'));
+            if ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1) {
+                $sessionAdvice[] = sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId());
+                if (!$this->config->isSessionIdFromEnv()) {
+                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config->get('application.executable'));
                 }
             }
 
-            if ($this->config()->getWithDefault('application.login_method', 'browser') === 'browser') {
-                /** @var \Platformsh\Cli\Service\Url $url */
-                $urlService = $this->getService('url');
+            if ($this->config->getWithDefault('application.login_method', 'browser') === 'browser') {
+                /** @var Url $url */
+                $urlService = $this->url;
                 if ($urlService->canOpenUrls()) {
                     $this->stdErr->writeln($event->getMessage());
                     $this->stdErr->writeln('');
@@ -654,8 +698,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                         $this->stdErr->writeln($sessionAdvice);
                         $this->stdErr->writeln('');
                     }
-                    /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                    $questionHelper = $this->getService('question_helper');
+                    $questionHelper = $this->questionHelper;
                     if ($questionHelper->confirm('Log in via a browser?')) {
                         $this->stdErr->writeln('');
                         $exitCode = $this->runOtherCommand('auth:browser-login', $event->getLoginOptions());
@@ -701,20 +744,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $project = false;
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $config = $localProject->getProjectConfig($projectRoot);
         if ($config) {
             $this->debug('Project "' . $config['id'] . '" is mapped to the current directory');
             try {
-                $project = $this->api()->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+                $project = $this->api->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
             } catch (BadResponseException $e) {
                 if ($suppressErrors && $e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
                     return $this->currentProject = false;
                 }
-                if ($this->config()->has('api.base_url')
+                if ($this->config->has('api.base_url')
                     && $e->getResponse() && $e->getResponse()->getStatusCode() === 401
-                    && parse_url($this->config()->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
+                    && parse_url($this->config->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
                     $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getUri()->getHost());
                     return $this->currentProject = false;
                 }
@@ -752,20 +794,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return false;
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        $git = $this->git;
         $git->setDefaultRepositoryDir($this->getProjectRoot());
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $config = $localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
         if (!empty($config['mapping'])
             && ($currentBranch = $git->getCurrentBranch())
             && !empty($config['mapping'][$currentBranch])) {
-            $environment = $this->api()->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
+            $environment = $this->api->getEnvironment($config['mapping'][$currentBranch], $project, $refresh);
             if ($environment) {
-                $this->debug('Found mapped environment for branch "' . $currentBranch . '": ' . $this->api()->getEnvironmentLabel($environment));
+                $this->debug('Found mapped environment for branch "' . $currentBranch . '": ' . $this->api->getEnvironmentLabel($environment));
                 return $environment;
             } else {
                 unset($config['mapping'][$currentBranch]);
@@ -778,7 +818,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $upstream = $git->getUpstream();
         if ($upstream && strpos($upstream, '/') !== false) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
-            $environment = $this->api()->getEnvironment($potentialEnvironment, $project, $refresh);
+            $environment = $this->api->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
                 $this->debug('Selecting environment "' . $environment->id . '" based on Git upstream: ' . $upstream);
                 return $environment;
@@ -788,12 +828,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // There is no Git remote set. Fall back to trying the current branch
         // name.
         if (!empty($currentBranch) || ($currentBranch = $git->getCurrentBranch())) {
-            $environment = $this->api()->getEnvironment($currentBranch, $project, $refresh);
+            $environment = $this->api->getEnvironment($currentBranch, $project, $refresh);
             if (!$environment) {
                 // Try a sanitized version of the branch name too.
                 $currentBranchSanitized = Environment::sanitizeId($currentBranch);
                 if ($currentBranchSanitized !== $currentBranch) {
-                    $environment = $this->api()->getEnvironment($currentBranchSanitized, $project, $refresh);
+                    $environment = $this->api->getEnvironment($currentBranchSanitized, $project, $refresh);
                 }
             }
             if ($environment) {
@@ -835,8 +875,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!Drupal::isDrupal($projectRoot)) {
             return;
         }
-        /** @var \Platformsh\Cli\Service\Drush $drush */
-        $drush = $this->getService('drush');
+        $drush = $this->drush;
         if ($drush->getVersion() === false) {
             $this->debug('Not updating Drush aliases: the Drush version cannot be determined.');
             return;
@@ -870,8 +909,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         if (!isset(self::$projectRoot)) {
             $this->debug('Finding the project root');
-            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
+            $localProject = $this->localProject;
             self::$projectRoot = $localProject->getProjectRoot();
             $this->debug(
                 self::$projectRoot
@@ -904,7 +942,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->stdErr->writeln([
             '',
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
-            'To redeploy an environment, run: <info>' . $this->config()->get('application.executable') . ' redeploy</info>',
+            'To redeploy an environment, run: <info>' . $this->config->get('application.executable') . ' redeploy</info>',
         ]);
     }
 
@@ -971,7 +1009,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Returns whether we should wait for an operation to complete.
      *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      *
      * @return bool
      */
@@ -984,7 +1022,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return true;
         }
         if ($this->detectRunningInHook()) {
-            $serviceName = $this->config()->get('service.name');
+            $serviceName = $this->config->get('service.name');
             $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
                 . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
                 . "\n";
@@ -1003,7 +1041,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function detectRunningInHook()
     {
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
             && basename(getenv('SHELL')) === 'dash'
             && !$this->isTerminal(STDIN)) {
@@ -1035,7 +1073,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function isWrapped()
     {
-        return $this->config()->isWrapped();
+        return $this->config->isWrapped();
     }
 
     /**
@@ -1050,7 +1088,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function selectProject($projectId = null, $host = null, $detectCurrent = true)
     {
         if (!empty($projectId)) {
-            $this->project = $this->api()->getProject($projectId, $host);
+            $this->project = $this->api->getProject($projectId, $host);
             if (!$this->project) {
                 throw new ConsoleInvalidArgumentException($this->getProjectNotFoundMessage($projectId));
             }
@@ -1060,7 +1098,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $this->project = $detectCurrent ? $this->getCurrentProject() : false;
         if (!$this->project && isset($this->input) && $this->input->isInteractive()) {
-            $myProjects = $this->api()->getMyProjects();
+            $myProjects = $this->api->getMyProjects();
             if (count($myProjects) > 0) {
                 $this->debug('No project specified: offering a choice...');
                 $projectId = $this->offerProjectChoice($myProjects);
@@ -1092,7 +1130,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     private function getProjectNotFoundMessage($projectId)
     {
         $message = 'Specified project not found: ' . $projectId;
-        if ($projectInfos = $this->api()->getMyProjects()) {
+        if ($projectInfos = $this->api->getMyProjects()) {
             $message .= "\n\nYour projects are:";
             $limit = 8;
             foreach (array_slice($projectInfos, 0, $limit) as $info) {
@@ -1103,7 +1141,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (count($projectInfos) > $limit) {
                 $message .= "\n    ...";
-                $message .= "\n\n    List projects with: " . $this->config()->get('application.executable') . ' projects';
+                $message .= "\n\n    List projects with: " . $this->config->get('application.executable') . ' projects';
             }
         }
 
@@ -1157,7 +1195,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function selectEnvironment($environmentId = null, $required = true, $selectDefaultEnv = false, $detectCurrentEnv = true, $filter = null)
     {
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
             $environmentId = getenv($envPrefix . 'BRANCH');
             $this->stdErr->writeln(sprintf(
@@ -1170,18 +1208,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($environmentId !== null) {
             if ($environmentId === self::DEFAULT_ENVIRONMENT_CODE) {
                 $this->stdErr->writeln(sprintf('Selecting default environment (indicated by <info>%s</info>)', $environmentId));
-                $environments = $this->api()->getEnvironments($this->project);
-                $environment = $this->api()->getDefaultEnvironment($environments, $this->project, true);
+                $environments = $this->api->getEnvironments($this->project);
+                $environment = $this->api->getDefaultEnvironment($environments, $this->project, true);
                 if (!$environment) {
                     throw new \RuntimeException('Default environment not found');
                 }
-                $this->stdErr->writeln(\sprintf('Selected environment: %s', $this->api()->getEnvironmentLabel($environment)));
+                $this->stdErr->writeln(\sprintf('Selected environment: %s', $this->api->getEnvironmentLabel($environment)));
                 $this->printedSelectedEnvironment = true;
                 $this->environment = $environment;
                 return;
             }
 
-            $environment = $this->api()->getEnvironment($environmentId, $this->project, null, true);
+            $environment = $this->api->getEnvironment($environmentId, $this->project, null, true);
             if (!$environment) {
                 throw new ConsoleInvalidArgumentException('Specified environment not found: ' . $environmentId);
             }
@@ -1197,10 +1235,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if ($selectDefaultEnv) {
             $this->debug('No environment specified or detected: finding a default...');
-            $environments = $this->api()->getEnvironments($this->project);
-            $environment = $this->api()->getDefaultEnvironment($environments, $this->project);
+            $environments = $this->api->getEnvironments($this->project);
+            $environment = $this->api->getDefaultEnvironment($environments, $this->project);
             if ($environment) {
-                $this->stdErr->writeln(\sprintf('Selected default environment: %s', $this->api()->getEnvironmentLabel($environment)));
+                $this->stdErr->writeln(\sprintf('Selected default environment: %s', $this->api->getEnvironmentLabel($environment)));
                 $this->printedSelectedEnvironment = true;
                 $this->environment = $environment;
                 return;
@@ -1208,7 +1246,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         if ($required && isset($this->input) && $this->input->isInteractive()) {
-            $environments = $this->api()->getEnvironments($this->project);
+            $environments = $this->api->getEnvironments($this->project);
             if ($filter === null && $this->chooseEnvFilter !== null) {
                 $filter = $this->chooseEnvFilter;
             }
@@ -1217,7 +1255,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
             if (count($environments) === 1) {
                 $only = reset($environments);
-                $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api()->getEnvironmentLabel($only)));
+                $this->stdErr->writeln(\sprintf('Selected environment: %s (by default)', $this->api->getEnvironmentLabel($only)));
                 $this->printedSelectedEnvironment = true;
                 $this->environment = $only;
                 return;
@@ -1268,7 +1306,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @param bool $includeWorkers
      *   Whether to include workers in the selection.
      *
-     * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
+     * @return RemoteContainerInterface
      *   A class representing a container that allows SSH access.
      */
     protected function selectRemoteContainer(InputInterface $input, $includeWorkers = true)
@@ -1280,7 +1318,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $environment = $this->getSelectedEnvironment();
 
         try {
-            $deployment = $this->api()->getCurrentDeployment(
+            $deployment = $this->api->getCurrentDeployment(
                 $environment,
                 $input->hasOption('refresh') && $input->getOption('refresh')
             );
@@ -1288,7 +1326,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
                 $appName = $input->hasOption('app') ? $input->getOption('app') : '';
 
-                return $this->remoteContainer = new RemoteContainer\BrokenEnv($environment, $appName);
+                return $this->remoteContainer = new BrokenEnv($environment, $appName);
             }
             throw $e;
         }
@@ -1308,7 +1346,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($workerOption === null) {
                 $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $webApp->name), OutputInterface::VERBOSITY_VERBOSE);
 
-                return $this->remoteContainer = new RemoteContainer\App($webApp, $environment);
+                return $this->remoteContainer = new App($webApp, $environment);
             }
 
             unset($webApp); // object is no longer required.
@@ -1338,7 +1376,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 }
                 $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $worker->name), OutputInterface::VERBOSITY_VERBOSE);
 
-                return $this->remoteContainer = new RemoteContainer\Worker($worker, $environment);
+                return $this->remoteContainer = new Worker($worker, $environment);
             }
 
             // If we don't have the app name, find all the possible matching
@@ -1358,7 +1396,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $workerName = reset($workerNames);
                 $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
-                return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+                return $this->remoteContainer = new Worker($deployment->getWorker($workerName), $environment);
             }
             if (!$input->isInteractive()) {
                 throw new ConsoleInvalidArgumentException(sprintf(
@@ -1367,15 +1405,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                     implode(', ', $workerNames)
                 ));
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $workerName = $questionHelper->choose(
                 $workerNames,
                 'Enter a number to choose a worker:'
             );
             $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
-            return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+            return $this->remoteContainer = new Worker($deployment->getWorker($workerName), $environment);
         }
 
         // Prompt the user to choose between the app(s) or worker(s) that have
@@ -1411,8 +1448,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (count($appNames) === 1) {
             $choice = reset($appNames);
         } elseif ($input->isInteractive()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             if ($choicesIncludeWorkers) {
                 $text = sprintf('Enter a number to choose an app or %s worker:',
                     count($choices) === 2 ? 'its' : 'a'
@@ -1433,12 +1469,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Match the choice to a worker or app destination.
         if (strpos($choice, '--') !== false) {
             $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
-            return $this->remoteContainer = new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
+            return $this->remoteContainer = new Worker($deployment->getWorker($choice), $environment);
         }
 
         $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
 
-        return $this->remoteContainer = new RemoteContainer\App($deployment->getWebApp($choice), $environment);
+        return $this->remoteContainer = new App($deployment->getWebApp($choice), $environment);
     }
 
     /**
@@ -1474,8 +1510,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         if (count($projectInfos) >= 25 || count($projectInfos) > (new Terminal())->getHeight() - 3) {
             $autocomplete = [];
@@ -1492,7 +1527,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 if (empty(trim($id))) {
                     throw new ConsoleInvalidArgumentException('A project ID is required');
                 }
-                if (!isset($autocomplete[$id]) && !$this->api()->getProject($id)) {
+                if (!isset($autocomplete[$id]) && !$this->api->getProject($id)) {
                     throw new ConsoleInvalidArgumentException('Project not found: ' . $id);
                 }
                 return $id;
@@ -1501,7 +1536,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         $projectList = [];
         foreach ($projectInfos as $info) {
-            $projectList[$info->id] = $this->api()->getProjectLabel($info, false);
+            $projectList[$info->id] = $this->api->getProjectLabel($info, false);
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
@@ -1521,11 +1556,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
         }
 
-        $defaultEnvironment = $this->api()->getDefaultEnvironment($environments, $this->project);
+        $defaultEnvironment = $this->api->getDefaultEnvironment($environments, $this->project);
         $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         if (count($environments) > (new Terminal())->getHeight() / 2) {
             $ids = array_keys($environments);
@@ -1541,7 +1575,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         } else {
             $environmentList = [];
             foreach ($environments as $environment) {
-                $environmentList[$environment->id] = $this->api()->getEnvironmentLabel($environment, false);
+                $environmentList[$environment->id] = $this->api->getEnvironmentLabel($environment, false);
             }
             asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
 
@@ -1574,7 +1608,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Identify the project.
         if ($projectId !== null) {
             /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
+            $identifier = $this->identifier;
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
             $projectHost = $projectHost ?: $result['host'];
@@ -1582,7 +1616,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         // Load the project ID from an environment variable, if available.
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         if ($projectId === null && getenv($envPrefix . 'PROJECT')) {
             $projectId = getenv($envPrefix . 'PROJECT');
             $this->stdErr->writeln(sprintf(
@@ -1616,7 +1650,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         // Select the project.
         $project = $this->selectProject($projectId, $projectHost, $detectCurrent);
         if ($this->stdErr->isVerbose()) {
-            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($project));
+            $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($project));
             $this->printedSelectedProject = true;
         }
 
@@ -1665,7 +1699,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function ensurePrintSelectedProject($blankLine = false) {
         if (!$this->printedSelectedProject && $this->project) {
-            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($this->project));
+            $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($this->project));
             $this->printedSelectedProject = true;
             if ($blankLine) {
                 $this->stdErr->writeln('');
@@ -1687,7 +1721,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 return;
             }
             $this->ensurePrintSelectedProject();
-            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->environment));
+            $this->stdErr->writeln('Selected environment: ' . $this->api->getEnvironmentLabel($this->environment));
             $this->printedSelectedEnvironment = true;
             if ($blankLine) {
                 $this->stdErr->writeln('');
@@ -1767,9 +1801,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function runOtherCommand($name, array $arguments = [], OutputInterface $output = null)
     {
-        /** @var \Platformsh\Cli\Application $application */
+        /** @var Application $application */
         $application = $this->getApplication();
-        /** @var Command $command */
         $command = $application->find($name);
 
         if (isset($this->input)) {
@@ -1886,7 +1919,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $name = $this->getName();
 
         $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, $this->config()->get('application.executable') . ' ' . $name];
+        $replacements = [$name, $this->config->get('application.executable') . ' ' . $name];
 
         return str_replace($placeholders, $replacements, $help);
     }
@@ -1980,14 +2013,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Get the configuration service.
      *
-     * @return \Platformsh\Cli\Service\Config
+     * @return Config
      */
     protected function config()
     {
         static $config;
         if (!isset($config)) {
-            /** @var \Platformsh\Cli\Service\Config $config */
-            $config = $this->getService('config');
+            $config = $this->config;
         }
 
         return $config;
@@ -2024,7 +2056,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
-                $this->config()->get('application.executable'),
+                $this->config->get('application.executable'),
                 $this->getPreferredName(),
                 $definition->getSynopsis($short)
             ));
@@ -2061,7 +2093,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     public function isEnabled(): bool
     {
-        return $this->config()->isCommandEnabled($this->getName());
+        return $this->config->isCommandEnabled($this->getName());
     }
 
     /**
@@ -2073,7 +2105,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function getNonInteractiveAuthHelp($tag = 'info')
     {
-        $prefix = $this->config()->get('application.env_prefix');
+        $prefix = $this->config->get('application.env_prefix');
 
         return "To authenticate non-interactively, configure an API token using the <$tag>{$prefix}TOKEN</$tag> environment variable.";
     }
@@ -2101,12 +2133,11 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @return HostInterface
      */
-    public function selectHost(InputInterface $input, $allowLocal = true, RemoteContainer\RemoteContainerInterface $remoteContainer = null, $includeWorkers = true)
+    public function selectHost(InputInterface $input, $allowLocal = true, RemoteContainerInterface $remoteContainer = null, $includeWorkers = true)
     {
-        /** @var Shell $shell */
-        $shell = $this->getService('shell');
+        $shell = $this->shell;
 
-        if ($allowLocal && !LocalHost::conflictsWithCommandLineOptions($input, $this->config()->get('service.env_prefix'))) {
+        if ($allowLocal && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->debug('Selected host: localhost');
 
             return new LocalHost($shell);
@@ -2128,10 +2159,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             }
         }
 
-        /** @var Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
-        $sshDiagnostics = $this->getService('ssh_diagnostics');
+        $ssh = $this->ssh;
+        $sshDiagnostics = $this->sshDiagnostics;
 
         $sshUrl = $remoteContainer->getSshUrl($instanceId);
         $this->debug('Selected host: ' . $sshUrl);
@@ -2144,18 +2173,16 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected function finalizeLogin()
     {
         // Reset the API client so that it will use the new tokens.
-        $this->api()->getClient(false, true);
+        $this->api->getClient(false, true);
         $this->stdErr->writeln('You are logged in.');
 
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
+        $sshConfig = $this->sshConfig;
 
         // Configure SSH host keys.
         $sshConfig->configureHostKeys();
 
         // Generate a new certificate from the certifier API.
-        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
-        $certifier = $this->getService('certifier');
+        $certifier = $this->certifier;
         if ($certifier->isAutoLoadEnabled() && $sshConfig->checkRequiredVersion()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('Generating SSH certificate...');
@@ -2170,13 +2197,12 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         // Write session-based SSH configuration.
         if ($sshConfig->configureSessionSsh()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $sshConfig->addUserSshConfig($questionHelper);
         }
 
         // Show user account info.
-        $account = $this->api()->getMyAccount(true);
+        $account = $this->api->getMyAccount(true);
         $this->stdErr->writeln(sprintf(
             "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
             $account['username'],
@@ -2192,8 +2218,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function showSessionInfo($logout = false, $newline = true)
     {
-        $api = $this->api();
-        $config = $this->config();
+        $api = $this->api;
+        $config = $this->config;
         $sessionId = $config->getSessionId();
         if ($sessionId !== 'default' || count($api->listSessionIds()) > 1) {
             if ($newline) {
@@ -2229,7 +2255,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addOrganizationOptions($includeProjectOption = false)
     {
-        if ($this->config()->getWithDefault('api.organizations', false)) {
+        if ($this->config->getWithDefault('api.organizations', false)) {
             $this->addOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)');
             if ($includeProjectOption && !$this->getDefinition()->hasOption('project')) {
                 $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL, which auto-selects the organization if --org is not used');
@@ -2260,7 +2286,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function validateOrganizationInput(InputInterface $input, $filterByLink = '', $filterByCapability = '', $skipCache = false)
     {
-        if (!$this->config()->getWithDefault('api.organizations', false)) {
+        if (!$this->config->getWithDefault('api.organizations', false)) {
             throw new \BadMethodCallException('Organizations are not enabled');
         }
 
@@ -2274,9 +2300,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             /** @link https://github.com/ulid/spec */
             if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
                 $this->debug('Detected organization ID format (ULID): ' . $identifier);
-                $organization = $this->api()->getOrganizationById($identifier, $skipCache);
+                $organization = $this->api->getOrganizationById($identifier, $skipCache);
             } else {
-                $organization = $this->api()->getOrganizationByName($identifier, $skipCache);
+                $organization = $this->api->getOrganizationByName($identifier, $skipCache);
             }
             if (!$organization) {
                 throw new ConsoleInvalidArgumentException('Organization not found: ' . $identifier);
@@ -2295,15 +2321,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if ($this->hasSelectedProject()) {
             $project = $this->getSelectedProject();
             $this->ensurePrintSelectedProject();
-            $organization = $this->api()->getOrganizationById($project->getProperty('organization'), $skipCache);
+            $organization = $this->api->getOrganizationById($project->getProperty('organization'), $skipCache);
             if ($organization) {
-                $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
+                $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api->getOrganizationLabel($organization)));
                 return $organization;
             }
         } elseif (($currentProject = $this->getCurrentProject(true)) && $currentProject->hasProperty('organization')) {
             $organizationId = $currentProject->getProperty('organization');
             try {
-                $organization = $this->api()->getOrganizationById($organizationId, $skipCache);
+                $organization = $this->api->getOrganizationById($organizationId, $skipCache);
             } catch (BadResponseException $e) {
                 $this->debug('Error when fetching project organization: ' . $e->getMessage());
                 $organization = false;
@@ -2312,21 +2338,21 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 if ($filterByLink === '' || $organization->hasLink($filterByLink)) {
                     if ($this->stdErr->isVerbose()) {
                         $this->ensurePrintSelectedProject();
-                        $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api()->getOrganizationLabel($organization)));
+                        $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api->getOrganizationLabel($organization)));
                     }
                     return $organization;
                 } elseif ($this->stdErr->isVerbose()) {
                     $this->stdErr->writeln(sprintf(
                         'Not auto-selecting project organization %s (it does not have the link <comment>%s</comment>)',
-                        $this->api()->getOrganizationLabel($organization, 'comment'),
+                        $this->api->getOrganizationLabel($organization, 'comment'),
                         $filterByLink
                     ));
                 }
             }
         }
 
-        $userId = $this->api()->getMyUserId();
-        $organizations = $this->api()->getClient()->listOrganizationsWithMember($userId);
+        $userId = $this->api->getMyUserId();
+        $organizations = $this->api->getClient()->listOrganizationsWithMember($userId);
 
         if (!$input->isInteractive()) {
             throw new ConsoleInvalidArgumentException('An organization name or ID (--org) is required.');
@@ -2335,7 +2361,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             throw new NoOrganizationsException('No organizations found.', 0);
         }
 
-        $this->api()->sortResources($organizations, 'name');
+        $this->api->sortResources($organizations, 'name');
         $options = [];
         $byId = [];
         $owned = [];
@@ -2346,7 +2372,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             if ($filterByCapability !== '' && !in_array($filterByCapability, $organization->capabilities, true)) {
                 continue;
             }
-            $options[$organization->id] = $this->api()->getOrganizationLabel($organization, false);
+            $options[$organization->id] = $this->api->getOrganizationLabel($organization, false);
             $byId[$organization->id] = $organization;
             if ($organization->owner_id === $userId) {
                 $owned[$organization->id] = $organization;
@@ -2369,7 +2395,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (count($byId) === 1) {
             /** @var Organization $organization */
             $organization = reset($byId);
-            $this->stdErr->writeln(\sprintf('Selected organization: %s (by default)', $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln(\sprintf('Selected organization: %s (by default)', $this->api->getOrganizationLabel($organization)));
             return $organization;
         }
         $default = null;
@@ -2380,8 +2406,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $options = [$default => $options[$default] . ' <info>(default)</info>'] + $options;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $id = $questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):', $default);
         return $byId[$id];
     }
@@ -2400,7 +2425,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function addResourcesInitOption($values, $description = '')
     {
-        if (!$this->config()->get('api.sizing')) {
+        if (!$this->config->get('api.sizing')) {
             return $this;
         }
         $this->validResourcesInitValues = $values;
@@ -2435,7 +2460,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $this->validResourcesInitValues));
                 return false;
             }
-            if (!$this->api()->supportsSizingApi($project)) {
+            if (!$this->api->supportsSizingApi($project)) {
                 $this->stdErr->writeln('The <comment>--resources-init</comment> option cannot be used as the project does not support flexible resources.');
                 return false;
             }
@@ -2446,24 +2471,24 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Warn the user if a project is suspended.
      *
-     * @param \Platformsh\Client\Model\Project $project
+     * @param Project $project
      */
     protected function warnIfSuspended(Project $project)
     {
         if ($project->isSuspended()) {
             $this->stdErr->writeln('This project is <error>suspended</error>.');
-            if ($this->config()->getWithDefault('warnings.project_suspended_payment', true)) {
+            if ($this->config->getWithDefault('warnings.project_suspended_payment', true)) {
                 $orgId = $project->getProperty('organization', false);
                 if ($orgId) {
                     try {
-                        $organization = $this->api()->getClient()->getOrganizationById($orgId);
+                        $organization = $this->api->getClient()->getOrganizationById($orgId);
                     } catch (BadResponseException $e) {
                         $organization = false;
                     }
                     if ($organization && $organization->hasLink('payment-source')) {
-                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->api()->getOrganizationLabel($organization, 'comment')));
+                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->api->getOrganizationLabel($organization, 'comment')));
                     }
-                } elseif ($project->owner === $this->api()->getMyUserId()) {
+                } elseif ($project->owner === $this->api->getMyUserId()) {
                     $this->stdErr->writeln('To re-activate it, update your payment details.');
                 }
             }
@@ -2478,8 +2503,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     protected function hasExternalGitHost(Project $project)
     {
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        $ssh = $this->ssh;
 
         return $ssh->hostIsInternal($project->getGitUrl()) === false;
     }

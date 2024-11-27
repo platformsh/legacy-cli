@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -15,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:scp', description: 'Copy files to and from an environment using scp', aliases: ['scp'])]
 class EnvironmentScpCommand extends CommandBase
 {
+    public function __construct(private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -46,8 +52,7 @@ class EnvironmentScpCommand extends CommandBase
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
-        /** @var Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        $ssh = $this->ssh;
         $command = 'scp';
 
         if ($sshArgs = $ssh->getSshArgs($sshUrl)) {
@@ -78,15 +83,13 @@ class EnvironmentScpCommand extends CommandBase
             throw new InvalidArgumentException('At least one argument needs to contain the "remote:" prefix');
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        $shell = $this->shell;
 
         $start = \time();
 
         $exitCode = $shell->executeSimple($command);
         if ($exitCode !== 0) {
-            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
-            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics = $this->sshDiagnostics;
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
         }
 

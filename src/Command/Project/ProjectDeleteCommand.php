@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectDeleteCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -34,20 +41,18 @@ class ProjectDeleteCommand extends CommandBase
 
         $project = $this->getSelectedProject();
         $subscriptionId = $project->getSubscriptionId();
-        $subscription = $this->api()->loadSubscription($subscriptionId, $project);
+        $subscription = $this->api->loadSubscription($subscriptionId, $project);
         if (!$subscription) {
             $this->stdErr->writeln('Subscription not found: <error>' . $subscriptionId . '</error>');
             $this->stdErr->writeln('Unable to delete the project.');
             return 1;
         }
         // TODO check for a HAL 'delete' link on the subscription?
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $confirmQuestionLines = [
             'You are about to delete the project:',
-            '  ' . $this->api()->getProjectLabel($project, 'comment'),
+            '  ' . $this->api->getProjectLabel($project, 'comment'),
             '',
             ' * This action is <options=bold>irreversible</>.',
             ' * Your site will no longer be accessible.',
@@ -73,8 +78,8 @@ class ProjectDeleteCommand extends CommandBase
             $subscription->delete();
         } catch (ClientException $e) {
             $response = $e->getResponse();
-            if ($response !== null && $response->getStatusCode() === 403 && !$this->config()->getWithDefault('api.organizations', false)) {
-                if ($project->owner !== $this->api()->getMyUserId()) {
+            if ($response !== null && $response->getStatusCode() === 403 && !$this->config->getWithDefault('api.organizations', false)) {
+                if ($project->owner !== $this->api->getMyUserId()) {
                     $this->stdErr->writeln("Only the project's owner can delete it.");
                     return 1;
                 }
@@ -82,10 +87,10 @@ class ProjectDeleteCommand extends CommandBase
             throw $e;
         }
 
-        $this->api()->clearProjectsCache();
+        $this->api->clearProjectsCache();
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('The project ' . $this->api()->getProjectLabel($project) . ' was deleted.');
+        $this->stdErr->writeln('The project ' . $this->api->getProjectLabel($project) . ' was deleted.');
         return 0;
     }
 }

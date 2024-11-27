@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,6 +23,10 @@ class OrganizationListCommand extends OrganizationCommandBase
         'owner_username' => 'Owner username',
     ];
     private $defaultColumns = ['name', 'label', 'owner_email'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -39,8 +45,8 @@ class OrganizationListCommand extends OrganizationCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $client = $this->api()->getClient();
-        $userId = $this->api()->getMyUserId();
+        $client = $this->api->getClient();
+        $userId = $this->api->getMyUserId();
 
         if ($input->getOption('my')) {
             $organizations = $client->listOrganizationsByOwner($userId);
@@ -49,16 +55,16 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         if ($sortBy = $input->getOption('sort')) {
-            $this->api()->sortResources($organizations, $sortBy);
+            $this->api->sortResources($organizations, $sortBy);
         }
         if ($input->getOption('reverse')) {
             $organizations = array_reverse($organizations, true);
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         if (empty($organizations)) {
             $this->stdErr->writeln('No organizations found.');
-            if ($this->config()->isCommandEnabled('organization:create')) {
+            if ($this->config->isCommandEnabled('organization:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To create a new organization, run: <info>%s org:create</info>', $executable));
             }
@@ -71,8 +77,7 @@ class OrganizationListCommand extends OrganizationCommandBase
             $currentProjectOrg = $currentProject->getProperty('organization');
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         $rows = [];
         $machineReadable = $table->formatIsMachineReadable();

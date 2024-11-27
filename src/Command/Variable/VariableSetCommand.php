@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -17,6 +18,10 @@ class VariableSetCommand extends CommandBase
 {
     protected $hiddenInList = true;
     protected $stability = 'deprecated';
+    public function __construct(private readonly ActivityMonitor $activityMonitor)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -73,8 +78,7 @@ class VariableSetCommand extends CommandBase
         if (!$result->countActivities()) {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

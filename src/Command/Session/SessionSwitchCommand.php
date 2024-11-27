@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Session;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\SshConfig;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SessionSwitchCommand extends CommandBase {
     protected $hiddenInList = true;
     protected $stability = self::STABILITY_BETA;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly SshConfig $sshConfig)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -27,7 +35,7 @@ class SessionSwitchCommand extends CommandBase {
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $config = $this->config();
+        $config = $this->config;
         $previousId = $config->getSessionId();
 
         $envVar = $config->get('application.env_prefix') . 'SESSION_ID';
@@ -43,9 +51,8 @@ class SessionSwitchCommand extends CommandBase {
                 $this->stdErr->writeln('The new session ID is required');
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $autocomplete = \array_merge(['default' => ''], \array_flip($this->api()->listSessionIds()));
+            $questionHelper = $this->questionHelper;
+            $autocomplete = \array_merge(['default' => ''], \array_flip($this->api->listSessionIds()));
             unset($autocomplete[$previousId]);
             $default = count($autocomplete) === 1 ? key($autocomplete) : false;
             $this->stdErr->writeln('The current session ID is: <info>' . $previousId . '</info>');
@@ -55,7 +62,7 @@ class SessionSwitchCommand extends CommandBase {
                     throw new \RuntimeException('The session ID cannot be empty');
                 }
                 try {
-                    $this->config()->validateSessionId($sessionId);
+                    $this->config->validateSessionId($sessionId);
                 } catch (\InvalidArgumentException $e) {
                     throw new \RuntimeException($e->getMessage());
                 }
@@ -74,12 +81,11 @@ class SessionSwitchCommand extends CommandBase {
         $config->setSessionId($newId, true);
 
         // Reset the API service.
-        $this->api()->getClient(false, true);
+        $this->api->getClient(false, true);
 
         // Set up SSH config.
-        if ($this->api()->isLoggedIn()) {
-            /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-            $sshConfig = $this->getService('ssh_config');
+        if ($this->api->isLoggedIn()) {
+            $sshConfig = $this->sshConfig;
             $sshConfig->configureSessionSsh();
         }
 
@@ -92,8 +98,8 @@ class SessionSwitchCommand extends CommandBase {
 
     private function showAccountInfo()
     {
-        if ($this->api()->isLoggedIn()) {
-            $account = $this->api()->getMyAccount();
+        if ($this->api->isLoggedIn()) {
+            $account = $this->api->getMyAccount();
             $this->stdErr->writeln(sprintf(
                 "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
                 $account['username'],
@@ -101,6 +107,6 @@ class SessionSwitchCommand extends CommandBase {
             ));
             return;
         }
-        $this->stdErr->writeln(sprintf("\nTo log in, run: <info>%s login</info>", $this->config()->get('application.executable')));
+        $this->stdErr->writeln(sprintf("\nTo log in, run: <info>%s login</info>", $this->config->get('application.executable')));
     }
 }

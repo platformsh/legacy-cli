@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Utils;
 use libphonenumber\NumberParseException;
@@ -15,9 +18,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:verify-phone-number', description: 'Verify your phone number interactively')]
 class VerifyPhoneNumberCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     public function isEnabled(): bool
     {
-        if (!$this->config()->getWithDefault('api.user_verification', false)) {
+        if (!$this->config->getWithDefault('api.user_verification', false)) {
             return false;
         }
         return parent::isEnabled();
@@ -29,10 +36,9 @@ class VerifyPhoneNumberCommand extends CommandBase
             $this->stdErr->writeln('Non-interactive use of this command is not supported.');
             return 1;
         }
-        $myUser = $this->api()->getUser(null, true);
+        $myUser = $this->api->getUser(null, true);
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         if ($myUser->phone_number_verified) {
             $this->stdErr->writeln('Your user account already has a verified phone number.');
@@ -61,7 +67,7 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->debug('E164-formatted number: ' . $number);
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
 
         $response = $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber', [
             'json' => [

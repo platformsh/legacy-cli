@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +16,10 @@ class EnvironmentSetRemoteCommand extends CommandBase
 {
     // @todo remove this command in v3
     protected $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Git $git, private readonly LocalProject $localProject)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -39,13 +46,12 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
         $projectRoot = $this->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        $git = $this->git;
         $git->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
         if ($specifiedEnvironmentId != '0'
-            && !($specifiedEnvironment = $this->api()->getEnvironment($specifiedEnvironmentId, $project))) {
+            && !($specifiedEnvironment = $this->api->getEnvironment($specifiedEnvironmentId, $project))) {
             $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
             return 1;
         }
@@ -81,8 +87,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         // Perform the mapping or unmapping.
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $projectConfig = $localProject->getProjectConfig($projectRoot);
         $projectConfig += ['mapping' => []];
         if ($mappedByDefault || $specifiedEnvironmentId == '0') {

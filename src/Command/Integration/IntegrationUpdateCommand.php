@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Service\ActivityMonitor;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:update', description: 'Update an integration')]
 class IntegrationUpdateCommand extends IntegrationCommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -112,8 +117,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this->displayIntegration($integration);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

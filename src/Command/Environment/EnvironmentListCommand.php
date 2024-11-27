@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -26,8 +30,12 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
     protected $currentEnvironment;
     protected $mapping = [];
 
-    /** @var \Platformsh\Cli\Service\PropertyFormatter */
+    /** @var PropertyFormatter */
     protected $formatter;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly LocalProject $localProject, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -151,7 +159,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $progress->showIfOutputDecorated('Loading environments...');
 
         $project = $this->getSelectedProject();
-        $environments = $this->api()->getEnvironments($project, $refresh ? true : null);
+        $environments = $this->api->getEnvironments($project, $refresh ? true : null);
 
         $progress->done();
 
@@ -169,7 +177,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->filterEnvironments($environments, $filters);
 
         if ($input->getOption('sort')) {
-            $this->api()->sortResources($environments, $input->getOption('sort'));
+            $this->api->sortResources($environments, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
             $environments = array_reverse($environments, true);
@@ -201,8 +209,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
         if (($currentProject = $this->getCurrentProject()) && $currentProject->id === $project->id) {
-            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
+            $localProject = $this->localProject;
             $projectConfig = $localProject->getProjectConfig($this->getProjectRoot());
             if (isset($projectConfig['mapping'])) {
                 $this->mapping = $projectConfig['mapping'];
@@ -211,11 +218,10 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
 
         $tree = $this->buildEnvironmentTree($environments);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $this->formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $this->formatter = $this->propertyFormatter;
 
         if ($table->formatIsMachineReadable()) {
             $table->render($this->buildEnvironmentRows($tree, false, false), $this->tableHeader, $this->defaultColumns);
@@ -233,7 +239,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->stdErr->writeln("<info>*</info> - Indicates the current environment\n");
 
         $currentEnvironment = $this->currentEnvironment;
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         $this->stdErr->writeln(
             'Check out a different environment by running <info>' . $executable . ' checkout [id]</info>'

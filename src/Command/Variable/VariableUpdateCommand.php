@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,6 +15,10 @@ class VariableUpdateCommand extends VariableCommandBase
 {
     /** @var Form */
     private $form;
+    public function __construct(private readonly ActivityMonitor $activityMonitor)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -90,8 +95,7 @@ class VariableUpdateCommand extends VariableCommandBase
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

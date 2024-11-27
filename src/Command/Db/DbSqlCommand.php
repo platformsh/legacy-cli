@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
@@ -18,6 +20,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSqlCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -39,11 +45,10 @@ class DbSqlCommand extends CommandBase
             throw new InvalidArgumentException('The query argument is required when running via "multi"');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        $relationships = $this->relationships;
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
-        if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
+        if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
             $this->validateInput($input);
         }
 
@@ -57,7 +62,7 @@ class DbSqlCommand extends CommandBase
             if ($this->hasSelectedEnvironment()) {
                 // Get information about the deployed service associated with the
                 // selected relationship.
-                $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+                $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
                 $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
             } else {
                 $service = false;
@@ -93,8 +98,7 @@ class DbSqlCommand extends CommandBase
                         $choices[$schema] .= ' (default)';
                     }
                 }
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                $questionHelper = $this->questionHelper;
                 $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
                 $schema = $schema === '(none)' ? '' : $schema;
             }

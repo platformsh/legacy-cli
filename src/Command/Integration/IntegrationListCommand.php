@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Integration;
@@ -13,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationListCommand extends IntegrationCommandBase
 {
     private $tableHeader = ['ID', 'Type', 'Summary'];
+    public function __construct(private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -43,8 +48,7 @@ class IntegrationListCommand extends IntegrationCommandBase
             });
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $rows = [];
 
         foreach ($integrations as $integration) {
@@ -58,7 +62,7 @@ class IntegrationListCommand extends IntegrationCommandBase
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
             $this->stdErr->writeln('');

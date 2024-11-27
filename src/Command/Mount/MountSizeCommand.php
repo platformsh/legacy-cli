@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
@@ -24,6 +27,10 @@ class MountSizeCommand extends CommandBase
         'available' => 'Available',
         'percent_used' => '% Used',
     ];
+    public function __construct(private readonly Config $config, private readonly Mount $mount, private readonly RemoteEnvVars $remoteEnvVars, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -46,11 +53,11 @@ filesystem. They are configured in the <info>mounts</info> key in the applicatio
 
 The filesystem's total size is determined by the <info>disk</info> key in the same file.
 EOF;
-        if ($this->config()->getWithDefault('api.metrics', false)) {
+        if ($this->config->getWithDefault('api.metrics', false)) {
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
-            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config()->get('application.executable'));
+            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config->get('application.executable'));
         }
         $this->setHelp($help);
     }
@@ -60,12 +67,10 @@ EOF;
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $host = $this->selectHost($input, getenv($this->config()->get('service.env_prefix') . 'APPLICATION'));
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
+        $host = $this->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
+        $mountService = $this->mount;
         if ($host instanceof LocalHost) {
-            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVars */
-            $envVars = $this->getService('remote_env_vars');
+            $envVars = $this->remoteEnvVars;
             $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
             $mounts = $mountService->mountsFromConfig($config);
         } else {
@@ -97,7 +102,7 @@ EOF;
         //      mounts.
         //   3. Run a 'du' command on each of the mounted paths, to find their
         //      individual sizes.
-        $appDirVar = $this->config()->get('service.env_prefix') . 'APP_DIR';
+        $appDirVar = $this->config->get('service.env_prefix') . 'APP_DIR';
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
@@ -152,8 +157,7 @@ EOF;
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
@@ -166,11 +170,11 @@ EOF;
                 'To increase the available space, edit the <info>disk</info> key in the application configuration.'
             );
 
-            if ($this->config()->getWithDefault('api.metrics', false) && $this->config()->isCommandEnabled('metrics:disk')) {
+            if ($this->config->getWithDefault('api.metrics', false) && $this->config->isCommandEnabled('metrics:disk')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
                 $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
-                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config->get('application.executable')));
             }
         }
 

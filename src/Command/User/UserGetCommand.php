@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'user:get', description: "View a user's role(s)")]
 class UserGetCommand extends UserCommandBase
 {
+    public function __construct(private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -53,8 +58,7 @@ class UserGetCommand extends UserCommandBase
 
         $this->warnAboutDeprecatedOptions(['role']);
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         // Load the user.
         $email = $input->getArgument('email');

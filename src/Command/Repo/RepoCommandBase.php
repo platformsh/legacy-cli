@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Repo;
 
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Exception\GitObjectTypeException;
@@ -12,6 +14,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RepoCommandBase extends CommandBase
 {
+    private readonly GitDataApi $gitDataApi;
+    private readonly Config $config;
+    #[Required]
+    public function autowire(Config $config, GitDataApi $gitDataApi) : void
+    {
+        $this->config = $config;
+        $this->gitDataApi = $gitDataApi;
+    }
     /**
      * Adds the --commit (-c) command option.
      */
@@ -34,8 +44,7 @@ class RepoCommandBase extends CommandBase
     {
         $path = $input->getArgument('path');
         try {
-            /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-            $gitData = $this->getService('git_data_api');
+            $gitData = $this->gitDataApi;
             $content = $gitData->readFile($path, $environment, $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
@@ -43,7 +52,7 @@ class RepoCommandBase extends CommandBase
                 $e->getMessage(),
                 $e->getPath()
             ));
-            $this->stdErr->writeln(sprintf('To list directory contents, run: <comment>%s repo:ls [path]</comment>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To list directory contents, run: <comment>%s repo:ls [path]</comment>', $this->config->get('application.executable')));
 
             return 3;
         }
@@ -70,8 +79,7 @@ class RepoCommandBase extends CommandBase
     protected function ls(Environment $environment, InputInterface $input, OutputInterface $output)
     {
         try {
-            /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-            $gitData = $this->getService('git_data_api');
+            $gitData = $this->gitDataApi;
             $tree = $gitData->getTree($environment, $input->getArgument('path'), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
             $this->stdErr->writeln(sprintf(
@@ -79,7 +87,7 @@ class RepoCommandBase extends CommandBase
                 $e->getMessage(),
                 $e->getPath()
             ));
-            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config->get('application.executable')));
 
             return 3;
         }

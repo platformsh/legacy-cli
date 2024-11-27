@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
@@ -14,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentUrlCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -30,7 +37,7 @@ class EnvironmentUrlCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
@@ -42,7 +49,7 @@ class EnvironmentUrlCommand extends CommandBase
             $this->debug('Reading URLs from the API');
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
             $this->validateInput($input);
-            $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+            $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
             $routes = Route::fromDeploymentApi($deployment->routes);
         }
         if (empty($routes)) {
@@ -80,8 +87,8 @@ class EnvironmentUrlCommand extends CommandBase
      * Displays or opens URLs.
      *
      * @param string[]                                          $urls
-     * @param \Symfony\Component\Console\Input\InputInterface   $input
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param InputInterface $input
+     * @param OutputInterface $output
      */
     private function displayOrOpenUrls(array $urls, InputInterface $input, OutputInterface $output)
     {
@@ -98,8 +105,7 @@ class EnvironmentUrlCommand extends CommandBase
             // non-interactive input.
             $toDisplay = $urls[0];
         }
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
+        $urlService = $this->url;
         if (!$urlService->hasDisplay()) {
             $this->debug('Not opening URLs (no display found)');
             $output->writeln($toDisplay);
@@ -114,8 +120,7 @@ class EnvironmentUrlCommand extends CommandBase
         if (count($urls) === 1) {
             $url = $urls[0];
         } else {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to open a URL', $urls[0]);
         }
 

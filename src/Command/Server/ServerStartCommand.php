@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Url;
@@ -15,14 +17,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:start', description: 'Run PHP web server(s) for the local project')]
 class ServerStartCommand extends ServerCommandBase
 {
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
-          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config()->get('local.local_dir') . '/server.log')
-          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . $this->config()->get('service.name') . ' environments as relationships');
+          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config->get('local.local_dir') . '/server.log')
+          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . $this->config->get('service.name') . ' environments as relationships');
         Url::configureInput($this->getDefinition());
     }
 
@@ -50,15 +56,14 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-        $finder = $this->getService('app_finder');
+        $finder = $this->applicationFinder;
         $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
             $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         $items = [];
         foreach ($apps as $app) {
@@ -107,7 +112,7 @@ class ServerStartCommand extends ServerCommandBase
                     continue;
                 }
                 $relationships = $bufferedOutput->fetch();
-                $items[$appId]['env'][$this->config()->get('service.env_prefix') . 'RELATIONSHIPS'] = $relationships;
+                $items[$appId]['env'][$this->config->get('service.env_prefix') . 'RELATIONSHIPS'] = $relationships;
             }
         }
 
@@ -116,7 +121,7 @@ class ServerStartCommand extends ServerCommandBase
         }
 
         $logFile = $input->getOption('log')
-            ?: $projectRoot . '/' . $this->config()->get('local.local_dir') . '/server.log';
+            ?: $projectRoot . '/' . $this->config->get('local.local_dir') . '/server.log';
         $log = $this->openLog($logFile);
         if (!$log) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: <error>%s</error>', $logFile));
@@ -219,8 +224,7 @@ class ServerStartCommand extends ServerCommandBase
         if (count($processes)) {
             $this->stdErr->writeln(sprintf('Logs are written to: %s', $logFile));
 
-            /** @var Url $urlService */
-            $urlService = $this->getService('url');
+            $urlService = $this->url;
             foreach ($processes as $address => $process) {
                 if ($process->isRunning()) {
                     $urlService->openUrl('http://' . $address);

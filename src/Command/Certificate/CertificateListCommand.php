@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -20,6 +22,10 @@ class CertificateListCommand extends CommandBase
         'expires' => 'Expires',
         'issuer' => 'Issuer',
     ];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -81,10 +87,8 @@ class CertificateListCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $propertyFormatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($certs as $cert) {
@@ -98,7 +102,7 @@ class CertificateListCommand extends CommandBase
         }
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api()->getProjectLabel($project)));
+            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api->getProjectLabel($project)));
         }
 
         $table->render($rows, $this->tableHeader);
@@ -107,7 +111,7 @@ class CertificateListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
 
@@ -174,7 +178,7 @@ class CertificateListCommand extends CommandBase
     /**
      * Check if a certificate has expired.
      *
-     * @param \Platformsh\Client\Model\Certificate $cert
+     * @param Certificate $cert
      *
      * @return bool
      */
@@ -184,7 +188,7 @@ class CertificateListCommand extends CommandBase
     }
 
     /**
-     * @param \Platformsh\Client\Model\Certificate $cert
+     * @param Certificate $cert
      * @param string                               $alias
      *
      * @return string|bool

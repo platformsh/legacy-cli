@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Worker;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WorkerListCommand extends CommandBase
 {
     private $tableHeader = ['Name', 'Type', 'Commands'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -35,7 +42,7 @@ class WorkerListCommand extends CommandBase
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input);
 
-        $deployment = $this->api()
+        $deployment = $this->api
             ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
 
         $workers = $deployment->workers;
@@ -54,22 +61,20 @@ class WorkerListCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($workers as $worker) {
             $commands = isset($worker->worker['commands']) ? $worker->worker['commands'] : [];
             $rows[] = [$worker->name, $formatter->format($worker->type, 'service_type'), $formatter->format($commands)];
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Workers on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
             ));
         }
 
@@ -85,7 +90,7 @@ class WorkerListCommand extends CommandBase
     private function recommendOtherCommands(EnvironmentDeployment $deployment)
     {
         $lines = [];
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         if ($deployment->webapps) {
             $lines[] = sprintf(
                 'To list applications, run: <info>%s apps</info>',
@@ -99,7 +104,7 @@ class WorkerListCommand extends CommandBase
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
-            if (!empty($info['settings']['sizing_api_enabled']) && $this->config()->get('api.sizing') && $this->config()->isCommandEnabled('resources:set')) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->get('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
                     $executable

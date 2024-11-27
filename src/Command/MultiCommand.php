@@ -2,6 +2,11 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use PhpParser\Node\Identifier;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Client\Model\Project;
 use Platformsh\Cli\Application;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Sort;
@@ -20,6 +25,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
     protected $canBeRunMultipleTimes = false;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Identifier $identifier, private readonly Shell $shell)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -51,7 +60,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             $this->stdErr->writeln(sprintf(
                 'The command <error>%s</error> cannot be run via "%s multi".',
                 $commandName,
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
             return 1;
         } elseif (!$command->getDefinition()->hasOption('project')) {
@@ -77,7 +86,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         ));
         foreach ($projects as $project) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=reverse>#</> Project: ' . $this->api()->getProjectLabel($project, false));
+            $this->stdErr->writeln('<options=reverse>#</> Project: ' . $this->api->getProjectLabel($project, false));
             try {
                 $commandInput = new StringInput($commandLine . ' --project ' . escapeshellarg($project->id));
                 $returnCode = $application->run($commandInput, $output);
@@ -121,7 +130,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         }
 
         $dialogRc = file_get_contents(CLI_ROOT . '/resources/console/dialogrc');
-        $dialogRcFile = $this->config()->getWritableUserDir() . '/dialogrc';
+        $dialogRcFile = $this->config->getWritableUserDir() . '/dialogrc';
         if ($dialogRc !== false && (file_exists($dialogRcFile) || file_put_contents($dialogRcFile, $dialogRc))) {
             putenv('DIALOGRC=' . $dialogRcFile);
         }
@@ -155,7 +164,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      */
     protected function getAllProjectsBasicInfo(InputInterface $input)
     {
-        $projects = $this->api()->getMyProjects();
+        $projects = $this->api->getMyProjects();
         if ($input->getOption('sort')) {
             Sort::sortObjects($projects, $input->getOption('sort'));
         }
@@ -175,7 +184,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      *
      * @param InputInterface $input
      *
-     * @return \Platformsh\Client\Model\Project[]|false
+     * @return Project[]|false
      *   An array of projects, or false on error.
      */
     protected function getSelectedProjects(InputInterface $input)
@@ -183,7 +192,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $projectList = $input->getOption('projects');
 
         /** @var \Platformsh\Cli\Service\Identifier $identifier */
-        $identifier = $this->getService('identifier');
+        $identifier = $this->identifier;
 
         if (!empty($projectList)) {
             $missing = [];
@@ -195,7 +204,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                     $missing[] = $projectId;
                     continue;
                 }
-                $project = $this->api()->getProject($result['projectId'], $result['host']);
+                $project = $this->api->getProject($result['projectId'], $result['host']);
                 if ($project !== false) {
                     $selected[$project->id] = $project;
                 } else {
@@ -215,8 +224,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             return false;
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        $shell = $this->shell;
         if (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
@@ -237,7 +245,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $this->stdErr->writeln('Selected project(s): ' . implode(',', $selected));
         $this->stdErr->writeln('');
 
-        return array_map(function ($id) { return $this->api()->getProject($id); }, $selected);
+        return array_map(function ($id) { return $this->api->getProject($id); }, $selected);
     }
 
     /**

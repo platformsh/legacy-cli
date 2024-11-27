@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:delete', description: 'Remove a user from an organization')]
 class OrganizationUserDeleteCommand extends OrganizationCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -25,15 +31,14 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
 
         $email = $input->getArgument('email');
 
-        $member = $this->api()->loadMemberByEmail($organization, $email);
+        $member = $this->api->loadMemberByEmail($organization, $email);
         if (!$member) {
             $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the user <comment>%s</comment> from the organization %s?', $email, $this->api()->getOrganizationLabel($organization, 'comment')))) {
+        $questionHelper = $this->questionHelper;
+        if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the user <comment>%s</comment> from the organization %s?', $email, $this->api->getOrganizationLabel($organization, 'comment')))) {
             return 1;
         }
 

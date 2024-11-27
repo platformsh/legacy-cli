@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -16,8 +18,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:info', description: 'Read or set properties for an environment')]
 class EnvironmentInfoCommand extends CommandBase
 {
-    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
+    /** @var PropertyFormatter|null */
     protected $formatter;
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -54,7 +60,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
-        $this->formatter = $this->getService('property_formatter');
+        $this->formatter = $this->propertyFormatter;
 
         if (!$property) {
             return $this->listProperties($environment);
@@ -71,7 +77,7 @@ class EnvironmentInfoCommand extends CommandBase
                 break;
 
             default:
-                $value = $this->api()->getNestedProperty($environment, $property);
+                $value = $this->api->getNestedProperty($environment, $property);
         }
 
         $output->writeln($this->formatter->format($value, $property));
@@ -92,8 +98,7 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $headings);
 
         return 0;
@@ -153,13 +158,12 @@ class EnvironmentInfoCommand extends CommandBase
             $this->formatter->format($environment->$property, $property)
         ));
 
-        $this->api()->clearEnvironmentsCache($environment->project);
+        $this->api->clearEnvironmentsCache($environment->project);
 
         $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
         if ($result->countActivities() && !$noWait) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->redeployWarning();
@@ -214,7 +218,7 @@ class EnvironmentInfoCommand extends CommandBase
                 if ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->api()->getEnvironment($value, $this->getSelectedProject())) {
+                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $this->getSelectedProject())) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DocsCommand extends CommandBase
 {
 
+    public function __construct(private readonly Config $config, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -22,8 +27,8 @@ class DocsCommand extends CommandBase
 
     public function isEnabled(): bool
     {
-        return $this->config()->has('service.docs_url')
-            && $this->config()->has('service.docs_search_url')
+        return $this->config->has('service.docs_url')
+            && $this->config->has('service.docs_search_url')
             && parent::isEnabled();
     }
 
@@ -31,13 +36,12 @@ class DocsCommand extends CommandBase
     {
         if ($searchArguments = $input->getArgument('search')) {
             $query = $this->getSearchQuery($searchArguments);
-            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config()->get('service.docs_search_url'));
+            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config->get('service.docs_search_url'));
         } else {
-            $url = $this->config()->get('service.docs_url');
+            $url = $this->config->get('service.docs_url');
         }
 
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
+        $urlService = $this->url;
         $urlService->openUrl($url);
         return 0;
     }

@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -26,6 +29,10 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'memory_ratio' => 'Memory ratio',
     ];
     protected $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -36,16 +43,16 @@ class ResourcesGetCommand extends ResourcesCommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service, app or worker type, e.g. "postgresql"');
         $this->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        if ($this->config()->has('service.resources_help_url')) {
-            $this->setHelp('For more information on managing resources, see: <info>' . $this->config()->get('service.resources_help_url') . '</info>');
+        if ($this->config->has('service.resources_help_url')) {
+            $this->setHelp('For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>');
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
             return 1;
         }
 
@@ -55,7 +62,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
             $nextDeployment = $this->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
-                $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api->getEnvironmentLabel($environment, 'comment')));
                 return 1;
             }
             throw $e;
@@ -72,15 +79,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(sprintf('Resource configuration for the project %s, environment %s:', $this->api()->getProjectLabel($this->getSelectedProject()), $this->api()->getEnvironmentLabel($environment)));
+            $this->stdErr->writeln(sprintf('Resource configuration for the project %s, environment %s:', $this->api->getProjectLabel($this->getSelectedProject()), $this->api->getEnvironmentLabel($environment)));
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
         $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
@@ -136,7 +141,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $isOriginalCommand = $input instanceof ArgvInput;
             if ($isOriginalCommand) {
                 $this->stdErr->writeln('');

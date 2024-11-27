@@ -1,6 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Backups\RestoreOptions;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupRestoreCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -21,7 +30,7 @@ class BackupRestoreCommand extends CommandBase
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
             ->addOption('no-code', null, InputOption::VALUE_NONE, 'Do not restore code, only data.')
             ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
-        if ($this->config()->get('api.sizing')) {
+        if ($this->config->get('api.sizing')) {
             $this->addOption('no-resources', null, InputOption::VALUE_NONE, "Do not override the target's existing resource settings.");
             $this->addResourcesInitOption(['backup', 'parent', 'default', 'minimum']);
         }
@@ -51,7 +60,7 @@ class BackupRestoreCommand extends CommandBase
                 return 1;
             }
         } else {
-            $this->stdErr->writeln(\sprintf('Finding the most recent backup for the environment %s', $this->api()->getEnvironmentLabel($environment)));
+            $this->stdErr->writeln(\sprintf('Finding the most recent backup for the environment %s', $this->api->getEnvironmentLabel($environment)));
             $backups = $environment->getBackups();
             $this->stdErr->writeln('');
             if (!$backups) {
@@ -70,7 +79,7 @@ class BackupRestoreCommand extends CommandBase
 
         // Validate the --branch-from option.
         $branchFrom = $input->getOption('branch-from');
-        if ($branchFrom !== null && !$this->api()->getEnvironment($branchFrom, $project)) {
+        if ($branchFrom !== null && !$this->api->getEnvironment($branchFrom, $project)) {
             $this->stdErr->writeln(sprintf('Environment not found (in --branch-from): <error>%s</error>', $branchFrom));
 
             return 1;
@@ -84,16 +93,14 @@ class BackupRestoreCommand extends CommandBase
 
         // Process the --target option, which does not have to be an existing environment.
         $target = $input->getOption('target');
-        $targetEnvironment = $target !== null ? $this->api()->getEnvironment($target, $project) : $environment;
+        $targetEnvironment = $target !== null ? $this->api->getEnvironment($target, $project) : $environment;
         $targetName = $target !== null ? $target : $environment->name;
         $targetLabel = $targetEnvironment
-            ? $this->api()->getEnvironmentLabel($targetEnvironment)
+            ? $this->api->getEnvironmentLabel($targetEnvironment)
             : '<info>' . $target . '</info>';
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $questionHelper = $this->questionHelper;
+        $formatter = $this->propertyFormatter;
 
         // Display a summary of the backup.
         $this->stdErr->writeln(\sprintf('Backup ID: <comment>%s</comment>', $backup->id));
@@ -104,8 +111,8 @@ class BackupRestoreCommand extends CommandBase
 
         $differentTarget = $backup->environment !== $targetName;
         if ($differentTarget) {
-            $original = $this->api()->getEnvironment($backup->environment, $project);
-            $originalLabel = $original ? $this->api()->getEnvironmentLabel($original, 'comment') : '<comment>' . $backup->environment . '</comment>';
+            $original = $this->api->getEnvironment($backup->environment, $project);
+            $originalLabel = $original ? $this->api->getEnvironmentLabel($original, 'comment') : '<comment>' . $backup->environment . '</comment>';
             $this->stdErr->writeln(\sprintf('Original environment: %s', $originalLabel));
             $this->stdErr->writeln('');
             if (!$questionHelper->confirm(\sprintf('Are you sure you want to restore this backup to the environment %s?', $targetLabel))) {
@@ -131,8 +138,7 @@ class BackupRestoreCommand extends CommandBase
         );
 
         if ($this->shouldWait($input) && $result->countActivities()) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
             if (!$success) {
                 return 1;

@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -15,8 +17,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:info', description: 'Read or set properties for a project')]
 class ProjectInfoCommand extends CommandBase
 {
-    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
+    /** @var PropertyFormatter|null */
     protected $formatter;
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -41,7 +47,7 @@ class ProjectInfoCommand extends CommandBase
         $this->validateInput($input);
 
         $project = $this->getSelectedProject();
-        $this->formatter = $this->getService('property_formatter');
+        $this->formatter = $this->propertyFormatter;
 
         if ($input->getOption('refresh')) {
             $project->refresh();
@@ -79,7 +85,7 @@ class ProjectInfoCommand extends CommandBase
                 throw new \InvalidArgumentException('Property not found: ' . $property);
 
             default:
-                $value = $this->api()->getNestedProperty($project, $property);
+                $value = $this->api->getNestedProperty($project, $property);
         }
 
         $output->writeln($this->formatter->format($value, $property));
@@ -100,8 +106,7 @@ class ProjectInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $headings);
 
         return 0;
@@ -143,12 +148,11 @@ class ProjectInfoCommand extends CommandBase
             $this->formatter->format($value, $property)
         ));
 
-        $this->api()->clearProjectsCache();
+        $this->api->clearProjectsCache();
 
         $success = true;
         if (!$noWait) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

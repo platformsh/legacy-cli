@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
@@ -14,6 +18,10 @@ class AppListCommand extends CommandBase
 {
     private $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
     private $defaultColumns = ['name', 'type'];
+    public function __construct(private readonly Api $api, private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -37,7 +45,7 @@ class AppListCommand extends CommandBase
         $this->validateInput($input);
 
         // Find a list of deployed web apps.
-        $deployment = $this->api()
+        $deployment = $this->api
             ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
         $apps = $deployment->webapps;
 
@@ -62,9 +70,8 @@ class AppListCommand extends CommandBase
         // @todo The "Local path" column is mainly here for legacy reasons, and can be removed in a future version.
         $showLocalPath = false;
         $localApps = [];
-        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config()->has('service.app_config_file')) {
-            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-            $finder = $this->getService('app_finder');
+        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config->has('service.app_config_file')) {
+            $finder = $this->applicationFinder;
             $localApps = $finder->findApplications($projectRoot);
             $showLocalPath = true;
         }
@@ -86,8 +93,7 @@ class AppListCommand extends CommandBase
             $defaultColumns[] = 'path';
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($apps as $app) {
@@ -98,13 +104,12 @@ class AppListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Applications on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
             ));
         }
 
@@ -120,7 +125,7 @@ class AppListCommand extends CommandBase
     private function recommendOtherCommands(EnvironmentDeployment $deployment)
     {
         $lines = [];
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         if ($deployment->services) {
             $lines[] = sprintf(
                 'To list services, run: <info>%s services</info>',
@@ -134,7 +139,7 @@ class AppListCommand extends CommandBase
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
-            if (!empty($info['settings']['sizing_api_enabled']) && $this->config()->get('api.sizing') && $this->config()->isCommandEnabled('resources:set')) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->get('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
                     $executable

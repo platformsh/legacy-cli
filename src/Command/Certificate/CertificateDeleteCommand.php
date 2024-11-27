@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'certificate:delete', description: 'Delete a certificate from the project')]
 class CertificateDeleteCommand extends CommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -35,15 +42,14 @@ class CertificateDeleteCommand extends CommandBase
         $certificate = $project->getCertificate($id);
         if (!$certificate) {
             try {
-                $certificate = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+                $certificate = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return 1;
             }
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
             return 1;
         }
@@ -62,8 +68,7 @@ class CertificateDeleteCommand extends CommandBase
         $this->stdErr->writeln(sprintf('The certificate <info>%s</info> has been deleted.', $certificate->id));
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

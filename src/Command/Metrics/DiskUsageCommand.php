@@ -32,6 +32,10 @@ class DiskUsageCommand extends MetricsCommandBase
     ];
     private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
     private $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -62,8 +66,7 @@ class DiskUsageCommand extends MetricsCommandBase
             $input->setOption('columns', $this->tmpReportColumns);
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
         $this->validateInput($input, false, true);
@@ -98,8 +101,7 @@ class DiskUsageCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',

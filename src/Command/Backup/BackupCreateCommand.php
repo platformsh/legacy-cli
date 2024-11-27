@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
@@ -15,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupCreateCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -53,7 +61,7 @@ class BackupCreateCommand extends CommandBase
                 $this->stdErr->writeln('The environment is not active.');
             } else {
                 try {
-                    if ($this->isUserAdmin($this->getSelectedProject(), $selectedEnvironment, $this->api()->getMyUserId())) {
+                    if ($this->isUserAdmin($this->getSelectedProject(), $selectedEnvironment, $this->api->getMyUserId())) {
                         $this->stdErr->writeln('You must be an administrator to create a backup.');
                     }
                 } catch (\Exception $e) {
@@ -69,13 +77,12 @@ class BackupCreateCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Creating a %s of %s.',
             $live ? '<info>live</info> backup' : 'backup',
-            $this->api()->getEnvironmentLabel($selectedEnvironment, 'info', false)
+            $this->api->getEnvironmentLabel($selectedEnvironment, 'info', false)
         ));
         $this->stdErr->writeln('Note: this may delete an older backup if the quota has been reached.');
         $this->stdErr->writeln('');
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
@@ -94,8 +101,7 @@ class BackupCreateCommand extends CommandBase
                 );
             }
 
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
             if (!$success) {
                 return 1;
@@ -114,8 +120,8 @@ class BackupCreateCommand extends CommandBase
 
     private function isUserAdmin(Project $project, Environment $environment, $userId)
     {
-        if ($this->config()->get('api.centralized_permissions') && $this->config()->get('api.organizations')) {
-            $client = $this->api()->getHttpClient();
+        if ($this->config->get('api.centralized_permissions') && $this->config->get('api.organizations')) {
+            $client = $this->api->getHttpClient();
             $endpointUrl = $project->getUri() . '/user-access';
             $userAccess = ProjectUserAccess::get($userId, $endpointUrl, $client);
             if (!$userAccess) {

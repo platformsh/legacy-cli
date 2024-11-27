@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Symfony\Component\Process\Exception\RuntimeException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Service\Relationships;
@@ -20,6 +24,10 @@ class DbSizeCommand extends CommandBase
 {
 
     private $tableHeader = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     const RED_WARNING_THRESHOLD = 90;//percentage
     const YELLOW_WARNING_THRESHOLD = 80;//percentage
@@ -36,12 +44,12 @@ class DbSizeCommand extends CommandBase
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
         $help = self::ESTIMATE_WARNING;
-        if ($this->config()->getWithDefault('api.metrics', false)) {
+        if ($this->config->getWithDefault('api.metrics', false)) {
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
             $help .= "\nThis command is deprecated and will be removed in a future version.\n";
-            $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config()->get('application.executable'));
+            $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable'));
         }
         $this->setHelp($help);
         $this->addProjectOption()->addEnvironmentOption()->addAppOption();
@@ -54,8 +62,7 @@ class DbSizeCommand extends CommandBase
      * {@inheritDoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        $relationships = $this->relationships;
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input);
@@ -76,7 +83,7 @@ class DbSizeCommand extends CommandBase
 
         // Get information about the deployed service associated with the
         // selected relationship.
-        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
         $service = $deployment->getService($dbServiceName);
 
         $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
@@ -86,8 +93,7 @@ class DbSizeCommand extends CommandBase
         $estimatedUsage = $this->getEstimatedUsage($host, $database);
         $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $machineReadable = $table->formatIsMachineReadable();
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
@@ -167,8 +173,7 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln("Only run these when you know what you're doing.");
         $this->stdErr->writeln('');
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if ($input->isInteractive() && $questionHelper->confirm('Do you want to run these queries now?', false)) {
             $mysqlCommand = $this->getMysqlCommand($database);
             foreach ($queries as $query) {
@@ -182,7 +187,7 @@ class DbSizeCommand extends CommandBase
     /**
      * Shows a warning about schemas not accessible through this relationship.
      *
-     * @param \Platformsh\Client\Model\Deployment\Service $service
+     * @param Service $service
      * @param array                                       $database
      *
      * @return void
@@ -218,15 +223,15 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=red>Warning:</>');
             $this->stdErr->writeln('Databases tend to need extra space for starting up and temporary storage when running large queries.');
-            $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config()->get('service.project_config_dir') . '/services.yaml'));
+            $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config->get('service.project_config_dir') . '/services.yaml'));
         }
 
         $this->stdErr->writeln('');
 
-        if ($this->config()->getWithDefault('api.metrics', false) && $this->config()->isCommandEnabled('metrics:disk')) {
+        if ($this->config->getWithDefault('api.metrics', false) && $this->config->isCommandEnabled('metrics:disk')) {
             $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
             $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
-            $this->stdErr->writeln(\sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable')));
         } else {
             $this->stdErr->writeln('<options=bold;fg=yellow>Warning:</>');
             $this->stdErr->writeln(self::ESTIMATE_WARNING);
@@ -256,8 +261,7 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function getPsqlCommand(array $database) {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        $relationships = $this->relationships;
         $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
 
         return sprintf(
@@ -267,8 +271,7 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getMongoDbCommand(array $database) {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        $relationships = $this->relationships;
         $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
 
         return sprintf(
@@ -287,8 +290,7 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function getMysqlCommand(array $database) {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        $relationships = $this->relationships;
         $cmdName = $relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
         $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);
         $connectionParams = $relationships->getDbCommandArgs($cmdName, $database, '');
@@ -400,7 +402,7 @@ class DbSizeCommand extends CommandBase
             $this->debug('Checking InnoDB separately for more accurate results...');
             try {
                 $innoDbSize = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbQuery());
-            } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+            } catch (RuntimeException $e) {
                 // Some configurations do not have PROCESS privilege(s) and thus have no access to the sys_tablespaces
                 // table. Ignore MySQL's 1227 Access Denied error, and revert to the legacy calculation.
                 if (stripos($e->getMessage(), 'access denied') !== false) {

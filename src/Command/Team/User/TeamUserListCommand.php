@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Team\User;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -22,6 +24,10 @@ class TeamUserListCommand extends TeamCommandBase
         'updated_at' => 'Updated at',
     ];
     private $defaultColumns = ['id', 'email', 'created_at'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -44,7 +50,7 @@ class TeamUserListCommand extends TeamCommandBase
         $options = [];
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
+        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 50) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 50, or 0 to disable pagination.');
@@ -54,7 +60,7 @@ class TeamUserListCommand extends TeamCommandBase
         }
         $options['query']['page[size]'] = $itemsPerPage;
 
-        $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
         if ($count === '0') {
             $fetchAllPages = true;
         }
@@ -64,7 +70,7 @@ class TeamUserListCommand extends TeamCommandBase
             return 1;
         }
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         /** @var TeamMember[] $members */
         $members = [];
         $url = $team->getUri() . '/members';
@@ -83,14 +89,13 @@ class TeamUserListCommand extends TeamCommandBase
 
         if (empty($members)) {
             $this->stdErr->writeln(\sprintf('No users were found in the team %s.', $this->getTeamLabel($team)));
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s team:user:add [email]</info>', $executable));
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($members as $member) {
@@ -102,8 +107,7 @@ class TeamUserListCommand extends TeamCommandBase
             ];
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('Users in the team %s:', $this->getTeamLabel($team)));
@@ -117,7 +121,7 @@ class TeamUserListCommand extends TeamCommandBase
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
             }
 
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s team:user:add [email]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To delete a user, run: <info>%s team:user:delete [email]</info>', $executable));

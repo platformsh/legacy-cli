@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityLoader;
@@ -17,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:cancel', description: 'Cancel an activity')]
 class ActivityCancelCommand extends ActivityCommandBase
 {
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -43,10 +49,9 @@ class ActivityCancelCommand extends ActivityCommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
-        /** @var ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $loader = $this->activityLoader;
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
             $apiResource = $this->getSelectedEnvironment();
@@ -59,7 +64,7 @@ class ActivityCancelCommand extends ActivityCommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -77,12 +82,10 @@ class ActivityCancelCommand extends ActivityCommandBase
                 return 1;
             }
             $choices = [];
-            /** @var QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $questionHelper = $this->questionHelper;
+            $formatter = $this->propertyFormatter;
             $byId = [];
-            $this->api()->sortResources($activities, 'created_at');
+            $this->api->sortResources($activities, 'created_at');
             foreach ($activities as $activity) {
                 $byId[$activity->id] = $activity;
                 $choices[$activity->id] = \sprintf(

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WebCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         Url::configureInput($this->getDefinition());
@@ -38,28 +44,27 @@ class WebCommand extends CommandBase
 
         if ($this->hasSelectedProject()) {
             $project = $this->getSelectedProject();
-            $url = $this->api()->getConsoleURL($project);
+            $url = $this->api->getConsoleURL($project);
             if ($environmentId !== null) {
                 // Console links lack the /environments path component.
-                $isConsole = $this->config()->has('detection.console_domain')
-                    && parse_url($url, PHP_URL_HOST) === $this->config()->get('detection.console_domain');
+                $isConsole = $this->config->has('detection.console_domain')
+                    && parse_url($url, PHP_URL_HOST) === $this->config->get('detection.console_domain');
                 if ($isConsole) {
                     $url .= '/' . rawurlencode($environmentId);
                 } else {
                     $url .= '/environments/' . rawurlencode($environmentId);
                 }
             }
-        } elseif ($this->config()->has('service.console_url')) {
-            $url = $this->config()->get('service.console_url');
-        } elseif ($this->config()->has('service.accounts_url')) {
-            $url = $this->config()->get('service.accounts_url');
+        } elseif ($this->config->has('service.console_url')) {
+            $url = $this->config->get('service.console_url');
+        } elseif ($this->config->has('service.accounts_url')) {
+            $url = $this->config->get('service.accounts_url');
         } else {
             $this->stdErr->writeln('No URLs are configured');
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
+        $urlService = $this->url;
         $urlService->openUrl($url);
 
         return 0;

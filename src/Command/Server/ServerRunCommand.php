@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Url;
@@ -14,6 +17,10 @@ use Symfony\Component\Process\Exception\RuntimeException;
 #[AsCommand(name: 'server:run', description: 'Run a local PHP web server')]
 class ServerRunCommand extends ServerCommandBase
 {
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -44,16 +51,14 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-        $finder = $this->getService('app_finder');
+        $finder = $this->applicationFinder;
         $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
             $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $appId = $input->getOption('app');
         if (!$appId) {
@@ -79,7 +84,7 @@ class ServerRunCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
             $this->stdErr->writeln(sprintf(
                 'Build the application with: <comment>%s build</comment>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
             return 1;
         }
@@ -174,8 +179,7 @@ class ServerRunCommand extends ServerCommandBase
         sleep(1);
 
         if ($process->isRunning()) {
-            /** @var Url $urlService */
-            $urlService = $this->getService('url');
+            $urlService = $this->url;
             $urlService->openUrl('http://' . $address);
         }
 

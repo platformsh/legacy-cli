@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,6 +11,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CurlCommand extends MetricsCommandBase
 {
     protected $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -25,15 +30,14 @@ class CurlCommand extends MetricsCommandBase
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).
-        $this->api();
+        $this->api;
 
         $link = $this->getMetricsLink($this->getSelectedEnvironment());
         if (!$link) {
             return 1;
         }
 
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
+        $curl = $this->curlCli;
 
         return $curl->run($link['href'], $input, $output);
     }

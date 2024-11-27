@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Organization\Member;
@@ -11,9 +15,19 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class OrganizationCommandBase extends CommandBase
 {
+    private readonly QuestionHelper $questionHelper;
+    private readonly Config $config;
+    private readonly Api $api;
+    #[Required]
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+    }
     public function isEnabled(): bool
     {
-        if (!$this->config()->getWithDefault('api.organizations', false)) {
+        if (!$this->config->getWithDefault('api.organizations', false)) {
             return false;
         }
         return parent::isEnabled();
@@ -44,7 +58,7 @@ class OrganizationCommandBase extends CommandBase
     protected function otherCommandExample(InputInterface $input, $commandName, $otherArgs = '')
     {
         $args = [
-            $this->config()->get('application.executable'),
+            $this->config->get('application.executable'),
             $commandName,
         ];
         if ($input->hasOption('org') && $input->getOption('org')) {
@@ -110,7 +124,7 @@ class OrganizationCommandBase extends CommandBase
      */
     protected function chooseMember(Organization $organization)
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $options = ['query' => ['page[size]' => 100]];
         $url = $organization->getUri() . '/members';
         /** @var Member[] $members */
@@ -134,11 +148,10 @@ class OrganizationCommandBase extends CommandBase
                 continue;
             }
             $emailAddresses[$member->user_id] = $member->getUserInfo()->email;
-            $choices[$member->user_id] = $this->api()->getMemberLabel($member);
+            $choices[$member->user_id] = $this->api->getMemberLabel($member);
             $byId[$member->user_id] = $member;
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if (count($choices) < 25) {
             $default = null;
             if (isset($choices[$organization->owner_id])) {

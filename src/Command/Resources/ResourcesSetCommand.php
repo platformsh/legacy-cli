@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Wildcard;
@@ -19,6 +23,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -49,13 +57,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
             '',
             'The resources may be the profile size, the instance count, or the disk size (MB).',
             '',
-            sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config()->get('application.executable')),
+            sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config->get('application.executable')),
             '',
             'If the same service and resource is specified on the command line multiple times, only the final value will be used.'
         ];
-        if ($this->config()->has('service.resources_help_url')) {
+        if ($this->config->has('service.resources_help_url')) {
             $helpLines[] = '';
-            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config()->get('service.resources_help_url') . '</info>';
+            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>';
         }
         $this->setHelp(implode("\n", $helpLines));
 
@@ -69,8 +77,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
             return 1;
         }
 
@@ -80,7 +88,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $nextDeployment = $this->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
-                $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api->getEnvironmentLabel($environment, 'comment')));
                 return 1;
             }
             throw $e;
@@ -126,8 +134,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
         $this->stdErr->writeln('');
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $containerProfiles = $nextDeployment->container_profiles;
 
@@ -273,7 +280,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
         $project = $this->getSelectedProject();
-        $organization = $this->api()->getClient()->getOrganizationById($project->getProperty('organization'));
+        $organization = $this->api->getClient()->getOrganizationById($project->getProperty('organization'));
         $profile = $organization->getProfile();
         if ($input->getOption('force') === false && isset($profile->resources_limit) && $profile->resources_limit) {
             $diff = $this->computeMemoryCPUStorageDiff($updates, $current);
@@ -325,12 +332,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('Setting the resources on the environment ' . $this->api()->getEnvironmentLabel($environment));
+        $this->stdErr->writeln('Setting the resources on the environment ' . $this->api->getEnvironmentLabel($environment));
         $result = $nextDeployment->update($updates);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;

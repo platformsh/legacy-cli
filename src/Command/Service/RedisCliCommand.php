@@ -15,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:redis-cli', description: 'Access the Redis CLI', aliases: ['redis'])]
 class RedisCliCommand extends CommandBase
 {
+    public function __construct(private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
@@ -36,8 +40,7 @@ class RedisCliCommand extends CommandBase
             throw new \RuntimeException('The redis-cli command cannot run as a shell via multi');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['redis']);

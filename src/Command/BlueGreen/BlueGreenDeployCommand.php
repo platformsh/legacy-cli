@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BlueGreenDeployCommand extends CommandBase
 {
     protected $stability = 'ALPHA';
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -28,12 +35,12 @@ class BlueGreenDeployCommand extends CommandBase
         $this->validateInput($input, false, true);
         $environment = $this->getSelectedEnvironment();
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));
         $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) < 2) {
-            $this->stdErr->writeln(sprintf('Blue/green deployments are not enabled for the environment %s.', $this->api()->getEnvironmentLabel($environment, 'error')));
-            $this->stdErr->writeln(sprintf('Enable blue/green first by running: <info>%s blue-green:enable</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('Blue/green deployments are not enabled for the environment %s.', $this->api->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(sprintf('Enable blue/green first by running: <info>%s blue-green:enable</info>', $this->config->get('application.executable')));
             return 1;
         }
 
@@ -56,8 +63,7 @@ class BlueGreenDeployCommand extends CommandBase
         }
         $targetPercentage = (int) $targetPercentage;
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         if ($targetPercentage === 100) {
             $questionText = sprintf('Are you sure you want to deploy version <info>%s</info>?', $latestVersionData['id']);
@@ -76,7 +82,7 @@ class BlueGreenDeployCommand extends CommandBase
         ]);
         if ($targetPercentage === 100) {
             $this->stdErr->writeln(sprintf('Version <info>%s</info> has now been deployed.', $latestVersionData['id']));
-            $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config->get('application.executable')));
         } else {
             $this->stdErr->writeln(sprintf('Version <info>%s</info> now has a routing percentage of %d.', $latestVersionData['id'] ,$targetPercentage));
         }

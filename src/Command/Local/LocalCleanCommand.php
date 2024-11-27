@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +14,10 @@ class LocalCleanCommand extends CommandBase
 {
     protected $local = true;
     protected $hiddenInList = true;
+    public function __construct(private readonly LocalBuild $localBuild)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -45,8 +50,7 @@ class LocalCleanCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
-        $builder = $this->getService('local.build');
+        $builder = $this->localBuild;
         $result = $builder->cleanBuilds(
             $projectRoot,
             $input->getOption('max-age'),

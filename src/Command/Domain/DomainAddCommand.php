@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Model\EnvironmentDomain;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainAddCommand extends DomainCommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -44,8 +51,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
@@ -60,7 +66,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         try {
             $result = EnvironmentDomain::add($httpClient, $environment, $this->domainName, $this->attach, $this->sslOptions);
         } catch (ClientException $e) {
@@ -84,7 +90,7 @@ class DomainAddCommand extends DomainCommandBase
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln(sprintf(
                             'The environment %s already has a domain with the same <comment>--attach</comment> value: <error>%s</error>',
-                            $this->api()->getEnvironmentLabel($environment, 'comment'), $data['detail']['conflicting_domain']
+                            $this->api->getEnvironmentLabel($environment, 'comment'), $data['detail']['conflicting_domain']
                         ));
                         return 1;
                     }
@@ -108,8 +114,7 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

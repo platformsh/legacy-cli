@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Team\Project;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Client\Exception\ApiResponseException;
@@ -12,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'team:project:delete', description: 'Remove a project from a team')]
 class TeamProjectDeleteCommand extends TeamCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -26,14 +32,13 @@ class TeamProjectDeleteCommand extends TeamCommandBase
         if (!$team) {
             return 1;
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $teamProjects = $this->loadTeamProjects($team);
 
         $projectLabels = [];
         foreach ($teamProjects as $teamProject) {
-            $projectLabels[$teamProject->project_id] = $this->api()->getProjectLabel($teamProject, false);
+            $projectLabels[$teamProject->project_id] = $this->api->getProjectLabel($teamProject, false);
         }
 
         $projectId = $input->getArgument('project');
@@ -60,7 +65,7 @@ class TeamProjectDeleteCommand extends TeamCommandBase
         }
 
         try {
-            $this->api()->getHttpClient()->delete($team->getUri() . '/project-access/' . rawurlencode($projectId));
+            $this->api->getHttpClient()->delete($team->getUri() . '/project-access/' . rawurlencode($projectId));
         } catch (BadResponseException $e) {
             throw ApiResponseException::create($e->getRequest(), $e->getResponse(), $e);
         }

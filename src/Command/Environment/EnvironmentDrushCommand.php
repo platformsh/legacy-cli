@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\AppConfig;
@@ -16,6 +19,10 @@ use Symfony\Component\Console\Terminal;
 class EnvironmentDrushCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly RemoteEnvVars $remoteEnvVars)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -39,7 +46,7 @@ class EnvironmentDrushCommand extends CommandBase
         // Hide this command in the list if the project is not Drupal.
         // Avoid checking if running in the home directory.
         $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && $this->config()->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
+        if ($projectRoot && $this->config->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
             return true;
         }
 
@@ -81,12 +88,11 @@ class EnvironmentDrushCommand extends CommandBase
 
         $selectedEnvironment = $this->getSelectedEnvironment();
 
-        $deployment = $this->api()->getCurrentDeployment($selectedEnvironment);
+        $deployment = $this->api->getCurrentDeployment($selectedEnvironment);
 
         // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
         // determine the path to Drupal.
-        /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
-        $envVarsService = $this->getService('remote_env_vars');
+        $envVarsService = $this->remoteEnvVars;
         $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $host);
         if ($documentRoot !== '') {
             $drupalRoot = $documentRoot;
@@ -104,7 +110,7 @@ class EnvironmentDrushCommand extends CommandBase
         $columns = (new Terminal())->getWidth();
 
         $sshDrushCommand = "COLUMNS=$columns drush --root=" . OsUtil::escapePosixShellArg($drupalRoot);
-        if ($siteUrl = $this->api()->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
+        if ($siteUrl = $this->api->getSiteUrl($selectedEnvironment, $appName, $deployment)) {
             $sshDrushCommand .= " --uri=" . OsUtil::escapePosixShellArg($siteUrl);
         }
         $sshDrushCommand .= ' ' . $drushCommand;

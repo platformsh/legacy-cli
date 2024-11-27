@@ -10,6 +10,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:list', description: 'List running local project web server(s)', aliases: ['servers'])]
 class ServerListCommand extends ServerCommandBase
 {
+    public function __construct(private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -37,7 +41,7 @@ class ServerListCommand extends ServerCommandBase
             }
         }
 
-        $table = $this->getService('table');
+        $table = $this->table;
         $headers = ['Address', 'PID', 'App', 'Project root', 'Log'];
         $rows = [];
         foreach ($servers as $address => $server) {

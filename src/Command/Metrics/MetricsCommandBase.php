@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
 use Khill\Duration\Duration;
@@ -22,6 +26,9 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
+    private readonly PropertyFormatter $propertyFormatter;
+    private readonly Config $config;
+    private readonly Api $api;
     const MIN_INTERVAL = 60; // 1 minute
 
     const MIN_RANGE = 300; // 5 minutes
@@ -87,10 +94,17 @@ abstract class MetricsCommandBase extends CommandBase
             'inodes_limit' => "AVG(`disk.inodes.limit`, 'mountpoint')",
         ],
     ];
+    #[Required]
+    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->propertyFormatter = $propertyFormatter;
+    }
 
     public function isEnabled(): bool
     {
-        if (!$this->config()->getWithDefault('api.metrics', false)) {
+        if (!$this->config->getWithDefault('api.metrics', false)) {
             return false;
         }
         return parent::isEnabled();
@@ -131,12 +145,12 @@ abstract class MetricsCommandBase extends CommandBase
     {
         $environmentData = $environment->getData();
         if (!isset($environmentData['_links']['#metrics'])) {
-            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api->getEnvironmentLabel($environment, 'error')));
 
             return false;
         }
         if (!isset($environmentData['_links']['#metrics'][0]['href'], $environmentData['_links']['#metrics'][0]['collection'])) {
-            $this->stdErr->writeln(\sprintf('Unable to find metrics URLs for the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('Unable to find metrics URLs for the environment: %s', $this->api->getEnvironmentLabel($environment, 'error')));
 
             return false;
         }
@@ -216,7 +230,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         // Select services based on the --service or --type options.
-        $deployment = $this->api()->getCurrentDeployment($environment);
+        $deployment = $this->api->getCurrentDeployment($environment);
         $allServices = array_merge($deployment->webapps, $deployment->services, $deployment->workers);
         $servicesInput = ArrayArgument::getOption($input, 'service');
         $selectedServiceNames = [];
@@ -256,7 +270,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         // Perform the metrics query.
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
         $request = new Request('POST', $metricsQueryUrl, [
             'Content-Type' => 'application/json',
         ], json_encode($query->asArray()));
@@ -455,10 +469,9 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function buildRows(array $values, $fields)
     {
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
-        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
 
         // Create a closure which can sort services by name, putting apps and
         // workers first.
@@ -562,8 +575,8 @@ abstract class MetricsCommandBase extends CommandBase
     protected function displayEnvironmentHeader()
     {
         if (!$this->printedSelectedEnvironment) {
-            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($this->getSelectedProject()));
-            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->getSelectedEnvironment()));
+            $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($this->getSelectedProject()));
+            $this->stdErr->writeln('Selected environment: ' . $this->api->getEnvironmentLabel($this->getSelectedEnvironment()));
         }
         $this->stdErr->writeln('');
     }

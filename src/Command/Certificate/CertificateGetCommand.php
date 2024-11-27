@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateGetCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -31,15 +36,14 @@ class CertificateGetCommand extends CommandBase
         $cert = $project->getCertificate($id);
         if (!$cert) {
             try {
-                $cert = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+                $cert = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return 1;
             }
         }
 
-        /** @var PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
+        $propertyFormatter = $this->propertyFormatter;
 
         $propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
 

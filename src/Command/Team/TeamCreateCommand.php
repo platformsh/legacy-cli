@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -19,6 +21,10 @@ use Symfony\Component\Console\Question\Question;
 class TeamCreateCommand extends TeamCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -38,7 +44,7 @@ class TeamCreateCommand extends TeamCommandBase
             if (!$existingTeam) {
                 return 1;
             }
-            $organization = $this->api()->getOrganizationById($existingTeam->organization_id);
+            $organization = $this->api->getOrganizationById($existingTeam->organization_id);
             if (!$organization) {
                 $this->stdErr->writeln(sprintf('Failed to load team organization: <error>%s</error>.', $existingTeam->organization_id));
                 return 1;
@@ -51,8 +57,7 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $label = $input->getOption('label');
         if ($label === null) {
@@ -69,7 +74,7 @@ class TeamCreateCommand extends TeamCommandBase
         if (!$input->getOption('no-check-unique') && (!$existingTeam || $label !== $existingTeam->label)) {
             $options = [];
             $options['query']['filter[organization_id]'] = $organization->id;
-            $client = $this->api()->getHttpClient();
+            $client = $this->api->getHttpClient();
             $url = '/teams';
             $pageNumber = 1;
             $progress = new ProgressMessage($this->stdErr);
@@ -149,7 +154,7 @@ class TeamCreateCommand extends TeamCommandBase
                 }
                 throw $e;
             }
-            $this->stdErr->writeln(sprintf('Created team %s in the organization %s', $this->getTeamLabel($team), $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln(sprintf('Created team %s in the organization %s', $this->getTeamLabel($team), $this->api->getOrganizationLabel($organization)));
             $this->stdErr->writeln('');
         } else {
             $team = $existingTeam;
@@ -213,8 +218,7 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function showProjectRoleForm($defaultRole, InputInterface $input)
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $validProjectRoles = ['admin', 'viewer'];
 
@@ -306,8 +310,7 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function showTypeRolesForm(array $defaultTypeRoles, InputInterface $input)
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);
         $this->stdErr->writeln("The user's environment type role(s) can be " . $this->describeRoles($validRoles) . '.');

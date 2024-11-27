@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Doctrine\Common\Cache\CacheProvider;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
@@ -17,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
 {
 
+    public function __construct(private readonly CacheProvider $cacheProvider, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -65,13 +71,11 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $this->stdErr->writeln('No log type specified.');
             return 1;
         } else {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $host->getCacheKey());
-            /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-            $cache = $this->getService('cache');
+            $cache = $this->cacheProvider;
             if (!$result = $cache->fetch($cacheKey)) {
                 $result = $host->runCommand('echo -n _BEGIN_FILE_LIST_; ls -1 ' . $logDir . '/*.log; echo -n _END_FILE_LIST_');
                 if (is_string($result)) {

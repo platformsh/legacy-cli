@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -15,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:ssh', description: 'SSH to the current environment', aliases: ['ssh'])]
 class EnvironmentSshCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -33,7 +41,7 @@ class EnvironmentSshCommand extends CommandBase
         $this->addExample('Pass an extra option to SSH', "-o 'RequestTTY force'");
         $this->addExample('List files', 'ls');
         $this->addExample("Monitor the app log (use '--' before flags)", 'tail /var/log/app.log -- -n50 -f');
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         $this->addExample('Display relationships (use quotes for complex syntax)', "'echo \${$envPrefix}RELATIONSHIPS | base64 --decode'");
     }
 
@@ -58,7 +66,7 @@ class EnvironmentSshCommand extends CommandBase
             }
             switch ($e->getEnvironment()->status) {
                 case 'inactive':
-                    $this->stdErr->writeln(sprintf('The environment %s is inactive, so an SSH connection is not possible.', $this->api()->getEnvironmentLabel($e->getEnvironment(), 'error')));
+                    $this->stdErr->writeln(sprintf('The environment %s is inactive, so an SSH connection is not possible.', $this->api->getEnvironmentLabel($e->getEnvironment(), 'error')));
                     if (!$e->getEnvironment()->has_code) {
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln('Push code to the environment to activate it.');
@@ -66,10 +74,10 @@ class EnvironmentSshCommand extends CommandBase
                     return 1;
 
                 case 'paused':
-                    $this->stdErr->writeln(sprintf('The environment %s is paused, so an SSH connection is not possible.', $this->api()->getEnvironmentLabel($e->getEnvironment(), 'error')));
-                    if ($this->config()->isCommandEnabled('environment:resume')) {
+                    $this->stdErr->writeln(sprintf('The environment %s is paused, so an SSH connection is not possible.', $this->api->getEnvironmentLabel($e->getEnvironment(), 'error')));
+                    if ($this->config->isCommandEnabled('environment:resume')) {
                         $this->stdErr->writeln('');
-                        $this->stdErr->writeln(sprintf('Resume the environment by running: <info>%s environment:resume -e %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($environment->id)));
+                        $this->stdErr->writeln(sprintf('Resume the environment by running: <info>%s environment:resume -e %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($environment->id)));
                     }
                     return 1;
             }
@@ -89,12 +97,10 @@ class EnvironmentSshCommand extends CommandBase
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        $ssh = $this->ssh;
         $command = $ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        $shell = $this->shell;
 
         $start = \time();
 
@@ -106,8 +112,7 @@ class EnvironmentSshCommand extends CommandBase
                 return $exitCode;
             }
 
-            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
-            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics = $this->sshDiagnostics;
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
         }
 

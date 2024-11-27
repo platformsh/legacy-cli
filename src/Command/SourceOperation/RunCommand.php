@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\SourceOperation;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\Variable;
@@ -15,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'source-operation:run', description: 'Run a source operation')]
 class RunCommand extends CommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -48,8 +56,7 @@ class RunCommand extends CommandBase
                 $this->stdErr->writeln('The <error>operation</error> argument is required in non-interactive mode.');
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($sourceOps as $sourceOp) {
                 $choices[$sourceOp->operation] = $sourceOp->operation . ' (app: <info>' . $sourceOp->app . '</info>)';
@@ -63,9 +70,9 @@ class RunCommand extends CommandBase
             $operationNames[] = $sourceOp->operation;
         }
         if (!in_array($operation, $operationNames, true)) {
-            $this->stdErr->writeln(sprintf('The source operation <error>%s</error> was not found on the environment %s.', $operation, $this->api()->getEnvironmentLabel($environment, 'comment')));
+            $this->stdErr->writeln(sprintf('The source operation <error>%s</error> was not found on the environment %s.', $operation, $this->api->getEnvironmentLabel($environment, 'comment')));
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config->get('application.executable')));
             return 1;
         }
 
@@ -82,8 +89,7 @@ class RunCommand extends CommandBase
 
         $success = true;
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
-            $monitor = $this->getService('activity_monitor');
+            $monitor = $this->activityMonitor;
             $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

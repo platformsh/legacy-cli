@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization\Billing;
 
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -16,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationProfileCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -31,25 +36,22 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $org = $this->validateOrganizationInput($input, 'orders');
         $profile = $org->getProfile();
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $property = $input->getArgument('property');
         if ($property === null) {
             $headings = [];
             $values = [];
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             foreach ($profile->getProperties() as $key => $value) {
                 $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
                 $values[] = $formatter->format($value, $key);
             }
 
-            /** @var Table $table */
-            $table = $this->getService('table');
+            $table = $this->table;
 
             if (!$table->formatIsMachineReadable()) {
-                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api()->getOrganizationLabel($org)));
+                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api->getOrganizationLabel($org)));
             }
 
             $table->renderSimple($values, $headings);
@@ -82,8 +84,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $currentValue = $profile->getProperty($property, false);
         if ($currentValue === $value) {

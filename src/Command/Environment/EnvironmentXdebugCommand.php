@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +15,10 @@ use Symfony\Component\Process\Process;
 class EnvironmentXdebugCommand extends CommandBase
 {
     const SOCKET_PATH = '/run/xdebug-tunnel.sock';
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Ssh $ssh)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -59,8 +65,7 @@ class EnvironmentXdebugCommand extends CommandBase
         static $isPhp;
         if (!isset($isPhp)) {
             $isPhp = false;
-            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-            $finder = $this->getService('app_finder');
+            $finder = $this->applicationFinder;
             foreach ($finder->findApplications($directory) as $app) {
                 $type = $app->getType();
                 if ($type === 'php' || strpos($type, 'php:') === 0) {
@@ -90,8 +95,8 @@ class EnvironmentXdebugCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('To use Xdebug your project must have an <comment>idekey</comment> value set.');
             $this->stdErr->writeln('');
-            if ($this->config()->has('service.app_config_file')) {
-                $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config()->get('service.app_config_file')));
+            if ($this->config->has('service.app_config_file')) {
+                $this->stdErr->writeln(sprintf('Set this in the <comment>%s</comment> file as in this example:', $this->config->get('service.app_config_file')));
             } else {
                 $this->stdErr->writeln('Set this in the application configuration file as in this example:');
             }
@@ -106,8 +111,7 @@ class EnvironmentXdebugCommand extends CommandBase
         }
 
 
-        /** @var Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        $ssh = $this->ssh;
 
         // The socket is removed to prevent 'file already exists' errors.
         $commandCleanup = $ssh->getSshCommand($sshUrl, [], 'rm -rf ' . self::SOCKET_PATH);

@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
@@ -23,9 +26,13 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'auth:browser-login', description: 'Log in to via a browser', aliases: ['login'])]
 class BrowserLoginCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $applicationName = $this->config()->get('application.name');
+        $applicationName = $this->config->get('application.name');
 
         $this
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in')
@@ -33,7 +40,7 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('max-age', null, InputOption::VALUE_REQUIRED, 'The maximum age (in seconds) of the web authentication session');
         Url::configureInput($this->getDefinition());
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         $help = 'Use this command to log in to the ' . $applicationName . ' using a web browser.'
             . "\n\nIt launches a temporary local website which redirects you to log in if necessary, and then captures the resulting authorization code."
             . "\n\nYour system's default browser will be used. You can override this using the <info>--browser</info> option."
@@ -44,7 +51,7 @@ class BrowserLoginCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($this->api()->hasApiToken(false)) {
+        if ($this->api->hasApiToken(false)) {
             $this->stdErr->writeln('Cannot log in via the browser, because an API token is set via config.');
             return 1;
         }
@@ -53,21 +60,21 @@ class BrowserLoginCommand extends CommandBase
             $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
-        if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
-            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
-            if (!$this->config()->isSessionIdFromEnv()) {
-                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+        if ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1) {
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId()));
+            if (!$this->config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
             }
             $this->stdErr->writeln('');
         }
-        $connector = $this->api()->getClient(false)->getConnector();
+        $connector = $this->api->getClient(false)->getConnector();
         $force = $input->getOption('force');
         if (!$force && $input->getOption('method') === [] && $input->getOption('max-age') === null && $connector->isLoggedIn()) {
             // Get account information, simultaneously checking whether the API
             // login is still valid. If the request works, then do not log in
             // again (unless --force is used). If the request fails, proceed
             // with login.
-            $api = $this->api();
+            $api = $this->api;
             try {
                 $api->inLoginCheck = true;
 
@@ -79,8 +86,7 @@ class BrowserLoginCommand extends CommandBase
                 ));
 
                 if ($input->isInteractive()) {
-                    /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                    $questionHelper = $this->getService('question_helper');
+                    $questionHelper = $this->questionHelper;
                     if (!$questionHelper->confirm('Log in anyway?', false)) {
                         return 1;
                     }
@@ -114,7 +120,7 @@ class BrowserLoginCommand extends CommandBase
             if (stripos($e->getMessage(), 'failed to find') !== false) {
                 $this->stdErr->writeln(sprintf('Failed to find an available port between <error>%d</error> and <error>%d</error>.', $start, $end));
                 $this->stdErr->writeln('Check if you have unnecessary services running on these ports.');
-                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config->get('application.executable')));
 
                 return 1;
             }
@@ -125,7 +131,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Then create the document root for the local server. This needs to be
         // outside the CLI itself (since the CLI may be run as a Phar).
-        $listenerDir = $this->config()->getWritableUserDir() . '/oauth-listener';
+        $listenerDir = $this->config->getWritableUserDir() . '/oauth-listener';
         $this->createDocumentRoot($listenerDir);
 
         // Create the file where a response will be saved (by the local server
@@ -147,11 +153,11 @@ class BrowserLoginCommand extends CommandBase
         ]);
         $codeVerifier = $this->generateCodeVerifier();
         $process->setEnv([
-            'CLI_OAUTH_APP_NAME' => $this->config()->get('application.name'),
+            'CLI_OAUTH_APP_NAME' => $this->config->get('application.name'),
             'CLI_OAUTH_STATE' => $this->generateCodeVerifier(), // the state can just be any random string
             'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
-            'CLI_OAUTH_AUTH_URL' => $this->config()->get('api.oauth2_auth_url'),
-            'CLI_OAUTH_CLIENT_ID' => $this->config()->get('api.oauth2_client_id'),
+            'CLI_OAUTH_AUTH_URL' => $this->config->get('api.oauth2_auth_url'),
+            'CLI_OAUTH_CLIENT_ID' => $this->config->get('api.oauth2_client_id'),
             'CLI_OAUTH_PROMPT' => $force ? 'consent select_account' : 'consent',
             'CLI_OAUTH_SCOPE' => 'offline_access',
             'CLI_OAUTH_FILE' => $responseFile,
@@ -175,8 +181,7 @@ class BrowserLoginCommand extends CommandBase
         }
 
         // Open the local server URL in a browser (or print the URL).
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
+        $urlService = $this->url;
         if ($urlService->openUrl($localUrl, false)) {
             $this->stdErr->writeln(sprintf('Opened URL: <info>%s</info>', $localUrl));
             $this->stdErr->writeln('Please use the browser to log in.');
@@ -254,17 +259,17 @@ class BrowserLoginCommand extends CommandBase
         $token = $this->getAccessToken($code, $codeVerifier, isset($response['redirect_uri']) ? $response['redirect_uri'] : $localUrl);
 
         // Finalize login: log out and save the new credentials.
-        $this->api()->logout();
+        $this->api->logout();
 
         // Save the new tokens to the persistent session.
-        $session = $this->api()->getClient(false)->getConnector()->getSession();
+        $session = $this->api->getClient(false)->getConnector()->getSession();
         $this->saveAccessToken($token, $session);
 
         $this->finalizeLogin();
 
         if (empty($token['refresh_token'])) {
             $this->stdErr->writeln('');
-            $clientId = $this->config()->get('api.oauth2_client_id');
+            $clientId = $this->config->get('api.oauth2_client_id');
             $this->stdErr->writeln([
                 '<options=bold;fg=yellow>Warning:</fg>',
                 'No refresh token is available. This will cause frequent login errors.',
@@ -318,7 +323,7 @@ class BrowserLoginCommand extends CommandBase
         if (!file_put_contents($dir . '/index.php', file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {
             throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/index.php');
         }
-        if (!file_put_contents($dir . '/config.json', json_encode($this->config()->getWithDefault('browser_login', []), JSON_UNESCAPED_SLASHES))) {
+        if (!file_put_contents($dir . '/config.json', json_encode($this->config->getWithDefault('browser_login', []), JSON_UNESCAPED_SLASHES))) {
             throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/config.json');
         }
     }
@@ -334,8 +339,8 @@ class BrowserLoginCommand extends CommandBase
      */
     private function getAccessToken($authCode, $codeVerifier, $redirectUri)
     {
-        $client = new Client(['verify' => !$this->config()->getWithDefault('api.skip_ssl', false)]);
-        $request = new Request('POST', $this->config()->get('api.oauth2_token_url'), body: http_build_query([
+        $client = new Client(['verify' => !$this->config->getWithDefault('api.skip_ssl', false)]);
+        $request = new Request('POST', $this->config->get('api.oauth2_token_url'), body: http_build_query([
             'grant_type' => 'authorization_code',
             'code' => $authCode,
             'redirect_uri' => $redirectUri,
@@ -347,7 +352,7 @@ class BrowserLoginCommand extends CommandBase
                 'headers' => [
                     'Content-Type' => 'application/x-www-form-urlencoded',
                 ],
-                'auth' => [$this->config()->get('api.oauth2_client_id'), ''],
+                'auth' => [$this->config->get('api.oauth2_client_id'), ''],
             ]);
 
             return Utils::jsonDecode((string) $response->getBody(), true);

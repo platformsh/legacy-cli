@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Route;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
@@ -14,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'route:get', description: 'View detailed information about a route')]
 class RouteGetCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -36,7 +43,7 @@ class RouteGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
@@ -48,14 +55,14 @@ class RouteGetCommand extends CommandBase
             $this->debug('Reading routes from the API');
             $this->validateInput($input);
             $environment = $this->getSelectedEnvironment();
-            $deployment = $this->api()
+            $deployment = $this->api
                 ->getCurrentDeployment($environment, $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
         }
 
         $this->warnAboutDeprecatedOptions(['app', 'identity-file']);
 
-        /** @var \Platformsh\Cli\Model\Route|false $selectedRoute */
+        /** @var Route|false $selectedRoute */
         $selectedRoute = false;
 
         $id = $input->getOption('id');
@@ -92,8 +99,7 @@ class RouteGetCommand extends CommandBase
 
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $items = [];
             $default = null;
             foreach ($routes as $route) {
@@ -134,8 +140,7 @@ class RouteGetCommand extends CommandBase
         // Add defaults.
         $selectedRoute = $selectedRoute->getProperties();
 
-        /** @var PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
+        $propertyFormatter = $this->propertyFormatter;
 
         $propertyFormatter->displayData($output, $selectedRoute, $input->getOption('property'));
 

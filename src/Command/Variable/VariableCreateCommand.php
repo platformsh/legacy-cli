@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
@@ -18,6 +22,10 @@ class VariableCreateCommand extends VariableCommandBase
 {
     /** @var Form */
     private $form;
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -58,7 +66,7 @@ class VariableCreateCommand extends VariableCommandBase
                 if (!$input->getOption('update')) {
                     $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
 
-                    $executable = $this->config()->get('application.executable');
+                    $executable = $this->config->get('application.executable');
                     $escapedName = $this->escapeShellArg($name);
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
@@ -91,8 +99,7 @@ class VariableCreateCommand extends VariableCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         try {
             $values = $this->form->resolveOptions($input, $output, $questionHelper);
@@ -175,7 +182,7 @@ class VariableCreateCommand extends VariableCommandBase
                     'Creating variable <info>%s</info> on the environment <info>%s</info>', $values['name'], $environment->id));
 
                 try {
-                    $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api()->getHttpClient());
+                    $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api->getHttpClient());
                 } catch (BadResponseException $e) {
 
                     // Explain the error with visible_build on older API versions.
@@ -198,7 +205,7 @@ class VariableCreateCommand extends VariableCommandBase
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the project %s',
                         $values['name'],
-                        $this->api()->getProjectLabel($project, 'error')
+                        $this->api->getProjectLabel($project, 'error')
                     ));
 
                     return 1;
@@ -206,10 +213,10 @@ class VariableCreateCommand extends VariableCommandBase
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the project %s',
                     $values['name'],
-                    $this->api()->getProjectLabel($project, 'info')
+                    $this->api->getProjectLabel($project, 'info')
                 ));
 
-                $result = ProjectLevelVariable::create($values, $project->getUri() . '/variables', $this->api()->getHttpClient());
+                $result = ProjectLevelVariable::create($values, $project->getUri() . '/variables', $this->api->getHttpClient());
                 break;
 
             default:
@@ -222,8 +229,7 @@ class VariableCreateCommand extends VariableCommandBase
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

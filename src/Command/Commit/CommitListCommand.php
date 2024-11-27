@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Commit;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\GitDataApi;
@@ -21,6 +22,10 @@ class CommitListCommand extends CommandBase
 {
 
     private $tableHeader = ['Date', 'SHA', 'Author', 'Summary'];
+    public function __construct(private readonly Api $api, private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -50,8 +55,7 @@ class CommitListCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $startSha = $input->getArgument('commit');
-        /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
+        $gitData = $this->gitDataApi;
         $startCommit = $gitData->getCommit($environment, $startSha);
         if (!$startCommit) {
             if ($startSha) {
@@ -63,21 +67,19 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($environment)
+                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getEnvironmentLabel($environment)
             ));
         }
 
         $commits = $this->loadCommitList($environment, $startCommit, $input->getOption('limit'));
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($commits as $commit) {
@@ -100,11 +102,11 @@ class CommitListCommand extends CommandBase
     /**
      * Load parent commits, recursively, up to the limit.
      *
-     * @param \Platformsh\Client\Model\Environment $environment
-     * @param \Platformsh\Client\Model\Git\Commit  $startCommit
+     * @param Environment $environment
+     * @param Commit $startCommit
      * @param int                                  $limit
      *
-     * @return \Platformsh\Client\Model\Git\Commit[]
+     * @return Commit[]
      */
     private function loadCommitList(Environment $environment, Commit $startCommit, $limit = 10)
     {
@@ -113,8 +115,7 @@ class CommitListCommand extends CommandBase
             return $commits;
         }
 
-        /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
+        $gitData = $this->gitDataApi;
 
         $progress = new ProgressBar($this->stdErr->isDecorated() ? $this->stdErr : new NullOutput());
         $progress->setMessage('Loading...');

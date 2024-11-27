@@ -1,6 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
@@ -19,11 +25,25 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
+    private readonly Table $table;
+    private readonly QuestionHelper $questionHelper;
+    private readonly PropertyFormatter $propertyFormatter;
+    private readonly LocalProject $localProject;
+    private readonly Api $api;
     /** @var Form */
     private $form;
 
     /** @var array */
     private $bitbucketAccessTokens = [];
+    #[Required]
+    public function autowire(Api $api, LocalProject $localProject, PropertyFormatter $propertyFormatter, QuestionHelper $questionHelper, Table $table) : void
+    {
+        $this->api = $api;
+        $this->localProject = $localProject;
+        $this->propertyFormatter = $propertyFormatter;
+        $this->questionHelper = $questionHelper;
+        $this->table = $table;
+    }
 
     /**
      * @param Project $project
@@ -44,8 +64,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
                 return false;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($integrations as $integration) {
                 $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
@@ -56,7 +75,7 @@ abstract class IntegrationCommandBase extends CommandBase
         $integration = $project->getIntegration($id);
         if (!$integration) {
             try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+                $integration = $this->api->matchPartialId($id, $project->getIntegrations(), 'Integration');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return false;
@@ -640,10 +659,8 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     protected function displayIntegration(Integration $integration)
     {
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
 
         $info = [];
         foreach ($integration->getProperties() as $property => $value) {
@@ -668,7 +685,7 @@ abstract class IntegrationCommandBase extends CommandBase
         if (isset($this->bitbucketAccessTokens[$credentials['key']])) {
             return $this->bitbucketAccessTokens[$credentials['key']];
         }
-        $response = $this->api()
+        $response = $this->api
             ->getExternalHttpClient()
             ->post('https://bitbucket.org/site/oauth2/access_token', [
                 'auth' => [$credentials['key'], $credentials['secret']],
@@ -715,7 +732,7 @@ abstract class IntegrationCommandBase extends CommandBase
      * Lists validation errors found in an integration.
      *
      * @param array                                             $errors
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param OutputInterface $output
      */
     protected function listValidationErrors(array $errors, OutputInterface $output)
     {
@@ -758,8 +775,7 @@ abstract class IntegrationCommandBase extends CommandBase
             return;
         }
         $this->stdErr->writeln(sprintf('Updating Git remote URL from %s to %s', $oldGitUrl, $newGitUrl));
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $localProject->ensureGitRemote($projectRoot, $newGitUrl);
     }
 }

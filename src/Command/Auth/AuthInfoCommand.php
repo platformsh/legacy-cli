@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:info', description: 'Display your account information')]
 class AuthInfoCommand extends CommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -28,10 +35,9 @@ class AuthInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
-        if ($input->getOption('no-auto-login') && !$this->api()->isLoggedIn()) {
+        if ($input->getOption('no-auto-login') && !$this->api->isLoggedIn()) {
             $this->stdErr->writeln('Not logged in', OutputInterface::VERBOSITY_VERBOSE);
             return 0;
         }
@@ -52,7 +58,7 @@ class AuthInfoCommand extends CommandBase
 
         // Exit early if it's the user ID.
         if ($property === 'id') {
-            $userId = $this->api()->getMyUserId($input->getOption('refresh'));
+            $userId = $this->api->getMyUserId($input->getOption('refresh'));
             if ($userId === false) {
                 $this->stdErr->writeln('The current session is not associated with a user ID');
                 return 1;
@@ -61,7 +67,7 @@ class AuthInfoCommand extends CommandBase
             return 0;
         }
 
-        $info = $this->api()->getMyAccount($input->getOption('refresh'));
+        $info = $this->api->getMyAccount($input->getOption('refresh'));
 
         $propertiesToDisplay = ['id', 'first_name', 'last_name', 'username', 'email', 'phone_number_verified'];
         $info = array_intersect_key($info, array_flip($propertiesToDisplay));
@@ -95,15 +101,14 @@ class AuthInfoCommand extends CommandBase
                 $header[] = $property;
             }
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $header);
 
-        if (!$table->formatIsMachineReadable() && ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1)) {
+        if (!$table->formatIsMachineReadable() && ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1)) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId()));
-            if (!$this->config()->isSessionIdFromEnv()) {
-                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId()));
+            if (!$this->config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
             }
         }
 

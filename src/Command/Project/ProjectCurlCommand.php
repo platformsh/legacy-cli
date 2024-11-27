@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectCurlCommand extends CommandBase
 {
     protected $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -26,12 +31,11 @@ class ProjectCurlCommand extends CommandBase
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).
-        $this->api();
+        $this->api;
 
         $url = $this->getSelectedProject()->getUri();
 
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
+        $curl = $this->curlCli;
 
         return $curl->run($url, $input, $output);
     }

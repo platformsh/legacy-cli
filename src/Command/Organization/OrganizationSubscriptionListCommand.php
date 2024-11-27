@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
@@ -21,6 +23,10 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         'updated_at' => 'Updated at',
     ];
     private $defaultColumns = ['id', 'project_id', 'project_title', 'project_region'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -46,7 +52,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         $options['query']['filter']['status']['operator'] = 'IN';
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
+        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 50) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 50, or 0 to disable pagination.');
@@ -56,7 +62,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         }
         $options['query']['range'] = $itemsPerPage;
 
-        $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
         if ($count === '0') {
             $fetchAllPages = true;
         }
@@ -71,7 +77,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 
         $organization = $this->validateOrganizationInput($input);
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $subscriptions = [];
         $url = $organization->getUri() . '/subscriptions';
         $progress = new ProgressMessage($output);
@@ -93,7 +99,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
                 $this->stdErr->writeln('No subscriptions were found on this page.');
                 return 0;
             }
-            $this->stdErr->writeln(\sprintf('No subscriptions were found belonging to the organization %s.', $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln(\sprintf('No subscriptions were found belonging to the organization %s.', $this->api->getOrganizationLabel($organization)));
             return 0;
         }
 
@@ -103,11 +109,10 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $title = \sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api()->getOrganizationLabel($organization));
+            $title = \sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api->getOrganizationLabel($organization));
             if (($pageNumber > 1 || isset($collection['next'])) && !$fetchAllPages) {
                 $title .= \sprintf(' (page %d)', $pageNumber);
             }

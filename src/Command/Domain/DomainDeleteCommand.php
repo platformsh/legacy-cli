@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'domain:delete', description: 'Delete a domain from the project')]
 class DomainDeleteCommand extends DomainCommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -36,7 +43,7 @@ class DomainDeleteCommand extends DomainCommandBase
         $project = $this->getSelectedProject();
 
         if ($forEnvironment) {
-            $httpClient = $this->api()->getHttpClient();
+            $httpClient = $this->api->getHttpClient();
             $environment = $this->getSelectedEnvironment();
             $domain = EnvironmentDomain::get($name, $environment->getLink('#domains'), $httpClient);
         }
@@ -59,7 +66,7 @@ class DomainDeleteCommand extends DomainCommandBase
             || (!$forEnvironment || $this->getSelectedEnvironment()->type === 'production');
         if ($isProductionDomain && $this->supportsNonProductionDomains($project)) {
             // Check the project has at least 1 non-inactive, non-production environment.
-            $hasNonProductionActiveEnvs = count(array_filter($this->api()->getEnvironments($project), function (Environment $e) {
+            $hasNonProductionActiveEnvs = count(array_filter($this->api->getEnvironments($project), function (Environment $e) {
                 return $e->type !== 'production' && $e->status !== 'inactive';
             })) > 0;
             if ($hasNonProductionActiveEnvs) {
@@ -73,8 +80,7 @@ class DomainDeleteCommand extends DomainCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
             return 1;
         }
@@ -85,8 +91,7 @@ class DomainDeleteCommand extends DomainCommandBase
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

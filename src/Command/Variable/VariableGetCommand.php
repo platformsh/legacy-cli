@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:get', description: 'View a variable', aliases: ['vget'])]
 class VariableGetCommand extends VariableCommandBase
 {
+    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -60,7 +67,7 @@ class VariableGetCommand extends VariableCommandBase
             $this->stdErr->writeln(sprintf(
                 "The variable <comment>%s</comment> is disabled.\nEnable it with: <comment>%s variable:enable %s</comment>",
                 $variable->name,
-                $this->config()->get('application.executable'),
+                $this->config->get('application.executable'),
                 escapeshellarg($variable->name)
             ));
         }
@@ -88,8 +95,7 @@ class VariableGetCommand extends VariableCommandBase
                 return 1;
             }
 
-            /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $formatter->displayData($output, $properties, $property);
 
             return 0;
@@ -97,11 +103,10 @@ class VariableGetCommand extends VariableCommandBase
 
         $this->displayVariable($variable);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $escapedName = $this->escapeShellArg($name);
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -145,8 +150,7 @@ class VariableGetCommand extends VariableCommandBase
             $options[$projectPrefix . $name] = $name
                 . (isset($options[$name]) ? ' (project-level)' : '');
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
         $key = $questionHelper->choose($options, 'Enter a number to choose a variable:');
         if (strpos($key, $projectPrefix) === 0) {

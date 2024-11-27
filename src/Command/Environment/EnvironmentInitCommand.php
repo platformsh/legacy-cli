@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:init', description: 'Initialize an environment from a public Git repository')]
 class EnvironmentInitCommand extends CommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -20,7 +27,7 @@ class EnvironmentInitCommand extends CommandBase
             ->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
 
-        if ($this->config()->get('service.name') === 'Platform.sh') {
+        if ($this->config->get('service.name') === 'Platform.sh') {
             $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh-templates/golang');
         }
 
@@ -65,8 +72,8 @@ class EnvironmentInitCommand extends CommandBase
 
         // Summarize this action with a message.
         $message = 'Initializing project ';
-        $message .= $this->api()->getProjectLabel($this->getSelectedProject());
-        $message .= ', environment ' . $this->api()->getEnvironmentLabel($environment);
+        $message .= $this->api->getProjectLabel($this->getSelectedProject());
+        $message .= ', environment ' . $this->api->getEnvironmentLabel($environment);
         if ($input->getOption('profile')) {
             $message .= ' with profile <info>' . $profile . '</info> (' . $url . ')';
         } else {
@@ -76,11 +83,10 @@ class EnvironmentInitCommand extends CommandBase
 
         $result = $environment->runOperation('initialize', 'POST', ['profile' => $profile, 'repository' => $url]);
 
-        $this->api()->clearEnvironmentsCache($environment->project);
+        $this->api->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             return $success ? 0 : 1;
         }

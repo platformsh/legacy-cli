@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
@@ -15,6 +19,9 @@ use Symfony\Component\Console\Input\InputOption;
 abstract class DomainCommandBase extends CommandBase
 {
 
+    private readonly QuestionHelper $questionHelper;
+    private readonly Config $config;
+    private readonly Api $api;
     // The final array of SSL options for the client parameters.
     protected $sslOptions = [];
 
@@ -23,6 +30,13 @@ abstract class DomainCommandBase extends CommandBase
     protected $environmentIsProduction;
 
     protected $attach;
+    #[Required]
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+    }
 
     /**
      * @param InputInterface $input
@@ -88,9 +102,9 @@ abstract class DomainCommandBase extends CommandBase
                     return false;
                 }
                 if (!$this->environmentIsProduction && !$supportsNonProduction) {
-                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
-                    if ($this->config()->has('warnings.non_production_domains_msg')) {
-                        $this->stdErr->writeln("\n". trim($this->config()->get('warnings.non_production_domains_msg')));
+                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api->getProjectLabel($project, 'error')));
+                    if ($this->config->has('warnings.non_production_domains_msg')) {
+                        $this->stdErr->writeln("\n". trim($this->config->get('warnings.non_production_domains_msg')));
                     }
                     return false;
                 }
@@ -130,8 +144,7 @@ abstract class DomainCommandBase extends CommandBase
                                 $choices[$productionDomain->name] = $productionDomain->name;
                             }
                         }
-                        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                        $questionHelper = $this->getService('question_helper');
+                        $questionHelper = $this->questionHelper;
                         $questionText = '<options=bold>Attachment</> (<info>--attach</info>)'
                             . "\nA non-production domain must be attached to an existing production domain."
                             . "\nIt will inherit the same routing behavior."

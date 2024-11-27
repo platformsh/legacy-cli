@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainUpdateCommand extends DomainCommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -42,7 +48,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $project = $this->getSelectedProject();
 
         if ($forEnvironment) {
-            $httpClient = $this->api()->getHttpClient();
+            $httpClient = $this->api->getHttpClient();
             $domain = EnvironmentDomain::get($this->domainName, $environment->getLink('#domains'), $httpClient);
         } else {
             $domain = $project->getDomain($this->domainName);
@@ -71,8 +77,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

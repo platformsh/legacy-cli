@@ -15,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:shell', description: 'Use the MongoDB shell', aliases: ['mongo'])]
 class MongoShellCommand extends CommandBase
 {
+    public function __construct(private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
@@ -32,8 +36,7 @@ class MongoShellCommand extends CommandBase
             throw new \RuntimeException('The mongo-shell command cannot run via multi');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);

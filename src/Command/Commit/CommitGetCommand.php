@@ -15,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CommitGetCommand extends CommandBase
 {
 
+    public function __construct(private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -49,8 +53,7 @@ class CommitGetCommand extends CommandBase
         $this->validateInput($input, false, true);
 
         $commitSha = $input->getArgument('commit');
-        /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
+        $gitData = $this->gitDataApi;
         $commit = $gitData->getCommit($this->getSelectedEnvironment(), $commitSha);
         if (!$commit) {
             if ($commitSha) {
@@ -62,8 +65,7 @@ class CommitGetCommand extends CommandBase
             return 1;
         }
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $commit->getProperties(), $input->getOption('property'));
 
         return 0;

@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -15,6 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainGetCommand extends DomainCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -38,7 +45,7 @@ class DomainGetCommand extends DomainCommandBase
         $project = $this->getSelectedProject();
         $forEnvironment = $input->getOption('environment') !== null;
         $environment = $forEnvironment ? $this->getSelectedEnvironment() : null;
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
 
         $domainName = $input->getArgument('name');
         if (!empty($domainName)) {
@@ -60,17 +67,15 @@ class DomainGetCommand extends DomainCommandBase
                 $options[$domain->name] = $domain->name;
                 $byName[$domain->name] = $domain;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
             $domain = $byName[$domainName];
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
+        $propertyFormatter = $this->propertyFormatter;
 
         if ($property = $input->getOption('property')) {
-            $value = $this->api()->getNestedProperty($domain, $property);
+            $value = $this->api->getNestedProperty($domain, $property);
             $output->writeln($propertyFormatter->format($value, $property));
 
             return 0;
@@ -86,12 +91,11 @@ class DomainGetCommand extends DomainCommandBase
             $properties[] = $name;
             $values[] = $propertyFormatter->format($value, $name);
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         $exampleArgs = '';
         if ($forEnvironment) {
             $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' ';

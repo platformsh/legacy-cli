@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Client\Model\Variable;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -10,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:delete', description: 'Delete a variable')]
 class VariableDeleteCommand extends VariableCommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -50,8 +57,7 @@ class VariableDeleteCommand extends VariableCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         switch ($this->getVariableLevel($variable)) {
             case 'environment':
@@ -67,7 +73,7 @@ class VariableDeleteCommand extends VariableCommandBase
 
             case 'project':
                 $confirm = $questionHelper->confirm(
-                    "Are you sure you want to delete the variable <info>$variableName</info> from the project " . $this->api()->getProjectLabel($this->getSelectedProject()) . "?",
+                    "Are you sure you want to delete the variable <info>$variableName</info> from the project " . $this->api->getProjectLabel($this->getSelectedProject()) . "?",
                     false
                 );
                 if (!$confirm) {
@@ -84,8 +90,7 @@ class VariableDeleteCommand extends VariableCommandBase
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

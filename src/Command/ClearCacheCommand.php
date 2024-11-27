@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Doctrine\Common\Cache\CacheProvider;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,6 +11,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ClearCacheCommand extends CommandBase
 {
     protected $local = true;
+    public function __construct(private readonly CacheProvider $cacheProvider)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -19,8 +24,7 @@ class ClearCacheCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-        $cache = $this->getService('cache');
+        $cache = $this->cacheProvider;
         $cache->flushAll();
         $this->stdErr->writeln("All caches have been cleared");
         return 0;

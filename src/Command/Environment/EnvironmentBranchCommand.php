@@ -1,6 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:branch', description: 'Branch an environment', aliases: ['branch'])]
 class EnvironmentBranchCommand extends CommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -67,14 +76,13 @@ class EnvironmentBranchCommand extends CommandBase
         $dryRun = $input->getOption('dry-run');
         $checkoutLocally = $projectRoot && !$input->getOption('no-checkout');
 
-        if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
+        if ($environment = $this->api->getEnvironment($branchName, $selectedProject)) {
             if (!$checkoutLocally || $dryRun) {
                 $this->stdErr->writeln("The environment <comment>$branchName</comment> already exists.");
 
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $checkout = $questionHelper->confirm(
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
@@ -90,16 +98,16 @@ class EnvironmentBranchCommand extends CommandBase
 
         if (!$parentEnvironment->operationAvailable('branch', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched."
+                "Operation not available: The environment " . $this->api->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched."
             );
 
             if ($parentEnvironment->getProperty('has_remote', false) === true
-                && ($integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject()))
+                && ($integration = $this->api->getCodeSourceIntegration($this->getSelectedProject()))
                 && $integration->getProperty('prune_branches', false) === true) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf("The project's branches are managed externally through its <info>%s</info> integration.", $integration->type));
-                if ($this->config()->isCommandEnabled('integration:get')) {
-                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                if ($this->config->isCommandEnabled('integration:get')) {
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
                 }
             } elseif ($parentEnvironment->is_dirty) {
                 $this->stdErr->writeln('');
@@ -135,7 +143,7 @@ class EnvironmentBranchCommand extends CommandBase
         $parentMessage = $input->getOption('no-clone-parent')
             ? 'Settings will be copied from the parent environment: %s'
             : 'Settings will be copied and data cloned from the parent environment: %s';
-        $this->stdErr->writeln(sprintf($parentMessage, $this->api()->getEnvironmentLabel($parentEnvironment, 'info', false)));
+        $this->stdErr->writeln(sprintf($parentMessage, $this->api->getEnvironmentLabel($parentEnvironment, 'info', false)));
 
         if ($resourcesInit === 'parent') {
             $this->stdErr->writeln('Resource sizes will be inherited from the parent environment.');
@@ -167,11 +175,10 @@ class EnvironmentBranchCommand extends CommandBase
             $activities = $result->getActivities();
 
             // Clear the environments cache, as branching has started.
-            $this->api()->clearEnvironmentsCache($selectedProject->id);
+            $this->api->clearEnvironmentsCache($selectedProject->id);
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        $git = $this->git;
 
         $createdNew = false;
         if ($checkoutLocally) {
@@ -194,10 +201,9 @@ class EnvironmentBranchCommand extends CommandBase
 
         $remoteSuccess = true;
         if ($this->shouldWait($input) && !$dryRun && $activities) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            $activityMonitor = $this->activityMonitor;
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
-            $this->api()->clearEnvironmentsCache($selectedProject->id);
+            $this->api->clearEnvironmentsCache($selectedProject->id);
         }
 
         // If a new local branch has been created, set its upstream.
@@ -207,7 +213,7 @@ class EnvironmentBranchCommand extends CommandBase
         // project's Git URL.
         if ($remoteSuccess && $checkoutLocally && $createdNew) {
             $gitUrl = $selectedProject->getGitUrl();
-            $remoteName = $this->config()->get('detection.git_remote_name');
+            $remoteName = $this->config->get('detection.git_remote_name');
             if ($gitUrl && $git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
                 $this->stdErr->writeln(sprintf(
                     'Setting the upstream for the local branch to: <info>%s/%s</info>',

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization\Billing;
 
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -18,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationAddressCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -38,8 +43,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         $org = $this->validateOrganizationInput($input, 'orders');
         $address = $org->getAddress();
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $result = 0;
         if ($property !== null) {
@@ -58,20 +62,18 @@ class OrganizationAddressCommand extends OrganizationCommandBase
 
     protected function display(Address $address, Organization $org, InputInterface $input)
     {
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         foreach ($address->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $formatter->format($value, $key);
         }
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api()->getOrganizationLabel($org)));
+            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api->getOrganizationLabel($org)));
         }
 
         $table->renderSimple($values, $headings);

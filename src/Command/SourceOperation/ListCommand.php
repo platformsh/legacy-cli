@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\SourceOperation;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
@@ -18,6 +20,10 @@ class ListCommand extends CommandBase
     const COMMAND_MAX_LENGTH = 24;
 
     private $tableHeader = ['Operation', 'App', 'Command'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -55,21 +61,20 @@ class ListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Source operations on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
             ));
         }
 
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('To run a source operation, use: <info>%s source-operation:run [operation]</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To run a source operation, use: <info>%s source-operation:run [operation]</info>', $this->config->get('application.executable')));
         }
 
         return 0;

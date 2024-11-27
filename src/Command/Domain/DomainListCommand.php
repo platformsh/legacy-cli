@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Cli\Service\Table;
@@ -23,6 +26,10 @@ class DomainListCommand extends DomainCommandBase
         'type' => 'Type',
     ];
     private $defaultColumns = ['name', 'ssl', 'created_at'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -44,8 +51,7 @@ class DomainListCommand extends DomainCommandBase
     {
         $rows = [];
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         foreach ($tree as $domain) {
             $rows[] = [
@@ -71,12 +77,12 @@ class DomainListCommand extends DomainCommandBase
         $forEnvironment = $input->getOption('environment') !== null;
 
         $project = $this->getSelectedProject();
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         $defaultColumns = $this->defaultColumns;
 
         if ($forEnvironment) {
             $defaultColumns[] = 'replacement_for';
-            $httpClient = $this->api()->getHttpClient();
+            $httpClient = $this->api->getHttpClient();
             try {
                 $domains = EnvironmentDomain::getList($this->getSelectedEnvironment(), $httpClient);
             } catch (ClientException $e) {
@@ -97,8 +103,8 @@ class DomainListCommand extends DomainCommandBase
                 $environment = $this->getSelectedEnvironment();
                 $this->stdErr->writeln(sprintf(
                     'No domains found for the environment %s on the project %s.',
-                    $this->api()->getEnvironmentLabel($environment),
-                    $this->api()->getProjectLabel($project)
+                    $this->api->getEnvironmentLabel($environment),
+                    $this->api->getProjectLabel($project)
                 ));
                 $this->stdErr->writeln('');
                 if ($environment->is_main) {
@@ -116,7 +122,7 @@ class DomainListCommand extends DomainCommandBase
                 }
             }
             else {
-                $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
+                $this->stdErr->writeln('No domains found for ' . $this->api->getProjectLabel($project) . '.');
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(
                     'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'
@@ -126,21 +132,20 @@ class DomainListCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $rows = $this->buildDomainRows($domains);
 
         if (!$table->formatIsMachineReadable()) {
             if ($forEnvironment) {
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s, environment %s:',
-                    $this->api()->getProjectLabel($project),
-                    $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                    $this->api->getProjectLabel($project),
+                    $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s:',
-                    $this->api()->getProjectLabel($project)
+                    $this->api->getProjectLabel($project)
                 ));
             }
         }

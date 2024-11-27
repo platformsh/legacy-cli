@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Stecman\Component\Symfony\Console\BashCompletion\Completion\ShellPathCompletion;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Client\Model\BasicProjectInfo;
@@ -78,42 +79,42 @@ class CompletionCommand extends ParentCompletionCommand
                 Completion::TYPE_OPTION,
                 ['project', 'environment']
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'ssh-key:add',
                 'path',
                 Completion::TYPE_ARGUMENT
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'domain:add',
                 'cert',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'domain:add',
                 'key',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'domain:add',
                 'chain',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'local:build',
                 'source',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'local:build',
                 'destination',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'environment:sql-dump',
                 'file',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'local:init',
                 'directory',
                 Completion::TYPE_ARGUMENT
@@ -130,32 +131,32 @@ class CompletionCommand extends ParentCompletionCommand
                 Completion::TYPE_OPTION,
                 [$this, 'getAppNames']
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 Completion::ALL_COMMANDS,
                 'identity-file',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'server:run',
                 'log',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'server:start',
                 'log',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'service:mongo:restore',
                 'archive',
                 Completion::TYPE_ARGUMENT
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'integration:add',
                 'file',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'integration:update',
                 'file',
                 Completion::TYPE_OPTION

@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -12,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentHttpAccessCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         parent::configure();
@@ -190,13 +197,12 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         // Patch the environment with the changes.
         if ($change) {
             $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
-            $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+            $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
             $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
@@ -206,8 +212,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             if (!$result->countActivities()) {
                 $this->redeployWarning();
             } elseif ($this->shouldWait($input)) {
-                /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-                $activityMonitor = $this->getService('activity_monitor');
+                $activityMonitor = $this->activityMonitor;
                 $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             }
 

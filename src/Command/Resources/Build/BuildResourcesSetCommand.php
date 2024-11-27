@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Resources\Build;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -12,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
 class BuildResourcesSetCommand extends ResourcesCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -23,8 +29,8 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
             return 1;
         }
 
@@ -37,8 +43,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $settings = $project->getSettings();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $validateCpu = function ($v) use ($maxCpu) {
             $f = (float) $v;
@@ -67,7 +72,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
             return $i;
         };
 
-        $this->stdErr->writeln('Update the build resources on the project: ' . $this->api()->getProjectLabel($project));
+        $this->stdErr->writeln('Update the build resources on the project: ' . $this->api->getProjectLabel($project));
 
         $cpuOption = $input->getOption('cpu');
         $memoryOption = $input->getOption('memory');

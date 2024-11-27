@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Route;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Model\Host\LocalHost;
@@ -22,6 +24,10 @@ class RouteListCommand extends CommandBase
         'url' => 'URL',
     ];
     private $defaultColumns = ['route', 'type', 'to'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -40,7 +46,7 @@ class RouteListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
@@ -53,7 +59,7 @@ class RouteListCommand extends CommandBase
             $this->debug('Reading routes from the deployments API');
             $this->validateInput($input);
             $environment = $this->getSelectedEnvironment();
-            $deployment = $this->api()->getCurrentDeployment($environment, $input->getOption('refresh'));
+            $deployment = $this->api->getCurrentDeployment($environment, $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
             $fromEnv = false;
         }
@@ -63,8 +69,7 @@ class RouteListCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         $rows = [];
         foreach ($routes as $route) {
@@ -83,8 +88,8 @@ class RouteListCommand extends CommandBase
             if (isset($environment) && !$fromEnv) {
                 $this->stdErr->writeln(sprintf(
                     'Routes on the project %s, environment %s:',
-                    $this->api()->getProjectLabel($this->getSelectedProject()),
-                    $this->api()->getEnvironmentLabel($environment)
+                    $this->api->getProjectLabel($this->getSelectedProject()),
+                    $this->api->getEnvironmentLabel($environment)
                 ));
             }
         }
@@ -95,7 +100,7 @@ class RouteListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single route, run: <info>%s route:get <route></info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
 

@@ -22,6 +22,10 @@ class CpuCommand extends MetricsCommandBase
     ];
 
     private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -47,8 +51,7 @@ class CpuCommand extends MetricsCommandBase
 
         $this->validateInput($input, false, true);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
@@ -66,8 +69,7 @@ class CpuCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average CPU usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\RemoteHost;
@@ -19,6 +20,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:export', description: 'Export data from MongoDB', aliases: ['mongoexport'])]
 class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 {
+    public function __construct(private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to export');
@@ -42,8 +47,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             );
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
@@ -60,8 +64,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
         }
 
@@ -100,8 +103,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
      */
     private function getCollections(array $service, HostInterface $host)
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
 
         $js = 'printjson(db.getCollectionNames())';
 

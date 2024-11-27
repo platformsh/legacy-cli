@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -29,6 +31,10 @@ class TeamListCommand extends TeamCommandBase
         'granted_at' => 'Granted at',
     ];
     private $defaultColumns = ['id', 'label', 'member_count', 'project_count', 'project_permissions'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -73,14 +79,14 @@ class TeamListCommand extends TeamCommandBase
             $params['page[size]'] = $count;
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         // Fetch teams for a specific project.
         $projectSpecific = !$input->getOption('all') && $this->hasSelectedProject();
         if ($projectSpecific) {
             $teamsOnProject = $this->loadTeamsOnProject($this->getSelectedProject());
             if (!$teamsOnProject) {
-                $this->stdErr->writeln(sprintf('No teams found on the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+                $this->stdErr->writeln(sprintf('No teams found on the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To list all teams in the organization, run: <info>%s teams --all</info>', $executable));
                 $this->stdErr->writeln(\sprintf('To add this project to a team, run: <info>%s team:project:add %s</info>', $executable, OsUtil::escapeShellArg($this->getSelectedProject()->id)));
@@ -92,17 +98,15 @@ class TeamListCommand extends TeamCommandBase
         $teams = $this->loadTeams($organization, $fetchAllPages, $params);
         if (empty($teams)) {
             $this->stdErr->writeln('No teams found');
-            if ($this->config()->isCommandEnabled('team:create')) {
+            if ($this->config->isCommandEnabled('team:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To create a new team, run: <info>%s team:create</info>', $executable));
             }
             return 1;
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
 
         $machineReadable = $table->formatIsMachineReadable();
 
@@ -125,9 +129,9 @@ class TeamListCommand extends TeamCommandBase
 
         if (!$machineReadable) {
             if ($projectSpecific) {
-                $this->stdErr->writeln(sprintf('Teams with access to the project %s:', $this->api()->getProjectLabel($this->getSelectedProject())));
+                $this->stdErr->writeln(sprintf('Teams with access to the project %s:', $this->api->getProjectLabel($this->getSelectedProject())));
             } else {
-                $this->stdErr->writeln(sprintf('Teams in the organization %s:', $this->api()->getOrganizationLabel($organization)));
+                $this->stdErr->writeln(sprintf('Teams in the organization %s:', $this->api->getOrganizationLabel($organization)));
             }
         }
 
@@ -156,7 +160,7 @@ class TeamListCommand extends TeamCommandBase
      */
     private function loadTeamsOnProject(Project $project)
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $url = $project->getUri() . '/team-access';
         $info = [];
         $progress = new ProgressMessage($this->stdErr);
