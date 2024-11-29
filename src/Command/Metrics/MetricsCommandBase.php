@@ -555,20 +555,6 @@ abstract class MetricsCommandBase extends CommandBase
     }
 
     /**
-     * Displays the current project and environment, if not already displayed.
-     *
-     * @return void
-     */
-    protected function displayEnvironmentHeader()
-    {
-        if (!$this->printedSelectedEnvironment) {
-            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($this->getSelectedProject()));
-            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->getSelectedEnvironment()));
-        }
-        $this->stdErr->writeln('');
-    }
-
-    /**
      * Shows an explanation if services were found that use high memory.
      *
      * @return void
