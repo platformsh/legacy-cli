@@ -1,10 +1,12 @@
 <?php
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Console;
 
+use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\LoginRequiredException;
@@ -17,14 +19,9 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class EventSubscriber implements EventSubscriberInterface
 {
-    protected Config $config;
 
-    /**
-     * @param \Platformsh\Cli\Service\Config $config
-     */
-    public function __construct(Config $config)
+    public function __construct(private readonly CacheProvider $cache, private readonly Config $config)
     {
-        $this->config = $config;
     }
 
     /**
@@ -32,15 +29,15 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return [ConsoleEvents::ERROR => 'onException'];
+        return [ConsoleEvents::ERROR => 'onError'];
     }
 
     /**
      * React to any console errors or exceptions.
      *
-     * @param ConsoleErrorEvent $event
+     * @param \Symfony\Component\Console\Event\ConsoleErrorEvent $event
      */
-    public function onException(ConsoleErrorEvent $event)
+    public function onError(ConsoleErrorEvent $event): void
     {
         $error = $event->getError();
 
@@ -90,7 +87,7 @@ class EventSubscriber implements EventSubscriberInterface
         // When an environment is found to be in the wrong state, perhaps our
         // cache is old - we should invalidate it.
         if ($error instanceof EnvironmentStateException) {
-            (new Api())->clearEnvironmentsCache($error->getEnvironment()->project);
+            $this->cache->delete('environments:' . $error->getEnvironment()->project);
         }
     }
 
@@ -100,7 +97,7 @@ class EventSubscriber implements EventSubscriberInterface
      * @param RequestInterface $request
      * @return string
      */
-    private function permissionDeniedMessage(RequestInterface $request)
+    private function permissionDeniedMessage(RequestInterface $request): string
     {
         $pathsPermissionTypes = [
             '/projects' => 'project',
@@ -108,10 +105,10 @@ class EventSubscriber implements EventSubscriberInterface
             '/environments' => 'environment',
             '/organizations' => 'organization'
         ];
-        $requestUrl = $request->getUri();
+        $requestPath = $request->getUri()->getPath();
         $permissionTypes = [];
         foreach ($pathsPermissionTypes as $path => $pathsPermissionType) {
-            if (str_contains($requestUrl, $path)) {
+            if (str_contains($requestPath, $path)) {
                 $permissionTypes[$pathsPermissionType] = $pathsPermissionType;
             }
         }

@@ -13,7 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'local:build', description: 'Build the current project locally', aliases: ['build'])]
 class LocalBuildCommand extends CommandBase
 {
-    protected $local = true;
 
     protected function configure()
     {

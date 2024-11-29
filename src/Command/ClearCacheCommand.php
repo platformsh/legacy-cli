@@ -9,7 +9,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'clear-cache', description: 'Clear the CLI cache', aliases: ['cc'])]
 class ClearCacheCommand extends CommandBase
 {
-    protected $local = true;
 
     protected function configure()
     {

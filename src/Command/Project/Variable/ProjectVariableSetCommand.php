@@ -14,8 +14,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:variable:set', description: 'Set a variable for a project', aliases: ['pvset'])]
 class ProjectVariableSetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
 
     /**
      * {@inheritdoc}
@@ -66,7 +66,7 @@ class ProjectVariableSetCommand extends CommandBase
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
-        $this->redeployWarning();
+        $this->api()->redeployWarning();
 
         return 0;
     }

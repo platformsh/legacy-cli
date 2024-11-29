@@ -11,8 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'local:clean', description: 'Remove old project builds', aliases: ['clean'])]
 class LocalCleanCommand extends CommandBase
 {
-    protected $local = true;
-    protected $hiddenInList = true;
+        protected bool $hiddenInList = true;
 
     protected function configure()
     {

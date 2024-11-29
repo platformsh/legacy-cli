@@ -15,8 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:set', description: 'Set a variable for an environment', aliases: ['vset'])]
 class VariableSetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
 
     /**
      * {@inheritdoc}
@@ -71,7 +71,7 @@ class VariableSetCommand extends CommandBase
 
         $success = true;
         if (!$result->countActivities()) {
-            $this->redeployWarning();
+            $this->api()->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');

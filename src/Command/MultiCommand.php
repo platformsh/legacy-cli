@@ -19,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'multi', description: 'Execute a command on multiple projects')]
 class MultiCommand extends CommandBase implements CompletionAwareInterface
 {
-    protected $canBeRunMultipleTimes = false;
+    protected bool $canBeRunMultipleTimes = false;
 
     protected function configure()
     {

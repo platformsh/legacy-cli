@@ -12,7 +12,7 @@ class AuthTokenCommand extends CommandBase
 {
     const RFC6750_PREFIX = 'Authorization: Bearer ';
 
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {
