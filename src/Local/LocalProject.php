@@ -4,7 +4,9 @@ namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\IO;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -14,13 +16,15 @@ class LocalProject
     protected $config;
     protected $fs;
     protected $git;
+    protected $io;
 
     protected static $projectConfigs = [];
 
-    public function __construct(Config $config = null, Git $git = null)
+    public function __construct(Config $config = null, Git $git = null, IO $io = null)
     {
         $this->config = $config ?: new Config();
         $this->git = $git ?: new Git();
+        $this->io = $io ?: new IO(new ConsoleOutput());
         $this->fs = new Filesystem();
     }
 
@@ -209,15 +213,18 @@ class LocalProject
     }
 
     /**
-     * Find the root of the current project.
-     *
-     * @param string|null $startDir
-     *
-     * @return string|false
+     * Finds the root of the current project.
      */
-    public function getProjectRoot($startDir = null)
+    public function getProjectRoot(?string $startDir = null): string|false
     {
         $startDir = $startDir ?: getcwd();
+
+        static $cache = [];
+        if (isset($cache[$startDir])) {
+            return $cache[$startDir];
+        }
+
+        $this->io->debug('Finding the project root');
 
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
@@ -228,11 +235,16 @@ class LocalProject
         // The project root is a Git repository, which contains a project
         // configuration file, and/or contains a Git remote with the appropriate
         // domain.
-        return $this->findTopDirectoryContaining('.git', $startDir, function ($dir) {
+        $result = $this->findTopDirectoryContaining('.git', $startDir, function ($dir) {
             $config = $this->getProjectConfig($dir);
 
             return !empty($config);
         });
+        $this->io->debug(
+            $result ? 'Project root found: ' . $result : 'Project root not found'
+        );
+
+        return $cache[$startDir] = $result;
     }
 
     /**

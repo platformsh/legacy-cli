@@ -18,7 +18,6 @@ use Symfony\Component\Yaml\Yaml;
 #[AsCommand(name: 'local:drush-aliases', description: 'Find the project\'s Drush aliases', aliases: ['drush-aliases'])]
 class LocalDrushAliasesCommand extends CommandBase
 {
-    protected $local = true;
 
     protected function configure()
     {

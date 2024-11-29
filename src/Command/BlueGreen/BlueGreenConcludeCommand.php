@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'blue-green:conclude', description: 'Conclude a blue/green deployment')]
 class BlueGreenConcludeCommand extends CommandBase
 {
-    protected $stability = 'ALPHA';
+    protected string $stability = 'ALPHA';
 
     protected function configure()
     {
