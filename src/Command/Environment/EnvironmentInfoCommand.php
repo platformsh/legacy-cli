@@ -162,7 +162,7 @@ class EnvironmentInfoCommand extends CommandBase
             $activityMonitor = $this->getService('activity_monitor');
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
-            $this->redeployWarning();
+            $this->api()->redeployWarning();
         }
 
         return $success ? 0 : 1;

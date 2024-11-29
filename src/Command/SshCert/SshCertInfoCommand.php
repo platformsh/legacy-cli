@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'ssh-cert:info', description: 'Display information about the current SSH certificate')]
 class SshCertInfoCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {

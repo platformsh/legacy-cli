@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:curl', description: "Run an authenticated cURL request on an organization's API")]
 class OrganizationCurlCommand extends OrganizationCommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {

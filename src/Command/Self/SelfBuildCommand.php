@@ -11,8 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'self:build', description: 'Build a new package of the CLI')]
 class SelfBuildCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {

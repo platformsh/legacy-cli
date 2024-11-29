@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'blue-green:deploy', description: 'Perform a blue/green deployment')]
 class BlueGreenDeployCommand extends CommandBase
 {
-    protected $stability = 'ALPHA';
+    protected string $stability = 'ALPHA';
 
     protected function configure()
     {

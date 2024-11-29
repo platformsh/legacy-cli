@@ -847,7 +847,7 @@ class Installer {
     /**
      * Detects if running in a TTY terminal.
      *
-     * @see \Platformsh\Cli\Command\CommandBase::isTerminal()
+     * @see \Platformsh\Cli\Service\IO::isTerminal()
      *
      * @param resource|int $descriptor
      *

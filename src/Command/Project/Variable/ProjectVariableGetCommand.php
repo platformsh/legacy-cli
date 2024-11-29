@@ -15,8 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:variable:get', description: 'View variable(s) for a project', aliases: ['project-variables', 'pvget'])]
 class ProjectVariableGetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
 
     /**
      * {@inheritdoc}

@@ -5,7 +5,7 @@ services:
     _defaults:
         autowire: true
         autoconfigure: false
-        public: false
+        public: true # Public for now before transitioning to DI for commands
 
     # Set up all classes in src/Command as console commands.
     Platformsh\Cli\Command\:
@@ -22,6 +22,7 @@ services:
     Platformsh\Cli\Local\LocalProject:
         public: true
     Platformsh\Cli\SshCert\Certifier: {}
+    Platformsh\Cli\Selector\Selector: {}
 
     # A couple of other services have to be public.
     Platformsh\Cli\Service\LegacyMigration:

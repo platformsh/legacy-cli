@@ -220,7 +220,7 @@ class VariableCreateCommand extends VariableCommandBase
 
         $success = true;
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
-            $this->redeployWarning();
+            $this->api()->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
             $activityMonitor = $this->getService('activity_monitor');
