@@ -13,7 +13,7 @@ abstract class TunnelCommandBase extends CommandBase
     const LOCAL_IP = '127.0.0.1';
 
     protected $tunnelInfo;
-    protected $canBeRunMultipleTimes = false;
+    protected bool $canBeRunMultipleTimes = false;
 
     /**
      * Check whether a tunnel is already open.

@@ -438,7 +438,7 @@ class UserAddCommand extends UserCommandBase
                 return 1;
             }
         } elseif (!$this->centralizedPermissionsEnabled()) {
-            $this->redeployWarning();
+            $this->api()->redeployWarning();
         }
 
         return 0;

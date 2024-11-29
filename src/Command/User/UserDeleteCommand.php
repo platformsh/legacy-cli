@@ -59,7 +59,7 @@ class UserDeleteCommand extends UserCommandBase
             $activityMonitor = $this->getService('activity_monitor');
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         } elseif (!$this->centralizedPermissionsEnabled()) {
-            $this->redeployWarning();
+            $this->api()->redeployWarning();
         }
 
         // If the user was deleting themselves from the project, then invalidate

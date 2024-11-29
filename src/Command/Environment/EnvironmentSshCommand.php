@@ -102,7 +102,7 @@ class EnvironmentSshCommand extends CommandBase
         if ($exitCode !== 0) {
             if ($this->getSelectedProject()->isSuspended()) {
                 $this->stdErr->writeln('');
-                $this->warnIfSuspended($this->getSelectedProject());
+                $this->api()->warnIfSuspended($this->getSelectedProject());
                 return $exitCode;
             }
 

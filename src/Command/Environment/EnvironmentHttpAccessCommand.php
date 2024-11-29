@@ -204,7 +204,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
             $success = true;
             if (!$result->countActivities()) {
-                $this->redeployWarning();
+                $this->api()->redeployWarning();
             } elseif ($this->shouldWait($input)) {
                 /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
                 $activityMonitor = $this->getService('activity_monitor');

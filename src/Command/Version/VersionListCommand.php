@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'version:list', description: 'List environment versions', aliases: ['versions'])]
 class VersionListCommand extends CommandBase
 {
-    protected $stability = 'ALPHA';
+    protected string $stability = 'ALPHA';
 
     protected function configure()
     {

@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'api:curl', description: 'Run an authenticated cURL request on the API')]
 class ApiCurlCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {
