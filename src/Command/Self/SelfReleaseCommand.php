@@ -16,7 +16,7 @@ use Symfony\Component\Process\PhpExecutableFinder;
 #[AsCommand(name: 'self:release', description: 'Build and release a new version')]
 class SelfReleaseCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {

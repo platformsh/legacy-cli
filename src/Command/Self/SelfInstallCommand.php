@@ -15,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfInstallCommand extends CommandBase
 {
     const INSTALLED_FILENAME = 'self_installed';
-    protected $local = true;
 
     protected function configure()
     {

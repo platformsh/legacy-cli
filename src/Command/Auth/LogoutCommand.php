@@ -11,7 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:logout', description: 'Log out', aliases: ['logout'])]
 class LogoutCommand extends CommandBase
 {
-    protected $local = true;
 
     protected function configure()
     {
@@ -64,11 +63,11 @@ class LogoutCommand extends CommandBase
             $this->api()->deleteAllSessions();
             $this->stdErr->writeln('');
             $this->stdErr->writeln('All sessions have been deleted.');
-            $this->showSessionInfo(true);
+            $this->api()->showSessionInfo(true);
             return 0;
         }
 
-        $this->showSessionInfo(true);
+        $this->api()->showSessionInfo(true);
 
         if ($this->api()->anySessionsExist()) {
             $this->stdErr->writeln('');

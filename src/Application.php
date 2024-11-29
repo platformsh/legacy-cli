@@ -6,14 +6,17 @@ namespace Platformsh\Cli;
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Command\WelcomeCommand;
 use Platformsh\Cli\Command\MultiAwareInterface;
+use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Service\Config;
-//use Platformsh\Cli\Service\LegacyMigration;
-//use Platformsh\Cli\Service\SelfUpdateChecker;
+use Platformsh\Cli\Service\LegacyMigration;
+use Platformsh\Cli\Service\SelfInstallChecker;
+use Platformsh\Cli\Service\SelfUpdateChecker;
 use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
+use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\InputArgument;
@@ -31,22 +34,15 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
 {
-    /**
-     * @var ConsoleCommand|null
-     */
-    private $currentCommand;
+    private ?ConsoleCommand $currentCommand = null;
 
-    /** @var Config */
-    private $config;
+    private Config $config;
 
-    /** @var \Symfony\Component\DependencyInjection\Container */
-    private $container;
+    private ContainerInterface $container;
 
-    /** @var string */
-    private $envPrefix;
+    private string $envPrefix;
 
-    /** @var bool */
-    private $runningViaMulti = false;
+    private bool $runningViaMulti = false;
 
     public function __construct(Config $config = null)
     {
@@ -68,7 +64,7 @@ class Application extends ParentApplication
         // Set up the command loader, which will load commands that are tagged
         // appropriately in the services.yaml container configuration (any
         // services tagged with "console.command").
-        /** @var \Symfony\Component\Console\CommandLoader\CommandLoaderInterface $loader */
+        /** @var CommandLoaderInterface $loader */
         $loader = $this->container()->get('console.command_loader');
         $this->setCommandLoader($loader);
 
@@ -79,8 +75,7 @@ class Application extends ParentApplication
         $dispatcher = new EventDispatcher();
         /** @var CacheProvider $cache */
         $cache = $this->container()->get(CacheProvider::class);
-        // TODO
-        //$dispatcher->addSubscriber(new EventSubscriber($cache, $this->config));
+        $dispatcher->addSubscriber(new EventSubscriber($cache, $this->config));
         $this->setDispatcher($dispatcher);
     }
 
@@ -120,7 +115,7 @@ class Application extends ParentApplication
      *
      * @return ContainerInterface
      */
-    private function container(bool $recompile = false)
+    private function container(bool $recompile = false): ContainerInterface
     {
         $cacheFile = __DIR__ . '/../config/cache/container.php';
         $servicesFile = __DIR__ . '/../config/services.yaml';
@@ -129,6 +124,8 @@ class Application extends ParentApplication
             if (file_exists($cacheFile) && !$recompile) {
                 // Load the cached container.
                 require_once $cacheFile;
+                /** @noinspection PhpUndefinedClassInspection */
+                /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
                 $this->container = new \ProjectServiceContainer();
             } else {
                 // Compile a new container.
@@ -346,23 +343,27 @@ class Application extends ParentApplication
             $input->setInteractive(false);
         }
 
-//        // Check for automatic updates.
-//        $noChecks = in_array($command->getName(), ['welcome', '_completion']);
-//        if ($input->isInteractive() && !$noChecks) {
-//            /** @var SelfUpdateChecker $checker */
-//            $checker = $this->container()->get(SelfUpdateChecker::class);
-//            $checker->checkUpdates();
-//        }
-//
-//        if (!$noChecks && $command->getName() !== 'legacy-migrate') {
-//            /** @var LocalProject $localProject */
-//            $localProject = $this->container()->get(LocalProject::class);
-//            if ($localProject->getLegacyProjectRoot()) {
-//                /** @var LegacyMigration $legacyMigration */
-//                $legacyMigration = $this->container()->get(LegacyMigration::class);
-//                $legacyMigration->check();
-//            }
-//        }
+        // Check for automatic updates.
+        $noChecks = $command->getName() == '_completion';
+        $container = $this->container();
+        if ($input->isInteractive() && !$noChecks) {
+            /** @var SelfUpdateChecker $checker */
+            $checker = $container->get(SelfUpdateChecker::class);
+            $checker->checkUpdates();
+        }
+
+        if (!$noChecks && $command->getName() !== 'legacy-migrate') {
+            /** @var LegacyMigration $legacyMigration */
+            $legacyMigration = $container->get(LegacyMigration::class);
+            $legacyMigration->checkMigrateFrom3xTo4x();
+            $legacyMigration->checkMigrateToGoWrapper();
+        }
+
+        if (!$noChecks && $command->getName() !== 'self::install') {
+            /** @var SelfInstallChecker $selfInstallChecker */
+            $selfInstallChecker = $container->get(SelfInstallChecker::class);
+            $selfInstallChecker->checkSelfInstall();
+        }
 
         return parent::doRunCommand($command, $input, $output);
     }
@@ -372,7 +373,7 @@ class Application extends ParentApplication
      *
      * @param ConsoleCommand|null $command
      */
-    public function setCurrentCommand(ConsoleCommand $command = null)
+    public function setCurrentCommand(ConsoleCommand $command = null): void
     {
         // The parent class has a similar (private) property named
         // $runningCommand.
@@ -384,7 +385,7 @@ class Application extends ParentApplication
      *
      * @return ConsoleCommand|null
      */
-    public function getCurrentCommand()
+    public function getCurrentCommand(): ?ConsoleCommand
     {
         return $this->currentCommand;
     }
@@ -412,7 +413,7 @@ class Application extends ParentApplication
         }
     }
 
-    public function setRunningViaMulti()
+    public function setRunningViaMulti(): void
     {
         $this->runningViaMulti = true;
     }

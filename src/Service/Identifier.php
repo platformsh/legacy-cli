@@ -10,31 +10,20 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class Identifier
 {
     private $config;
     private $api;
-    private $stdErr;
     private $cache;
+    private $io;
 
-    /**
-     * Constructor.
-     *
-     * @param \Platformsh\Cli\Service\Config|null $config
-     * @param \Platformsh\Cli\Service\Api|null $api
-     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
-     * @param CacheProvider|null $cache
-     */
-    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null, CacheProvider $cache = null)
+    public function __construct(Config $config = null, Api $api = null, CacheProvider $cache = null, IO $io = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
-        $output = $output ?: new NullOutput();
-        $this->stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+        $this->io = $io ?: new IO(new ConsoleOutput());
     }
 
     /**
@@ -83,7 +72,7 @@ class Identifier
             return $result;
         }
 
-        $this->debug('Parsing URL to determine project ID: ' . $url);
+        $this->io->debug('Parsing URL to determine project ID: ' . $url);
 
         $host = $urlParts['host'];
         $path = isset($urlParts['path']) ? $urlParts['path'] : '';
@@ -155,7 +144,7 @@ class Identifier
         $result = ['projectId' => null, 'environmentId' => null];
         $cluster = $this->getClusterHeader($url);
         if (!empty($cluster)) {
-            $this->debug('Identified project cluster: ' . $cluster);
+            $this->io->debug('Identified project cluster: ' . $cluster);
             list($result['projectId'], $result['environmentId']) = explode('-', $cluster, 2);
         }
 
@@ -177,7 +166,7 @@ class Identifier
         $cacheKey = 'project-cluster:' . $url;
         $cluster = $this->cache ? $this->cache->fetch($cacheKey) : false;
         if ($cluster === false) {
-            $this->debug('Making a HEAD request to identify project from URL: ' . $url);
+            $this->io->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
                 $response = $this->api->getExternalHttpClient()
                     ->head($url, [
@@ -191,7 +180,7 @@ class Identifier
                 if ($e->getResponse()) {
                     $response = $e->getResponse();
                 } else {
-                    $this->debug($e->getMessage());
+                    $this->io->debug($e->getMessage());
 
                     return false;
                 }
@@ -205,13 +194,5 @@ class Identifier
         }
 
         return is_array($cluster) ? reset($cluster) : false;
-    }
-
-    /**
-     * @param string $message
-     */
-    private function debug($message)
-    {
-        $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
 }

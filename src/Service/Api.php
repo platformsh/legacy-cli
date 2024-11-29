@@ -42,6 +42,7 @@ use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
+use Platformsh\Client\Session\Storage\SessionStorageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -50,80 +51,63 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * Decorates the PlatformClient API client to provide aggressive caching.
  */
 class Api
 {
-    /** @var EventDispatcherInterface */
-    public $dispatcher;
+    private static bool $printedApiTokenWarning = false;
 
-    /** @var Config */
-    private $config;
-
-    /** @var \Doctrine\Common\Cache\CacheProvider */
-    private $cache;
-
-    /** @var OutputInterface */
-    private $output;
-
-    /** @var OutputInterface */
-    private $stdErr;
-
-    /** @var TokenConfig */
-    private $tokenConfig;
-
-    /** @var FileLock */
-    private $fileLock;
+    private readonly EventDispatcherInterface $dispatcher;
+    private readonly  Config $config;
+    private readonly  CacheProvider $cache;
+    private readonly  OutputInterface $output;
+    private readonly  OutputInterface $stdErr;
+    private readonly  TokenConfig $tokenConfig;
+    private readonly  FileLock $fileLock;
+    private readonly IO $io;
 
     /**
      * The library's API client object.
      *
      * This is static so that a freshly logged-in client can then be reused by a parent command with a different service container.
-     *
-     * @var PlatformClient|null
      */
-    private static $client;
+    private static ?PlatformClient $client = null;
 
     /**
      * A cache of environments lists, keyed by project ID.
      *
      * @var array<string, Environment[]>
      */
-    private static $environmentsCache = [];
+    private static array $environmentsCache = [];
 
     /**
      * A cache of environment deployments.
      *
      * @var array<string, EnvironmentDeployment>
      */
-    private static $deploymentsCache = [];
+    private static array $deploymentsCache = [];
 
     /**
      * A cache of not-found environment IDs.
      *
      * @see Api::getEnvironment()
-     *
-     * @var string[]
      */
-    private static $notFound = [];
+    private static array $notFound = [];
 
     /**
      * Session storage, via files or credential helpers.
      *
      * @see Api::initSessionStorage()
-     *
-     * @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null
      */
-    private $sessionStorage;
+    private ?SessionStorageInterface $sessionStorage = null;
 
     /**
      * Sets whether we are currently verifying login using a test request.
-     *
-     * @var bool
      */
-    public $inLoginCheck = false;
+    public bool $inLoginCheck = false;
 
     /**
      * Constructor.
@@ -134,22 +118,47 @@ class Api
      * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
      * @param FileLock|null $fileLock
+     * @param IO|null $io
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
         OutputInterface $output = null,
+        IO $io = null,
         TokenConfig $tokenConfig = null,
         FileLock $fileLock = null,
-        EventDispatcherInterface $dispatcher = null
+        EventDispatcherInterface $dispatcher = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
         $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
+        $this->io = $io ?: new IO($this->output);
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->fileLock = $fileLock ?: new FileLock($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+    }
+
+    /**
+     * Sets up listeners (called by the DI container).
+     *
+     * @param AutoLoginListener $autoLoginListener
+     * @param DrushAliasUpdater $drushAliasUpdater
+     */
+    #[Required]
+    public function injectListeners(
+        AutoLoginListener $autoLoginListener,
+        DrushAliasUpdater $drushAliasUpdater
+    ): void
+    {
+        $this->dispatcher->addListener(
+            'login.required',
+            [$autoLoginListener, 'onLoginRequired']
+        );
+        $this->dispatcher->addListener(
+            'environments.changed',
+            [$drushAliasUpdater, 'onEnvironmentsChanged']
+        );
     }
 
     /**
@@ -284,7 +293,7 @@ class Api
         // different CLI processes.
         $refreshLockName = 'refresh--' . $this->config->getSessionIdSlug();
         $connectorOptions['on_refresh_start'] = function ($originalRefreshToken) use ($refreshLockName) {
-            $this->debug('Refreshing access token');
+            $this->io->debug('Refreshing access token');
             $connector = $this->getClient(false)->getConnector();
             return $this->fileLock->acquireOrWait($refreshLockName, function () {
                 $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
@@ -342,22 +351,9 @@ class Api
         static $path;
         if ($path === null) {
             $path = CaBundle::getSystemCaRootBundlePath();
-            $this->debug('Determined CA bundle path: ' . $path);
+            $this->io->debug('Determined CA bundle path: ' . $path);
         }
         return $path;
-    }
-
-    /**
-     * Logs a debug message.
-     *
-     * @param string $message
-     * @return void
-     */
-    private function debug($message)
-    {
-        if ($this->stdErr && $this->stdErr->isDebug()) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
-        }
     }
 
     private function onStepUpAuthResponse(ResponseInterface $response) {
@@ -365,9 +361,7 @@ class Api
             return null;
         }
 
-        if ($this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln(ApiResponseException::getErrorDetails($response));
-        }
+        $this->io->debug(ApiResponseException::getErrorDetails($response));
 
         $session = $this->getClient(false)->getConnector()->getSession();
         $previousAccessToken = $session->get('accessToken');
@@ -405,7 +399,7 @@ class Api
             return null;
         }
 
-        $this->debug($e->getMessage());
+        $this->io->debug($e->getMessage());
 
         $this->logout();
 
@@ -554,7 +548,7 @@ class Api
             // (unless an access token was set directly).
             if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
                 $this->initSessionStorage();
-                $this->debug('Loading session');
+                $this->io->debug('Loading session');
                 try {
                     $session->setStorage($this->sessionStorage);
                 } catch (\RuntimeException $e) {
@@ -574,12 +568,33 @@ class Api
 
             self::$client = new PlatformClient($connector);
 
+            if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config->get('application.env_prefix') . 'TOKEN') || $this->hasApiToken(false))) {
+                $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
+                $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
+                $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
+                $this->stdErr->writeln('');
+                self::$printedApiTokenWarning = true;
+            }
+
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch(new LoginRequiredEvent([], null, $this->hasApiToken()), 'login_required');
             }
         }
 
         return self::$client;
+    }
+
+    /**
+     * Detects if running on an application container.
+     *
+     * @return bool
+     */
+    private function onContainer(): bool
+    {
+        $envPrefix = $this->config->get('service.env_prefix');
+        return getenv($envPrefix . 'PROJECT') !== false
+            && getenv($envPrefix . 'BRANCH') !== false
+            && getenv($envPrefix . 'TREE_ID') !== false;
     }
 
     /**
@@ -591,9 +606,9 @@ class Api
             $manager = new Manager($this->config);
             if ($manager->isSupported()) {
                 if ($manager->isInstalled()) {
-                    $this->debug('Using Docker credential helper for session storage');
+                    $this->io->debug('Using Docker credential helper for session storage');
                 } else {
-                    $this->debug('Installing Docker credential helper for session storage');
+                    $this->io->debug('Installing Docker credential helper for session storage');
                     $manager->install();
                 }
                 $this->sessionStorage = new CredentialHelperStorage($manager, $this->config->get('application.slug'));
@@ -601,7 +616,7 @@ class Api
             }
 
             // Fall back to file storage.
-            $this->debug('Using filesystem for session storage');
+            $this->io->debug('Using filesystem for session storage');
             $this->sessionStorage = new File($this->config->getSessionDir());
         }
     }
@@ -659,14 +674,14 @@ class Api
         } elseif ($refresh || !$cached) {
             $projects = [];
             if ($new) {
-                $this->debug('Loading extended access information to fetch the projects list');
+                $this->io->debug('Loading extended access information to fetch the projects list');
                 foreach ($this->getClient()->getMyProjects() as $project) {
                     if ($this->matchesVendorFilter($vendorFilter, $project)) {
                         $projects[] = $project;
                     }
                 }
             } else {
-                $this->debug('Loading account information to fetch the projects list');
+                $this->io->debug('Loading account information to fetch the projects list');
                 foreach ($this->getClient()->getProjectStubs((bool) $refresh) as $stub) {
                     $project = BasicProjectInfo::fromStub($stub);
                     if ($this->matchesVendorFilter($vendorFilter, $project)) {
@@ -677,7 +692,7 @@ class Api
             $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
         } else {
             $projects = $cached;
-            $this->debug('Loaded user project data from cache');
+            $this->io->debug('Loaded user project data from cache');
         }
 
         return $projects;
@@ -723,7 +738,7 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
-            $this->debug('Loaded project from cache: ' . $id);
+            $this->io->debug('Loaded project from cache: ' . $id);
         }
         if ($apiUrl !== '') {
             $project->setApiUrl($apiUrl);
@@ -783,7 +798,7 @@ class Api
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
-            $this->debug('Loaded environments from cache');
+            $this->io->debug('Loaded environments from cache');
         }
 
         self::$environmentsCache[$projectId] = $environments;
@@ -871,7 +886,7 @@ class Api
             foreach ((array) $cached as $data) {
                 $types[] = new EnvironmentType($data, $data['_uri'], $guzzleClient);
             }
-            $this->debug('Loaded environment types from cache for project: ' . $project->id);
+            $this->io->debug('Loaded environment types from cache for project: ' . $project->id);
         }
 
         return $types;
@@ -912,7 +927,7 @@ class Api
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         $info = $this->cache->fetch($cacheKey);
         if (!$reset && $info) {
-            $this->debug('Loaded account information from cache');
+            $this->io->debug('Loaded account information from cache');
         } else {
             $info = $this->getClient()->getAccountInfo($reset);
             $this->cache->save($cacheKey, $info, (int) $this->config->getWithDefault('api.users_ttl', 600));
@@ -971,7 +986,7 @@ class Api
             }
             $this->cache->save($cacheKey, $user->getData(), (int) $this->config->getWithDefault('api.users_ttl', 600));
         } else {
-            $this->debug('Loaded user info from cache: ' . $id);
+            $this->io->debug('Loaded user info from cache: ' . $id);
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
         }
@@ -1294,7 +1309,7 @@ class Api
             $data['_uri'] = $deployment->getUri();
             $this->cache->save($cacheKey, $data);
         } else {
-            $this->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
+            $this->io->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
             $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
@@ -1451,7 +1466,7 @@ class Api
                 $subscription = false;
             }
             if ($subscription) {
-                $this->debug('Loaded the subscription directly');
+                $this->io->debug('Loaded the subscription directly');
                 return $subscription;
             }
         }
@@ -1469,17 +1484,17 @@ class Api
             }
         }
         if (empty($organizationId)) {
-            $this->debug('Failed to find the organization ID for the subscription: ' . $id);
+            $this->io->debug('Failed to find the organization ID for the subscription: ' . $id);
             return false;
         }
         $organization = $this->getOrganizationById($organizationId);
         if (!$organization) {
-            $this->debug('Project organization not found: ' . $organizationId);
+            $this->io->debug('Project organization not found: ' . $organizationId);
             return false;
         }
         $subscription = $organization->getSubscription($id);
         if (!$subscription) {
-            $this->debug('Failed to load subscription: ' . $id);
+            $this->io->debug('Failed to load subscription: ' . $id);
             return false;
         }
 
@@ -1544,7 +1559,7 @@ class Api
     {
         $cacheKey = 'organization:' . $id;
         if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
-            $this->debug('Loaded organization from cache: ' . $id);
+            $this->io->debug('Loaded organization from cache: ' . $id);
             return new Organization($cached, $cached['_url'], $this->getHttpClient());
         }
         $organization = $this->getClient()->getOrganizationById($id);
@@ -1711,5 +1726,76 @@ class Api
             }
         }
         return null;
+    }
+
+    /**
+     * Shows information about the currently logged in user and their session, if applicable.
+     *
+     * @param bool $logout  Whether this should avoid re-authentication (if an API token is set).
+     * @param bool $newline Whether to prepend a newline if there is output.
+     */
+    public function showSessionInfo(bool $logout = false, bool $newline = true): void
+    {
+        $sessionId = $this->config->getSessionId();
+        if ($sessionId !== 'default' || count($this->listSessionIds()) > 1) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+                $newline = false;
+            }
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
+            if (!$this->config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
+            }
+        }
+        if (!$logout && $this->isLoggedIn()) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $account = $this->getMyAccount();
+            $this->stdErr->writeln(\sprintf(
+                'You are logged in as <info>%s</info> (<info>%s</info>)',
+                $account['username'],
+                $account['email']
+            ));
+        }
+    }
+
+    /**
+     * Warn the user if a project is suspended.
+     *
+     * @param Project $project
+     */
+    public function warnIfSuspended(Project $project): void
+    {
+        if ($project->isSuspended()) {
+            $this->stdErr->writeln('This project is <error>suspended</error>.');
+            if ($this->config->getWithDefault('warnings.project_suspended_payment', true)) {
+                $orgId = $project->getProperty('organization', false);
+                if ($orgId) {
+                    try {
+                        $organization = $this->getClient()->getOrganizationById($orgId);
+                    } catch (BadResponseException $e) {
+                        $organization = false;
+                    }
+                    if ($organization && $organization->hasLink('payment-source')) {
+                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->getOrganizationLabel($organization, 'comment')));
+                    }
+                } elseif ($project->owner === $this->getMyUserId()) {
+                    $this->stdErr->writeln('To re-activate it, update your payment details.');
+                }
+            }
+        }
+    }
+
+    /**
+     * Warn the user that the remote environment needs redeploying.
+     */
+    public function redeployWarning()
+    {
+        $this->stdErr->writeln([
+            '',
+            '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
+            'To redeploy an environment, run: <info>' . $this->config->get('application.executable') . ' redeploy</info>',
+        ]);
     }
 }

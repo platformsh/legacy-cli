@@ -11,7 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'local:dir', description: 'Find the local project root', aliases: ['dir'])]
 class LocalDirCommand extends CommandBase
 {
-    protected $local = true;
 
     protected function configure()
     {
