@@ -11,13 +11,10 @@ use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Util\OsUtil;
-use Platformsh\Cli\Util\StringUtil;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -803,99 +800,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Run another CLI command.
-     *
-     * @param string $name
-     *   The name of the other command.
-     * @param array $arguments
-     *   Arguments for the other command.
-     *   Unambiguous options that both commands have in common will be passed
-     *   on automatically.
-     * @param OutputInterface $output
-     *   The output for the other command. Defaults to the current output.
-     *
-     * @return int
-     */
-    protected function runOtherCommand($name, array $arguments = [], OutputInterface $output = null)
-    {
-        /** @var \Platformsh\Cli\Application $application */
-        $application = $this->getApplication();
-        /** @var Command $command */
-        $command = $application->find($name);
-
-        if (isset($this->input)) {
-            $this->forwardStandardOptions($arguments, $this->input, $command->getDefinition());
-        }
-
-        $cmdInput = new ArrayInput(['command' => $name] + $arguments);
-        if (!empty($arguments['--yes']) || !empty($arguments['--no'])) {
-            $cmdInput->setInteractive(false);
-        } elseif (isset($this->input)) {
-            $cmdInput->setInteractive($this->input->isInteractive());
-        }
-
-        if ($this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln(
-                '<options=reverse>#</> Running subcommand: <info>' . $cmdInput->__toString() . '</info>'
-            );
-        }
-
-        // Give the other command an entirely new service container, because the
-        // "input" and "output" parameters, and all their dependents, need to
-        // change.
-        $container = self::$container;
-        self::$container = null;
-        $application->setCurrentCommand($command);
-
-        // Use a try/finally pattern to ensure that state is restored, even if
-        // an exception is thrown in $command->run() and caught by the caller.
-        try {
-            $result = $command->run($cmdInput, $output ?: $this->output);
-        } finally {
-            $application->setCurrentCommand($this);
-            // Restore the old service container.
-            self::$container = $container;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Forwards standard (unambiguous) arguments that a source and target command have in common.
-     *
-     * @param array &$args
-     * @param InputInterface $input
-     * @param InputDefinition $targetDef
-     */
-    private function forwardStandardOptions(array &$args, InputInterface $input, InputDefinition $targetDef)
-    {
-        $stdOptions = [
-            'no',
-            'no-interaction',
-            'yes',
-
-            'no-wait',
-            'wait',
-
-            'org',
-            'host',
-            'project',
-            'environment',
-            'app',
-            'worker',
-            'instance',
-        ];
-        foreach ($stdOptions as $name) {
-            if (!\array_key_exists('--' . $name, $args) && $targetDef->hasOption($name) && $input->hasOption($name)) {
-                $value = $input->getOption($name);
-                if ($value !== null && $value !== false) {
-                    $args['--' . $name] = $value;
-                }
-            }
-        }
-    }
-
-    /**
      * Add aliases that should be hidden from help.
      *
      * @see parent::setAliases()
@@ -1022,7 +926,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         if (!isset(self::$container)) {
             self::$container = new ContainerBuilder();
             $loader = new YamlFileLoader(self::$container, new FileLocator());
-            $loader->load(CLI_ROOT . '/services.yaml');
+            $loader->load(CLI_ROOT . '/config/services.yaml');
         }
 
         return self::$container;
