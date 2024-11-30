@@ -62,13 +62,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected $canBeRunMultipleTimes = true;
     protected $runningViaMulti = false;
 
-    /**
-     * @var string[] The valid values for --resources-init on this command.
-     *
-     * @see CommandBase::addResourcesInitOption()
-     */
-    protected $validResourcesInitValues = [];
-
     private static $container;
 
     /** @var \Platformsh\Cli\Service\Api|null */
@@ -1229,63 +1222,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
                 $account['email']
             ));
         }
-    }
-
-    /**
-     * Adds a --resources-init option to commands that support it.
-     *
-     * The option will only be added if the api.sizing feature is enabled.
-     *
-     * @param string[] $values
-     *   The possible values, with the default as the first element.
-     *
-     * @return self
-     *
-     * @see CommandBase::validateResourcesInitInput()
-     */
-    protected function addResourcesInitOption($values, $description = '')
-    {
-        if (!$this->config()->get('api.sizing')) {
-            return $this;
-        }
-        $this->validResourcesInitValues = $values;
-        if ($description === '') {
-            $description = 'Set the resources to use for new services';
-            $description .= ': ' . StringUtil::formatItemList($values);
-            $default = array_shift($values);
-            $description .= ".\n" . sprintf('If not set, "%s" will be used.', $default);
-        }
-        $this->addOption('resources-init', null, InputOption::VALUE_REQUIRED, $description);
-
-        return $this;
-    }
-
-    /**
-     * Validates and returns the --resources-init input, if any.
-     *
-     * @param InputInterface $input
-     * @param Project $project
-     *
-     * @return string|false|null
-     *   The input value, or false if there was a validation error, or null if
-     *   nothing was specified or the input option didn't exist.
-     *
-     * @see CommandBase::addResourcesInitOption()
-     */
-    protected function validateResourcesInitInput(InputInterface $input, Project $project)
-    {
-        $resourcesInit = $input->hasOption('resources-init') ? $input->getOption('resources-init') : null;
-        if ($resourcesInit !== null) {
-            if (!\in_array($resourcesInit, $this->validResourcesInitValues, true)) {
-                $this->stdErr->writeln('The value for <error>--resources-init</error> must be one of: ' . \implode(', ', $this->validResourcesInitValues));
-                return false;
-            }
-            if (!$this->api()->supportsSizingApi($project)) {
-                $this->stdErr->writeln('The <comment>--resources-init</comment> option cannot be used as the project does not support flexible resources.');
-                return false;
-            }
-        }
-        return $resourcesInit;
     }
 
     /**
