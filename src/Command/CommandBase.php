@@ -12,7 +12,6 @@ use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -28,8 +27,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     const STABILITY_BETA = 'BETA';
     const STABILITY_DEPRECATED = 'DEPRECATED';
 
-    /** @var ?bool */
-    private static $checkedUpdates;
     /** @var ?bool */
     private static $checkedSelfInstall;
     /** @var ?bool */
@@ -204,7 +201,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             return;
         }
 
-        $this->checkUpdates();
         $this->checkSelfInstall();
         // Run migration steps if configured.
         if ($this->config()->getWithDefault('migrate.prompt', false)) {
@@ -266,97 +262,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln('To install at another time, run: <info>' . $config->get('application.executable') . ' self:install</info>');
         }
 
-        $this->stdErr->writeln('');
-    }
-
-    /**
-     * Check for updates.
-     */
-    protected function checkUpdates()
-    {
-        // Avoid checking more than once in this process.
-        if (self::$checkedUpdates) {
-            return;
-        }
-        self::$checkedUpdates = true;
-
-        // Check that the Phar extension is available.
-        if (!extension_loaded('Phar')) {
-            return;
-        }
-
-        // Get the filename of the Phar, or stop if this instance of the CLI is
-        // not a Phar.
-        $pharFilename = \Phar::running(false);
-        if (!$pharFilename) {
-            return;
-        }
-
-        // Check if the file and its containing directory are writable.
-        if (!is_writable($pharFilename) || !is_writable(dirname($pharFilename))) {
-            return;
-        }
-
-        // Check if updates are configured.
-        $config = $this->config();
-        if (!$config->getWithDefault('updates.check', true)) {
-            return;
-        }
-
-        // Determine an embargo time, after which updates can be checked.
-        $timestamp = time();
-        $embargoTime = $timestamp - (int) $config->getWithDefault('updates.check_interval', 604800);
-
-        // Stop if updates were last checked after the embargo time.
-        /** @var \Platformsh\Cli\Service\State $state */
-        $state = $this->getService('state');
-        if ($state->get('updates.last_checked') > $embargoTime) {
-            return;
-        }
-
-        // Stop if the Phar was updated after the embargo time.
-        if (filemtime($pharFilename) > $embargoTime) {
-            return;
-        }
-
-        // Ensure classes are auto-loaded if they may be needed after the
-        // update.
-        $this->getService('question_helper');
-        $this->getService('shell');
-        $currentVersion = $this->config()->getVersion();
-
-        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
-        $cliUpdater = $this->getService('self_updater');
-        $cliUpdater->setAllowMajor(true);
-        $cliUpdater->setTimeout(5);
-
-        try {
-            $newVersion = $cliUpdater->update(null, $currentVersion);
-        } catch (\RuntimeException $e) {
-            if (strpos($e->getMessage(), 'Failed to download') !== false) {
-                $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
-                $newVersion = false;
-            } else {
-                throw $e;
-            }
-        }
-
-        $state->set('updates.last_checked', $timestamp);
-
-        if ($newVersion === '') {
-            // No update was available.
-            return;
-        }
-
-        if ($newVersion !== false) {
-            // Update succeeded. Continue (based on a few conditions).
-            $this->continueAfterUpdating($currentVersion, $newVersion, $pharFilename);
-            exit(0);
-        }
-
-        // Automatic update failed.
-        // Error messages will already have been printed, and the original
-        // command can continue.
         $this->stdErr->writeln('');
     }
 
@@ -480,48 +385,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $message .= "\n";
         $this->stdErr->writeln($message);
         $state->set('migrate.last_prompted', time());
-    }
-
-    /**
-     * Prompts the user to continue with the original command after updating.
-     *
-     * This only applies if it's not a major version change.
-     *
-     * @param string $currentVersion
-     * @param string $newVersion
-     * @param string $pharFilename
-     *
-     * @return void
-     */
-    private function continueAfterUpdating($currentVersion, $newVersion, $pharFilename) {
-        if (!isset($this->input) || !$this->input instanceof ArgvInput || !is_executable($pharFilename)) {
-            return;
-        }
-        list($currentMajorVersion,) = explode('.', ltrim($currentVersion, 'v'), 2);
-        list($newMajorVersion,) = explode('.', ltrim($newVersion, 'v'), 2);
-        if ($newMajorVersion !== $currentMajorVersion) {
-            return;
-        }
-
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
-        $originalCommand = $this->input->__toString();
-        if (empty($originalCommand)) {
-            $exitCode = $shell->executeSimple(escapeshellarg($pharFilename));
-            exit($exitCode);
-        }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        $questionText = "\n"
-            . 'Original command: <info>' . $originalCommand . '</info>'
-            . "\n\n" . 'Continue?';
-        if ($questionHelper->confirm($questionText)) {
-            $this->stdErr->writeln('');
-            $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
-            exit($exitCode);
-        }
     }
 
     /**

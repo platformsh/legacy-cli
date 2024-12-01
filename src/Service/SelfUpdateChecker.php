@@ -9,35 +9,24 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfUpdateChecker
 {
-    private static $checkedUpdates = false;
+    private static bool $checkedUpdates = false;
 
-    private $config;
-    private $input;
-    private $questionHelper;
-    private $selfUpdater;
-    private $shell;
-    private $state;
-    private $stdErr;
+    private readonly OutputInterface $stdErr;
 
     public function __construct(
-        Config $config,
-        InputInterface $input,
-        OutputInterface $output,
-        QuestionHelper $questionHelper,
-        SelfUpdater $selfUpdater,
-        Shell $shell,
-        State $state
-    ) {
-        $this->config = $config;
-        $this->input = $input;
+        private readonly Config         $config,
+        private readonly InputInterface $input,
+        private readonly QuestionHelper $questionHelper,
+        private readonly SelfUpdater    $selfUpdater,
+        private readonly Shell          $shell,
+        private readonly State          $state,
+        OutputInterface                 $output,
+    )
+    {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->questionHelper = $questionHelper;
-        $this->selfUpdater = $selfUpdater;
-        $this->shell = $shell;
-        $this->state = $state;
     }
 
-    public function checkUpdates()
+    public function checkUpdates(): void
     {
         // Avoid checking more than once in this process.
         if (self::$checkedUpdates) {
@@ -57,8 +46,8 @@ class SelfUpdateChecker
             return;
         }
 
-        // Check if the file is writable.
-        if (!is_writable($pharFilename)) {
+        // Check if the file and its containing directory are writable.
+        if (!is_writable($pharFilename) || !is_writable(dirname($pharFilename))) {
             return;
         }
 
@@ -115,6 +104,11 @@ class SelfUpdateChecker
                 && $this->input instanceof ArgvInput
                 && is_executable($pharFilename)) {
                 $originalCommand = $this->input->__toString();
+                if (empty($originalCommand)) {
+                    $exitCode = $this->shell->executeSimple(escapeshellarg($pharFilename));
+                    exit($exitCode);
+                }
+
                 $questionText = "\n"
                     . 'Original command: <info>' . $originalCommand . '</info>'
                     . "\n\n" . 'Continue?';
