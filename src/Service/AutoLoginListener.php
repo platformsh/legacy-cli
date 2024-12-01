@@ -2,68 +2,69 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\Event\LoginRequiredEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class AutoLoginListener
+readonly class AutoLoginListener
 {
-    private $commandDispatcher;
-    private $config;
-    private $input;
-    private $stdErr;
-    private $questionHelper;
-    private $urlService;
+    private OutputInterface $stdErr;
 
     public function __construct(
-        SubCommandRunner $commandDispatcher,
-        Config $config,
-        InputInterface $input,
-        OutputInterface $output,
-        QuestionHelper $questionHelper,
-        Url $urlService
+        private Api              $api,
+        private SubCommandRunner $commandDispatcher,
+        private Config           $config,
+        private InputInterface   $input,
+        private QuestionHelper   $questionHelper,
+        private Url              $urlService,
+        OutputInterface          $output,
     ) {
-        $this->commandDispatcher = $commandDispatcher;
-        $this->config = $config;
-        $this->input = $input;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
-        $this->questionHelper = $questionHelper;
-        $this->urlService = $urlService;
     }
 
     /**
      * Log in the user.
      *
-     * This is called via the 'login.required' event.
-     *
      * @see Api::getClient()
      */
-    public function onLoginRequired()
+    public function onLoginRequired(LoginRequiredEvent $event): void
     {
         if (!$this->input->isInteractive()) {
             throw new LoginRequiredException();
         }
-        $method = $this->config->getWithDefault('application.login_method', 'browser');
-        if ($method === 'browser') {
-            if ($this->urlService->canOpenUrls()
-                && $this->questionHelper->confirm("Authentication is required.\nLog in via a browser?")) {
-                $this->stdErr->writeln('');
-                $exitCode = $this->commandDispatcher
-                    ->run('auth:browser-login');
-                $this->stdErr->writeln('');
-                if ($exitCode === 0) {
-                    return;
+        $success = false;
+        if ($this->input->isInteractive()) {
+            $sessionAdvice = [];
+            if ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1) {
+                $sessionAdvice[] = sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId());
+                if (!$this->config->isSessionIdFromEnv()) {
+                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config->get('application.executable'));
                 }
             }
-        } elseif ($method === 'api-token') {
-            $exitCode = $this->commandDispatcher
-                ->run('auth:api-token-login');
-            $this->stdErr->writeln('');
-            if ($exitCode === 0) {
-                return;
+
+            if ($this->config->getWithDefault('application.login_method', 'browser') === 'browser') {
+                if ($this->urlService->canOpenUrls()) {
+                    $this->stdErr->writeln($event->getMessage());
+                    $this->stdErr->writeln('');
+                    if ($sessionAdvice) {
+                        $this->stdErr->writeln($sessionAdvice);
+                        $this->stdErr->writeln('');
+                    }
+                    if ($this->questionHelper->confirm('Log in via a browser?')) {
+                        $this->stdErr->writeln('');
+                        $exitCode = $this->commandDispatcher->run('auth:browser-login', $event->getLoginOptions());
+                        $this->stdErr->writeln('');
+                        $success = $exitCode === 0;
+                    }
+                }
             }
         }
-        throw new LoginRequiredException();
+        if (!$success) {
+            $e = new LoginRequiredException();
+            $e->setMessageFromEvent($event);
+            throw $e;
+        }
     }
 }

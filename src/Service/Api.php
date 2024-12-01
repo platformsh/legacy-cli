@@ -1712,4 +1712,36 @@ class Api
         }
         return null;
     }
+
+    /**
+     * Shows information about the currently logged in user and their session, if applicable.
+     *
+     * @param bool $logout  Whether this should avoid re-authentication (if an API token is set).
+     * @param bool $newline Whether to prepend a newline if there is output.
+     */
+    public function showSessionInfo(bool $logout = false, bool $newline = true): void
+    {
+        $sessionId = $this->config->getSessionId();
+        if ($sessionId !== 'default' || count($this->listSessionIds()) > 1) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+                $newline = false;
+            }
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
+            if (!$this->config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
+            }
+        }
+        if (!$logout && $this->isLoggedIn()) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $account = $this->getMyAccount();
+            $this->stdErr->writeln(\sprintf(
+                'You are logged in as <info>%s</info> (<info>%s</info>)',
+                $account['username'],
+                $account['email']
+            ));
+        }
+    }
 }

@@ -6,8 +6,6 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Self\SelfInstallCommand;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Event\LoginRequiredEvent;
-use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Util\OsUtil;
@@ -117,31 +115,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln('');
             self::$printedApiTokenWarning = true;
         }
-    }
-
-    /**
-     * Set up the API object.
-     *
-     * @return \Platformsh\Cli\Service\Api
-     */
-    protected function api()
-    {
-        if (!isset($this->api)) {
-            $this->api = $this->getService('api');
-        }
-        if (!$this->apiHasListeners && $this->output && $this->input) {
-            $this->api
-                ->dispatcher
-                ->addListener('login_required', [$this, 'login']);
-            if ($this->config()->get('application.drush_aliases')) {
-                $this->api
-                    ->dispatcher
-                    ->addListener('environments_changed', [$this, 'updateDrushAliases']);
-            }
-            $this->apiHasListeners = true;
-        }
-
-        return $this->api;
     }
 
     /**
@@ -548,54 +521,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $this->stdErr->writeln('');
             $exitCode = $shell->executeSimple(escapeshellarg($pharFilename) . ' ' . $originalCommand);
             exit($exitCode);
-        }
-    }
-
-    /**
-     * Log in the user.
-     *
-     * This is called via the 'login_required' event.
-     *
-     * @param LoginRequiredEvent $event
-     * @see Api::getClient()
-     */
-    public function login(LoginRequiredEvent $event)
-    {
-        $success = false;
-        if ($this->output && $this->input && $this->input->isInteractive()) {
-            $sessionAdvice = [];
-            if ($this->config()->getSessionId() !== 'default' || count($this->api()->listSessionIds()) > 1) {
-                $sessionAdvice[] = sprintf('The current session ID is: <info>%s</info>', $this->config()->getSessionId());
-                if (!$this->config()->isSessionIdFromEnv()) {
-                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config()->get('application.executable'));
-                }
-            }
-
-            if ($this->config()->getWithDefault('application.login_method', 'browser') === 'browser') {
-                /** @var \Platformsh\Cli\Service\Url $url */
-                $urlService = $this->getService('url');
-                if ($urlService->canOpenUrls()) {
-                    $this->stdErr->writeln($event->getMessage());
-                    $this->stdErr->writeln('');
-                    if ($sessionAdvice) {
-                        $this->stdErr->writeln($sessionAdvice);
-                        $this->stdErr->writeln('');
-                    }
-                    /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                    $questionHelper = $this->getService('question_helper');
-                    if ($questionHelper->confirm('Log in via a browser?')) {
-                        $this->stdErr->writeln('');
-                        $exitCode = $this->runOtherCommand('auth:browser-login', $event->getLoginOptions());
-                        $this->stdErr->writeln('');
-                        $success = $exitCode === 0;
-                    }
-                }
-            }
-        }
-        if (!$success) {
-            $e = new LoginRequiredException();
-            $e->setMessageFromEvent($event);
-            throw $e;
         }
     }
 
@@ -1020,20 +945,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Get help on how to use API tokens non-interactively.
-     *
-     * @param string $tag
-     *
-     * @return string
-     */
-    protected function getNonInteractiveAuthHelp($tag = 'info')
-    {
-        $prefix = $this->config()->get('application.env_prefix');
-
-        return "To authenticate non-interactively, configure an API token using the <$tag>{$prefix}TOKEN</$tag> environment variable.";
-    }
-
-    /**
      * {@inheritDoc}
      */
     public function getDescription(): string {
@@ -1046,86 +957,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return $description;
-    }
-
-    /**
-     * Finalizes login: refreshes SSH certificate, prints account information.
-     */
-    protected function finalizeLogin()
-    {
-        // Reset the API client so that it will use the new tokens.
-        $this->api()->getClient(false, true);
-        $this->stdErr->writeln('You are logged in.');
-
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
-
-        // Configure SSH host keys.
-        $sshConfig->configureHostKeys();
-
-        // Generate a new certificate from the certifier API.
-        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
-        $certifier = $this->getService('certifier');
-        if ($certifier->isAutoLoadEnabled() && $sshConfig->checkRequiredVersion()) {
-            $this->stdErr->writeln('');
-            $this->stdErr->writeln('Generating SSH certificate...');
-            try {
-                $certifier->generateCertificate(null);
-                $this->stdErr->writeln('A new SSH certificate has been generated.');
-                $this->stdErr->writeln('It will be automatically refreshed when necessary.');
-            } catch (\Exception $e) {
-                $this->stdErr->writeln('Failed to generate SSH certificate: <error>' . $e->getMessage() . '</error>');
-            }
-        }
-
-        // Write session-based SSH configuration.
-        if ($sshConfig->configureSessionSsh()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $sshConfig->addUserSshConfig($questionHelper);
-        }
-
-        // Show user account info.
-        $account = $this->api()->getMyAccount(true);
-        $this->stdErr->writeln(sprintf(
-            "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
-            $account['username'],
-            $account['email']
-        ));
-    }
-
-    /**
-     * Shows information about the currently logged in user and their session, if applicable.
-     *
-     * @param bool $logout  Whether this should avoid re-authentication (if an API token is set).
-     * @param bool $newline Whether to prepend a newline if there is output.
-     */
-    protected function showSessionInfo($logout = false, $newline = true)
-    {
-        $api = $this->api();
-        $config = $this->config();
-        $sessionId = $config->getSessionId();
-        if ($sessionId !== 'default' || count($api->listSessionIds()) > 1) {
-            if ($newline) {
-                $this->stdErr->writeln('');
-                $newline = false;
-            }
-            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
-            if (!$config->isSessionIdFromEnv()) {
-                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $config->get('application.executable')));
-            }
-        }
-        if (!$logout && $api->isLoggedIn()) {
-            if ($newline) {
-                $this->stdErr->writeln('');
-            }
-            $account = $api->getMyAccount();
-            $this->stdErr->writeln(\sprintf(
-                'You are logged in as <info>%s</info> (<info>%s</info>)',
-                $account['username'],
-                $account['email']
-            ));
-        }
     }
 
     /**

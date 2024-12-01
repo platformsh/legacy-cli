@@ -6,40 +6,33 @@ use Platformsh\Cli\SshCert\Certifier;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Login
+readonly class Login
 {
-    private $api;
-    private $certifier;
-    private $config;
-    private $sshConfig;
-    private $stdErr;
-    private $questionHelper;
+    private OutputInterface $stdErr;
 
     public function __construct(
-        Api $api,
-        Certifier $certifier,
-        Config $config,
-        OutputInterface $output,
-        QuestionHelper $questionHelper,
-        SshConfig $sshConfig
+        private Api            $api,
+        private Certifier      $certifier,
+        private Config         $config,
+        private QuestionHelper $questionHelper,
+        private SshConfig      $sshConfig,
+        OutputInterface        $output,
     )
     {
-        $this->api = $api;
-        $this->certifier = $certifier;
-        $this->config = $config;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->sshConfig = $sshConfig;
-        $this->questionHelper = $questionHelper;
     }
 
     /**
      * Finalizes login: refreshes SSH certificate, prints account information.
      */
-    public function finalize()
+    public function finalize(): void
     {
         // Reset the API client so that it will use the new tokens.
-        $client = $this->api->getClient(false, true);
+        $this->api->getClient(false, true);
         $this->stdErr->writeln('You are logged in.');
+
+        // Configure SSH host keys.
+        $this->sshConfig->configureHostKeys();
 
         // Generate a new certificate from the certifier API.
         if ($this->certifier->isAutoLoadEnabled() && $this->sshConfig->checkRequiredVersion()) {
@@ -60,11 +53,11 @@ class Login
         }
 
         // Show user account info.
-        $info = $client->getAccountInfo();
+        $account = $this->api->getMyAccount(true);
         $this->stdErr->writeln(sprintf(
             "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
-            $info['username'],
-            $info['mail']
+            $account['username'],
+            $account['email']
         ));
     }
 
@@ -75,10 +68,10 @@ class Login
      *
      * @return string
      */
-    public function getNonInteractiveAuthHelp($tag = 'info')
+    public function getNonInteractiveAuthHelp(string $tag = 'info'): string
     {
         $prefix = $this->config->get('application.env_prefix');
 
-        return "To authenticate non-interactively, configure an API token using the <$tag>${prefix}TOKEN</$tag> environment variable.";
+        return "To authenticate non-interactively, configure an API token using the <$tag>{$prefix}TOKEN</$tag> environment variable.";
     }
 }
