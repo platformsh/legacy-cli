@@ -56,11 +56,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     private static $container;
 
-    /** @var \Platformsh\Cli\Service\Api|null */
-    private $api;
-    /** @var ?bool */
-    private $apiHasListeners;
-
     /** @var InputInterface|null */
     private $input;
 
