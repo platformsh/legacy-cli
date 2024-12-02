@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfInstallCommand extends CommandBase
 {
     const INSTALLED_FILENAME = 'self_installed';
-    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -103,7 +104,7 @@ EOT
         $shellType = $input->getOption('shell-type');
         if ($shellType === null && getenv('SHELL') !== false) {
             $shellType = str_replace('.exe', '', basename(getenv('SHELL')));
-            $this->debug('Detected shell type: ' . $shellType);
+            $this->io->debug('Detected shell type: ' . $shellType);
         }
 
         $this->stdErr->write('Setting up autocompletion...');
@@ -125,7 +126,7 @@ EOT
             // If stdout is not a terminal, then we tried but
             // autocompletion probably isn't needed at all, as we are in the
             // context of some kind of automated build. So ignore the error.
-            if (!$this->isTerminal(STDOUT)) {
+            if (!$this->io->isTerminal(STDOUT)) {
                 $this->stdErr->writeln(' <info>skipped</info> (not a terminal)');
             } elseif ($shellType === null) {
                 $this->stdErr->writeln(' <info>skipped</info> (unsupported shell)');
@@ -143,7 +144,7 @@ EOT
         $shellConfigOverrideVar = $this->config->get('application.env_prefix') . 'SHELL_CONFIG_FILE';
         $shellConfigOverride = getenv($shellConfigOverrideVar);
         if ($shellConfigOverride === '') {
-            $this->debug(sprintf('Shell config detection disabled via %s', $shellConfigOverrideVar));
+            $this->io->debug(sprintf('Shell config detection disabled via %s', $shellConfigOverrideVar));
             $shellConfigFile = false;
         } elseif ($shellConfigOverride !== false) {
             $fsService = $this->filesystem;
@@ -154,7 +155,7 @@ EOT
                     $shellConfigOverrideVar
                 ));
             }
-            $this->debug(sprintf('Shell config file specified via %s', $shellConfigOverrideVar));
+            $this->io->debug(sprintf('Shell config file specified via %s', $shellConfigOverrideVar));
             $shellConfigFile = $shellConfigOverride;
         } else {
             $shellConfigFile = $this->findShellConfigFile($shellType);
@@ -438,7 +439,7 @@ EOT
         $homeDir = $this->config->getHomeDirectory();
         foreach ($candidates as $candidate) {
             if (file_exists($homeDir . DIRECTORY_SEPARATOR . $candidate)) {
-                $this->debug('Found existing config file: ' . $homeDir . DIRECTORY_SEPARATOR . $candidate);
+                $this->io->debug('Found existing config file: ' . $homeDir . DIRECTORY_SEPARATOR . $candidate);
 
                 return $homeDir . DIRECTORY_SEPARATOR . $candidate;
             }
@@ -452,15 +453,15 @@ EOT
         // then create a new file based on the shell type.
         if ($shellType === 'bash') {
             if (OsUtil::isOsX()) {
-                $this->debug('OS X: defaulting to ~/.bash_profile');
+                $this->io->debug('OS X: defaulting to ~/.bash_profile');
 
                 return $homeDir . DIRECTORY_SEPARATOR . '.bash_profile';
             }
-            $this->debug('Defaulting to ~/.bashrc');
+            $this->io->debug('Defaulting to ~/.bashrc');
 
             return $homeDir . DIRECTORY_SEPARATOR . '.bashrc';
         } elseif ($shellType === 'zsh') {
-            $this->debug('Defaulting to ~/.zshrc');
+            $this->io->debug('Defaulting to ~/.zshrc');
 
             return $homeDir . DIRECTORY_SEPARATOR . '.zshrc';
         }

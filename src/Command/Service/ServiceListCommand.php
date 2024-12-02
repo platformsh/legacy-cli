@@ -30,8 +30,8 @@ class ServiceListCommand extends CommandBase
         $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of service names only');
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 

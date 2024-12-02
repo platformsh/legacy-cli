@@ -20,11 +20,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:restore', description: 'Restore an environment backup')]
 class BackupRestoreCommand extends CommandBase
 {
+    private array $validResourcesInitOptions = ['backup', 'parent', 'default', 'minimum'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
@@ -35,11 +37,11 @@ class BackupRestoreCommand extends CommandBase
             ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
         if ($this->config->get('api.sizing')) {
             $this->addOption('no-resources', null, InputOption::VALUE_NONE, "Do not override the target's existing resource settings.");
-            $this->resourcesUtil->addOption(['backup', 'parent', 'default', 'minimum']);
+            $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
         }
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHiddenAliases(['environment:restore', 'snapshot:restore']);
         $this->addExample('Restore the most recent backup');
         $this->addExample('Restore a specific backup', '92c9a4b2aa75422efb3d');
@@ -89,7 +91,7 @@ class BackupRestoreCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->resourcesUtil->validateInput($input, $project);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $project, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }

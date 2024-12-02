@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -33,8 +34,8 @@ class DomainGetCommand extends DomainCommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -42,7 +43,7 @@ class DomainGetCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         $project = $selection->getProject();
         $forEnvironment = $input->getOption('environment') !== null;
         $environment = $forEnvironment ? $selection->getEnvironment() : null;

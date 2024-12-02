@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources\Build;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
 class BuildResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -125,7 +126,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $this->summarizeChanges($updates['build_resources'], $settings['build_resources']);
 
-        $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
+        $this->io->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
         $this->stdErr->writeln('');
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -38,7 +39,7 @@ class BlueGreenEnableCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
         $environment = $selection->getEnvironment();
 
         $httpClient = $this->api->getHttpClient();

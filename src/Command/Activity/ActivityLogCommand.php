@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
@@ -54,8 +55,8 @@ class ActivityLogCommand extends ActivityCommandBase
                 . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
             ->addExample('Display the log for the last activity on the current project', '--all')
             ->addExample('Display the log for the last push, with microsecond timestamps', "-a -t --type %push --date-fmt 'Y-m-d\TH:i:s.uP'");
@@ -63,7 +64,7 @@ class ActivityLogCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
         $loader = $this->activityLoader;
 

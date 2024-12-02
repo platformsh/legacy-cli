@@ -2,13 +2,13 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
@@ -28,6 +28,7 @@ class DbDumpCommand extends CommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
@@ -40,7 +41,9 @@ class DbDumpCommand extends CommandBase
             ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
             ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data')
             ->addOption('charset', null, InputOption::VALUE_REQUIRED, 'The character set encoding for the dump');
-        $this->selector->addEnvironmentOption($this->getDefinition())->addAppOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
@@ -52,11 +55,14 @@ class DbDumpCommand extends CommandBase
     {
         $relationships = $this->relationships;
 
-        $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
-        if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
-            $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
-        }
+        $selectorConfig = new SelectorConfig(
+            envRequired: false,
+            allowLocalHost: $relationships->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        );
+        // TODO check if this still allows offline use from the container
+        $selection = $this->selector->getSelection($input, $selectorConfig);
+        $host = $selection->getHost();
 
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
         $gzip = $input->getOption('gzip');

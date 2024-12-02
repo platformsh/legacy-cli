@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\ProjectSshInfo;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -11,6 +12,7 @@ use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,10 +23,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentDeleteCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly ProjectSshInfo $projectSshInfo, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
-    {
+    public function __construct(
+        private readonly ActivityMonitor $activityMonitor,
+        private readonly Api             $api,
+        private readonly Config          $config,
+        private readonly ProjectSshInfo  $projectSshInfo,
+        private readonly QuestionHelper  $questionHelper,
+        private readonly Selector        $selector
+    ) {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
@@ -42,21 +51,21 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('exclude-status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment status(es) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)')
             ->addOption('allow-delete-parent', null, InputOption::VALUE_NONE, 'Allow environments that have children to be deleted');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the currently checked out environment');
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with their parent', '--merged');
         $service = $this->config->get('service.name');
         $this->setHelp(<<<EOF
-When a {$service} environment is deleted, it will become "inactive": it will
-exist only as a Git branch, containing code but no services, databases nor
-files.
+            When a {$service} environment is deleted, it will become "inactive": it will
+            exist only as a Git branch, containing code but no services, databases nor
+            files.
 
-This command allows you to delete environments as well as their Git branches.
-EOF
+            This command allows you to delete environments as well as their Git branches.
+            EOF
         );
     }
 
@@ -67,7 +76,7 @@ EOF
         $inputCopy = clone $input;
         $inputCopy->setArgument('environment', null);
         $inputCopy->setOption('environment', null);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
 
         $environments = $this->api->getEnvironments($selection->getProject());
 
@@ -171,7 +180,7 @@ EOF
         // Add the current environment if nothing is otherwise specified.
         if (!$anythingSpecified
             && empty($selectedEnvironments)
-            && ($current = $this->getCurrentEnvironment($selection->getProject()))) {
+            && ($current = $this->selector->getCurrentEnvironment($selection->getProject()))) {
             $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api->getEnvironmentLabel($current));
             $this->stdErr->writeln('');
             $selectedEnvironments[$current->id] = $current;
@@ -395,7 +404,7 @@ EOF
             return $error ? 1 : 0;
         }
 
-        $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
+        $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $selection->getProject(), $input) && !$error;
 
         return $success ? 0 : 1;
     }
@@ -413,14 +422,7 @@ EOF
         return "<$tag>" . implode("</$tag>, <$tag>", $uniqueIds) . "</$tag>";
     }
 
-    /**
-     * @param array $toDeactivate
-     * @param array $toDeleteBranch
-     * @param InputInterface $input
-     *
-     * @return bool
-     */
-    protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, InputInterface $input): bool
+    protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, Project $project, InputInterface $input): bool
     {
         $error = false;
         $deactivateActivities = [];
@@ -438,7 +440,7 @@ EOF
 
         if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            if (!$activityMonitor->waitMultiple($deactivateActivities, $selection->getProject())) {
+            if (!$activityMonitor->waitMultiple($deactivateActivities, $project)) {
                 $error = true;
             }
         }

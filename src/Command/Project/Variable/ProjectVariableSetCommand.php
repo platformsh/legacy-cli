@@ -38,8 +38,8 @@ class ProjectVariableSetCommand extends CommandBase
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
         );
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

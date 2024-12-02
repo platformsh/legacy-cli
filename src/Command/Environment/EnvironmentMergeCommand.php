@@ -17,19 +17,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:merge', description: 'Merge an environment', aliases: ['merge'])]
 class EnvironmentMergeCommand extends CommandBase
 {
+    private array $validResourcesInitOptions = ['child', 'default', 'minimum', 'manual'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
-        $this->resourcesUtil->addOption(['child', 'default', 'minimum', 'manual']);
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(
             'This command will initiate a Git merge of the specified environment into its parent environment.'
@@ -69,7 +71,7 @@ class EnvironmentMergeCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->resourcesUtil->validateInput($input, $selection->getProject());
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $selection->getProject(), $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }

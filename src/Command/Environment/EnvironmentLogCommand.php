@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
 {
 
-    public function __construct(private readonly CacheProvider $cacheProvider, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    public function __construct(private readonly CacheProvider $cacheProvider, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -30,8 +31,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
              ->addRemoteContainerOptions();
         $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
@@ -58,7 +59,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         // the SSH URL contains something like "ssh://1.ent-" or "1.ent-" or "ent-".
         if (preg_match('%(^|[/.])ent-[a-z0-9]%', (string) $host->getLabel())) {
             $logDir = '/var/log/platform/"$USER"';
-            $this->debug('Detected Dedicated environment: using log directory: ' . $logDir);
+            $this->io->debug('Detected Dedicated environment: using log directory: ' . $logDir);
         }
 
         // Select the log file that the user specified.

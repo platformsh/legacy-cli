@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:shell', description: 'Use the MongoDB shell', aliases: ['mongo'])]
 class MongoShellCommand extends CommandBase
 {
-    public function __construct(private readonly Relationships $relationships, private readonly Selector $selector)
+    public function __construct(private readonly Io $io, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -57,7 +58,7 @@ class MongoShellCommand extends CommandBase
         }
 
         // Force TTY output when the input is a terminal.
-        if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+        if ($this->io->isTerminal(STDIN) && $host instanceof RemoteHost) {
             $host->setExtraSshOptions(['RequestTTY yes']);
         }
 

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -38,14 +39,14 @@ class VariableCreateCommand extends VariableCommandBase
             ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update the variable if it already exists');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition())
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
 
         // Merge the 'name' argument with the --name option.
         if ($input->getArgument('name')) {

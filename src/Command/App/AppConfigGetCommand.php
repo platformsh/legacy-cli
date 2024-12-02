@@ -42,7 +42,7 @@ class AppConfigGetCommand extends CommandBase
         // Allow override via PLATFORM_APPLICATION.
         $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'APPLICATION') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
-            $this->debug('Reading application config from environment variable ' . $prefix . 'APPLICATION');
+            $this->io->debug('Reading application config from environment variable ' . $prefix . 'APPLICATION');
             $decoded = json_decode(base64_decode(getenv($prefix . 'APPLICATION'), true), true);
             if (!is_array($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'APPLICATION');

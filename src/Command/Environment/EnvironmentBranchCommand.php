@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
@@ -21,10 +22,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:branch', description: 'Branch an environment', aliases: ['branch'])]
 class EnvironmentBranchCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    private array $validResourcesInitOptions = ['parent', 'default', 'minimum'];
+
+    public function __construct(private readonly ActivityMonitor  $activityMonitor,
+                                private readonly Api              $api,
+                                private readonly Config           $config,
+                                private readonly Git              $git,
+                                private readonly Io               $io,
+                                private readonly QuestionHelper   $questionHelper,
+                                private readonly ResourcesUtil    $resourcesUtil,
+                                private readonly Selector         $selector,
+                                private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
@@ -35,10 +47,10 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
             ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
-        $this->resourcesUtil->addOption(['parent', 'default', 'minimum']);
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used');
         $this->addHiddenOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
@@ -48,12 +60,15 @@ class EnvironmentBranchCommand extends CommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['force', 'identity-file']);
 
-        $this->envArgName = 'parent';
-        $this->chooseEnvText = 'Enter a number to choose a parent environment:';
-        $this->enterEnvText = 'Enter the ID of the parent environment';
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $branchName = $input->getArgument('id');
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $branchName !== null));
+        $selectorConfig = new SelectorConfig(
+            envRequired: $branchName !== null,
+            envArgName: 'parent',
+            chooseEnvText: 'Enter a number to choose a parent environment:',
+            enterEnvText: 'Enter the ID of the parent environment',
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        );
+        $selection = $this->selector->getSelection($input, $selectorConfig);
         $selectedProject = $selection->getProject();
 
         if ($branchName === null) {
@@ -71,7 +86,7 @@ class EnvironmentBranchCommand extends CommandBase
 
         $parentEnvironment = $selection->getEnvironment();
 
-        if ($branchName === $parentEnvironment->id && ($e = $this->getCurrentEnvironment($selectedProject)) && $e->id === $branchName) {
+        if ($branchName === $parentEnvironment->id && ($e = $this->selector->getCurrentEnvironment($selectedProject)) && $e->id === $branchName) {
             $this->stdErr->writeln('Already on <comment>' . $branchName . '</comment>');
             return 1;
         }
@@ -125,7 +140,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->resourcesUtil->validateInput($input, $selectedProject);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $selectedProject, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }
