@@ -79,7 +79,6 @@ class VariableSetCommand extends CommandBase
         if (!$result->countActivities()) {
             $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

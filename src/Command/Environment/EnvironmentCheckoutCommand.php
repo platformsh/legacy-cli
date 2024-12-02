@@ -66,7 +66,6 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
         }
 
-        /** @var Git $git */
         $git = $this->git;
         $git->setDefaultRepositoryDir($projectRoot);
 
@@ -85,7 +84,6 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         // Make sure that remotes are set up correctly.
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
         $localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
@@ -137,7 +135,6 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
             $environmentList[$id] = $this->api->getEnvironmentLabel($environment, false);
         }
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
         $projectConfig = $localProject->getProjectConfig($projectRoot);
         if (!empty($projectConfig['mapping'])) {
@@ -157,7 +154,6 @@ class EnvironmentCheckoutCommand extends CommandBase
             return false;
         }
 
-        /** @var QuestionHelper $helper */
         $helper = $this->questionHelper;
 
         // If there's more than one choice, present the user with a list.

@@ -69,9 +69,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             }
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $properties = $activity->getProperties();

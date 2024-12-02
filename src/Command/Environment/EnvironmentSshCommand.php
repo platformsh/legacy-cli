@@ -97,11 +97,9 @@ class EnvironmentSshCommand extends CommandBase
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
-        /** @var Ssh $ssh */
         $ssh = $this->ssh;
         $command = $ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
 
-        /** @var Shell $shell */
         $shell = $this->shell;
 
         $start = \time();
@@ -114,7 +112,6 @@ class EnvironmentSshCommand extends CommandBase
                 return $exitCode;
             }
 
-            /** @var SshDiagnostics $diagnostics */
             $diagnostics = $this->sshDiagnostics;
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
         }

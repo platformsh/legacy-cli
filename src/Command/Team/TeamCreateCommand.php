@@ -57,7 +57,6 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $label = $input->getOption('label');
@@ -219,7 +218,6 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function showProjectRoleForm(string $defaultRole, InputInterface $input): mixed
     {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $validProjectRoles = ['admin', 'viewer'];
@@ -306,7 +304,6 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function showTypeRolesForm(array $defaultTypeRoles, InputInterface $input): array
     {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);

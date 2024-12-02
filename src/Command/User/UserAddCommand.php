@@ -70,7 +70,6 @@ class UserAddCommand extends UserCommandBase
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $hasOutput = false;
@@ -439,7 +438,6 @@ class UserAddCommand extends UserCommandBase
 
         // Wait for activities to complete.
         if ($activities && $this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             if (!$activityMonitor->waitMultiple($activities, $project)) {
                 return 1;
@@ -527,7 +525,6 @@ class UserAddCommand extends UserCommandBase
      */
     private function showProjectRoleForm($defaultRole, InputInterface $input): mixed
     {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $this->stdErr->writeln("The user's project role can be " . $this->describeRoles(ProjectUserAccess::$projectRoles) . '.');
@@ -591,7 +588,6 @@ class UserAddCommand extends UserCommandBase
      */
     private function showTypeRolesForm(array $defaultTypeRoles, array $environmentTypes, InputInterface $input): array
     {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);

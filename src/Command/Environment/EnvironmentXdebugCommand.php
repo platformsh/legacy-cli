@@ -65,7 +65,6 @@ class EnvironmentXdebugCommand extends CommandBase
         static $isPhp;
         if (!isset($isPhp)) {
             $isPhp = false;
-            /** @var ApplicationFinder $finder */
             $finder = $this->applicationFinder;
             foreach ($finder->findApplications($directory) as $app) {
                 $type = $app->getType();
@@ -112,7 +111,6 @@ class EnvironmentXdebugCommand extends CommandBase
         }
 
 
-        /** @var Ssh $ssh */
         $ssh = $this->ssh;
 
         // The socket is removed to prevent 'file already exists' errors.

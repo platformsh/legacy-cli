@@ -38,7 +38,6 @@ class TeamGetCommand extends TeamCommandBase
         }
         $data = array_merge(array_flip(['id', 'label', 'organization_id', 'counts', 'project_permissions']), $team->getProperties());
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         if ($input->getOption('property')) {
@@ -46,7 +45,6 @@ class TeamGetCommand extends TeamCommandBase
             return 0;
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

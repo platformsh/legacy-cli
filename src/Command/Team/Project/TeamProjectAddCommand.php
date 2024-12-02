@@ -42,7 +42,6 @@ class TeamProjectAddCommand extends TeamCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $teamProjects = $this->loadTeamProjects($team);

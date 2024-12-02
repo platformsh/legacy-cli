@@ -51,7 +51,6 @@ class SessionSwitchCommand extends CommandBase {
                 $this->stdErr->writeln('The new session ID is required');
                 return 1;
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $autocomplete = \array_merge(['default' => ''], \array_flip($this->api->listSessionIds()));
             unset($autocomplete[$previousId]);
@@ -86,7 +85,6 @@ class SessionSwitchCommand extends CommandBase {
 
         // Set up SSH config.
         if ($this->api->isLoggedIn()) {
-            /** @var SshConfig $sshConfig */
             $sshConfig = $this->sshConfig;
             $sshConfig->configureSessionSsh();
         }

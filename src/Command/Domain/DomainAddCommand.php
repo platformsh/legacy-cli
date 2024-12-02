@@ -51,7 +51,6 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $project = $this->getSelectedProject();
@@ -115,7 +114,6 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

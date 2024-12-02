@@ -62,7 +62,6 @@ abstract class IntegrationCommandBase extends CommandBase
 
                 return false;
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($integrations as $integration) {
@@ -652,9 +651,7 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     protected function displayIntegration(Integration $integration)
     {
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $info = [];
@@ -770,7 +767,6 @@ abstract class IntegrationCommandBase extends CommandBase
             return;
         }
         $this->stdErr->writeln(sprintf('Updating Git remote URL from %s to %s', $oldGitUrl, $newGitUrl));
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
         $localProject->ensureGitRemote($projectRoot, $newGitUrl);
     }

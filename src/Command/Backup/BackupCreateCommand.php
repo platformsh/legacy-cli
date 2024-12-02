@@ -82,7 +82,6 @@ class BackupCreateCommand extends CommandBase
         $this->stdErr->writeln('Note: this may delete an older backup if the quota has been reached.');
         $this->stdErr->writeln('');
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
@@ -102,7 +101,6 @@ class BackupCreateCommand extends CommandBase
                 );
             }
 
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
             if (!$success) {
