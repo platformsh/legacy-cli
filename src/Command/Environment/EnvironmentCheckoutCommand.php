@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
@@ -19,10 +20,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentCheckoutCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper)
+    public function __construct(
+        private readonly Api            $api,
+        private readonly Config         $config,
+        private readonly Git            $git,
+        private readonly LocalProject   $localProject,
+        private readonly Selector       $selector,
+        private readonly QuestionHelper $questionHelper
+    )
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
@@ -37,8 +46,8 @@ class EnvironmentCheckoutCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->getCurrentProject();
-        $projectRoot = $this->getProjectRoot();
+        $project = $this->selector->getCurrentProject();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$project || !$projectRoot) {
             throw new RootNotFoundException();
         }
@@ -113,7 +122,7 @@ class EnvironmentCheckoutCommand extends CommandBase
     protected function offerBranchChoice(Project $project, $projectRoot): false|string|int|null
     {
         $environments = $this->api->getEnvironments($project);
-        $currentEnvironment = $this->getCurrentEnvironment($project);
+        $currentEnvironment = $this->selector->getCurrentEnvironment($project);
         if ($currentEnvironment) {
             $this->stdErr->writeln("The current environment is " . $this->api->getEnvironmentLabel($currentEnvironment) . ".");
             $this->stdErr->writeln('');

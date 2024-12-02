@@ -2,9 +2,11 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\SshKey;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +16,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WelcomeCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly SshKey $sshKey)
+
+    public function __construct(
+        private readonly Api      $api,
+        private readonly Config   $config,
+        private readonly Selector $selector,
+        private readonly SshKey   $sshKey,
+        private readonly SubCommandRunner $subCommandRunner,
+    )
     {
         parent::__construct();
     }
@@ -26,7 +35,7 @@ class WelcomeCommand extends CommandBase
         $envPrefix = $this->config->get('service.env_prefix');
         $onContainer = getenv($envPrefix . 'PROJECT') && getenv($envPrefix . 'BRANCH');
 
-        if ($project = $this->getCurrentProject()) {
+        if ($project = $this->selector->getCurrentProject()) {
             $this->welcomeForLocalProjectDir($project);
         } elseif ($onContainer) {
             $this->welcomeOnContainer();
@@ -58,7 +67,7 @@ class WelcomeCommand extends CommandBase
     private function defaultWelcome(): void
     {
         // The project is not known. Show all projects.
-        $this->runOtherCommand('projects', ['--refresh' => '0']);
+        $this->subCommandRunner->run('projects', ['--refresh' => '0']);
     }
 
     /**
@@ -81,7 +90,7 @@ class WelcomeCommand extends CommandBase
             $this->api->warnIfSuspended($project);
         } else {
             // Show the environments.
-            $this->runOtherCommand('environments', [
+            $this->subCommandRunner->run('environments', [
                 '--project' => $project->id,
             ]);
         }
