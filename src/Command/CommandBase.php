@@ -22,14 +22,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     const STABILITY_BETA = 'BETA';
     const STABILITY_DEPRECATED = 'DEPRECATED';
 
-    /**
-     * @see self::getProjectRoot()
-     * @see self::setProjectRoot()
-     *
-     * @var string|false|null
-     */
-    private static $projectRoot = null;
-
     /** @var OutputInterface|null */
     protected $stdErr;
 
@@ -115,37 +107,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     public function isLocal(): bool
     {
         return $this->local;
-    }
-
-    /**
-     * @param string $root
-     */
-    protected function setProjectRoot($root)
-    {
-        if (!is_dir($root)) {
-            throw new \InvalidArgumentException("Invalid project root: $root");
-        }
-        self::$projectRoot = $root;
-    }
-
-    /**
-     * @return string|false
-     */
-    public function getProjectRoot()
-    {
-        if (!isset(self::$projectRoot)) {
-            $this->debug('Finding the project root');
-            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
-            self::$projectRoot = $localProject->getProjectRoot();
-            $this->debug(
-                self::$projectRoot
-                    ? 'Project root found: ' . self::$projectRoot
-                    : 'Project root not found'
-            );
-        }
-
-        return self::$projectRoot;
     }
 
     /**

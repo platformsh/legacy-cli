@@ -67,6 +67,7 @@ class Api
     private readonly  OutputInterface $stdErr;
     private readonly  TokenConfig $tokenConfig;
     private readonly  FileLock $fileLock;
+    private readonly IO $io;
 
     /**
      * The library's API client object.
@@ -117,18 +118,21 @@ class Api
      * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
      * @param FileLock|null $fileLock
+     * @param IO|null $io
      */
     public function __construct(
         Config $config = null,
         CacheProvider $cache = null,
         OutputInterface $output = null,
+        IO $io = null,
         TokenConfig $tokenConfig = null,
         FileLock $fileLock = null,
-        EventDispatcherInterface $dispatcher = null
+        EventDispatcherInterface $dispatcher = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
         $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
+        $this->io = $io ?: new IO($this->output);
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->fileLock = $fileLock ?: new FileLock($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
@@ -289,7 +293,7 @@ class Api
         // different CLI processes.
         $refreshLockName = 'refresh--' . $this->config->getSessionIdSlug();
         $connectorOptions['on_refresh_start'] = function ($originalRefreshToken) use ($refreshLockName) {
-            $this->debug('Refreshing access token');
+            $this->io->debug('Refreshing access token');
             $connector = $this->getClient(false)->getConnector();
             return $this->fileLock->acquireOrWait($refreshLockName, function () {
                 $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
@@ -347,22 +351,9 @@ class Api
         static $path;
         if ($path === null) {
             $path = CaBundle::getSystemCaRootBundlePath();
-            $this->debug('Determined CA bundle path: ' . $path);
+            $this->io->debug('Determined CA bundle path: ' . $path);
         }
         return $path;
-    }
-
-    /**
-     * Logs a debug message.
-     *
-     * @param string $message
-     * @return void
-     */
-    private function debug($message)
-    {
-        if ($this->stdErr && $this->stdErr->isDebug()) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
-        }
     }
 
     private function onStepUpAuthResponse(ResponseInterface $response) {
@@ -370,9 +361,7 @@ class Api
             return null;
         }
 
-        if ($this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln(ApiResponseException::getErrorDetails($response));
-        }
+        $this->io->debug(ApiResponseException::getErrorDetails($response));
 
         $session = $this->getClient(false)->getConnector()->getSession();
         $previousAccessToken = $session->get('accessToken');
@@ -410,7 +399,7 @@ class Api
             return null;
         }
 
-        $this->debug($e->getMessage());
+        $this->io->debug($e->getMessage());
 
         $this->logout();
 
@@ -559,7 +548,7 @@ class Api
             // (unless an access token was set directly).
             if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
                 $this->initSessionStorage();
-                $this->debug('Loading session');
+                $this->io->debug('Loading session');
                 try {
                     $session->setStorage($this->sessionStorage);
                 } catch (\RuntimeException $e) {
@@ -617,9 +606,9 @@ class Api
             $manager = new Manager($this->config);
             if ($manager->isSupported()) {
                 if ($manager->isInstalled()) {
-                    $this->debug('Using Docker credential helper for session storage');
+                    $this->io->debug('Using Docker credential helper for session storage');
                 } else {
-                    $this->debug('Installing Docker credential helper for session storage');
+                    $this->io->debug('Installing Docker credential helper for session storage');
                     $manager->install();
                 }
                 $this->sessionStorage = new CredentialHelperStorage($manager, $this->config->get('application.slug'));
@@ -627,7 +616,7 @@ class Api
             }
 
             // Fall back to file storage.
-            $this->debug('Using filesystem for session storage');
+            $this->io->debug('Using filesystem for session storage');
             $this->sessionStorage = new File($this->config->getSessionDir());
         }
     }
@@ -685,14 +674,14 @@ class Api
         } elseif ($refresh || !$cached) {
             $projects = [];
             if ($new) {
-                $this->debug('Loading extended access information to fetch the projects list');
+                $this->io->debug('Loading extended access information to fetch the projects list');
                 foreach ($this->getClient()->getMyProjects() as $project) {
                     if ($this->matchesVendorFilter($vendorFilter, $project)) {
                         $projects[] = $project;
                     }
                 }
             } else {
-                $this->debug('Loading account information to fetch the projects list');
+                $this->io->debug('Loading account information to fetch the projects list');
                 foreach ($this->getClient()->getProjectStubs((bool) $refresh) as $stub) {
                     $project = BasicProjectInfo::fromStub($stub);
                     if ($this->matchesVendorFilter($vendorFilter, $project)) {
@@ -703,7 +692,7 @@ class Api
             $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
         } else {
             $projects = $cached;
-            $this->debug('Loaded user project data from cache');
+            $this->io->debug('Loaded user project data from cache');
         }
 
         return $projects;
@@ -749,7 +738,7 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
-            $this->debug('Loaded project from cache: ' . $id);
+            $this->io->debug('Loaded project from cache: ' . $id);
         }
         if ($apiUrl !== '') {
             $project->setApiUrl($apiUrl);
@@ -809,7 +798,7 @@ class Api
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
-            $this->debug('Loaded environments from cache');
+            $this->io->debug('Loaded environments from cache');
         }
 
         self::$environmentsCache[$projectId] = $environments;
@@ -897,7 +886,7 @@ class Api
             foreach ((array) $cached as $data) {
                 $types[] = new EnvironmentType($data, $data['_uri'], $guzzleClient);
             }
-            $this->debug('Loaded environment types from cache for project: ' . $project->id);
+            $this->io->debug('Loaded environment types from cache for project: ' . $project->id);
         }
 
         return $types;
@@ -938,7 +927,7 @@ class Api
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         $info = $this->cache->fetch($cacheKey);
         if (!$reset && $info) {
-            $this->debug('Loaded account information from cache');
+            $this->io->debug('Loaded account information from cache');
         } else {
             $info = $this->getClient()->getAccountInfo($reset);
             $this->cache->save($cacheKey, $info, (int) $this->config->getWithDefault('api.users_ttl', 600));
@@ -997,7 +986,7 @@ class Api
             }
             $this->cache->save($cacheKey, $user->getData(), (int) $this->config->getWithDefault('api.users_ttl', 600));
         } else {
-            $this->debug('Loaded user info from cache: ' . $id);
+            $this->io->debug('Loaded user info from cache: ' . $id);
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
         }
@@ -1320,7 +1309,7 @@ class Api
             $data['_uri'] = $deployment->getUri();
             $this->cache->save($cacheKey, $data);
         } else {
-            $this->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
+            $this->io->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
             $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
@@ -1477,7 +1466,7 @@ class Api
                 $subscription = false;
             }
             if ($subscription) {
-                $this->debug('Loaded the subscription directly');
+                $this->io->debug('Loaded the subscription directly');
                 return $subscription;
             }
         }
@@ -1495,17 +1484,17 @@ class Api
             }
         }
         if (empty($organizationId)) {
-            $this->debug('Failed to find the organization ID for the subscription: ' . $id);
+            $this->io->debug('Failed to find the organization ID for the subscription: ' . $id);
             return false;
         }
         $organization = $this->getOrganizationById($organizationId);
         if (!$organization) {
-            $this->debug('Project organization not found: ' . $organizationId);
+            $this->io->debug('Project organization not found: ' . $organizationId);
             return false;
         }
         $subscription = $organization->getSubscription($id);
         if (!$subscription) {
-            $this->debug('Failed to load subscription: ' . $id);
+            $this->io->debug('Failed to load subscription: ' . $id);
             return false;
         }
 
@@ -1570,7 +1559,7 @@ class Api
     {
         $cacheKey = 'organization:' . $id;
         if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
-            $this->debug('Loaded organization from cache: ' . $id);
+            $this->io->debug('Loaded organization from cache: ' . $id);
             return new Organization($cached, $cached['_url'], $this->getHttpClient());
         }
         $organization = $this->getClient()->getOrganizationById($id);

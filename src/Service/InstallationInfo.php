@@ -5,21 +5,16 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Util\OsUtil;
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class InstallationInfo
 {
     private static ?array $otherPaths = null;
 
-    private readonly OutputInterface $stdErr;
-
     public function __construct(
         private readonly Config $config,
         private readonly OsUtil $osUtil,
-        OutputInterface         $output)
+        private readonly IO $io)
     {
-        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**
@@ -37,7 +32,7 @@ class InstallationInfo
                 return $realpath && $realpath !== $thisPath;
             }));
             if (!empty($otherPaths)) {
-                $this->debug('Other CLI(s) found: ' . implode(", ", $otherPaths));
+                $this->io->debug('Other CLI(s) found: ' . implode(", ", $otherPaths));
             }
         }
         return !empty($otherPaths);
@@ -53,17 +48,5 @@ class InstallationInfo
             $path = $pharPath;
         }
         return $path;
-    }
-
-    /**
-     * Prints a debug message.
-     *
-     * @todo deduplicate this
-     *
-     * @param string $message
-     */
-    private function debug(string $message): void
-    {
-        $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
 }
