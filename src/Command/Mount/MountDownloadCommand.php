@@ -56,7 +56,6 @@ class MountDownloadCommand extends CommandBase
 
         /** @var App $container */
         $container = $this->selectRemoteContainer($input);
-        /** @var Mount $mountService */
         $mountService = $this->mount;
         $mounts = $mountService->mountsFromConfig($container->getConfig());
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
@@ -67,9 +66,7 @@ class MountDownloadCommand extends CommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
-        /** @var Filesystem $fs */
         $fs = $this->filesystem;
 
         $all = $input->getOption('all');
@@ -142,7 +139,6 @@ class MountDownloadCommand extends CommandBase
             $fs->validateDirectory($target, true);
         }
 
-        /** @var Rsync $rsync */
         $rsync = $this->rsync;
 
         $rsyncOptions = [
@@ -211,7 +207,6 @@ class MountDownloadCommand extends CommandBase
      */
     private function getDefaultTarget(App $app, string $mountPath): ?string
     {
-        /** @var Mount $mountService */
         $mountService = $this->mount;
 
         $appPath = $this->getLocalAppPath($app);
@@ -239,7 +234,6 @@ class MountDownloadCommand extends CommandBase
         if (!isset($this->localApps)) {
             $this->localApps = [];
             if ($projectRoot = $this->getProjectRoot()) {
-                /** @var ApplicationFinder $finder */
                 $finder = $this->applicationFinder;
                 $this->localApps = $finder->findApplications($projectRoot);
             }

@@ -61,7 +61,6 @@ class TunnelListCommand extends TunnelCommandBase
             }
         }
 
-        /** @var Table $table */
         $table = $this->table;
         $rows = [];
         foreach ($tunnels as $tunnel) {

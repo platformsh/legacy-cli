@@ -55,7 +55,6 @@ class CommitListCommand extends CommandBase
         $environment = $this->getSelectedEnvironment();
 
         $startSha = $input->getArgument('commit');
-        /** @var GitDataApi $gitData */
         $gitData = $this->gitDataApi;
         $startCommit = $gitData->getCommit($environment, $startSha);
         if (!$startCommit) {
@@ -68,7 +67,6 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
@@ -81,7 +79,6 @@ class CommitListCommand extends CommandBase
 
         $commits = $this->loadCommitList($environment, $startCommit, $input->getOption('limit'));
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];
@@ -118,7 +115,6 @@ class CommitListCommand extends CommandBase
             return $commits;
         }
 
-        /** @var GitDataApi $gitData */
         $gitData = $this->gitDataApi;
 
         $progress = new ProgressBar($this->stdErr->isDecorated() ? $this->stdErr : new NullOutput());

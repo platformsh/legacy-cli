@@ -43,7 +43,6 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         $org = $this->validateOrganizationInput($input, 'orders');
         $address = $org->getAddress();
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $result = 0;
@@ -63,12 +62,10 @@ class OrganizationAddressCommand extends OrganizationCommandBase
 
     protected function display(Address $address, Organization $org, InputInterface $input)
     {
-        /** @var Table $table */
         $table = $this->table;
 
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         foreach ($address->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);

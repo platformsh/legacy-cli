@@ -46,7 +46,6 @@ class IntegrationListCommand extends IntegrationCommandBase
             $integrations = array_filter($integrations, fn(Integration $i): bool => $i->type === $type);
         }
 
-        /** @var Table $table */
         $table = $this->table;
         $rows = [];
 

@@ -33,7 +33,6 @@ class BackupDeleteCommand extends CommandBase
         $this->validateInput($input);
         $environment = $this->getSelectedEnvironment();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         if ($id = $input->getArgument('backup')) {
@@ -72,7 +71,6 @@ class BackupDeleteCommand extends CommandBase
         $this->stdErr->writeln(sprintf('The backup <info>%s</info> has been deleted.', $this->labelBackup($backup)));
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
@@ -82,7 +80,6 @@ class BackupDeleteCommand extends CommandBase
 
     private function labelBackup(Backup $backup): string
     {
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         return sprintf('%s (%s)', $backup->id, $formatter->format($backup->created_at, 'created_at'));
     }

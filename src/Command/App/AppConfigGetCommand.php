@@ -55,7 +55,6 @@ class AppConfigGetCommand extends CommandBase
                 ->getConfig();
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
         return 0;

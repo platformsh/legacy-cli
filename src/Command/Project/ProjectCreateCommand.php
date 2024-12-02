@@ -86,10 +86,8 @@ EOF
             }
         }
 
-        /** @var Git $git */
         $git = $this->git;
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         // Identify an organization that should own the project.
@@ -332,7 +330,6 @@ EOF
                 $this->api->getProjectLabel($project)
             ));
 
-            /** @var LocalProject $localProject */
             $localProject = $this->localProject;
             $localProject->mapDirectory($gitRoot, $project);
         }

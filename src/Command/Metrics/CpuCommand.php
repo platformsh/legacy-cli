@@ -51,7 +51,6 @@ class CpuCommand extends MetricsCommandBase
 
         $this->validateInput($input, false, true);
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
@@ -70,7 +69,6 @@ class CpuCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average CPU usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',

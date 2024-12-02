@@ -37,7 +37,6 @@ class ReadCommand extends RepoCommandBase
         $environment = $this->getSelectedEnvironment();
 
         $path = $input->getArgument('path');
-        /** @var GitDataApi $gitData */
         $gitData = $this->gitDataApi;
         $object = $gitData->getObject($path, $environment, $input->getOption('commit'));
         if ($object === false) {

@@ -79,14 +79,12 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf('Resource configuration for the project %s, environment %s:', $this->api->getProjectLabel($this->getSelectedProject()), $this->api->getEnvironmentLabel($environment)));
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';

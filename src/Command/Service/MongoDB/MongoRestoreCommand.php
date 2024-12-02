@@ -36,7 +36,6 @@ class MongoRestoreCommand extends CommandBase
             throw new InvalidArgumentException('This command requires a mongodump archive to be piped into STDIN');
         }
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 

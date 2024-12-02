@@ -41,7 +41,6 @@ class TeamUserAddCommand extends TeamCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $identifier = $input->getArgument('user');

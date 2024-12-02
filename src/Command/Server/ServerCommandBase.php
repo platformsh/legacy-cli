@@ -241,7 +241,6 @@ abstract class ServerCommandBase extends CommandBase
         if (isset($appConfig['type'])) {
             $type = explode(':', (string) $appConfig['type'], 2);
             $version = isset($type[1]) ? $type[1] : false;
-            /** @var Shell $shell */
             $shell = $this->shell;
             $localPhpVersion = $shell->getPhpVersion();
             if ($type[0] === 'php' && $version && version_compare($localPhpVersion, $version, '<')) {
@@ -361,7 +360,6 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function getRoutesList(string $projectRoot, string $address)
     {
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
         $routesConfig = (array) $localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
 

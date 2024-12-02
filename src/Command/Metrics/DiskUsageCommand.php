@@ -66,7 +66,6 @@ class DiskUsageCommand extends MetricsCommandBase
             $input->setOption('columns', $this->tmpReportColumns);
         }
 
-        /** @var Table $table */
         $table = $this->table;
         $table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
@@ -102,7 +101,6 @@ class DiskUsageCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',

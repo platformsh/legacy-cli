@@ -47,7 +47,6 @@ class IntegrationGetCommand extends IntegrationCommandBase
                 $value = $this->api->getNestedProperty($integration, $property);
             }
 
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             $output->writeln($formatter->format($value, $property));
 

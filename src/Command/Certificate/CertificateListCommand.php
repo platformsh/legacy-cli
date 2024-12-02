@@ -87,9 +87,7 @@ class CertificateListCommand extends CommandBase
             return 0;
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->propertyFormatter;
 
         $rows = [];

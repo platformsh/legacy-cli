@@ -44,7 +44,6 @@ class VariableListCommand extends VariableCommandBase
 
         $project = $this->getSelectedProject();
 
-        /** @var Table $table */
         $table = $this->table;
 
         $variables = [];
