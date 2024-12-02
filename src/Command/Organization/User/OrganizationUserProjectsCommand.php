@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -34,7 +35,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         'region' => 'Region',
     ];
     protected $defaultColumns = ['project_id', 'project_title', 'roles', 'updated_at'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -70,7 +71,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         }
         if ($email = $input->getArgument('email')) {
             if (!$organization) {
-                $this->debug('Finding user by email address');
+                $this->io->debug('Finding user by email address');
                 $user = $this->api->getUser('email=' . $email);
                 $userId = $user->id;
                 $userRef = UserRef::fromData($user->getData());

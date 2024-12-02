@@ -35,8 +35,8 @@ class RouteGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addExample('View the URL to the https://{default}/ route', "'https://{default}/' -P url");
@@ -47,14 +47,14 @@ class RouteGetCommand extends CommandBase
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
-            $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
+            $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }
             $routes = Route::fromVariables($decoded);
         } else {
-            $this->debug('Reading routes from the API');
+            $this->io->debug('Reading routes from the API');
             $selection = $this->selector->getSelection($input);
             $environment = $selection->getEnvironment();
             $deployment = $this->api

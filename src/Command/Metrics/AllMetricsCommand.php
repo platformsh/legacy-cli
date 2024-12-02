@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
@@ -60,8 +61,8 @@ class AllMetricsCommand extends MetricsCommandBase
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
         $this->addExample('Show metrics in five-minute intervals over the last hour', '-i 5m -r 1h');
         $this->addExample('Show metrics for all SQL services', '--type mariadb,%sql');
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -77,7 +78,7 @@ class AllMetricsCommand extends MetricsCommandBase
         }
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
         $table = $this->table;
 

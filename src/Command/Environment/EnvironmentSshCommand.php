@@ -34,8 +34,8 @@ class EnvironmentSshCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
             ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open a shell over SSH');

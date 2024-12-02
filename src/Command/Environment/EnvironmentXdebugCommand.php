@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
@@ -16,7 +17,7 @@ use Symfony\Component\Process\Process;
 class EnvironmentXdebugCommand extends CommandBase
 {
     const SOCKET_PATH = '/run/xdebug-tunnel.sock';
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Selector $selector, private readonly Ssh $ssh)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Io $io, private readonly Selector $selector, private readonly Ssh $ssh)
     {
         parent::__construct();
     }
@@ -28,8 +29,8 @@ class EnvironmentXdebugCommand extends CommandBase
     {
         $this
             ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
@@ -116,7 +117,7 @@ class EnvironmentXdebugCommand extends CommandBase
 
         // The socket is removed to prevent 'file already exists' errors.
         $commandCleanup = $ssh->getSshCommand($sshUrl, [], 'rm -rf ' . self::SOCKET_PATH);
-        $this->debug("Cleanup command: " . $commandCleanup);
+        $this->io->debug("Cleanup command: " . $commandCleanup);
         $process = Process::fromShellCommandline($commandCleanup, null, $ssh->getEnv());
         $process->run();
 
@@ -129,7 +130,7 @@ class EnvironmentXdebugCommand extends CommandBase
 
         $listenAddress = '127.0.0.1:' . $port;
         $commandTunnel = $ssh->getSshCommand($sshUrl, $sshOptions) . ' -R ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
-        $this->debug("Tunnel command: " . $commandTunnel);
+        $this->io->debug("Tunnel command: " . $commandTunnel);
         $process = Process::fromShellCommandline($commandTunnel, null, $ssh->getEnv());
         $process->setTimeout(null);
         $process->start();

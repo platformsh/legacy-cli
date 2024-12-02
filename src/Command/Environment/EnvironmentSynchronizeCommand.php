@@ -36,9 +36,9 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
             $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
         }
         $this->addOption('rebase', null, InputOption::VALUE_NONE, 'Synchronize code by rebasing instead of merging');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Synchronize data from the parent environment', 'data');
         $this->addExample('Synchronize code and data from the parent environment', 'code data');

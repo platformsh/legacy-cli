@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Route;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -25,7 +26,7 @@ class RouteListCommand extends CommandBase
         'url' => 'URL',
     ];
     private array $defaultColumns = ['route', 'type', 'to'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -40,8 +41,8 @@ class RouteListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -49,7 +50,7 @@ class RouteListCommand extends CommandBase
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
-            $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
+            $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (!is_array($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
@@ -57,7 +58,7 @@ class RouteListCommand extends CommandBase
             $routes = Route::fromVariables($decoded);
             $fromEnv = true;
         } else {
-            $this->debug('Reading routes from the deployments API');
+            $this->io->debug('Reading routes from the deployments API');
             $selection = $this->selector->getSelection($input);
             $environment = $selection->getEnvironment();
             $deployment = $this->api->getCurrentDeployment($environment, $input->getOption('refresh'));

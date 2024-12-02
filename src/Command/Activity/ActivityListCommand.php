@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
@@ -70,8 +71,8 @@ class ActivityListCommand extends ActivityCommandBase
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type push')
@@ -82,7 +83,7 @@ class ActivityListCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !$input->getOption('all')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !$input->getOption('all')));
 
         $project = $selection->getProject();
 

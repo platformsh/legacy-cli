@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -34,15 +35,15 @@ class VariableUpdateCommand extends VariableCommandBase
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);
         $this->form = Form::fromArray($fields);
         $this->form->configureInputDefinition($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition())
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
 
         $name = $input->getArgument('name');
         $variable = $this->getExistingVariable($name, $level);

@@ -24,8 +24,8 @@ class BackupGetCommand extends CommandBase
         $this
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The backup property to display.');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }
 

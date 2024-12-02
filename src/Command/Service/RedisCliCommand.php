@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:redis-cli', description: 'Access the Redis CLI', aliases: ['redis'])]
 class RedisCliCommand extends CommandBase
 {
-    public function __construct(private readonly Relationships $relationships, private readonly Selector $selector)
+    public function __construct(private readonly Io $io, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -59,7 +60,7 @@ class RedisCliCommand extends CommandBase
             } else {
                 $redisCommand .= ' ' . implode(' ', array_map(OsUtil::escapePosixShellArg(...), $args));
             }
-        } elseif ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+        } elseif ($this->io->isTerminal(STDIN) && $host instanceof RemoteHost) {
             // Force TTY output when the input is a terminal.
             $host->setExtraSshOptions(['RequestTTY yes']);
         }

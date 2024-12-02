@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -24,15 +25,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition())
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $helpLines = [
             'Configure the resources allocated to apps, workers and services on an environment.',
@@ -249,7 +250,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $this->summarizeChanges($updates, $services, $containerProfiles);
 
-        $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
+        $this->io->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
         $project = $selection->getProject();
         $organization = $this->api->getClient()->getOrganizationById($project->getProperty('organization'));
@@ -259,9 +260,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $limit = $profile->resources_limit['limit'];
             $used = $profile->resources_limit['used']['totals'];
 
-            $this->debug('Raw diff: ' . json_encode($diff, JSON_UNESCAPED_SLASHES));
-            $this->debug('Raw limits: ' . json_encode($limit, JSON_UNESCAPED_SLASHES));
-            $this->debug('Raw used: ' . json_encode($used, JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Raw diff: ' . json_encode($diff, JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Raw limits: ' . json_encode($limit, JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Raw used: ' . json_encode($used, JSON_UNESCAPED_SLASHES));
 
             $errored = false;
             if ($limit['cpu'] < $used['cpu'] + $diff['cpu']) {
@@ -580,7 +581,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     continue;
                 }
                 if (isset($values[$name]) && $values[$name] !== $normalized) {
-                    $this->debug(sprintf('Overriding value %s with %s for %s in --%s', $values[$name], $normalized, $name, $optionName));
+                    $this->io->debug(sprintf('Overriding value %s with %s for %s in --%s', $values[$name], $normalized, $name, $optionName));
                 }
                 $values[$name] = $normalized;
             }

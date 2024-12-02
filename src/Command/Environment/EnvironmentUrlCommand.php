@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentUrlCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Url $url)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -27,8 +28,8 @@ class EnvironmentUrlCommand extends CommandBase
         $this
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
         Url::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addExample('Give a choice of URLs to open (or print all URLs if there is no browser)');
         $this->addExample('Print all URLs', '--pipe');
         $this->addExample('Print and/or open the primary route URL', '--primary');
@@ -40,14 +41,14 @@ class EnvironmentUrlCommand extends CommandBase
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
-            $this->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
+            $this->io->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }
             $routes = Route::fromVariables($decoded);
         } else {
-            $this->debug('Reading URLs from the API');
+            $this->io->debug('Reading URLs from the API');
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
             $selection = $this->selector->getSelection($input);
             $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
@@ -106,11 +107,11 @@ class EnvironmentUrlCommand extends CommandBase
         }
         $urlService = $this->url;
         if (!$urlService->hasDisplay()) {
-            $this->debug('Not opening URLs (no display found)');
+            $this->io->debug('Not opening URLs (no display found)');
             $output->writeln($toDisplay);
             return;
         } elseif (!$urlService->canOpenUrls()) {
-            $this->debug('Not opening URLs (no browser found)');
+            $this->io->debug('Not opening URLs (no browser found)');
             $output->writeln($toDisplay);
             return;
         }

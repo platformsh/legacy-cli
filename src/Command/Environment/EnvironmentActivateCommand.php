@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -10,6 +11,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,27 +21,35 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:activate', description: 'Activate an environment')]
 class EnvironmentActivateCommand extends CommandBase
 {
+    private array $validResourcesInitOptions = ['parent', 'default', 'minimum'];
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
-    {
+    public function __construct(
+        private readonly ActivityMonitor $activityMonitor,
+        private readonly Api             $api,
+        private readonly Config          $config,
+        private readonly QuestionHelper  $questionHelper,
+        private readonly ResourcesUtil   $resourcesUtil,
+        private readonly Selector        $selector,
+        private readonly SubCommandRunner $subCommandRunner,
+    ) {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
-        $this->resourcesUtil->addOption(['parent', 'default', 'minimum']);
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsByStatus(['inactive', 'paused']);
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         if ($selection->hasEnvironment()) {
             $toActivate = [$selection->getEnvironment()];
@@ -53,28 +63,21 @@ class EnvironmentActivateCommand extends CommandBase
             }
         }
 
-        $success = $this->activateMultiple($toActivate, $input, $this->stdErr);
+        $success = $this->activateMultiple($toActivate, $selection->getProject(), $input, $this->stdErr);
 
         return $success ? 0 : 1;
     }
 
-    /**
-     * @param Environment[]   $environments
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     *
-     * @return bool
-     */
-    protected function activateMultiple(array $environments, InputInterface $input, OutputInterface $output)
+    protected function activateMultiple(array $environments, Project $project, InputInterface $input, OutputInterface $output): bool
     {
         $parentId = $input->getOption('parent');
-        if ($parentId && !$this->api->getEnvironment($parentId, $selection->getProject())) {
+        if ($parentId && !$this->api->getEnvironment($parentId, $project)) {
             $this->stdErr->writeln(sprintf('Parent environment not found: <error>%s</error>', $parentId));
             return false;
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->resourcesUtil->validateInput($input, $selection->getProject());
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $project, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }
@@ -100,7 +103,7 @@ class EnvironmentActivateCommand extends CommandBase
                             '--wait' => $input->getOption('wait'),
                             '--no-wait' => $input->getOption('no-wait'),
                             '--yes' => true,
-                        ]);
+                        ]) === 0;
                     }
                     $output->writeln(sprintf(
                         'To resume the environment, run: <comment>%s environment:resume</comment>',
@@ -163,10 +166,10 @@ class EnvironmentActivateCommand extends CommandBase
         if ($processed) {
             if ($this->activityMonitor->shouldWait($input)) {
                 $activityMonitor = $this->activityMonitor;
-                $result = $activityMonitor->waitMultiple($activities, $selection->getProject());
+                $result = $activityMonitor->waitMultiple($activities, $project);
                 $success = $success && $result;
             }
-            $this->api->clearEnvironmentsCache($selection->getProject()->id);
+            $this->api->clearEnvironmentsCache($project->id);
         }
 
         return $success;

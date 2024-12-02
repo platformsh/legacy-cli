@@ -22,6 +22,20 @@ class SelectorConfig
     ) {
     }
 
+    public function with(
+        ?bool $envRequired = null,
+        ?callable $chooseEnvFilter = null,
+    ): SelectorConfig {
+        $obj = clone $this;
+        if ($envRequired !== null) {
+            $obj->envRequired = $envRequired;
+        }
+        if ($chooseEnvFilter !== null) {
+            $obj->chooseEnvFilter = $chooseEnvFilter;
+        }
+        return $obj;
+    }
+
     /**
      * Returns an environment filter to select environments that may be active.
      *

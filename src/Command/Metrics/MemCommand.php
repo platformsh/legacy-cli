@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
@@ -36,8 +37,8 @@ class MemCommand extends MetricsCommandBase
     {
         $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -52,7 +53,7 @@ class MemCommand extends MetricsCommandBase
             return 1;
         }
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
         $table = $this->table;
 
