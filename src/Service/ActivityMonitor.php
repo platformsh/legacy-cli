@@ -31,7 +31,7 @@ class ActivityMonitor
 
     private readonly OutputInterface $stdErr;
 
-    public function __construct(private readonly Config $config, private readonly Api $api, private readonly IO $io, OutputInterface $output)
+    public function __construct(private readonly Config $config, private readonly Api $api, private readonly Io $io, OutputInterface $output)
     {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
