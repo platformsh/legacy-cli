@@ -72,9 +72,7 @@ class CustomJsonDescriptor extends Descriptor
             $data['namespace'] = $describedNamespace;
         } else {
             // Only show namespaces with at least one (non-hidden) command.
-            $data['namespaces'] = array_values(array_filter($description->getNamespaces(), function ($n) {
-                return !empty($n['commands']);
-            }));
+            $data['namespaces'] = array_values(array_filter($description->getNamespaces(), fn($n): bool => !empty($n['commands'])));
         }
 
         $this->writeData($data, $options);
@@ -83,7 +81,7 @@ class CustomJsonDescriptor extends Descriptor
     /**
      * Writes data as json.
      */
-    private function writeData(array $data, array $options)
+    private function writeData(array $data, array $options): void
     {
         $flags = isset($options['json_encoding']) ? $options['json_encoding'] : 0;
         $flags |= JSON_UNESCAPED_SLASHES;
@@ -94,7 +92,7 @@ class CustomJsonDescriptor extends Descriptor
     /**
      * @return array
      */
-    private function getInputArgumentData(InputArgument $argument)
+    private function getInputArgumentData(InputArgument $argument): array
     {
         return [
             'name' => $argument->getName(),
@@ -108,7 +106,7 @@ class CustomJsonDescriptor extends Descriptor
     /**
      * @return array
      */
-    private function getInputOptionData(InputOption $option)
+    private function getInputOptionData(InputOption $option): array
     {
         return [
             'name' => '--'.$option->getName(),
@@ -125,7 +123,7 @@ class CustomJsonDescriptor extends Descriptor
     /**
      * @return array
      */
-    private function getInputDefinitionData(InputDefinition $definition)
+    private function getInputDefinitionData(InputDefinition $definition): array
     {
         $inputArguments = [];
         foreach ($definition->getArguments() as $name => $argument) {
@@ -149,7 +147,7 @@ class CustomJsonDescriptor extends Descriptor
     /**
      * @return array
      */
-    private function getCommandData(Command $command)
+    private function getCommandData(Command $command): array
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);

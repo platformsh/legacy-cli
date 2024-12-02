@@ -14,32 +14,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Ssh implements InputConfiguringInterface
 {
     const SSH_NO_REFRESH_ENV_VAR = 'CLI_SSH_NO_REFRESH';
+    protected OutputInterface $stdErr;
 
-    protected $input;
-    protected $output;
-    protected $stdErr;
-    protected $config;
-    protected $certifier;
-    protected $sshConfig;
-    protected $sshKey;
+    private bool $configuredSession = false;
 
-    private $configuredSession = false;
-
-    public function __construct(InputInterface $input, OutputInterface $output, Config $config, Certifier $certifier, SshConfig $sshConfig, SshKey $sshKey)
+    public function __construct(protected InputInterface $input, protected OutputInterface $output, protected Config $config, protected Certifier $certifier, protected SshConfig $sshConfig, protected SshKey $sshKey)
     {
-        $this->input = $input;
-        $this->output = $output;
-        $this->config = $config;
-        $this->sshKey = $sshKey;
-        $this->certifier = $certifier;
-        $this->sshConfig = $sshConfig;
         $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\InputDefinition $definition
+     * @param InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition): void
     {
         $definition->addOption(
             new HiddenInputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated: an SSH identity (private key) to use. The auto-generated certificate is recommended instead.')
@@ -59,7 +46,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @return array
      */
-    public function getSshArgs($uri, array $extraOptions = [], $remoteCommand = null)
+    public function getSshArgs($uri, array $extraOptions = [], $remoteCommand = null): array
     {
         $options = array_merge($this->getSshOptions($this->hostIsInternal($uri)), $extraOptions);
 
@@ -78,7 +65,7 @@ class Ssh implements InputConfiguringInterface
                 if (count($remoteCommand) === 1) {
                     $args[] = reset($remoteCommand);
                 } else {
-                    $args[] = implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $remoteCommand));
+                    $args[] = implode(' ', array_map(OsUtil::escapePosixShellArg(...), $remoteCommand));
                 }
             } else {
                 $args[] = $remoteCommand;
@@ -95,7 +82,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @return string[] An array of SSH options.
      */
-    private function getSshOptions($hostIsInternal)
+    private function getSshOptions($hostIsInternal): array
     {
         $options = [];
 
@@ -169,7 +156,7 @@ class Ssh implements InputConfiguringInterface
         }
 
         if ($configuredOptions = $this->config->get('ssh.options')) {
-            $options = array_merge($options, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
+            $options = array_merge($options, is_array($configuredOptions) ? $configuredOptions : explode("\n", (string) $configuredOptions));
         }
 
         // Avoid repeating options.
@@ -195,14 +182,14 @@ class Ssh implements InputConfiguringInterface
      *
      * @return string
      */
-    public function getSshCommand($url, array $extraOptions = [], $remoteCommand = null, $omitUrl = false, $autoConfigure = true)
+    public function getSshCommand($url, array $extraOptions = [], $remoteCommand = null, $omitUrl = false, $autoConfigure = true): string
     {
         $command = 'ssh';
         if (!$omitUrl) {
             $command .= ' ' . OsUtil::escapeShellArg($url);
         }
         if ($args = $this->getSshArgs($url, $extraOptions, $remoteCommand)) {
-            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapeShellArg'], $args));
+            $command .= ' ' . implode(' ', array_map(OsUtil::escapeShellArg(...), $args));
         }
 
         // Configure or validate the session SSH config.
@@ -223,7 +210,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @return array<string, string>
      */
-    public function getEnv()
+    public function getEnv(): array
     {
         // Suppress refreshing the certificate while SSH is running through the CLI.
         return [self::SSH_NO_REFRESH_ENV_VAR => '1'];
@@ -236,15 +223,15 @@ class Ssh implements InputConfiguringInterface
      *
      * @return string|false|null
      */
-    private function getHost($uri)
+    private function getHost(string $uri): false|int|string|array|null
     {
-        if (\strpos($uri, '@') !== false) {
+        if (str_contains($uri, '@')) {
             list(, $uri) = \explode('@', $uri, 2);
         }
-        if (\strpos($uri, '://') !== false) {
+        if (str_contains($uri, '://')) {
             list(, $uri) = \explode('://', $uri, 2);
         }
-        if (\strpos($uri, ':') !== false) {
+        if (str_contains($uri, ':')) {
             list($uri, ) = \explode(':', $uri, 2);
         }
         if (!preg_match('@^[\p{Ll}0-9-]+\.[\p{Ll}0-9-]+@', $uri)) {
@@ -261,7 +248,7 @@ class Ssh implements InputConfiguringInterface
      * @return bool|null
      *  True if the URI is for an internal server, false if it's external, or null if it cannot be determined.
      */
-    public function hostIsInternal($uri)
+    public function hostIsInternal($uri): ?bool
     {
         $host = $this->getHost($uri);
         if (!$host) {
@@ -273,7 +260,7 @@ class Ssh implements InputConfiguringInterface
             return null;
         }
         foreach ($wildcards as $wildcard) {
-            if (\strpos($host, \str_replace('*.', '', $wildcard)) !== false) {
+            if (str_contains($host, \str_replace('*.', '', $wildcard))) {
                 return true;
             }
         }

@@ -17,7 +17,7 @@ class Sketch
      * @param array $value
      * @return Sketch
      */
-    public static function fromApiValue(array $value)
+    public static function fromApiValue(array $value): \Platformsh\Cli\Model\Metrics\Sketch
     {
         $s = new Sketch();
         $s->name = $value['info']['name'];
@@ -45,7 +45,7 @@ class Sketch
     /**
      * @return float
      */
-    public function average()
+    public function average(): float
     {
         if ($this->isInfinite()) {
             throw new \RuntimeException('Cannot find the average of an infinite value');

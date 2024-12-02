@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:all', description: 'Show CPU, disk and memory metrics for an environment', aliases: ['metrics', 'met'])]
 class AllMetricsCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -43,7 +43,11 @@ class AllMetricsCommand extends MetricsCommandBase
         'tmp_inodes_percent' => '/tmp inodes %',
     ];
 
-    private $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
+    private array $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -75,8 +79,8 @@ class AllMetricsCommand extends MetricsCommandBase
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input, false, true);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        /** @var Table $table */
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
@@ -86,7 +90,7 @@ class AllMetricsCommand extends MetricsCommandBase
         //
         // The fields are the selected column names (according to the $table
         // service), filtered to only those that contain an underscore.
-        $fieldNames = array_filter($table->columnsToDisplay($this->tableHeader, $this->defaultColumns), function ($c) { return strpos($c, '_') !== false; });
+        $fieldNames = array_filter($table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn($c): bool => str_contains((string) $c, '_'));
         $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), $fieldNames);
         if ($values === false) {
             return 1;
@@ -122,7 +126,7 @@ class AllMetricsCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),

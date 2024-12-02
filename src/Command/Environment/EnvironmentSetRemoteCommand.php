@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +16,10 @@ class EnvironmentSetRemoteCommand extends CommandBase
 {
     // @todo remove this command in v3
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Git $git, private readonly LocalProject $localProject)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -39,13 +46,13 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
         $projectRoot = $this->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->git;
         $git->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
         if ($specifiedEnvironmentId != '0'
-            && !($specifiedEnvironment = $this->api()->getEnvironment($specifiedEnvironmentId, $project))) {
+            && !($specifiedEnvironment = $this->api->getEnvironment($specifiedEnvironmentId, $project))) {
             $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
             return 1;
         }
@@ -67,8 +74,8 @@ class EnvironmentSetRemoteCommand extends CommandBase
             && $specifiedEnvironmentId === $specifiedBranch;
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {
             $upstream = $git->getUpstream($specifiedBranch);
-            if (strpos($upstream, '/')) {
-                list(, $upstream) = explode('/', $upstream, 2);
+            if (strpos((string) $upstream, '/')) {
+                list(, $upstream) = explode('/', (string) $upstream, 2);
             }
             if ($upstream === $specifiedEnvironmentId) {
                 $mappedByDefault = true;
@@ -81,8 +88,8 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         // Perform the mapping or unmapping.
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        /** @var LocalProject $localProject */
+        $localProject = $this->localProject;
         $projectConfig = $localProject->getProjectConfig($projectRoot);
         $projectConfig += ['mapping' => []];
         if ($mappedByDefault || $specifiedEnvironmentId == '0') {

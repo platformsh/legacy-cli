@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Backup;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupDeleteCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -26,8 +33,8 @@ class BackupDeleteCommand extends CommandBase
         $this->validateInput($input);
         $environment = $this->getSelectedEnvironment();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
         if ($id = $input->getArgument('backup')) {
             $backup = $environment->getBackup($id);
@@ -65,18 +72,18 @@ class BackupDeleteCommand extends CommandBase
         $this->stdErr->writeln(sprintf('The backup <info>%s</info> has been deleted.', $this->labelBackup($backup)));
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 
         return 0;
     }
 
-    private function labelBackup(Backup $backup)
+    private function labelBackup(Backup $backup): string
     {
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
         return sprintf('%s (%s)', $backup->id, $formatter->format($backup->created_at, 'created_at'));
     }
 }

@@ -44,7 +44,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    protected function indent($string, $prefix = '    ')
+    protected function indent($string, $prefix = '    '): ?string
     {
         return preg_replace('/^/m', $prefix, $string);
     }
@@ -115,7 +115,7 @@ class ActivityMonitor
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null, $noResult = false)
+    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null, $noResult = false): bool
     {
         $stdErr = $this->stdErr;
         $logOutput = $logOutput ?: $stdErr;
@@ -134,10 +134,8 @@ class ActivityMonitor
             return $this->formatState($overrideState ?: $activity->state);
         });
         $startTime = $this->getStart($activity) ?: time();
-        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
-            return $this->formatDuration(time() - $startTime);
-        });
-        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor) { return $progressColor; });
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
+        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
         $bar->setFormat('[%bar%] <fg=%fgColor%>%elapsed:6s%</> (%state%)');
         $bar->start();
 
@@ -273,7 +271,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    private function formatDuration($value)
+    private function formatDuration(int|float $value): string
     {
         $hours = $minutes = 0;
         $seconds = (int) round($value);
@@ -296,7 +294,7 @@ class ActivityMonitor
      *
      * @return array{'items': LogItem[], 'seal': bool}
      */
-    private function parseLog(&$buffer) {
+    private function parseLog(string &$buffer): array {
         if (\strlen($buffer) <= 1) {
             return ['items' => [], 'seal' => false];
         }
@@ -320,12 +318,12 @@ class ActivityMonitor
      *
      * @return string
      */
-    public function formatLog(array $items, $timestamps = false) {
+    public function formatLog(array $items, $timestamps = false): string {
         $timestampFormat = false;
         if ($timestamps !== false) {
             $timestampFormat = $timestamps ?: $this->config->getWithDefault('application.date_format', 'Y-m-d H:i:s');
         }
-        $formatItem = function (LogItem $item) use ($timestampFormat) {
+        $formatItem = function (LogItem $item) use ($timestampFormat): string {
             if ($timestampFormat !== false) {
                 return '[' . $item->getTime()->format($timestampFormat) . '] '. $item->getMessage();
             }
@@ -364,12 +362,8 @@ class ActivityMonitor
         }
 
         // Split integration and non-integration activities, and put the latter first.
-        $integrationActivities = array_filter($activities, function (Activity $a) {
-            return strpos($a->type, 'integration.') === 0;
-        });
-        $nonIntegrationActivities = array_filter($activities, function (Activity $a) {
-            return strpos($a->type, 'integration.') !== 0;
-        });
+        $integrationActivities = array_filter($activities, fn(Activity $a): bool => str_starts_with($a->type, 'integration.'));
+        $nonIntegrationActivities = array_filter($activities, fn(Activity $a): bool => !str_starts_with($a->type, 'integration.'));
         $activities = array_merge($nonIntegrationActivities, $integrationActivities);
 
         // For more than one activity, output a list of their descriptions.
@@ -472,10 +466,8 @@ class ActivityMonitor
             }
             return implode(', ', $withCount);
         });
-        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor) { return $progressColor; });
-        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime, &$progressColor) {
-            return $this->formatDuration(time() - $startTime);
-        });
+        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix
@@ -556,7 +548,7 @@ class ActivityMonitor
      *
      * @return bool Success or failure.
      */
-    private function printResult(Activity $activity, $logOnFailure = false)
+    private function printResult(Activity $activity, bool $logOnFailure = false): bool
     {
         $stdErr = $this->stdErr;
 
@@ -620,7 +612,7 @@ class ActivityMonitor
      *
      * @return ProgressBar
      */
-    protected function newProgressBar(OutputInterface $output)
+    protected function newProgressBar(OutputInterface $output): ProgressBar
     {
         // If the console output is not decorated (i.e. it does not support
         // ANSI), use NullOutput to suppress the progress bar entirely.
@@ -632,14 +624,14 @@ class ActivityMonitor
     /**
      * Get the formatted description of an activity.
      *
-     * @param \Platformsh\Client\Model\Activity $activity The activity.
+     * @param Activity $activity The activity.
      * @param bool $withDecoration Add decoration to activity tags.
      * @param bool $withId Add the activity ID.
      * @param string $fgColor Define a foreground color e.g. 'green', 'red', 'cyan'.
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity, $withDecoration = true, $withId = false, $fgColor = '')
+    public static function getFormattedDescription(Activity $activity, $withDecoration = true, $withId = false, $fgColor = ''): string
     {
         if (!$withDecoration) {
             if ($withId) {
@@ -652,14 +644,14 @@ class ActivityMonitor
         // Replace description HTML elements with Symfony Console decoration
         // tags.
         $descr = preg_replace('@<[^/][^>]+>@', '<options=underscore>', $descr);
-        $descr = preg_replace('@</[^>]+>@', '</>', $descr);
+        $descr = preg_replace('@</[^>]+>@', '</>', (string) $descr);
 
         // Replace literal tags like "&lt;info&;gt;" with escaped tags like
         // "\<info>".
-        $descr = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $descr);
+        $descr = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', (string) $descr);
 
         // Decode other HTML entities.
-        $descr = html_entity_decode($descr, ENT_QUOTES, 'utf-8');
+        $descr = html_entity_decode((string) $descr, ENT_QUOTES, 'utf-8');
 
         if ($withId) {
             if ($fgColor) {
@@ -676,7 +668,7 @@ class ActivityMonitor
      *
      * @return false|int
      */
-    private function getStart(Activity $activity) {
+    private function getStart(Activity $activity): int|false {
         return !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
     }
 

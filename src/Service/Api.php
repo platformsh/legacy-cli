@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Service;
 
+use Symfony\Component\Filesystem\Filesystem;
+use GuzzleHttp\Exception\RequestException;
+use Platformsh\Client\Model\Integration;
 use Composer\CaBundle\CaBundle;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Client;
@@ -153,11 +156,11 @@ class Api
     {
         $this->dispatcher->addListener(
             'login.required',
-            [$autoLoginListener, 'onLoginRequired']
+            $autoLoginListener->onLoginRequired(...)
         );
         $this->dispatcher->addListener(
             'environments.changed',
-            [$drushAliasUpdater, 'onEnvironmentsChanged']
+            $drushAliasUpdater->onEnvironmentsChanged(...)
         );
     }
 
@@ -168,7 +171,7 @@ class Api
      *
      * @return bool
      */
-    public function hasApiToken($includeStored = true)
+    public function hasApiToken($includeStored = true): bool
     {
         return $this->tokenConfig->getAccessToken() || $this->tokenConfig->getApiToken($includeStored);
     }
@@ -180,7 +183,7 @@ class Api
      *
      * @return string[]
      */
-    public function listSessionIds()
+    public function listSessionIds(): array
     {
         $ids = [];
         if ($this->sessionStorage instanceof CredentialHelperStorage) {
@@ -193,9 +196,7 @@ class Api
                 $ids[] = $matches[1];
             }
         }
-        $ids = \array_filter($ids, function ($id) {
-           return strpos($id, 'api-token-') !== 0;
-        });
+        $ids = \array_filter($ids, fn($id): bool => !str_starts_with((string) $id, 'api-token-'));
 
         return \array_unique($ids);
     }
@@ -219,7 +220,7 @@ class Api
     /**
      * Logs out of the current session.
      */
-    public function logout()
+    public function logout(): void
     {
         // Delete the stored API token, if any.
         $this->tokenConfig->storage()->deleteToken();
@@ -234,7 +235,7 @@ class Api
         // Ensure the session directory is wiped.
         $dir = $this->config->getSessionDir(true);
         if (is_dir($dir)) {
-            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+            (new Filesystem())->remove($dir);
         }
 
         // Wipe the client so it is re-initialized when needed.
@@ -244,14 +245,14 @@ class Api
     /**
      * Deletes all sessions.
      */
-    public function deleteAllSessions()
+    public function deleteAllSessions(): void
     {
         if ($this->sessionStorage instanceof CredentialHelperStorage) {
             $this->sessionStorage->deleteAll();
         }
         $dir = $this->config->getSessionDir();
         if (is_dir($dir)) {
-            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+            (new Filesystem())->remove($dir);
         }
     }
 
@@ -262,7 +263,7 @@ class Api
      *
      * @return array
      */
-    private function getConnectorOptions() {
+    private function getConnectorOptions(): array {
         $connectorOptions = [];
         $connectorOptions['api_url'] = $this->config->getApiUrl();
         if ($this->config->has('api.accounts_api_url')) {
@@ -295,7 +296,7 @@ class Api
         $connectorOptions['on_refresh_start'] = function ($originalRefreshToken) use ($refreshLockName) {
             $this->io->debug('Refreshing access token');
             $connector = $this->getClient(false)->getConnector();
-            return $this->fileLock->acquireOrWait($refreshLockName, function () {
+            return $this->fileLock->acquireOrWait($refreshLockName, function (): void {
                 $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
             }, function () use ($connector, $originalRefreshToken) {
                 $session = $connector->getSession();
@@ -304,17 +305,13 @@ class Api
                     ? $accessToken : null;
             });
         };
-        $connectorOptions['on_refresh_end'] = function () use ($refreshLockName) {
+        $connectorOptions['on_refresh_end'] = function () use ($refreshLockName): void {
             $this->fileLock->release($refreshLockName);
         };
 
-        $connectorOptions['on_refresh_error'] = function (IdentityProviderException $e) {
-            return $this->onRefreshError($e);
-        };
+        $connectorOptions['on_refresh_error'] = fn(IdentityProviderException $e): ?AccessToken => $this->onRefreshError($e);
 
-        $connectorOptions['on_step_up_auth_response'] = function (ResponseInterface $response) {
-            return $this->onStepUpAuthResponse($response);
-        };
+        $connectorOptions['on_step_up_auth_response'] = fn(ResponseInterface $response) => $this->onStepUpAuthResponse($response);
 
         $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
 
@@ -323,16 +320,12 @@ class Api
         // Debug responses.
         $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getWithDefault('api.debug', false));
         // Handle 403 errors.
-        $connectorOptions['middlewares'][] = function (callable $handler) {
-            return function (RequestInterface $request, array $options) use ($handler) {
-                return $handler($request, $options)->then(function (ResponseInterface $response) use ($request) {
-                    if ($response->getStatusCode() === 403) {
-                        $this->on403($request);
-                    }
-                    return $response;
-                });
-            };
-        };
+        $connectorOptions['middlewares'][] = fn(callable $handler): \Closure => fn(RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
+            if ($response->getStatusCode() === 403) {
+                $this->on403($request);
+            }
+            return $response;
+        });
 
         return $connectorOptions;
     }
@@ -426,7 +419,7 @@ class Api
     {
         if (isset($data['error']) && $data['error'] === 'invalid_grant') {
             return isset($errDetails['error_description'])
-                && str_contains($errDetails['error_description'], 'SSO session has expired');
+                && str_contains((string) $errDetails['error_description'], 'SSO session has expired');
         }
         return false;
     }
@@ -438,7 +431,7 @@ class Api
     {
         if (is_array($body) && isset($body['error']) && $body['error'] === 'invalid_grant') {
             return isset($errDetails['error_description'])
-                && str_contains($errDetails['error_description'], 'API token');
+                && str_contains((string) $errDetails['error_description'], 'API token');
         }
         return false;
     }
@@ -450,7 +443,7 @@ class Api
      *
      * @return AccessToken|null
      */
-    private function tokenFromSession(SessionInterface $session) {
+    private function tokenFromSession(SessionInterface $session): ?AccessToken {
         if (!$session->get('accessToken')) {
             return null;
         }
@@ -478,7 +471,7 @@ class Api
      *
      * @return array
      */
-    public function getGuzzleOptions() {
+    public function getGuzzleOptions(): array {
         $options = [
             'headers' => ['User-Agent' => $this->config->getUserAgent()],
             'debug' => false,
@@ -505,7 +498,7 @@ class Api
      *
      * @return string[]
      */
-    private function guzzleProxyConfig()
+    private function guzzleProxyConfig(): array
     {
         return array_map(function($proxyUrl) {
             // If Guzzle is going to use PHP's built-in HTTP streams,
@@ -526,7 +519,7 @@ class Api
      *
      * @return PlatformClient
      */
-    public function getClient($autoLogin = true, $reset = false)
+    public function getClient($autoLogin = true, $reset = false): PlatformClient
     {
         if (!isset(self::$client) || $reset) {
             $options = $this->getConnectorOptions();
@@ -537,7 +530,7 @@ class Api
             // This ensures file storage from other credentials will not be
             // reused.
             if (!empty($options['api_token'])) {
-                $sessionId = 'api-token-' . \substr(\hash('sha256', $options['api_token']), 0, 32);
+                $sessionId = 'api-token-' . \substr(\hash('sha256', (string) $options['api_token']), 0, 32);
             }
 
             // Set up a session to store OAuth2 tokens.
@@ -600,7 +593,7 @@ class Api
     /**
      * Initializes session credential storage.
      */
-    private function initSessionStorage() {
+    private function initSessionStorage(): void {
         if (!isset($this->sessionStorage)) {
             // Attempt to use the docker-credential-helpers.
             $manager = new Manager($this->config);
@@ -644,7 +637,7 @@ class Api
      * @param BasicProjectInfo $project
      * @return bool
      */
-    private function matchesVendorFilter($filters, BasicProjectInfo $project)
+    private function matchesVendorFilter($filters, BasicProjectInfo $project): bool
     {
         if (empty($filters)) {
             return true;
@@ -707,7 +700,7 @@ class Api
      *
      * @return Project|false
      */
-    public function getProject($id, $host = null, $refresh = null)
+    public function getProject(string $id, $host = null, $refresh = null)
     {
         // Ignore the $host if an api.base_url is configured.
         $apiUrl = $this->config->getWithDefault('api.base_url', '');
@@ -817,7 +810,7 @@ class Api
      *
      * @return Environment|false The environment, or false if not found.
      */
-    public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
+    public function getEnvironment(string $id, Project $project, $refresh = null, $tryMachineName = false)
     {
         // Statically cache not found environments.
         $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
@@ -877,9 +870,7 @@ class Api
             return [];
         } elseif ($refresh || !$cached) {
             $types = $project->getEnvironmentTypes();
-            $cachedTypes = \array_map(function (EnvironmentType $type) {
-                return $type->getData() + ['_uri' => $type->getUri()];
-            }, $types);
+            $cachedTypes = \array_map(fn(EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
             $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->getWithDefault('api.environments_ttl', 120));
         } else {
             $guzzleClient = $this->getHttpClient();
@@ -941,7 +932,7 @@ class Api
      *
      * @return string|false
      */
-    public function getMyUserId($reset = false)
+    public function getMyUserId(bool $reset = false): string|false
     {
         return $this->getClient()->getMyUserId($reset);
     }
@@ -953,7 +944,7 @@ class Api
      *
      * @return SshKey[]
      */
-    public function getSshKeys($reset = false)
+    public function getSshKeys($reset = false): array
     {
         $data = $this->getLegacyAccountInfo($reset);
 
@@ -1000,12 +991,12 @@ class Api
      *
      * @param string $projectId
      */
-    public function clearEnvironmentsCache($projectId)
+    public function clearEnvironmentsCache(string $projectId): void
     {
         $this->cache->delete('environments:' . $projectId);
         unset(self::$environmentsCache[$projectId]);
         foreach (array_keys(self::$notFound) as $key) {
-            if (strpos($key, $projectId . ':') === 0) {
+            if (str_starts_with($key, $projectId . ':')) {
                 unset(self::$notFound[$key]);
             }
         }
@@ -1016,7 +1007,7 @@ class Api
      *
      * @return string
      */
-    private function myProjectsCacheKey()
+    private function myProjectsCacheKey(): string
     {
         $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
@@ -1026,7 +1017,7 @@ class Api
     /**
      * Clears the projects cache.
      */
-    public function clearProjectsCache()
+    public function clearProjectsCache(): void
     {
         $this->cache->delete($this->myProjectsCacheKey());
     }
@@ -1042,15 +1033,13 @@ class Api
      *
      * @return void
      */
-    public static function sortResources(array &$resources, $propertyPath, $reverse = false)
+    public static function sortResources(array &$resources, $propertyPath, $reverse = false): void
     {
-        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath, $reverse) {
-            return Sort::compare(
-                static::getNestedProperty($a, $propertyPath, false),
-                static::getNestedProperty($b, $propertyPath, false),
-                $reverse
-            );
-        });
+        uasort($resources, fn(ApiResource $a, ApiResource $b) => Sort::compare(
+            static::getNestedProperty($a, $propertyPath, false),
+            static::getNestedProperty($b, $propertyPath, false),
+            $reverse
+        ));
     }
 
     /**
@@ -1064,7 +1053,7 @@ class Api
      *
      * @return mixed
      */
-    public static function getNestedProperty(ApiResource $resource, $propertyPath, $lazyLoad = true)
+    public static function getNestedProperty(ApiResource $resource, $propertyPath, bool $lazyLoad = true)
     {
         if (!strpos($propertyPath, '.')) {
             return $resource->getProperty($propertyPath, true, $lazyLoad);
@@ -1104,7 +1093,7 @@ class Api
      *
      * @return string
      */
-    public function getProjectLabel($project, $tag = 'info')
+    public function getProjectLabel($project, $tag = 'info'): string
     {
         static $titleCache = [];
         if ($project instanceof Project || $project instanceof BasicProjectInfo || $project instanceof \Platformsh\Client\Model\Organization\Project) {
@@ -1148,7 +1137,7 @@ class Api
      *
      * @return string
      */
-    public function getEnvironmentLabel(Environment $environment, $tag = 'info', $showType = true)
+    public function getEnvironmentLabel(Environment $environment, $tag = 'info', $showType = true): string
     {
         $id = $environment->id;
         $title = $environment->title;
@@ -1174,7 +1163,7 @@ class Api
      *
      * @return string
      */
-    public function getOrganizationLabel(Organization $organization, $tag = 'info')
+    public function getOrganizationLabel(Organization $organization, $tag = 'info'): string
     {
         $name = $organization->name;
         $label = $organization->label;
@@ -1197,16 +1186,12 @@ class Api
      * @return ApiResource
      *   The resource, if one (and only one) is matched.
      */
-    public function matchPartialId($id, array $resources, $name = 'Resource')
+    public function matchPartialId($id, array $resources, $name = 'Resource'): ApiResource
     {
-        $matched = array_filter($resources, function (ApiResource $resource) use ($id) {
-            return strpos($resource->getProperty('id'), $id) === 0;
-        });
+        $matched = array_filter($resources, fn(ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
 
         if (count($matched) > 1) {
-            $matchedIds = array_map(function (ApiResource $resource) {
-                return $resource->getProperty('id');
-            }, $matched);
+            $matchedIds = array_map(fn(ApiResource $resource): mixed => $resource->getProperty('id'), $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',
                 $id,
@@ -1259,7 +1244,7 @@ class Api
      *
      * @return ClientInterface
      */
-    public function getHttpClient()
+    public function getHttpClient(): ClientInterface
     {
         return $this->getClient()->getConnector()->getClient();
     }
@@ -1271,7 +1256,7 @@ class Api
      *
      * @return ClientInterface
      */
-    public function getExternalHttpClient()
+    public function getExternalHttpClient(): Client
     {
         return new Client($this->getGuzzleOptions());
     }
@@ -1323,7 +1308,7 @@ class Api
      *
      * @return bool
      */
-    public function hasCachedCurrentDeployment(Environment $environment)
+    public function hasCachedCurrentDeployment(Environment $environment): bool
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
 
@@ -1362,17 +1347,13 @@ class Api
         }
 
         // Check if there is only one "production" environment.
-        $prod = \array_filter($envs, function (Environment $environment) {
-            return $environment->type === 'production';
-        });
+        $prod = \array_filter($envs, fn(Environment $environment): bool => $environment->type === 'production');
         if (\count($prod) === 1) {
             return \reset($prod);
         }
 
         // Check if there is only one "main" environment.
-        $main = \array_filter($envs, function (Environment $environment) {
-            return $environment->is_main;
-        });
+        $main = \array_filter($envs, fn(Environment $environment) => $environment->is_main);
         if (\count($main) === 1) {
             return \reset($main);
         }
@@ -1383,9 +1364,9 @@ class Api
     /**
      * Get the preferred site URL for an environment and app.
      *
-     * @param \Platformsh\Client\Model\Environment                           $environment
+     * @param Environment $environment
      * @param string                                                         $appName
-     * @param \Platformsh\Client\Model\Deployment\EnvironmentDeployment|null $deployment
+     * @param EnvironmentDeployment|null $deployment
      *
      * @return string|null
      */
@@ -1396,9 +1377,7 @@ class Api
 
         // Return the first route that matches this app.
         // The routes will already have been sorted.
-        $routes = \array_filter($routes, function (Route $route) use ($appName) {
-            return $route->type === 'upstream' && $route->getUpstreamName() === $appName;
-        });
+        $routes = \array_filter($routes, fn(Route $route): bool => $route->type === 'upstream' && $route->getUpstreamName() === $appName);
         $route = reset($routes);
         if ($route) {
             return $route->url;
@@ -1438,12 +1417,12 @@ class Api
      * @param Project|null $project
      * @param bool $forWrite
      *
-     * @throws \GuzzleHttp\Exception\RequestException
+     * @throws RequestException
      *
      * @return false|Subscription
      *   The subscription or false if not found.
      */
-    public function loadSubscription($id, Project $project = null, $forWrite = true)
+    public function loadSubscription(string $id, Project $project = null, $forWrite = true)
     {
         $organizations_enabled = $this->config->getWithDefault('api.organizations', false);
         if (!$organizations_enabled) {
@@ -1538,7 +1517,7 @@ class Api
      *
      * @return string
      */
-    public function getUserRefLabel(UserRef $userRef, $tag = 'info')
+    public function getUserRefLabel(UserRef $userRef, $tag = 'info'): string
     {
         $name = trim($userRef->first_name . ' ' . $userRef->last_name);
         $pattern = $name !== '' ? '%2$s \<%3$s>' : '%3$s';
@@ -1555,7 +1534,7 @@ class Api
      * @param bool $reset
      * @return Organization|false
      */
-    public function getOrganizationById($id, $reset = false)
+    public function getOrganizationById(string $id, $reset = false)
     {
         $cacheKey = 'organization:' . $id;
         if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
@@ -1578,7 +1557,7 @@ class Api
      * @param bool $reset
      * @return Organization|false
      */
-    public function getOrganizationByName($name, $reset = false)
+    public function getOrganizationByName(string $name, $reset = false)
     {
         return $this->getOrganizationById('name=' . $name, $reset);
     }
@@ -1589,7 +1568,7 @@ class Api
      * @param Organization $org
      * @return void
      */
-    public function clearOrganizationCache(Organization $org)
+    public function clearOrganizationCache(Organization $org): void
     {
         $this->cache->delete('organization:' . $org->id);
         $this->cache->delete('organization:name=' . $org->name);
@@ -1621,7 +1600,7 @@ class Api
                 }
             }
 
-            return ltrim($this->config->get('service.console_url'), '/') . '/' . rawurlencode($firstSegment) . '/' . rawurlencode($project->id);
+            return ltrim($this->config->get('service.console_url'), '/') . '/' . rawurlencode((string) $firstSegment) . '/' . rawurlencode($project->id);
         }
         $subscription = $this->loadSubscription($project->getSubscriptionId(), $project);
         return $subscription ? $subscription->project_ui : false;
@@ -1715,7 +1694,7 @@ class Api
      * Loads the code source integration for a project.
      *
      * @param Project $project
-     * @return \Platformsh\Client\Model\Integration|null
+     * @return Integration|null
      */
     public function getCodeSourceIntegration(Project $project)
     {
@@ -1774,7 +1753,7 @@ class Api
                 if ($orgId) {
                     try {
                         $organization = $this->getClient()->getOrganizationById($orgId);
-                    } catch (BadResponseException $e) {
+                    } catch (BadResponseException) {
                         $organization = false;
                     }
                     if ($organization && $organization->hasLink('payment-source')) {
@@ -1790,7 +1769,7 @@ class Api
     /**
      * Warn the user that the remote environment needs redeploying.
      */
-    public function redeployWarning()
+    public function redeployWarning(): void
     {
         $this->stdErr->writeln([
             '',

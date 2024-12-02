@@ -2,6 +2,12 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Rsync;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -15,6 +21,10 @@ use Symfony\Component\Console\Question\Question;
 class MountUploadCommand extends CommandBase
 {
 
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -41,8 +51,8 @@ class MountUploadCommand extends CommandBase
         $this->validateInput($input);
 
         $container = $this->selectRemoteContainer($input);
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
+        /** @var Mount $mountService */
+        $mountService = $this->mount;
         $mounts = $mountService->mountsFromConfig($container->getConfig());
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
@@ -52,10 +62,10 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
+        /** @var Filesystem $fs */
+        $fs = $this->filesystem;
 
         if ($input->getOption('mount')) {
             $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
@@ -86,13 +96,13 @@ class MountUploadCommand extends CommandBase
         } elseif ($projectRoot = $this->getProjectRoot()) {
             $sharedMounts = $mountService->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
-                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
-                    $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
+                if (file_exists($projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
+                    $defaultSource = $projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 
-            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-            $finder = $this->getService('app_finder');
+            /** @var ApplicationFinder $finder */
+            $finder = $this->applicationFinder;
             $applications = $finder->findApplications($projectRoot);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
@@ -124,8 +134,8 @@ class MountUploadCommand extends CommandBase
 
         $fs->validateDirectory($source);
 
-        /** @var \Platformsh\Cli\Service\Rsync $rsync */
-        $rsync = $this->getService('rsync');
+        /** @var Rsync $rsync */
+        $rsync = $this->rsync;
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"

@@ -8,7 +8,7 @@ use Platformsh\Cli\Util\PlainFormat;
 
 class CsvTest extends TestCase
 {
-    private $data = [];
+    private array $data = [];
 
     public function setUp(): void
     {
@@ -23,7 +23,7 @@ class CsvTest extends TestCase
         ];
     }
 
-    public function testRfc4180()
+    public function testRfc4180(): void
     {
         $expected = "Year,Make,Model,Description,Price\r\n"
             . "1997,Ford,E350,\"ac, abs, moon\",3000.00\r\n"
@@ -34,7 +34,7 @@ class CsvTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
-    public function testTsv()
+    public function testTsv(): void
     {
         $expected = "Year\tMake\tModel\tDescription\tPrice\n"
             . "1997\tFord\tE350\tac, abs, moon\t3000.00\n"
@@ -45,7 +45,7 @@ class CsvTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
-    public function testPlain()
+    public function testPlain(): void
     {
         $expected = "Year\tMake\tModel\tDescription\tPrice\n"
             . "1997\tFord\tE350\tac, abs, moon\t3000.00\n"

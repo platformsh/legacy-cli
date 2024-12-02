@@ -13,10 +13,6 @@ use Platformsh\Cli\Util\StringUtil;
 class RemoteEnvVars
 {
 
-    protected $config;
-    protected $ssh;
-    protected $cache;
-
     /**
      * Constructor (dependencies are injected via the DIC).
      *
@@ -24,11 +20,8 @@ class RemoteEnvVars
      * @param CacheProvider   $cache
      * @param Config          $config
      */
-    public function __construct(Ssh $ssh, CacheProvider $cache, Config $config)
+    public function __construct(protected Ssh $ssh, protected CacheProvider $cache, protected Config $config)
     {
-        $this->ssh = $ssh;
-        $this->cache = $cache;
-        $this->config = $config;
     }
 
     /**
@@ -44,7 +37,7 @@ class RemoteEnvVars
      *
      * @return string The environment variable or an empty string.
      */
-    public function getEnvVar($variable, HostInterface $host, $refresh = false, $ttl = 3600)
+    public function getEnvVar(string $variable, HostInterface $host, $refresh = false, $ttl = 3600)
     {
         $varName = $this->config->get('service.env_prefix') . $variable;
         if ($host instanceof LocalHost) {

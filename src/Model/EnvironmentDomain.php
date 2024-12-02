@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Model;
 
+use Platformsh\Client\Model\Result;
 use GuzzleHttp\ClientInterface;
 use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Domain;
@@ -18,7 +19,7 @@ use Platformsh\Client\Model\Environment;
  */
 class EnvironmentDomain extends ApiResourceBase
 {
-    public static function getList(Environment $environment, ClientInterface $client)
+    public static function getList(Environment $environment, ClientInterface $client): array
     {
         return static::getCollection($environment->getLink('#domains'), 0, [], $client);
     }
@@ -29,7 +30,7 @@ class EnvironmentDomain extends ApiResourceBase
      * @param string $name
      * @param string $replacementFor
      * @param array $ssl
-     * @return \Platformsh\Client\Model\Result
+     * @return Result
      */
     public static function add(ClientInterface $client, Environment $environment, $name, $replacementFor = '', $ssl = [])
     {

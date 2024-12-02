@@ -8,7 +8,7 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 class Container
 {
-    public static function instance()
+    public static function instance(): ContainerBuilder
     {
         $container = new ContainerBuilder();
         $loader = new YamlFileLoader($container, new FileLocator());

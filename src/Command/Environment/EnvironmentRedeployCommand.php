@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentRedeployCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addProjectOption()
@@ -26,7 +33,7 @@ class EnvironmentRedeployCommand extends CommandBase
 
         if (!$environment->operationAvailable('redeploy', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($environment, 'error') . " can't be redeployed."
+                "Operation not available: The environment " . $this->api->getEnvironmentLabel($environment, 'error') . " can't be redeployed."
             );
 
             if (!$environment->isActive()) {
@@ -36,8 +43,8 @@ class EnvironmentRedeployCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm('Are you sure you want to redeploy the environment <comment>' . $environment->id . '</comment>?')) {
             return 1;
         }
@@ -45,8 +52,8 @@ class EnvironmentRedeployCommand extends CommandBase
         $result = $environment->runOperation('redeploy');
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;

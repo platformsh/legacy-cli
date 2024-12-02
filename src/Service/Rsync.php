@@ -10,22 +10,15 @@ use Platformsh\Cli\Exception\ProcessFailedException;
 class Rsync
 {
 
-    private $shell;
-    private $ssh;
-    private $sshDiagnostics;
-
     /**
      * Constructor.
      *
-     * @param Shell $shellHelper
+     * @param Shell $shell
      * @param Ssh $ssh
      * @param SshDiagnostics $sshDiagnostics
      */
-    public function __construct(Shell $shellHelper, Ssh $ssh, SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
     {
-        $this->shell = $shellHelper;
-        $this->ssh = $ssh;
-        $this->sshDiagnostics = $sshDiagnostics;
     }
 
     /**
@@ -52,7 +45,7 @@ class Rsync
         if (!isset($supportsIconv)) {
             $result = $this->shell->execute(['rsync', '-h']);
             if (is_string($result)) {
-                $supportsIconv = strpos($result, '--iconv') !== false;
+                $supportsIconv = str_contains($result, '--iconv');
             }
         }
 
@@ -67,7 +60,7 @@ class Rsync
      * @param string $remoteDir
      * @param array  $options
      */
-    public function syncUp($sshUrl, $localDir, $remoteDir, array $options = [])
+    public function syncUp($sshUrl, $localDir, $remoteDir, array $options = []): void
     {
         // Ensure a trailing slash on the "from" path, to copy the directory's
         // contents rather than the directory itself.
@@ -89,7 +82,7 @@ class Rsync
      * @param string $localDir
      * @param array  $options
      */
-    public function syncDown($sshUrl, $remoteDir, $localDir, array $options = [])
+    public function syncDown($sshUrl, $remoteDir, $localDir, array $options = []): void
     {
         $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
         $to = $localDir;
@@ -109,7 +102,7 @@ class Rsync
      * @param string $sshUrl
      * @param array $options
      */
-    private function doSync($from, $to, $sshUrl, array $options = [])
+    private function doSync(string $from, $to, $sshUrl, array $options = []): void
     {
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 

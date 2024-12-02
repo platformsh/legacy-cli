@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Shell;
 use GuzzleHttp\Client;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
@@ -17,11 +21,15 @@ use Symfony\Component\Process\PhpExecutableFinder;
 class SelfReleaseCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Shell $shell)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $defaultRepo = $this->config()->get('application.github_repo');
-        $defaultReleaseBranch = $this->config()->getWithDefault('application.release_branch', 'main');
+        $defaultRepo = $this->config->get('application.github_repo');
+        $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'main');
 
         $this
             ->addArgument('version', InputArgument::OPTIONAL, 'The new version number')
@@ -37,7 +45,7 @@ class SelfReleaseCommand extends CommandBase
 
     public function isEnabled(): bool
     {
-        return $this->config()->has('application.github_repo')
+        return $this->config->has('application.github_repo')
             && (!extension_loaded('Phar') || !\Phar::running(false));
     }
 
@@ -46,14 +54,14 @@ class SelfReleaseCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        /** @var Shell $shell */
+        $shell = $this->shell;
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->git;
         $git->setDefaultRepositoryDir(CLI_ROOT);
 
         $releaseBranch = $input->getOption('release-branch');
@@ -67,7 +75,7 @@ class SelfReleaseCommand extends CommandBase
             $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
             if (is_string($gitStatus) && !empty($gitStatus)) {
                 foreach (explode("\n", $gitStatus) as $statusLine) {
-                    if (strpos($statusLine, ' config.yaml') === false) {
+                    if (!str_contains($statusLine, ' config.yaml')) {
                         $this->stdErr->writeln('There are uncommitted changes in Git. Cannot proceed.');
                         $this->stdErr->writeln('Use the --no-check-changes option to override this.');
 
@@ -79,7 +87,7 @@ class SelfReleaseCommand extends CommandBase
 
         if ($shell->commandExists('gh')) {
             $process = $shell->executeCaptureProcess('gh auth status --show-token', null, true);
-            if (!preg_match('/Token: (\S+)/', $process->getOutput(), $matches)) {
+            if (!preg_match('/Token: (\S+)/', (string) $process->getOutput(), $matches)) {
                 $this->stdErr->writeln('Unable to obtain a GitHub token.');
                 $this->stdErr->writeln('Log in to the GitHub CLI with: <info>gh auth login</info>');
                 return 1;
@@ -94,13 +102,13 @@ class SelfReleaseCommand extends CommandBase
 
         // Find the previous version number.
         if ($input->getOption('last-version')) {
-            $lastVersion = ltrim($input->getOption('last-version'), 'v');
+            $lastVersion = ltrim((string) $input->getOption('last-version'), 'v');
             $lastTag = 'v' . $lastVersion;
 
             $this->stdErr->writeln('Last version number: <info>' . $lastVersion . '</info>');
         } else {
             $lastTag = $shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
-            $lastVersion = ltrim($lastTag, 'v');
+            $lastVersion = ltrim((string) $lastTag, 'v');
             $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
         }
 
@@ -149,13 +157,13 @@ class SelfReleaseCommand extends CommandBase
 
         // Set up GitHub API connection details.
         $http = new Client();
-        $repo = $input->getOption('repo') ?: $this->config()->get('application.github_repo');
-        $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
+        $repo = $input->getOption('repo') ?: $this->config->get('application.github_repo');
+        $repoUrl = implode('/', array_map('rawurlencode', explode('/', (string) $repo)));
         $repoApiUrl = 'https://api.github.com/repos/' . $repoUrl;
         $repoGitUrl = 'git@github.com:' . $repo . '.git';
 
         // Check if the chosen version number already exists as a release.
-        $tagName = 'v' . ltrim($newVersion, 'v');
+        $tagName = 'v' . ltrim((string) $newVersion, 'v');
         $existsResponse = $http->get($repoApiUrl . '/releases/tags/' . $tagName, [
             'headers' => [
                 'Authorization' => 'token ' . $gitHubToken,
@@ -234,8 +242,8 @@ class SelfReleaseCommand extends CommandBase
         // Confirm the release changelog.
         list($changelogFilename, $changelog) = $this->getReleaseChangelog($lastTag, $tagName);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm($questionText)) {
             $this->stdErr->writeln('Update or delete the file <comment>' . $changelogFilename . '</comment> and re-run this command.');
 
@@ -244,7 +252,7 @@ class SelfReleaseCommand extends CommandBase
 
         // Build a Phar file, if one doesn't already exist.
         if (!$pharFilename) {
-            $pharFilename = sys_get_temp_dir() . '/' . $this->config()->get('application.executable') . '.phar';
+            $pharFilename = sys_get_temp_dir() . '/' . $this->config->get('application.executable') . '.phar';
             $result = $this->runOtherCommand('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
@@ -264,7 +272,7 @@ class SelfReleaseCommand extends CommandBase
                 $pharFilename,
                 '--version'
             ], null, true);
-            if (strpos($versionInPhar, $newVersion) === false) {
+            if (!str_contains($versionInPhar, (string) $newVersion)) {
                 $this->stdErr->writeln('The file ' . $pharFilename . ' reports a different version: "' . $versionInPhar . '"');
 
                 return 1;
@@ -272,8 +280,8 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Construct the download URL (the public location of the Phar file).
-        $pharPublicFilename = $this->config()->get('application.executable') . '.phar';
-        $download_url = str_replace('{tag}', $tagName, $this->config()->getWithDefault(
+        $pharPublicFilename = $this->config->get('application.executable') . '.phar';
+        $download_url = str_replace('{tag}', $tagName, $this->config->getWithDefault(
             'application.download_url',
             'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename
         ));
@@ -357,7 +365,7 @@ class SelfReleaseCommand extends CommandBase
         ]);
         $release = Utils::jsonDecode((string) $response->getBody(), true);
         $releaseUrl = $repoApiUrl . '/releases/' . $release['id'];
-        $uploadUrl = preg_replace('/\{.+?\}/', '', $release['upload_url']);
+        $uploadUrl = preg_replace('/\{.+?\}/', '', (string) $release['upload_url']);
 
         // Upload the Phar to the GitHub release.
         $this->stdErr->writeln('Uploading the Phar file to the release');
@@ -399,7 +407,7 @@ class SelfReleaseCommand extends CommandBase
      *
      * @return string[] The filename and the current changelog.
      */
-    private function getReleaseChangelog($lastVersionTag, $newVersionTag)
+    private function getReleaseChangelog($lastVersionTag, string $newVersionTag): array
     {
         $filename = CLI_ROOT . '/release-changelog-' . $newVersionTag . '.md';
         if (file_exists($filename)) {
@@ -428,10 +436,10 @@ class SelfReleaseCommand extends CommandBase
      *
      * @return int|false
      */
-    private function getTagDate($tagName)
+    private function getTagDate(string $tagName): int|false
     {
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->git;
         $date = $git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
 
         return is_string($date) ? strtotime(trim($date)) : false;
@@ -444,10 +452,10 @@ class SelfReleaseCommand extends CommandBase
      *
      * @return bool
      */
-    private function hasGitDifferences($since)
+    private function hasGitDifferences(string $since): bool
     {
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->git;
         $stat = $git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
         if (!is_string($stat)) {
             return false;
@@ -455,7 +463,7 @@ class SelfReleaseCommand extends CommandBase
 
         foreach (explode("\n", trim($stat)) as $line) {
             // Exclude config.yaml and dist/manifest.json from the check.
-            if (strpos($line, ' config.yaml') === false && strpos($line, ' dist/manifest.json') === false) {
+            if (!str_contains($line, ' config.yaml') && !str_contains($line, ' dist/manifest.json')) {
                 return true;
             }
         }
@@ -468,10 +476,10 @@ class SelfReleaseCommand extends CommandBase
      *
      * @return string
      */
-    private function getGitChangelog($since)
+    private function getGitChangelog(string $since): string
     {
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->git;
         $changelog = $git->execute([
             'log',
             '--pretty=tformat:* %s%n%b',
@@ -487,8 +495,8 @@ class SelfReleaseCommand extends CommandBase
         }
 
         $changelog = preg_replace('/^[^\*\n]/m', '    $0', $changelog);
-        $changelog = preg_replace('/\n+\*/', "\n*", $changelog);
-        $changelog = trim($changelog);
+        $changelog = preg_replace('/\n+\*/', "\n*", (string) $changelog);
+        $changelog = trim((string) $changelog);
 
         return $changelog;
     }

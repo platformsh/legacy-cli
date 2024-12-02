@@ -10,7 +10,7 @@ use Symfony\Component\Yaml\Parser;
 
 class AppConfigGetTest extends TestCase
 {
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string {
         $output = new BufferedOutput();
         $input = new ArrayInput($args);
         $input->setInteractive(false);
@@ -20,7 +20,7 @@ class AppConfigGetTest extends TestCase
         return $output->fetch();
     }
 
-    public function testGetConfig() {
+    public function testGetConfig(): void {
         $app = base64_encode(json_encode([
             'type' => 'php:7.3',
             'name' => 'app',

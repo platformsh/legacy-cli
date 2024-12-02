@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupListCommand extends CommandBase
 {
 
-    private $tableHeader = [
+    private array $tableHeader = [
         'created_at' => 'Created',
         'id' => 'Backup ID',
         'restorable' => 'Restorable',
@@ -26,7 +27,11 @@ class BackupListCommand extends CommandBase
         'status' => 'Status',
         'updated_at' => 'Updated',
     ];
-    private $defaultColumns = ['created_at', 'id', 'restorable'];
+    private array $defaultColumns = ['created_at', 'id', 'restorable'];
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -48,10 +53,10 @@ class BackupListCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var Table $table */
+        $table = $this->table;
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $backups = $environment->getBackups((int) $input->getOption('limit'));
         if (!$backups) {
@@ -87,8 +92,8 @@ class BackupListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Backups on the project %s, environment %s:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($environment)
+                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getEnvironmentLabel($environment)
             ));
         }
 

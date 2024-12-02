@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Util\OsUtil;
@@ -13,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:open', description: "Open SSH tunnels to an app's relationships")]
 class TunnelOpenCommand extends TunnelCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Ssh $ssh)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -72,8 +80,8 @@ EOF
         $sshUrl = $container->getSshUrl();
         $host = $this->selectHost($input, false, $container);
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
         $relationships = $relationshipsService->getRelationships($host);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
@@ -81,16 +89,16 @@ EOF
         }
 
         if ($environment->is_main) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api()->getEnvironmentLabel($environment, 'comment'));
+            /** @var QuestionHelper $questionHelper */
+            $questionHelper = $this->questionHelper;
+            $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api->getEnvironmentLabel($environment, 'comment'));
             if (!$questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');
         }
 
-        $logFile = $this->config()->getWritableUserDir() . '/tunnels.log';
+        $logFile = $this->config->getWritableUserDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
@@ -101,8 +109,8 @@ EOF
             $sshOptions[] = 'GatewayPorts yes';
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        /** @var Ssh $ssh */
+        $ssh = $this->ssh;
         $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
@@ -198,8 +206,8 @@ EOF
         }
 
         if (!$error) {
-            $executable = $this->config()->get('application.executable');
-            $variable = $this->config()->get('service.env_prefix') . 'RELATIONSHIPS';
+            $executable = $this->config->get('application.executable');
+            $variable = $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
             $this->stdErr->writeln('');
             $this->stdErr->writeln("List tunnels with: <info>$executable tunnels</info>");
             $this->stdErr->writeln("View tunnel details with: <info>$executable tunnel:info</info>");
@@ -223,7 +231,7 @@ EOF
      *
      * @return string[]
      */
-    private function missingExtensions()
+    private function missingExtensions(): array
     {
         $missing = [];
         foreach (['pcntl', 'posix'] as $ext) {

@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\VersionUtil;
 
 class VersionUtilTest extends TestCase
 {
-    public function testNextVersions()
+    public function testNextVersions(): void
     {
         $util = new VersionUtil();
         $this->assertEquals(['1.0.1', '1.1.0', '2.0.0'], $util->nextVersions('1.0.0'));
@@ -15,7 +15,7 @@ class VersionUtilTest extends TestCase
         $this->assertEquals(['2.0.3-beta', '2.1.0-beta', '3.0.0-beta'], $util->nextVersions('2.0.2-beta'));
     }
 
-    public function testMajorVersion()
+    public function testMajorVersion(): void
     {
         $util = new VersionUtil();
         $this->assertEquals(1, $util->majorVersion('1.0.0'));
@@ -26,7 +26,7 @@ class VersionUtilTest extends TestCase
         $this->assertEquals(3, $util->majorVersion('3.1.0-beta'));
     }
 
-    public function testIsPreRelease()
+    public function testIsPreRelease(): void
     {
         $util = new VersionUtil();
         $this->assertEquals(1, $util->majorVersion('1.0.0'));

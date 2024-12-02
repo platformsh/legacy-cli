@@ -15,16 +15,14 @@ class Query
     private $endTime;
     /** @var string */
     private $collection;
-    /** @var array */
-    private $fields = [];
-    /** @var array */
-    private $filters = [];
+    private array $fields = [];
+    private array $filters = [];
 
     /**
      * @param int $interval
      * @return Query
      */
-    public function setInterval($interval)
+    public function setInterval($interval): static
     {
         $this->interval = $interval;
         return $this;
@@ -34,7 +32,7 @@ class Query
      * @param int $startTime
      * @return Query
      */
-    public function setStartTime($startTime)
+    public function setStartTime($startTime): static
     {
         $this->startTime = $startTime;
         return $this;
@@ -44,7 +42,7 @@ class Query
      * @param int $endTime
      * @return Query
      */
-    public function setEndTime($endTime)
+    public function setEndTime($endTime): static
     {
         $this->endTime = $endTime;
         return $this;
@@ -54,7 +52,7 @@ class Query
      * @param string $collection
      * @return Query
      */
-    public function setCollection($collection)
+    public function setCollection($collection): static
     {
         $this->collection = $collection;
         return $this;
@@ -65,7 +63,7 @@ class Query
      * @param string $expression
      * @return Query
      */
-    public function addField($name, $expression)
+    public function addField($name, $expression): static
     {
         $this->fields[$name] = $expression;
         return $this;
@@ -76,7 +74,7 @@ class Query
      * @param string $value
      * @return Query
      */
-    public function addFilter($key, $value)
+    public function addFilter($key, $value): static
     {
         $this->filters[$key] = $value;
         return $this;
@@ -86,7 +84,7 @@ class Query
      * Returns the query as an array.
      * @return array
      */
-    public function asArray()
+    public function asArray(): array
     {
         $query = [
             'stream' => [

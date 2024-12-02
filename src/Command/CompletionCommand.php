@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Stecman\Component\Symfony\Console\BashCompletion\Completion\ShellPathCompletion;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Client\Model\BasicProjectInfo;
@@ -16,7 +17,7 @@ class CompletionCommand extends ParentCompletionCommand
     protected $api;
 
     /** @var CommandBase|null */
-    private $welcomeCommand;
+    private ?WelcomeCommand $welcomeCommand = null;
 
     /**
      * {@inheritdoc}
@@ -33,7 +34,7 @@ class CompletionCommand extends ParentCompletionCommand
     {
         $this->api = new Api();
         $projectInfos = $this->api->isLoggedIn() ? $this->api->getMyProjects(false) : [];
-        $projectIds = array_map(function (BasicProjectInfo $p) { return $p->id; }, $projectInfos);
+        $projectIds = array_map(fn(BasicProjectInfo $p): string => $p->id, $projectInfos);
 
         $this->handler->addHandlers([
             new Completion(
@@ -52,25 +53,25 @@ class CompletionCommand extends ParentCompletionCommand
                 Completion::ALL_COMMANDS,
                 'environment',
                 Completion::TYPE_ARGUMENT,
-                [$this, 'getEnvironments']
+                $this->getEnvironments(...)
             ),
             new Completion(
                 Completion::ALL_COMMANDS,
                 'environment',
                 Completion::TYPE_OPTION,
-                [$this, 'getEnvironments']
+                $this->getEnvironments(...)
             ),
             new Completion(
                 'environment:branch',
                 'parent',
                 Completion::TYPE_ARGUMENT,
-                [$this, 'getEnvironments']
+                $this->getEnvironments(...)
             ),
             new Completion(
                 'environment:checkout',
                 'id',
                 Completion::TYPE_ARGUMENT,
-                [$this, 'getEnvironmentsForCheckout']
+                $this->getEnvironmentsForCheckout(...)
             ),
             new Completion(
                 'user:role',
@@ -78,42 +79,42 @@ class CompletionCommand extends ParentCompletionCommand
                 Completion::TYPE_OPTION,
                 ['project', 'environment']
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'ssh-key:add',
                 'path',
                 Completion::TYPE_ARGUMENT
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'domain:add',
                 'cert',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'domain:add',
                 'key',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'domain:add',
                 'chain',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'local:build',
                 'source',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'local:build',
                 'destination',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'environment:sql-dump',
                 'file',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'local:init',
                 'directory',
                 Completion::TYPE_ARGUMENT
@@ -122,40 +123,40 @@ class CompletionCommand extends ParentCompletionCommand
                 Completion::ALL_COMMANDS,
                 'app',
                 Completion::TYPE_OPTION,
-                [$this, 'getAppNames']
+                $this->getAppNames(...)
             ),
             new Completion(
                 Completion::ALL_COMMANDS,
                 'app',
                 Completion::TYPE_OPTION,
-                [$this, 'getAppNames']
+                $this->getAppNames(...)
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 Completion::ALL_COMMANDS,
                 'identity-file',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'server:run',
                 'log',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'server:start',
                 'log',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'service:mongo:restore',
                 'archive',
                 Completion::TYPE_ARGUMENT
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'integration:add',
                 'file',
                 Completion::TYPE_OPTION
             ),
-            new Completion\ShellPathCompletion(
+            new ShellPathCompletion(
                 'integration:update',
                 'file',
                 Completion::TYPE_OPTION
@@ -164,7 +165,7 @@ class CompletionCommand extends ParentCompletionCommand
 
         try {
             return $this->handler->runCompletion();
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             // Suppress exceptions so that they are not displayed during
             // completion.
         }
@@ -190,7 +191,7 @@ class CompletionCommand extends ParentCompletionCommand
      *
      * @return string[]
      */
-    public function getEnvironmentsForCheckout()
+    public function getEnvironmentsForCheckout(): array
     {
         $project = $this->getWelcomeCommand()->getCurrentProject(true);
         if (!$project) {
@@ -198,16 +199,14 @@ class CompletionCommand extends ParentCompletionCommand
         }
         try {
             $currentEnvironment = $this->getWelcomeCommand()->getCurrentEnvironment($project, false);
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             $currentEnvironment = false;
         }
         $environments = $this->api->getEnvironments($project, false, false);
         if ($currentEnvironment) {
             $environments = array_filter(
                 $environments,
-                function ($environment) use ($currentEnvironment) {
-                    return $environment->id !== $currentEnvironment->id;
-                }
+                fn($environment): bool => $environment->id !== $currentEnvironment->id
             );
         }
 
@@ -219,7 +218,7 @@ class CompletionCommand extends ParentCompletionCommand
      *
      * @return string[]
      */
-    public function getAppNames()
+    public function getAppNames(): array
     {
         $apps = [];
         if ($projectRoot = $this->getWelcomeCommand()->getProjectRoot()) {
@@ -266,7 +265,7 @@ class CompletionCommand extends ParentCompletionCommand
      *
      * @return string[]
      */
-    public function getEnvironments()
+    public function getEnvironments(): array
     {
         $project = $this->getProject();
         if (!$project) {
@@ -283,7 +282,7 @@ class CompletionCommand extends ParentCompletionCommand
      *
      * @return string|false
      */
-    protected function getProjectIdFromCommandLine($commandLine)
+    protected function getProjectIdFromCommandLine($commandLine): string|false
     {
         if (preg_match('/\W(\-\-project|\-p|get) ?=? ?[\'"]?([0-9a-z]+)[\'"]?/', $commandLine, $matches)) {
             return $matches[2];

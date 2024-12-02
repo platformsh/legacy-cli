@@ -36,7 +36,7 @@ class EnvironmentUrlTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args, $verbosity = OutputInterface::VERBOSITY_NORMAL) {
+    private function runCommand(array $args, int $verbosity = OutputInterface::VERBOSITY_NORMAL): string {
         $output = new BufferedOutput();
         $output->setVerbosity($verbosity);
         $input = new ArrayInput($args);
@@ -46,7 +46,7 @@ class EnvironmentUrlTest extends TestCase
         return $output->fetch();
     }
 
-    public function testUrl() {
+    public function testUrl(): void {
         $this->assertEquals(
             "https://example.com\n"
             . "http://example.com\n",
@@ -56,17 +56,17 @@ class EnvironmentUrlTest extends TestCase
         );
     }
 
-    public function testPrimaryUrl() {
+    public function testPrimaryUrl(): void {
         $this->assertEquals(
             'https://example.com',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 '--primary' => true,
                 '--browser' => '0',
             ]), "\n")
         );
     }
 
-    public function testNonExistentBrowserIsNotFound() {
+    public function testNonExistentBrowserIsNotFound(): void {
         putenv('DISPLAY=fake');
         $result = $this->runCommand([
             '--browser' => 'nonexistent',
