@@ -20,7 +20,7 @@ final class Page
      *
      * @return string
      */
-    public function displayInfo()
+    public function displayInfo(): string
     {
         return \sprintf('page <info>%d</info> of <info>%d</info>; <info>%d</info> per page, <info>%d</info> total',
             $this->pageNumber, $this->pageCount, $this->itemsPerPage, $this->total);

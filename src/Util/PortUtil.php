@@ -63,7 +63,7 @@ class PortUtil
      *
      * @return bool
      */
-    public static function isPortInUse($port, $hostname = null)
+    public static function isPortInUse($port, $hostname = null): bool
     {
         $fp = @fsockopen($hostname !== null ? $hostname : '127.0.0.1', $port, $errno, $errstr, 10);
         if ($fp !== false) {

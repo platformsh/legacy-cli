@@ -17,20 +17,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Relationships implements InputConfiguringInterface
 {
 
-    protected $envVarService;
-
     /**
      * @param RemoteEnvVars $envVarService
      */
-    public function __construct(RemoteEnvVars $envVarService)
+    public function __construct(protected RemoteEnvVars $envVarService)
     {
-        $this->envVarService = $envVarService;
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\InputDefinition $definition
+     * @param InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition): void
     {
         $definition->addOption(
             new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The service relationship to use')
@@ -68,7 +65,7 @@ class Relationships implements InputConfiguringInterface
 
         // Filter to find services matching the schemes.
         if (!empty($schemes)) {
-            $relationships = array_filter($relationships, function (array $relationship) use ($schemes) {
+            $relationships = array_filter($relationships, function (array $relationship) use ($schemes): bool {
                 foreach ($relationship as $service) {
                     if (isset($service['scheme']) && in_array($service['scheme'], $schemes, true)) {
                         return true;
@@ -109,9 +106,9 @@ class Relationships implements InputConfiguringInterface
         if ($input->hasOption('relationship')
             && ($relationshipName = $input->getOption('relationship'))) {
             // Normalise the relationship name to remove a trailing ".0".
-            if (substr($relationshipName, -2) === '.0'
+            if (str_ends_with((string) $relationshipName, '.0')
                 && isset($relationships[$relationshipName]) && count($relationships[$relationshipName]) ===1) {
-                $relationshipName = substr($relationshipName, 0, strlen($relationshipName) - 2);
+                $relationshipName = substr((string) $relationshipName, 0, strlen((string) $relationshipName) - 2);
             }
             if (!isset($choices[$relationshipName])) {
                 $stdErr->writeln('Relationship not found: <error>' . $relationshipName . '</error>');
@@ -140,8 +137,8 @@ class Relationships implements InputConfiguringInterface
             $identifier = $questionHelper->choose($choices, 'Enter a number to choose a relationship:');
         }
 
-        if (strpos($identifier, '.') !== false) {
-            list($name, $key) = explode('.', $identifier, 2);
+        if (str_contains((string) $identifier, '.')) {
+            list($name, $key) = explode('.', (string) $identifier, 2);
         } else {
             $name = $identifier;
             $key = 0;
@@ -190,7 +187,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return array
      */
-    private function normalizeRelationships(array $relationships)
+    private function normalizeRelationships(array $relationships): array
     {
         foreach ($relationships as &$relationship) {
             foreach ($relationship as &$instance) {
@@ -200,12 +197,10 @@ class Relationships implements InputConfiguringInterface
                 // first hostname), and parses that to populate the instance
                 // definition.
                 if (isset($instance['scheme']) && isset($instance['host'])
-                    && $instance['scheme'] === 'mongodb' && strpos($instance['host'], 'mongodb://') === 0) {
+                    && $instance['scheme'] === 'mongodb' && str_starts_with((string) $instance['host'], 'mongodb://')) {
                     $mongodbUri = $instance['host'];
-                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', function ($matches) {
-                        return $matches[1] . \explode(',', $matches[2])[0] . $matches[3];
-                    }, $mongodbUri);
-                    $urlParts = \parse_url($url);
+                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', fn($matches): string => $matches[1] . \explode(',', (string) $matches[2])[0] . $matches[3], (string) $mongodbUri);
+                    $urlParts = \parse_url((string) $url);
                     if ($urlParts) {
                         $instance = array_merge($urlParts, $instance);
                         // Fix the "host" to be a hostname.
@@ -225,9 +220,9 @@ class Relationships implements InputConfiguringInterface
      * @param array $database The database definition from the relationships.
      * @return bool
      */
-    public function isMariaDB(array $database)
+    public function isMariaDB(array $database): bool
     {
-        return isset($database['type']) && (\strpos($database['type'], 'mariadb:') === 0 || \strpos($database['type'], 'mysql:') === 0);
+        return isset($database['type']) && (str_starts_with((string) $database['type'], 'mariadb:') || str_starts_with((string) $database['type'], 'mysql:'));
     }
 
     /**
@@ -270,7 +265,7 @@ class Relationships implements InputConfiguringInterface
      * @return string
      *   The command line arguments (excluding the $command).
      */
-    public function getDbCommandArgs($command, array $database, $schema = null)
+    public function getDbCommandArgs(string $command, array $database, $schema = null)
     {
         if ($schema === null) {
             $schema = $database['path'];
@@ -287,7 +282,7 @@ class Relationships implements InputConfiguringInterface
                     $database['port']
                 );
                 if ($schema !== '') {
-                    $url .= '/' . rawurlencode($schema);
+                    $url .= '/' . rawurlencode((string) $schema);
                 }
 
                 return OsUtil::escapePosixShellArg($url);
@@ -344,7 +339,7 @@ class Relationships implements InputConfiguringInterface
     /**
      * @return bool
      */
-    public function hasLocalEnvVar()
+    public function hasLocalEnvVar(): bool
     {
         return $this->envVarService->getEnvVar('RELATIONSHIPS', new LocalHost()) !== '';
     }
@@ -356,7 +351,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return string
      */
-    public function buildUrl(array $instance)
+    public function buildUrl(array $instance): string
     {
         $parts = $instance;
 
@@ -377,7 +372,7 @@ class Relationships implements InputConfiguringInterface
         // Special case #1: Solr.
         if (isset($parts['scheme']) && $parts['scheme'] === 'solr') {
             $parts['scheme'] = 'http';
-            if (isset($parts['path']) && \dirname($parts['path']) === '/solr') {
+            if (isset($parts['path']) && \dirname((string) $parts['path']) === '/solr') {
                 $parts['path'] = '/solr/';
             }
         }

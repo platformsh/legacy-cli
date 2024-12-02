@@ -10,8 +10,8 @@ use Platformsh\Client\Session\Session;
 
 class CredentialHelperTest extends TestCase
 {
-    private $manager;
-    private $storage;
+    private Manager $manager;
+    private SessionStorage $storage;
 
     public function setUp(): void
     {
@@ -24,7 +24,7 @@ class CredentialHelperTest extends TestCase
         $this->storage->deleteAll();
     }
 
-    public function testCredentialStorage()
+    public function testCredentialStorage(): void
     {
         if (!$this->manager->isSupported()) {
             $this->markTestIncomplete('Skipping credential helper test (not supported on this system)');

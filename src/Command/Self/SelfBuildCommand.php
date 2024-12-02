@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
@@ -12,12 +16,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfBuildCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly Shell $shell)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config->get('application.executable') . '.phar')
             ->addOption('replace-version', null, InputOption::VALUE_OPTIONAL, 'Replace the version number in config.yaml')
             ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
     }
@@ -36,8 +44,8 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        /** @var Filesystem $fs */
+        $fs = $this->filesystem;
 
         $outputFilename = $input->getOption('output');
         if ($outputFilename && !$fs->canWrite($outputFilename)) {
@@ -53,12 +61,12 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var Shell $shell */
+        $shell = $this->shell;
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
-        $version = $this->config()->getVersion();
+        $version = $this->config->getVersion();
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
         } else {
@@ -167,7 +175,7 @@ class SelfBuildCommand extends CommandBase
      *
      * @return bool
      */
-    private function checkInstallerFile()
+    private function checkInstallerFile(): bool
     {
         $installerFile = CLI_ROOT . '/dist/installer.php';
         $installerContents = \file_get_contents($installerFile);
@@ -184,15 +192,15 @@ class SelfBuildCommand extends CommandBase
             return false;
         }
         $newConfig = \var_export([
-            'envPrefix' => $this->config()->get('application.env_prefix'),
-            'manifestUrl' => $this->config()->get('application.manifest_url'),
-            'configDir' => $this->config()->get('application.user_config_dir'),
-            'executable' => $this->config()->get('application.executable'),
-            'cliName' => $this->config()->get('application.name'),
-            'userAgent' => $this->config()->get('application.slug'),
-            'serviceEnvPrefix' => $this->config()->get('service.env_prefix'),
-            'migratePrompt' => $this->config()->getWithDefault('migrate.prompt', false),
-            'migrateDocsUrl' => $this->config()->getWithDefault('migrate.docs_url', ''),
+            'envPrefix' => $this->config->get('application.env_prefix'),
+            'manifestUrl' => $this->config->get('application.manifest_url'),
+            'configDir' => $this->config->get('application.user_config_dir'),
+            'executable' => $this->config->get('application.executable'),
+            'cliName' => $this->config->get('application.name'),
+            'userAgent' => $this->config->get('application.slug'),
+            'serviceEnvPrefix' => $this->config->get('service.env_prefix'),
+            'migratePrompt' => $this->config->getWithDefault('migrate.prompt', false),
+            'migrateDocsUrl' => $this->config->getWithDefault('migrate.docs_url', ''),
         ], true);
         $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
         if ($newContents !== $installerContents) {

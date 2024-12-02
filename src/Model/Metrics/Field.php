@@ -15,16 +15,12 @@ class Field
     const FORMAT_DISK = 'disk';
     const FORMAT_MEMORY = 'memory';
 
-    /** @var string */
-    private $name;
-
-    /** @var string */
-    private $format;
-
-    public function __construct($name, $format)
+    /**
+     * @param string $name
+     * @param string $format
+     */
+    public function __construct(private $name, private $format)
     {
-        $this->name = $name;
-        $this->format = $format;
     }
 
     public function getName()
@@ -40,7 +36,7 @@ class Field
      *
      * @return string
      */
-    private function formatPercent($pc, $warn = true)
+    private function formatPercent(float $pc, $warn = true): string
     {
         if ($warn) {
             if ($pc >= self::RED_WARNING_THRESHOLD) {
@@ -67,17 +63,12 @@ class Field
         if ($value->isInfinite()) {
             return '∞';
         }
-        switch ($this->format) {
-            case self::FORMAT_ROUNDED:
-                return (string) round($value->average());
-            case self::FORMAT_ROUNDED_2DP:
-                return (string) round($value->average(), 2);
-            case self::FORMAT_PERCENT:
-                return $this->formatPercent($value->average(), $warn);
-            case self::FORMAT_DISK:
-            case self::FORMAT_MEMORY:
-                return FormatterHelper::formatMemory($value->average());
-        }
-        throw new \InvalidArgumentException('Formatter not found: ' . $this->format);
+        return match ($this->format) {
+            self::FORMAT_ROUNDED => (string) round($value->average()),
+            self::FORMAT_ROUNDED_2DP => (string) round($value->average(), 2),
+            self::FORMAT_PERCENT => $this->formatPercent($value->average(), $warn),
+            self::FORMAT_DISK, self::FORMAT_MEMORY => FormatterHelper::formatMemory($value->average()),
+            default => throw new \InvalidArgumentException('Formatter not found: ' . $this->format),
+        };
     }
 }

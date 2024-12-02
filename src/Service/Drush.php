@@ -16,17 +16,13 @@ use Platformsh\Client\Model\Project;
 
 class Drush
 {
-    /** @var Api */
-    protected $api;
+    protected Api $api;
 
-    /** @var Shell */
-    protected $shellHelper;
+    protected Shell $shellHelper;
 
-    /** @var LocalProject */
-    protected $localProject;
+    protected LocalProject $localProject;
 
-    /** @var Config */
-    protected $config;
+    protected Config $config;
 
     /** @var string|null */
     protected $homeDir;
@@ -43,8 +39,7 @@ class Drush
     /** @var string[] */
     protected $cachedAppRoots = [];
 
-    /** @var ApplicationFinder */
-    protected $applicationFinder;
+    protected ApplicationFinder $applicationFinder;
 
     /**
      * @param Config|null $config
@@ -67,7 +62,7 @@ class Drush
         $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 
-    public function setHomeDir($homeDir)
+    public function setHomeDir($homeDir): void
     {
         $this->homeDir = $homeDir;
     }
@@ -81,7 +76,7 @@ class Drush
      * @param string $sshUrl
      * @param string $enterpriseAppRoot
      */
-    public function setCachedAppRoot($sshUrl, $enterpriseAppRoot)
+    public function setCachedAppRoot($sshUrl, $enterpriseAppRoot): void
     {
         $this->cachedAppRoots[$sshUrl] = $enterpriseAppRoot;
     }
@@ -101,7 +96,7 @@ class Drush
      *
      * @return string
      */
-    public function getDrushDir()
+    public function getDrushDir(): string
     {
         return $this->getHomeDir() . '/.drush';
     }
@@ -126,7 +121,7 @@ class Drush
      *
      * @return string[]
      */
-    public function getLegacyAliasFiles()
+    public function getLegacyAliasFiles(): array|false
     {
         return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT);
     }
@@ -154,7 +149,7 @@ class Drush
     /**
      * @throws DependencyMissingException
      */
-    public function ensureInstalled()
+    public function ensureInstalled(): void
     {
         if ($this->getVersion() === false) {
             throw new DependencyMissingException('Drush is not installed');
@@ -166,7 +161,7 @@ class Drush
      *
      * @return bool
      */
-    public function supportsMakeLock()
+    public function supportsMakeLock(): bool
     {
         return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
     }
@@ -242,7 +237,7 @@ class Drush
     /**
      * @return bool
      */
-    public function clearCache()
+    public function clearCache(): bool
     {
         return (bool) $this->execute(['cache-clear', 'drush']);
     }
@@ -257,7 +252,7 @@ class Drush
      *
      * @return array
      */
-    public function getAliases($groupName, $reset = false)
+    public function getAliases(string $groupName, $reset = false)
     {
         if (!$reset && isset($this->aliases[$groupName])) {
             return $this->aliases[$groupName];
@@ -308,7 +303,7 @@ class Drush
      * @param string $newGroup
      * @param string $projectRoot
      */
-    public function setAliasGroup($newGroup, $projectRoot)
+    public function setAliasGroup($newGroup, $projectRoot): void
     {
         $this->localProject->writeCurrentProjectConfig(['alias-group' => $newGroup], $projectRoot, true);
     }
@@ -323,7 +318,7 @@ class Drush
      *
      * @return bool True on success, false on failure.
      */
-    public function createAliases(Project $project, $projectRoot, $environments, $original = null)
+    public function createAliases(Project $project, $projectRoot, array $environments, $original = null)
     {
         if (!$apps = $this->getDrupalApps($projectRoot)) {
             return false;
@@ -346,20 +341,18 @@ class Drush
      *
      * @return LocalApplication[]
      */
-    public function getDrupalApps($projectRoot)
+    public function getDrupalApps($projectRoot): array
     {
         return array_filter(
             $this->applicationFinder->findApplications($projectRoot),
-            function (LocalApplication $app) {
-                return Drupal::isDrupal($app->getRoot());
-            }
+            fn(LocalApplication $app): bool => Drupal::isDrupal($app->getRoot())
         );
     }
 
     /**
      * @return SiteAliasTypeInterface[]
      */
-    protected function getSiteAliasTypes()
+    protected function getSiteAliasTypes(): array
     {
         $types = [];
         $types[] = new DrushYaml($this->config, $this);
@@ -395,7 +388,7 @@ class Drush
     /**
      * @param string $group
      */
-    public function deleteOldAliases($group)
+    public function deleteOldAliases($group): void
     {
         foreach ($this->getSiteAliasTypes() as $type) {
             $type->deleteAliases($group);

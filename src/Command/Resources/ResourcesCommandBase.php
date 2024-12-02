@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -16,11 +18,17 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class ResourcesCommandBase extends CommandBase
 {
-    private static $cachedNextDeployment = [];
+    private readonly Config $config;
+    private static array $cachedNextDeployment = [];
+    #[Required]
+    public function autowire(Config $config) : void
+    {
+        $this->config = $config;
+    }
 
     public function isHidden(): bool
     {
-        return !$this->config()->get('api.sizing') || parent::isHidden();
+        return !$this->config->get('api.sizing') || parent::isHidden();
     }
 
     /**
@@ -31,7 +39,7 @@ class ResourcesCommandBase extends CommandBase
      * @return array<string, WebApp||Worker|Service>
      *     An array of services keyed by the service name.
      */
-    protected function allServices(EnvironmentDeployment $deployment)
+    protected function allServices(EnvironmentDeployment $deployment): array
     {
         $webapps = $deployment->webapps;
         $workers = $deployment->workers;
@@ -109,7 +117,7 @@ class ResourcesCommandBase extends CommandBase
         }
         $requestedApps = ArrayArgument::getOption($input, 'app');
         if (!empty($requestedApps)) {
-            $selectedNames = Wildcard::select(array_keys(array_filter($services, function ($s) { return $s instanceof WebApp; })), $requestedApps);
+            $selectedNames = Wildcard::select(array_keys(array_filter($services, fn($s): bool => $s instanceof WebApp)), $requestedApps);
             if (!$selectedNames) {
                 $this->stdErr->writeln('No applications were found matching the name(s): <error>' . implode('</error>, <error>', $requestedApps) . '</error>');
                 return false;
@@ -118,7 +126,7 @@ class ResourcesCommandBase extends CommandBase
         }
         $requestedWorkers = ArrayArgument::getOption($input, 'worker');
         if (!empty($requestedWorkers)) {
-            $selectedNames = Wildcard::select(array_keys(array_filter($services, function ($s) { return $s instanceof Worker; })), $requestedWorkers);
+            $selectedNames = Wildcard::select(array_keys(array_filter($services, fn($s): bool => $s instanceof Worker)), $requestedWorkers);
             if (!$selectedNames) {
                 $this->stdErr->writeln('No workers were found matching the name(s): <error>' . implode('</error>, <error>', $requestedWorkers) . '</error>');
                 return false;
@@ -180,7 +188,7 @@ class ResourcesCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function formatChange($previousValue, $newValue, $suffix = '')
+    protected function formatChange($previousValue, $newValue, $suffix = ''): string
     {
         if ($previousValue === null || $newValue === $previousValue) {
             return sprintf('<info>%s%s</info>', $newValue, $suffix);
@@ -201,7 +209,7 @@ class ResourcesCommandBase extends CommandBase
      * @return string
      *   A numeric (still comparable) string with 1 decimal place.
      */
-    protected function formatCPU($unformatted)
+    protected function formatCPU($unformatted): string
     {
         return sprintf('%.1f', $unformatted);
     }

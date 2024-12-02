@@ -10,20 +10,10 @@ use Platformsh\Client\Model\Environment;
 
 class RemoteHost implements HostInterface
 {
-    private $sshUrl;
-    private $environment;
-    private $sshService;
-    private $shell;
-    private $extraSshOptions = [];
-    private $sshDiagnostics;
+    private array $extraSshOptions = [];
 
-    public function __construct($sshUrl, Environment $environment, Ssh $sshService, Shell $shell, SshDiagnostics $sshDiagnostics)
+    public function __construct(private $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
     {
-        $this->sshUrl = $sshUrl;
-        $this->environment = $environment;
-        $this->sshService = $sshService;
-        $this->shell = $shell;
-        $this->sshDiagnostics = $sshDiagnostics;
     }
 
     /**
@@ -37,7 +27,7 @@ class RemoteHost implements HostInterface
     /**
      * @param string[] $options
      */
-    public function setExtraSshOptions(array $options)
+    public function setExtraSshOptions(array $options): void
     {
         $this->extraSshOptions = $options;
     }
@@ -81,7 +71,7 @@ class RemoteHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function getCacheKey()
+    public function getCacheKey(): string
     {
         return $this->sshUrl . '--' . $this->environment->head_commit;
     }

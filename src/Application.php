@@ -36,11 +36,11 @@ class Application extends ParentApplication
 {
     private ?ConsoleCommand $currentCommand = null;
 
-    private Config $config;
+    private readonly Config $config;
 
     private ContainerInterface $container;
 
-    private string $envPrefix;
+    private readonly string $envPrefix;
 
     private bool $runningViaMulti = false;
 

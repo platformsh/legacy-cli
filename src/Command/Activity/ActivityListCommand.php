@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -14,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:list', description: 'Get a list of activities for an environment or project', aliases: ['activities', 'act'])]
 class ActivityListCommand extends ActivityCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'created' => 'Created',
         'completed' => 'Completed',
@@ -29,7 +32,11 @@ class ActivityListCommand extends ActivityCommandBase
         'time_build' => 'Build time (s)',
         'time_deploy' => 'Deploy time (s)',
     ];
-    private $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
+    private array $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -38,8 +45,8 @@ class ActivityListCommand extends ActivityCommandBase
     {
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';
-        if ($this->config()->has('service.activity_type_list_url')) {
-            $typeDescription .= "\nFor a list of types see: <info>" . $this->config()->get('service.activity_type_list_url') . '</info>';
+        if ($this->config->has('service.activity_type_list_url')) {
+            $typeDescription .= "\nFor a list of types see: <info>" . $this->config->get('service.activity_type_list_url') . '</info>';
         }
         $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             $typeDescription
@@ -86,8 +93,8 @@ class ActivityListCommand extends ActivityCommandBase
             $apiResource = $project;
         }
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        /** @var ActivityLoader $loader */
+        $loader = $this->activityLoader;
         $activities = $loader->loadFromInput($apiResource, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
@@ -95,10 +102,10 @@ class ActivityListCommand extends ActivityCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var Table $table */
+        $table = $this->table;
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $defaultColumns = $this->defaultColumns;
 
@@ -132,13 +139,13 @@ class ActivityListCommand extends ActivityCommandBase
             if ($environmentSpecific) {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s, environment %s:',
-                    $this->api()->getProjectLabel($project),
-                    $this->api()->getEnvironmentLabel($apiResource)
+                    $this->api->getProjectLabel($project),
+                    $this->api->getEnvironmentLabel($apiResource)
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s:',
-                    $this->api()->getProjectLabel($project)
+                    $this->api->getProjectLabel($project)
                 ));
             }
         }
@@ -146,7 +153,7 @@ class ActivityListCommand extends ActivityCommandBase
         $table->render($rows, $this->tableHeader, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;
@@ -176,7 +183,7 @@ class ActivityListCommand extends ActivityCommandBase
         return 0;
     }
 
-    private function suggestExclusions(array $activities)
+    private function suggestExclusions(array $activities): void
     {
         $counts = [];
         foreach ($activities as $activity) {

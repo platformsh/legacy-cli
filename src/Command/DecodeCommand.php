@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,9 +14,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DecodeCommand extends CommandBase
 {
 
+    public function __construct(private readonly Config $config)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
 
         $this
             ->addArgument('value', InputArgument::REQUIRED, 'The value to decode')
@@ -30,13 +35,13 @@ class DecodeCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $variable = $input->getArgument('value');
-        if (trim($variable) === '') {
+        if (trim((string) $variable) === '') {
             $this->stdErr->writeln('Failed to decode: the provided value is empty.');
 
             return 1;
         }
 
-        $b64decoded = base64_decode($variable, true);
+        $b64decoded = base64_decode((string) $variable, true);
         if ($b64decoded === false) {
             $this->stdErr->writeln('Invalid value: base64 decoding failed.');
 
@@ -67,7 +72,7 @@ class DecodeCommand extends CommandBase
             if (array_key_exists($property, $decoded)) {
                 $value = $decoded[$property];
             } else {
-                $value = NestedArrayUtil::getNestedArrayValue($decoded, explode('.', $property), $keyExists);
+                $value = NestedArrayUtil::getNestedArrayValue($decoded, explode('.', (string) $property), $keyExists);
                 if (!$keyExists) {
                     $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
 

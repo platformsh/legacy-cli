@@ -80,7 +80,7 @@ class SelfUpdateChecker
         try {
             $newVersion = $this->selfUpdater->update(null, $currentVersion);
         } catch (\RuntimeException $e) {
-            if (strpos($e->getMessage(), 'Failed to download') !== false) {
+            if (str_contains($e->getMessage(), 'Failed to download')) {
                 $this->stdErr->writeln('<error>' . $e->getMessage() . '</error>');
                 $newVersion = false;
             } else {

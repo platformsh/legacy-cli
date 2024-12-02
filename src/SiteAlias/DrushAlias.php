@@ -16,13 +16,8 @@ use Platformsh\Client\Model\Project;
  */
 abstract class DrushAlias implements SiteAliasTypeInterface
 {
-    protected $config;
-    protected $drush;
-
-    public function __construct(Config $config, Drush $drush)
+    public function __construct(protected Config $config, protected Drush $drush)
     {
-        $this->config = $config;
-        $this->drush = $drush;
     }
 
     /**
@@ -146,8 +141,8 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         foreach (array_filter([$currentGroup, $previousGroup]) as $groupName) {
             foreach ($this->drush->getAliases($groupName) as $name => $alias) {
                 // Remove the group prefix from the alias name.
-                $name = ltrim($name, '@');
-                if (strpos($name, $groupName . '.') === 0) {
+                $name = ltrim((string) $name, '@');
+                if (str_starts_with($name, $groupName . '.')) {
                     $name = substr($name, strlen($groupName . '.'));
                 }
 
@@ -214,7 +209,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Generate an alias for the local environment.
      *
-     * @param \Platformsh\Cli\Local\LocalApplication $app
+     * @param LocalApplication $app
      *
      * @return array
      */
@@ -255,7 +250,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         if ($environment->deployment_target !== 'local') {
             $appRoot = $this->drush->getCachedAppRoot($sshUrl);
             if ($appRoot) {
-                $alias['root'] = rtrim($appRoot, '/') . '/' . $app->getDocumentRoot();
+                $alias['root'] = rtrim((string) $appRoot, '/') . '/' . $app->getDocumentRoot();
             }
         } else {
             $alias['root'] = '/app/' . $app->getDocumentRoot();
@@ -279,7 +274,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *     A string based on the application name, for example
      *     'platformsh-cli-auto-remove'.
      */
-    private function getAutoRemoveKey()
+    private function getAutoRemoveKey(): string
     {
         return $this->config->get('application.slug') . '-auto-remove';
     }
@@ -287,7 +282,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function deleteAliases($group)
+    public function deleteAliases($group): void
     {
         $filename = $this->getFilename($group);
         if (file_exists($filename)) {

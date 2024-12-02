@@ -9,7 +9,7 @@ class Composer extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getInstallHelp()
+    public function getInstallHelp(): string
     {
         return 'See https://getcomposer.org/ for installation instructions.';
     }
@@ -17,7 +17,7 @@ class Composer extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths($prefix): array
     {
         return [$prefix . '/vendor/bin'];
     }
@@ -25,7 +25,7 @@ class Composer extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies, $global = false)
+    public function install($path, array $dependencies, $global = false): void
     {
         if ($global) {
             $this->installGlobal($dependencies);
@@ -60,7 +60,7 @@ class Composer extends DependencyManagerBase
      *
      * @param array $dependencies
      */
-    private function installGlobal(array $dependencies)
+    private function installGlobal(array $dependencies): void
     {
         $requirements = [];
         foreach ($dependencies as $package => $version) {

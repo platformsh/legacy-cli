@@ -1,6 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
@@ -18,6 +23,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbDumpCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
@@ -40,11 +49,11 @@ class DbDumpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        /** @var Relationships $relationships */
+        $relationships = $this->relationships;
 
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
-        if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
+        if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
             $this->validateInput($input, true);
         }
@@ -56,11 +65,11 @@ class DbDumpCommand extends CommandBase
         $schemaOnly = $input->getOption('schema-only');
         $projectRoot = $this->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        /** @var Filesystem $fs */
+        $fs = $this->filesystem;
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
         $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
@@ -71,7 +80,7 @@ class DbDumpCommand extends CommandBase
         if ($this->hasSelectedEnvironment()) {
             // Get information about the deployed service associated with the
             // selected relationship.
-            $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+            $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
             $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
         }
 
@@ -105,8 +114,8 @@ class DbDumpCommand extends CommandBase
             }
             $schema = null;
             if (!empty($choices)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                /** @var QuestionHelper $questionHelper */
+                $questionHelper = $this->questionHelper;
                 $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
             }
             if (empty($schema)) {
@@ -129,7 +138,7 @@ class DbDumpCommand extends CommandBase
 
                     return 1;
                 }
-                $dumpFile = rtrim($fileOption, '/');
+                $dumpFile = rtrim((string) $fileOption, '/');
                 if (!$gzip && preg_match('/\.gz$/i', $dumpFile)) {
                     $this->stdErr->writeln('Warning: the filename ends with ".gz", but the dump will be plain-text.');
                     $this->stdErr->writeln('Use <comment>--gzip</comment> to create a compressed dump.');
@@ -155,12 +164,12 @@ class DbDumpCommand extends CommandBase
 
                     return 1;
                 }
-                $dumpFile = rtrim($directoryOption, '/') . '/' . basename($dumpFile);
+                $dumpFile = rtrim((string) $directoryOption, '/') . '/' . basename($dumpFile);
             }
 
             // Insert a timestamp into the filename, before the
             // extension.
-            if ($timestamp !== null && strpos($dumpFile, $timestamp) === false) {
+            if ($timestamp !== null && !str_contains($dumpFile, $timestamp)) {
                 $basename = basename($dumpFile);
                 $prefix = substr($dumpFile, 0, - strlen($basename));
                 if (($dotPos = strpos($basename, '.')) > 0) {
@@ -221,9 +230,7 @@ class DbDumpCommand extends CommandBase
                 }
                 if ($includedTables) {
                     $dumpCommand .= ' --tables '
-                        . implode(' ', array_map(function ($table) {
-                            return OsUtil::escapePosixShellArg($table);
-                        }, $includedTables));
+                        . implode(' ', array_map(fn($table) => OsUtil::escapePosixShellArg($table), $includedTables));
                 }
                 if (!empty($service->configuration['properties']['max_allowed_packet'])) {
                     $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
@@ -255,7 +262,7 @@ class DbDumpCommand extends CommandBase
 
         $append = '';
         if ($dumpFile) {
-            $append .= ' > ' . escapeshellarg($dumpFile);
+            $append .= ' > ' . escapeshellarg((string) $dumpFile);
         }
 
         set_time_limit(0);
@@ -274,13 +281,13 @@ class DbDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
-            /** @var \Platformsh\Cli\Service\Git $git */
-            $git = $this->getService('git');
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with((string) $dumpFile, $projectRoot)) {
+            /** @var Git $git */
+            $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
-                if ($pos = strrpos($dumpFile, '--dump.sql')) {
-                    $extension = substr($dumpFile, $pos);
+                if ($pos = strrpos((string) $dumpFile, '--dump.sql')) {
+                    $extension = substr((string) $dumpFile, $pos);
                     $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
                     $this->stdErr->writeln('    *' . $extension);
                 }
@@ -310,9 +317,9 @@ class DbDumpCommand extends CommandBase
         array $includedTables = [],
         array $excludedTables = [],
         $schemaOnly = false,
-        $gzip = false)
+        $gzip = false): string
     {
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentMachineName = $environment ? $environment->machine_name : getenv($prefix . 'ENVIRONMENT');
         $defaultFilename = $projectId ?: 'db';

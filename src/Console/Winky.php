@@ -25,15 +25,15 @@ class Winky extends Animation
         // Replace Unicode characters with ANSI background colors.
         if ($output->isDecorated()) {
             foreach ($sources as &$source) {
-                $source = preg_replace_callback('/([\x{2588}\x{2591} ])\1*/u', function (array $matches) {
+                $source = preg_replace_callback('/([\x{2588}\x{2591} ])\1*/u', function (array $matches): string {
                     $styles = [
                         ' ' => "\033[47m",
                         '█' => "\033[40m",
                         '░' => "\033[48;5;217m",
                     ];
-                    $char = mb_substr($matches[0], 0, 1);
+                    $char = mb_substr((string) $matches[0], 0, 1);
 
-                    return $styles[$char] . str_repeat(' ', mb_strlen($matches[0])) . "\033[0m";
+                    return $styles[$char] . str_repeat(' ', mb_strlen((string) $matches[0])) . "\033[0m";
                 }, $source);
             }
         }
@@ -44,9 +44,7 @@ class Winky extends Animation
             $signatureIndent = str_repeat(' ', intval(strlen($indent) + floor($width / 2) - floor(strlen($signature) / 2)));
             $signature = "\n" . $signatureIndent . $signature;
         }
-        $sources = array_map(function ($source) use ($indent, $signature) {
-            return "\n" . preg_replace('/^/m', $indent, $source) . $signature . "\n";
-        }, $sources);
+        $sources = array_map(fn($source): string => "\n" . preg_replace('/^/m', $indent, (string) $source) . $signature . "\n", $sources);
 
         $frames = [];
         $frames[] = new AnimationFrame($sources['normal'], 1200000);

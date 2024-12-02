@@ -11,25 +11,18 @@ use Symfony\Component\Yaml\Yaml;
 
 class PropertyFormatter implements InputConfiguringInterface
 {
-    /** @var InputInterface|null */
-    protected $input;
+    protected Config $config;
 
-    /** @var \Platformsh\Cli\Service\Config */
-    protected $config;
-
-    public function __construct(InputInterface $input = null, Config $config = null)
+    public function __construct(protected ?InputInterface $input = null, Config $config = null)
     {
-        $this->input = $input;
         $this->config = $config ?: new Config();
     }
 
     /**
-     * @param mixed  $value
      * @param string $property
-     *
      * @return string
      */
-    public function format($value, $property = null)
+    public function format(mixed $value, $property = null)
     {
         if ($value === null && $property !== 'parent') {
             return '';
@@ -77,8 +70,8 @@ class PropertyFormatter implements InputConfiguringInterface
                 break;
 
             case 'service_type':
-                if (substr_count($value, ':') === 2) {
-                    $value = substr($value, 0, strrpos($value, ':'));
+                if (substr_count((string) $value, ':') === 2) {
+                    $value = substr((string) $value, 0, strrpos((string) $value, ':'));
                 }
                 break;
         }
@@ -95,7 +88,7 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @param InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition): void
     {
         static $config;
         $config = $config ?: new Config();
@@ -128,11 +121,11 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @return string|null
      */
-    public function formatDate($value)
+    public function formatDate($value): ?string
     {
         // Workaround for the ssl.expires_on date, which is currently a
         // timestamp in milliseconds.
-        if (substr($value, -3) === '000' && strlen($value) === 13) {
+        if (str_ends_with($value, '000') && strlen($value) === 13) {
             $value = substr($value, 0, 10);
         }
 
@@ -148,7 +141,7 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @return string
      */
-    public function formatUnixTimestamp($value)
+    public function formatUnixTimestamp($value): string
     {
         return date($this->dateFormat(), $value);
     }
@@ -167,9 +160,7 @@ class PropertyFormatter implements InputConfiguringInterface
             'is_enabled' => true,
         ];
         // Hide passwords.
-        $info['basic_auth'] = array_map(function () {
-            return '******';
-        }, $info['basic_auth']);
+        $info['basic_auth'] = array_map(fn(): string => '******', $info['basic_auth']);
 
         return $this->format($info);
     }
@@ -182,7 +173,7 @@ class PropertyFormatter implements InputConfiguringInterface
      * @param string|null     $property   The property of the data to display
      *                                    (a dot-separated string).
      */
-    public function displayData(OutputInterface $output, array $data, $property = null)
+    public function displayData(OutputInterface $output, array $data, $property = null): void
     {
         $key = null;
 

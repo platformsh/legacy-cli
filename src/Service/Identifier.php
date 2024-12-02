@@ -13,10 +13,10 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Identifier
 {
-    private $config;
-    private $api;
+    private readonly Config $config;
+    private readonly Api $api;
     private $cache;
-    private $io;
+    private readonly IO $io;
 
     public function __construct(Config $config = null, Api $api = null, CacheProvider $cache = null, IO $io = null)
     {
@@ -35,10 +35,10 @@ class Identifier
      *   An array containing keys 'projectId', 'environmentId', 'host', and
      *   'appId'. At least the 'projectId' will be populated.
      */
-    public function identify($url)
+    public function identify(string $url)
     {
         $result = $this->parseProjectId($url);
-        if (empty($result['projectId']) && strpos($url, '.') !== false && $this->config->has('detection.cluster_header')) {
+        if (empty($result['projectId']) && str_contains($url, '.') && $this->config->has('detection.cluster_header')) {
             $result = $this->identifyFromHeaders($url);
         }
         if (empty($result['projectId'])) {
@@ -56,7 +56,7 @@ class Identifier
      *
      * @return array
      */
-    private function parseProjectId($url)
+    private function parseProjectId(string $url): array
     {
         $result = [];
 
@@ -100,9 +100,9 @@ class Identifier
             return $result;
         }
 
-        if (strpos($path, '/projects/') !== false || strpos($fragment, '/projects/') !== false) {
+        if (str_contains($path, '/projects/') || str_contains($fragment, '/projects/')) {
             $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            $result['projectId'] = basename((string) preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
             if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
                 $result['environmentId'] = rawurldecode(basename($matches[1]));
             }
@@ -133,12 +133,12 @@ class Identifier
      *
      * @return array
      */
-    private function identifyFromHeaders($url)
+    private function identifyFromHeaders(string $url): array
     {
         if (!strpos($url, '.')) {
             throw new \InvalidArgumentException('Invalid URL: ' . $url);
         }
-        if (strpos($url, '//') === false) {
+        if (!str_contains($url, '//')) {
             $url = 'https://' . $url;
         }
         $result = ['projectId' => null, 'environmentId' => null];
@@ -158,7 +158,7 @@ class Identifier
      *
      * @return string|false
      */
-    private function getClusterHeader($url)
+    private function getClusterHeader(string $url)
     {
         if (!$this->config->has('detection.cluster_header')) {
             return false;

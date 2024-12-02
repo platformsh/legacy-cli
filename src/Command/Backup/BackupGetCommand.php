@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupGetCommand extends CommandBase
 {
 
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -28,8 +33,8 @@ class BackupGetCommand extends CommandBase
         $this->validateInput($input);
         $environment = $this->getSelectedEnvironment();
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         if ($id = $input->getArgument('backup')) {
             $backup = $environment->getBackup($id);
@@ -54,8 +59,8 @@ class BackupGetCommand extends CommandBase
                 }
                 $choices[$id] = sprintf('%s (%s)', $backup->id, $formatter->format($backup->created_at, 'created_at'));
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            /** @var QuestionHelper $questionHelper */
+            $questionHelper = $this->questionHelper;
             $choice = $questionHelper->choose($choices, 'Enter a number to choose a backup:', $default);
             $backup = $byId[$choice];
         }

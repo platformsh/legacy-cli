@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -17,6 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:get', description: 'View an organization user')]
 class OrganizationUserGetCommand extends OrganizationCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -32,13 +37,13 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         $organization = $this->validateOrganizationInput($input, 'members');
 
         if (!$organization->hasLink('members')) {
-            $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api()->getOrganizationLabel($organization, 'comment') . '.');
+            $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');
             return 1;
         }
 
         $email = $input->getArgument('email');
         if (!empty($email)) {
-            $member = $this->api()->loadMemberByEmail($organization, $email);
+            $member = $this->api->loadMemberByEmail($organization, $email);
             if (!$member) {
                 $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
                 return 1;
@@ -51,7 +56,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         }
 
         /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $data = $member->getProperties();
         $memberInfo = $member->getUserInfo();
@@ -68,10 +73,10 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         }
 
         /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('Viewing the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln(\sprintf('Viewing the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api->getOrganizationLabel($organization)));
         }
 
         $headings = [];

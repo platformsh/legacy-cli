@@ -2,6 +2,11 @@
 
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
 use Platformsh\Cli\Command\CommandBase;
@@ -27,8 +32,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:create', description: 'Create a new project', aliases: ['create'])]
 class ProjectCreateCommand extends CommandBase
 {
-    private $plansCache;
+    private ?array $plansCache = null;
     private $regionsCache;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -67,31 +76,31 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organizationsEnabled = $this->config()->getWithDefault('api.organizations', false);
+        $organizationsEnabled = $this->config->getWithDefault('api.organizations', false);
 
         // Check if the user needs phone verification before creating a project.
         if (!$organizationsEnabled) {
-            $needsVerify = $this->api()->checkUserVerification();
+            $needsVerify = $this->api->checkUserVerification();
             if ($needsVerify['state'] && !$this->requireVerification($needsVerify['type'], '', $input)) {
                 return 1;
             }
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        /** @var Git $git */
+        $git = $this->git;
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
         // Identify an organization that should own the project.
         $organization = null;
         $setupOptions = null;
-        if ($this->config()->getWithDefault('api.organizations', false)) {
+        if ($this->config->getWithDefault('api.organizations', false)) {
             try {
                 $organization = $this->validateOrganizationInput($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
                 $this->stdErr->writeln('You do not yet own nor belong to an organization in which you can create a project.');
-                if ($e->getTotalNumOrgs() === 0 && $input->isInteractive() && $this->config()->isCommandEnabled('organization:create') && $questionHelper->confirm('Do you want to create an organization now?')) {
+                if ($e->getTotalNumOrgs() === 0 && $input->isInteractive() && $this->config->isCommandEnabled('organization:create') && $questionHelper->confirm('Do you want to create an organization now?')) {
                     if ($this->runOtherCommand('organization:create') !== 0) {
                         return 1;
                     }
@@ -105,7 +114,7 @@ EOF
                 return 1;
             }
 
-            $this->stdErr->writeln('Creating a project under the organization ' . $this->api()->getOrganizationLabel($organization));
+            $this->stdErr->writeln('Creating a project under the organization ' . $this->api->getOrganizationLabel($organization));
             $this->stdErr->writeln('');
 
             $setupOptions = $organization->getSetupOptions();
@@ -128,7 +137,7 @@ EOF
         if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
             try {
                 $currentProject = $this->getCurrentProject();
-            } catch (ProjectNotFoundException $e) {
+            } catch (ProjectNotFoundException) {
                 $currentProject = false;
             } catch (BadResponseException $e) {
                 if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
@@ -140,7 +149,7 @@ EOF
 
             $this->stdErr->writeln('Local Git repository detected: <info>' . $gitRoot . '</info>');
             if ($currentProject) {
-                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api()->getProjectLabel($currentProject, 'comment')));
+                $this->stdErr->writeln(sprintf('The remote project is currently: %s', $this->api->getProjectLabel($currentProject, 'comment')));
             }
             $this->stdErr->writeln('');
 
@@ -149,7 +158,7 @@ EOF
             } elseif ($currentProject) {
                 $setRemote = $questionHelper->confirm(sprintf(
                     'Switch the remote project for this repository directory from <comment>%s</comment> to the new project <comment>%s</comment>?',
-                    $this->api()->getProjectLabel($currentProject, false),
+                    $this->api->getProjectLabel($currentProject, false),
                     $options['title']
                 ), false);
             } else {
@@ -169,17 +178,17 @@ EOF
             $options_custom['initialize']['repository'] = $options['init_repo'];
         }
 
-        $estimate = $this->api()
+        $estimate = $this->api
             ->getClient()
             ->getSubscriptionEstimate($options['plan'], (int) $options['storage'] * 1024, (int) $options['environments'], 1, null, $organization ? $organization->id : null);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
         );
-        if ($this->config()->has('service.pricing_url')) {
+        if ($this->config->has('service.pricing_url')) {
             $costConfirm .= sprintf(
                 "\nPricing information: <comment>%s</comment>",
-                $this->config()->get('service.pricing_url')
+                $this->config->get('service.pricing_url')
             );
         }
         $costConfirm .= "\n\nAre you sure you want to continue?";
@@ -187,7 +196,7 @@ EOF
             return 1;
         }
 
-        $subscription = $this->api()->getClient()
+        $subscription = $this->api->getClient()
             ->createSubscription(SubscriptionOptions::fromArray([
                 'organization_id' => $organization ? $organization->id : null,
                 'project_title' => $options['title'],
@@ -199,17 +208,17 @@ EOF
                 'options_custom' => $options_custom,
             ]));
 
-        $this->api()->clearProjectsCache();
+        $this->api->clearProjectsCache();
 
         $this->stdErr->writeln(sprintf(
             'Your %s project has been requested (subscription ID: <comment>%s</comment>)',
-            $this->config()->get('service.name'),
+            $this->config->get('service.name'),
             $subscription->id
         ));
 
         $this->stdErr->writeln(sprintf(
             "\nThe %s Bot is activating your project\n",
-            $this->config()->get('service.name')
+            $this->config->get('service.name')
         ));
 
         $bot = new Bot($this->stdErr);
@@ -230,7 +239,7 @@ EOF
                     // The API call will timeout after $checkTimeout seconds.
                     $subscription->refresh(['timeout' => $checkTimeout]);
                 } catch (ConnectException $e) {
-                    if (strpos($e->getMessage(), 'timed out') !== false) {
+                    if (str_contains($e->getMessage(), 'timed out')) {
                         $this->debug($e->getMessage());
                     } else {
                         throw $e;
@@ -261,7 +270,7 @@ EOF
                 $output->writeln($subscription->project_id);
             }
 
-            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config->get('application.executable')));
 
             return 1;
         }
@@ -275,14 +284,14 @@ EOF
             if (time() - $lastCheck >= $checkInterval) {
                 $lastCheck = time();
                 try {
-                    $project = $this->api()->getProject($subscription->project_id);
+                    $project = $this->api->getProject($subscription->project_id);
                     if ($project !== false) {
                         break;
                     } else {
                         $this->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
                     }
                 } catch (ConnectException $e) {
-                    if (strpos($e->getMessage(), 'timed out') !== false) {
+                    if (str_contains($e->getMessage(), 'timed out')) {
                         $this->debug($e->getMessage());
                     } else {
                         throw $e;
@@ -320,17 +329,17 @@ EOF
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Setting the remote project for this repository to: %s',
-                $this->api()->getProjectLabel($project)
+                $this->api->getProjectLabel($project)
             ));
 
-            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
+            /** @var LocalProject $localProject */
+            $localProject = $this->localProject;
             $localProject->mapDirectory($gitRoot, $project);
         }
 
         if ($gitRoot === false) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To clone the project locally, run: <info>%s get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($project->id)));
+            $this->stdErr->writeln(sprintf('To clone the project locally, run: <info>%s get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($project->id)));
         }
 
         return 0;
@@ -347,24 +356,24 @@ EOF
      */
     private function checkCanCreate(Organization $organization, InputInterface $input)
     {
-        $canCreate = $this->api()->checkCanCreate($organization);
+        $canCreate = $this->api->checkCanCreate($organization);
         if ($canCreate['can_create']) {
             return true;
         }
         if ($canCreate['required_action']) {
-            $consoleUrl = $this->config()->getWithDefault('service.console_url', '');
+            $consoleUrl = $this->config->getWithDefault('service.console_url', '');
             if ($consoleUrl && $canCreate['required_action']['action'] === 'billing_details') {
                 $this->stdErr->writeln($canCreate['message']);
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('View or update billing details at:');
-                $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim($consoleUrl, '/'), $organization->name));
+                $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim((string) $consoleUrl, '/'), $organization->name));
                 return false;
             }
             if ($consoleUrl && $canCreate['required_action']['action'] === 'ticket') {
                 $this->stdErr->writeln($canCreate['message']);
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to create a ticket:');
-                $this->stdErr->writeln(sprintf('<info>%s/support</info>', rtrim($consoleUrl, '/')));
+                $this->stdErr->writeln(sprintf('<info>%s/support</info>', rtrim((string) $consoleUrl, '/')));
                 return false;
             }
             if ($canCreate['required_action']['action'] === 'verification') {
@@ -383,7 +392,7 @@ EOF
      * @param InputInterface $input
      * @return bool True if verification succeeded, false otherwise.
      */
-    private function requireVerification($type, $message, InputInterface $input)
+    private function requireVerification($type, string|iterable $message, InputInterface $input): bool
     {
         if ($type === 'phone') {
             $this->stdErr->writeln('Phone number verification is required before creating a project.');
@@ -394,8 +403,8 @@ EOF
                     $this->stdErr->writeln('');
                     return true;
                 }
-            } elseif ($this->config()->has('service.console_url')) {
-                $url = $this->config()->get('service.console_url') . '/-/phone-verify';
+            } elseif ($this->config->has('service.console_url')) {
+                $url = $this->config->get('service.console_url') . '/-/phone-verify';
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to verify your phone number:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
@@ -403,15 +412,15 @@ EOF
             }
         } elseif ($type === 'credit-card') {
             $this->stdErr->writeln('Credit card verification is required before creating a project.');
-            if ($this->config()->has('service.console_url')) {
+            if ($this->config->has('service.console_url')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please use Console to create your first project:');
-                $this->stdErr->writeln(sprintf('<info>%s</info>', $this->config()->get('service.console_url')));
+                $this->stdErr->writeln(sprintf('<info>%s</info>', $this->config->get('service.console_url')));
             }
         } elseif ($type === 'support' || $type === 'ticket') {
             $this->stdErr->writeln('Verification via a support ticket is required before creating a project.');
-            if ($this->config()->has('service.console_url')) {
-                $url = $this->config()->get('service.console_url') . '/support';
+            if ($this->config->has('service.console_url')) {
+                $url = $this->config->get('service.console_url') . '/support';
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to create a ticket:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
@@ -439,7 +448,7 @@ EOF
             return $this->plansCache;
         }
         $plans = [];
-        foreach ($this->api()->getClient()->getPlans() as $plan) {
+        foreach ($this->api->getClient()->getPlans() as $plan) {
             $plans[] = $plan->name;
         }
         return $this->plansCache = $plans;
@@ -470,11 +479,11 @@ EOF
      * @return array<string, string>
      *   A list of region names, mapped to option names.
      */
-    protected function getAvailableRegions(SetupOptions $setupOptions = null)
+    protected function getAvailableRegions(SetupOptions $setupOptions = null): array
     {
         $regions = $this->regionsCache !== null
             ? $this->regionsCache
-            : $this->regionsCache = $this->api()->getClient()->getRegions();
+            : $this->regionsCache = $this->api->getClient()->getRegions();
         $available = [];
         if (isset($setupOptions)) {
             $available = $setupOptions->regions;
@@ -486,7 +495,7 @@ EOF
             }
         }
 
-        \usort($available, [Sort::class, 'compareDomains']);
+        \usort($available, Sort::compareDomains(...));
 
         $options = [];
         foreach ($available as $id) {
@@ -533,7 +542,7 @@ EOF
      *
      * @return Field[]
      */
-    protected function getFields(SetupOptions $setupOptions = null)
+    protected function getFields(SetupOptions $setupOptions = null): array
     {
         return [
           'title' => new Field('Project title', [
@@ -544,10 +553,8 @@ EOF
           ]),
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
-            'description' => trim("The region where the project will be hosted.\n" . $this->config()->getWithDefault('messages.region_discount', '')),
-            'optionsCallback' => function () use ($setupOptions) {
-                return $this->getAvailableRegions($setupOptions);
-            },
+            'description' => trim("The region where the project will be hosted.\n" . $this->config->getWithDefault('messages.region_discount', '')),
+            'optionsCallback' => fn() => $this->getAvailableRegions($setupOptions),
             'allowOther' => true,
           ]),
           'plan' => new OptionsField('Plan', [
@@ -559,12 +566,8 @@ EOF
             // and set a default if possible. If the organization setup options
             // have been supplied ($setupOptions is not null) then that plans
             // list will be used.
-            'optionsCallback' => function () use ($setupOptions) {
-                return $this->getAvailablePlans($setupOptions);
-            },
-            'defaultCallback' => function () use ($setupOptions) {
-                return $this->getDefaultPlan($this->getAvailablePlans($setupOptions));
-            },
+            'optionsCallback' => fn() => $this->getAvailablePlans($setupOptions),
+            'defaultCallback' => fn() => $this->getDefaultPlan($this->getAvailablePlans($setupOptions)),
 
             'allowOther' => true,
             'avoidQuestion' => true,
@@ -573,17 +576,13 @@ EOF
             'optionName' => 'environments',
             'description' => 'The number of environments',
             'default' => 3,
-            'validator' => function ($value) {
-                return is_numeric($value) && $value > 0 && $value < 50;
-            },
+            'validator' => fn($value): bool => is_numeric($value) && $value > 0 && $value < 50,
             'avoidQuestion' => true,
           ]),
           'storage' => new Field('Storage', [
             'description' => 'The amount of storage per environment, in GiB',
             'default' => 5,
-            'validator' => function ($value) {
-                return is_numeric($value) && $value > 0 && $value < 1024;
-            },
+            'validator' => fn($value): bool => is_numeric($value) && $value > 0 && $value < 1024,
             'avoidQuestion' => true,
           ]),
           'default_branch' => new Field('Default branch', [
@@ -596,21 +595,21 @@ EOF
             'description' => 'URL of a Git repository to use for initialization. A GitHub path such as "platformsh-templates/nuxtjs" can be used.',
             'required' => false,
             'avoidQuestion' => true,
-            'normalizer' => function ($url) {
+            'normalizer' => function (string $url): string {
                 // Provide GitHub as a default.
-                if (strpos($url, 'github.com') === 0) {
+                if (str_starts_with($url, 'github.com')) {
                     return 'https://github.com' . substr($url, 10);
                 }
-                if (strpos($url, '//') === false && preg_match('#^[a-z0-9-]+/[a-z0-9-]+$#', $url)) {
+                if (!str_contains($url, '//') && preg_match('#^[a-z0-9-]+/[a-z0-9-]+$#', $url)) {
                     return 'https://github.com/' . $url;
                 }
                 return $url;
             },
-            'validator' => function ($url) {
-                if (strpos($url, 'https://') !== 0 && parse_url($url, PHP_URL_SCHEME) !== 'https') {
+            'validator' => function ($url): string|true {
+                if (!str_starts_with($url, 'https://') && parse_url($url, PHP_URL_SCHEME) !== 'https') {
                     return 'The initialize repository URL must start with "https://".';
                 }
-                $response = $this->api()->getExternalHttpClient()->get($url, ['exceptions' => false]);
+                $response = $this->api->getExternalHttpClient()->get($url, ['exceptions' => false]);
                 $code = $response->getStatusCode();
                 if ($code >= 400) {
                     return sprintf('The initialize repository URL "%s" returned status code %d. The repository must be public.', $url, $code);
@@ -624,14 +623,14 @@ EOF
     /**
      * Get a numeric option value while ensuring it's a reasonable number.
      *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      * @param string                                          $optionName
      * @param int                                             $min
      * @param int                                             $max
      *
      * @return float|int
      */
-    private function getTimeOption(InputInterface $input, $optionName, $min = 0, $max = 3600)
+    private function getTimeOption(InputInterface $input, string $optionName, int $min = 0, int $max = 3600)
     {
         $value = $input->getOption($optionName);
         if ($value <= $min) {

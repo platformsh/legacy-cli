@@ -6,18 +6,15 @@ use Platformsh\Cli\Service\Shell;
 
 class Pip extends DependencyManagerBase
 {
-    private $stack;
-
-    public function __construct(Shell $shell, $stack)
+    public function __construct(Shell $shell, private $stack)
     {
-        $this->stack = $stack;
         parent::__construct($shell);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getInstallHelp()
+    public function getInstallHelp(): string
     {
         return 'See https://pip.pypa.io/en/stable/installing/ for installation instructions.';
     }
@@ -25,7 +22,7 @@ class Pip extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths($prefix): array
     {
         return [$prefix . '/bin'];
     }
@@ -33,7 +30,7 @@ class Pip extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getCommandName()
+    public function getCommandName(): string
     {
         $commands = ['pip', 'pip3', 'pip2'];
         if ($this->stack === 'python3') {
@@ -53,7 +50,7 @@ class Pip extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies, $global = false)
+    public function install($path, array $dependencies, $global = false): void
     {
         file_put_contents($path . '/requirements.txt', $this->formatRequirementsTxt($dependencies));
         $command = $this->getCommandName() . ' install --requirement=requirements.txt';
@@ -66,7 +63,7 @@ class Pip extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getEnvVars($path)
+    public function getEnvVars($path): array
     {
         $envVars = [];
 
@@ -76,7 +73,7 @@ class Pip extends DependencyManagerBase
         if (file_exists($path . '/lib')) {
             $subdirectories = scandir($path . '/lib') ?: [];
             foreach ($subdirectories as $subdirectory) {
-                if (strpos($subdirectory, '.') !== 0) {
+                if (!str_starts_with($subdirectory, '.')) {
                     $envVars['PYTHONPATH'] = $path . '/lib/' . $subdirectory . '/site-packages';
                     break;
                 }
@@ -91,7 +88,7 @@ class Pip extends DependencyManagerBase
      *
      * @return string
      */
-    private function formatRequirementsTxt(array $dependencies)
+    private function formatRequirementsTxt(array $dependencies): string
     {
         $lines = [];
         foreach ($dependencies as $package => $version) {

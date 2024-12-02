@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,8 +14,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:update', description: 'Update a variable')]
 class VariableUpdateCommand extends VariableCommandBase
 {
-    /** @var Form */
-    private $form;
+    private ?Form $form = null;
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -67,7 +72,7 @@ class VariableUpdateCommand extends VariableCommandBase
         if ((isset($variable->value) || isset($values['value']))
             && (!empty($values['is_json']) || $variable->is_json)) {
             $value = isset($values['value']) ? $values['value'] : $variable->value;
-            if (json_decode($value) === null && json_last_error()) {
+            if (json_decode((string) $value) === null && json_last_error()) {
                 $this->stdErr->writeln('The value is not valid JSON: <error>' . $value . '</error>');
 
                 return 1;
@@ -88,10 +93,10 @@ class VariableUpdateCommand extends VariableCommandBase
         $success = true;
 
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
-            $this->api()->redeployWarning();
+            $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }
 

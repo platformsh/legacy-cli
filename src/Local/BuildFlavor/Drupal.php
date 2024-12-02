@@ -9,12 +9,12 @@ use Symfony\Component\Finder\Finder;
 class Drupal extends BuildFlavorBase
 {
 
-    public function getStacks()
+    public function getStacks(): array
     {
         return ['php', 'hhvm'];
     }
 
-    public function getKeys()
+    public function getKeys(): array
     {
         return ['drupal'];
     }
@@ -27,7 +27,7 @@ class Drupal extends BuildFlavorBase
      *
      * @return bool
      */
-    public static function isDrupal($directory, $depth = '< 2')
+    public static function isDrupal($directory, string|int|array $depth = '< 2'): bool
     {
         if (!is_dir($directory)) {
             return false;
@@ -58,7 +58,7 @@ class Drupal extends BuildFlavorBase
             if (($f = fopen($file, 'r')) !== false) {
                 $beginning = fread($f, 3178);
                 fclose($f);
-                if ($beginning !== false && strpos($beginning, 'Drupal') !== false) {
+                if ($beginning !== false && str_contains($beginning, 'Drupal')) {
                     return true;
                 }
             }
@@ -84,7 +84,7 @@ class Drupal extends BuildFlavorBase
         return false;
     }
 
-    public function build()
+    public function build(): void
     {
         $profiles = glob($this->appRoot . '/*.profile');
         $projectMake = $this->findDrushMakeFile();
@@ -136,7 +136,7 @@ class Drupal extends BuildFlavorBase
      *
      * @return array
      */
-    protected function getDrushFlags()
+    protected function getDrushFlags(): array
     {
         $drushFlags = [
             '--yes',
@@ -179,7 +179,7 @@ class Drupal extends BuildFlavorBase
      * @return string|false
      *   The absolute filename of the make file.
      */
-    protected function findDrushMakeFile($required = false, $core = false)
+    protected function findDrushMakeFile($required = false, $core = false): string|false
     {
         $candidates = [
             'project.make.yml',
@@ -288,7 +288,7 @@ class Drupal extends BuildFlavorBase
      *
      * @param string $profileName
      */
-    protected function buildInProfileMode($profileName)
+    protected function buildInProfileMode(string $profileName)
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
@@ -402,7 +402,7 @@ class Drupal extends BuildFlavorBase
         }
     }
 
-    public function install()
+    public function install(): void
     {
         $this->processSharedFileMounts();
 
@@ -425,7 +425,7 @@ class Drupal extends BuildFlavorBase
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {
-                list($skip[],) = explode('/', $mount, 2);
+                list($skip[],) = explode('/', (string) $mount, 2);
             }
 
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);

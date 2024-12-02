@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -12,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentHttpAccessCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         parent::configure();
@@ -50,9 +57,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
      *
      * @return array
      */
-    protected function parseAuth($auth)
+    protected function parseAuth($auth): array
     {
-        $parts = explode(':', $auth, 2);
+        $parts = explode(':', (string) $auth, 2);
         if (count($parts) != 2) {
             $message = sprintf('Auth "<error>%s</error>" is not valid. The format should be username:password', $auth);
             throw new InvalidArgumentException($message);
@@ -79,9 +86,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
      *
      * @return array
      */
-    protected function parseAccess($access)
+    protected function parseAccess($access): array
     {
-        $parts = explode(':', $access, 2);
+        $parts = explode(':', (string) $access, 2);
         if (count($parts) != 2) {
             $message = sprintf(
                 'Access "<error>%s</error>" is not valid, please use the format: permission:address',
@@ -190,13 +197,13 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         // Patch the environment with the changes.
         if ($change) {
             $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
-            $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+            $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
             $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
@@ -204,10 +211,10 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
             $success = true;
             if (!$result->countActivities()) {
-                $this->api()->redeployWarning();
+                $this->api->redeployWarning();
             } elseif ($this->shouldWait($input)) {
-                /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-                $activityMonitor = $this->getService('activity_monitor');
+                /** @var ActivityMonitor $activityMonitor */
+                $activityMonitor = $this->activityMonitor;
                 $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             }
 

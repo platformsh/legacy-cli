@@ -76,7 +76,7 @@ abstract class BuildFlavorTestBase extends TestCase
      * @return string
      *   The project root for the dummy project.
      */
-    protected function assertBuildSucceeds($sourceDir, array $buildSettings = [], $expectedResult = true)
+    protected function assertBuildSucceeds(string $sourceDir, array $buildSettings = [], $expectedResult = true)
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);

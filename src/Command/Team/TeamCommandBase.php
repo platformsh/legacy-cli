@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Exception\NoOrganizationsException;
@@ -14,11 +18,21 @@ use Symfony\Component\Console\Input\InputOption;
 
 class TeamCommandBase extends CommandBase
 {
+    private readonly QuestionHelper $questionHelper;
+    private readonly Config $config;
+    private readonly Api $api;
+    #[Required]
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+    }
     public function isEnabled(): bool
     {
-        return $this->config()->get('api.teams')
-            && $this->config()->get('api.centralized_permissions')
-            && $this->config()->get('api.organizations')
+        return $this->config->get('api.teams')
+            && $this->config->get('api.centralized_permissions')
+            && $this->config->get('api.organizations')
             && parent::isEnabled();
     }
 
@@ -27,7 +41,7 @@ class TeamCommandBase extends CommandBase
      *
      * @return self
      */
-    protected function addTeamOption()
+    protected function addTeamOption(): static
     {
         $this->addOption('team', 't', InputOption::VALUE_REQUIRED, 'The team ID');
         return $this;
@@ -48,23 +62,23 @@ class TeamCommandBase extends CommandBase
                 $this->stdErr->writeln('No organizations found.');
                 if ($this->getApplication()->has('organization:create')) {
                     $this->stdErr->writeln('');
-                    $this->stdErr->writeln(sprintf('To create an organization, run: <comment>%s org:create</comment>', $this->config()->get('application.executable')));
+                    $this->stdErr->writeln(sprintf('To create an organization, run: <comment>%s org:create</comment>', $this->config->get('application.executable')));
                 }
                 return false;
             }
             $this->stdErr->writeln('No organizations were found in which you can manage teams.');
             if ($this->getApplication()->has('organization:list')) {
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf('To list organizations, run: <comment>%s organizations</comment>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To list organizations, run: <comment>%s organizations</comment>', $this->config->get('application.executable')));
             }
             return false;
         }
         if (!in_array('teams', $organization->capabilities)) {
-            $this->stdErr->writeln(sprintf('The organization %s does not have teams support.', $this->api()->getOrganizationLabel($organization, 'comment')));
+            $this->stdErr->writeln(sprintf('The organization %s does not have teams support.', $this->api->getOrganizationLabel($organization, 'comment')));
             return false;
         }
         if (!$organization->hasLink('members')) {
-            $this->stdErr->writeln(sprintf('You do not have permission to manage teams in the organization %s.', $this->api()->getOrganizationLabel($organization, 'comment')));
+            $this->stdErr->writeln(sprintf('You do not have permission to manage teams in the organization %s.', $this->api->getOrganizationLabel($organization, 'comment')));
             return false;
         }
         return $organization;
@@ -86,16 +100,16 @@ class TeamCommandBase extends CommandBase
             }
         }
         if ($teamInput = $input->getOption('team')) {
-            $team = $this->api()->getClient()->getTeam($teamInput);
+            $team = $this->api->getClient()->getTeam($teamInput);
             if (!$team) {
                 $this->stdErr->writeln('Team not found: <error>' . $teamInput . '</error>');
                 return false;
             }
             if ($organization && $team->organization_id !== $organization->id) {
-                $this->stdErr->writeln(sprintf('The team %s is not part of the selected organization, %s.', $this->getTeamLabel($team, 'error'), $this->api()->getOrganizationLabel($organization, 'error')));
+                $this->stdErr->writeln(sprintf('The team %s is not part of the selected organization, %s.', $this->getTeamLabel($team, 'error'), $this->api->getOrganizationLabel($organization, 'error')));
                 return false;
             }
-            if (!$organization && !$this->api()->getOrganizationById($team->organization_id)) {
+            if (!$organization && !$this->api->getOrganizationById($team->organization_id)) {
                 $this->stdErr->writeln(sprintf('Failed to load team organization: <error>%s</error>.', $team->organization_id));
                 return false;
             }
@@ -117,7 +131,7 @@ class TeamCommandBase extends CommandBase
 
         $teams = $this->loadTeams($organization);
         if (count($teams) === 0) {
-            $this->stdErr->writeln(sprintf('No teams were found in the organization %s', $this->api()->getOrganizationLabel($organization, 'error')));
+            $this->stdErr->writeln(sprintf('No teams were found in the organization %s', $this->api->getOrganizationLabel($organization, 'error')));
             return false;
         }
 
@@ -140,9 +154,9 @@ class TeamCommandBase extends CommandBase
      *
      * @return Team[]
      */
-    protected function loadTeams(Organization $organization, $fetchAllPages = true, $params = [])
+    protected function loadTeams(Organization $organization, $fetchAllPages = true, $params = []): array
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $options = ['query' => array_merge(['filter[organization_id]' => $organization->id, 'sort' => 'label'], $params)];
         $url = '/teams';
         /** @var Team[] $teams */
@@ -176,8 +190,8 @@ class TeamCommandBase extends CommandBase
             $choices[$team->id] = $team->label . ' (' . $team->id . ')';
             $byId[$team->id] = $team;
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
         $teamId = $questionHelper->choose($choices, 'Enter a number to choose a team:');
         return $byId[$teamId];
     }
@@ -189,9 +203,9 @@ class TeamCommandBase extends CommandBase
      *
      * @return TeamProjectAccess[]
      */
-    protected function loadTeamProjects(Team $team)
+    protected function loadTeamProjects(Team $team): array
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         /** @var TeamProjectAccess[] $projects */
         $projects = [];
         $options = ['query' => ['sort' => 'project_title']];
@@ -219,7 +233,7 @@ class TeamCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function getTeamLabel(Team $team, $tag = 'info')
+    protected function getTeamLabel(Team $team, $tag = 'info'): string
     {
         $pattern = $tag !== false ? '<%1$s>%2$s</%1$s> (%3$s)' : '%2$s (%3$s)';
 

@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\PortUtil;
 
 class PortUtilTest extends TestCase
 {
-    public function testGetPortDoesNotReturnPortInUse()
+    public function testGetPortDoesNotReturnPortInUse(): void
     {
         $util = new PortUtil();
         $port = $util->getPort();
@@ -25,13 +25,13 @@ class PortUtilTest extends TestCase
         }
     }
 
-    public function testGetPortDoesNotReturnUnsafePort()
+    public function testGetPortDoesNotReturnUnsafePort(): void
     {
         $util = new PortUtil();
         $this->assertNotEquals(2049, $util->getPort(2049));
     }
 
-    public function testGetPortReturnsValidPort()
+    public function testGetPortReturnsValidPort(): void
     {
         $util = new PortUtil();
         $port = $util->getPort(rand(10000, 50000));
@@ -43,7 +43,7 @@ class PortUtilTest extends TestCase
         $util->getPort(70000);
     }
 
-    public function testValidatePort()
+    public function testValidatePort(): void
     {
         $util = new PortUtil();
         $this->assertFalse($util->validatePort(22));

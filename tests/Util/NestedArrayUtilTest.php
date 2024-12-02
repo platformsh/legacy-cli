@@ -22,7 +22,7 @@ class NestedArrayUtilTest extends TestCase
         ];
     }
 
-    public function testGetValue()
+    public function testGetValue(): void
     {
         $this->assertEquals($this->testArray['a']['0'], $this->getValue('a.0'));
         $this->assertEquals($this->testArray['a']['0']['x'], $this->getValue('a.0.x'));
@@ -33,7 +33,7 @@ class NestedArrayUtilTest extends TestCase
         $this->assertEquals(null, $this->getValue('d.foo'));
     }
 
-    public function testSetValue()
+    public function testSetValue(): void
     {
         NestedArrayUtil::setNestedArrayValue($this->testArray, ['a', 'foo'], 'bar');
         $this->assertEquals('bar', $this->testArray['a']['foo']);
@@ -41,7 +41,7 @@ class NestedArrayUtilTest extends TestCase
         $this->assertEquals('test', $this->testArray['c'][2][3]);
     }
 
-    public function testKeyExists()
+    public function testKeyExists(): void
     {
         NestedArrayUtil::getNestedArrayValue($this->testArray, ['a', '0'], $keyExists);
         $this->assertTrue($keyExists);
@@ -54,7 +54,7 @@ class NestedArrayUtilTest extends TestCase
      *
      * @return mixed
      */
-    private function getValue($property)
+    private function getValue(string $property)
     {
         return NestedArrayUtil::getNestedArrayValue($this->testArray, explode('.', $property));
     }

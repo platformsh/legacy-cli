@@ -9,8 +9,7 @@ use Platformsh\Client\Session\Storage\SessionStorageInterface;
  */
 class SessionStorage implements SessionStorageInterface
 {
-    private $serverUrlBase;
-    private $manager;
+    private readonly string $serverUrlBase;
 
     /**
      * CredentialsHelperStorage constructor.
@@ -22,9 +21,8 @@ class SessionStorage implements SessionStorageInterface
      *   is more helpful to the user. In Windows this will be described as the
      *   "Internet or network address".
      */
-    public function __construct(Manager $manager, $serverUrlPrefix)
+    public function __construct(private readonly Manager $manager, $serverUrlPrefix)
     {
-        $this->manager = $manager;
         $this->serverUrlBase = rtrim($serverUrlPrefix, '/');
     }
 
@@ -62,14 +60,14 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return bool
      */
-    public function hasAnySessions() {
+    public function hasAnySessions(): bool {
         return count($this->listAllServerUrls()) > 0;
     }
 
     /**
      * @return array
      */
-    public function listSessionIds()
+    public function listSessionIds(): array
     {
         $ids = [];
         foreach ($this->listAllServerUrls() as $url) {
@@ -84,7 +82,7 @@ class SessionStorage implements SessionStorageInterface
     /**
      * Deletes all sessions from the credential store.
      */
-    public function deleteAll() {
+    public function deleteAll(): void {
         foreach ($this->listAllServerUrls() as $url) {
             $this->manager->erase($url);
         }
@@ -93,12 +91,10 @@ class SessionStorage implements SessionStorageInterface
     /**
      * @return string[]
      */
-    private function listAllServerUrls() {
+    private function listAllServerUrls(): array {
         $list = $this->manager->listAll();
 
-        return array_filter(array_keys($list), function ($url) {
-            return strpos($url, $this->serverUrlBase . '/') === 0;
-        });
+        return array_filter(array_keys($list), fn($url): bool => str_starts_with((string) $url, $this->serverUrlBase . '/'));
     }
 
     /**
@@ -129,7 +125,7 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return string
      */
-    private function serialize(array $data)
+    private function serialize(array $data): string
     {
         return base64_encode(json_encode($data, JSON_UNESCAPED_SLASHES));
     }
@@ -141,7 +137,7 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return array
      */
-    private function deserialize($data)
+    private function deserialize($data): array
     {
         $result = json_decode(base64_decode($data, true), true);
 

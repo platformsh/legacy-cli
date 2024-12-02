@@ -8,22 +8,18 @@ use Platformsh\Client\Model\Deployment\Worker as DeployedWorker;
 
 class Worker implements RemoteContainerInterface
 {
-    private $worker;
-    private $environment;
-
     /**
      * @param \Platformsh\Client\Model\Deployment\Worker $worker
-     * @param \Platformsh\Client\Model\Environment       $environment
+     * @param Environment $environment
      */
-    public function __construct(DeployedWorker $worker, Environment $environment) {
-        $this->worker = $worker;
-        $this->environment = $environment;
+    public function __construct(private readonly DeployedWorker $worker, private readonly Environment $environment)
+    {
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getSshUrl($instance = '')
+    public function getSshUrl($instance = ''): string
     {
         return $this->environment->getSshUrl($this->worker->name, $instance);
     }
@@ -39,7 +35,7 @@ class Worker implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfig() {
+    public function getConfig(): AppConfig {
         return new AppConfig($this->worker->getProperties());
     }
 

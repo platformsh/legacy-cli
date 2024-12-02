@@ -9,7 +9,7 @@ class LoginRequiredException extends HttpException
 {
     protected $message = 'Authentication is required.';
     protected $code = 3;
-    private $config;
+    private readonly Config $config;
 
     public function __construct(
         $message = null,
@@ -27,7 +27,7 @@ class LoginRequiredException extends HttpException
         parent::__construct($message, $previous);
     }
 
-    public function setMessageFromEvent(LoginRequiredEvent $event)
+    public function setMessageFromEvent(LoginRequiredEvent $event): void
     {
         $this->message = $event->getExtendedMessage($this->config);
     }

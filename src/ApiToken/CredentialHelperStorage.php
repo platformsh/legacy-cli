@@ -9,12 +9,10 @@ use Platformsh\Cli\Service\Config;
  * Stores API tokens using the docker credential helpers.
  */
 class CredentialHelperStorage implements StorageInterface {
-    private $manager;
-    private $serverUrl;
+    private readonly string $serverUrl;
 
-    public function __construct(Config $config, Manager $manager)
+    public function __construct(Config $config, private readonly Manager $manager)
     {
-        $this->manager = $manager;
         $this->serverUrl = sprintf(
             '%s/%s/api-token',
             $config->get('application.slug'),
@@ -33,7 +31,7 @@ class CredentialHelperStorage implements StorageInterface {
     /**
      * @inheritDoc
      */
-    public function storeToken($value)
+    public function storeToken($value): void
     {
         $this->manager->store($this->serverUrl, $value);
     }
@@ -41,7 +39,7 @@ class CredentialHelperStorage implements StorageInterface {
     /**
      * @inheritDoc
      */
-    public function deleteToken()
+    public function deleteToken(): void
     {
         $this->manager->erase($this->serverUrl);
     }
