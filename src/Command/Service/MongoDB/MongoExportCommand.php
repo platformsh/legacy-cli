@@ -47,7 +47,6 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             );
         }
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
@@ -65,7 +64,6 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
         }
@@ -105,7 +103,6 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
      */
     private function getCollections(array $service, HostInterface $host): array
     {
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
 
         $js = 'printjson(db.getCollectionNames())';

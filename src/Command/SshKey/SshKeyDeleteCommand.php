@@ -45,7 +45,6 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
             foreach ($keys as $key) {
                 $options[$key->key_id] = sprintf('%s (%s)', $key->key_id, $key->title ?: $key->fingerprint);
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $id = $questionHelper->choose($options, 'Enter a number to choose a key to delete:', null, false);
         }
@@ -82,7 +81,6 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
             // Suppress exceptions; we do not need the result of this call.
         }
 
-        /** @var SshConfig $sshConfig */
         $sshConfig = $this->sshConfig;
         $sshConfig->configureSessionSsh();
 

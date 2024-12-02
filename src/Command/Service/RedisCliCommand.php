@@ -40,7 +40,6 @@ class RedisCliCommand extends CommandBase
             throw new \RuntimeException('The redis-cli command cannot run as a shell via multi');
         }
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 

@@ -42,7 +42,6 @@ class TunnelCloseCommand extends TunnelCommandBase
             }
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $error = false;

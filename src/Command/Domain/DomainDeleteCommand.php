@@ -78,7 +78,6 @@ class DomainDeleteCommand extends DomainCommandBase
             }
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
             return 1;
@@ -90,7 +89,6 @@ class DomainDeleteCommand extends DomainCommandBase
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

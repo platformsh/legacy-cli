@@ -66,7 +66,6 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $options = [];
             foreach ($servicesByProfile as $profile => $serviceNames) {
@@ -80,7 +79,6 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             throw new InvalidArgumentException('The --service or --profile is required.');
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         $rows = [];

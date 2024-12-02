@@ -56,7 +56,6 @@ class RunCommand extends CommandBase
                 $this->stdErr->writeln('The <error>operation</error> argument is required in non-interactive mode.');
                 return 1;
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($sourceOps as $sourceOp) {
@@ -90,7 +89,6 @@ class RunCommand extends CommandBase
 
         $success = true;
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $monitor */
             $monitor = $this->activityMonitor;
             $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

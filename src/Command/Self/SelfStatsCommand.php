@@ -59,9 +59,7 @@ class SelfStatsCommand extends CommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($releases as $release) {

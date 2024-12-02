@@ -93,7 +93,6 @@ class ActivityListCommand extends ActivityCommandBase
             $apiResource = $project;
         }
 
-        /** @var ActivityLoader $loader */
         $loader = $this->activityLoader;
         $activities = $loader->loadFromInput($apiResource, $input);
         if ($activities === []) {
@@ -102,9 +101,7 @@ class ActivityListCommand extends ActivityCommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $defaultColumns = $this->defaultColumns;

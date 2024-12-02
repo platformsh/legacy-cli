@@ -58,7 +58,6 @@ class UserGetCommand extends UserCommandBase
 
         $this->warnAboutDeprecatedOptions(['role']);
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         // Load the user.

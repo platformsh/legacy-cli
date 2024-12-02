@@ -103,7 +103,6 @@ class EnvironmentUrlCommand extends CommandBase
             // non-interactive input.
             $toDisplay = $urls[0];
         }
-        /** @var Url $urlService */
         $urlService = $this->url;
         if (!$urlService->hasDisplay()) {
             $this->debug('Not opening URLs (no display found)');
@@ -119,7 +118,6 @@ class EnvironmentUrlCommand extends CommandBase
         if (count($urls) === 1) {
             $url = $urls[0];
         } else {
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to open a URL', $urls[0]);
         }

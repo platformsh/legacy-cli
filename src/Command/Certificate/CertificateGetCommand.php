@@ -43,7 +43,6 @@ class CertificateGetCommand extends CommandBase
             }
         }
 
-        /** @var PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->propertyFormatter;
 
         $propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));

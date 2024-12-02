@@ -41,7 +41,6 @@ EOF
         if (parent::isHidden()) {
             return true;
         }
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
 
         return !$localProject->getLegacyProjectRoot();
@@ -54,7 +53,6 @@ EOF
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
         $legacyRoot = $localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
@@ -71,7 +69,6 @@ EOF
 
         $cwd = getcwd();
 
-        /** @var Filesystem $fs */
         $fs = $this->filesystem;
 
         $repositoryDir = $legacyRoot . '/repository';

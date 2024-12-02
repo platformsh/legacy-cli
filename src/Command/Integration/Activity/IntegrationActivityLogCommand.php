@@ -67,7 +67,6 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             }
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $this->stdErr->writeln([
@@ -87,7 +86,6 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
 
-        /** @var ActivityMonitor $monitor */
         $monitor = $this->activityMonitor;
         if (!$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $monitor->waitAndLog($activity, 3, $timestamps, false, $output);

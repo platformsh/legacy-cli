@@ -51,7 +51,6 @@ class MountUploadCommand extends CommandBase
         $this->validateInput($input);
 
         $container = $this->selectRemoteContainer($input);
-        /** @var Mount $mountService */
         $mountService = $this->mount;
         $mounts = $mountService->mountsFromConfig($container->getConfig());
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
@@ -62,9 +61,7 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
-        /** @var Filesystem $fs */
         $fs = $this->filesystem;
 
         if ($input->getOption('mount')) {
@@ -101,7 +98,6 @@ class MountUploadCommand extends CommandBase
                 }
             }
 
-            /** @var ApplicationFinder $finder */
             $finder = $this->applicationFinder;
             $applications = $finder->findApplications($projectRoot);
             $appPath = $projectRoot;
@@ -134,7 +130,6 @@ class MountUploadCommand extends CommandBase
 
         $fs->validateDirectory($source);
 
-        /** @var Rsync $rsync */
         $rsync = $this->rsync;
 
         $confirmText = sprintf(

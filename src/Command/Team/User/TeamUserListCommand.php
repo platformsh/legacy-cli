@@ -95,7 +95,6 @@ class TeamUserListCommand extends TeamCommandBase
             return 0;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];
@@ -108,7 +107,6 @@ class TeamUserListCommand extends TeamCommandBase
             ];
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

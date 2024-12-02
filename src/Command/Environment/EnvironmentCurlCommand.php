@@ -35,7 +35,6 @@ class EnvironmentCurlCommand extends CommandBase
 
         $url = $this->getSelectedEnvironment()->getUri();
 
-        /** @var CurlCli $curl */
         $curl = $this->curlCli;
 
         return $curl->run($url, $input, $output);

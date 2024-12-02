@@ -128,7 +128,6 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
         $this->stdErr->writeln('');
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $containerProfiles = $nextDeployment->container_profiles;
@@ -327,7 +326,6 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $result = $nextDeployment->update($updates);
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {

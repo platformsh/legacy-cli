@@ -55,7 +55,6 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
             $member = $this->chooseMember($organization);
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $data = $member->getProperties();
@@ -72,7 +71,6 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
             return 0;
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

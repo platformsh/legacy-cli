@@ -35,7 +35,6 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
 
         $tunnels = $this->getTunnelInfo();
@@ -77,7 +76,6 @@ class TunnelInfoCommand extends TunnelCommandBase
             return 0;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $relationships, $input->getOption('property'));
 

@@ -43,7 +43,6 @@ class EnvironmentRedeployCommand extends CommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm('Are you sure you want to redeploy the environment <comment>' . $environment->id . '</comment>?')) {
             return 1;
@@ -52,7 +51,6 @@ class EnvironmentRedeployCommand extends CommandBase
         $result = $environment->runOperation('redeploy');
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {

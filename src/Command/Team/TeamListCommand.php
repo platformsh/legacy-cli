@@ -105,9 +105,7 @@ class TeamListCommand extends TeamCommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $machineReadable = $table->formatIsMachineReadable();

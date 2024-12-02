@@ -44,7 +44,6 @@ class BuildResourcesGetCommand extends CommandBase
         $project = $this->getSelectedProject();
         $settings = $project->getSettings();
 
-        /** @var Table $table */
         $table = $this->table;
 
         $isOriginalCommand = $input instanceof ArgvInput;

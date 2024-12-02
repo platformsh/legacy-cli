@@ -41,7 +41,6 @@ class EnvironmentResumeCommand extends CommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm('Are you sure you want to resume the paused environment <comment>' . $environment->id . '</comment>?')) {
             return 1;
@@ -51,7 +50,6 @@ class EnvironmentResumeCommand extends CommandBase
         $this->api->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {

@@ -51,7 +51,6 @@ class DomainListCommand extends DomainCommandBase
     {
         $rows = [];
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         foreach ($tree as $domain) {
@@ -133,7 +132,6 @@ class DomainListCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
         $rows = $this->buildDomainRows($domains);
 

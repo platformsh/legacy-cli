@@ -48,7 +48,6 @@ class ProjectDeleteCommand extends CommandBase
             return 1;
         }
         // TODO check for a HAL 'delete' link on the subscription?
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $confirmQuestionLines = [

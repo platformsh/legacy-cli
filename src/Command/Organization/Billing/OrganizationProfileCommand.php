@@ -36,21 +36,18 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $org = $this->validateOrganizationInput($input, 'orders');
         $profile = $org->getProfile();
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $property = $input->getArgument('property');
         if ($property === null) {
             $headings = [];
             $values = [];
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             foreach ($profile->getProperties() as $key => $value) {
                 $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
                 $values[] = $formatter->format($value, $key);
             }
 
-            /** @var Table $table */
             $table = $this->table;
 
             if (!$table->formatIsMachineReadable()) {
@@ -87,7 +84,6 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $currentValue = $profile->getProperty($property, false);

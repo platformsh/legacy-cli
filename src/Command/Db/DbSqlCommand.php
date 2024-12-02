@@ -45,7 +45,6 @@ class DbSqlCommand extends CommandBase
             throw new InvalidArgumentException('The query argument is required when running via "multi"');
         }
 
-        /** @var Relationships $relationships */
         $relationships = $this->relationships;
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
@@ -99,7 +98,6 @@ class DbSqlCommand extends CommandBase
                         $choices[$schema] .= ' (default)';
                     }
                 }
-                /** @var QuestionHelper $questionHelper */
                 $questionHelper = $this->questionHelper;
                 $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
                 $schema = $schema === '(none)' ? '' : $schema;
