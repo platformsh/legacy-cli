@@ -70,7 +70,7 @@ class Api
     private readonly  OutputInterface $stdErr;
     private readonly  TokenConfig $tokenConfig;
     private readonly  FileLock $fileLock;
-    private readonly IO $io;
+    private readonly Io $io;
 
     /**
      * The library's API client object.
@@ -121,21 +121,21 @@ class Api
      * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
      * @param FileLock|null $fileLock
-     * @param IO|null $io
+     * @param Io|null $io
      */
     public function __construct(
-        Config $config = null,
-        CacheProvider $cache = null,
-        OutputInterface $output = null,
-        IO $io = null,
-        TokenConfig $tokenConfig = null,
-        FileLock $fileLock = null,
+        Config                   $config = null,
+        CacheProvider            $cache = null,
+        OutputInterface          $output = null,
+        Io                       $io = null,
+        TokenConfig              $tokenConfig = null,
+        FileLock                 $fileLock = null,
         EventDispatcherInterface $dispatcher = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
         $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
-        $this->io = $io ?: new IO($this->output);
+        $this->io = $io ?: new Io($this->output);
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->fileLock = $fileLock ?: new FileLock($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();

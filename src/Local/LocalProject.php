@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
-use Platformsh\Cli\Service\IO;
+use Platformsh\Cli\Service\Io;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Filesystem\Filesystem;
@@ -16,15 +16,15 @@ class LocalProject
     protected Config $config;
     protected Filesystem $fs;
     protected Git $git;
-    protected IO $io;
+    protected Io $io;
 
     protected static $projectConfigs = [];
 
-    public function __construct(Config $config = null, Git $git = null, IO $io = null)
+    public function __construct(Config $config = null, Git $git = null, Io $io = null)
     {
         $this->config = $config ?: new Config();
         $this->git = $git ?: new Git();
-        $this->io = $io ?: new IO(new ConsoleOutput());
+        $this->io = $io ?: new Io(new ConsoleOutput());
         $this->fs = new Filesystem();
     }
 

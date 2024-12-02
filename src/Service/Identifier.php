@@ -16,14 +16,14 @@ class Identifier
     private readonly Config $config;
     private readonly Api $api;
     private $cache;
-    private readonly IO $io;
+    private readonly Io $io;
 
-    public function __construct(Config $config = null, Api $api = null, CacheProvider $cache = null, IO $io = null)
+    public function __construct(Config $config = null, Api $api = null, CacheProvider $cache = null, Io $io = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
-        $this->io = $io ?: new IO(new ConsoleOutput());
+        $this->io = $io ?: new Io(new ConsoleOutput());
     }
 
     /**
