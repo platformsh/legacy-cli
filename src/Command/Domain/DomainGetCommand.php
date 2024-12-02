@@ -67,13 +67,11 @@ class DomainGetCommand extends DomainCommandBase
                 $options[$domain->name] = $domain->name;
                 $byName[$domain->name] = $domain;
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
             $domain = $byName[$domainName];
         }
 
-        /** @var PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->propertyFormatter;
 
         if ($property = $input->getOption('property')) {
@@ -93,7 +91,6 @@ class DomainGetCommand extends DomainCommandBase
             $properties[] = $name;
             $values[] = $propertyFormatter->format($value, $name);
         }
-        /** @var Table $table */
         $table = $this->table;
         $table->renderSimple($values, $properties);
 

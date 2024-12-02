@@ -53,7 +53,6 @@ class CommitGetCommand extends CommandBase
         $this->validateInput($input, false, true);
 
         $commitSha = $input->getArgument('commit');
-        /** @var GitDataApi $gitData */
         $gitData = $this->gitDataApi;
         $commit = $gitData->getCommit($this->getSelectedEnvironment(), $commitSha);
         if (!$commit) {
@@ -66,7 +65,6 @@ class CommitGetCommand extends CommandBase
             return 1;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $commit->getProperties(), $input->getOption('property'));
 

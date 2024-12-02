@@ -79,7 +79,6 @@ class EnvironmentMergeCommand extends CommandBase
             $environmentId,
             $parentId
         );
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
@@ -100,7 +99,6 @@ class EnvironmentMergeCommand extends CommandBase
 
         $result = $selectedEnvironment->runOperation('merge', 'POST', $params);
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {

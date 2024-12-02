@@ -95,7 +95,6 @@ class VariableGetCommand extends VariableCommandBase
                 return 1;
             }
 
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             $formatter->displayData($output, $properties, $property);
 
@@ -104,7 +103,6 @@ class VariableGetCommand extends VariableCommandBase
 
         $this->displayVariable($variable);
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
@@ -152,7 +150,6 @@ class VariableGetCommand extends VariableCommandBase
             $options[$projectPrefix . $name] = $name
                 . (isset($options[$name]) ? ' (project-level)' : '');
         }
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
         $key = $questionHelper->choose($options, 'Enter a number to choose a variable:');

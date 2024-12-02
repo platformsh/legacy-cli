@@ -39,7 +39,6 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         try {
             $values = $this->getForm()
@@ -102,7 +101,6 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
         $success = true;
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

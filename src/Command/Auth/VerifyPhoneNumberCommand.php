@@ -38,7 +38,6 @@ class VerifyPhoneNumberCommand extends CommandBase
         }
         $myUser = $this->api->getUser(null, true);
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         if ($myUser->phone_number_verified) {

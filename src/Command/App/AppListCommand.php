@@ -71,7 +71,6 @@ class AppListCommand extends CommandBase
         $showLocalPath = false;
         $localApps = [];
         if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config->has('service.app_config_file')) {
-            /** @var ApplicationFinder $finder */
             $finder = $this->applicationFinder;
             $localApps = $finder->findApplications($projectRoot);
             $showLocalPath = true;
@@ -94,7 +93,6 @@ class AppListCommand extends CommandBase
             $defaultColumns[] = 'path';
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];
@@ -106,7 +104,6 @@ class AppListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        /** @var Table $table */
         $table = $this->table;
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(

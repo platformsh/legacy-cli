@@ -49,7 +49,6 @@ class TunnelSingleCommand extends TunnelCommandBase
         $sshUrl = $container->getSshUrl();
         $host = $this->selectHost($input, false, $container);
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $relationships = $relationshipsService->getRelationships($host);
         if (!$relationships) {
@@ -63,7 +62,6 @@ class TunnelSingleCommand extends TunnelCommandBase
         }
 
         if ($environment->is_main) {
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $confirmText = sprintf(
                 'Are you sure you want to open an SSH tunnel to'
@@ -83,7 +81,6 @@ class TunnelSingleCommand extends TunnelCommandBase
             $sshOptions[] = 'GatewayPorts yes';
         }
 
-        /** @var Ssh $ssh */
         $ssh = $this->ssh;
         $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
 

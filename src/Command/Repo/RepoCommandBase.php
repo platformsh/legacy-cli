@@ -44,7 +44,6 @@ class RepoCommandBase extends CommandBase
     {
         $path = $input->getArgument('path');
         try {
-            /** @var GitDataApi $gitData */
             $gitData = $this->gitDataApi;
             $content = $gitData->readFile($path, $environment, $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {
@@ -80,7 +79,6 @@ class RepoCommandBase extends CommandBase
     protected function ls(Environment $environment, InputInterface $input, OutputInterface $output): int
     {
         try {
-            /** @var GitDataApi $gitData */
             $gitData = $this->gitDataApi;
             $tree = $gitData->getTree($environment, $input->getArgument('path'), $input->getOption('commit'));
         } catch (GitObjectTypeException $e) {

@@ -95,7 +95,6 @@ class VariableUpdateCommand extends VariableCommandBase
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

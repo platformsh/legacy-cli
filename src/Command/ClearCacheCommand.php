@@ -23,7 +23,6 @@ class ClearCacheCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var CacheProvider $cache */
         $cache = $this->cacheProvider;
         $cache->flushAll();
         $this->stdErr->writeln("All caches have been cleared");

@@ -33,9 +33,7 @@ class SshCertInfoCommand extends CommandBase
         // Initialize the API service to ensure event listeners etc.
         $this->api;
 
-        /** @var Certifier $certifier */
         $certifier = $this->certifier;
-        /** @var SshConfig $sshConfig */
         $sshConfig = $this->sshConfig;
 
         $cert = $certifier->getExistingCertificate();
@@ -52,7 +50,6 @@ class SshCertInfoCommand extends CommandBase
             $cert = $certifier->generateCertificate($cert);
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $properties = [
             'filename' => $cert->certificateFilename(),

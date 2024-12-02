@@ -120,9 +120,7 @@ abstract class VariableCommandBase extends CommandBase
      */
     protected function displayVariable(ApiResourceBase $variable)
     {
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $properties = $variable->getProperties();

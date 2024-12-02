@@ -49,7 +49,6 @@ class LocalCleanCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        /** @var LocalBuild $builder */
         $builder = $this->localBuild;
         $result = $builder->cleanBuilds(
             $projectRoot,

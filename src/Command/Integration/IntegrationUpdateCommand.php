@@ -117,7 +117,6 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this->displayIntegration($integration);
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

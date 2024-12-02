@@ -36,7 +36,6 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
         }
 
         $confirmText = sprintf('Delete the integration <info>%s</info> (type: %s)?', $integration->id, $integration->type);
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
@@ -49,7 +48,6 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
         $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

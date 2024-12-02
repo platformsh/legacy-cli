@@ -94,7 +94,6 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        /** @var Table $table */
         $table = $this->table;
         $table->renderSimple($values, $headings);
 
@@ -160,7 +159,6 @@ class EnvironmentInfoCommand extends CommandBase
         $rebuildProperties = ['enable_smtp', 'restrict_robots'];
         $success = true;
         if ($result->countActivities() && !$noWait) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {

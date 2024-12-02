@@ -35,7 +35,6 @@ class ProjectCurlCommand extends CommandBase
 
         $url = $this->getSelectedProject()->getUri();
 
-        /** @var CurlCli $curl */
         $curl = $this->curlCli;
 
         return $curl->run($url, $input, $output);

@@ -79,7 +79,6 @@ class AllMetricsCommand extends MetricsCommandBase
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $this->validateInput($input, false, true);
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
@@ -125,7 +124,6 @@ class AllMetricsCommand extends MetricsCommandBase
         ]);
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',

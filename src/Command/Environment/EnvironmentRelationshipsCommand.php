@@ -38,7 +38,6 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
@@ -53,7 +52,6 @@ class EnvironmentRelationshipsCommand extends CommandBase
             }
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $relationships, $input->getOption('property'));
 

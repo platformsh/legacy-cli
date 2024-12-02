@@ -142,7 +142,6 @@ abstract class DomainCommandBase extends CommandBase
                                 $choices[$productionDomain->name] = $productionDomain->name;
                             }
                         }
-                        /** @var QuestionHelper $questionHelper */
                         $questionHelper = $this->questionHelper;
                         $questionText = '<options=bold>Attachment</> (<info>--attach</info>)'
                             . "\nA non-production domain must be attached to an existing production domain."

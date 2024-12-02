@@ -68,10 +68,8 @@ EOF;
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $host = $this->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
-        /** @var Mount $mountService */
         $mountService = $this->mount;
         if ($host instanceof LocalHost) {
-            /** @var RemoteEnvVars $envVars */
             $envVars = $this->remoteEnvVars;
             $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
             $mounts = $mountService->mountsFromConfig($config);
@@ -159,7 +157,6 @@ EOF;
             $rows[] = $row;
         }
 
-        /** @var Table $table */
         $table = $this->table;
         $table->render($rows, $this->tableHeader);
 

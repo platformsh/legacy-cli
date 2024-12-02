@@ -43,9 +43,7 @@ class UserListCommand extends UserCommandBase
 
         $project = $this->getSelectedProject();
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];

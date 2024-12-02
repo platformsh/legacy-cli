@@ -31,7 +31,6 @@ class OrganizationCurlCommand extends OrganizationCommandBase
         $apiUri = new Uri($this->config->getApiUrl());
         $absoluteUrl = $apiUri->withPath($organization->getUri());
 
-        /** @var CurlCli $curl */
         $curl = $this->curlCli;
         return $curl->run($absoluteUrl, $input, $output);
     }

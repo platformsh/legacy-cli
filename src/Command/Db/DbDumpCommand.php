@@ -49,7 +49,6 @@ class DbDumpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var Relationships $relationships */
         $relationships = $this->relationships;
 
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
@@ -65,10 +64,8 @@ class DbDumpCommand extends CommandBase
         $schemaOnly = $input->getOption('schema-only');
         $projectRoot = $this->getProjectRoot();
 
-        /** @var Filesystem $fs */
         $fs = $this->filesystem;
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $database = $relationships->chooseDatabase($host, $input, $output);
@@ -114,7 +111,6 @@ class DbDumpCommand extends CommandBase
             }
             $schema = null;
             if (!empty($choices)) {
-                /** @var QuestionHelper $questionHelper */
                 $questionHelper = $this->questionHelper;
                 $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
             }
@@ -282,7 +278,6 @@ class DbDumpCommand extends CommandBase
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
         if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with((string) $dumpFile, $projectRoot)) {
-            /** @var Git $git */
             $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');

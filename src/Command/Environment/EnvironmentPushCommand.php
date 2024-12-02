@@ -63,7 +63,6 @@ class EnvironmentPushCommand extends CommandBase
     {
         $this->warnAboutDeprecatedOptions(['branch'], 'The option --%s is deprecated and will be removed in future. Use --activate, which has the same effect.');
 
-        /** @var Git $git */
         $git = $this->git;
         $gitRoot = $git->getRoot();
 
@@ -116,7 +115,6 @@ class EnvironmentPushCommand extends CommandBase
 
         $this->debug(sprintf('Source revision: %s', $sourceRevision));
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         // Find the target branch name (--target, the name of the current
@@ -195,7 +193,6 @@ class EnvironmentPushCommand extends CommandBase
 
         $activities = [];
 
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
 
         $remoteName = $this->config->get('detection.git_remote_name');
@@ -261,11 +258,9 @@ class EnvironmentPushCommand extends CommandBase
 
             // Perform the push, capturing the Process object so that the STDERR
             // output can be read.
-            /** @var Shell $shell */
             $shell = $this->shell;
             $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv($gitUrl), $this->config->get('api.git_push_timeout'));
             if ($process->getExitCode() !== 0) {
-                /** @var SshDiagnostics $diagnostics */
                 $diagnostics = $this->sshDiagnostics;
                 $diagnostics->diagnoseFailure($project->getGitUrl(), $process);
                 return $process->getExitCode();
@@ -335,7 +330,6 @@ class EnvironmentPushCommand extends CommandBase
 
         // Wait if there are still activities.
         if ($this->shouldWait($input) && !empty($activities)) {
-            /** @var ActivityMonitor $monitor */
             $monitor = $this->activityMonitor;
             $success = $monitor->waitMultiple($activities, $project);
             if (!$success) {
@@ -432,7 +426,6 @@ class EnvironmentPushCommand extends CommandBase
         if ($targetEnvironment && $targetEnvironment->is_dirty) {
             $targetEnvironment->refresh();
         }
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$targetEnvironment) {
             $questionText = sprintf('Create <info>%s</info> as an active environment?', $target);

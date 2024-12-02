@@ -66,7 +66,6 @@ class RunCommand extends CommandBase
             return 0;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $operationName = $input->getArgument('operation');
@@ -129,7 +128,6 @@ class RunCommand extends CommandBase
 
         $success = true;
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $monitor */
             $monitor = $this->activityMonitor;
             $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

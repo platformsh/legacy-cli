@@ -53,9 +53,7 @@ class BackupListCommand extends CommandBase
 
         $environment = $this->getSelectedEnvironment();
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $backups = $environment->getBackups((int) $input->getOption('limit'));

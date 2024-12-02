@@ -37,9 +37,7 @@ class VersionListCommand extends CommandBase
         $response = $httpClient->get($environment->getLink('#versions'));
         $data = Utils::jsonDecode((string) $response->getBody(), true);
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $header = ['id' => 'ID', 'commit' => 'Commit', 'locked' => 'Locked', 'routing_percentage' => 'Routing %'];

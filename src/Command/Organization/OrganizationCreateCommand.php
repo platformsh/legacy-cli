@@ -62,7 +62,6 @@ END_HELP;
         // Ensure login before presenting the form.
         $client = $this->api->getClient();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $form = $this->getForm();
         if (($name = $input->getOption('name')) && $input->getOption('label') === null) {

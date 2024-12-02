@@ -32,7 +32,6 @@ class TeamProjectDeleteCommand extends TeamCommandBase
         if (!$team) {
             return 1;
         }
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $teamProjects = $this->loadTeamProjects($team);
