@@ -238,11 +238,11 @@ class Selector
     /**
      * @param InputInterface $input
      * @param SelectorConfig $config
-     * @param Selection $selection
+     * @param Selection|null $selection
      * @param RemoteContainerInterface|null $remoteContainer
      * @return HostInterface
      */
-    public function selectHost(InputInterface $input, SelectorConfig $config, Selection $selection, $remoteContainer = null): LocalHost|RemoteHost
+    public function selectHost(InputInterface $input, ?SelectorConfig $config = null, ?Selection $selection = null, ?RemoteContainerInterface $remoteContainer = null): HostInterface
     {
         if ($config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->debug('Selected host: localhost');
@@ -251,12 +251,10 @@ class Selector
         }
 
         if ($remoteContainer === null) {
-            if (!$selection->hasEnvironment()) {
-                $config->envRequired = true;
-                if (!$config->chooseEnvFilter) {
-                    $config->chooseEnvFilter = SelectorConfig::filterEnvsMaybeActive();
-                }
-                $selection = $this->getSelection($input, new SelectorConfig(envRequired: true, chooseEnvFilter: $config->chooseEnvFilter ?: SelectorConfig::filterEnvsMaybeActive()));
+            if (!$selection) {
+                $config = $config ? $config->with(envRequired: true, chooseEnvFilter: $config->chooseEnvFilter ?: SelectorConfig::filterEnvsMaybeActive())
+                    : new SelectorConfig(envRequired: true, chooseEnvFilter: $config->chooseEnvFilter ?: SelectorConfig::filterEnvsMaybeActive());
+                $selection = $this->getSelection($input, $config);
             }
             $remoteContainer = $this->selectRemoteContainer($selection->getEnvironment(), $input, $selection->getAppName());
         }

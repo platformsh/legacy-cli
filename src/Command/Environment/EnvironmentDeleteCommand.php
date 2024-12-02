@@ -6,11 +6,13 @@ use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\ProjectSshInfo;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,10 +23,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentDeleteCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
-    {
+    public function __construct(
+        private readonly ActivityMonitor $activityMonitor,
+        private readonly Api             $api,
+        private readonly Config          $config,
+        private readonly ProjectSshInfo  $projectSshInfo,
+        private readonly QuestionHelper  $questionHelper,
+        private readonly Selector        $selector
+    ) {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
@@ -171,7 +180,7 @@ EOF
         // Add the current environment if nothing is otherwise specified.
         if (!$anythingSpecified
             && empty($selectedEnvironments)
-            && ($current = $this->getCurrentEnvironment($selection->getProject()))) {
+            && ($current = $this->selector->getCurrentEnvironment($selection->getProject()))) {
             $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api->getEnvironmentLabel($current));
             $this->stdErr->writeln('');
             $selectedEnvironments[$current->id] = $current;
@@ -273,7 +282,7 @@ EOF
         }
 
         $codeSourceIntegration = null;
-        if ($this->hasExternalGitHost($selection->getProject())) {
+        if ($this->projectSshInfo->hasExternalGitHost($selection->getProject())) {
             $codeSourceIntegration = $this->api->getCodeSourceIntegration($selection->getProject());
         }
         $integrationPrunesBranches = $codeSourceIntegration && $codeSourceIntegration->getProperty('prune_branches', false);
@@ -395,7 +404,7 @@ EOF
             return $error ? 1 : 0;
         }
 
-        $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
+        $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $selection->getProject(), $input) && !$error;
 
         return $success ? 0 : 1;
     }
@@ -413,14 +422,7 @@ EOF
         return "<$tag>" . implode("</$tag>, <$tag>", $uniqueIds) . "</$tag>";
     }
 
-    /**
-     * @param array $toDeactivate
-     * @param array $toDeleteBranch
-     * @param InputInterface $input
-     *
-     * @return bool
-     */
-    protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, InputInterface $input): bool
+    protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, Project $project, InputInterface $input): bool
     {
         $error = false;
         $deactivateActivities = [];
@@ -438,7 +440,7 @@ EOF
 
         if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            if (!$activityMonitor->waitMultiple($deactivateActivities, $selection->getProject())) {
+            if (!$activityMonitor->waitMultiple($deactivateActivities, $project)) {
                 $error = true;
             }
         }

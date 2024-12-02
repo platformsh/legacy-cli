@@ -65,7 +65,7 @@ class ActivityMonitor
     /**
      * Returns whether we should wait for an operation to complete.
      */
-    protected function shouldWait(InputInterface $input): bool
+    public function shouldWait(InputInterface $input): bool
     {
         if ($input->hasOption('no-wait') && $input->getOption('no-wait')) {
             return false;

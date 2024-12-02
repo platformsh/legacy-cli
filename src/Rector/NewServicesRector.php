@@ -13,6 +13,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Class_;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\ProjectSshInfo;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Rector\Rector\AbstractRector;
@@ -55,10 +56,12 @@ class NewServicesRector extends AbstractRector
 
         $transforms = [
             'addResourcesInitOption' => [ResourcesUtil::class, 'addOption', '_'],
+            'validateResourcesInitInput' => [ResourcesUtil::class, 'validateInput', '_'],
             'warnAboutDeprecatedOptions' => [Io::class, 'warnAboutDeprecatedOptions', '_'],
             'runSubCommand' => [SubCommandRunner::class, 'run', '_'],
             'addWaitOptions' => [ActivityMonitor::class, 'addWaitOptions', [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))]],
             'shouldWait' => [ActivityMonitor::class, 'shouldWait', '_'],
+            'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_']
         ];
 
         $this->traverseNodesWithCallable($node, function (NodeAbstract $node) use ($transforms, &$injections, &$changed) {

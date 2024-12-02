@@ -2,10 +2,10 @@
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
@@ -31,7 +31,9 @@ class DbSqlCommand extends CommandBase
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to use. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');
-        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition())->addAppOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open an SQL console on the remote database');
@@ -47,11 +49,15 @@ class DbSqlCommand extends CommandBase
         }
 
         $relationships = $this->relationships;
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
-        if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
-            $selection = $this->selector->getSelection($input);
-        }
+
+        $selectorConfig = new SelectorConfig(
+            envRequired: false,
+            allowLocalHost: $relationships->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        );
+        // TODO check if this still allows offline use from the container
+        $selection = $this->selector->getSelection($input, $selectorConfig);
+        $host = $selection->getHost();
 
         $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {

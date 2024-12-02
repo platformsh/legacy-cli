@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:restore', description: 'Restore an environment backup')]
 class BackupRestoreCommand extends CommandBase
 {
+    private array $validResourcesInitOptions = ['backup', 'parent', 'default', 'minimum'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
     {
@@ -35,7 +36,7 @@ class BackupRestoreCommand extends CommandBase
             ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
         if ($this->config->get('api.sizing')) {
             $this->addOption('no-resources', null, InputOption::VALUE_NONE, "Do not override the target's existing resource settings.");
-            $this->resourcesUtil->addOption($this->getDefinition(), ['backup', 'parent', 'default', 'minimum']);
+            $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
         }
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -89,7 +90,7 @@ class BackupRestoreCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $project);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $project, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }

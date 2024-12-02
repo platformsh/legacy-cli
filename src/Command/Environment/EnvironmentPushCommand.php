@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\ProjectSshInfo;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -28,7 +29,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentPushCommand extends CommandBase
 {
     const PUSH_FAILURE_EXIT_CODE = 87;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
+
+    private array $validResourcesInitOptions = ['parent', 'default', 'minimum', 'manual'];
+
+    public function __construct(private readonly ActivityMonitor $activityMonitor,
+                                private readonly Api             $api,
+                                private readonly Config          $config,
+                                private readonly Git             $git,
+                                private readonly Io              $io,
+                                private readonly LocalProject    $localProject,
+                                private readonly ProjectSshInfo  $projectSshInfo,
+                                private readonly QuestionHelper  $questionHelper,
+                                private readonly ResourcesUtil   $resourcesUtil,
+                                private readonly Selector        $selector,
+                                private readonly Shell           $shell,
+                                private readonly SshDiagnostics  $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -47,7 +62,8 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
         $this->resourcesUtil->addOption(
-            ['parent', 'default', 'minimum', 'manual'],
+            $this->getDefinition(),
+            $this->validResourcesInitOptions,
             'Set the resources to use for new services: parent, default, minimum, or manual.'
             . "\n" . 'Currently the default is "default" but this will change to "parent" in future.'
         );
@@ -83,7 +99,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->stdErr->writeln('');
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $project);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $project, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }
@@ -183,7 +199,7 @@ class EnvironmentPushCommand extends CommandBase
         } else {
             $targetLabel = $mayBeProduction ? '<comment>' . $target . '</comment>' : '<info>' . $target . '</info>';
             $this->stdErr->writeln(sprintf('Pushing <info>%s</info> to the branch %s of project %s', $source, $targetLabel, $projectLabel));
-            if ($activateRequested && !$this->hasExternalGitHost($project)) {
+            if ($activateRequested && !$this->projectSshInfo->hasExternalGitHost($project)) {
                 $this->stdErr->writeln('It will be created as an active environment.');
             }
         }
@@ -320,7 +336,7 @@ class EnvironmentPushCommand extends CommandBase
                 $targetEnvironment = $this->api->getEnvironment($target, $project);
                 if (!$targetEnvironment) {
                     $this->stdErr->writeln('The target environment <error>' . $target . '</error> cannot be activated (not found).');
-                    if ($this->hasExternalGitHost($project) && ($integration = $this->api->getCodeSourceIntegration($project))) {
+                    if ($this->projectSshInfo->hasExternalGitHost($project) && ($integration = $this->api->getCodeSourceIntegration($project))) {
                         $this->stdErr->writeln(sprintf("Environments may be created through the project's <info>%s</info> integration.", $integration->type));
                         if ($this->config->isCommandEnabled('integration:get')) {
                             $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
@@ -423,7 +439,7 @@ class EnvironmentPushCommand extends CommandBase
         // The environment cannot be created via a push if the Git host is
         // external. This would indicate that a code source integration is
         // enabled on the project (e.g. with GitHub, GitLab or Bitbucket).
-        if (!$targetEnvironment && $this->hasExternalGitHost($project)) {
+        if (!$targetEnvironment && $this->projectSshInfo->hasExternalGitHost($project)) {
             return false;
         }
 

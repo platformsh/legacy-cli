@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Config;
@@ -41,12 +42,7 @@ abstract class DomainCommandBase extends CommandBase
         $this->selector = $selector;
     }
 
-    /**
-     * @param InputInterface $input
-     *
-     * @return bool
-     */
-    protected function validateDomainInput(InputInterface $input)
+    protected function validateDomainInput(InputInterface $input, Selection $selection): bool
     {
         $this->domainName = $input->getArgument('name');
         if (!$this->validDomain($this->domainName)) {

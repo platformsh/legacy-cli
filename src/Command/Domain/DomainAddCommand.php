@@ -48,9 +48,9 @@ class DomainAddCommand extends DomainCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['replace'], 'The option --replace has been renamed to --attach.');
 
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
 
-        if (!$this->validateDomainInput($input)) {
+        if (!$this->validateDomainInput($input, $selection)) {
             return 1;
         }
 
@@ -58,7 +58,7 @@ class DomainAddCommand extends DomainCommandBase
 
         $project = $selection->getProject();
         $environment = $selection->getEnvironment();
-        $this->ensurePrintSelectedEnvironment(true);
+        $this->selector->ensurePrintedSelection($selection);
 
         $this->stdErr->writeln(sprintf('Adding the domain: <info>%s</info>', $this->domainName));
         if (!empty($this->attach)) {
