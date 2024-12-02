@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command;
 
 use GuzzleHttp\Exception\BadResponseException;
-use Platformsh\Cli\Command\Self\SelfInstallCommand;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -25,9 +24,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     const STABILITY_STABLE = 'STABLE';
     const STABILITY_BETA = 'BETA';
     const STABILITY_DEPRECATED = 'DEPRECATED';
-
-    /** @var ?bool */
-    private static $checkedSelfInstall;
 
     /** @var ?bool */
     private static $printedApiTokenWarning;
@@ -134,66 +130,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             && isset($GLOBALS['argv'])
             && array_intersect($GLOBALS['argv'], ['-n', '--no', '-y', '---yes'])) {
             $input->setInteractive(false);
-            return;
         }
-
-        $this->checkSelfInstall();
-    }
-
-    /**
-     * Check for self-installation.
-     */
-    protected function checkSelfInstall()
-    {
-        // Avoid checking more than once in this process.
-        if (self::$checkedSelfInstall) {
-            return;
-        }
-        self::$checkedSelfInstall = true;
-
-        $config = $this->config();
-
-        // Avoid if disabled.
-        if (!$config->getWithDefault('application.prompt_self_install', true)
-            || !$config->isCommandEnabled('self:install')) {
-            return;
-        }
-
-        // Avoid if already installed.
-        if (file_exists($config->getUserConfigDir() . DIRECTORY_SEPARATOR . SelfInstallCommand::INSTALLED_FILENAME)) {
-            return;
-        }
-
-        // Avoid if other CLIs are installed.
-        if ($this->isWrapped() || $this->otherCLIsInstalled()) {
-            return;
-        }
-
-        // Stop if already prompted and declined.
-        /** @var \Platformsh\Cli\Service\State $state */
-        $state = $this->getService('state');
-        if ($state->get('self_install.last_prompted') !== false) {
-            return;
-        }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        $this->stdErr->writeln('CLI resource files can be installed automatically. They provide support for autocompletion and other features.');
-        $questionText = 'Do you want to install these files?';
-        if (file_exists($config->getUserConfigDir() . DIRECTORY_SEPARATOR . '/shell-config.rc')) {
-            $questionText = 'Do you want to complete the installation?';
-        }
-        $answer = $questionHelper->confirm($questionText);
-        $state->set('self_install.last_prompted', time());
-        $this->stdErr->writeln('');
-
-        if ($answer) {
-            $this->runOtherCommand('self:install');
-        } else {
-            $this->stdErr->writeln('To install at another time, run: <info>' . $config->get('application.executable') . ' self:install</info>');
-        }
-
-        $this->stdErr->writeln('');
     }
 
     /**

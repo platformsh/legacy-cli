@@ -10,6 +10,7 @@ use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\LegacyMigration;
+use Platformsh\Cli\Service\SelfInstallChecker;
 use Platformsh\Cli\Service\SelfUpdateChecker;
 use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Config\FileLocator;
@@ -343,18 +344,25 @@ class Application extends ParentApplication
         }
 
         // Check for automatic updates.
-        $noChecks = in_array($command->getName(), ['welcome', '_completion']);
+        $noChecks = $command->getName() == '_completion';
+        $container = $this->container();
         if ($input->isInteractive() && !$noChecks) {
             /** @var SelfUpdateChecker $checker */
-            $checker = $this->container()->get(SelfUpdateChecker::class);
+            $checker = $container->get(SelfUpdateChecker::class);
             $checker->checkUpdates();
         }
 
         if (!$noChecks && $command->getName() !== 'legacy-migrate') {
             /** @var LegacyMigration $legacyMigration */
-            $legacyMigration = $this->container()->get(LegacyMigration::class);
+            $legacyMigration = $container->get(LegacyMigration::class);
             $legacyMigration->checkMigrateFrom3xTo4x();
             $legacyMigration->checkMigrateToGoWrapper();
+        }
+
+        if (!$noChecks && $command->getName() !== 'self::install') {
+            /** @var SelfInstallChecker $selfInstallChecker */
+            $selfInstallChecker = $container->get(SelfInstallChecker::class);
+            $selfInstallChecker->checkSelfInstall();
         }
 
         return parent::doRunCommand($command, $input, $output);

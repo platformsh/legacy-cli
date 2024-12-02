@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Local\LocalProject;
-use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -19,6 +18,7 @@ class LegacyMigration
     public function __construct(
         private readonly Config           $config,
         private readonly InputInterface   $input,
+        private readonly InstallationInfo $installationInfo,
         private readonly LocalProject     $localProject,
         private readonly QuestionHelper   $questionHelper,
         private readonly SubCommandRunner $subCommandRunner,
@@ -108,7 +108,7 @@ class LegacyMigration
         }
         self::$promptedDeleteOldCli = true;
 
-        if ($this->config->isWrapped() || !$this->otherCLIsInstalled()) {
+        if ($this->config->isWrapped() || !$this->installationInfo->otherCLIsInstalled()) {
             return;
         }
         $pharPath = \Phar::running(false);
@@ -178,42 +178,6 @@ class LegacyMigration
         $this->state->set('migrate.last_prompted', time());
     }
 
-    private function cliPath(): string
-    {
-        $path = CLI_ROOT . '/bin/platform';
-        if (defined('CLI_FILE')) {
-            $path = CLI_FILE;
-        }
-        if (extension_loaded('Phar') && ($pharPath = \Phar::running(false))) {
-            $path = $pharPath;
-        }
-        return $path;
-    }
-
-    /**
-     * Returns whether other instances are installed of the CLI.
-     *
-     * Finds programs with the same executable name in the PATH.
-     *
-     * @return bool
-     */
-    private function otherCLIsInstalled(): bool
-    {
-        static $otherPaths;
-        if ($otherPaths === null) {
-            $thisPath = $this->cliPath();
-            $paths = (new OsUtil())->findExecutables($this->config->get('application.executable'));
-            $otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath) {
-                $realpath = realpath($p);
-                return $realpath && $realpath !== $thisPath;
-            }));
-            if (!empty($otherPaths)) {
-                $this->debug('Other CLI(s) found: ' . implode(", ", $otherPaths));
-            }
-        }
-        return !empty($otherPaths);
-    }
-
     /**
      * Detects if running within a CI or local container system.
      *
@@ -260,17 +224,5 @@ class LegacyMigration
     private function isTerminal($descriptor): bool
     {
         return !function_exists('posix_isatty') || posix_isatty($descriptor);
-    }
-
-    /**
-     * Prints a debug message.
-     *
-     * @todo deduplicate this
-     *
-     * @param string $message
-     */
-    private function debug(string $message): void
-    {
-        $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
 }
