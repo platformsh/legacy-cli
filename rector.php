@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Rector\InjectCommandServicesRector;
+use Platformsh\Cli\Rector\UseSelectorServiceRector;
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
 use Rector\Symfony\Symfony61\Rector\Class_\CommandConfigureToAttributeRector;
@@ -18,6 +19,7 @@ return RectorConfig::configure()
     ->withRules([
         CommandConfigureToAttributeRector::class,
         InjectCommandServicesRector::class,
+        UseSelectorServiceRector::class,
     ])
     ->withImportNames(importShortClasses: false, removeUnusedImports: true)
     ->withConfiguredRule(MethodCallToPropertyFetchRector::class,

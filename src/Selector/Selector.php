@@ -106,11 +106,11 @@ class Selector
         if (LocalHost::conflictsWithCommandLineOptions($input, $envPrefix)) {
             $allowLocalHost = false;
         } else {
-            $allowLocalHost = $config->shouldAllowLocalHost();
+            $allowLocalHost = $config->allowLocalHost;
         }
 
         // If the user is not logged in, then return the localhost without selecting the project/environment.
-        if ($allowLocalHost && !$config->shouldRequireApiOnLocal() && !$this->api->isLoggedIn()) {
+        if ($allowLocalHost && !$config->requireApiOnLocal && !$this->api->isLoggedIn()) {
             return new Selection(null, null, getenv($envPrefix . 'APPLICATION_NAME') ?: null, null, $this->hostFactory->local());
         }
 
@@ -143,7 +143,7 @@ class Selector
         $envOptionName = 'environment';
         $environment = null;
 
-        $envArgName = $config->getEnvArgName();
+        $envArgName = $config->envArgName;
         if ($input->hasArgument($envArgName)
             && $input->getArgument($envArgName) !== null
             && $input->getArgument($envArgName) !== []) {
@@ -168,7 +168,7 @@ class Selector
             if ($input->getOption($envOptionName) !== null) {
                 $environmentId = $input->getOption($envOptionName);
             }
-            $environment = $this->selectEnvironment($input, $project, $environmentId, $config->isEnvRequired());
+            $environment = $this->selectEnvironment($input, $project, $environmentId, $config->envRequired);
         }
 
         // Select the app.
@@ -199,7 +199,7 @@ class Selector
         }
 
         $host = null;
-        if ($config->shouldAllowLocalHost()) {
+        if ($config->allowLocalHost) {
             $host = $this->hostFactory->local();
         } elseif ($remoteContainer !== null && $environment !== null) {
             $host = $this->hostFactory->remote($remoteContainer->getSshUrl(), $environment);
@@ -244,7 +244,7 @@ class Selector
      */
     public function selectHost(InputInterface $input, SelectorConfig $config, Selection $selection, $remoteContainer = null): LocalHost|RemoteHost
     {
-        if ($config->shouldAllowLocalHost() && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
+        if ($config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->debug('Selected host: localhost');
 
             return new LocalHost($this->shell);
@@ -252,11 +252,11 @@ class Selector
 
         if ($remoteContainer === null) {
             if (!$selection->hasEnvironment()) {
-                $config->setEnvRequired(true);
-                if (!$config->getChooseEnvFilter()) {
-                    $config->setChooseEnvFilter(SelectorConfig::filterEnvsMaybeActive());
+                $config->envRequired = true;
+                if (!$config->chooseEnvFilter) {
+                    $config->chooseEnvFilter = SelectorConfig::filterEnvsMaybeActive();
                 }
-                $selection = $this->getSelection($input, $config);
+                $selection = $this->getSelection($input, new SelectorConfig(envRequired: true, chooseEnvFilter: $config->chooseEnvFilter ?: SelectorConfig::filterEnvsMaybeActive()));
             }
             $remoteContainer = $this->selectRemoteContainer($selection->getEnvironment(), $input, $selection->getAppName());
         }
@@ -307,7 +307,7 @@ class Selector
             return $project;
         }
 
-        if ($config->shouldDetectCurrentEnv()) {
+        if ($config->detectCurrentEnv) {
             $currentProject = $this->getCurrentProject();
             if ($currentProject) {
                 return $currentProject;
@@ -328,7 +328,7 @@ class Selector
             }
         }
 
-        if ($config->shouldDetectCurrentEnv()) {
+        if ($config->detectCurrentEnv) {
             throw new RootNotFoundException(
                     "Could not determine the current project."
                     . "\n\nSpecify it using --project, or go to a project directory."
@@ -414,11 +414,11 @@ class Selector
             return $environment;
         }
 
-        if ($config->shouldDetectCurrentEnv() && ($environment = $this->getCurrentEnvironment($project))) {
+        if ($config->detectCurrentEnv && ($environment = $this->getCurrentEnvironment($project))) {
             return $environment;
         }
 
-        if ($config->shouldSelectDefaultEnv()) {
+        if ($config->selectDefaultEnv) {
             $this->debug('No environment specified or detected: finding a default...');
             $environments = $this->api->getEnvironments($project);
             $environment = $this->api->getDefaultEnvironment($environments, $project);
@@ -431,7 +431,7 @@ class Selector
 
         if ($required && $input->isInteractive()) {
             $environments = $this->api->getEnvironments($project);
-            $filter = $filter ?: $config->getChooseEnvFilter();
+            $filter = $filter ?: $config->chooseEnvFilter;
             if ($filter !== null) {
                 $environments = array_filter($environments, $filter);
             }
@@ -450,7 +450,7 @@ class Selector
         }
 
         if ($required) {
-            if ($this->getProjectRoot() || !$config->shouldDetectCurrentEnv()) {
+            if ($this->getProjectRoot() || !$config->detectCurrentEnv) {
                 $message = 'Could not determine the current environment.'
                     . "\n" . 'Specify it manually using --environment (-e).';
             } else {
@@ -488,7 +488,7 @@ class Selector
                 }
             }
             asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
-            return $this->questionHelper->askInput($config->getEnterProjectText(), null, array_values($autocomplete), function ($value) use ($autocomplete): string {
+            return $this->questionHelper->askInput($config->enterProjectText, null, array_values($autocomplete), function ($value) use ($autocomplete): string {
                 list($id, ) = explode(' - ', $value);
                 if (empty(trim($id))) {
                     throw new InvalidArgumentException('A project ID is required');
@@ -506,7 +506,7 @@ class Selector
         }
         asort($projectList, SORT_NATURAL | SORT_FLAG_CASE);
 
-        return $this->questionHelper->choose($projectList, $config->getChooseProjectText(), null, false);
+        return $this->questionHelper->choose($projectList, $config->chooseProjectText, null, false);
     }
 
     /**
@@ -532,7 +532,7 @@ class Selector
             $ids = array_keys($environments);
             sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
-            $id = $this->questionHelper->askInput($config->getEnterEnvText(), $defaultEnvironmentId, array_keys($environments), function (string $value) use ($environments): string {
+            $id = $this->questionHelper->askInput($config->enterEnvText, $defaultEnvironmentId, array_keys($environments), function (string $value) use ($environments): string {
                 if (!isset($environments[$value])) {
                     throw new \RuntimeException('Environment not found: ' . $value);
                 }
@@ -546,7 +546,7 @@ class Selector
             }
             asort($environmentList, SORT_NATURAL | SORT_FLAG_CASE);
 
-            $text = $config->getChooseEnvText();
+            $text = $config->chooseEnvText;
             if ($defaultEnvironmentId) {
                 $text .= "\n" . 'Default: <question>' . $defaultEnvironmentId . '</question>';
             }
