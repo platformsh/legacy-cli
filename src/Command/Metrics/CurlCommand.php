@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:curl', description: "Run an authenticated cURL request on an environment's metrics API")]
 class CurlCommand extends MetricsCommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {

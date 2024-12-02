@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'self:stats', description: 'View stats on GitHub package downloads')]
 class SelfStatsCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
     private $tableHeader = ['Release', 'Date', 'Asset', 'Downloads'];
 

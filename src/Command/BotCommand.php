@@ -11,8 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'bot', description: 'The Platform.sh Bot')]
 class BotCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected bool $hiddenInList = true;
 
     protected function configure()
     {

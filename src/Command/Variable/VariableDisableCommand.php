@@ -13,8 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:disable', description: 'Disable an enabled environment-level variable')]
 class VariableDisableCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
 
     /**
      * {@inheritdoc}

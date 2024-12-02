@@ -10,11 +10,13 @@ class InstallationInfo
 {
     private static ?array $otherPaths = null;
 
+    private OsUtil $osUtil;
+
     public function __construct(
         private readonly Config $config,
-        private readonly OsUtil $osUtil,
         private readonly IO $io)
     {
+        $this->osUtil = new OsUtil();
     }
 
     /**
@@ -27,7 +29,7 @@ class InstallationInfo
         if (self::$otherPaths === null) {
             $thisPath = $this->cliPath();
             $paths = $this->osUtil->findExecutables($this->config->get('application.executable'));
-            self::$otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath) {
+            self::$otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath): bool {
                 $realpath = realpath($p);
                 return $realpath && $realpath !== $thisPath;
             }));

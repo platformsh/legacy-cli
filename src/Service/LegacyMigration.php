@@ -19,6 +19,7 @@ class LegacyMigration
         private readonly Config           $config,
         private readonly InputInterface   $input,
         private readonly InstallationInfo $installationInfo,
+        private readonly IO               $io,
         private readonly LocalProject     $localProject,
         private readonly QuestionHelper   $questionHelper,
         private readonly SubCommandRunner $subCommandRunner,
@@ -205,24 +206,10 @@ class LegacyMigration
         $envPrefix = $this->config->get('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
             && basename(getenv('SHELL')) === 'dash'
-            && !$this->isTerminal(STDIN)) {
+            && !$this->io->isTerminal(STDIN)) {
             return true;
         }
 
         return false;
-    }
-
-    /**
-     * Checks if running in a terminal.
-     *
-     * @todo deduplicate this
-     *
-     * @param resource|int $descriptor
-     *
-     * @return bool
-     */
-    private function isTerminal($descriptor): bool
-    {
-        return !function_exists('posix_isatty') || posix_isatty($descriptor);
     }
 }

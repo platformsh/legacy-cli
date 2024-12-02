@@ -11,7 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:logout', description: 'Log out', aliases: ['logout'])]
 class LogoutCommand extends CommandBase
 {
-    protected $local = true;
 
     protected function configure()
     {

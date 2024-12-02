@@ -10,8 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'welcome', description: 'Default (welcome) command')]
 class WelcomeCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected bool $hiddenInList = true;
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
