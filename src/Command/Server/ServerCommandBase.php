@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,11 +14,21 @@ use Symfony\Component\Process\Process;
 
 abstract class ServerCommandBase extends CommandBase
 {
+    private readonly Shell $shell;
+    private readonly LocalProject $localProject;
+    private readonly Config $config;
     protected $serverInfo;
+    #[Required]
+    public function autowire(Config $config, LocalProject $localProject, Shell $shell) : void
+    {
+        $this->config = $config;
+        $this->localProject = $localProject;
+        $this->shell = $shell;
+    }
 
     public function isEnabled(): bool
     {
-        return $this->config()->isExperimentEnabled('enable_local_server')
+        return $this->config->isExperimentEnabled('enable_local_server')
             && parent::isEnabled();
     }
 
@@ -96,14 +110,14 @@ abstract class ServerCommandBase extends CommandBase
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getWritableUserDir() . '/local-servers.json';
+            $filename = $this->config->getWritableUserDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
             }
         }
 
         if ($running) {
-            return array_filter($this->serverInfo, function ($server) {
+            return array_filter($this->serverInfo, function (array $server): bool {
                 if ($this->isProcessDead($server['pid'])) {
                     $this->stopServer($server['address']);
                     return false;
@@ -118,7 +132,7 @@ abstract class ServerCommandBase extends CommandBase
 
     protected function saveServerInfo()
     {
-        $filename = $this->config()->getWritableUserDir() . '/local-servers.json';
+        $filename = $this->config->getWritableUserDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
             if (!file_put_contents($filename, json_encode($this->serverInfo))) {
                 throw new \RuntimeException('Failed to write server info to: ' . $filename);
@@ -206,7 +220,7 @@ abstract class ServerCommandBase extends CommandBase
      */
     protected function getPidFile($address)
     {
-        return $this->config()->getWritableUserDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
+        return $this->config->getWritableUserDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
 
     /**
@@ -225,10 +239,10 @@ abstract class ServerCommandBase extends CommandBase
     protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig, array $env = [])
     {
         if (isset($appConfig['type'])) {
-            $type = explode(':', $appConfig['type'], 2);
+            $type = explode(':', (string) $appConfig['type'], 2);
             $version = isset($type[1]) ? $type[1] : false;
-            /** @var \Platformsh\Cli\Service\Shell $shell */
-            $shell = $this->getService('shell');
+            /** @var Shell $shell */
+            $shell = $this->shell;
             $localPhpVersion = $shell->getPhpVersion();
             if ($type[0] === 'php' && $version && version_compare($localPhpVersion, $version, '<')) {
                 $this->stdErr->writeln(sprintf(
@@ -270,7 +284,7 @@ abstract class ServerCommandBase extends CommandBase
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         if (isset($env[$envPrefix . 'APP_DIR'])) {
             $process->setWorkingDirectory($env[$envPrefix . 'APP_DIR']);
         }
@@ -289,7 +303,7 @@ abstract class ServerCommandBase extends CommandBase
 
         // Ensure $_ENV is populated.
         $variables_order = ini_get('variables_order');
-        if (strpos($variables_order, 'E') === false) {
+        if (!str_contains($variables_order, 'E')) {
             $phpConfig['variables_order'] = 'E' . $variables_order;
         }
 
@@ -304,7 +318,7 @@ abstract class ServerCommandBase extends CommandBase
      * @return string
      *   The absolute path to the router file.
      */
-    protected function createRouter($projectRoot)
+    protected function createRouter(string $projectRoot)
     {
         static $created = [];
 
@@ -313,7 +327,7 @@ abstract class ServerCommandBase extends CommandBase
             throw new \RuntimeException(sprintf('Router not found: <error>%s</error>', $router_src));
         }
 
-        $router = $projectRoot . '/' . $this->config()->get('local.local_dir') . '/' . basename($router_src);
+        $router = $projectRoot . '/' . $this->config->get('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
                 throw new \RuntimeException(sprintf('Could not create router file: <error>%s</error>', $router));
@@ -345,10 +359,10 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return array
      */
-    protected function getRoutesList($projectRoot, $address)
+    protected function getRoutesList(string $projectRoot, string $address)
     {
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        /** @var LocalProject $localProject */
+        $localProject = $this->localProject;
         $routesConfig = (array) $localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
 
         $routes = [];
@@ -356,10 +370,10 @@ abstract class ServerCommandBase extends CommandBase
             // If the route starts with http://{default}, replace it with the
             // $address. This can't accommodate subdomains or HTTPS routes, so
             // those are ignored.
-            $url = strpos($route, 'http://{default}') === 0
+            $url = str_starts_with($route, 'http://{default}')
                 ? 'http://' . $address . substr($route, 16)
                 : $route;
-            if (strpos($url, '{default}') !== false) {
+            if (str_contains($url, '{default}')) {
                 continue;
             }
             $routes[$url] = $config + ['original_url' => $route];
@@ -378,10 +392,10 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return array
      */
-    protected function createEnv($projectRoot, $docRoot, $address, array $appConfig)
+    protected function createEnv(string $projectRoot, $docRoot, $address, array $appConfig)
     {
         $realDocRoot = realpath($docRoot);
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         $env = [
             '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',
@@ -393,7 +407,7 @@ abstract class ServerCommandBase extends CommandBase
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config()->get('local.build_dir')) {
+        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->get('local.build_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 
@@ -403,7 +417,7 @@ abstract class ServerCommandBase extends CommandBase
                 if ($project) {
                     $env[$envPrefix . 'PROJECT'] = $project->id;
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Ignore errors
             }
         }

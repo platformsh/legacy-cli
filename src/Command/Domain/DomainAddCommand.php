@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Model\EnvironmentDomain;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainAddCommand extends DomainCommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -44,8 +51,8 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
         $project = $this->getSelectedProject();
         $environment = $this->getSelectedEnvironment();
@@ -60,7 +67,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         try {
             $result = EnvironmentDomain::add($httpClient, $environment, $this->domainName, $this->attach, $this->sslOptions);
         } catch (ClientException $e) {
@@ -80,15 +87,15 @@ class DomainAddCommand extends DomainCommandBase
                 }
                 if ($code === 409) {
                     $data = Utils::jsonDecode((string) $response->getBody(), true);
-                    if (isset($data['message'], $data['detail']['conflicting_domain']) && strpos($data['message'], 'already has a domain with the same replacement_for') !== false) {
+                    if (isset($data['message'], $data['detail']['conflicting_domain']) && str_contains((string) $data['message'], 'already has a domain with the same replacement_for')) {
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln(sprintf(
                             'The environment %s already has a domain with the same <comment>--attach</comment> value: <error>%s</error>',
-                            $this->api()->getEnvironmentLabel($environment, 'comment'), $data['detail']['conflicting_domain']
+                            $this->api->getEnvironmentLabel($environment, 'comment'), $data['detail']['conflicting_domain']
                         ));
                         return 1;
                     }
-                    if (isset($data['message'], $data['detail']['prod-domains']) && strpos($data['message'], 'has no corresponding domain set on the production environment') !== false) {
+                    if (isset($data['message'], $data['detail']['prod-domains']) && str_contains((string) $data['message'], 'has no corresponding domain set on the production environment')) {
                         $this->stdErr->writeln('');
                         $this->stdErr->writeln(sprintf(
                             'The <comment>--attach</comment> domain does not exist on a production environment: <error>%s</error>',
@@ -108,8 +115,8 @@ class DomainAddCommand extends DomainCommandBase
         }
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

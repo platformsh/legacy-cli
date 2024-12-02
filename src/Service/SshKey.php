@@ -10,13 +10,9 @@ use Symfony\Component\Console\Output\OutputInterface;
  * SSH key utilities.
  */
 class SshKey {
-    private $config;
-    private $api;
-    private $stdErr;
+    private readonly OutputInterface $stdErr;
 
-    public function __construct(Config $config, Api $api, OutputInterface $output) {
-        $this->config = $config;
-        $this->api = $api;
+    public function __construct(private readonly Config $config, private readonly Api $api, OutputInterface $output) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
@@ -30,7 +26,7 @@ class SshKey {
      *
      * @return string[]
      */
-    public function defaultKeyNames()
+    public function defaultKeyNames(): array
     {
         return [
             'id_rsa',
@@ -79,7 +75,7 @@ class SshKey {
         $publicKeys = $this->listPublicKeys(true);
         if (\count($publicKeys) === 1) {
             $filename = \reset($publicKeys) ?: '';
-            $identityFile = \substr($filename, 0, \strlen($filename) - 4);
+            $identityFile = \substr((string) $filename, 0, \strlen((string) $filename) - 4);
             if (\in_array(\basename($identityFile), $this->defaultKeyNames(), true)) {
                 return null;
             }
@@ -100,7 +96,7 @@ class SshKey {
      *
      * @return array
      */
-    private function listPublicKeys($reset = false)
+    private function listPublicKeys(bool $reset = false)
     {
         static $publicKeyList;
         if (!isset($publicKeyList) || $reset) {
@@ -114,22 +110,20 @@ class SshKey {
      *
      * @return string[]
      */
-    private function listAccountKeyFingerprints()
+    private function listAccountKeyFingerprints(): array
     {
         $keys = $this->api->getSshKeys();
         if (!count($keys)) {
             return [];
         }
 
-        return \array_map(function (SshKeyModel $sshKey) {
-            return $sshKey->fingerprint;
-        }, $keys);
+        return \array_map(fn(SshKeyModel $sshKey) => $sshKey->fingerprint, $keys);
     }
 
     /**
      * Checks whether the user has an SSH key in ~/.ssh matching their account.
      */
-    public function hasLocalKey()
+    public function hasLocalKey(): bool
     {
         return $this->findIdentityMatchingPublicKeys($this->listAccountKeyFingerprints()) !== null;
     }
@@ -140,10 +134,10 @@ class SshKey {
      * @return string|null
      *   The filename of the key, or null if none is found.
      */
-    public function findIdentityMatchingPublicKeys(array $fingerprints)
+    public function findIdentityMatchingPublicKeys(array $fingerprints): ?string
     {
         foreach ($this->listPublicKeys() as $publicKey) {
-            $privateKey = \substr($publicKey, 0, \strlen($publicKey) - 4);
+            $privateKey = \substr((string) $publicKey, 0, \strlen((string) $publicKey) - 4);
             if (!\file_exists($privateKey)) {
                 continue;
             }
@@ -169,12 +163,12 @@ class SshKey {
      *
      * @return string
      */
-    public function getPublicKeyFingerprint($filename) {
+    public function getPublicKeyFingerprint(string $filename): string {
         $contents = \file_get_contents($filename);
         if ($contents === false) {
             throw new \RuntimeException('Failed to read file: ' . $filename);
         }
-        if (\strpos($contents, ' ') === false) {
+        if (!str_contains($contents, ' ')) {
             throw new \RuntimeException('Invalid public key: ' . $filename);
         }
         list(, $keyB64) = \explode(' ', $contents, 3);

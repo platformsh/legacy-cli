@@ -35,7 +35,7 @@ class EventSubscriber implements EventSubscriberInterface
     /**
      * React to any console errors or exceptions.
      *
-     * @param \Symfony\Component\Console\Event\ConsoleErrorEvent $event
+     * @param ConsoleErrorEvent $event
      */
     public function onError(ConsoleErrorEvent $event): void
     {
@@ -44,7 +44,7 @@ class EventSubscriber implements EventSubscriberInterface
         // Replace Guzzle connect exceptions with a friendlier message. This
         // also prevents the user from seeing two exceptions (one direct from
         // Guzzle, one from RingPHP).
-        if ($error instanceof ConnectException && strpos($error->getMessage(), 'cURL error 6') !== false) {
+        if ($error instanceof ConnectException && str_contains($error->getMessage(), 'cURL error 6')) {
             $request = $error->getRequest();
             $event->setError(new ConnectionFailedException(
                 "Failed to connect to host: " . $request->getUri()->getHost()

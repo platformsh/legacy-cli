@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,6 +10,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TeamDeleteCommand extends TeamCommandBase
 {
 
+    public function __construct(private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -23,8 +28,8 @@ class TeamDeleteCommand extends TeamCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
         if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the team %s?', $this->getTeamLabel($team, 'comment')), false)) {
             return 1;

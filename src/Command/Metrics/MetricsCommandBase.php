@@ -2,6 +2,10 @@
 
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
 use Khill\Duration\Duration;
@@ -22,6 +26,9 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
+    private readonly PropertyFormatter $propertyFormatter;
+    private readonly Config $config;
+    private readonly Api $api;
     const MIN_INTERVAL = 60; // 1 minute
 
     const MIN_RANGE = 300; // 5 minutes
@@ -32,9 +39,9 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * @var bool Whether services have been identified that use high memory.
      */
-    private $foundHighMemoryServices = false;
+    private bool $foundHighMemoryServices = false;
 
-    private $fields = [
+    private array $fields = [
         // Grid.
         'local' => [
             'cpu_used' => "AVG(SUM((`cpu.user` + `cpu.kernel`) / `interval`, 'service', 'instance'), 'service')",
@@ -87,10 +94,17 @@ abstract class MetricsCommandBase extends CommandBase
             'inodes_limit' => "AVG(`disk.inodes.limit`, 'mountpoint')",
         ],
     ];
+    #[Required]
+    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->propertyFormatter = $propertyFormatter;
+    }
 
     public function isEnabled(): bool
     {
-        if (!$this->config()->getWithDefault('api.metrics', false)) {
+        if (!$this->config->getWithDefault('api.metrics', false)) {
             return false;
         }
         return parent::isEnabled();
@@ -131,12 +145,12 @@ abstract class MetricsCommandBase extends CommandBase
     {
         $environmentData = $environment->getData();
         if (!isset($environmentData['_links']['#metrics'])) {
-            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api->getEnvironmentLabel($environment, 'error')));
 
             return false;
         }
         if (!isset($environmentData['_links']['#metrics'][0]['href'], $environmentData['_links']['#metrics'][0]['collection'])) {
-            $this->stdErr->writeln(\sprintf('Unable to find metrics URLs for the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('Unable to find metrics URLs for the environment: %s', $this->api->getEnvironmentLabel($environment, 'error')));
 
             return false;
         }
@@ -150,7 +164,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @param string $dimension
      * @return array<string, string>
      */
-    private function dimensionFields($dimension)
+    private function dimensionFields($dimension): array
     {
         $fields = ['service' => '', 'mountpoint' => '', 'instance' => ''];
         foreach (explode('/', $dimension) as $field) {
@@ -203,8 +217,8 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         // Add fields and expressions to the query based on the requested $fieldNames.
-        $fieldNames = array_map(function ($f) {
-            if (substr($f, 0, 4) === 'tmp_') {
+        $fieldNames = array_map(function ($f): string {
+            if (str_starts_with($f, 'tmp_')) {
                 return substr($f, 4);
             }
             return $f;
@@ -216,7 +230,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         // Select services based on the --service or --type options.
-        $deployment = $this->api()->getCurrentDeployment($environment);
+        $deployment = $this->api->getCurrentDeployment($environment);
         $allServices = array_merge($deployment->webapps, $deployment->services, $deployment->workers);
         $servicesInput = ArrayArgument::getOption($input, 'service');
         $selectedServiceNames = [];
@@ -256,7 +270,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         // Perform the metrics query.
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
         $request = new Request('POST', $metricsQueryUrl, [
             'Content-Type' => 'application/json',
         ], json_encode($query->asArray()));
@@ -355,7 +369,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         if ($to = $input->getOption('to')) {
-            $endTime = \strtotime($to);
+            $endTime = \strtotime((string) $to);
             if (!$endTime) {
                 $this->stdErr->writeln('Failed to parse --to time: ' . $to);
                 return false;
@@ -405,7 +419,7 @@ abstract class MetricsCommandBase extends CommandBase
      *
      * @return int
      */
-    private function defaultInterval($range)
+    private function defaultInterval(int $range): int
     {
         $divisor = 5; // Number of points per time range.
         // Number of seconds to round to:
@@ -455,10 +469,10 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function buildRows(array $values, $fields)
     {
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
-        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
 
         // Create a closure which can sort services by name, putting apps and
         // workers first.
@@ -467,7 +481,7 @@ abstract class MetricsCommandBase extends CommandBase
         $serviceNames = array_keys($deployment->services);
         sort($serviceNames, SORT_NATURAL);
         $nameOrder = array_flip(array_merge($appAndWorkerNames, $serviceNames, ['router']));
-        $sortServices = function ($a, $b) use ($nameOrder) {
+        $sortServices = function ($a, $b) use ($nameOrder): int {
             $aPos = isset($nameOrder[$a]) ? $nameOrder[$a] : 1000;
             $bPos = isset($nameOrder[$b]) ? $nameOrder[$b] : 1000;
             return $aPos > $bPos ? 1 : ($aPos < $bPos ? -1 : 0);
@@ -535,7 +549,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @param array $rows
      * @return array
      */
-    private function mergeRows(array $rows)
+    private function mergeRows(array $rows): array
     {
         $infoKeys = array_flip(['service', 'timestamp', 'instance', 'type']);
         $previous = $previousKey = null;

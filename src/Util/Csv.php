@@ -4,9 +4,6 @@ namespace Platformsh\Cli\Util;
 
 class Csv
 {
-    private $delimiter;
-    private $lineBreak;
-
     /**
      * Csv constructor.
      *
@@ -19,10 +16,8 @@ class Csv
      * @param string $delimiter The delimiter character between cells.
      * @param string $lineBreak The break character(s) between lines.
      */
-    public function __construct($delimiter = ',', $lineBreak = "\r\n")
+    public function __construct(private $delimiter = ',', private $lineBreak = "\r\n")
     {
-        $this->delimiter = $delimiter;
-        $this->lineBreak = $lineBreak;
     }
 
     /**
@@ -37,7 +32,7 @@ class Csv
      *
      * @return string
      */
-    public function format(array $data, $appendLineBreak = true)
+    public function format(array $data, $appendLineBreak = true): string
     {
         return implode($this->lineBreak, array_map([$this, 'formatRow'], $data))
             . ($appendLineBreak ? $this->lineBreak : '');
@@ -50,7 +45,7 @@ class Csv
      *
      * @return string
      */
-    private function formatRow(array $data)
+    private function formatRow(array $data): string
     {
         return implode($this->delimiter, array_map([$this, 'formatCell'], $data));
     }
@@ -62,7 +57,7 @@ class Csv
      *
      * @return string
      */
-    protected function formatCell($cell)
+    protected function formatCell($cell): string|array|null
     {
         // Cast cell data to a string.
         $cell = (string) $cell;

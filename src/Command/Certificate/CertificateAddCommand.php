@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CertificateAddCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -40,8 +45,8 @@ class CertificateAddCommand extends CommandBase
         $result = $project->addCertificate($options['certificate'], $options['key'], $options['chain']);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

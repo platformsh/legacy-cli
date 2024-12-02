@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 class WelcomeCommandTest extends TestCase
 {
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string {
         $output = new BufferedOutput();
         $input = new ArrayInput($args);
         $input->setInteractive(false);
@@ -19,7 +19,7 @@ class WelcomeCommandTest extends TestCase
         return $output->fetch();
     }
 
-    public function testWelcomeOnLocalContainer() {
+    public function testWelcomeOnLocalContainer(): void {
         chdir('/');
         putenv('PLATFORM_PROJECT=test-project');
         putenv('PLATFORM_BRANCH=test-environment');

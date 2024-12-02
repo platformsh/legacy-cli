@@ -59,7 +59,7 @@ class TimezoneUtil
      * @return string|false
      *   A string or false if the value cannot be read or is invalid.
      */
-    private static function convertTz($tz)
+    private static function convertTz($tz): string|false
     {
         if (\strlen($tz) > 1 && $tz[0] === ':') {
             $filename = substr($tz, 1);
@@ -82,7 +82,7 @@ class TimezoneUtil
      *
      * @return string|false
      */
-    private static function detectSystemTimezone()
+    private static function detectSystemTimezone(): string|false
     {
         // Mac OS X (and older Linuxes): /etc/localtime is a symlink to the
         // timezone in /usr/share/zoneinfo or /var/db/timezone/zoneinfo.
@@ -93,7 +93,7 @@ class TimezoneUtil
                 '/var/db/timezone/zoneinfo/',
             ];
             foreach ($prefixes as $prefix) {
-                if (strpos($filename, $prefix) === 0) {
+                if (str_starts_with($filename, $prefix)) {
                     return substr($filename, strlen($prefix));
                 }
             }
@@ -111,7 +111,7 @@ class TimezoneUtil
         if (file_exists('/etc/sysconfig/clock')) {
             $data = parse_ini_file('/etc/sysconfig/clock');
             if (!empty($data['ZONE'])) {
-                return trim($data['ZONE']);
+                return trim((string) $data['ZONE']);
             }
         }
 

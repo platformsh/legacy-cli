@@ -26,7 +26,7 @@ class CustomTextDescriptor extends TextDescriptor
      */
     public function __construct($cliExecutableName = null)
     {
-        $this->cliExecutableName = $cliExecutableName ?: basename($_SERVER['PHP_SELF']);
+        $this->cliExecutableName = $cliExecutableName ?: basename((string) $_SERVER['PHP_SELF']);
     }
 
     /**
@@ -58,9 +58,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText("\n");
         $definition = clone $command->getNativeDefinition();
-        $definition->setOptions(array_filter($definition->getOptions(), function (InputOption $opt) {
-            return !$opt instanceof HiddenInputOption;
-        }));
+        $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
         $this->describeInputDefinition($definition, $options);
         $this->writeText("\n");
 
@@ -171,7 +169,7 @@ class CustomTextDescriptor extends TextDescriptor
     protected function writeText($content, array $options = [])
     {
         $this->write(
-            isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
+            isset($options['raw_text']) && $options['raw_text'] ? strip_tags((string) $content) : $content,
             isset($options['raw_output']) ? !$options['raw_output'] : true
         );
     }
@@ -181,7 +179,7 @@ class CustomTextDescriptor extends TextDescriptor
      *
      * @return string
      */
-    protected function formatAliases(array $aliases)
+    protected function formatAliases(array $aliases): string
     {
         return $aliases ? " (" . implode(', ', $aliases) . ")" : '';
     }
@@ -212,7 +210,7 @@ class CustomTextDescriptor extends TextDescriptor
         $width = 0;
         foreach ($commands as $command) {
             $aliasesString = $this->formatAliases($command->getAliases());
-            $commandWidth = strlen($command->getName()) + strlen($aliasesString);
+            $commandWidth = strlen((string) $command->getName()) + strlen($aliasesString);
             $width = $commandWidth > $width ? $commandWidth : $width;
         }
 

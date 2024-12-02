@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:get', description: 'View details of an integration')]
 class IntegrationGetCommand extends IntegrationCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -38,11 +44,11 @@ class IntegrationGetCommand extends IntegrationCommandBase
             if ($property === 'hook_url' && $integration->hasLink('#hook')) {
                 $value = $integration->getLink('#hook');
             } else {
-                $value = $this->api()->getNestedProperty($integration, $property);
+                $value = $this->api->getNestedProperty($integration, $property);
             }
 
-            /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            /** @var PropertyFormatter $formatter */
+            $formatter = $this->propertyFormatter;
             $output->writeln($formatter->format($value, $property));
 
             return 0;

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -15,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:scp', description: 'Copy files to and from an environment using scp', aliases: ['scp'])]
 class EnvironmentScpCommand extends CommandBase
 {
+    public function __construct(private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -47,11 +53,11 @@ class EnvironmentScpCommand extends CommandBase
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         /** @var Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        $ssh = $this->ssh;
         $command = 'scp';
 
         if ($sshArgs = $ssh->getSshArgs($sshUrl)) {
-            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $sshArgs));
+            $command .= ' ' . implode(' ', array_map(OsUtil::escapePosixShellArg(...), $sshArgs));
         }
 
         if ($input->getOption('recursive')) {
@@ -66,11 +72,11 @@ class EnvironmentScpCommand extends CommandBase
 
         $remoteUsed = false;
         foreach ($files as $file) {
-            if (strpos($file, 'remote:') === 0) {
-                $command .= ' ' . escapeshellarg($sshUrl . ':' . substr($file, 7));
+            if (str_starts_with((string) $file, 'remote:')) {
+                $command .= ' ' . escapeshellarg($sshUrl . ':' . substr((string) $file, 7));
                 $remoteUsed = true;
             } else {
-                $command .= ' ' . escapeshellarg($file);
+                $command .= ' ' . escapeshellarg((string) $file);
             }
         }
 
@@ -78,15 +84,15 @@ class EnvironmentScpCommand extends CommandBase
             throw new InvalidArgumentException('At least one argument needs to contain the "remote:" prefix');
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
+        /** @var Shell $shell */
+        $shell = $this->shell;
 
         $start = \time();
 
         $exitCode = $shell->executeSimple($command);
         if ($exitCode !== 0) {
-            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
-            $diagnostics = $this->getService('ssh_diagnostics');
+            /** @var SshDiagnostics $diagnostics */
+            $diagnostics = $this->sshDiagnostics;
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
         }
 

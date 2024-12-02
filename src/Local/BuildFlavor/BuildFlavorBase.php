@@ -30,7 +30,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      *     "{webroot}" - see getWebRoot() (usually /app/public on Platform.sh)
      *     "{approot}" - the $buildDir (usually /app on Platform.sh)
      */
-    protected $specialDestinations = [];
+    protected array $specialDestinations;
 
     /** @var LocalApplication */
     protected $app;
@@ -56,8 +56,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /** @var Git */
     protected $gitHelper;
 
-    /** @var Shell */
-    protected $shellHelper;
+    protected Shell $shellHelper;
 
     /** @var Config */
     protected $config;
@@ -70,10 +69,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
 
     /**
      * Whether all app files have just been symlinked or copied to the build.
-     *
-     * @var bool
      */
-    private $buildInPlace = false;
+    private bool $buildInPlace = false;
 
     /**
      * @param object     $fsHelper
@@ -99,7 +96,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function setOutput(OutputInterface $output)
+    public function setOutput(OutputInterface $output): void
     {
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface
@@ -111,7 +108,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function addIgnoredFiles(array $ignoredFiles)
+    public function addIgnoredFiles(array $ignoredFiles): void
     {
         $this->ignoredFiles = array_merge($this->ignoredFiles, $ignoredFiles);
     }
@@ -119,7 +116,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, LocalApplication $app, Config $config, array $settings = [])
+    public function prepare($buildDir, LocalApplication $app, Config $config, array $settings = []): void
     {
         $this->app = $app;
         $this->appRoot = $app->getRoot();
@@ -145,7 +142,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * {@inheritdoc}
      */
-    public function setBuildDir($buildDir)
+    public function setBuildDir($buildDir): void
     {
         $this->buildDir = $buildDir;
     }
@@ -222,7 +219,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     {
         $shared = $this->app->getSourceDir() . '/' . $this->config->get('local.shared_dir');
         if (!$this->app->isSingle()) {
-            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
+            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', (string) $this->app->getName());
         }
         $this->fsHelper->mkdir($shared);
 
@@ -274,7 +271,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      *
      * @param string $buildDir
      */
-    private function cloneToBuildDir($buildDir)
+    private function cloneToBuildDir(string $buildDir): void
     {
         $gitRoot = $this->gitHelper->getRoot($this->appRoot, true);
         $ref = $this->gitHelper->execute(['rev-parse', 'HEAD'], $gitRoot, true);
@@ -298,7 +295,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function install()
+    public function install(): void
     {
         $this->processSharedFileMounts();
     }

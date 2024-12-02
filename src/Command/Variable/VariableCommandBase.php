@@ -2,6 +2,11 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Client\Model\ApiResourceBase;
@@ -18,15 +23,27 @@ use Symfony\Component\Console\Output\NullOutput;
 
 abstract class VariableCommandBase extends CommandBase
 {
+    private readonly Table $table;
+    private readonly PropertyFormatter $propertyFormatter;
+    private readonly Config $config;
+    private readonly Api $api;
     const LEVEL_PROJECT = 'project';
     const LEVEL_ENVIRONMENT = 'environment';
+    #[Required]
+    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Table $table) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->propertyFormatter = $propertyFormatter;
+        $this->table = $table;
+    }
 
     /**
      * @param string $str
      *
      * @return string
      */
-    protected function escapeShellArg($str)
+    protected function escapeShellArg(string $str)
     {
         return (new ArgvInput(['example']))->escapeToken($str);
     }
@@ -53,7 +70,7 @@ abstract class VariableCommandBase extends CommandBase
             return null;
         }
         foreach ([self::LEVEL_PROJECT, self::LEVEL_ENVIRONMENT] as $validLevel) {
-            if (stripos($validLevel, $str) === 0) {
+            if (stripos($validLevel, (string) $str) === 0) {
                 return $validLevel;
             }
         }
@@ -68,9 +85,9 @@ abstract class VariableCommandBase extends CommandBase
      * @param bool        $messages Whether to print error messages to
      *                              $this->stdErr if the variable is not found.
      *
-     * @return \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable|false
+     * @return ProjectLevelVariable|\Platformsh\Client\Model\Variable|false
      */
-    protected function getExistingVariable($name, $level = null, $messages = true)
+    protected function getExistingVariable(string $name, $level = null, $messages = true)
     {
         $output = $messages ? $this->stdErr : new NullOutput();
 
@@ -103,10 +120,10 @@ abstract class VariableCommandBase extends CommandBase
      */
     protected function displayVariable(ApiResourceBase $variable)
     {
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var Table $table */
+        $table = $this->table;
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $properties = $variable->getProperties();
         $properties['level'] = $this->getVariableLevel($variable);
@@ -116,7 +133,7 @@ abstract class VariableCommandBase extends CommandBase
         foreach ($properties as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             if ($key === 'value') {
-                $value = wordwrap($value, 80, "\n", true);
+                $value = wordwrap((string) $value, 80, "\n", true);
             }
             $values[] = $formatter->format($value, $key);
         }
@@ -167,9 +184,7 @@ abstract class VariableCommandBase extends CommandBase
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
             'questionLine' => 'On what environment should the variable be set?',
-            'optionsCallback' => function () {
-                return array_keys($this->api()->getEnvironments($this->getSelectedProject()));
-            },
+            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($this->getSelectedProject())),
             'asChoice' => false,
             'includeAsOption' => false,
             'defaultCallback' => function () {
@@ -182,16 +197,12 @@ abstract class VariableCommandBase extends CommandBase
         $fields['name'] = new Field('Name', [
             'description' => 'The variable name',
             'validators' => [
-                function ($value) {
-                    return strlen($value) > 256
-                        ? 'The variable name exceeds the maximum length, 256 characters.'
-                        : true;
-                },
-                function ($value) {
-                    return strpos($value, ' ') !== false
-                        ? 'The variable name must not contain a space.'
-                        : true;
-                },
+                fn($value): string|true => strlen((string) $value) > 256
+                    ? 'The variable name exceeds the maximum length, 256 characters.'
+                    : true,
+                fn($value): string|true => str_contains((string) $value, ' ')
+                    ? 'The variable name must not contain a space.'
+                    : true,
             ],
         ]);
         $fields['value'] = new Field('Value', [
@@ -212,14 +223,10 @@ abstract class VariableCommandBase extends CommandBase
         $fields['prefix'] = new OptionsField('Prefix', [
             'description' => "The variable name's prefix which can determine its type, e.g. 'env'. Only applicable if the name does not already contain a prefix.",
             'conditions' => [
-                'name' => function ($name) {
-                    return strpos($name, ':') === false;
-                }
+                'name' => fn($name): bool => !str_contains((string) $name, ':')
             ],
             'options' => $this->getPrefixOptions('NAME'),
-            'optionsCallback' => function (array $previousValues) {
-                return $this->getPrefixOptions(isset($previousValues['name']) ? $previousValues['name'] : 'NAME');
-            },
+            'optionsCallback' => fn(array $previousValues) => $this->getPrefixOptions(isset($previousValues['name']) ? $previousValues['name'] : 'NAME'),
             'allowOther' => true,
             'default' => 'none',
         ]);
@@ -244,12 +251,11 @@ abstract class VariableCommandBase extends CommandBase
             'optionName' => 'visible-build',
             'description' => 'Whether the variable should be visible at build time',
             'questionLine' => 'Should the variable be available at build time?',
-            'defaultCallback' => function (array $values) {
+            'defaultCallback' => fn(array $values): bool =>
                 // Variables that are visible at build-time will affect the
                 // build cache, so it is good to minimise the number of them.
                 // This defaults to true for project-level variables, false otherwise.
-                return isset($values['level']) && $values['level'] === self::LEVEL_PROJECT;
-            },
+                isset($values['level']) && $values['level'] === self::LEVEL_PROJECT,
             'avoidQuestion' => true,
         ]);
         $fields['visible_runtime'] = new BooleanField('Visible at runtime', [
@@ -267,10 +273,10 @@ abstract class VariableCommandBase extends CommandBase
      *
      * @return array
      */
-    private function getPrefixOptions($name)
+    private function getPrefixOptions($name): array
     {
         return [
-            'none' => 'No prefix: The variable will be part of <comment>$' . $this->config()->get('service.env_prefix') . 'VARIABLES</comment>.',
+            'none' => 'No prefix: The variable will be part of <comment>$' . $this->config->get('service.env_prefix') . 'VARIABLES</comment>.',
             'env:' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
     }

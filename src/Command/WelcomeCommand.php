@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\SshKey;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,12 +14,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WelcomeCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly SshKey $sshKey)
+    {
+        parent::__construct();
+    }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->stdErr->writeln("Welcome to " . $this->config()->get('service.name') . "!\n");
+        $this->stdErr->writeln("Welcome to " . $this->config->get('service.name') . "!\n");
 
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         $onContainer = getenv($envPrefix . 'PROJECT') && getenv($envPrefix . 'BRANCH');
 
         if ($project = $this->getCurrentProject()) {
@@ -27,13 +34,13 @@ class WelcomeCommand extends CommandBase
             $this->defaultWelcome();
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
-        $this->api()->showSessionInfo();
+        $this->api->showSessionInfo();
 
-        if ($this->api()->isLoggedIn() && !$this->config()->getWithDefault('ssh.auto_load_cert', false)) {
-            /** @var \Platformsh\Cli\Service\SshKey $sshKey */
-            $sshKey = $this->getService('ssh_key');
+        if ($this->api->isLoggedIn() && !$this->config->getWithDefault('ssh.auto_load_cert', false)) {
+            /** @var SshKey $sshKey */
+            $sshKey = $this->sshKey;
             if (!$sshKey->hasLocalKey()) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln("To add an SSH key, run: <info>$executable ssh-key:add</info>");
@@ -48,7 +55,7 @@ class WelcomeCommand extends CommandBase
     /**
      * Display default welcome message, when not in a project directory.
      */
-    private function defaultWelcome()
+    private function defaultWelcome(): void
     {
         // The project is not known. Show all projects.
         $this->runOtherCommand('projects', ['--refresh' => '0']);
@@ -57,21 +64,21 @@ class WelcomeCommand extends CommandBase
     /**
      * Display welcome for a local project directory.
      *
-     * @param \Platformsh\Client\Model\Project $project
+     * @param Project $project
      */
-    private function welcomeForLocalProjectDir(Project $project)
+    private function welcomeForLocalProjectDir(Project $project): void
     {
-        $this->stdErr->writeln("Project: " . $this->api()->getProjectLabel($project));
-        if ($this->config()->get('api.organizations')) {
-            $org = $this->api()->getOrganizationById($project->getProperty('organization'));
+        $this->stdErr->writeln("Project: " . $this->api->getProjectLabel($project));
+        if ($this->config->get('api.organizations')) {
+            $org = $this->api->getOrganizationById($project->getProperty('organization'));
             if ($org) {
-                $this->stdErr->writeln("Organization: " . $this->api()->getOrganizationLabel($org));
+                $this->stdErr->writeln("Organization: " . $this->api->getOrganizationLabel($org));
             }
         }
-        $this->stdErr->writeln("Console URL: <info>" . $this->api()->getConsoleURL($project) . "</info>\n");
+        $this->stdErr->writeln("Console URL: <info>" . $this->api->getConsoleURL($project) . "</info>\n");
 
         if ($project->isSuspended()) {
-            $this->api()->warnIfSuspended($project);
+            $this->api->warnIfSuspended($project);
         } else {
             // Show the environments.
             $this->runOtherCommand('environments', [
@@ -79,17 +86,17 @@ class WelcomeCommand extends CommandBase
             ]);
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
         $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>");
     }
 
     /**
      * Display welcome when the user is in a cloud container environment.
      */
-    private function welcomeOnContainer()
+    private function welcomeOnContainer(): void
     {
-        $envPrefix = $this->config()->get('service.env_prefix');
-        $executable = $this->config()->get('application.executable');
+        $envPrefix = $this->config->get('service.env_prefix');
+        $executable = $this->config->get('application.executable');
 
         $projectId = getenv($envPrefix . 'PROJECT');
         $environmentId = getenv($envPrefix . 'BRANCH');
@@ -97,24 +104,24 @@ class WelcomeCommand extends CommandBase
 
         $project = false;
         $environment = false;
-        if ($this->api()->isLoggedIn()) {
-            $project = $this->api()->getProject($projectId);
+        if ($this->api->isLoggedIn()) {
+            $project = $this->api->getProject($projectId);
             if ($project && $environmentId) {
-                $environment = $this->api()->getEnvironment($environmentId, $project);
+                $environment = $this->api->getEnvironment($environmentId, $project);
             }
         }
 
         if ($project) {
-            $this->stdErr->writeln('Project: ' . $this->api()->getProjectLabel($project));
+            $this->stdErr->writeln('Project: ' . $this->api->getProjectLabel($project));
             if ($environment) {
-                $this->stdErr->writeln('Environment: ' . $this->api()->getEnvironmentLabel($environment));
+                $this->stdErr->writeln('Environment: ' . $this->api->getEnvironmentLabel($environment));
             }
             if ($appName) {
                 $this->stdErr->writeln('Application name: <info>' . $appName . '</info>');
             }
 
             if ($project->isSuspended()) {
-                $this->api()->warnIfSuspended($project);
+                $this->api->warnIfSuspended($project);
                 return;
             }
         } else {

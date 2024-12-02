@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfConfigCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -22,8 +27,8 @@ class SelfConfigCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-        $formatter->displayData($output, $this->config()->getAll(), $input->getArgument('value'));
+        $formatter = $this->propertyFormatter;
+        $formatter->displayData($output, $this->config->getAll(), $input->getArgument('value'));
         return 0;
     }
 }

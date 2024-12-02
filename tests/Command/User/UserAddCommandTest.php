@@ -7,13 +7,12 @@ use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\User\UserAddCommand;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
 
 class UserAddCommandTest extends TestCase
 {
-    private $mockEnvironments = [];
-    private $mockTypes = [];
+    private array $mockEnvironments = [];
+    private array $mockTypes = [];
 
     protected function setUp(): void
     {
@@ -40,7 +39,7 @@ class UserAddCommandTest extends TestCase
         }
     }
 
-    public function testGetSpecifiedEnvironmentRoles()
+    public function testGetSpecifiedEnvironmentRoles(): void
     {
         // Set up a mock command to make the private method accessible.
         $command = new UserAddCommand();
@@ -121,7 +120,7 @@ class UserAddCommandTest extends TestCase
 //        }
 //    }
 
-    public function testConvertEnvironmentRolesToTypeRoles()
+    public function testConvertEnvironmentRolesToTypeRoles(): void
     {
         // Set up a mock command to make the private method accessible.
         $command = new UserAddCommand();

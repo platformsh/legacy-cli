@@ -20,7 +20,7 @@ class LocalBuildTest extends TestCase
         $this->localBuild = $container->get('local.build');
     }
 
-    public function testGetTreeId()
+    public function testGetTreeId(): void
     {
         $treeId = $this->localBuild->getTreeId('tests/data/apps/composer', []);
         $this->assertEquals('0d9f5dd9a2907d905efc298686bb3c4e2f9a4811', $treeId);

@@ -8,23 +8,16 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class LoginRequiredEvent extends Event
 {
-    private $authMethods;
-    private $maxAge;
-    private $hasApiToken;
-
     /**
      * @param string[] $authMethods
      * @param int|null $maxAge
      * @param bool $hasApiToken
      */
-    public function __construct(array $authMethods = [], $maxAge = null, $hasApiToken = false)
+    public function __construct(private array $authMethods = [], private $maxAge = null, private $hasApiToken = false)
     {
-        $this->authMethods = $authMethods;
-        $this->maxAge = $maxAge;
-        $this->hasApiToken = $hasApiToken;
     }
 
-    public function getMessage()
+    public function getMessage(): string
     {
         $message = 'Authentication is required.';
         if (count($this->authMethods) > 0 || $this->maxAge !== null) {
@@ -33,7 +26,7 @@ class LoginRequiredEvent extends Event
         if (count($this->authMethods) === 1) {
             if ($this->authMethods[0] === 'mfa') {
                 $message = 'Multi-factor authentication (MFA) is required.';
-            } elseif (strpos($this->authMethods[0], 'sso:') === 0) {
+            } elseif (str_starts_with($this->authMethods[0], 'sso:')) {
                 $message = 'Single sign-on (SSO) is required.';
             }
         } elseif ($this->maxAge !== null) {
@@ -63,7 +56,7 @@ class LoginRequiredEvent extends Event
     /**
      * @return array<string, mixed>
      */
-    public function getLoginOptions() {
+    public function getLoginOptions(): array {
         $loginOptions = [];
         if (count($this->authMethods) > 0) {
             $loginOptions['--method'] = $this->authMethods;
@@ -77,7 +70,7 @@ class LoginRequiredEvent extends Event
     /**
      * @return string
      */
-    public function getLoginOptionsCmdLine() {
+    public function getLoginOptionsCmdLine(): string {
         $args = [];
         foreach ($this->getLoginOptions() as $option => $value) {
             $args[] = $option;

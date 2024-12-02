@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Selector;
 
+use Platformsh\Cli\Model\RemoteContainer\BrokenEnv;
+use Platformsh\Cli\Model\RemoteContainer\Worker;
+use Platformsh\Cli\Model\RemoteContainer\App;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Exception\NoOrganizationsException;
@@ -11,7 +14,6 @@ use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
-use Platformsh\Cli\Model\RemoteContainer;
 use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -82,7 +84,7 @@ class Selector
      *
      * @param string $message
      */
-    private function debug($message)
+    private function debug(string $message): void
     {
         $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
@@ -214,7 +216,7 @@ class Selector
      *
      * @param bool $blankLine Append an extra newline after the message, if any is printed.
      */
-    public function ensurePrintedSelection(Selection $selection, $blankLine = false) {
+    public function ensurePrintedSelection(Selection $selection, $blankLine = false): void {
         $outputAnything = false;
         if ($selection->hasProject() && $this->printedProject !== $selection->getProject()->id) {
             $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($selection->getProject()));
@@ -238,7 +240,7 @@ class Selector
      * @param RemoteContainerInterface|null $remoteContainer
      * @return HostInterface
      */
-    public function selectHost(InputInterface $input, SelectorConfig $config, Selection $selection, $remoteContainer = null)
+    public function selectHost(InputInterface $input, SelectorConfig $config, Selection $selection, $remoteContainer = null): LocalHost|RemoteHost
     {
         if ($config->shouldAllowLocalHost() && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->debug('Selected host: localhost');
@@ -273,7 +275,7 @@ class Selector
     /**
      * @return bool
      */
-    public function isProjectCurrent(Project $project)
+    public function isProjectCurrent(Project $project): bool
     {
         $current = $this->getCurrentProject(true);
 
@@ -341,7 +343,7 @@ class Selector
      *
      * @return string
      */
-    private function getProjectNotFoundMessage($projectId)
+    private function getProjectNotFoundMessage(string $projectId): string
     {
         $message = 'Specified project not found: ' . $projectId;
         if ($projectInfos = $this->api->getMyProjects()) {
@@ -484,7 +486,7 @@ class Selector
                 }
             }
             asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
-            return $this->questionHelper->askInput($config->getEnterProjectText(), null, array_values($autocomplete), function ($value) use ($autocomplete) {
+            return $this->questionHelper->askInput($config->getEnterProjectText(), null, array_values($autocomplete), function ($value) use ($autocomplete): string {
                 list($id, ) = explode(' - ', $value);
                 if (empty(trim($id))) {
                     throw new InvalidArgumentException('A project ID is required');
@@ -514,7 +516,7 @@ class Selector
      * @param Environment[]|null $environments
      * @return Environment
      */
-    private function offerEnvironmentChoice(InputInterface $input, Project $project, SelectorConfig $config, $environments)
+    private function offerEnvironmentChoice(InputInterface $input, Project $project, SelectorConfig $config, array $environments)
     {
         if (!$input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
@@ -528,7 +530,7 @@ class Selector
             $ids = array_keys($environments);
             sort($ids, SORT_NATURAL | SORT_FLAG_CASE);
 
-            $id = $this->questionHelper->askInput($config->getEnterEnvText(), $defaultEnvironmentId, array_keys($environments), function ($value) use ($environments) {
+            $id = $this->questionHelper->askInput($config->getEnterEnvText(), $defaultEnvironmentId, array_keys($environments), function (string $value) use ($environments): string {
                 if (!isset($environments[$value])) {
                     throw new \RuntimeException('Environment not found: ' . $value);
                 }
@@ -642,7 +644,7 @@ class Selector
         // Check whether the user has a Git upstream set to a remote environment
         // ID.
         $upstream = $this->git->getUpstream();
-        if ($upstream && strpos($upstream, '/') !== false) {
+        if ($upstream && str_contains($upstream, '/')) {
             list(, $potentialEnvironment) = explode('/', $upstream, 2);
             $environment = $this->api->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
@@ -686,9 +688,9 @@ class Selector
     /**
      * Add the --project and --host options.
      *
-     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     * @param InputDefinition $inputDefinition
      */
-    public function addProjectOption(InputDefinition $inputDefinition)
+    public function addProjectOption(InputDefinition $inputDefinition): void
     {
         $inputDefinition->addOption(new InputOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL'));
         $inputDefinition->addOption(new HiddenInputOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname"));
@@ -697,9 +699,9 @@ class Selector
     /**
      * Add the --environment option.
      *
-     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     * @param InputDefinition $inputDefinition
      */
-    public function addEnvironmentOption(InputDefinition $inputDefinition)
+    public function addEnvironmentOption(InputDefinition $inputDefinition): void
     {
         $inputDefinition->addOption(new InputOption('environment', 'e', InputOption::VALUE_REQUIRED, 'The environment ID. Use "' . self::DEFAULT_ENVIRONMENT_CODE . '" to select the project\'s default environment.'));
     }
@@ -707,9 +709,9 @@ class Selector
     /**
      * Add the --app option.
      *
-     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     * @param InputDefinition $inputDefinition
      */
-    public function addAppOption(InputDefinition $inputDefinition)
+    public function addAppOption(InputDefinition $inputDefinition): void
     {
         $inputDefinition->addOption(new InputOption('app', 'A', InputOption::VALUE_REQUIRED, 'The remote application name'));
     }
@@ -717,7 +719,7 @@ class Selector
     /**
      * Add the --app and --worker and --instance options.
      */
-    public function addRemoteContainerOptions(InputDefinition $definition)
+    public function addRemoteContainerOptions(InputDefinition $definition): static
     {
         if (!$definition->hasOption('app')) {
             $this->addAppOption($definition);
@@ -732,11 +734,11 @@ class Selector
     /**
      * Add all standard selection options (project, environment and app).
      *
-     * @param \Symfony\Component\Console\Input\InputDefinition $inputDefinition
+     * @param InputDefinition $inputDefinition
      * @param bool $includeWorkers
      * @param bool $includeOrganizations
      */
-    public function addAllOptions(InputDefinition $inputDefinition, $includeWorkers = false, $includeOrganizations = false)
+    public function addAllOptions(InputDefinition $inputDefinition, $includeWorkers = false, $includeOrganizations = false): void
     {
         $this->addProjectOption($inputDefinition);
         $this->addEnvironmentOption($inputDefinition);
@@ -754,15 +756,15 @@ class Selector
      *
      * Needs the --app and --worker options, as applicable.
      *
-     * @param \Platformsh\Client\Model\Environment $environment
+     * @param Environment $environment
      * @param InputInterface                       $input
      *   The user input object.
      * @param string|null                          $appName
      *
-     * @return \Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface
+     * @return RemoteContainerInterface
      *   A class representing a container that allows SSH access.
      */
-    private function selectRemoteContainer(Environment $environment, InputInterface $input, $appName)
+    private function selectRemoteContainer(Environment $environment, InputInterface $input, $appName): BrokenEnv|Worker|App
     {
         $includeWorkers = $input->hasOption('worker');
         try {
@@ -774,7 +776,7 @@ class Selector
             if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
                 $appName = $input->hasOption('app') ? $input->getOption('app') : '';
 
-                return new RemoteContainer\BrokenEnv($environment, $appName);
+                return new BrokenEnv($environment, $appName);
             }
             throw $e;
         }
@@ -789,8 +791,8 @@ class Selector
         if ($workerOption !== null) {
             // Check for a conflict with the --app option.
             if ($appName !== null
-                && strpos($workerOption, '--') !== false
-                && stripos($workerOption, $appName . '--') !== 0) {
+                && str_contains((string) $workerOption, '--')
+                && stripos((string) $workerOption, $appName . '--') !== 0) {
                 throw new InvalidArgumentException(sprintf(
                     'App name "%s" conflicts with worker name "%s"',
                     $appName,
@@ -799,18 +801,18 @@ class Selector
             }
 
             // If we have the app name, load the worker directly.
-            if (strpos($workerOption, '--') !== false || $appName !== null) {
-                $qualifiedWorkerName = strpos($workerOption, '--') !== false
+            if (str_contains((string) $workerOption, '--') || $appName !== null) {
+                $qualifiedWorkerName = str_contains((string) $workerOption, '--')
                     ? $workerOption
                     : $appName . '--' . $workerOption;
                 try {
                     $worker = $deployment->getWorker($qualifiedWorkerName);
-                } catch (\InvalidArgumentException $e) {
+                } catch (\InvalidArgumentException) {
                     throw new InvalidArgumentException('Worker not found: ' . $workerOption . ' (in app: ' . $appName . ')');
                 }
                 $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $worker->name), OutputInterface::VERBOSITY_VERBOSE);
 
-                return new RemoteContainer\Worker($worker, $environment);
+                return new Worker($worker, $environment);
             }
 
             // If we don't have the app name, find all the possible matching
@@ -830,7 +832,7 @@ class Selector
                 $workerName = reset($workerNames);
                 $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
-                return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+                return new Worker($deployment->getWorker($workerName), $environment);
             }
             if (!$input->isInteractive()) {
                 throw new InvalidArgumentException(sprintf(
@@ -845,13 +847,13 @@ class Selector
             );
             $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
-            return new RemoteContainer\Worker($deployment->getWorker($workerName), $environment);
+            return new Worker($deployment->getWorker($workerName), $environment);
         }
         // Prompt the user to choose between the app(s) or worker(s) that have
         // been found.
         $appNames = $appName !== null
             ? [$appName]
-            : array_map(function (WebApp $app) { return $app->name; }, $deployment->webapps);
+            : array_map(fn(WebApp $app) => $app->name, $deployment->webapps);
         $choices = array_combine($appNames, $appNames);
         $choicesIncludeWorkers = false;
         if ($includeWorkers) {
@@ -898,14 +900,14 @@ class Selector
         }
 
         // Match the choice to a worker or app destination.
-        if (strpos($choice, '--') !== false) {
+        if (str_contains((string) $choice, '--')) {
             $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
-            return new RemoteContainer\Worker($deployment->getWorker($choice), $environment);
+            return new Worker($deployment->getWorker($choice), $environment);
         }
 
         $this->stdErr->writeln(sprintf('Selected app: <info>%s</info>', $choice), OutputInterface::VERBOSITY_VERBOSE);
 
-        return new RemoteContainer\App($deployment->getWebApp($choice), $environment);
+        return new App($deployment->getWebApp($choice), $environment);
     }
 
     /**
@@ -916,7 +918,7 @@ class Selector
      *    Adds a --project option which means the organization may be
      *    auto-selected based on the current or specified project.
      */
-    public function addOrganizationOptions(InputDefinition $definition, $includeProjectOption = false)
+    public function addOrganizationOptions(InputDefinition $definition, $includeProjectOption = false): void
     {
         if ($this->config->getWithDefault('api.organizations', false)) {
             $definition->addOption(new InputOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)'));
@@ -959,7 +961,7 @@ class Selector
             // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
             // So it's easy to distinguish one from the other.
             /** @link https://github.com/ulid/spec */
-            if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', $identifier) === 1) {
+            if (\preg_match('#^[0-9A-HJKMNP-TV-Z]{26}$#', (string) $identifier) === 1) {
                 $this->debug('Detected organization ID format (ULID): ' . $identifier);
                 $organization = $this->api->getOrganizationById($identifier, $skipCache);
             } else {

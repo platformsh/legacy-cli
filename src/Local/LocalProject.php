@@ -13,10 +13,10 @@ use Symfony\Component\Yaml\Parser;
 
 class LocalProject
 {
-    protected $config;
-    protected $fs;
-    protected $git;
-    protected $io;
+    protected Config $config;
+    protected Filesystem $fs;
+    protected Git $git;
+    protected IO $io;
 
     protected static $projectConfigs = [];
 
@@ -36,7 +36,7 @@ class LocalProject
      *
      * @return array|null
      */
-    public function readProjectConfigFile($dir, $configFile)
+    public function readProjectConfigFile(string $dir, string $configFile)
     {
         $result = null;
         $filename = $dir . '/' . $this->config->get('service.project_config_dir') . '/' . $configFile;
@@ -54,10 +54,10 @@ class LocalProject
      * @return array|false
      *   An array containing 'id' and 'host', or false on failure.
      */
-    public function parseGitUrl($gitUrl)
+    public function parseGitUrl($gitUrl): false|array
     {
         $gitDomain = $this->config->get('detection.git_domain');
-        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote((string) $gitDomain) . '):\1\.git$/';
         if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }
@@ -94,7 +94,7 @@ class LocalProject
      * @param string $url
      *   The Git URL.
      */
-    public function ensureGitRemote($dir, $url)
+    public function ensureGitRemote(string $dir, $url): void
     {
         if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
@@ -136,7 +136,7 @@ class LocalProject
      *   The path to the directory, or false if the file is not found. Where
      *   possible this will be an absolute, real path.
      */
-    protected static function findTopDirectoryContaining($file, $startDir = null, callable $callback = null)
+    protected static function findTopDirectoryContaining(string $file, $startDir = null, callable $callback = null)
     {
         static $roots = [];
         $startDir = $startDir ?: getcwd();
@@ -182,7 +182,7 @@ class LocalProject
      * @param Project $project
      *   The project.
      */
-    public function mapDirectory($directory, Project $project)
+    public function mapDirectory(string $directory, Project $project): void
     {
         if (!file_exists($directory . '/.git')) {
             throw new \InvalidArgumentException('Not a Git repository: ' . $directory);
@@ -235,7 +235,7 @@ class LocalProject
         // The project root is a Git repository, which contains a project
         // configuration file, and/or contains a Git remote with the appropriate
         // domain.
-        $result = $this->findTopDirectoryContaining('.git', $startDir, function ($dir) {
+        $result = $this->findTopDirectoryContaining('.git', $startDir, function ($dir): bool {
             $config = $this->getProjectConfig($dir);
 
             return !empty($config);
@@ -318,7 +318,7 @@ class LocalProject
     /**
      * @param string $projectRoot
      */
-    public function ensureLocalDir($projectRoot)
+    public function ensureLocalDir(string $projectRoot): void
     {
         $localDirRelative = $this->config->get('local.local_dir');
         $dir = $projectRoot . '/' . $localDirRelative;
@@ -351,7 +351,7 @@ EOF
      *
      * @param string $dir
      */
-    public function writeGitExclude($dir)
+    public function writeGitExclude(string $dir): void
     {
         $filesToExclude = ['/' . $this->config->get('local.local_dir'), '/' . $this->config->getWithDefault('local.web_root', '_www')];
         $excludeFilename = $dir . '/.git/info/exclude';
@@ -361,11 +361,11 @@ EOF
         // application.name.
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
-            if (strpos($existing, $this->config->get('application.name')) !== false) {
+            if (str_contains($existing, (string) $this->config->get('application.name'))) {
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
                 $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";
-                if (strpos($existing, $oldRoot) !== false && strpos($existing, $newRoot) === false) {
+                if (str_contains($existing, $oldRoot) && !str_contains($existing, $newRoot)) {
                     $this->fs->dumpFile($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
                 }
                 if (is_link($dir . '/.www')) {

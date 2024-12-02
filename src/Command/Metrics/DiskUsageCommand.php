@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:disk-usage', description: 'Show disk usage of an environment', aliases: ['disk'])]
 class DiskUsageCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -30,8 +30,12 @@ class DiskUsageCommand extends MetricsCommandBase
         'tmp_ilimit' => '/tmp inodes limit',
         'tmp_ipercent' => '/tmp inodes %',
     ];
-    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
-    private $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
+    private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
+    private array $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -62,8 +66,8 @@ class DiskUsageCommand extends MetricsCommandBase
             $input->setOption('columns', $this->tmpReportColumns);
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        /** @var Table $table */
+        $table = $this->table;
         $table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
         $this->validateInput($input, false, true);
@@ -99,7 +103,7 @@ class DiskUsageCommand extends MetricsCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',

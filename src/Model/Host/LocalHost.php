@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class LocalHost implements HostInterface
 {
-    private $shell;
+    private readonly Shell $shell;
 
     public function __construct(Shell $shell = null)
     {
@@ -17,7 +17,7 @@ class LocalHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function getLabel()
+    public function getLabel(): string
     {
         return 'localhost';
     }
@@ -31,7 +31,7 @@ class LocalHost implements HostInterface
      * @return bool True if there is a conflict, or false if the local host can
      *              be safely used.
      */
-    public static function conflictsWithCommandLineOptions(InputInterface $input, $envPrefix)
+    public static function conflictsWithCommandLineOptions(InputInterface $input, string $envPrefix): bool
     {
         $map = [
             'PROJECT' => 'project',
@@ -52,12 +52,12 @@ class LocalHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function getCacheKey()
+    public function getCacheKey(): string
     {
         return 'localhost';
     }
 
-    public function lastChanged()
+    public function lastChanged(): string
     {
         return '';
     }
