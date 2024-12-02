@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\ConsoleForm\Form;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableUpdateCommand extends VariableCommandBase
 {
     private ?Form $form = null;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -33,15 +34,15 @@ class VariableUpdateCommand extends VariableCommandBase
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);
         $this->form = Form::fromArray($fields);
         $this->form->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
-        $this->validateInput($input, $level === self::LEVEL_PROJECT);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($level === self::LEVEL_PROJECT)));
 
         $name = $input->getArgument('name');
         $variable = $this->getExistingVariable($name, $level);
@@ -96,7 +97,7 @@ class VariableUpdateCommand extends VariableCommandBase
             $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

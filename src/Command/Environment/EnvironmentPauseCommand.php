@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -18,25 +19,25 @@ Pausing an environment helps to reduce resource consumption and carbon emissions
 
 The environment will be unavailable until it is resumed. No data will be lost.
 EOF;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this->addProjectOption()
-            ->addEnvironmentOption();
-        $this->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHelp(self::PAUSE_HELP);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         if ($environment->status === 'paused') {
             $this->stdErr->writeln(sprintf(
@@ -70,7 +71,7 @@ EOF;
 
         if ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {
                 return 1;
             }

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\SshCert;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\SshCert\Certifier;
 use Platformsh\Cli\Service\Config;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'ssh-cert:load', description: 'Generate an SSH certificate')]
 class SshCertLoadCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Certifier $certifier, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly SshConfig $sshConfig)
+    public function __construct(private readonly Api $api, private readonly Certifier $certifier, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly SshConfig $sshConfig)
     {
         parent::__construct();
     }
@@ -41,7 +42,7 @@ class SshCertLoadCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['new-key'], 'The --new-key option is deprecated. Use --new instead.');
+        $this->io->warnAboutDeprecatedOptions(['new-key'], 'The --new-key option is deprecated. Use --new instead.');
 
         // Initialize the API service to ensure event listeners etc.
         $this->api;

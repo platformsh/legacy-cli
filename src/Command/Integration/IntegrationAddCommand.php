@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
@@ -13,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:add', description: 'Add an integration to the project')]
 class IntegrationAddCommand extends IntegrationCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -23,7 +24,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
         $this->addExample(
             'Add an integration with a GitHub repository',
             '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
@@ -36,8 +37,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $questionHelper = $this->questionHelper;
         try {

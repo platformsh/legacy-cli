@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
@@ -19,7 +20,7 @@ class VariableSetCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -34,9 +35,9 @@ class VariableSetCommand extends CommandBase
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
@@ -45,7 +46,7 @@ class VariableSetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
@@ -58,7 +59,7 @@ class VariableSetCommand extends CommandBase
 
         // Check whether the variable already exists. If there is no change,
         // quit early.
-        $existing = $this->getSelectedEnvironment()
+        $existing = $selection->getEnvironment()
                          ->getVariable($variableName);
         if ($existing
             && $existing->value === $variableValue
@@ -70,7 +71,7 @@ class VariableSetCommand extends CommandBase
         }
 
         // Set the variable to a new value.
-        $result = $this->getSelectedEnvironment()
+        $result = $selection->getEnvironment()
                        ->setVariable($variableName, $variableValue, $json, $enabled);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
@@ -80,7 +81,7 @@ class VariableSetCommand extends CommandBase
             $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

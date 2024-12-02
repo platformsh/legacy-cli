@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Repo;
 
+use Platformsh\Cli\Selector\Selector;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LsCommand extends RepoCommandBase
 {
 
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -23,8 +28,8 @@ class LsCommand extends RepoCommandBase
             ->addOption('files', 'f', InputOption::VALUE_NONE, 'Show files only')
             ->addOption('git-style', null, InputOption::VALUE_NONE, 'Style output similar to "git ls-tree"')
             ->addCommitOption();
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -32,8 +37,8 @@ class LsCommand extends RepoCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
-        return $this->ls($this->getSelectedEnvironment(), $input, $output);
+        return $this->ls($selection->getEnvironment(), $input, $output);
     }
 }

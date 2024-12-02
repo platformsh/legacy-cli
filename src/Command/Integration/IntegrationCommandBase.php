@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -25,6 +26,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
+    private readonly Selector $selector;
     private readonly Table $table;
     private readonly QuestionHelper $questionHelper;
     private readonly PropertyFormatter $propertyFormatter;
@@ -34,13 +36,14 @@ abstract class IntegrationCommandBase extends CommandBase
 
     private array $bitbucketAccessTokens = [];
     #[Required]
-    public function autowire(Api $api, LocalProject $localProject, PropertyFormatter $propertyFormatter, QuestionHelper $questionHelper, Table $table) : void
+    public function autowire(Api $api, LocalProject $localProject, PropertyFormatter $propertyFormatter, QuestionHelper $questionHelper, Selector $selector, Table $table) : void
     {
         $this->api = $api;
         $this->localProject = $localProject;
         $this->propertyFormatter = $propertyFormatter;
         $this->questionHelper = $questionHelper;
         $this->table = $table;
+        $this->selector = $selector;
     }
 
     /**
@@ -178,7 +181,7 @@ abstract class IntegrationCommandBase extends CommandBase
     private function selectedProjectIntegrations()
     {
         static $cache = [];
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         if (!isset($cache[$project->id])) {
             $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
         }
@@ -220,7 +223,7 @@ abstract class IntegrationCommandBase extends CommandBase
                         return null;
                     }
                     // If the type is supported, check if it is available on the project.
-                    if ($this->hasSelectedProject()) {
+                    if ($selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && empty($integrations['config'][$value]['enabled'])) {
                             return "The integration type '$value' is not available on this project.";
@@ -229,7 +232,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     return null;
                 },
                 'optionsCallback' => function () use ($allSupportedTypes): array {
-                    if ($this->hasSelectedProject()) {
+                    if ($selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
                             return array_filter($allSupportedTypes, fn($type): bool => !empty($integrations['config'][$type]['enabled']));
@@ -756,8 +759,8 @@ abstract class IntegrationCommandBase extends CommandBase
         if (!$this->selectedProjectIsCurrent()) {
             return;
         }
-        $project = $this->getCurrentProject();
-        $projectRoot = $this->getProjectRoot();
+        $project = $this->selector->getCurrentProject();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$project || !$projectRoot) {
             return;
         }

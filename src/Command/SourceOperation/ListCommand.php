@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\SourceOperation;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
@@ -20,7 +21,7 @@ class ListCommand extends CommandBase
     const COMMAND_MAX_LENGTH = 24;
 
     private array $tableHeader = ['Operation', 'App', 'Command'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -30,18 +31,18 @@ class ListCommand extends CommandBase
         $this
             ->addOption('full', null, InputOption::VALUE_NONE, 'Do not limit the length of command to display. The default limit is ' . self::COMMAND_MAX_LENGTH . ' lines.');
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
 
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         try {
-            $sourceOps = $this->getSelectedEnvironment()->getSourceOperations();
+            $sourceOps = $selection->getEnvironment()->getSourceOperations();
         } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support source operations.');
         }
@@ -66,8 +67,8 @@ class ListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Source operations on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
-                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment())
             ));
         }
 

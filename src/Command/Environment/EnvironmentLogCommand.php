@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
 {
 
-    public function __construct(private readonly CacheProvider $cacheProvider, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly CacheProvider $cacheProvider, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -29,8 +30,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
              ->addRemoteContainerOptions();
         $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
@@ -42,7 +43,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         if ($input->getOption('tail') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');

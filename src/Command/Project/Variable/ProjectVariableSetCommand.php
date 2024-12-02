@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -17,7 +18,7 @@ class ProjectVariableSetCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
-    public function __construct(private readonly Api $api)
+    public function __construct(private readonly Api $api, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -37,13 +38,13 @@ class ProjectVariableSetCommand extends CommandBase
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
         );
-        $this->addProjectOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
@@ -57,7 +58,7 @@ class ProjectVariableSetCommand extends CommandBase
 
         // Check whether the variable already exists. If there is no change,
         // quit early.
-        $existing = $this->getSelectedProject()
+        $existing = $selection->getProject()
                          ->getVariable($variableName);
         if ($existing && $existing->value === $variableValue && $existing->is_json == $json) {
             $this->stdErr->writeln("Variable <info>$variableName</info> already set as: $variableValue");
@@ -66,7 +67,7 @@ class ProjectVariableSetCommand extends CommandBase
         }
 
         // Set the variable to a new value.
-        $this->getSelectedProject()
+        $selection->getProject()
                        ->setVariable($variableName, $variableValue, $json, !$supressBuild, !$supressRuntime);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");

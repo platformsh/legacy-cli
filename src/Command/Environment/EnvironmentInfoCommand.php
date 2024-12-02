@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
@@ -20,7 +21,7 @@ class EnvironmentInfoCommand extends CommandBase
 {
     /** @var PropertyFormatter|null */
     protected $formatter;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -36,9 +37,9 @@ class EnvironmentInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Read all environment properties')
              ->addExample("Show the environment's status", 'status')
              ->addExample('Show the date the environment was created', 'created_at')
@@ -51,9 +52,9 @@ class EnvironmentInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
         if ($input->getOption('refresh')) {
             $environment->refresh();
         }
@@ -160,7 +161,7 @@ class EnvironmentInfoCommand extends CommandBase
         $success = true;
         if ($result->countActivities() && !$noWait) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->api->redeployWarning();
         }
@@ -205,7 +206,7 @@ class EnvironmentInfoCommand extends CommandBase
         $valid = true;
         $message = '';
         // @todo find out exactly how these should best be validated
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         switch ($property) {
             case 'parent':
                 if ($value === '-') {
@@ -214,7 +215,7 @@ class EnvironmentInfoCommand extends CommandBase
                 if ($value === $selectedEnvironment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $this->getSelectedProject())) {
+                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $selection->getProject())) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
                 } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {

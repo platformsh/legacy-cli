@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
@@ -12,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:update', description: 'Update an integration')]
 class IntegrationUpdateCommand extends IntegrationCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Io $io, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,7 +26,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
             'ZXhhbXBsZSB --fetch-branches 1'
@@ -33,14 +35,14 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(
+        $this->io->warnAboutDeprecatedOptions(
             ['type'],
             'The --type option is not supported on the integration:update command. The integration type cannot be changed.'
         );
 
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
@@ -118,7 +120,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
 
         if ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return 0;

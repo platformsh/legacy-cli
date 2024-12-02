@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -16,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentMergeCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,10 +26,10 @@ class EnvironmentMergeCommand extends CommandBase
     {
         $this
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment to merge');
-        $this->addResourcesInitOption(['child', 'default', 'minimum', 'manual']);
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->resourcesUtil->addOption($this->getDefinition(), ['child', 'default', 'minimum', 'manual']);
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(
             'This command will initiate a Git merge of the specified environment into its parent environment.'
@@ -36,9 +38,9 @@ class EnvironmentMergeCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
 
         if (!$selectedEnvironment->operationAvailable('merge', true)) {
@@ -48,7 +50,7 @@ class EnvironmentMergeCommand extends CommandBase
             ));
 
             if ($selectedEnvironment->getProperty('has_remote', false) === true
-                && ($integration = $this->api->getCodeSourceIntegration($this->getSelectedProject()))
+                && ($integration = $this->api->getCodeSourceIntegration($selection->getProject()))
                 && $integration->getProperty('fetch_branches', false) === true) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf("The project's code is managed externally through its <info>%s</info> integration.", $integration->type));
@@ -67,7 +69,7 @@ class EnvironmentMergeCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $this->getSelectedProject());
+        $resourcesInit = $this->validateResourcesInitInput($input, $selection->getProject());
         if ($resourcesInit === false) {
             return 1;
         }
@@ -100,7 +102,7 @@ class EnvironmentMergeCommand extends CommandBase
         $result = $selectedEnvironment->runOperation('merge', 'POST', $params);
         if ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {
                 return 1;
             }

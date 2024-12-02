@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
@@ -15,7 +16,7 @@ use Symfony\Component\Process\Process;
 class EnvironmentXdebugCommand extends CommandBase
 {
     const SOCKET_PATH = '/run/xdebug-tunnel.sock';
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Ssh $ssh)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Selector $selector, private readonly Ssh $ssh)
     {
         parent::__construct();
     }
@@ -27,8 +28,8 @@ class EnvironmentXdebugCommand extends CommandBase
     {
         $this
             ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
@@ -41,7 +42,7 @@ class EnvironmentXdebugCommand extends CommandBase
         }
 
         // Hide this command in the list if the project is not PHP.
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if ($projectRoot) {
             try {
                 return !$this->isPhp($projectRoot);
@@ -81,8 +82,8 @@ class EnvironmentXdebugCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
-        $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $selection->getEnvironment();
 
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl($input->getOption('instance'));

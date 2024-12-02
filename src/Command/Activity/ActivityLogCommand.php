@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:log', description: 'Display the log for an activity')]
 class ActivityLogCommand extends ActivityCommandBase
 {
-    public function __construct(private readonly ActivityLoader $activityLoader, private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter)
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -53,8 +54,8 @@ class ActivityLogCommand extends ActivityCommandBase
                 . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
             ->addExample('Display the log for the last activity on the current project', '--all')
             ->addExample('Display the log for the last push, with microsecond timestamps', "-a -t --type %push --date-fmt 'Y-m-d\TH:i:s.uP'");
@@ -62,19 +63,19 @@ class ActivityLogCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
         $loader = $this->activityLoader;
 
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-            $apiResource = $this->getSelectedEnvironment();
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
+            $apiResource = $selection->getEnvironment();
         } else {
-            $apiResource = $this->getSelectedProject();
+            $apiResource = $selection->getProject();
         }
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $this->getSelectedProject()
+            $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');

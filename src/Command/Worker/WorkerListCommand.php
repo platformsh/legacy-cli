@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Worker;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WorkerListCommand extends CommandBase
 {
     private array $tableHeader = ['Name', 'Type', 'Commands'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -29,8 +30,8 @@ class WorkerListCommand extends CommandBase
         $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of worker names only');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
@@ -40,10 +41,10 @@ class WorkerListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $deployment = $this->api
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
 
         $workers = $deployment->workers;
         if (empty($workers)) {
@@ -73,8 +74,8 @@ class WorkerListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Workers on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
-                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment())
             ));
         }
 

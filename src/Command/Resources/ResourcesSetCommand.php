@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -23,7 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -48,8 +49,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             )
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything')
-            ->addProjectOption()
-            ->addEnvironmentOption()
+            ->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition())
             ->addWaitOptions();
 
         $helpLines = [
@@ -76,13 +77,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         try {
             $nextDeployment = $this->loadNextDeployment($environment);
@@ -269,7 +270,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $organization = $this->api->getClient()->getOrganizationById($project->getProperty('organization'));
         $profile = $organization->getProfile();
         if ($input->getOption('force') === false && isset($profile->resources_limit) && $profile->resources_limit) {
@@ -327,7 +328,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         if ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {
                 return 1;
             }

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:get', description: 'View detailed information on a single activity')]
 class ActivityGetCommand extends ActivityCommandBase
 {
-    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -46,8 +47,8 @@ class ActivityGetCommand extends ActivityCommandBase
                 'Include only incomplete activities (when selecting a default activity).'
                 . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addExample('Find the time a project was created', '--all --type project.create -P completed_at');
@@ -56,19 +57,19 @@ class ActivityGetCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
         $loader = $this->activityLoader;
 
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-            $apiResource = $this->getSelectedEnvironment();
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
+            $apiResource = $selection->getEnvironment();
         } else {
-            $apiResource = $this->getSelectedProject();
+            $apiResource = $selection->getProject();
         }
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $this->getSelectedProject()
+            $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');

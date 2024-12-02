@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalBuildCommand extends CommandBase
 {
 
-    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalBuild $localBuild, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalBuild $localBuild, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -124,7 +125,7 @@ class LocalBuildCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
         $questionHelper = $this->questionHelper;
 

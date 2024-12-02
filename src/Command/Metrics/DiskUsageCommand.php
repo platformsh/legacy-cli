@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -32,7 +33,7 @@ class DiskUsageCommand extends MetricsCommandBase
     ];
     private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
     private array $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
-    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -46,8 +47,8 @@ class DiskUsageCommand extends MetricsCommandBase
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addMetricsOptions()
             ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')')
-            ->addProjectOption()
-            ->addEnvironmentOption();
+            ->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -69,13 +70,13 @@ class DiskUsageCommand extends MetricsCommandBase
         $table = $this->table;
         $table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();
         }
 
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
+        $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
         if ($values === false) {
             return 1;
         }

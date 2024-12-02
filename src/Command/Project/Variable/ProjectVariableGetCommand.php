@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -17,6 +18,10 @@ class ProjectVariableGetCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -31,18 +36,18 @@ class ProjectVariableGetCommand extends CommandBase
             . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>"
         );
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->setHiddenAliases(['project:variable:list']);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         return $this->runOtherCommand('variable:get', [
             'name' => $input->getArgument('name'),
             '--level' => 'project',
-            '--project' => $this->getSelectedProject()->id,
+            '--project' => $selection->getProject()->id,
             ] + array_filter([
                 '--format' => $input->getOption('format'),
                 '--pipe' => $input->getOption('pipe'),

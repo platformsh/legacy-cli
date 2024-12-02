@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
@@ -16,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:activity:log', description: 'Display the log for an integration activity')]
 class IntegrationActivityLogCommand extends IntegrationCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -30,16 +32,16 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
+        $this->io->warnAboutDeprecatedOptions(['environment']);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('integration'), $input->isInteractive());
         if (!$integration) {

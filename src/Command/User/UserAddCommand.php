@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -28,7 +29,7 @@ use Symfony\Component\Console\Question\Question;
 class UserAddCommand extends UserCommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -41,8 +42,8 @@ class UserAddCommand extends UserCommandBase
 
         $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
 
-        $this->addProjectOption();
-        $this->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
         $this->addExample('Add Bob as a viewer on the "production" environment type, and a contributor on "development" environments', 'bob@example.com -r production:v -r development:c');
@@ -67,8 +68,8 @@ class UserAddCommand extends UserCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $questionHelper = $this->questionHelper;
 

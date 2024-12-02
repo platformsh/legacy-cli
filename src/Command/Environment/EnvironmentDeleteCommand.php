@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentDeleteCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -40,9 +41,9 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('exclude-status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment status(es) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)')
             ->addOption('allow-delete-parent', null, InputOption::VALUE_NONE, 'Allow environments that have children to be deleted');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the currently checked out environment');
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
@@ -65,9 +66,9 @@ EOF
         $inputCopy = clone $input;
         $inputCopy->setArgument('environment', null);
         $inputCopy->setOption('environment', null);
-        $this->validateInput($inputCopy, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
 
-        $environments = $this->api->getEnvironments($this->getSelectedProject());
+        $environments = $this->api->getEnvironments($selection->getProject());
 
         /**
          * A list of selected environments, keyed by ID to avoid duplication.
@@ -90,7 +91,7 @@ EOF
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             if (!empty($notFound)) {
                 // Refresh the environments list if any environment is not found.
-                $environments = $this->api->getEnvironments($this->getSelectedProject(), true);
+                $environments = $this->api->getEnvironments($selection->getProject(), true);
                 $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             }
             foreach ($notFound as $notFoundId) {
@@ -169,7 +170,7 @@ EOF
         // Add the current environment if nothing is otherwise specified.
         if (!$anythingSpecified
             && empty($selectedEnvironments)
-            && ($current = $this->getCurrentEnvironment($this->getSelectedProject()))) {
+            && ($current = $this->getCurrentEnvironment($selection->getProject()))) {
             $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api->getEnvironmentLabel($current));
             $this->stdErr->writeln('');
             $selectedEnvironments[$current->id] = $current;
@@ -271,8 +272,8 @@ EOF
         }
 
         $codeSourceIntegration = null;
-        if ($this->hasExternalGitHost($this->getSelectedProject())) {
-            $codeSourceIntegration = $this->api->getCodeSourceIntegration($this->getSelectedProject());
+        if ($this->hasExternalGitHost($selection->getProject())) {
+            $codeSourceIntegration = $this->api->getCodeSourceIntegration($selection->getProject());
         }
         $integrationPrunesBranches = $codeSourceIntegration && $codeSourceIntegration->getProperty('prune_branches', false);
 
@@ -436,7 +437,7 @@ EOF
 
         if ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            if (!$activityMonitor->waitMultiple($deactivateActivities, $this->getSelectedProject())) {
+            if (!$activityMonitor->waitMultiple($deactivateActivities, $selection->getProject())) {
                 $error = true;
             }
         }

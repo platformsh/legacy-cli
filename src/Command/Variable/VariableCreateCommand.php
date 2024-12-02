@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -21,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VariableCreateCommand extends VariableCommandBase
 {
     private ?Form $form = null;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -36,14 +37,14 @@ class VariableCreateCommand extends VariableCommandBase
             ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update the variable if it already exists');
         $this->form = Form::fromArray($this->getFields());
         $this->form->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
 
         // Merge the 'name' argument with the --name option.
         if ($input->getArgument('name')) {
@@ -81,11 +82,11 @@ class VariableCreateCommand extends VariableCommandBase
                 }
                 $arguments = [
                     '--allow-no-change' => true,
-                    '--project' => $this->getSelectedProject()->id,
+                    '--project' => $selection->getProject()->id,
                     'name' => $name,
                 ];
-                if ($this->hasSelectedEnvironment()) {
-                    $arguments['--environment'] = $this->getSelectedEnvironment()->id;
+                if ($selection->hasEnvironment()) {
+                    $arguments['--environment'] = $selection->getEnvironment()->id;
                 }
                 foreach ($this->form->getFields() as $field) {
                     $argName = '--' . $field->getOptionName();
@@ -152,7 +153,7 @@ class VariableCreateCommand extends VariableCommandBase
         $level = $values['level'];
         unset($values['level']);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         switch ($level) {
             case 'environment':
@@ -166,7 +167,7 @@ class VariableCreateCommand extends VariableCommandBase
                     unset($values['visible_runtime']);
                 }
 
-                $environment = $this->getSelectedEnvironment();
+                $environment = $selection->getEnvironment();
                 if ($environment->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the environment <error>%s</error>',
@@ -229,7 +230,7 @@ class VariableCreateCommand extends VariableCommandBase
             $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

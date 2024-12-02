@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Version;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
 use GuzzleHttp\Utils;
@@ -16,22 +17,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VersionListCommand extends CommandBase
 {
     protected string $stability = 'ALPHA';
-    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $environment = $selection->getEnvironment();
 
         $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));
@@ -55,7 +56,7 @@ class VersionListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Versions for the project %s, environment %s:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getProjectLabel($selection->getProject()),
                 $this->api->getEnvironmentLabel($environment)
             ));
         }

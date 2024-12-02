@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:init', description: 'Initialize an environment from a public Git repository')]
 class EnvironmentInitCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -31,9 +32,9 @@ class EnvironmentInitCommand extends CommandBase
             $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh-templates/golang');
         }
 
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     /**
@@ -41,12 +42,12 @@ class EnvironmentInitCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
-        if (!$this->hasSelectedEnvironment()) {
-            $this->selectEnvironment($this->getSelectedProject()->default_branch);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        if (!$selection->hasEnvironment()) {
+            $this->selectEnvironment($selection->getProject()->default_branch);
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         $url = $input->getArgument('url');
         $profile = $input->getOption('profile') ?: basename((string) $url);
@@ -72,7 +73,7 @@ class EnvironmentInitCommand extends CommandBase
 
         // Summarize this action with a message.
         $message = 'Initializing project ';
-        $message .= $this->api->getProjectLabel($this->getSelectedProject());
+        $message .= $this->api->getProjectLabel($selection->getProject());
         $message .= ', environment ' . $this->api->getEnvironmentLabel($environment);
         if ($input->getOption('profile')) {
             $message .= ' with profile <info>' . $profile . '</info> (' . $url . ')';
@@ -87,7 +88,7 @@ class EnvironmentInitCommand extends CommandBase
 
         if ($this->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             return $success ? 0 : 1;
         }
 

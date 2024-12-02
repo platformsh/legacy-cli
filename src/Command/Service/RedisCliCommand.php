@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:redis-cli', description: 'Access the Redis CLI', aliases: ['redis'])]
 class RedisCliCommand extends CommandBase
 {
-    public function __construct(private readonly Relationships $relationships)
+    public function __construct(private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,9 +25,9 @@ class RedisCliCommand extends CommandBase
         $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
+            ->addAppOption($this->getDefinition());
         $this->addExample('Open the redis-cli shell');
         $this->addExample('Ping the Redis server', 'ping');
         $this->addExample('Show Redis status information', 'info');

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
@@ -26,6 +27,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
+    private readonly Selector $selector;
     private readonly PropertyFormatter $propertyFormatter;
     private readonly Config $config;
     private readonly Api $api;
@@ -95,11 +97,12 @@ abstract class MetricsCommandBase extends CommandBase
         ],
     ];
     #[Required]
-    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter) : void
+    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Selector $selector) : void
     {
         $this->api = $api;
         $this->config = $config;
         $this->propertyFormatter = $propertyFormatter;
+        $this->selector = $selector;
     }
 
     public function isEnabled(): bool
@@ -471,7 +474,7 @@ abstract class MetricsCommandBase extends CommandBase
     {
         $formatter = $this->propertyFormatter;
 
-        $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
+        $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
 
         // Create a closure which can sort services by name, putting apps and
         // workers first.

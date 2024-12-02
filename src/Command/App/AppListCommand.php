@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
@@ -18,7 +19,7 @@ class AppListCommand extends CommandBase
 {
     private array $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
     private array $defaultColumns = ['name', 'type'];
-    public function __construct(private readonly Api $api, private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -31,8 +32,8 @@ class AppListCommand extends CommandBase
         $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of app names only');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
@@ -42,11 +43,11 @@ class AppListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         // Find a list of deployed web apps.
         $deployment = $this->api
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
         $apps = $deployment->webapps;
 
         if (!count($apps)) {
@@ -70,7 +71,7 @@ class AppListCommand extends CommandBase
         // @todo The "Local path" column is mainly here for legacy reasons, and can be removed in a future version.
         $showLocalPath = false;
         $localApps = [];
-        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config->has('service.app_config_file')) {
+        if (($projectRoot = $this->selector->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config->has('service.app_config_file')) {
             $finder = $this->applicationFinder;
             $localApps = $finder->findApplications($projectRoot);
             $showLocalPath = true;
@@ -108,8 +109,8 @@ class AppListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Applications on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
-                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment())
             ));
         }
 

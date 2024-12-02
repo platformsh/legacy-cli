@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -23,7 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbDumpCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -39,7 +40,7 @@ class DbDumpCommand extends CommandBase
             ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
             ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data')
             ->addOption('charset', null, InputOption::VALUE_REQUIRED, 'The character set encoding for the dump');
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition())->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
@@ -54,7 +55,7 @@ class DbDumpCommand extends CommandBase
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
         if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $this->validateInput($input, true);
+            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
         }
 
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
@@ -62,7 +63,7 @@ class DbDumpCommand extends CommandBase
         $includedTables = $input->getOption('table');
         $excludedTables = $input->getOption('exclude-table');
         $schemaOnly = $input->getOption('schema-only');
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
         $fs = $this->filesystem;
 
@@ -74,10 +75,10 @@ class DbDumpCommand extends CommandBase
         }
 
         $service = false;
-        if ($this->hasSelectedEnvironment()) {
+        if ($selection->hasEnvironment()) {
             // Get information about the deployed service associated with the
             // selected relationship.
-            $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
+            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
             $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
         }
 
@@ -142,7 +143,7 @@ class DbDumpCommand extends CommandBase
                 }
             } else {
                 $defaultFilename = $this->getDefaultFilename(
-                    $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null,
+                    $selection->hasEnvironment() ? $selection->getEnvironment() : null,
                     $database['service'],
                     $schema,
                     $includedTables,

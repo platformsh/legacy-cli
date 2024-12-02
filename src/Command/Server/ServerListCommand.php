@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,7 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:list', description: 'List running local project web server(s)', aliases: ['servers'])]
 class ServerListCommand extends ServerCommandBase
 {
-    public function __construct(private readonly Table $table)
+    public function __construct(private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -29,7 +30,7 @@ class ServerListCommand extends ServerCommandBase
             return 1;
         }
 
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         $all = $input->getOption('all');
         if (!$all && $projectRoot) {
             $servers = array_filter($servers, fn($server): bool => $server['projectRoot'] === $projectRoot);

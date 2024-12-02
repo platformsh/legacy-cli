@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
@@ -17,7 +18,7 @@ use Symfony\Component\Filesystem\Filesystem;
 #[AsCommand(name: 'project:set-remote', description: 'Set the remote project for the current Git repository', aliases: ['set-remote'])]
 class ProjectSetRemoteCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly \Platformsh\Cli\Service\Filesystem $filesystem, private readonly Git $git, private readonly Identifier $identifier, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly \Platformsh\Cli\Service\Filesystem $filesystem, private readonly Git $git, private readonly Identifier $identifier, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -103,7 +104,7 @@ class ProjectSetRemoteCommand extends CommandBase
             return 0;
         }
 
-        $currentProject = $this->getCurrentProject(true);
+        $currentProject = $this->selector->getCurrentProject();
         if ($currentProject) {
             $this->stdErr->writeln(sprintf(
                 'This repository is already linked to the remote project: %s',

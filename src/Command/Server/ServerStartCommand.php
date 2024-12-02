@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:start', description: 'Run PHP web server(s) for the local project')]
 class ServerStartCommand extends ServerCommandBase
 {
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Url $url)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -39,7 +40,7 @@ class ServerStartCommand extends ServerCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }

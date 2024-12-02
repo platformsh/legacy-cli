@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\RemoteEnvVars;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Terminal;
 class EnvironmentDrushCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly RemoteEnvVars $remoteEnvVars)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -27,9 +28,9 @@ class EnvironmentDrushCommand extends CommandBase
     {
         $this
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
+             ->addAppOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Run "drush status" on the remote environment', 'status');
         $this->addExample('Enable the Overlay module on the remote environment', 'en overlay');
@@ -45,7 +46,7 @@ class EnvironmentDrushCommand extends CommandBase
 
         // Hide this command in the list if the project is not Drupal.
         // Avoid checking if running in the home directory.
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if ($projectRoot && $this->config->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
             return true;
         }
@@ -55,7 +56,7 @@ class EnvironmentDrushCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $drushCommand = (array) $input->getArgument('cmd');
         if (count($drushCommand) === 1) {
@@ -86,7 +87,7 @@ class EnvironmentDrushCommand extends CommandBase
         $host = $this->selectHost($input, false, $appContainer);
         $appName = $appContainer->getName();
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
 
         $deployment = $this->api->getCurrentDeployment($selectedEnvironment);
 

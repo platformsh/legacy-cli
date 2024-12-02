@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Model\Activity;
@@ -17,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:activity:get', description: 'View detailed information on a single integration activity')]
 class IntegrationActivityGetCommand extends IntegrationCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -30,7 +32,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             ->addArgument('integration', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view');
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
@@ -38,10 +40,10 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
+        $this->io->warnAboutDeprecatedOptions(['environment']);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('integration'), $input->isInteractive());
         if (!$integration) {

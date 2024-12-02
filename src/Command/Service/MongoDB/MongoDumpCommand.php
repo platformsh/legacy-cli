@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:dump', description: 'Create a binary archive dump of data from MongoDB', aliases: ['mongodump'])]
 class MongoDumpCommand extends CommandBase
 {
-    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -31,14 +32,14 @@ class MongoDumpCommand extends CommandBase
         $this->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
+            ->addAppOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
         $gzip = $input->getOption('gzip');
 
@@ -54,7 +55,7 @@ class MongoDumpCommand extends CommandBase
         $dumpFile = false;
 
         if (!$input->getOption('stdout')) {
-            $defaultFilename = $this->getDefaultFilename($this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null, $appName, $input->getOption('collection'), $gzip);
+            $defaultFilename = $this->getDefaultFilename($selection->hasEnvironment() ? $selection->getEnvironment() : null, $appName, $input->getOption('collection'), $gzip);
             $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
         }
 

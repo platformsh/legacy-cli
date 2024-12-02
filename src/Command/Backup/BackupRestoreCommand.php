@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -18,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupRestoreCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -32,11 +35,11 @@ class BackupRestoreCommand extends CommandBase
             ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
         if ($this->config->get('api.sizing')) {
             $this->addOption('no-resources', null, InputOption::VALUE_NONE, "Do not override the target's existing resource settings.");
-            $this->addResourcesInitOption(['backup', 'parent', 'default', 'minimum']);
+            $this->resourcesUtil->addOption($this->getDefinition(), ['backup', 'parent', 'default', 'minimum']);
         }
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHiddenAliases(['environment:restore', 'snapshot:restore']);
         $this->addExample('Restore the most recent backup');
         $this->addExample('Restore a specific backup', '92c9a4b2aa75422efb3d');
@@ -44,12 +47,12 @@ class BackupRestoreCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['restore-code']);
+        $this->io->warnAboutDeprecatedOptions(['restore-code']);
 
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $environment = $this->getSelectedEnvironment();
-        $project = $this->getSelectedProject();
+        $environment = $selection->getEnvironment();
+        $project = $selection->getProject();
 
         $backupName = $input->getArgument('backup');
         if (!empty($backupName)) {

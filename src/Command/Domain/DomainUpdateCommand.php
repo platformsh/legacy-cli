@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Model\EnvironmentDomain;
@@ -12,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainUpdateCommand extends DomainCommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -22,9 +23,9 @@ class DomainUpdateCommand extends DomainCommandBase
     protected function configure()
     {
         $this->addDomainOptions();
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Update the custom certificate for the domain example.org',
             'example.org --cert example-org.crt --key example-org.key'
@@ -36,16 +37,16 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
 
         if (!$this->validateDomainInput($input)) {
             return 1;
         }
 
         $forEnvironment = $input->getOption('environment') !== null;
-        $environment = $forEnvironment ? $this->getSelectedEnvironment() : null;
+        $environment = $forEnvironment ? $selection->getEnvironment() : null;
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         if ($forEnvironment) {
             $httpClient = $this->api->getHttpClient();

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
@@ -23,7 +24,7 @@ class OrganizationListCommand extends OrganizationCommandBase
         'owner_username' => 'Owner username',
     ];
     private array $defaultColumns = ['name', 'label', 'owner_email'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -72,7 +73,7 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         $currentProjectOrg = null;
-        $currentProject = $this->getCurrentProject(true);
+        $currentProject = $this->selector->getCurrentProject();
         if ($currentProject && $currentProject->hasProperty('organization')) {
             $currentProjectOrg = $currentProject->getProperty('organization');
         }

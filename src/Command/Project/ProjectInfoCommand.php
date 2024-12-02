@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
@@ -19,7 +20,7 @@ class ProjectInfoCommand extends CommandBase
 {
     /** @var PropertyFormatter|null */
     protected $formatter;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -35,7 +36,7 @@ class ProjectInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
@@ -44,9 +45,9 @@ class ProjectInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $this->formatter = $this->propertyFormatter;
 
         if ($input->getOption('refresh')) {
@@ -153,7 +154,7 @@ class ProjectInfoCommand extends CommandBase
         $success = true;
         if (!$noWait) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

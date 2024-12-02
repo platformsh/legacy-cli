@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -17,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentActivateCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -26,22 +28,22 @@ class EnvironmentActivateCommand extends CommandBase
         $this
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set a new environment parent before activating');
-        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->resourcesUtil->addOption($this->getDefinition(), ['parent', 'default', 'minimum']);
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Activate the environments "develop" and "stage"', 'develop stage');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsByStatus(['inactive', 'paused']);
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        if ($this->hasSelectedEnvironment()) {
-            $toActivate = [$this->getSelectedEnvironment()];
+        if ($selection->hasEnvironment()) {
+            $toActivate = [$selection->getEnvironment()];
         } else {
-            $environments = $this->api->getEnvironments($this->getSelectedProject());
+            $environments = $this->api->getEnvironments($selection->getProject());
             $environmentIds = $input->getArgument('environment');
             $toActivate = array_intersect_key($environments, array_flip($environmentIds));
             $notFound = array_diff($environmentIds, array_keys($environments));
@@ -65,13 +67,13 @@ class EnvironmentActivateCommand extends CommandBase
     protected function activateMultiple(array $environments, InputInterface $input, OutputInterface $output)
     {
         $parentId = $input->getOption('parent');
-        if ($parentId && !$this->api->getEnvironment($parentId, $this->getSelectedProject())) {
+        if ($parentId && !$this->api->getEnvironment($parentId, $selection->getProject())) {
             $this->stdErr->writeln(sprintf('Parent environment not found: <error>%s</error>', $parentId));
             return false;
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $this->getSelectedProject());
+        $resourcesInit = $this->validateResourcesInitInput($input, $selection->getProject());
         if ($resourcesInit === false) {
             return 1;
         }
@@ -160,10 +162,10 @@ class EnvironmentActivateCommand extends CommandBase
         if ($processed) {
             if ($this->shouldWait($input)) {
                 $activityMonitor = $this->activityMonitor;
-                $result = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
+                $result = $activityMonitor->waitMultiple($activities, $selection->getProject());
                 $success = $success && $result;
             }
-            $this->api->clearEnvironmentsCache($this->getSelectedProject()->id);
+            $this->api->clearEnvironmentsCache($selection->getProject()->id);
         }
 
         return $success;

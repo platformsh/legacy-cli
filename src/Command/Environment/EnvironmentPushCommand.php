@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -24,7 +27,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentPushCommand extends CommandBase
 {
     const PUSH_FAILURE_EXIT_CODE = 87;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -42,14 +45,14 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Set the environment parent (only used with --activate)')
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
-        $this->addResourcesInitOption(
+        $this->resourcesUtil->addOption(
             ['parent', 'default', 'minimum', 'manual'],
             'Set the resources to use for new services: parent, default, minimum, or manual.'
             . "\n" . 'Currently the default is "default" but this will change to "parent" in future.'
         );
-        $this->addWaitOptions();
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Push code to the current environment');
         $this->addExample('Push code, without waiting for deployment', '--no-wait');
@@ -61,7 +64,7 @@ class EnvironmentPushCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['branch'], 'The option --%s is deprecated and will be removed in future. Use --activate, which has the same effect.');
+        $this->io->warnAboutDeprecatedOptions(['branch'], 'The option --%s is deprecated and will be removed in future. Use --activate, which has the same effect.');
 
         $git = $this->git;
         $gitRoot = $git->getRoot();
@@ -72,9 +75,9 @@ class EnvironmentPushCommand extends CommandBase
         }
         $git->setDefaultRepositoryDir($gitRoot);
 
-        $this->validateInput($input, true);
-        $project = $this->getSelectedProject();
-        $currentProject = $this->getCurrentProject();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $project = $selection->getProject();
+        $currentProject = $this->selector->getCurrentProject();
         $this->ensurePrintSelectedProject();
         $this->stdErr->writeln('');
 
@@ -121,8 +124,8 @@ class EnvironmentPushCommand extends CommandBase
         // environment, or the Git branch name).
         if ($input->getOption('target')) {
             $target = $input->getOption('target');
-        } elseif ($this->hasSelectedEnvironment()) {
-            $target = $this->getSelectedEnvironment()->id;
+        } elseif ($selection->hasEnvironment()) {
+            $target = $selection->getEnvironment()->id;
         } else {
             $allEnvironments = $this->api->getEnvironments($project);
             $currentBranch = $git->getCurrentBranch();

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:scp', description: 'Copy files to and from an environment using scp', aliases: ['scp'])]
 class EnvironmentScpCommand extends CommandBase
 {
-    public function __construct(private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -29,8 +30,8 @@ class EnvironmentScpCommand extends CommandBase
         $this
             ->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
             ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories');
-        $this->addProjectOption()
-            ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
             ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Copy local files a.txt and b.txt to remote mount var/files', "a.txt b.txt remote:var/files");
@@ -47,7 +48,7 @@ class EnvironmentScpCommand extends CommandBase
         }
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl($input->getOption('instance'));

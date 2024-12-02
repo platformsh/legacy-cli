@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'certificate:delete', description: 'Delete a certificate from the project')]
 class CertificateDeleteCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -25,8 +26,8 @@ class CertificateDeleteCommand extends CommandBase
     {
         $this
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
-        $this->addProjectOption();
-        $this->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     /**
@@ -34,10 +35,10 @@ class CertificateDeleteCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $id = $input->getArgument('id');
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $certificate = $project->getCertificate($id);
         if (!$certificate) {

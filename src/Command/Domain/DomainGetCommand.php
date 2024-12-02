@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainGetCommand extends DomainCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -32,8 +33,8 @@ class DomainGetCommand extends DomainCommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The domain property to view');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -41,10 +42,10 @@ class DomainGetCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $project = $selection->getProject();
         $forEnvironment = $input->getOption('environment') !== null;
-        $environment = $forEnvironment ? $this->getSelectedEnvironment() : null;
+        $environment = $forEnvironment ? $selection->getEnvironment() : null;
         $httpClient = $this->api->getHttpClient();
 
         $domainName = $input->getArgument('name');
@@ -98,7 +99,7 @@ class DomainGetCommand extends DomainCommandBase
         $executable = $this->config->get('application.executable');
         $exampleArgs = '';
         if ($forEnvironment) {
-            $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' ';
+            $exampleArgs = '-e ' . OsUtil::escapeShellArg($selection->getEnvironment()->name) . ' ';
         }
         $exampleArgs .= OsUtil::escapeShellArg($domainName);
         $this->stdErr->writeln([

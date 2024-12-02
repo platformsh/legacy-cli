@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
@@ -12,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentCurlCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
-    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli)
+    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -21,19 +22,19 @@ class EnvironmentCurlCommand extends CommandBase
     {
         CurlCli::configureInput($this->getDefinition());
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).
         $this->api;
 
-        $url = $this->getSelectedEnvironment()->getUri();
+        $url = $selection->getEnvironment()->getUri();
 
         $curl = $this->curlCli;
 

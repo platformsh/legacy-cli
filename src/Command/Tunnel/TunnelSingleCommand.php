@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:single', description: 'Open a single SSH tunnel to an app relationship')]
 class TunnelSingleCommand extends TunnelCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Ssh $ssh)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh)
     {
         parent::__construct();
     }
@@ -27,9 +28,9 @@ class TunnelSingleCommand extends TunnelCommandBase
         $this
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
     }
@@ -40,9 +41,9 @@ class TunnelSingleCommand extends TunnelCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
+        $environment = $selection->getEnvironment();
 
         $container = $this->selectRemoteContainer($input, false);
         $appName = $container->getName();

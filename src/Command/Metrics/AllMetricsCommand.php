@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -44,7 +45,7 @@ class AllMetricsCommand extends MetricsCommandBase
     ];
 
     private array $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
-    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -60,8 +61,8 @@ class AllMetricsCommand extends MetricsCommandBase
         $this->addExample('Show metrics in five-minute intervals over the last hour', '-i 5m -r 1h');
         $this->addExample('Show metrics for all SQL services', '--type mariadb,%sql');
         $this->addMetricsOptions()
-            ->addProjectOption()
-            ->addEnvironmentOption();
+            ->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -77,7 +78,7 @@ class AllMetricsCommand extends MetricsCommandBase
         }
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         $table = $this->table;
 
@@ -90,7 +91,7 @@ class AllMetricsCommand extends MetricsCommandBase
         // The fields are the selected column names (according to the $table
         // service), filtered to only those that contain an underscore.
         $fieldNames = array_filter($table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn($c): bool => str_contains((string) $c, '_'));
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), $fieldNames);
+        $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), $fieldNames);
         if ($values === false) {
             return 1;
         }

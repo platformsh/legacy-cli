@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Shell;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:ssh', description: 'SSH to the current environment', aliases: ['ssh'])]
 class EnvironmentSshCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -33,8 +34,8 @@ class EnvironmentSshCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the SSH URL only.')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
             ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition())
              ->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open a shell over SSH');
@@ -48,8 +49,8 @@ class EnvironmentSshCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $environment = $selection->getEnvironment();
 
         if ($input->getOption('all')) {
             $output->writeln(array_values($environment->getSshUrls()));
@@ -106,9 +107,9 @@ class EnvironmentSshCommand extends CommandBase
 
         $exitCode = $shell->executeSimple($command, null, $ssh->getEnv());
         if ($exitCode !== 0) {
-            if ($this->getSelectedProject()->isSuspended()) {
+            if ($selection->getProject()->isSuspended()) {
                 $this->stdErr->writeln('');
-                $this->api->warnIfSuspended($this->getSelectedProject());
+                $this->api->warnIfSuspended($selection->getProject());
                 return $exitCode;
             }
 

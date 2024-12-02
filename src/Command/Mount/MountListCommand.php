@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Mount;
@@ -21,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MountListCommand extends CommandBase
 {
     private array $tableHeader = ['path' => 'Mount path', 'definition' => 'Definition'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Mount $mount, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Mount $mount, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -35,8 +36,8 @@ class MountListCommand extends CommandBase
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addRemoteContainerOptions();
     }
 
@@ -63,8 +64,8 @@ class MountListCommand extends CommandBase
             }
         } else {
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $this->validateInput($input);
-            $environment = $this->getSelectedEnvironment();
+            $selection = $this->selector->getSelection($input);
+            $environment = $selection->getEnvironment();
             $container = $this->selectRemoteContainer($input);
             if ($container instanceof BrokenEnv) {
                 $this->stdErr->writeln(sprintf(
@@ -101,9 +102,9 @@ class MountListCommand extends CommandBase
         }
 
         $table = $this->table;
-        if ($this->hasSelectedEnvironment()) {
+        if ($selection->hasEnvironment()) {
             $this->stdErr->writeln(sprintf('Mounts on environment %s, %s <info>%s</info>:',
-                $this->api->getEnvironmentLabel($this->getSelectedEnvironment()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment()),
                 $appType,
                 $appName
             ));

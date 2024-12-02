@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSqlCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -30,7 +31,7 @@ class DbSqlCommand extends CommandBase
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to use. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition())->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open an SQL console on the remote database');
@@ -49,7 +50,7 @@ class DbSqlCommand extends CommandBase
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
         if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
-            $this->validateInput($input);
+            $selection = $this->selector->getSelection($input);
         }
 
         $database = $relationships->chooseDatabase($host, $input, $output);
@@ -59,10 +60,10 @@ class DbSqlCommand extends CommandBase
 
         $schema = $input->getOption('schema');
         if ($schema === null) {
-            if ($this->hasSelectedEnvironment()) {
+            if ($selection->hasEnvironment()) {
                 // Get information about the deployed service associated with the
                 // selected relationship.
-                $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
+                $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
                 $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
             } else {
                 $service = false;

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Route;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
@@ -24,7 +25,7 @@ class RouteListCommand extends CommandBase
         'url' => 'URL',
     ];
     private array $defaultColumns = ['route', 'type', 'to'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -39,8 +40,8 @@ class RouteListCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -57,8 +58,8 @@ class RouteListCommand extends CommandBase
             $fromEnv = true;
         } else {
             $this->debug('Reading routes from the deployments API');
-            $this->validateInput($input);
-            $environment = $this->getSelectedEnvironment();
+            $selection = $this->selector->getSelection($input);
+            $environment = $selection->getEnvironment();
             $deployment = $this->api->getCurrentDeployment($environment, $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
             $fromEnv = false;
@@ -88,7 +89,7 @@ class RouteListCommand extends CommandBase
             if (isset($environment) && !$fromEnv) {
                 $this->stdErr->writeln(sprintf(
                     'Routes on the project %s, environment %s:',
-                    $this->api->getProjectLabel($this->getSelectedProject()),
+                    $this->api->getProjectLabel($selection->getProject()),
                     $this->api->getEnvironmentLabel($environment)
                 ));
             }

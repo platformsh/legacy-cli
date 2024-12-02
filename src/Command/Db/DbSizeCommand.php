@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -24,7 +25,7 @@ class DbSizeCommand extends CommandBase
 {
 
     private array $tableHeader = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -52,7 +53,7 @@ class DbSizeCommand extends CommandBase
             $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable'));
         }
         $this->setHelp($help);
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition())->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());
@@ -65,7 +66,7 @@ class DbSizeCommand extends CommandBase
         $relationships = $this->relationships;
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
         $container = $this->selectRemoteContainer($input);
 
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar(), $container);
@@ -83,7 +84,7 @@ class DbSizeCommand extends CommandBase
 
         // Get information about the deployed service associated with the
         // selected relationship.
-        $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
+        $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
         $service = $deployment->getService($dbServiceName);
 
         $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));

@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Route;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -17,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'route:get', description: 'View detailed information about a route')]
 class RouteGetCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -33,8 +35,8 @@ class RouteGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to display')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addExample('View the URL to the https://{default}/ route', "'https://{default}/' -P url");
@@ -53,14 +55,14 @@ class RouteGetCommand extends CommandBase
             $routes = Route::fromVariables($decoded);
         } else {
             $this->debug('Reading routes from the API');
-            $this->validateInput($input);
-            $environment = $this->getSelectedEnvironment();
+            $selection = $this->selector->getSelection($input);
+            $environment = $selection->getEnvironment();
             $deployment = $this->api
                 ->getCurrentDeployment($environment, $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
         }
 
-        $this->warnAboutDeprecatedOptions(['app', 'identity-file']);
+        $this->io->warnAboutDeprecatedOptions(['app', 'identity-file']);
 
         /** @var Route|false $selectedRoute */
         $selectedRoute = false;
