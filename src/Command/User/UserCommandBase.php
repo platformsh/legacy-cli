@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Project;
@@ -11,16 +14,24 @@ use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 
 abstract class UserCommandBase extends CommandBase
 {
+    private readonly Config $config;
+    private readonly Api $api;
     /** @var ProjectUserAccess|ProjectAccess|null */
-    private static $userCache;
+    private static ?array $userCache = null;
+    #[Required]
+    public function autowire(Api $api, Config $config) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+    }
 
     /**
      * @return bool
      */
     protected function centralizedPermissionsEnabled()
     {
-        return $this->config()->get('api.centralized_permissions')
-            && $this->config()->get('api.organizations');
+        return $this->config->get('api.centralized_permissions')
+            && $this->config->get('api.organizations');
     }
 
     /**
@@ -31,9 +42,9 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return ProjectAccess|null
      */
-    private function doLoadLegacyProjectAccessById(Project $project, $id)
+    private function doLoadLegacyProjectAccessById(Project $project, string $id): ?ProjectAccess
     {
-        return ProjectAccess::get($id, $project->getUri() . '/access', $this->api()->getHttpClient()) ?: null;
+        return ProjectAccess::get($id, $project->getUri() . '/access', $this->api->getHttpClient()) ?: null;
     }
 
     /**
@@ -50,9 +61,9 @@ abstract class UserCommandBase extends CommandBase
      *  "Centralized Permissions" are enabled, or a ProjectAccess object
      *  otherwise.
      */
-    protected function loadProjectUser(Project $project, $identifier, $reset = false)
+    protected function loadProjectUser(Project $project, string $identifier, $reset = false)
     {
-        $byEmail = strpos($identifier, '@') !== false;
+        $byEmail = str_contains($identifier, '@');
         $cacheKey = $project->id . ':' . $identifier;
         if ($reset || !isset(self::$userCache[$cacheKey])) {
             if ($this->centralizedPermissionsEnabled()) {
@@ -76,7 +87,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return ProjectAccess|null
      */
-    private function doLoadLegacyProjectAccessByEmail(Project $project, $email)
+    private function doLoadLegacyProjectAccessByEmail(Project $project, string $email)
     {
         foreach ($project->getUsers() as $user) {
             $info = $this->legacyUserInfo($user);
@@ -115,9 +126,9 @@ abstract class UserCommandBase extends CommandBase
      * @param Project $project
      * @return ProjectUserAccess|null
      */
-    private function doLoadProjectUserById(Project $project, $id)
+    private function doLoadProjectUserById(Project $project, string $id): ?ProjectUserAccess
     {
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
         $endpointUrl = $project->getUri() . '/user-access';
         return ProjectUserAccess::get($id, $endpointUrl, $client) ?: null;
     }
@@ -131,9 +142,9 @@ abstract class UserCommandBase extends CommandBase
      * @param Project $project
      * @return ProjectUserAccess|null
      */
-    private function doLoadProjectUserByEmail(Project $project, $email)
+    private function doLoadProjectUserByEmail(Project $project, string $email): ?ProjectUserAccess
     {
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
 
         $progress = new ProgressMessage($this->stdErr);
         $progress->showIfOutputDecorated('Loading user information...');
@@ -184,7 +195,7 @@ abstract class UserCommandBase extends CommandBase
     {
         $choices = [];
         if ($this->centralizedPermissionsEnabled()) {
-            $items = ProjectUserAccess::getCollection($project->getUri() . '/user-access', 0, ['query' => ['page[size]' => 200]], $this->api()->getHttpClient());
+            $items = ProjectUserAccess::getCollection($project->getUri() . '/user-access', 0, ['query' => ['page[size]' => 200]], $this->api->getHttpClient());
             foreach ($items as $item) {
                 $choices[$item->user_id] = $this->getUserLabel($item);
             }

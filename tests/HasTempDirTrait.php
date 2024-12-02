@@ -19,7 +19,7 @@ trait HasTempDirTrait
      *
      * @return string
      */
-    protected function createTempDir($parentDir, $prefix = '')
+    protected function createTempDir(string $parentDir, $prefix = ''): string
     {
         if (!($tempDir = tempnam($parentDir, $prefix))
           || !unlink($tempDir)

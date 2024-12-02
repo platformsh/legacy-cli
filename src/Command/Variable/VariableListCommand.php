@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Client\Model\ProjectLevelVariable;
+use Platformsh\Client\Model\Variable;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -10,12 +14,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:list', description: 'List variables', aliases: ['variables', 'var'])]
 class VariableListCommand extends VariableCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'name' => 'Name',
         'level' => 'Level',
         'value' => 'Value',
         'is_enabled' => 'Enabled',
     ];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -36,8 +44,8 @@ class VariableListCommand extends VariableCommandBase
 
         $project = $this->getSelectedProject();
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        /** @var Table $table */
+        $table = $this->table;
 
         $variables = [];
         if ($level === 'project' || $level === null) {
@@ -54,7 +62,7 @@ class VariableListCommand extends VariableCommandBase
         }
 
         if (!$table->formatIsMachineReadable()) {
-            $projectLabel = $this->api()->getProjectLabel($project);
+            $projectLabel = $this->api->getProjectLabel($project);
             switch ($level) {
                 case 'project':
                     $this->stdErr->writeln(sprintf('Project-level variables on the project %s:', $projectLabel));
@@ -74,7 +82,7 @@ class VariableListCommand extends VariableCommandBase
 
         $rows = [];
 
-        /** @var \Platformsh\Client\Model\ProjectLevelVariable|\Platformsh\Client\Model\Variable $variable */
+        /** @var ProjectLevelVariable|Variable $variable */
         foreach ($variables as $variable) {
             $row = [];
             $row['name'] = $variable->name;
@@ -100,7 +108,7 @@ class VariableListCommand extends VariableCommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln(sprintf(
                 'To view variable details, run: <info>%s variable:get [name]</info>',
                 $executable

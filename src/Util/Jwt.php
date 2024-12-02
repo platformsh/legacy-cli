@@ -4,14 +4,11 @@ namespace Platformsh\Cli\Util;
 
 class Jwt
 {
-    private $token;
-
     /**
      * @param string $token
      */
-    public function __construct($token)
+    public function __construct(private $token)
     {
-        $this->token = $token;
     }
 
     /**

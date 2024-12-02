@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationCurlCommand extends OrganizationCommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config, private readonly CurlCli $curlCli)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -23,11 +28,11 @@ class OrganizationCurlCommand extends OrganizationCommandBase
     {
         $organization = $this->validateOrganizationInput($input);
 
-        $apiUri = new Uri($this->config()->getApiUrl());
+        $apiUri = new Uri($this->config->getApiUrl());
         $absoluteUrl = $apiUri->withPath($organization->getUri());
 
         /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
+        $curl = $this->curlCli;
         return $curl->run($absoluteUrl, $input, $output);
     }
 }

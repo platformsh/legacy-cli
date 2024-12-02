@@ -2,22 +2,18 @@
 
 namespace Platformsh\Cli\Event;
 
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class EnvironmentsChangedEvent extends Event
 {
-    private $project;
-    private $environments;
-
     /**
-     * @param \Platformsh\Client\Model\Project        $project
-     * @param \Platformsh\Client\Model\Environment[]  $environments
+     * @param Project $project
+     * @param Environment[] $environments
      */
-    public function __construct(Project $project, array $environments)
+    public function __construct(private readonly Project $project, private readonly array $environments)
     {
-        $this->project = $project;
-        $this->environments = $environments;
     }
 
     public function getProject()

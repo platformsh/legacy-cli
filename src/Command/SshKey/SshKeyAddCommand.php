@@ -1,6 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\SshConfig;
+use Platformsh\Cli\Service\SshKey;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'ssh-key:add', description: 'Add a new SSH key')]
 class SshKeyAddCommand extends SshKeyCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SshConfig $sshConfig, private readonly SshKey $sshKey)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -24,26 +33,26 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Service\Shell $shellHelper */
-        $shellHelper = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\SshKey $sshKeyService */
-        $sshKeyService = $this->getService('ssh_key');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
+        /** @var Shell $shellHelper */
+        $shellHelper = $this->shell;
+        /** @var SshKey $sshKeyService */
+        $sshKeyService = $this->sshKey;
 
-        $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
+        $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 
         $this->stdErr->writeln(sprintf(
             "Adding an SSH key to your %s account (<info>%s</info>)\n",
-            $this->config()->get('service.name'),
-            $this->api()->getMyAccount()['email']
+            $this->config->get('service.name'),
+            $this->api->getMyAccount()['email']
         ));
 
         $this->stdErr->writeln($this->certificateNotice(false));
         $this->stdErr->writeln('');
         if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config->get('application.executable')));
             return 1;
         }
         $this->stdErr->writeln('');
@@ -83,7 +92,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
                 $this->stdErr->writeln('You must specify the path to a public SSH key');
                 return 1;
             }
-        } elseif (\strpos($publicKeyPath, '.pub') === false && \file_exists($publicKeyPath . '.pub')) {
+        } elseif (!str_contains((string) $publicKeyPath, '.pub') && \file_exists($publicKeyPath . '.pub')) {
             $publicKeyPath .= '.pub';
             $this->debug('Using public key: ' . $publicKeyPath . '.pub');
         }
@@ -109,7 +118,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             $this->stdErr->writeln('This key already exists in your account.');
             $this->stdErr->writeln(\sprintf(
                 'List your SSH keys with: <info>%s ssh-keys</info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
 
             return 0;
@@ -123,23 +132,23 @@ class SshKeyAddCommand extends SshKeyCommandBase
         }
 
         // Add the new key.
-        $this->api()->getClient()->addSshKey($publicKey, $input->getOption('name'));
+        $this->api->getClient()->addSshKey($publicKey, $input->getOption('name'));
 
         $this->stdErr->writeln(\sprintf(
             'The SSH key <info>%s</info> has been successfully added to your %s account.',
-            \basename($publicKeyPath),
-            $this->config()->get('service.name')
+            \basename((string) $publicKeyPath),
+            $this->config->get('service.name')
         ));
 
         // Reset and warm the SSH keys cache.
         try {
-            $this->api()->getSshKeys(true);
-        } catch (\Exception $e) {
+            $this->api->getSshKeys(true);
+        } catch (\Exception) {
             // Suppress exceptions; we do not need the result of this call.
         }
 
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
+        /** @var SshConfig $sshConfig */
+        $sshConfig = $this->sshConfig;
         if ($sshConfig->configureSessionSsh()) {
             $sshConfig->addUserSshConfig($questionHelper);
         }
@@ -154,9 +163,9 @@ class SshKeyAddCommand extends SshKeyCommandBase
      *
      * @return bool
      */
-    protected function keyExistsByFingerprint($fingerprint)
+    protected function keyExistsByFingerprint($fingerprint): bool
     {
-        foreach ($this->api()->getClient()->getSshKeys() as $existingKey) {
+        foreach ($this->api->getClient()->getSshKeys() as $existingKey) {
             if ($existingKey->fingerprint === $fingerprint) {
                 return true;
             }
@@ -174,16 +183,16 @@ class SshKeyAddCommand extends SshKeyCommandBase
      */
     private function askNewKeyPath(QuestionHelper $questionHelper)
     {
-        $basename = 'id_ed25519-' . $this->config()->get('application.slug') . '-' . $this->api()->getMyAccount()['username'];
-        $sshDir = $this->config()->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
+        $basename = 'id_ed25519-' . $this->config->get('application.slug') . '-' . $this->api->getMyAccount()['username'];
+        $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
         for ($i = 2; \file_exists($sshDir . DIRECTORY_SEPARATOR . $basename); $i++) {
             $basename .= $i;
         }
 
         return $questionHelper->askInput('Enter a filename for the new key (relative to ~/.ssh)', $basename, [], function ($path) use ($sshDir) {
-            if (\substr($path, 0, 1) !== '/') {
+            if (!str_starts_with($path, '/')) {
                 if (\substr($path, 0, 1) === '~/') {
-                    $path = $this->config()->getHomeDirectory() . '/' . \substr($path, 2);
+                    $path = $this->config->getHomeDirectory() . '/' . \substr($path, 2);
                 } else {
                     $path = $sshDir . DIRECTORY_SEPARATOR . ltrim($path, '\\/');
                 }

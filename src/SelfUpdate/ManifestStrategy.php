@@ -9,38 +9,20 @@ use Humbug\SelfUpdate\VersionParser;
 
 class ManifestStrategy implements StrategyInterface
 {
-    /** @var string */
-    private $manifestUrl;
-
-    /** @var array|null */
-    private $manifest;
+    private ?array $manifest = null;
 
     /** @var array|null */
     private $availableVersions;
 
-    /** @var string */
-    private $localVersion;
+    private static array $requiredKeys = ['sha256', 'version', 'url'];
 
-    /** @var bool */
-    private $allowMajor = false;
+    private int $manifestTimeout = 10;
 
-    /** @var bool */
-    private $allowUnstable = false;
+    private int $downloadTimeout = 60;
 
-    /** @var array */
-    private static $requiredKeys = ['sha256', 'version', 'url'];
+    private bool $ignorePhpReq = false;
 
-    /** @var int */
-    private $manifestTimeout = 10;
-
-    /** @var int */
-    private $downloadTimeout = 60;
-
-    /** @var bool */
-    private $ignorePhpReq = false;
-
-    /** @var array */
-    private $streamContextOptions = [];
+    private array $streamContextOptions = [];
 
     /**
      * ManifestStrategy constructor.
@@ -55,18 +37,14 @@ class ManifestStrategy implements StrategyInterface
      *                              version. Ignored if $localVersion is unstable
      *                              and there are no new stable versions.
      */
-    public function __construct($localVersion, $manifestUrl, $allowMajor = false, $allowUnstable = false)
+    public function __construct(private $localVersion, private $manifestUrl, private $allowMajor = false, private $allowUnstable = false)
     {
-        $this->localVersion = $localVersion;
-        $this->manifestUrl = $manifestUrl;
-        $this->allowMajor = $allowMajor;
-        $this->allowUnstable = $allowUnstable;
     }
 
     /**
      * @param array $opts
      */
-    public function setStreamContextOptions(array $opts)
+    public function setStreamContextOptions(array $opts): void
     {
         $this->streamContextOptions = $opts;
     }
@@ -74,7 +52,7 @@ class ManifestStrategy implements StrategyInterface
     /**
      * @param int $manifestTimeout
      */
-    public function setManifestTimeout($manifestTimeout)
+    public function setManifestTimeout($manifestTimeout): void
     {
         $this->manifestTimeout = $manifestTimeout;
     }
@@ -123,7 +101,7 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return array
      */
-    public function getUpdateNotesByVersion($currentVersion, $targetVersion)
+    public function getUpdateNotesByVersion($currentVersion, $targetVersion): array
     {
         $notes = [];
         foreach ($this->getAvailableVersions() as $version => $item) {
@@ -139,22 +117,22 @@ class ManifestStrategy implements StrategyInterface
                 }
             }
         }
-        uksort($notes, function ($a, $b) { return \version_compare($a, $b); });
+        uksort($notes, fn($a, $b): int|bool => \version_compare($a, $b));
         return $notes;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function download(Updater $updater)
+    public function download(Updater $updater): void
     {
         $versionInfo = $this->getRemoteVersionInfo($updater);
 
         // A relative download URL is treated as relative to the manifest URL.
         $url = $versionInfo['url'];
-        if (strpos($url, '//') === false && strpos($this->manifestUrl, '//') !== false) {
+        if (!str_contains((string) $url, '//') && str_contains($this->manifestUrl, '//')) {
             $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
-            $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
+            $url = str_replace($removePath, '/' . ltrim((string) $url, '/'), $this->manifestUrl);
         }
 
         $opts = $this->streamContextOptions;
@@ -263,11 +241,11 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return string[]
      */
-    private function filterByLocalMajorVersion(array $versions)
+    private function filterByLocalMajorVersion(array $versions): array
     {
         list($localMajorVersion, ) = explode('.', $this->localVersion, 2);
 
-        return array_filter($versions, function ($version) use ($localMajorVersion) {
+        return array_filter($versions, function ($version) use ($localMajorVersion): bool {
             list($majorVersion, ) = explode('.', $version, 2);
             return $majorVersion === $localMajorVersion;
         });
@@ -280,11 +258,11 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return string[]
      */
-    private function filterByPhpVersion(array $versions)
+    private function filterByPhpVersion(array $versions): array
     {
         $versionInfo = $this->getAvailableVersions();
 
-        return array_filter($versions, function ($version) use ($versionInfo) {
+        return array_filter($versions, function ($version) use ($versionInfo): bool {
             if (isset($versionInfo[$version]['php']['min'])
                 && version_compare(PHP_VERSION, $versionInfo[$version]['php']['min'], '<')) {
                 return false;

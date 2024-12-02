@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Relationships;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -9,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:info', description: "View relationship info for SSH tunnels")]
 class TunnelInfoCommand extends TunnelCommandBase
 {
+    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -28,8 +35,8 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
 
         $tunnels = $this->getTunnelInfo();
         $relationships = [];
@@ -53,7 +60,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             if (count($tunnels) > count($relationships)) {
                 $this->stdErr->writeln(sprintf(
                     'List all tunnels with: <info>%s tunnels --all</info>',
-                    $this->config()->get('application.executable')
+                    $this->config->get('application.executable')
                 ));
             }
 
@@ -70,8 +77,8 @@ class TunnelInfoCommand extends TunnelCommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;

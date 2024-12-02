@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Model\Host;
 
+use Symfony\Component\Process\Exception\RuntimeException;
+
 /**
  * Represents a host that can be accessed.
  *
@@ -38,7 +40,7 @@ interface HostInterface
      *   The command's output, or true if it succeeds with no output, or false
      *   if it fails and $mustRun is false.
      *
-     * @throws \Symfony\Component\Process\Exception\RuntimeException
+     * @throws RuntimeException
      *   If $mustRun is enabled and the command fails.
      */
     public function runCommand($command, $mustRun = true, $quiet = true, $input = null);

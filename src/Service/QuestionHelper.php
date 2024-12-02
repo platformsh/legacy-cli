@@ -16,10 +16,7 @@ use Symfony\Component\Console\Question\Question;
 
 class QuestionHelper extends BaseQuestionHelper
 {
-    /** @var InputInterface */
-    private $input;
-    /** @var OutputInterface */
-    private $output;
+    private readonly OutputInterface $output;
 
     /**
      * QuestionHelper constructor.
@@ -27,9 +24,8 @@ class QuestionHelper extends BaseQuestionHelper
      * @param InputInterface  $input
      * @param OutputInterface $output
      */
-    public function __construct(InputInterface $input, OutputInterface $output)
+    public function __construct(private readonly InputInterface $input, OutputInterface $output)
     {
-        $this->input = $input;
         if ($output instanceof ConsoleOutputInterface) {
             $output = $output->getErrorOutput();
         }
@@ -90,7 +86,7 @@ class QuestionHelper extends BaseQuestionHelper
      * @return int|string|null
      *   The chosen item (as a key in $items).
      */
-    public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null, $skipOnOne = true)
+    public function choose(array $items, $text = 'Enter a number to choose an item:', mixed $default = null, $skipOnOne = true): int|string|null
     {
         if (count($items) === 1) {
             if ($skipOnOne) {
@@ -149,7 +145,7 @@ class QuestionHelper extends BaseQuestionHelper
      * @return int|string|null
      *   The chosen item (as a key in $items).
      */
-    public function chooseAssoc(array $items, $text = 'Choose an item:', $default = null, $skipOnOne = true, $newLine = true)
+    public function chooseAssoc(array $items, $text = 'Choose an item:', mixed $default = null, $skipOnOne = true, $newLine = true)
     {
         if (count($items) === 1) {
             if ($skipOnOne) {
@@ -171,15 +167,13 @@ class QuestionHelper extends BaseQuestionHelper
      * Ask a simple question which requires input.
      *
      * @param string   $questionText
-     * @param mixed    $default
      * @param array    $autoCompleterValues
      * @param callable $validator
      * @param string   $defaultLabel
-     *
      * @return string
      *   The user's answer.
      */
-    public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null, $defaultLabel = 'default: ')
+    public function askInput(string $questionText, mixed $default = null, array $autoCompleterValues = [], callable $validator = null, $defaultLabel = 'default: '): mixed
     {
         if ($default !== null) {
             $questionText .= sprintf(' (%s<question>%s</question>)', $defaultLabel, $default);

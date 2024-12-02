@@ -16,7 +16,7 @@ class TableServiceTest extends TestCase
     /**
      * Test a table filtered by allowed column names.
      */
-    public function testColumns()
+    public function testColumns(): void
     {
         $output = new BufferedOutput();
         $definition = new InputDefinition();
@@ -57,7 +57,7 @@ class TableServiceTest extends TestCase
     /**
      * Test that columns are validated.
      */
-    public function testInvalidColumn()
+    public function testInvalidColumn(): void
     {
         $definition = new InputDefinition();
         Table::configureInput($definition);

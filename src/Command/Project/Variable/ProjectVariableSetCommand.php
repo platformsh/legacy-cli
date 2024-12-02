@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project\Variable;
 
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -16,6 +17,10 @@ class ProjectVariableSetCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
+    public function __construct(private readonly Api $api)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -66,7 +71,7 @@ class ProjectVariableSetCommand extends CommandBase
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
-        $this->api()->redeployWarning();
+        $this->api->redeployWarning();
 
         return 0;
     }
@@ -81,6 +86,6 @@ class ProjectVariableSetCommand extends CommandBase
         if ($string === 'null') {
             return true;
         }
-        return \json_decode($string) !== null;
+        return \json_decode((string) $string) !== null;
     }
 }

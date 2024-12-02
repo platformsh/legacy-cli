@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BlueGreenEnableCommand extends CommandBase
 {
     protected string $stability = 'ALPHA';
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -33,24 +40,24 @@ class BlueGreenEnableCommand extends CommandBase
         $this->validateInput($input, false, true);
         $environment = $this->getSelectedEnvironment();
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));
         $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) > 1) {
-            $this->stdErr->writeln(sprintf('Blue/green deployments are already enabled for the environment %s.', $this->api()->getEnvironmentLabel($environment)));
-            $this->stdErr->writeln(sprintf('List versions by running: <info>%s versions</info>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('Blue/green deployments are already enabled for the environment %s.', $this->api->getEnvironmentLabel($environment)));
+            $this->stdErr->writeln(sprintf('List versions by running: <info>%s versions</info>', $this->config->get('application.executable')));
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to enable blue/green deployments for the environment %s?', $this->api()->getEnvironmentLabel($environment)))) {
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
+        if (!$questionHelper->confirm(sprintf('Are you sure you want to enable blue/green deployments for the environment %s?', $this->api->getEnvironmentLabel($environment)))) {
             return 1;
         }
 
         $this->stdErr->writeln('');
         $httpClient->post($environment->getLink('#versions'), ['json' => new \stdClass()]);
-        $this->stdErr->writeln(sprintf('Blue/green deployments are now enabled for the environment %s.', $this->api()->getEnvironmentLabel($environment)));
+        $this->stdErr->writeln(sprintf('Blue/green deployments are now enabled for the environment %s.', $this->api->getEnvironmentLabel($environment)));
 
         return 0;
     }

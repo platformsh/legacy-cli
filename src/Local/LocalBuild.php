@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Symfony\Component\Finder\SplFileInfo;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
@@ -20,36 +21,29 @@ class LocalBuild
     /** @var array */
     protected $settings = [];
 
-    /** @var OutputInterface */
-    protected $output;
+    protected OutputInterface $output;
 
-    /** @var Filesystem */
-    protected $fsHelper;
+    protected Filesystem $fsHelper;
 
-    /** @var Git */
-    protected $gitHelper;
+    protected Git $gitHelper;
 
-    /** @var Shell */
-    protected $shellHelper;
+    protected Shell $shellHelper;
 
-    /** @var DependencyInstaller */
-    protected $dependencyInstaller;
+    protected DependencyInstaller $dependencyInstaller;
 
-    /** @var Config */
-    protected $config;
+    protected Config $config;
 
-    /** @var ApplicationFinder */
-    protected $applicationFinder;
+    protected ApplicationFinder $applicationFinder;
 
     /**
      * LocalBuild constructor.
      *
      * @param Config|null                                    $config
      * @param OutputInterface|null                           $output
-     * @param \Platformsh\Cli\Service\Shell|null             $shell
-     * @param \Platformsh\Cli\Service\Filesystem|null        $fs
-     * @param \Platformsh\Cli\Service\Git|null               $git
-     * @param \Platformsh\Cli\Local\DependencyInstaller|null $dependencyInstaller
+     * @param Shell|null $shell
+     * @param Filesystem|null $fs
+     * @param Git|null $git
+     * @param DependencyInstaller|null $dependencyInstaller
      */
     public function __construct(
         Config $config = null,
@@ -108,7 +102,7 @@ class LocalBuild
      *
      * @return bool
      */
-    public function build(array $settings, $sourceDir, $destination = null, array $apps = [])
+    public function build(array $settings, string $sourceDir, $destination = null, array $apps = [])
     {
         $this->settings = $settings;
         $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
@@ -153,7 +147,7 @@ class LocalBuild
      *
      * @return string|false
      */
-    public function getTreeId($appRoot, array $settings)
+    public function getTreeId($appRoot, array $settings): false|string
     {
         $hashes = [];
 
@@ -168,7 +162,7 @@ class LocalBuild
             "\n",
             $tree
         );
-        $hashes[] = sha1($tree);
+        $hashes[] = sha1((string) $tree);
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
@@ -243,15 +237,15 @@ class LocalBuild
 
         // If the destination is inside the source directory, ensure it isn't
         // copied or symlinked into the build.
-        if (strpos($destination, $sourceDir) === 0) {
+        if (str_starts_with($destination, $sourceDir)) {
             $buildFlavor->addIgnoredFiles([
                 ltrim(substr($destination, strlen($sourceDir)), '/'),
             ]);
         }
 
         // Warn about a mismatched PHP version.
-        if (isset($appConfig['type']) && strpos($appConfig['type'], ':')) {
-            list($stack, $version) = explode(':', $appConfig['type'], 2);
+        if (isset($appConfig['type']) && strpos((string) $appConfig['type'], ':')) {
+            list($stack, $version) = explode(':', (string) $appConfig['type'], 2);
             $localPhpVersion = $this->shellHelper->getPhpVersion();
             if ($stack === 'php' && version_compare($version, $localPhpVersion, '>')) {
                 $this->output->writeln(sprintf(
@@ -438,7 +432,7 @@ class LocalBuild
      *
      * @return bool
      */
-    protected function runHook($hook, $dir)
+    protected function runHook($hook, $dir): bool
     {
         $code = $this->shellHelper->executeSimple(
             implode("\n", (array) $hook),
@@ -466,7 +460,7 @@ class LocalBuild
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanBuilds($projectRoot, $maxAge = null, $keepMax = 10, $includeActive = false, $quiet = true)
+    public function cleanBuilds(string $projectRoot, $maxAge = null, $keepMax = 10, $includeActive = false, $quiet = true)
     {
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
@@ -493,7 +487,7 @@ class LocalBuild
      *
      * @return array The absolute paths to any active builds in the project.
      */
-    protected function getActiveBuilds($projectRoot)
+    protected function getActiveBuilds(string $projectRoot): array
     {
         $www = $projectRoot . '/' . $this->config->getWithDefault('local.web_root', '_www');
         if (!file_exists($www)) {
@@ -502,7 +496,7 @@ class LocalBuild
         $links = [$www];
         if (!is_link($www) && is_dir($www)) {
             $finder = new Finder();
-            /** @var \Symfony\Component\Finder\SplFileInfo $file */
+            /** @var SplFileInfo $file */
             foreach ($finder->in($www)
                             ->directories()
                             ->depth(0) as $file) {
@@ -519,14 +513,14 @@ class LocalBuild
                     continue;
                 }
                 // Ignore the target if it doesn't point to a build in 'builds'.
-                if (strpos($target, $buildsDir) === false) {
+                if (!str_contains($target, $buildsDir)) {
                     continue;
                 }
                 // The target should just be one level below the 'builds'
                 // directory, not more.
                 while (dirname($target) != $buildsDir) {
                     $target = dirname($target);
-                    if (strpos($target, $buildsDir) === false) {
+                    if (!str_contains($target, $buildsDir)) {
                         throw new \Exception('Error resolving active build directory');
                     }
                 }
@@ -548,7 +542,7 @@ class LocalBuild
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanArchives($projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
+    public function cleanArchives(string $projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
     {
         return $this->cleanDirectory(
             $projectRoot . '/' . $this->config->get('local.archive_dir'),
@@ -570,7 +564,7 @@ class LocalBuild
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $exclude = [], $quiet = true)
+    protected function cleanDirectory(string $directory, $maxAge = null, $keepMax = 5, array $exclude = [], $quiet = true): array
     {
         if (!is_dir($directory)) {
             return [0, 0];
@@ -582,9 +576,7 @@ class LocalBuild
         // Sort files by modified time (descending).
         usort(
             $files,
-            function ($a, $b) {
-                return filemtime($a) < filemtime($b);
-            }
+            fn($a, $b): bool => filemtime($a) < filemtime($b)
         );
         $now = time();
         $numDeleted = 0;

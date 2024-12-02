@@ -21,7 +21,7 @@ class Mount
      *   trailing slashes are stripped. An empty shared path defaults to
      *   'files'.
      */
-    public function getSharedFileMounts(array $mounts)
+    public function getSharedFileMounts(array $mounts): array
     {
         $sharedFileMounts = [];
         foreach ($this->normalizeMounts($mounts) as $path => $definition) {
@@ -62,7 +62,7 @@ class Mount
      *
      * @return array
      */
-    public function normalizeMounts(array $mounts)
+    public function normalizeMounts(array $mounts): array
     {
         $normalized = [];
         foreach ($mounts as $path => $definition) {
@@ -100,7 +100,7 @@ class Mount
      *
      * @return string
      */
-    private function normalizeRelativePath($path)
+    private function normalizeRelativePath($path): string
     {
         return trim(trim($path), '/');
     }
@@ -116,7 +116,7 @@ class Mount
     private function normalizeDefinition($definition)
     {
         if (!is_array($definition)) {
-            if (!is_string($definition) || strpos($definition, 'shared:files') === false) {
+            if (!is_string($definition) || !str_contains($definition, 'shared:files')) {
                 throw new \RuntimeException('Failed to parse mount definition: ' . json_encode($definition));
             }
             $definition = [

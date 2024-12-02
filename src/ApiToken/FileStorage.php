@@ -9,12 +9,10 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
  * Stores API tokens using a hidden file.
  */
 class FileStorage implements StorageInterface {
-    private $config;
-    private $fs;
+    private readonly SymfonyFilesystem $fs;
 
-    public function __construct(Config $config, SymfonyFilesystem $fs = null)
+    public function __construct(private readonly Config $config, SymfonyFilesystem $fs = null)
     {
-        $this->config = $config;
         $this->fs = $fs ?: new SymfonyFilesystem();
     }
 
@@ -32,21 +30,21 @@ class FileStorage implements StorageInterface {
      *
      * @param string $value
      */
-    public function storeToken($value) {
+    public function storeToken($value): void {
         $this->save($value);
     }
 
     /**
      * Deletes the saved token.
      */
-    public function deleteToken() {
+    public function deleteToken(): void {
         $this->save('');
     }
 
     /**
      * @param string $token
      */
-    private function save($token) {
+    private function save($token): void {
         $filename = $this->getFilename();
         if (empty($token)) {
             if (file_exists($filename)) {
@@ -67,7 +65,7 @@ class FileStorage implements StorageInterface {
     /**
      * @return string
      */
-    private function load() {
+    private function load(): string {
         $filename = $this->getFilename();
         if (file_exists($filename)) {
             return trim((string) file_get_contents($filename));
@@ -79,7 +77,7 @@ class FileStorage implements StorageInterface {
     /**
      * @return string
      */
-    private function getFilename() {
+    private function getFilename(): string {
         return $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'api-token';
     }
 
@@ -90,8 +88,8 @@ class FileStorage implements StorageInterface {
      *
      * @return string
      */
-    private function resolveTokenFile($tokenFile) {
-        if (strpos($tokenFile, '/') !== 0 && strpos($tokenFile, '\\') !== 0) {
+    private function resolveTokenFile($tokenFile): string {
+        if (!str_starts_with($tokenFile, '/') && !str_starts_with($tokenFile, '\\')) {
             $tokenFile = $this->config->getUserConfigDir() . '/' . $tokenFile;
         }
 

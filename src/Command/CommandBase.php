@@ -153,9 +153,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if (!isset($this->synopsis[$key])) {
             $definition = clone $this->getDefinition();
-            $definition->setOptions(array_filter($definition->getOptions(), function (InputOption $opt) {
-                return !$opt instanceof HiddenInputOption;
-            }));
+            $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
 
             $this->synopsis[$key] = trim(sprintf(
                 // TODO

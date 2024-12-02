@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
@@ -11,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:add', description: 'Add an integration to the project')]
 class IntegrationAddCommand extends IntegrationCommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -33,8 +39,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->validateInput($input);
         $project = $this->getSelectedProject();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
         try {
             $values = $this->getForm()
                 ->resolveOptions($input, $this->stdErr, $questionHelper);
@@ -96,8 +102,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
 
         $success = true;
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 

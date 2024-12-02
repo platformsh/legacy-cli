@@ -15,24 +15,13 @@ class Certifier
 {
     const KEY_ALGORITHM = 'ed25519';
     const PRIVATE_KEY_FILENAME = 'id_ed25519';
+    private readonly OutputInterface $stdErr;
 
-    private $api;
-    private $config;
-    private $shell;
-    private $fs;
-    private $stdErr;
-    private $fileLock;
+    private static bool $disableAutoLoad = false;
 
-    private static $disableAutoLoad = false;
-
-    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output, FileLock $fileLock)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Shell $shell, private readonly Filesystem $fs, OutputInterface $output, private readonly FileLock $fileLock)
     {
-        $this->api = $api;
-        $this->config = $config;
-        $this->shell = $shell;
-        $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->fileLock = $fileLock;
     }
 
     /**
@@ -67,7 +56,7 @@ class Certifier
         // Acquire a lock to prevent race conditions when certificate and key
         // files are changed at the same time in different CLI processes.
         $lockName = 'ssh-cert--' . $this->config->getSessionIdSlug();
-        $result = $this->fileLock->acquireOrWait($lockName, function () {
+        $result = $this->fileLock->acquireOrWait($lockName, function (): void {
             $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
         }, function () use ($previousCert) {
             // While waiting for the lock, check if a new certificate has
@@ -94,7 +83,7 @@ class Certifier
      *
      * @see self::generateCertificate()
      */
-    private function doGenerateCertificate($forceNewKey = false)
+    private function doGenerateCertificate($forceNewKey = false): Certificate
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
@@ -169,7 +158,7 @@ class Certifier
      *
      * @return Certificate|null
      */
-    public function getExistingCertificate()
+    public function getExistingCertificate(): ?Certificate
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $private = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
@@ -190,7 +179,7 @@ class Certifier
      * @param Certificate $certificate
      * @return bool
      */
-    public function isValid(Certificate $certificate)
+    public function isValid(Certificate $certificate): bool
     {
         if ($certificate->hasExpired()) {
             return false;
@@ -213,7 +202,7 @@ class Certifier
      *
      * @return bool
      */
-    public function certificateConflictsWithJwt(Certificate $certificate, $jwt = null)
+    public function certificateConflictsWithJwt(Certificate $certificate, $jwt = null): bool
     {
         $extensions = $certificate->metadata()->getExtensions();
         if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh']) && !isset($extensions['token-claims@platform.sh'])) {
@@ -265,7 +254,7 @@ class Certifier
      * @param string $filename
      *   The private key filename.
      */
-    private function generateSshKey($filename)
+    private function generateSshKey(string $filename): void
     {
         $this->stdErr->writeln('Generating local key pair', OutputInterface::VERBOSITY_VERBOSE);
 
@@ -290,7 +279,7 @@ class Certifier
      * @param string $source
      * @param string $target
      */
-    private function rename($source, $target)
+    private function rename(string $source, string $target): void
     {
         if (!\rename($source, $target)) {
             throw new \RuntimeException(sprintf('Failed to rename file from %s to %s', $source, $target));

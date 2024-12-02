@@ -15,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:restore', description: 'Restore a binary archive dump of data into MongoDB', aliases: ['mongorestore'])]
 class MongoRestoreCommand extends CommandBase
 {
+    public function __construct(private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
@@ -32,8 +36,8 @@ class MongoRestoreCommand extends CommandBase
             throw new InvalidArgumentException('This command requires a mongodump archive to be piped into STDIN');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);

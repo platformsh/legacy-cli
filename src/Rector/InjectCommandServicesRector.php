@@ -4,6 +4,38 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Rector;
 
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\CurlCli;
+use Platformsh\Cli\Service\Drush;
+use Platformsh\Cli\Service\FileLock;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\GitDataApi;
+use Platformsh\Cli\Service\Identifier;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Local\DependencyInstaller;
+use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\RemoteEnvVars;
+use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Rsync;
+use Platformsh\Cli\Service\SelfUpdater;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SshConfig;
+use Platformsh\Cli\Service\SshDiagnostics;
+use Platformsh\Cli\Service\SshKey;
+use Platformsh\Cli\Service\State;
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\TokenConfig;
+use Platformsh\Cli\Service\Url;
+use PhpParser\Node\Stmt\If_;
 use Doctrine\Common\Cache\CacheProvider;
 use PhpParser\Builder\Method;
 use PhpParser\BuilderFactory;
@@ -17,8 +49,6 @@ use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
-use Platformsh\Cli\Local;
-use Platformsh\Cli\Service;
 use Platformsh\Cli\SshCert\Certifier;
 use Rector\NodeManipulator\ClassInsertManipulator;
 use Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory;
@@ -31,44 +61,44 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 class InjectCommandServicesRector extends AbstractRector
 {
     private const SERVICE_CLASS_NAMES = [
-        'activity_loader' => Service\ActivityLoader::class,
-        'activity_monitor' => Service\ActivityMonitor::class,
-        'api' => Service\Api::class,
-        'app_finder' => Local\ApplicationFinder::class,
+        'activity_loader' => ActivityLoader::class,
+        'activity_monitor' => ActivityMonitor::class,
+        'api' => Api::class,
+        'app_finder' => ApplicationFinder::class,
         'cache' => CacheProvider::class,
         'certifier' => Certifier::class,
-        'config' => Service\Config::class,
-        'curl_cli' => Service\CurlCli::class,
-        'drush' => Service\Drush::class,
-        'file_lock' => Service\FileLock::class,
-        'fs' => Service\Filesystem::class,
-        'git' => Service\Git::class,
-        'git_data_api' => Service\GitDataApi::class,
-        'identifier' => Service\Identifier::class,
-        'local.build' => Local\LocalBuild::class,
-        'local.project' => Local\LocalProject::class,
-        'local.dependency_installer' => Local\DependencyInstaller::class,
-        'mount' => Service\Mount::class,
-        'property_formatter' => Service\PropertyFormatter::class,
-        'question_helper' => Service\QuestionHelper::class,
-        'remote_env_vars' => Service\RemoteEnvVars::class,
-        'relationships' => Service\Relationships::class,
-        'rsync' => Service\Rsync::class,
-        'self_updater' => Service\SelfUpdater::class,
-        'shell' => Service\Shell::class,
-        'ssh' => Service\Ssh::class,
-        'ssh_config' => Service\SshConfig::class,
-        'ssh_diagnostics' => Service\SshDiagnostics::class,
-        'ssh_key' => Service\SshKey::class,
-        'state' => Service\State::class,
-        'table' => Service\Table::class,
-        'token_config' => Service\TokenConfig::class,
-        'url' => Service\Url::class,
+        'config' => Config::class,
+        'curl_cli' => CurlCli::class,
+        'drush' => Drush::class,
+        'file_lock' => FileLock::class,
+        'fs' => Filesystem::class,
+        'git' => Git::class,
+        'git_data_api' => GitDataApi::class,
+        'identifier' => Identifier::class,
+        'local.build' => LocalBuild::class,
+        'local.project' => LocalProject::class,
+        'local.dependency_installer' => DependencyInstaller::class,
+        'mount' => Mount::class,
+        'property_formatter' => PropertyFormatter::class,
+        'question_helper' => QuestionHelper::class,
+        'remote_env_vars' => RemoteEnvVars::class,
+        'relationships' => Relationships::class,
+        'rsync' => Rsync::class,
+        'self_updater' => SelfUpdater::class,
+        'shell' => Shell::class,
+        'ssh' => Ssh::class,
+        'ssh_config' => SshConfig::class,
+        'ssh_diagnostics' => SshDiagnostics::class,
+        'ssh_key' => SshKey::class,
+        'state' => State::class,
+        'table' => Table::class,
+        'token_config' => TokenConfig::class,
+        'url' => Url::class,
     ];
 
     private const METHOD_TO_SERVICE = [
-        'api' => Service\Api::class,
-        'config' => Service\Config::class,
+        'api' => Api::class,
+        'config' => Config::class,
     ];
 
     public function __construct(
@@ -156,7 +186,7 @@ class InjectCommandServicesRector extends AbstractRector
         foreach ($stmts as $stmt) {
             if (property_exists($stmt, 'stmts') && is_array($stmt->stmts)) {
                 $assignments = array_merge($assignments, $this->findAssignmentsRecursively($stmt->stmts));
-                if ($stmt instanceof Node\Stmt\If_) {
+                if ($stmt instanceof If_) {
                     $assignments = array_merge($assignments, $this->findAssignmentsRecursively($stmt->elseifs));
                     if ($stmt->else !== null) {
                         $assignments = array_merge($assignments, $this->findAssignmentsRecursively($stmt->else->stmts));
@@ -210,7 +240,7 @@ class InjectCommandServicesRector extends AbstractRector
             ));
         }
 
-        usort($method->params, fn (Param $a, Param $b) => $a->var->name <=> $b->var->name);
+        usort($method->params, fn (Param $a, Param $b): int => $a->var->name <=> $b->var->name);
     }
 
     private function getOrCreateMethod(Class_ $classNode, string $name): ClassMethod

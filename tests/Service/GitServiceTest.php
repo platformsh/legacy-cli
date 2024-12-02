@@ -58,7 +58,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::ensureInstalled().
      */
-    public function testEnsureInstalled()
+    public function testEnsureInstalled(): void
     {
         $this->expectNotToPerformAssertions();
         $this->git->ensureInstalled();
@@ -67,7 +67,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::isRepository().
      */
-    public function testGetRoot()
+    public function testGetRoot(): void
     {
         // Test a real repository.
         $repositoryDir = $this->getRepositoryDir();
@@ -87,7 +87,7 @@ class GitServiceTest extends TestCase
      *
      * @return string
      */
-    protected function getRepositoryDir()
+    protected function getRepositoryDir(): string
     {
         return $this->tempDir . '/repo';
     }
@@ -95,7 +95,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::checkOutNew().
      */
-    public function testCheckOutNew()
+    public function testCheckOutNew(): void
     {
         $this->assertTrue($this->git->checkOutNew('new'));
         $this->git->checkOut('main');
@@ -104,7 +104,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::branchExists().
      */
-    public function testBranchExists()
+    public function testBranchExists(): void
     {
         $this->git->checkOutNew('existent');
         $this->assertTrue($this->git->branchExists('existent'));
@@ -114,7 +114,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::branchExists() with unicode branch names.
      */
-    public function testBranchExistsUnicode()
+    public function testBranchExistsUnicode(): void
     {
         $this->git->checkOutNew('b®åñçh-wî†h-üní¢ø∂é');
         $this->assertTrue($this->git->branchExists('b®åñçh-wî†h-üní¢ø∂é'));
@@ -123,7 +123,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::getCurrentBranch().
      */
-    public function testGetCurrentBranch()
+    public function testGetCurrentBranch(): void
     {
         $this->git->checkOutNew('test');
         $this->assertEquals('test', $this->git->getCurrentBranch());
@@ -132,7 +132,7 @@ class GitServiceTest extends TestCase
     /**
      * Test GitHelper::getConfig().
      */
-    public function testGetConfig()
+    public function testGetConfig(): void
     {
         $config = $this->git->getConfig('user.email');
         $this->assertEquals('test@example.com', $config);

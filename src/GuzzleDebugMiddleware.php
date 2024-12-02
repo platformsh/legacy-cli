@@ -10,14 +10,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GuzzleDebugMiddleware
 {
-    private OutputInterface $stdErr;
-    private bool $includeHeaders;
+    private readonly OutputInterface $stdErr;
 
     private static int $requestSeq = 1;
 
-    public function __construct(OutputInterface $output, $includeHeaders = false)
+    public function __construct(OutputInterface $output, private readonly bool $includeHeaders = false)
     {
-        $this->includeHeaders = $includeHeaders;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
@@ -48,7 +46,7 @@ class GuzzleDebugMiddleware
         };
     }
 
-    private function formatMessage(RequestInterface|ResponseInterface $message, $headerPrefix = ''): string
+    private function formatMessage(RequestInterface|ResponseInterface $message, string $headerPrefix = ''): string
     {
         $startLine = $message instanceof RequestInterface
             ? $this->getRequestFirstLine($message)

@@ -20,7 +20,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
      */
     public function __construct($cliExecutableName = null)
     {
-        $this->cliExecutableName = $cliExecutableName ?: basename($_SERVER['PHP_SELF']);
+        $this->cliExecutableName = $cliExecutableName ?: basename((string) $_SERVER['PHP_SELF']);
     }
 
     /**
@@ -44,9 +44,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             }
 
             $this->write("\n\n");
-            $this->write(implode("\n", array_map(function ($commandName) use ($description) {
-                return sprintf('* [`%s`](#%s)', $commandName, str_replace(':', '', $description->getCommand($commandName)->getName()));
-            }, $namespace['commands'])));
+            $this->write(implode("\n", array_map(fn($commandName): string => sprintf('* [`%s`](#%s)', $commandName, str_replace(':', '', $description->getCommand($commandName)->getName())), $namespace['commands'])));
         }
 
         foreach ($description->getCommands() as $command) {
@@ -64,7 +62,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $command->mergeApplicationDefinition(false);
 
         $this->write($command->getName() . "\n"
-            . str_repeat('-', strlen($command->getName()))."\n");
+            . str_repeat('-', strlen((string) $command->getName()))."\n");
 
         if ($description = $command->getDescription()) {
             $this->write("$description\n\n");

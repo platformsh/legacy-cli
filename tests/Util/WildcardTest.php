@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\Wildcard;
 
 class WildcardTest extends TestCase
 {
-    public function testSelect()
+    public function testSelect(): void
     {
         $cases = [
             [['a', 'b', 'c'], ['a'], ['a']],

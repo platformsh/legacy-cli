@@ -1,6 +1,12 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Local\BuildFlavor\Symfony;
+use Platformsh\Cli\Local\BuildFlavor\Composer;
+use Platformsh\Cli\Local\BuildFlavor\NodeJs;
+use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
@@ -19,20 +25,19 @@ class LocalApplication
 {
 
     protected $appRoot;
-    protected $config;
     protected $sourceDir;
-    protected $cliConfig;
-    protected $mount;
+    protected Config $cliConfig;
+    protected Mount $mount;
 
-    private $single = false;
+    private bool $single = false;
 
     /**
      * @param string      $appRoot
      * @param Config|null $cliConfig
      * @param string|null $sourceDir
-     * @param AppConfig|null $appConfig
+     * @param AppConfig|null $config
      */
-    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null, AppConfig $appConfig = null)
+    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null, protected ?AppConfig $config = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
@@ -41,7 +46,6 @@ class LocalApplication
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
         $this->mount = new Mount();
-        $this->config = $appConfig;
     }
 
     /**
@@ -51,7 +55,7 @@ class LocalApplication
      */
     public function getId()
     {
-        return $this->getName() ?: $this->getPath() ?: 'default';
+        return ($this->getName() ?: $this->getPath()) ?: 'default';
     }
 
     /**
@@ -81,7 +85,7 @@ class LocalApplication
      *
      * @param bool $single
      */
-    public function setSingle($single = true)
+    public function setSingle($single = true): void
     {
         $this->single = $single;
     }
@@ -101,7 +105,7 @@ class LocalApplication
     /**
      * @return string
      */
-    protected function getPath()
+    protected function getPath(): string|array
     {
         return str_replace($this->sourceDir . '/', '', $this->appRoot);
     }
@@ -156,7 +160,7 @@ class LocalApplication
      * Get the application's configuration as an object.
      *
      * @throws InvalidConfigException if config is not found or invalid
-     * @throws \Symfony\Component\Yaml\Exception\ParseException if config cannot be parsed
+     * @throws ParseException if config cannot be parsed
      * @throws \Exception if the config file cannot be read
      *
      * @return AppConfig
@@ -196,14 +200,14 @@ class LocalApplication
     /**
      * @return BuildFlavorInterface[]
      */
-    public function getBuildFlavors()
+    public function getBuildFlavors(): array
     {
         return [
-            new BuildFlavor\Drupal(),
-            new BuildFlavor\Symfony(),
-            new BuildFlavor\Composer(),
-            new BuildFlavor\NodeJs(),
-            new BuildFlavor\NoBuildFlavor(),
+            new Drupal(),
+            new Symfony(),
+            new Composer(),
+            new NodeJs(),
+            new NoBuildFlavor(),
         ];
     }
 
@@ -222,7 +226,7 @@ class LocalApplication
         }
 
         $key = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
-        list($stack, ) = explode(':', $appConfig['type'], 2);
+        list($stack, ) = explode(':', (string) $appConfig['type'], 2);
         foreach (self::getBuildFlavors() as $candidate) {
             if (in_array($key, $candidate->getKeys())
                 && ($candidate->getStacks() === [] || in_array($stack, $candidate->getStacks()))) {

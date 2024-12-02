@@ -13,22 +13,18 @@ use Platformsh\Client\Model\Environment;
  */
 class BrokenEnv implements RemoteContainerInterface
 {
-    private $environment;
-    private $appName;
-
     /**
-     * @param \Platformsh\Client\Model\Environment $environment
+     * @param Environment $environment
      * @param string                               $appName
      */
-    public function __construct(Environment $environment, $appName) {
-        $this->environment = $environment;
-        $this->appName = $appName;
+    public function __construct(private readonly Environment $environment, private $appName)
+    {
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getSshUrl($instance = '')
+    public function getSshUrl($instance = ''): string
     {
         return $this->environment->getSshUrl($this->appName, $instance);
     }
@@ -44,14 +40,14 @@ class BrokenEnv implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfig() {
+    public function getConfig(): AppConfig {
         return new AppConfig(!empty($this->appName) ? ['name' => $this->appName] : []);
     }
 
     /**
      * {@inheritDoc}
      */
-    public function getRuntimeOperations()
+    public function getRuntimeOperations(): array
     {
         return [];
     }

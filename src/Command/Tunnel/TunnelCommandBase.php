@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,10 +13,18 @@ use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
+    private readonly Relationships $relationships;
+    private readonly Config $config;
     const LOCAL_IP = '127.0.0.1';
 
     protected $tunnelInfo;
     protected bool $canBeRunMultipleTimes = false;
+    #[Required]
+    public function autowire(Config $config, Relationships $relationships) : void
+    {
+        $this->config = $config;
+        $this->relationships = $relationships;
+    }
 
     /**
      * Check whether a tunnel is already open.
@@ -55,7 +66,7 @@ abstract class TunnelCommandBase extends CommandBase
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
+            $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
                 $this->debug(sprintf('Loading tunnel info from %s', $filename));
                 $this->tunnelInfo = (array) json_decode(file_get_contents($filename), true);
@@ -85,7 +96,7 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected function saveTunnelInfo()
     {
-        $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
+        $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
             $this->debug('Saving tunnel info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
@@ -123,9 +134,7 @@ abstract class TunnelCommandBase extends CommandBase
         if (file_exists($pidFile)) {
             $success = unlink($pidFile) && $success;
         }
-        $this->tunnelInfo = array_filter($this->tunnelInfo, function ($info) use ($tunnel) {
-            return !$this->tunnelsAreEqual($info, $tunnel);
-        });
+        $this->tunnelInfo = array_filter($this->tunnelInfo, fn($info): bool => !$this->tunnelsAreEqual($info, $tunnel));
         $this->saveTunnelInfo();
 
         return $success;
@@ -187,8 +196,8 @@ abstract class TunnelCommandBase extends CommandBase
      */
     protected function getTunnelUrl(array $tunnel, array $service)
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
         $localService = array_merge($service, array_intersect_key([
             'host' => self::LOCAL_IP,
             'port' => $tunnel['localPort'],
@@ -216,7 +225,7 @@ abstract class TunnelCommandBase extends CommandBase
     protected function getPidFile(array $tunnel)
     {
         $key = $this->getTunnelKey($tunnel);
-        $dir = $this->config()->getWritableUserDir() . '/.tunnels';
+        $dir = $this->config->getWritableUserDir() . '/.tunnels';
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }
@@ -231,7 +240,7 @@ abstract class TunnelCommandBase extends CommandBase
      * @param int $localPort
      * @param array $extraArgs
      *
-     * @return \Symfony\Component\Process\Process
+     * @return Process
      */
     protected function createTunnelProcess($url, $remoteHost, $remotePort, $localPort, array $extraArgs = [])
     {

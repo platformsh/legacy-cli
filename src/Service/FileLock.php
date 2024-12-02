@@ -4,17 +4,14 @@ namespace Platformsh\Cli\Service;
 
 class FileLock
 {
-    private $config;
+    private readonly int $checkIntervalMs;
+    private readonly int $timeLimit;
+    private readonly bool $disabled;
 
-    private $checkIntervalMs;
-    private $timeLimit;
-    private $disabled;
+    private array $locks = [];
 
-    private $locks = [];
-
-    public function __construct(Config $config)
+    public function __construct(private readonly Config $config)
     {
-        $this->config = $config;
         $this->checkIntervalMs = 500;
         $this->timeLimit = 30;
         $this->disabled = (bool) $this->config->getWithDefault('api.disable_locks', false);
@@ -74,7 +71,7 @@ class FileLock
      *
      * @param string $lockName
      */
-    public function release($lockName)
+    public function release($lockName): void
     {
         if (!$this->disabled && isset($this->locks[$lockName])) {
             $this->writeWithLock($this->filename($lockName), '');
@@ -98,7 +95,7 @@ class FileLock
      * @param string $lockName
      * @return string
      */
-    private function filename($lockName)
+    private function filename($lockName): string
     {
         return $this->config->getWritableUserDir()
             . DIRECTORY_SEPARATOR . 'locks'
@@ -113,7 +110,7 @@ class FileLock
      * @param string $filename
      * @return string
      */
-    private function readWithLock($filename)
+    private function readWithLock(string $filename): string|false
     {
         $handle = \fopen($filename, 'r');
         if (!$handle) {
@@ -145,7 +142,7 @@ class FileLock
      * @param string $content
      * @return void
      */
-    private function writeWithLock($filename, $content)
+    private function writeWithLock(string $filename, string $content): void
     {
         $dir = \dirname($filename);
         if (!\is_dir($dir)) {

@@ -7,7 +7,7 @@ class OsUtil
     /**
      * @return bool
      */
-    public static function isWindows()
+    public static function isWindows(): bool
     {
         return defined('PHP_WINDOWS_VERSION_BUILD');
     }
@@ -15,7 +15,7 @@ class OsUtil
     /**
      * @return bool
      */
-    public static function isOsX()
+    public static function isOsX(): bool
     {
         return stripos(PHP_OS, 'Darwin') !== false;
     }
@@ -23,7 +23,7 @@ class OsUtil
     /**
      * @return bool
      */
-    public static function isLinux()
+    public static function isLinux(): bool
     {
         return stripos(PHP_OS, 'Linux') !== false;
     }
@@ -66,7 +66,7 @@ class OsUtil
         if ('' === $argument = (string) $argument) {
             return '""';
         }
-        if (false !== strpos($argument, "\0")) {
+        if (str_contains($argument, "\0")) {
             $argument = str_replace("\0", '?', $argument);
         }
         if (!preg_match('/[\/()%!^"<>&|\s]/', $argument)) {
@@ -86,7 +86,7 @@ class OsUtil
      *
      * @return array
      */
-    public static function findExecutables($name)
+    public static function findExecutables(string $name): array
     {
         $dirs = explode(\PATH_SEPARATOR, getenv('PATH') ?: getenv('Path'));
         $suffixes = [''];

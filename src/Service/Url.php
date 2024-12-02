@@ -11,25 +11,19 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Url implements InputConfiguringInterface
 {
-    protected $input;
-    protected $shell;
-    protected $output;
-    protected $stdErr;
+    protected OutputInterface $stdErr;
 
-    public function __construct(Shell $shell, InputInterface $input, OutputInterface $output)
+    public function __construct(protected Shell $shell, protected InputInterface $input, protected OutputInterface $output)
     {
-        $this->shell = $shell;
-        $this->input = $input;
-        $this->output = $output;
         $this->stdErr = $this->output instanceof ConsoleOutputInterface
             ? $this->output->getErrorOutput()
             : $this->output;
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\InputDefinition $definition
+     * @param InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition): void
     {
         $definition->addOption(new InputOption(
             'browser',
@@ -50,7 +44,7 @@ class Url implements InputConfiguringInterface
      *
      * @return bool
      */
-    public function canOpenUrls()
+    public function canOpenUrls(): bool
     {
         return $this->hasDisplay()
             && $this->getBrowser($this->input->hasOption('browser') ? $this->input->getOption('browser') : null) !== false;
@@ -116,7 +110,7 @@ class Url implements InputConfiguringInterface
      *
      * @return bool
      */
-    public function hasDisplay()
+    public function hasDisplay(): bool
     {
         if (getenv('DISPLAY')) {
             return getenv('DISPLAY') !== 'none';
@@ -155,7 +149,7 @@ class Url implements InputConfiguringInterface
      *
      * @return string|false
      */
-    private function getDefaultBrowser()
+    private function getDefaultBrowser(): string|false
     {
         if (OsUtil::isWindows()) {
             return 'start';

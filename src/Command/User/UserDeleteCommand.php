@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class UserDeleteCommand extends UserCommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -37,14 +44,14 @@ class UserDeleteCommand extends UserCommandBase
             $this->stdErr->writeln(sprintf(
                 'The user <error>%s</error> is the owner of the project %s.',
                 $email,
-                $this->api()->getProjectLabel($project, 'error')
+                $this->api->getProjectLabel($project, 'error')
             ));
             $this->stdErr->writeln("The project's owner cannot be deleted.");
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
 
         if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?")) {
             return 1;
@@ -55,17 +62,17 @@ class UserDeleteCommand extends UserCommandBase
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
         if ($result->getActivities() && $this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         } elseif (!$this->centralizedPermissionsEnabled()) {
-            $this->api()->redeployWarning();
+            $this->api->redeployWarning();
         }
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        if ($this->api()->getMyUserId() === $userId) {
-            $this->api()->clearProjectsCache();
+        if ($this->api->getMyUserId() === $userId) {
+            $this->api->clearProjectsCache();
         }
 
         return 0;

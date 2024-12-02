@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\SiteAlias;
 
+use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
 interface SiteAliasTypeInterface
@@ -9,10 +11,10 @@ interface SiteAliasTypeInterface
     /**
      * Create an alias file.
      *
-     * @param \Platformsh\Client\Model\Project         $project
+     * @param Project $project
      * @param string                                   $aliasGroup
-     * @param \Platformsh\Cli\Local\LocalApplication[] $apps
-     * @param \Platformsh\Client\Model\Environment[]   $environments
+     * @param LocalApplication[] $apps
+     * @param Environment[] $environments
      * @param string|null                              $previousGroup
      *
      * @throws \RuntimeException

@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
@@ -17,6 +20,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:dump', description: 'Create a binary archive dump of data from MongoDB', aliases: ['mongodump'])]
 class MongoDumpCommand extends CommandBase
 {
+    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to dump');
@@ -35,7 +42,7 @@ class MongoDumpCommand extends CommandBase
 
         $gzip = $input->getOption('gzip');
 
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->get('service.env_prefix');
         $host = $this->selectHost($input, getenv($envPrefix . 'RELATIONSHIPS') !== false);
 
         if ($host instanceof RemoteHost) {
@@ -53,8 +60,8 @@ class MongoDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                /** @var QuestionHelper $questionHelper */
+                $questionHelper = $this->questionHelper;
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
                 }
@@ -66,8 +73,8 @@ class MongoDumpCommand extends CommandBase
             ));
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
@@ -114,9 +121,9 @@ class MongoDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
-            /** @var \Platformsh\Cli\Service\Git $git */
-            $git = $this->getService('git');
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with($dumpFile, $projectRoot)) {
+            /** @var Git $git */
+            $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
                 if ($pos = strrpos($dumpFile, '.bson')) {
@@ -143,10 +150,10 @@ class MongoDumpCommand extends CommandBase
     private function getDefaultFilename(
         Environment $environment = null,
         $appName = null,
-        $collection = '',
-        $gzip = false)
+        ?string $collection = '',
+        $gzip = false): string
     {
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentId = $environment ? $environment->id : getenv($prefix . 'BRANCH');
         $defaultFilename = $projectId ?: 'db';

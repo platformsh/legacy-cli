@@ -17,7 +17,7 @@ class PlainFormat extends Csv
     /**
      * @inheritDoc
      */
-    protected function formatCell($cell) {
+    protected function formatCell($cell): string|array|null {
         // Replace any newline or tab characters with a space.
         return \preg_replace('#[\r\n\t]+#', ' ', (string) $cell);
     }

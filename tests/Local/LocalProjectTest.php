@@ -12,7 +12,7 @@ class LocalProjectTest extends TestCase
 
     use HasTempDirTrait;
 
-    public function testGetLegacyProjectRoot()
+    public function testGetLegacyProjectRoot(): void
     {
         $this->tempDirSetUp();
         $testDir = $this->tempDir;
