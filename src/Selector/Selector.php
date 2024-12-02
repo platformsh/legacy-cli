@@ -93,12 +93,14 @@ class Selector
      * Processes and validates input to select the project, environment and app.
      *
      * @param InputInterface $input
-     * @param SelectorConfig $config
+     * @param ?SelectorConfig $config
      *
      * @return Selection
      */
-    public function getSelection(InputInterface $input, SelectorConfig $config): Selection
+    public function getSelection(InputInterface $input, ?SelectorConfig $config = null): Selection
     {
+        $config = $config ?: new SelectorConfig();
+
         // Determine whether the localhost can be used.
         $envPrefix = $this->config->get('service.env_prefix');
         if (LocalHost::conflictsWithCommandLineOptions($input, $envPrefix)) {
@@ -135,7 +137,7 @@ class Selector
         }
 
         // Select the project.
-        $project = $this->selectProject($input, $projectId, $projectHost);
+        $project = $this->selectProject($input, $config, $projectId, $projectHost);
 
         // Select the environment.
         $envOptionName = 'environment';
