@@ -43,9 +43,7 @@ class SshKeyListCommand extends SshKeyCommandBase
                 $this->config->get('service.name')
             ));
         } else {
-            /** @var Table $table */
             $table = $this->table;
-            /** @var SshKey $sshKeyService */
             $sshKeyService = $this->sshKey;
             $rows = [];
             foreach ($keys as $key) {

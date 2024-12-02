@@ -256,7 +256,6 @@ EOF
 
         // Confirm which of the environments the user wishes to be deleted.
         ksort($selectedEnvironments, SORT_NATURAL|SORT_FLAG_CASE);
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $toDeleteBranch = [];
         $toDeactivate = [];
@@ -436,7 +435,6 @@ EOF
         }
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             if (!$activityMonitor->waitMultiple($deactivateActivities, $this->getSelectedProject())) {
                 $error = true;

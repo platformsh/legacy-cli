@@ -91,7 +91,6 @@ class ListCommand extends CommandBase
             return 0;
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

@@ -48,7 +48,6 @@ class WelcomeCommand extends CommandBase
         $this->api->showSessionInfo();
 
         if ($this->api->isLoggedIn() && !$this->config->getWithDefault('ssh.auto_load_cert', false)) {
-            /** @var SshKey $sshKey */
             $sshKey = $this->sshKey;
             if (!$sshKey->hasLocalKey()) {
                 $this->stdErr->writeln('');

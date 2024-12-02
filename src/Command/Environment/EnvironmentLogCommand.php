@@ -71,12 +71,10 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $this->stdErr->writeln('No log type specified.');
             return 1;
         } else {
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $host->getCacheKey());
-            /** @var CacheProvider $cache */
             $cache = $this->cacheProvider;
             if (!$result = $cache->fetch($cacheKey)) {
                 $result = $host->runCommand('echo -n _BEGIN_FILE_LIST_; ls -1 ' . $logDir . '/*.log; echo -n _END_FILE_LIST_');

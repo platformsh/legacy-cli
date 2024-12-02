@@ -45,7 +45,6 @@ class MountListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var Mount $mountService */
         $mountService = $this->mount;
         if (($applicationEnv = getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
             && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
@@ -96,13 +95,11 @@ class MountListCommand extends CommandBase
         }
 
         $rows = [];
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         foreach ($mounts as $path => $definition) {
             $rows[] = ['path' => $path, 'definition' => $formatter->format($definition)];
         }
 
-        /** @var Table $table */
         $table = $this->table;
         if ($this->hasSelectedEnvironment()) {
             $this->stdErr->writeln(sprintf('Mounts on environment %s, %s <info>%s</info>:',

@@ -42,7 +42,6 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $skipCache = $value !== null || $input->getOption('refresh');
         $organization = $this->validateOrganizationInput($input, '', '', $skipCache);
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         if ($property === null) {
@@ -78,13 +77,11 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     {
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         foreach ($this->getProperties($organization) as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $formatter->format($value, $key);
         }
-        /** @var Table $table */
         $table = $this->table;
         $table->renderSimple($values, $headings);
     }
@@ -101,7 +98,6 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $currentValue = $organization->getProperty($property, false);

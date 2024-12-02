@@ -32,7 +32,6 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
     {
         $organization = $this->validateOrganizationInput($input, 'create-member');
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $update = get_called_class() === OrganizationUserUpdateCommand::class;

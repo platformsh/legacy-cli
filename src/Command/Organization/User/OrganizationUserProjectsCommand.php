@@ -130,9 +130,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             return 0;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
-        /** @var Table $table */
         $table = $this->table;
 
         $rolesUtil = new ProjectRoles();

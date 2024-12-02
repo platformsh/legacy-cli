@@ -191,7 +191,6 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     {
         $projectList = $input->getOption('projects');
 
-        /** @var Identifier $identifier */
         $identifier = $this->identifier;
 
         if (!empty($projectList)) {
@@ -224,7 +223,6 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
             return false;
         }
 
-        /** @var Shell $shell */
         $shell = $this->shell;
         if (!$shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');

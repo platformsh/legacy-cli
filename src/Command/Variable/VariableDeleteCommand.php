@@ -57,7 +57,6 @@ class VariableDeleteCommand extends VariableCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         switch ($this->getVariableLevel($variable)) {
@@ -91,7 +90,6 @@ class VariableDeleteCommand extends VariableCommandBase
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->api->redeployWarning();
         } elseif ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
         }

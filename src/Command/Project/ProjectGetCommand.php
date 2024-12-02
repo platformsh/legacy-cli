@@ -48,9 +48,7 @@ class ProjectGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var Git $git */
         $git = $this->git;
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
 
         // Validate input options and arguments.
@@ -99,7 +97,6 @@ class ProjectGetCommand extends CommandBase
 
             $this->stdErr->writeln('');
 
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             if ($questionHelper->confirm($questionText)) {
                 return $this->runOtherCommand('project:set-remote', ['project' => $project->id], $output);
@@ -110,7 +107,6 @@ class ProjectGetCommand extends CommandBase
 
         $projectRoot = $this->chooseDirectory($project, $input);
 
-        /** @var Filesystem $fs */
         $fs = $this->filesystem;
         $projectRootFormatted = $fs->formatPathForDisplay($projectRoot);
 
@@ -243,7 +239,6 @@ class ProjectGetCommand extends CommandBase
                 $this->config->get('application.executable')
             ));
             $options = ['no-clean' => true];
-            /** @var LocalBuild $builder */
             $builder = $this->localBuild;
             $success = $builder->build($options, $projectRoot);
         }
@@ -283,7 +278,6 @@ class ProjectGetCommand extends CommandBase
      * @return string
      */
     private function chooseDirectory(Project $project, InputInterface $input): string {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $directory = $input->getArgument('directory');
@@ -301,7 +295,6 @@ class ProjectGetCommand extends CommandBase
             throw new InvalidArgumentException('Directory not found: ' . dirname((string) $directory));
         }
 
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
         if ($localProject->getProjectRoot($directory) !== false) {
             throw new InvalidArgumentException('A project cannot be cloned inside another project.');
@@ -324,7 +317,6 @@ class ProjectGetCommand extends CommandBase
             list($gitSshUri,) = explode(':', $gitUrl, 2);
         }
 
-        /** @var SshDiagnostics $sshDiagnostics */
         $sshDiagnostics = $this->sshDiagnostics;
         $sshDiagnostics->diagnoseFailure($gitSshUri, $process);
     }

@@ -30,7 +30,6 @@ class ApiCurlCommand extends CommandBase
         // (allowing for auto login).
         $this->api;
 
-        /** @var CurlCli $curl */
         $curl = $this->curlCli;
 
         return $curl->run($url, $input, $output);

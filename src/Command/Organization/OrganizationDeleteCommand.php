@@ -35,7 +35,6 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the organization %s?', $this->api->getOrganizationLabel($organization)), false)) {

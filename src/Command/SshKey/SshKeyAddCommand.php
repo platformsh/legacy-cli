@@ -33,11 +33,8 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
-        /** @var Shell $shellHelper */
         $shellHelper = $this->shell;
-        /** @var SshKey $sshKeyService */
         $sshKeyService = $this->sshKey;
 
         $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
@@ -147,7 +144,6 @@ class SshKeyAddCommand extends SshKeyCommandBase
             // Suppress exceptions; we do not need the result of this call.
         }
 
-        /** @var SshConfig $sshConfig */
         $sshConfig = $this->sshConfig;
         if ($sshConfig->configureSessionSsh()) {
             $sshConfig->addUserSshConfig($questionHelper);

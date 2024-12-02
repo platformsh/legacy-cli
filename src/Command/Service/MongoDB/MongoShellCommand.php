@@ -36,7 +36,6 @@ class MongoShellCommand extends CommandBase
             throw new \RuntimeException('The mongo-shell command cannot run via multi');
         }
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 

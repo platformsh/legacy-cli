@@ -61,7 +61,6 @@ class WorkerListCommand extends CommandBase
             return 0;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($workers as $worker) {
@@ -69,7 +68,6 @@ class WorkerListCommand extends CommandBase
             $rows[] = [$worker->name, $formatter->format($worker->type, 'service_type'), $formatter->format($commands)];
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

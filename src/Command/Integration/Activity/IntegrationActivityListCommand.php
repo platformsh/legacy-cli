@@ -80,7 +80,6 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        /** @var ActivityLoader $loader */
         $loader = $this->activityLoader;
         $activities = $loader->loadFromInput($integration, $input);
         if ($activities === []) {
@@ -89,9 +88,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $timingTypes = ['execute', 'wait', 'build', 'deploy'];

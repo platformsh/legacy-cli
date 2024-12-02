@@ -92,7 +92,6 @@ class EnvironmentDrushCommand extends CommandBase
 
         // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
         // determine the path to Drupal.
-        /** @var RemoteEnvVars $envVarsService */
         $envVarsService = $this->remoteEnvVars;
         $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $host);
         if ($documentRoot !== '') {

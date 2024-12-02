@@ -56,7 +56,6 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var ApplicationFinder $finder */
         $finder = $this->applicationFinder;
         $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
@@ -225,7 +224,6 @@ class ServerStartCommand extends ServerCommandBase
         if (count($processes)) {
             $this->stdErr->writeln(sprintf('Logs are written to: %s', $logFile));
 
-            /** @var Url $urlService */
             $urlService = $this->url;
             foreach ($processes as $address => $process) {
                 if ($process->isRunning()) {

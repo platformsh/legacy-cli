@@ -64,7 +64,6 @@ class ActivityLogCommand extends ActivityCommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
-        /** @var ActivityLoader $loader */
         $loader = $this->activityLoader;
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
@@ -96,7 +95,6 @@ class ActivityLogCommand extends ActivityCommandBase
             }
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $this->stdErr->writeln([
@@ -116,7 +114,6 @@ class ActivityLogCommand extends ActivityCommandBase
             $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
 
-        /** @var ActivityMonitor $monitor */
         $monitor = $this->activityMonitor;
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $monitor->waitAndLog($activity, $refresh, $timestamps, false, $output);

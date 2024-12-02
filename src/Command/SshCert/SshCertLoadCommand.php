@@ -46,7 +46,6 @@ class SshCertLoadCommand extends CommandBase
         // Initialize the API service to ensure event listeners etc.
         $this->api;
 
-        /** @var Certifier $certifier */
         $certifier = $this->certifier;
 
         $sshCert = $certifier->getExistingCertificate();
@@ -74,7 +73,6 @@ class SshCertLoadCommand extends CommandBase
             $refresh = false;
         }
 
-        /** @var SshConfig $sshConfig */
         $sshConfig = $this->sshConfig;
 
         if ($refresh) {
@@ -97,7 +95,6 @@ class SshCertLoadCommand extends CommandBase
         $sshConfig->configureHostKeys();
         $hasSessionConfig = $sshConfig->configureSessionSsh();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $success = !$hasSessionConfig || $sshConfig->addUserSshConfig($questionHelper);
 
@@ -107,7 +104,6 @@ class SshCertLoadCommand extends CommandBase
     private function displayCertificate(Certificate $cert): void
     {
         $validBefore = $cert->metadata()->getValidBefore();
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
         $expires = $formatter->formatUnixTimestamp($validBefore);
         $expiresWithColor = $validBefore > time() ? '<fg=green>' . $expires . '</>' : $expires;

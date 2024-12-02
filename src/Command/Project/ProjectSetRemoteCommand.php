@@ -39,13 +39,11 @@ class ProjectSetRemoteCommand extends CommandBase
         }
 
         if ($projectId) {
-            /** @var Identifier $identifier */
             $identifier = $this->identifier;
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
         }
 
-        /** @var Git $git */
         $git = $this->git;
         $root = $git->getRoot(getcwd());
         if ($root === false) {
@@ -58,11 +56,8 @@ class ProjectSetRemoteCommand extends CommandBase
 
         $this->debug('Git repository found: ' . $root);
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
-        /** @var LocalProject $localProject */
         $localProject = $this->localProject;
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
         $fs = $this->filesystem;
 
         if ($unset) {

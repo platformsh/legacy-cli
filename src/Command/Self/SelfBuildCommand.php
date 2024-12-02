@@ -44,7 +44,6 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        /** @var Filesystem $fs */
         $fs = $this->filesystem;
 
         $outputFilename = $input->getOption('output');
@@ -61,9 +60,7 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
 
-        /** @var Shell $shell */
         $shell = $this->shell;
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $version = $this->config->getVersion();

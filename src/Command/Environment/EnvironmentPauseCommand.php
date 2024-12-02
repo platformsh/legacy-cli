@@ -59,7 +59,6 @@ EOF;
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $text = self::PAUSE_HELP . "\n\n" . sprintf('Are you sure you want to pause the environment <comment>%s</comment>?', $environment->id);
         if (!$questionHelper->confirm($text)) {
@@ -70,7 +69,6 @@ EOF;
         $this->api->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {

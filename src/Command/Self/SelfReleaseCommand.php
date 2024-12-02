@@ -54,13 +54,10 @@ class SelfReleaseCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
-        /** @var Shell $shell */
         $shell = $this->shell;
 
-        /** @var Git $git */
         $git = $this->git;
         $git->setDefaultRepositoryDir(CLI_ROOT);
 
@@ -242,7 +239,6 @@ class SelfReleaseCommand extends CommandBase
         // Confirm the release changelog.
         list($changelogFilename, $changelog) = $this->getReleaseChangelog($lastTag, $tagName);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm($questionText)) {
             $this->stdErr->writeln('Update or delete the file <comment>' . $changelogFilename . '</comment> and re-run this command.');
@@ -438,7 +434,6 @@ class SelfReleaseCommand extends CommandBase
      */
     private function getTagDate(string $tagName): int|false
     {
-        /** @var Git $git */
         $git = $this->git;
         $date = $git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
 
@@ -454,7 +449,6 @@ class SelfReleaseCommand extends CommandBase
      */
     private function hasGitDifferences(string $since): bool
     {
-        /** @var Git $git */
         $git = $this->git;
         $stat = $git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
         if (!is_string($stat)) {
@@ -478,7 +472,6 @@ class SelfReleaseCommand extends CommandBase
      */
     private function getGitChangelog(string $since): string
     {
-        /** @var Git $git */
         $git = $this->git;
         $changelog = $git->execute([
             'log',
