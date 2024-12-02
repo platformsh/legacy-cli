@@ -21,6 +21,7 @@ use Platformsh\Cli\Service\Identifier;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\WebApp;
@@ -43,56 +44,35 @@ class Selector
 {
     const DEFAULT_ENVIRONMENT_CODE = '.';
 
-    private $identifier;
-    private $config;
-    private $stdErr;
-    private $api;
-    private $localProject;
-    private $questionHelper;
-    private $git;
-    private $hostFactory;
-    private $shell;
-    private $ssh;
+    private readonly OutputInterface $stdErr;
 
-    /** @var Project|null */
-    private $currentProject;
-
-    /** @var string|null */
-    private $projectRoot;
+    private Project|false|null $currentProject = null;
+    private string|false|null $projectRoot = null;
 
     /**
      * The ID of the last printed project.
-     * @var string|null
      */
-    private $printedProject = null;
+    private ?string $printedProject = null;
+
     /**
      * The ID of the last printed environment.
-     * @var string|null
      */
-    private $printedEnvironment = null;
+    private ?string $printedEnvironment = null;
 
     public function __construct(
+        private readonly Identifier $identifier,
+        private readonly Config $config,
+        private readonly Api $api,
+        private readonly LocalProject $localProject,
+        private readonly QuestionHelper $questionHelper,
+        private readonly Git $git,
+        private readonly HostFactory $hostFactory,
+        private readonly Shell $shell,
+        private readonly Ssh $ssh,
+        private readonly SshDiagnostics $sshDiagnostics,
         OutputInterface $output,
-        Identifier $identifier,
-        Config $config,
-        Api $api,
-        LocalProject $localProject,
-        QuestionHelper $questionHelper,
-        Git $git,
-        HostFactory $hostFactory,
-        Shell $shell,
-        Ssh $ssh
     ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->identifier = $identifier;
-        $this->config = $config;
-        $this->api = $api;
-        $this->localProject = $localProject;
-        $this->questionHelper = $questionHelper;
-        $this->git = $git;
-        $this->hostFactory = $hostFactory;
-        $this->shell = $shell;
-        $this->ssh = $ssh;
     }
 
     /**
@@ -115,7 +95,7 @@ class Selector
      *
      * @return Selection
      */
-    public function getSelection(InputInterface $input, SelectorConfig $config)
+    public function getSelection(InputInterface $input, SelectorConfig $config): Selection
     {
         // Determine whether the localhost can be used.
         $envPrefix = $this->config->get('service.env_prefix');
@@ -217,8 +197,8 @@ class Selector
         $host = null;
         if ($config->shouldAllowLocalHost()) {
             $host = $this->hostFactory->local();
-        } elseif ($remoteContainer !== null) {
-            $host = $this->hostFactory->remote($remoteContainer->getSshUrl());
+        } elseif ($remoteContainer !== null && $environment !== null) {
+            $host = $this->hostFactory->remote($remoteContainer->getSshUrl(), $environment);
         }
 
         $selection = new Selection($project, $environment, $appName, $remoteContainer, $host);
@@ -260,7 +240,7 @@ class Selector
      */
     public function selectHost(InputInterface $input, SelectorConfig $config, Selection $selection, $remoteContainer = null)
     {
-        if ($config->shouldAllowLocalHost() && !LocalHost::conflictsWithCommandLineOptions($input, $this->config()->get('service.env_prefix'))) {
+        if ($config->shouldAllowLocalHost() && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->debug('Selected host: localhost');
 
             return new LocalHost($this->shell);
@@ -596,15 +576,15 @@ class Selector
         if ($config) {
             $this->debug('Project "' . $config['id'] . '" is mapped to the current directory');
             try {
-                $project = $this->api->getProject($config['id'], isset($config['host']) ? $config['host'] : null);
+                $project = $this->api->getProject($config['id'], $config['host'] ?? null);
             } catch (BadResponseException $e) {
                 if ($suppressErrors && $e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
                     return $this->currentProject = false;
                 }
                 if ($this->config->has('api.base_url')
                     && $e->getResponse() && $e->getResponse()->getStatusCode() === 401
-                    && parse_url($this->config->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getHost()) {
-                    $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getHost());
+                    && parse_url($this->config->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
+                    $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getUri()->getHost());
                     return $this->currentProject = false;
                 }
                 throw $e;
@@ -694,16 +674,10 @@ class Selector
     /**
      * @return string|false
      */
-    public function getProjectRoot()
+    public function getProjectRoot(): string|false
     {
         if (!isset($this->projectRoot)) {
-            $this->debug('Finding the project root');
             $this->projectRoot = $this->localProject->getProjectRoot();
-            $this->debug(
-                $this->projectRoot
-                    ? 'Project root found: ' . $this->projectRoot
-                    : 'Project root not found'
-            );
         }
 
         return $this->projectRoot;
