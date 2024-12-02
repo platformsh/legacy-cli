@@ -50,7 +50,6 @@ class UserDeleteCommand extends UserCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?")) {
@@ -62,7 +61,6 @@ class UserDeleteCommand extends UserCommandBase
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
         if ($result->getActivities() && $this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         } elseif (!$this->centralizedPermissionsEnabled()) {

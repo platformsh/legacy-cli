@@ -43,7 +43,6 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $settings = $project->getSettings();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $validateCpu = function ($v) use ($maxCpu): float {

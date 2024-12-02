@@ -80,7 +80,6 @@ EOF
         $sshUrl = $container->getSshUrl();
         $host = $this->selectHost($input, false, $container);
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $relationships = $relationshipsService->getRelationships($host);
         if (!$relationships) {
@@ -89,7 +88,6 @@ EOF
         }
 
         if ($environment->is_main) {
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api->getEnvironmentLabel($environment, 'comment'));
             if (!$questionHelper->confirm($confirmText)) {
@@ -109,7 +107,6 @@ EOF
             $sshOptions[] = 'GatewayPorts yes';
         }
 
-        /** @var Ssh $ssh */
         $ssh = $this->ssh;
         $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
 

@@ -82,7 +82,6 @@ class EnvironmentBranchCommand extends CommandBase
 
                 return 1;
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $checkout = $questionHelper->confirm(
                 "The environment <comment>$branchName</comment> already exists. Check out?"
@@ -179,7 +178,6 @@ class EnvironmentBranchCommand extends CommandBase
             $this->api->clearEnvironmentsCache($selectedProject->id);
         }
 
-        /** @var Git $git */
         $git = $this->git;
 
         $createdNew = false;
@@ -203,7 +201,6 @@ class EnvironmentBranchCommand extends CommandBase
 
         $remoteSuccess = true;
         if ($this->shouldWait($input) && !$dryRun && $activities) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
             $this->api->clearEnvironmentsCache($selectedProject->id);

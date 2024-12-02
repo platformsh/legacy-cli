@@ -109,7 +109,6 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

@@ -77,7 +77,6 @@ class OrganizationListCommand extends OrganizationCommandBase
             $currentProjectOrg = $currentProject->getProperty('organization');
         }
 
-        /** @var Table $table */
         $table = $this->table;
 
         $rows = [];

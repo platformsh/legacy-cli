@@ -37,7 +37,6 @@ class CurlCommand extends MetricsCommandBase
             return 1;
         }
 
-        /** @var CurlCli $curl */
         $curl = $this->curlCli;
 
         return $curl->run($link['href'], $input, $output);

@@ -126,7 +126,6 @@ class LocalBuildCommand extends CommandBase
     {
         $projectRoot = $this->getProjectRoot();
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $sourceDirOption = $input->getOption('source');
@@ -165,7 +164,6 @@ class LocalBuildCommand extends CommandBase
         }
 
         if ($destination) {
-            /** @var Filesystem $fs */
             $fs = $this->filesystem;
             $destination = $fs->makePathAbsolute($destination);
         } elseif (!$projectRoot) {
@@ -205,7 +203,6 @@ class LocalBuildCommand extends CommandBase
 
         $apps = $input->getArgument('app');
 
-        /** @var LocalBuild $builder */
         $builder = $this->localBuild;
         $success = $builder->build($settings, $sourceDir, $destination, $apps);
 

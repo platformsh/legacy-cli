@@ -95,7 +95,6 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        /** @var Table $table */
         $table = $this->table;
         $table->renderSimple($values, $headings);
 
@@ -129,7 +128,6 @@ class SubscriptionInfoCommand extends CommandBase
             return 0;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $confirmMessage = sprintf(
             "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",

@@ -71,7 +71,6 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        /** @var Drush $drush */
         $drush = $this->drush;
 
         $apps = $drush->getDrupalApps($projectRoot);
@@ -109,7 +108,6 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
 
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
 
             if ($new_group !== $current_group) {
@@ -128,13 +126,9 @@ class LocalDrushAliasesCommand extends CommandBase
             // Attempt to find the absolute application root directory for
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
-            /** @var RemoteEnvVars $envVarsService */
             $envVarsService = $this->remoteEnvVars;
-            /** @var Ssh $ssh */
             $ssh = $this->ssh;
-            /** @var SshDiagnostics $sshDiagnostics */
             $sshDiagnostics = $this->sshDiagnostics;
-            /** @var Shell $shell */
             $shell = $this->shell;
             foreach ($environments as $environment) {
 
@@ -241,7 +235,6 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $drushConfig['drush']['paths']['alias-path'][] = $aliasPath;
 
-            /** @var Filesystem $fs */
             $fs = $this->filesystem;
             $fs->writeFile($drushYml, Yaml::dump($drushConfig, 5));
         }
@@ -260,7 +253,6 @@ class LocalDrushAliasesCommand extends CommandBase
             return;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $newDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $newDrushDir);
         $confirmText = "Do you want to move your global Drush alias files from <comment>~/.drush</comment> to <comment>$newDrushDirRelative</comment>?";

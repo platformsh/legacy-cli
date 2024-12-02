@@ -80,7 +80,6 @@ class EnvironmentActivateCommand extends CommandBase
         $processed = 0;
         // Confirm which environments the user wishes to be activated.
         $process = [];
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         foreach ($environments as $environment) {
             if (!$environment->operationAvailable('activate', true)) {
@@ -160,7 +159,6 @@ class EnvironmentActivateCommand extends CommandBase
 
         if ($processed) {
             if ($this->shouldWait($input)) {
-                /** @var ActivityMonitor $activityMonitor */
                 $activityMonitor = $this->activityMonitor;
                 $result = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
                 $success = $success && $result;

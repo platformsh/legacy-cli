@@ -49,7 +49,6 @@ class CertificateDeleteCommand extends CommandBase
             }
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
             return 1;
@@ -69,7 +68,6 @@ class CertificateDeleteCommand extends CommandBase
         $this->stdErr->writeln(sprintf('The certificate <info>%s</info> has been deleted.', $certificate->id));
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

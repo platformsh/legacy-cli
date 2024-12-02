@@ -99,7 +99,6 @@ class RouteGetCommand extends CommandBase
 
                 return 1;
             }
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
             $items = [];
             $default = null;
@@ -141,7 +140,6 @@ class RouteGetCommand extends CommandBase
         // Add defaults.
         $selectedRoute = $selectedRoute->getProperties();
 
-        /** @var PropertyFormatter $propertyFormatter */
         $propertyFormatter = $this->propertyFormatter;
 
         $propertyFormatter->displayData($output, $selectedRoute, $input->getOption('property'));

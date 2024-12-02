@@ -145,7 +145,6 @@ EOT
             $this->debug(sprintf('Shell config detection disabled via %s', $shellConfigOverrideVar));
             $shellConfigFile = false;
         } elseif ($shellConfigOverride !== false) {
-            /** @var Filesystem $fsService */
             $fsService = $this->filesystem;
             if (!$fsService->canWrite($shellConfigOverride)) {
                 throw new \RuntimeException(sprintf(
@@ -174,7 +173,6 @@ EOT
             $pathParts = $path !== false ? array_unique(array_filter(explode(';', $path))) : [];
             if ($path !== false && !empty($pathParts)) {
                 $newPath = implode(';', $pathParts) . ';' . $binDir;
-                /** @var Shell $shell */
                 $shell = $this->shell;
                 $setPathCommand = 'setx PATH ' . OsUtil::escapeShellArg($newPath);
                 if ($shell->execute($setPathCommand, null, false, true, [], 10) !== false) {
@@ -227,7 +225,6 @@ EOT
             return 0;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         $modify = false;
         $create = false;

@@ -62,7 +62,6 @@ class DbSizeCommand extends CommandBase
      * {@inheritDoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        /** @var Relationships $relationships */
         $relationships = $this->relationships;
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
@@ -94,7 +93,6 @@ class DbSizeCommand extends CommandBase
         $estimatedUsage = $this->getEstimatedUsage($host, $database);
         $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
 
-        /** @var Table $table */
         $table = $this->table;
         $machineReadable = $table->formatIsMachineReadable();
         $showInBytes = $input->getOption('bytes') || $machineReadable;
@@ -175,7 +173,6 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln("Only run these when you know what you're doing.");
         $this->stdErr->writeln('');
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if ($input->isInteractive() && $questionHelper->confirm('Do you want to run these queries now?', false)) {
             $mysqlCommand = $this->getMysqlCommand($database);
@@ -264,7 +261,6 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function getPsqlCommand(array $database): string {
-        /** @var Relationships $relationships */
         $relationships = $this->relationships;
         $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
 
@@ -275,7 +271,6 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getMongoDbCommand(array $database): string {
-        /** @var Relationships $relationships */
         $relationships = $this->relationships;
         $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
 
@@ -295,7 +290,6 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function getMysqlCommand(array $database): string {
-        /** @var Relationships $relationships */
         $relationships = $this->relationships;
         $cmdName = $relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
         $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);

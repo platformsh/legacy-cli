@@ -51,7 +51,6 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var ApplicationFinder $finder */
         $finder = $this->applicationFinder;
         $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
@@ -59,7 +58,6 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         $appId = $input->getOption('app');
@@ -181,7 +179,6 @@ class ServerRunCommand extends ServerCommandBase
         sleep(1);
 
         if ($process->isRunning()) {
-            /** @var Url $urlService */
             $urlService = $this->url;
             $urlService->openUrl('http://' . $address);
         }

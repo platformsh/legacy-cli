@@ -49,7 +49,6 @@ class ActivityCancelCommand extends ActivityCommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
-        /** @var ActivityLoader $loader */
         $loader = $this->activityLoader;
 
         $executable = $this->config->get('application.executable');
@@ -83,9 +82,7 @@ class ActivityCancelCommand extends ActivityCommandBase
                 return 1;
             }
             $choices = [];
-            /** @var QuestionHelper $questionHelper */
             $questionHelper = $this->questionHelper;
-            /** @var PropertyFormatter $formatter */
             $formatter = $this->propertyFormatter;
             $byId = [];
             $this->api->sortResources($activities, 'created_at');

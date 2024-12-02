@@ -35,7 +35,6 @@ class AuthInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         if ($input->getOption('no-auto-login') && !$this->api->isLoggedIn()) {
@@ -102,7 +101,6 @@ class AuthInfoCommand extends CommandBase
                 $header[] = $property;
             }
         }
-        /** @var Table $table */
         $table = $this->table;
         $table->renderSimple($values, $header);
 

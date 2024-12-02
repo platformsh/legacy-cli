@@ -151,7 +151,6 @@ class OrganizationCommandBase extends CommandBase
             $choices[$member->user_id] = $this->api->getMemberLabel($member);
             $byId[$member->user_id] = $member;
         }
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (count($choices) < 25) {
             $default = null;

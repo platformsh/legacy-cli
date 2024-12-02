@@ -99,9 +99,7 @@ class BackupRestoreCommand extends CommandBase
             ? $this->api->getEnvironmentLabel($targetEnvironment)
             : '<info>' . $target . '</info>';
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         // Display a summary of the backup.
@@ -140,7 +138,6 @@ class BackupRestoreCommand extends CommandBase
         );
 
         if ($this->shouldWait($input) && $result->countActivities()) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
             if (!$success) {

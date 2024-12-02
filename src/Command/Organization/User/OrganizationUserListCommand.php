@@ -104,7 +104,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             return 1;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];
@@ -125,7 +124,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             ];
             $rows[] = $row;
         }
-        /** @var Table $table */
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {

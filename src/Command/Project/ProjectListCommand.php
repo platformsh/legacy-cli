@@ -153,14 +153,12 @@ class ProjectListCommand extends CommandBase
             return 1;
         }
 
-        /** @var Table $table */
         $table = $this->table;
         $machineReadable = $table->formatIsMachineReadable();
 
         $table->replaceDeprecatedColumns(['host' => 'region'], $input, $output);
         $table->removeDeprecatedColumns(['url', 'ui_url', 'endpoint', 'region_label'], '[deprecated]', $input, $output);
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];

@@ -61,7 +61,6 @@ class ServiceListCommand extends CommandBase
             return 0;
         }
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $rows = [];
@@ -75,7 +74,6 @@ class ServiceListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        /** @var Table $table */
         $table = $this->table;
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(

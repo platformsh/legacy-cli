@@ -77,7 +77,6 @@ class DomainUpdateCommand extends DomainCommandBase
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

@@ -49,7 +49,6 @@ class BlueGreenEnableCommand extends CommandBase
             return 0;
         }
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm(sprintf('Are you sure you want to enable blue/green deployments for the environment %s?', $this->api->getEnvironmentLabel($environment)))) {
             return 1;

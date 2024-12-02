@@ -86,7 +86,6 @@ class BrowserLoginCommand extends CommandBase
                 ));
 
                 if ($input->isInteractive()) {
-                    /** @var QuestionHelper $questionHelper */
                     $questionHelper = $this->questionHelper;
                     if (!$questionHelper->confirm('Log in anyway?', false)) {
                         return 1;
@@ -182,7 +181,6 @@ class BrowserLoginCommand extends CommandBase
         }
 
         // Open the local server URL in a browser (or print the URL).
-        /** @var Url $urlService */
         $urlService = $this->url;
         if ($urlService->openUrl($localUrl, false)) {
             $this->stdErr->writeln(sprintf('Opened URL: <info>%s</info>', $localUrl));

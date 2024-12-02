@@ -197,7 +197,6 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $selectedEnvironment = $this->getSelectedEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         // Patch the environment with the changes.
@@ -213,7 +212,6 @@ class EnvironmentHttpAccessCommand extends CommandBase
             if (!$result->countActivities()) {
                 $this->api->redeployWarning();
             } elseif ($this->shouldWait($input)) {
-                /** @var ActivityMonitor $activityMonitor */
                 $activityMonitor = $this->activityMonitor;
                 $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             }

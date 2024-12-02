@@ -469,7 +469,6 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function buildRows(array $values, $fields)
     {
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());

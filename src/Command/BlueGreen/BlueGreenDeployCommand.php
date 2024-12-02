@@ -63,7 +63,6 @@ class BlueGreenDeployCommand extends CommandBase
         }
         $targetPercentage = (int) $targetPercentage;
 
-        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->questionHelper;
 
         if ($targetPercentage === 100) {

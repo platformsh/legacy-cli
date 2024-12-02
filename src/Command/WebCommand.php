@@ -64,7 +64,6 @@ class WebCommand extends CommandBase
             return 1;
         }
 
-        /** @var Url $urlService */
         $urlService = $this->url;
         $urlService->openUrl($url);
 

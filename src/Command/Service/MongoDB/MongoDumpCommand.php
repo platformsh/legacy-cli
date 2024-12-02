@@ -60,7 +60,6 @@ class MongoDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var QuestionHelper $questionHelper */
                 $questionHelper = $this->questionHelper;
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
@@ -73,7 +72,6 @@ class MongoDumpCommand extends CommandBase
             ));
         }
 
-        /** @var Relationships $relationshipsService */
         $relationshipsService = $this->relationships;
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
@@ -122,7 +120,6 @@ class MongoDumpCommand extends CommandBase
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
         if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with($dumpFile, $projectRoot)) {
-            /** @var Git $git */
             $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');

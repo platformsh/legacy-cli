@@ -86,7 +86,6 @@ class EnvironmentInitCommand extends CommandBase
         $this->api->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
-            /** @var ActivityMonitor $activityMonitor */
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             return $success ? 0 : 1;

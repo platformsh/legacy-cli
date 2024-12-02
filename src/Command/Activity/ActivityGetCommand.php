@@ -58,7 +58,6 @@ class ActivityGetCommand extends ActivityCommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
-        /** @var ActivityLoader $loader */
         $loader = $this->activityLoader;
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
@@ -90,9 +89,7 @@ class ActivityGetCommand extends ActivityCommandBase
             }
         }
 
-        /** @var Table $table */
         $table = $this->table;
-        /** @var PropertyFormatter $formatter */
         $formatter = $this->propertyFormatter;
 
         $properties = $activity->getProperties();
