@@ -30,7 +30,7 @@ class WelcomeCommand extends CommandBase
 
         $executable = $this->config()->get('application.executable');
 
-        $this->showSessionInfo();
+        $this->api()->showSessionInfo();
 
         if ($this->api()->isLoggedIn() && !$this->config()->getWithDefault('ssh.auto_load_cert', false)) {
             /** @var \Platformsh\Cli\Service\SshKey $sshKey */
@@ -72,7 +72,7 @@ class WelcomeCommand extends CommandBase
         $this->stdErr->writeln("Console URL: <info>" . $this->api()->getConsoleURL($project) . "</info>\n");
 
         if ($project->isSuspended()) {
-            $this->warnIfSuspended($project);
+            $this->api()->warnIfSuspended($project);
         } else {
             // Show the environments.
             $this->runOtherCommand('environments', [
@@ -115,7 +115,7 @@ class WelcomeCommand extends CommandBase
             }
 
             if ($project->isSuspended()) {
-                $this->warnIfSuspended($project);
+                $this->api()->warnIfSuspended($project);
                 return;
             }
         } else {

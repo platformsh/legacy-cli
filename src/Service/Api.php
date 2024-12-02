@@ -42,6 +42,7 @@ use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
+use Platformsh\Client\Session\Storage\SessionStorageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -50,80 +51,62 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * Decorates the PlatformClient API client to provide aggressive caching.
  */
 class Api
 {
-    /** @var EventDispatcherInterface */
-    public $dispatcher;
+    private static bool $printedApiTokenWarning = false;
 
-    /** @var Config */
-    private $config;
-
-    /** @var \Doctrine\Common\Cache\CacheProvider */
-    private $cache;
-
-    /** @var OutputInterface */
-    private $output;
-
-    /** @var OutputInterface */
-    private $stdErr;
-
-    /** @var TokenConfig */
-    private $tokenConfig;
-
-    /** @var FileLock */
-    private $fileLock;
+    private readonly EventDispatcherInterface $dispatcher;
+    private readonly  Config $config;
+    private readonly  CacheProvider $cache;
+    private readonly  OutputInterface $output;
+    private readonly  OutputInterface $stdErr;
+    private readonly  TokenConfig $tokenConfig;
+    private readonly  FileLock $fileLock;
 
     /**
      * The library's API client object.
      *
      * This is static so that a freshly logged-in client can then be reused by a parent command with a different service container.
-     *
-     * @var PlatformClient|null
      */
-    private static $client;
+    private static ?PlatformClient $client = null;
 
     /**
      * A cache of environments lists, keyed by project ID.
      *
      * @var array<string, Environment[]>
      */
-    private static $environmentsCache = [];
+    private static array $environmentsCache = [];
 
     /**
      * A cache of environment deployments.
      *
      * @var array<string, EnvironmentDeployment>
      */
-    private static $deploymentsCache = [];
+    private static array $deploymentsCache = [];
 
     /**
      * A cache of not-found environment IDs.
      *
      * @see Api::getEnvironment()
-     *
-     * @var string[]
      */
-    private static $notFound = [];
+    private static array $notFound = [];
 
     /**
      * Session storage, via files or credential helpers.
      *
      * @see Api::initSessionStorage()
-     *
-     * @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null
      */
-    private $sessionStorage;
+    private ?SessionStorageInterface $sessionStorage = null;
 
     /**
      * Sets whether we are currently verifying login using a test request.
-     *
-     * @var bool
      */
-    public $inLoginCheck = false;
+    public bool $inLoginCheck = false;
 
     /**
      * Constructor.
@@ -150,6 +133,28 @@ class Api
         $this->fileLock = $fileLock ?: new FileLock($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+    }
+
+    /**
+     * Sets up listeners (called by the DI container).
+     *
+     * @param AutoLoginListener $autoLoginListener
+     * @param DrushAliasUpdater $drushAliasUpdater
+     */
+    #[Required]
+    public function injectListeners(
+        AutoLoginListener $autoLoginListener,
+        DrushAliasUpdater $drushAliasUpdater
+    ): void
+    {
+        $this->dispatcher->addListener(
+            'login.required',
+            [$autoLoginListener, 'onLoginRequired']
+        );
+        $this->dispatcher->addListener(
+            'environments.changed',
+            [$drushAliasUpdater, 'onEnvironmentsChanged']
+        );
     }
 
     /**
@@ -574,12 +579,33 @@ class Api
 
             self::$client = new PlatformClient($connector);
 
+            if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config->get('application.env_prefix') . 'TOKEN') || $this->hasApiToken(false))) {
+                $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
+                $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
+                $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
+                $this->stdErr->writeln('');
+                self::$printedApiTokenWarning = true;
+            }
+
             if ($autoLogin && !$connector->isLoggedIn()) {
                 $this->dispatcher->dispatch(new LoginRequiredEvent([], null, $this->hasApiToken()), 'login_required');
             }
         }
 
         return self::$client;
+    }
+
+    /**
+     * Detects if running on an application container.
+     *
+     * @return bool
+     */
+    private function onContainer(): bool
+    {
+        $envPrefix = $this->config->get('service.env_prefix');
+        return getenv($envPrefix . 'PROJECT') !== false
+            && getenv($envPrefix . 'BRANCH') !== false
+            && getenv($envPrefix . 'TREE_ID') !== false;
     }
 
     /**
@@ -1742,6 +1768,33 @@ class Api
                 $account['username'],
                 $account['email']
             ));
+        }
+    }
+
+    /**
+     * Warn the user if a project is suspended.
+     *
+     * @param Project $project
+     */
+    public function warnIfSuspended(Project $project): void
+    {
+        if ($project->isSuspended()) {
+            $this->stdErr->writeln('This project is <error>suspended</error>.');
+            if ($this->config->getWithDefault('warnings.project_suspended_payment', true)) {
+                $orgId = $project->getProperty('organization', false);
+                if ($orgId) {
+                    try {
+                        $organization = $this->getClient()->getOrganizationById($orgId);
+                    } catch (BadResponseException $e) {
+                        $organization = false;
+                    }
+                    if ($organization && $organization->hasLink('payment-source')) {
+                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->getOrganizationLabel($organization, 'comment')));
+                    }
+                } elseif ($project->owner === $this->getMyUserId()) {
+                    $this->stdErr->writeln('To re-activate it, update your payment details.');
+                }
+            }
         }
     }
 }

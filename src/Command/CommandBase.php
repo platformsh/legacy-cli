@@ -2,10 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
-use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\HiddenInputOption;
-use Platformsh\Cli\Event\EnvironmentsChangedEvent;
-use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
@@ -24,9 +21,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     const STABILITY_STABLE = 'STABLE';
     const STABILITY_BETA = 'BETA';
     const STABILITY_DEPRECATED = 'DEPRECATED';
-
-    /** @var ?bool */
-    private static $printedApiTokenWarning;
 
     /**
      * @see self::getProjectRoot()
@@ -88,14 +82,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->input = $input;
         $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-
-        if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config()->get('application.env_prefix') . 'TOKEN') || $this->api()->hasApiToken(false))) {
-            $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
-            $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
-            $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
-            $this->stdErr->writeln('');
-            self::$printedApiTokenWarning = true;
-        }
     }
 
     /**
@@ -105,18 +91,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->getService(Selector::class);
-    }
-
-    /**
-     * Detects if the command is running on an application container.
-     *
-     * @return bool
-     */
-    private function onContainer() {
-        $envPrefix = $this->config()->get('service.env_prefix');
-        return getenv($envPrefix . 'PROJECT') !== false
-            && getenv($envPrefix . 'BRANCH') !== false
-            && getenv($envPrefix . 'TREE_ID') !== false;
     }
 
     /**
@@ -141,56 +115,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     public function isLocal(): bool
     {
         return $this->local;
-    }
-
-    /**
-     * Update the user's local Drush aliases.
-     *
-     * This is called via the 'environments_changed' event.
-     *
-     * @see \Platformsh\Cli\Service\Api::getEnvironments()
-     *
-     * @param EnvironmentsChangedEvent $event
-     */
-    public function updateDrushAliases(EnvironmentsChangedEvent $event)
-    {
-        $projectRoot = $this->selector()->getProjectRoot();
-        if (!$projectRoot) {
-            return;
-        }
-        // Make sure the local:drush-aliases command is enabled.
-        if (!$this->getApplication()->has('local:drush-aliases')) {
-            return;
-        }
-        // Double-check that the passed project is the current one, and that it
-        // still exists.
-        try {
-            $currentProject = $this->selector()->getCurrentProject();
-            if (!$currentProject || $currentProject->id != $event->getProject()->id) {
-                return;
-            }
-        } catch (ProjectNotFoundException $e) {
-            return;
-        }
-        // Ignore the project if it doesn't contain a Drupal application.
-        if (!Drupal::isDrupal($projectRoot)) {
-            return;
-        }
-        /** @var \Platformsh\Cli\Service\Drush $drush */
-        $drush = $this->getService('drush');
-        if ($drush->getVersion() === false) {
-            $this->debug('Not updating Drush aliases: the Drush version cannot be determined.');
-            return;
-        }
-        $this->debug('Updating Drush aliases');
-        try {
-            $drush->createAliases($event->getProject(), $projectRoot, $event->getEnvironments());
-        } catch (\Exception $e) {
-            $this->stdErr->writeln(sprintf(
-                "<comment>Failed to update Drush aliases:</comment>\n%s\n",
-                preg_replace('/^/m', '  ', trim($e->getMessage()))
-            ));
-        }
     }
 
     /**
@@ -541,33 +465,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return $description;
-    }
-
-    /**
-     * Warn the user if a project is suspended.
-     *
-     * @param \Platformsh\Client\Model\Project $project
-     */
-    protected function warnIfSuspended(Project $project)
-    {
-        if ($project->isSuspended()) {
-            $this->stdErr->writeln('This project is <error>suspended</error>.');
-            if ($this->config()->getWithDefault('warnings.project_suspended_payment', true)) {
-                $orgId = $project->getProperty('organization', false);
-                if ($orgId) {
-                    try {
-                        $organization = $this->api()->getClient()->getOrganizationById($orgId);
-                    } catch (BadResponseException $e) {
-                        $organization = false;
-                    }
-                    if ($organization && $organization->hasLink('payment-source')) {
-                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->api()->getOrganizationLabel($organization, 'comment')));
-                    }
-                } elseif ($project->owner === $this->api()->getMyUserId()) {
-                    $this->stdErr->writeln('To re-activate it, update your payment details.');
-                }
-            }
-        }
     }
 
     /**
