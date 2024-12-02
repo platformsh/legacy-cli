@@ -11,7 +11,7 @@ class AdaptiveTableCell extends TableCell
 {
     protected $wrap = true;
 
-    public function __construct($value, array $options = [])
+    public function __construct(string $value, array $options = [])
     {
         foreach (['wrap'] as $flag) {
             if (isset($options[$flag])) {
@@ -38,7 +38,7 @@ class AdaptiveTableCell extends TableCell
      *
      * @return self
      */
-    public function withValue($value)
+    public function withValue($value): self
     {
         $options = [
             'colspan' => $this->getColspan(),

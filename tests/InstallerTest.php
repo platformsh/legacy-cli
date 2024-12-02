@@ -14,7 +14,7 @@ class InstallerTest extends TestCase
         require_once CLI_ROOT . '/dist/installer.php';
     }
 
-    public function testFindInstallableVersionsChecksForSuffix()
+    public function testFindInstallableVersionsChecksForSuffix(): void
     {
         $resolver = new VersionResolver();
         $this->assertEquals(
@@ -45,7 +45,7 @@ class InstallerTest extends TestCase
         );
     }
 
-    public function testFindInstallableVersionsChecksFoMinPhp()
+    public function testFindInstallableVersionsChecksFoMinPhp(): void
     {
         $this->assertEmpty((new VersionResolver())->findInstallableVersions([
             [
@@ -55,7 +55,7 @@ class InstallerTest extends TestCase
         ], '5.5.0'));
     }
 
-    public function testFindLatestVersionWithMax()
+    public function testFindLatestVersionWithMax(): void
     {
         $this->assertEquals('3.0.0', (new VersionResolver())->findLatestVersion([
             ['version' => '1.0.0'],
@@ -65,7 +65,7 @@ class InstallerTest extends TestCase
         ], '', '3.0.0')['version']);
     }
 
-    public function testFindLatestVersionWithMin()
+    public function testFindLatestVersionWithMin(): void
     {
         $this->assertEquals('3.0.1', (new VersionResolver())->findLatestVersion([
             ['version' => '1.0.0'],
@@ -83,7 +83,7 @@ class InstallerTest extends TestCase
         ], 'v3.1');
     }
 
-    public function testGetOption()
+    public function testGetOption(): void
     {
         $method = new \ReflectionMethod(Installer::class, 'getOption');
         $method->setAccessible(true);

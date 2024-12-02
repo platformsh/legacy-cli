@@ -10,6 +10,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:list', description: 'List running local project web server(s)', aliases: ['servers'])]
 class ServerListCommand extends ServerCommandBase
 {
+    public function __construct(private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -28,16 +32,14 @@ class ServerListCommand extends ServerCommandBase
         $projectRoot = $this->getProjectRoot();
         $all = $input->getOption('all');
         if (!$all && $projectRoot) {
-            $servers = array_filter($servers, function ($server) use ($projectRoot) {
-                return $server['projectRoot'] === $projectRoot;
-            });
+            $servers = array_filter($servers, fn($server): bool => $server['projectRoot'] === $projectRoot);
             if (!$servers) {
                 $this->stdErr->writeln('No servers are running for this project. Specify --all to view all servers.');
                 return 1;
             }
         }
 
-        $table = $this->getService('table');
+        $table = $this->table;
         $headers = ['Address', 'PID', 'App', 'Project root', 'Log'];
         $rows = [];
         foreach ($servers as $address => $server) {

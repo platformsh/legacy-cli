@@ -17,7 +17,7 @@ class Route
 {
     use ReadOnlyStructureTrait;
 
-    public static function fromData(array $data) {
+    public static function fromData(array $data): static {
         return new static($data + ['id' => null, 'primary' => false]);
     }
 
@@ -26,12 +26,12 @@ class Route
      *
      * @return string|false
      */
-    public function getUpstreamName() {
+    public function getUpstreamName(): false|string {
         if (!isset($this->data['upstream'])) {
             return false;
         }
 
-        return explode(':', $this->data['upstream'], 2)[0];
+        return explode(':', (string) $this->data['upstream'], 2)[0];
     }
 
     /**
@@ -81,8 +81,8 @@ class Route
      *
      * @return Route[]
      */
-    private static function sort(array $routes) {
-        usort($routes, function (Route $a, Route $b) {
+    private static function sort(array $routes): array {
+        usort($routes, function (Route $a, Route $b): int {
             $result = 0;
             if ($a->primary) {
                 $result -= 4;

@@ -7,24 +7,24 @@ use Platformsh\Client\Model\Environment;
 
 class SelectorConfig
 {
-    private $envRequired = true;
-    private $envArgName = 'environment';
-    private $chooseProjectText = 'Enter a number to choose a project:';
-    private $chooseEnvText = 'Enter a number to choose an environment:';
-    private $enterProjectText = 'Enter a project ID';
-    private $enterEnvText = 'Enter an environment ID';
-    private $selectDefaultEnv = false;
-    private $detectCurrentEnv = true;
+    private bool $envRequired = true;
+    private string $envArgName = 'environment';
+    private string $chooseProjectText = 'Enter a number to choose a project:';
+    private string $chooseEnvText = 'Enter a number to choose an environment:';
+    private string $enterProjectText = 'Enter a project ID';
+    private string $enterEnvText = 'Enter an environment ID';
+    private bool $selectDefaultEnv = false;
+    private bool $detectCurrentEnv = true;
     /** @var callable|null */
     private $chooseEnvFilter = null;
-    private $allowLocalHost = false;
-    private $requireApiOnLocal = false;
+    private bool $allowLocalHost = false;
+    private bool $requireApiOnLocal = false;
 
     /**
      * @param string $envArgName
      * @return SelectorConfig
      */
-    public function setEnvArgName($envArgName)
+    public function setEnvArgName($envArgName): static
     {
         $this->envArgName = $envArgName;
         return $this;
@@ -34,7 +34,7 @@ class SelectorConfig
      * @param string $chooseProjectText
      * @return SelectorConfig
      */
-    public function setChooseProjectText($chooseProjectText)
+    public function setChooseProjectText($chooseProjectText): static
     {
         $this->chooseProjectText = $chooseProjectText;
         return $this;
@@ -44,7 +44,7 @@ class SelectorConfig
      * @param string $chooseEnvText
      * @return SelectorConfig
      */
-    public function setChooseEnvText($chooseEnvText)
+    public function setChooseEnvText($chooseEnvText): static
     {
         $this->chooseEnvText = $chooseEnvText;
         return $this;
@@ -54,7 +54,7 @@ class SelectorConfig
      * @param string $enterProjectText
      * @return SelectorConfig
      */
-    public function setEnterProjectText($enterProjectText)
+    public function setEnterProjectText($enterProjectText): static
     {
         $this->enterProjectText = $enterProjectText;
         return $this;
@@ -64,7 +64,7 @@ class SelectorConfig
      * @param string $enterEnvText
      * @return SelectorConfig
      */
-    public function setEnterEnvText($enterEnvText)
+    public function setEnterEnvText($enterEnvText): static
     {
         $this->enterEnvText = $enterEnvText;
         return $this;
@@ -74,7 +74,7 @@ class SelectorConfig
      * @param callable|null $chooseEnvFilter
      * @return SelectorConfig
      */
-    public function setChooseEnvFilter($chooseEnvFilter)
+    public function setChooseEnvFilter($chooseEnvFilter): static
     {
         $this->chooseEnvFilter = $chooseEnvFilter;
         return $this;
@@ -137,9 +137,7 @@ class SelectorConfig
      */
     public static function filterEnvsByStatus(array $statuses)
     {
-        return function (Environment $e) use ($statuses) {
-            return \in_array($e->status, $statuses, true);
-        };
+        return fn(Environment $e): bool => \in_array($e->status, $statuses, true);
     }
 
     /**
@@ -149,16 +147,14 @@ class SelectorConfig
      */
     public static function filterEnvsMaybeActive()
     {
-        return function (Environment $e) {
-            return \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
-        };
+        return fn(Environment $e): bool => \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
     }
 
     /**
      * @param bool $selectDefaultEnv
      * @return SelectorConfig
      */
-    public function setSelectDefaultEnv($selectDefaultEnv)
+    public function setSelectDefaultEnv($selectDefaultEnv): static
     {
         $this->selectDefaultEnv = $selectDefaultEnv;
         return $this;
@@ -168,7 +164,7 @@ class SelectorConfig
      * @param bool $detectCurrentEnv
      * @return SelectorConfig
      */
-    public function setDetectCurrentEnv($detectCurrentEnv)
+    public function setDetectCurrentEnv($detectCurrentEnv): static
     {
         $this->detectCurrentEnv = $detectCurrentEnv;
         return $this;
@@ -178,7 +174,7 @@ class SelectorConfig
      * @param bool $allowLocalHost
      * @return SelectorConfig
      */
-    public function setAllowLocalHost($allowLocalHost)
+    public function setAllowLocalHost($allowLocalHost): static
     {
         $this->allowLocalHost = $allowLocalHost;
         return $this;
@@ -188,7 +184,7 @@ class SelectorConfig
      * @param bool $requireApiOnLocal
      * @return SelectorConfig
      */
-    public function setRequireApiOnLocal($requireApiOnLocal)
+    public function setRequireApiOnLocal($requireApiOnLocal): static
     {
         $this->requireApiOnLocal = $requireApiOnLocal;
         return $this;
@@ -230,7 +226,7 @@ class SelectorConfig
      * @param bool $envRequired
      * @return SelectorConfig
      */
-    public function setEnvRequired($envRequired)
+    public function setEnvRequired($envRequired): static
     {
         $this->envRequired = $envRequired;
         return $this;

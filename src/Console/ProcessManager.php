@@ -48,7 +48,7 @@ class ProcessManager
     /**
      * @return bool
      */
-    public static function supported()
+    public static function supported(): bool
     {
         return extension_loaded('pcntl') && extension_loaded('posix');
     }
@@ -62,7 +62,7 @@ class ProcessManager
      *
      * This depends on the PCNTL extension.
      */
-    public static function fork()
+    public static function fork(): void
     {
         $pid = pcntl_fork();
         if ($pid === -1) {
@@ -71,10 +71,10 @@ class ProcessManager
             // This is the parent process. If the child process succeeds, this
             // receives SIGCHLD. If it fails, this receives SIGTERM.
             declare (ticks = 1);
-            pcntl_signal(SIGCHLD, function () {
+            pcntl_signal(SIGCHLD, function (): void {
                 exit;
             });
-            pcntl_signal(SIGTERM, function () {
+            pcntl_signal(SIGTERM, function (): void {
                 exit(1);
             });
 
@@ -93,7 +93,7 @@ class ProcessManager
      * @param bool $error
      *   Whether the parent process should exit with an error status.
      */
-    public static function killParent($error = false)
+    public static function killParent($error = false): void
     {
         if (!posix_kill(posix_getppid(), $error ? SIGTERM : SIGCHLD)) {
             throw new \RuntimeException('Failed to kill parent process');
@@ -116,13 +116,13 @@ class ProcessManager
      * @return int
      *   The process PID.
      */
-    public function startProcess(Process $process, $pidFile, OutputInterface $log)
+    public function startProcess(Process $process, string $pidFile, OutputInterface $log): ?int
     {
         $this->processes[$pidFile] = $process;
         $errLog = $log instanceof ConsoleOutputInterface ? $log->getErrorOutput() : $log;
 
         try {
-            $process->start(function ($type, $buffer) use ($log, $errLog) {
+            $process->start(function ($type, $buffer) use ($log, $errLog): void {
                 $output = $type === Process::ERR ? $errLog : $log;
                 $output->write($buffer);
             });
@@ -147,7 +147,7 @@ class ProcessManager
      * @param OutputInterface $log
      *   A log file as a Symfony Console output object.
      */
-    public function monitor(OutputInterface $log)
+    public function monitor(OutputInterface $log): void
     {
         while (count($this->processes)) {
             sleep(1);
@@ -189,7 +189,7 @@ class ProcessManager
      *
      * @return string|false
      */
-    private function getSignal($exitCode)
+    private function getSignal($exitCode): false|string
     {
         if ($exitCode < 128 || $exitCode > 162) {
             return false;

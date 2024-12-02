@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -17,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:activity:list', description: 'Get a list of activities for an integration', aliases: ['integration:activities'])]
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'created' => 'Created',
         'completed' => 'Completed',
@@ -31,7 +34,11 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         'time_build' => 'Build time (s)',
         'time_deploy' => 'Deploy time (s)',
     ];
-    private $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
+    private array $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -73,8 +80,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        /** @var ActivityLoader $loader */
+        $loader = $this->activityLoader;
         $activities = $loader->loadFromInput($integration, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
@@ -82,10 +89,10 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var Table $table */
+        $table = $this->table;
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $timingTypes = ['execute', 'wait', 'build', 'deploy'];
 
@@ -111,7 +118,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Activities on the project %s, integration <info>%s</info> (%s):',
-                $this->api()->getProjectLabel($project),
+                $this->api->getProjectLabel($project),
                 $integration->id,
                 $integration->type
             ));
@@ -120,7 +127,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;

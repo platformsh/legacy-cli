@@ -51,7 +51,7 @@ EOF
 
         try {
             $errors = $integration->validate();
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             $this->stdErr->writeln('This integration does not support validation.');
 
             return 1;

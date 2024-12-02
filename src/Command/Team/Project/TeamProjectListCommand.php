@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Team\Project;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -17,13 +19,17 @@ class TeamProjectListCommand extends TeamCommandBase
 {
     const MAX_COUNT = 200;
 
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'Project ID',
         'title' => 'Project title',
         'granted_at' => 'Date added',
         'updated_at' => 'Updated at',
     ];
-    private $defaultColumns = ['id', 'title', 'granted_at'];
+    private array $defaultColumns = ['id', 'title', 'granted_at'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -47,7 +53,7 @@ class TeamProjectListCommand extends TeamCommandBase
         $options['query']['sort'] = 'project_title';
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
+        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > self::MAX_COUNT) {
                 $this->stdErr->writeln('The --count must be a number between 1 and ' . self::MAX_COUNT . ', or 0 to disable pagination.');
@@ -57,7 +63,7 @@ class TeamProjectListCommand extends TeamCommandBase
         }
         $options['query']['range'] = $itemsPerPage;
 
-        $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
         if ($count === '0') {
             $fetchAllPages = true;
         }
@@ -67,7 +73,7 @@ class TeamProjectListCommand extends TeamCommandBase
             return 1;
         }
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         /** @var TeamProjectAccess[] $projects */
         $projects = [];
         $url = $team->getUri() . '/project-access';
@@ -87,13 +93,13 @@ class TeamProjectListCommand extends TeamCommandBase
         if (empty($projects)) {
             $this->stdErr->writeln(\sprintf('No projects were found in the team %s.', $this->getTeamLabel($team)));
             $this->stdErr->writeln('');
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln(\sprintf('To add project(s), run: <info>%s team:project:add</info>', $executable));
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($projects as $project) {
@@ -105,8 +111,8 @@ class TeamProjectListCommand extends TeamCommandBase
             ];
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        /** @var Table $table */
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('Projects in the team %s:', $this->getTeamLabel($team)));
@@ -120,7 +126,7 @@ class TeamProjectListCommand extends TeamCommandBase
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
             }
 
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add project(s) to the team, run: <info>%s team:project:add [ids...]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To delete a project from the team, run: <info>%s team:project:delete [id]</info>', $executable));

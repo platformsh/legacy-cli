@@ -6,14 +6,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Animation
 {
-    protected $interval;
-
-    /** @var \Platformsh\Cli\Console\AnimationFrame[] */
-    protected $frames = [];
+    /** @var AnimationFrame[] */
+    protected array $frames;
 
     protected $currentFrame = 0;
     protected $lastFrame;
-    protected $output;
     protected $lastFrameTime;
 
     /**
@@ -24,13 +21,9 @@ class Animation
      * @param int             $interval
      *    Minimum interval between frames in microseconds.
      */
-    public function __construct(OutputInterface $output, array $frames, $interval = 500000)
+    public function __construct(protected OutputInterface $output, array $frames, protected $interval = 500000)
     {
-        $this->output = $output;
-        $this->interval = $interval;
-        $this->frames = \array_map(function ($frame) use ($interval) {
-            return \is_string($frame) ? new AnimationFrame($frame, $interval) : $frame;
-        }, $frames);
+        $this->frames = \array_map(fn($frame) => \is_string($frame) ? new AnimationFrame($frame, $this->interval) : $frame, $frames);
     }
 
     /**
@@ -50,7 +43,7 @@ class Animation
      *
      * @param string $placeholder
      */
-    public function render($placeholder = '.')
+    public function render($placeholder = '.'): void
     {
         // Ensure that at least $this->interval microseconds have passed since
         // the last frame.

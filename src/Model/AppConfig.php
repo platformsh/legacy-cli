@@ -10,7 +10,6 @@ use Platformsh\Client\Model\Deployment\WebApp;
  */
 class AppConfig
 {
-    private $config;
     private $normalizedConfig;
 
     /**
@@ -18,18 +17,17 @@ class AppConfig
      *
      * @param array $config
      */
-    public function __construct(array $config)
+    public function __construct(private readonly array $config)
     {
-        $this->config = $config;
-        $this->normalizedConfig = $this->normalizeConfig($config);
+        $this->normalizedConfig = $this->normalizeConfig($this->config);
     }
 
     /**
-     * @param \Platformsh\Client\Model\Deployment\WebApp $app
+     * @param WebApp $app
      *
      * @return static
      */
-    public static function fromWebApp(WebApp $app)
+    public static function fromWebApp(WebApp $app): static
     {
         return new static($app->getProperties());
     }
@@ -53,7 +51,7 @@ class AppConfig
      *
      * @return string
      */
-    public function getDocumentRoot()
+    public function getDocumentRoot(): string
     {
         $documentRoot = '';
         $normalized = $this->getNormalized();
@@ -69,7 +67,7 @@ class AppConfig
             }
         }
 
-        return ltrim($documentRoot, '/');
+        return ltrim((string) $documentRoot, '/');
     }
 
     /**
@@ -79,15 +77,15 @@ class AppConfig
      *
      * @return array
      */
-    private function normalizeConfig(array $config)
+    private function normalizeConfig(array $config): array
     {
         // Backwards compatibility with old config format: `toolstack` is
         // changed to application `type` and `build`.`flavor`.
         if (isset($config['toolstack'])) {
-            if (!strpos($config['toolstack'], ':')) {
+            if (!strpos((string) $config['toolstack'], ':')) {
                 throw new InvalidConfigException("Invalid value for 'toolstack'");
             }
-            list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
+            list($config['type'], $config['build']['flavor']) = explode(':', (string) $config['toolstack'], 2);
         }
 
         // The `web` section has changed to `web`.`locations`.
@@ -117,7 +115,7 @@ class AppConfig
     /**
      * @return array
      */
-    private function getOldWebDefaults()
+    private function getOldWebDefaults(): array
     {
         return [
             'document_root' => '/public',

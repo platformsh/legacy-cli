@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Doctrine\Common\Cache\CacheProvider;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
@@ -17,6 +19,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
 {
 
+    public function __construct(private readonly CacheProvider $cacheProvider, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -49,7 +55,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         // Special handling for Dedicated Generation 2 environments, for which
         // the SSH URL contains something like "ssh://1.ent-" or "1.ent-" or "ent-".
-        if (preg_match('%(^|[/.])ent-[a-z0-9]%', $host->getLabel())) {
+        if (preg_match('%(^|[/.])ent-[a-z0-9]%', (string) $host->getLabel())) {
             $logDir = '/var/log/platform/"$USER"';
             $this->debug('Detected Dedicated environment: using log directory: ' . $logDir);
         }
@@ -57,25 +63,25 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         // Select the log file that the user specified.
         if ($logType = $input->getArgument('type')) {
             // @todo this might need to be cleverer
-            if (substr($logType, -4) === '.log') {
-                $logType = substr($logType, 0, strlen($logType) - 4);
+            if (str_ends_with((string) $logType, '.log')) {
+                $logType = substr((string) $logType, 0, strlen((string) $logType) - 4);
             }
             $logFilename = $logDir . '/' . OsUtil::escapePosixShellArg($logType . '.log');
         } elseif (!$input->isInteractive()) {
             $this->stdErr->writeln('No log type specified.');
             return 1;
         } else {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            /** @var QuestionHelper $questionHelper */
+            $questionHelper = $this->questionHelper;
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $host->getCacheKey());
-            /** @var \Doctrine\Common\Cache\CacheProvider $cache */
-            $cache = $this->getService('cache');
+            /** @var CacheProvider $cache */
+            $cache = $this->cacheProvider;
             if (!$result = $cache->fetch($cacheKey)) {
                 $result = $host->runCommand('echo -n _BEGIN_FILE_LIST_; ls -1 ' . $logDir . '/*.log; echo -n _END_FILE_LIST_');
                 if (is_string($result)) {
-                    $result = trim(StringUtil::between($result, '_BEGIN_FILE_LIST_', '_END_FILE_LIST_'));
+                    $result = trim((string) StringUtil::between($result, '_BEGIN_FILE_LIST_', '_END_FILE_LIST_'));
                 }
 
                 // Cache the list for 1 day.
@@ -90,9 +96,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $files = $result && is_string($result) ? explode("\n", $result) : $defaultFiles;
 
             // Ask the user to choose a file.
-            $files = array_combine($files, array_map(function ($file) {
-                return str_replace('.log', '', basename(trim($file)));
-            }, $files));
+            $files = array_combine($files, array_map(fn($file): string|array => str_replace('.log', '', basename(trim((string) $file))), $files));
             $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 

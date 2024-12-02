@@ -10,8 +10,6 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
  */
 class State
 {
-    protected $config;
-
     protected $state = [];
 
     protected $loaded = false;
@@ -19,9 +17,8 @@ class State
     /**
      * @param Config $config
      */
-    public function __construct(Config $config)
+    public function __construct(protected Config $config)
     {
-        $this->config = $config;
     }
 
     /**
@@ -42,10 +39,9 @@ class State
      * Set a state value.
      *
      * @param string $key
-     * @param mixed  $value
      * @param bool   $save
      */
-    public function set($key, $value, $save = true)
+    public function set($key, mixed $value, $save = true): void
     {
         $this->load();
         $parents = explode('.', $key);
@@ -61,7 +57,7 @@ class State
     /**
      * Save state.
      */
-    public function save()
+    public function save(): void
     {
         (new SymfonyFilesystem())->dumpFile(
             $this->getFilename(),
@@ -87,7 +83,7 @@ class State
     /**
      * @return string
      */
-    protected function getFilename()
+    protected function getFilename(): string
     {
         return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . $this->config->getWithDefault('application.user_state_file', 'state.json');
     }

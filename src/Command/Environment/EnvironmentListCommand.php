@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -17,8 +21,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:list', description: 'Get a list of environments', aliases: ['environments', 'env'])]
 class EnvironmentListCommand extends CommandBase implements CompletionAwareInterface
 {
-    private $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
-    private $defaultColumns = ['id', 'title', 'status', 'type'];
+    private array $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
+    private array $defaultColumns = ['id', 'title', 'status', 'type'];
 
     protected $children = [];
 
@@ -26,8 +30,12 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
     protected $currentEnvironment;
     protected $mapping = [];
 
-    /** @var \Platformsh\Cli\Service\PropertyFormatter */
+    /** @var PropertyFormatter */
     protected $formatter;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly LocalProject $localProject, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -57,7 +65,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      *                       Children of all environments are stored in the
      *                       property $this->children.
      */
-    protected function buildEnvironmentTree(array $environments, $parent = null)
+    protected function buildEnvironmentTree(array $environments, $parent = null): array
     {
         $children = [];
         foreach ($environments as $environment) {
@@ -86,7 +94,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      *
      * @return array
      */
-    protected function buildEnvironmentRows(array $tree, $indent = true, $indicateCurrent = true, $indentAmount = 0)
+    protected function buildEnvironmentRows(array $tree, $indent = true, $indicateCurrent = true, $indentAmount = 0): array
     {
         $rows = [];
         foreach ($tree as $environment) {
@@ -151,7 +159,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $progress->showIfOutputDecorated('Loading environments...');
 
         $project = $this->getSelectedProject();
-        $environments = $this->api()->getEnvironments($project, $refresh ? true : null);
+        $environments = $this->api->getEnvironments($project, $refresh ? true : null);
 
         $progress->done();
 
@@ -169,7 +177,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->filterEnvironments($environments, $filters);
 
         if ($input->getOption('sort')) {
-            $this->api()->sortResources($environments, $input->getOption('sort'));
+            $this->api->sortResources($environments, $input->getOption('sort'));
         }
         if ($input->getOption('reverse')) {
             $environments = array_reverse($environments, true);
@@ -201,8 +209,8 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->currentEnvironment = $this->getCurrentEnvironment($project);
 
         if (($currentProject = $this->getCurrentProject()) && $currentProject->id === $project->id) {
-            /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-            $localProject = $this->getService('local.project');
+            /** @var LocalProject $localProject */
+            $localProject = $this->localProject;
             $projectConfig = $localProject->getProjectConfig($this->getProjectRoot());
             if (isset($projectConfig['mapping'])) {
                 $this->mapping = $projectConfig['mapping'];
@@ -211,11 +219,11 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
 
         $tree = $this->buildEnvironmentTree($environments);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        /** @var Table $table */
+        $table = $this->table;
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $this->formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $this->formatter = $this->propertyFormatter;
 
         if ($table->formatIsMachineReadable()) {
             $table->render($this->buildEnvironmentRows($tree, false, false), $this->tableHeader, $this->defaultColumns);
@@ -233,7 +241,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         $this->stdErr->writeln("<info>*</info> - Indicates the current environment\n");
 
         $currentEnvironment = $this->currentEnvironment;
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         $this->stdErr->writeln(
             'Check out a different environment by running <info>' . $executable . ' checkout [id]</info>'
@@ -278,7 +286,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      *
      * @return string
      */
-    protected function formatEnvironmentStatus($status)
+    protected function formatEnvironmentStatus($status): string
     {
         if ($status == 'dirty') {
             $status = 'In progress';
@@ -296,19 +304,13 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
     protected function filterEnvironments(array &$environments, array $filters)
     {
         if (!empty($filters['no-inactive'])) {
-            $environments = array_filter($environments, function ($environment) {
-                return $environment->status !== 'inactive';
-            });
+            $environments = array_filter($environments, fn($environment): bool => $environment->status !== 'inactive');
         }
         if (!empty($filters['type'])) {
-            $environments = array_filter($environments, function (Environment $environment) use ($filters) {
-                return \in_array($environment->type, $filters['type']);
-            });
+            $environments = array_filter($environments, fn(Environment $environment): bool => \in_array($environment->type, $filters['type']));
         }
         if (!empty($filters['status'])) {
-            $environments = array_filter($environments, function (Environment $environment) use ($filters) {
-                return \in_array($environment->status, $filters['status']);
-            });
+            $environments = array_filter($environments, fn(Environment $environment): bool => \in_array($environment->status, $filters['status']));
         }
     }
 

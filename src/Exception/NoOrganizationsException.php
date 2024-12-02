@@ -3,16 +3,13 @@
 namespace Platformsh\Cli\Exception;
 
 class NoOrganizationsException extends \Exception {
-    private $totalNumOrgs;
-
     /**
      * @param string $message
      * @param int $totalNumOrgs
      * @param string $filteredByLink
      */
-    public function __construct($message, $totalNumOrgs)
+    public function __construct($message, private $totalNumOrgs)
     {
-        $this->totalNumOrgs = $totalNumOrgs;
         parent::__construct($message);
     }
 

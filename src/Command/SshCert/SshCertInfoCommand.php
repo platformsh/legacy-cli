@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\SshCert;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\SshCert\Certifier;
+use Platformsh\Cli\Service\SshConfig;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SshCertInfoCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Certifier $certifier, private readonly PropertyFormatter $propertyFormatter, private readonly SshConfig $sshConfig)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -24,12 +31,12 @@ class SshCertInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Initialize the API service to ensure event listeners etc.
-        $this->api();
+        $this->api;
 
-        /** @var \Platformsh\Cli\SshCert\Certifier $certifier */
-        $certifier = $this->getService('certifier');
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
+        /** @var Certifier $certifier */
+        $certifier = $this->certifier;
+        /** @var SshConfig $sshConfig */
+        $sshConfig = $this->sshConfig;
 
         $cert = $certifier->getExistingCertificate();
         if (!$cert || !$certifier->isValid($cert)) {
@@ -45,8 +52,8 @@ class SshCertInfoCommand extends CommandBase
             $cert = $certifier->generateCertificate($cert);
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
         $properties = [
             'filename' => $cert->certificateFilename(),
             'key_filename' => $cert->privateKeyFilename(),

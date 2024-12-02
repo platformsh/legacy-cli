@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\SelfUpdater;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'self:update', description: 'Update the CLI to the latest version', aliases: ['update', 'up'])]
 class SelfUpdateCommand extends CommandBase
 {
+    public function __construct(private readonly Config $config, private readonly SelfUpdater $selfUpdater)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -23,11 +29,11 @@ class SelfUpdateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $manifestUrl = $input->getOption('manifest') ?: $this->config()->get('application.manifest_url');
-        $currentVersion = $input->getOption('current-version') ?: $this->config()->getVersion();
+        $manifestUrl = $input->getOption('manifest') ?: $this->config->get('application.manifest_url');
+        $currentVersion = $input->getOption('current-version') ?: $this->config->getVersion();
 
-        /** @var \Platformsh\Cli\Service\SelfUpdater $cliUpdater */
-        $cliUpdater = $this->getService('self_updater');
+        /** @var SelfUpdater $cliUpdater */
+        $cliUpdater = $this->selfUpdater;
         $cliUpdater->setAllowMajor(!$input->getOption('no-major'));
         $cliUpdater->setAllowUnstable((bool) $input->getOption('unstable'));
         $cliUpdater->setTimeout($input->getOption('timeout'));

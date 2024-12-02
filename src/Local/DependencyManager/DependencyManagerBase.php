@@ -5,12 +5,10 @@ use Platformsh\Cli\Service\Shell;
 
 abstract class DependencyManagerBase implements DependencyManagerInterface
 {
-    protected $shell;
     protected $command = 'undefined';
 
-    public function __construct(Shell $shell)
+    public function __construct(protected Shell $shell)
     {
-        $this->shell = $shell;
     }
 
     /**

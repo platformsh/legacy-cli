@@ -52,7 +52,7 @@ class DrushServiceTest extends TestCase
         $this->tempDirSetUp();
     }
 
-    public function testCreateAliases()
+    public function testCreateAliases(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -85,7 +85,7 @@ class DrushServiceTest extends TestCase
         $this->assertArrayHasKey('_local', $aliases);
     }
 
-    public function testCreateAliasesMultiApp()
+    public function testCreateAliasesMultiApp(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -117,7 +117,7 @@ class DrushServiceTest extends TestCase
         $this->assertCount(1, $apps);
     }
 
-    public function testCreateAliasesMultiDrupal()
+    public function testCreateAliasesMultiDrupal(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -157,7 +157,7 @@ class DrushServiceTest extends TestCase
         $this->assertArrayHasKey('_local--drupal2', $aliases);
     }
 
-    public function testGetSiteAliasDir()
+    public function testGetSiteAliasDir(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();

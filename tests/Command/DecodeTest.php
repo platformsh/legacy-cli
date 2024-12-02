@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
  */
 class DecodeTest extends TestCase
 {
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string {
         $output = new BufferedOutput();
         $input = new ArrayInput($args);
         $input->setInteractive(false);
@@ -21,7 +21,7 @@ class DecodeTest extends TestCase
         return $output->fetch();
     }
 
-    public function testDecode() {
+    public function testDecode(): void {
         $var = base64_encode(json_encode([
             'foo' => 'bar',
             'fee' => 'bor',
@@ -29,31 +29,31 @@ class DecodeTest extends TestCase
         ]));
         $this->assertEquals(
             'bar',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 'value' => $var,
                 '--property' => 'foo',
             ]), "\n")
         );
         $this->assertEquals(
             'baz',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 'value' => $var,
                 '--property' => 'nest.nested',
             ]), "\n")
         );
     }
 
-    public function testDecodeEmptyObject() {
+    public function testDecodeEmptyObject(): void {
         $this->assertEquals(
             '{}',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 'value' => base64_encode(json_encode(new \stdClass()))
             ]), "\n")
         );
 
         $this->assertEquals(
             'Property not found: nonexistent',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 'value' => base64_encode(json_encode(new \stdClass())),
                 '--property' => 'nonexistent'
             ]), "\n")

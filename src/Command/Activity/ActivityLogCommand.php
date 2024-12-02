@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -14,6 +17,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:log', description: 'Display the log for an activity')]
 class ActivityLogCommand extends ActivityCommandBase
 {
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -57,8 +64,8 @@ class ActivityLogCommand extends ActivityCommandBase
     {
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        /** @var ActivityLoader $loader */
+        $loader = $this->activityLoader;
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
             $apiResource = $this->getSelectedEnvironment();
@@ -71,7 +78,7 @@ class ActivityLogCommand extends ActivityCommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -89,8 +96,8 @@ class ActivityLogCommand extends ActivityCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
@@ -106,18 +113,18 @@ class ActivityLogCommand extends ActivityCommandBase
         if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
             $timestamps = $input->getOption('date-fmt');
         } elseif ($timestamps) {
-            $timestamps = $this->config()->getWithDefault('application.date_format', 'c');
+            $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
 
         /** @var ActivityMonitor $monitor */
-        $monitor = $this->getService('activity_monitor');
+        $monitor = $this->activityMonitor;
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $monitor->waitAndLog($activity, $refresh, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
-            $this->api()->clearEnvironmentsCache($activity->project);
+            $this->api->clearEnvironmentsCache($activity->project);
         } else {
             $items = $activity->readLog();
             $output->write($monitor->formatLog($items, $timestamps));

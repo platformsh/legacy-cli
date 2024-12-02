@@ -6,17 +6,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Composer extends BuildFlavorBase
 {
-    public function getStacks()
+    public function getStacks(): array
     {
         return ['php', 'hhvm'];
     }
 
-    public function getKeys()
+    public function getKeys(): array
     {
         return ['composer', 'default'];
     }
 
-    public function build()
+    public function build(): void
     {
         $buildDir = $this->copyToBuildDir();
 
@@ -46,7 +46,7 @@ class Composer extends BuildFlavorBase
         $this->processSpecialDestinations();
     }
 
-    public function install()
+    public function install(): void
     {
         parent::install();
         $this->copyGitIgnore('gitignore-composer');
