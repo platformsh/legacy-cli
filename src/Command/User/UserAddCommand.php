@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -29,7 +30,7 @@ use Symfony\Component\Console\Question\Question;
 class UserAddCommand extends UserCommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -190,7 +191,7 @@ class UserAddCommand extends UserCommandBase
         }
 
         if ($existingUserId !== null) {
-            $this->debug(sprintf('User %s found with user ID: %s', $email, $existingUserId));
+            $this->io->debug(sprintf('User %s found with user ID: %s', $email, $existingUserId));
         }
 
         // Exit if the user is the owner already.
@@ -391,12 +392,12 @@ class UserAddCommand extends UserCommandBase
             }
             if ($permissions != $selection->permissions) {
                 $this->stdErr->writeln("Updating the user's project access...");
-                $this->debug('New permissions: ' . implode(', ', $permissions));
+                $this->io->debug('New permissions: ' . implode(', ', $permissions));
                 $selection->update(['permissions' => $permissions]);
                 $this->stdErr->writeln('Access was updated successfully.');
             } else {
                 $this->stdErr->writeln('No changes to make');
-                $this->debug('Permissions match: ' . implode(', ', $permissions));
+                $this->io->debug('Permissions match: ' . implode(', ', $permissions));
             }
         } elseif ($selection instanceof ProjectAccess) {
             // Make the desired changes at the project level.

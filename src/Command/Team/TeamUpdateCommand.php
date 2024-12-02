@@ -18,7 +18,7 @@ class TeamUpdateCommand extends TeamCreateCommand
     protected function configure()
     {
         $this->selector->addTeamOption($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition())
-            ->addWaitOptions();
+            ->addOrganizationOptions($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 }

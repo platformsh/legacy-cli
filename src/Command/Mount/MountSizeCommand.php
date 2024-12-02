@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Mount;
@@ -28,7 +29,7 @@ class MountSizeCommand extends CommandBase
         'available' => 'Available',
         'percent_used' => '% Used',
     ];
-    public function __construct(private readonly Config $config, private readonly Mount $mount, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly Mount $mount, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -231,7 +232,7 @@ EOF;
             try {
                 $path = $this->getDfColumn($line, 'path');
             } catch (\RuntimeException $e) {
-                $this->debug($e->getMessage());
+                $this->io->debug($e->getMessage());
                 continue;
             }
             if (!str_starts_with($path, $appDir . '/')) {

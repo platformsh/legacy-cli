@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
@@ -42,8 +43,8 @@ class DiskUsageCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -65,7 +66,7 @@ class DiskUsageCommand extends MetricsCommandBase
         $table = $this->table;
         $table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
         if (!$table->formatIsMachineReadable()) {
             $this->displayEnvironmentHeader();

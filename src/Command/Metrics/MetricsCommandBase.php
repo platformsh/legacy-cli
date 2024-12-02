@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
@@ -27,6 +28,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
+    private readonly Io $io;
     private readonly Selector $selector;
     private readonly PropertyFormatter $propertyFormatter;
     private readonly Config $config;
@@ -97,12 +99,13 @@ abstract class MetricsCommandBase extends CommandBase
         ],
     ];
     #[Required]
-    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Selector $selector) : void
+    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter, Selector $selector) : void
     {
         $this->api = $api;
         $this->config = $config;
         $this->propertyFormatter = $propertyFormatter;
         $this->selector = $selector;
+        $this->io = $io;
     }
 
     public function isEnabled(): bool
@@ -262,14 +265,14 @@ abstract class MetricsCommandBase extends CommandBase
             $selectedServiceNames = array_unique($selectedServiceNames);
         }
         if (!empty($selectedServiceNames)) {
-            $this->debug('Selected service(s): ' . implode(', ', $selectedServiceNames));
+            $this->io->debug('Selected service(s): ' . implode(', ', $selectedServiceNames));
             if (count($selectedServiceNames) === 1) {
                 $query->addFilter('service', reset($selectedServiceNames));
             }
         }
 
         if ($this->stdErr->isDebug()) {
-            $this->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
         }
 
         // Perform the metrics query.

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -32,9 +33,9 @@ class EnvironmentInitCommand extends CommandBase
             $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh-templates/golang');
         }
 
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition())
-            ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     /**
@@ -42,7 +43,7 @@ class EnvironmentInitCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         if (!$selection->hasEnvironment()) {
             $this->selectEnvironment($selection->getProject()->default_branch);
         }

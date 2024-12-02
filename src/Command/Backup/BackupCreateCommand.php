@@ -34,9 +34,9 @@ class BackupCreateCommand extends CommandBase
                 . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
                 . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.'
             );
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addHiddenOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
         $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
         $this->addExample('Make a backup of the current environment');
@@ -67,7 +67,7 @@ class BackupCreateCommand extends CommandBase
                         $this->stdErr->writeln('You must be an administrator to create a backup.');
                     }
                 } catch (\Exception $e) {
-                    $this->debug('Error while checking access: ' . $e->getMessage());
+                    $this->io->debug('Error while checking access: ' . $e->getMessage());
                 }
             }
 
@@ -97,7 +97,7 @@ class BackupCreateCommand extends CommandBase
 
         if ($this->activityMonitor->shouldWait($input)) {
             // Strongly recommend using --no-wait in a cron job.
-            if (!$this->isTerminal(STDIN)) {
+            if (!$this->io->isTerminal(STDIN)) {
                 $this->stdErr->writeln(
                     '<comment>Warning:</comment> use the --no-wait (-W) option if you are running this in a cron job.'
                 );
