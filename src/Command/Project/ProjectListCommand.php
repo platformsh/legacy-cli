@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
+use Platformsh\Cli\Service\IO;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Pager\Pager;
@@ -31,8 +32,14 @@ class ProjectListCommand extends CommandBase
         'created_at' => 'Created',
     ];
     private array $defaultColumns = ['id', 'title', 'region'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
-    {
+
+    public function __construct(
+        private readonly Api               $api,
+        private readonly Config            $config,
+        private readonly PropertyFormatter $propertyFormatter,
+        private readonly IO                $io,
+        private readonly Table             $table
+    ) {
         parent::__construct();
     }
 
@@ -65,7 +72,7 @@ class ProjectListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['host'], 'The option --host is deprecated and replaced by --region. It will be removed in a future version.');
+        $this->io->warnAboutDeprecatedOptions(['host'], 'The option --host is deprecated and replaced by --region. It will be removed in a future version.');
 
         $refresh = $input->hasOption('refresh') && $input->getOption('refresh');
 
