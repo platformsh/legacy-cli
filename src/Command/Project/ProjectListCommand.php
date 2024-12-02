@@ -6,7 +6,7 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ProgressMessage;
-use Platformsh\Cli\Service\IO;
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Pager\Pager;
@@ -37,7 +37,7 @@ class ProjectListCommand extends CommandBase
         private readonly Api               $api,
         private readonly Config            $config,
         private readonly PropertyFormatter $propertyFormatter,
-        private readonly IO                $io,
+        private readonly Io                $io,
         private readonly Table             $table
     ) {
         parent::__construct();

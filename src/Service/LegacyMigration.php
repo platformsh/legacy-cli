@@ -19,7 +19,7 @@ class LegacyMigration
         private readonly Config           $config,
         private readonly InputInterface   $input,
         private readonly InstallationInfo $installationInfo,
-        private readonly IO               $io,
+        private readonly Io               $io,
         private readonly LocalProject     $localProject,
         private readonly QuestionHelper   $questionHelper,
         private readonly SubCommandRunner $subCommandRunner,
