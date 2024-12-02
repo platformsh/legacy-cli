@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
@@ -13,13 +15,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'certificate:list', description: 'List project certificates', aliases: ['certificates', 'certs'])]
 class CertificateListCommand extends CommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'domains' => 'Domain(s)',
         'created' => 'Created',
         'expires' => 'Expires',
         'issuer' => 'Issuer',
     ];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -81,10 +87,10 @@ class CertificateListCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
+        /** @var Table $table */
+        $table = $this->table;
+        /** @var PropertyFormatter $propertyFormatter */
+        $propertyFormatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($certs as $cert) {
@@ -98,7 +104,7 @@ class CertificateListCommand extends CommandBase
         }
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api()->getProjectLabel($project)));
+            $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api->getProjectLabel($project)));
         }
 
         $table->render($rows, $this->tableHeader);
@@ -107,7 +113,7 @@ class CertificateListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
         }
 
@@ -121,9 +127,9 @@ class CertificateListCommand extends CommandBase
                 case 'domain':
                 case 'exclude-domain':
                     $include = $filter === 'domain';
-                    $certs = array_filter($certs, function (Certificate $cert) use ($value, $include) {
+                    $certs = array_filter($certs, function (Certificate $cert) use ($value, $include): bool {
                         foreach ($cert->domains as $domain) {
-                            if (stripos($domain, $value) !== false) {
+                            if (stripos($domain, (string) $value) !== false) {
                                 return $include;
                             }
                         }
@@ -133,7 +139,7 @@ class CertificateListCommand extends CommandBase
                     break;
 
                 case 'issuer':
-                    $certs = array_filter($certs, function (Certificate $cert) use ($value) {
+                    $certs = array_filter($certs, function (Certificate $cert) use ($value): bool {
                         foreach ($cert->issuer as $issuer) {
                             if (isset($issuer['value']) && $issuer['value'] === $value) {
                                 return true;
@@ -145,27 +151,19 @@ class CertificateListCommand extends CommandBase
                     break;
 
                 case 'only-auto':
-                    $certs = array_filter($certs, function (Certificate $cert) {
-                        return (bool) $cert->is_provisioned;
-                    });
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => (bool) $cert->is_provisioned);
                     break;
 
                 case 'no-auto':
-                    $certs = array_filter($certs, function (Certificate $cert) {
-                        return !$cert->is_provisioned;
-                    });
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => !$cert->is_provisioned);
                     break;
 
                 case 'no-expired':
-                    $certs = array_filter($certs, function (Certificate $cert) {
-                        return !$this->isExpired($cert);
-                    });
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => !$this->isExpired($cert));
                     break;
 
                 case 'only-expired':
-                    $certs = array_filter($certs, function (Certificate $cert) {
-                        return $this->isExpired($cert);
-                    });
+                    $certs = array_filter($certs, fn(Certificate $cert) => $this->isExpired($cert));
                     break;
             }
         }
@@ -174,17 +172,17 @@ class CertificateListCommand extends CommandBase
     /**
      * Check if a certificate has expired.
      *
-     * @param \Platformsh\Client\Model\Certificate $cert
+     * @param Certificate $cert
      *
      * @return bool
      */
-    private function isExpired(Certificate $cert)
+    private function isExpired(Certificate $cert): bool
     {
         return time() >= strtotime($cert->expires_at);
     }
 
     /**
-     * @param \Platformsh\Client\Model\Certificate $cert
+     * @param Certificate $cert
      * @param string                               $alias
      *
      * @return string|bool

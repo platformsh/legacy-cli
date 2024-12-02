@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Symfony\Component\Console\Command\Command;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
@@ -20,7 +21,7 @@ class OrganizationUserCommandBase extends OrganizationCommandBase implements Com
      *
      * @return string
      */
-    protected function listPermissions($permissions = null)
+    protected function listPermissions($permissions = null): string
     {
         if ($permissions === []) {
             return '<info>[none]</info>';
@@ -33,7 +34,7 @@ class OrganizationUserCommandBase extends OrganizationCommandBase implements Com
      *
      * @return $this
      */
-    protected function addPermissionOption()
+    protected function addPermissionOption(): Command
     {
         return $this->addOption(
             'permission',

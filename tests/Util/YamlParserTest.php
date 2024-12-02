@@ -8,7 +8,7 @@ use Platformsh\Cli\Util\YamlParser;
 
 class YamlParserTest extends TestCase
 {
-    public function testParseValidYaml()
+    public function testParseValidYaml(): void
     {
         $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $parsed = (new YamlParser())->parseFile($file);
@@ -31,7 +31,7 @@ class YamlParserTest extends TestCase
         $this->assertEquals($expected, $parsed);
     }
 
-    public function testParseInvalidYaml()
+    public function testParseInvalidYaml(): void
     {
         $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
         $content = file_get_contents($file);
@@ -41,7 +41,7 @@ class YamlParserTest extends TestCase
         (new YamlParser())->parseContent($content, $file);
     }
 
-    public function testParseIndentedYaml()
+    public function testParseIndentedYaml(): void
     {
         $file = 'example.yaml';
         $content = <<<EOF

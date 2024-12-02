@@ -36,17 +36,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Table implements InputConfiguringInterface
 {
-    protected $output;
-    protected $input;
-
     /**
      * @param InputInterface  $input
      * @param OutputInterface $output
      */
-    public function __construct(InputInterface $input, OutputInterface $output)
+    public function __construct(protected InputInterface $input, protected OutputInterface $output)
     {
-        $this->output = $output;
-        $this->input = $input;
     }
 
     /**
@@ -58,7 +53,7 @@ class Table implements InputConfiguringInterface
      * @param string[] $defaultColumns
      *   A list of default columns.
      */
-    public static function configureInput(InputDefinition $definition, array $columns = [], array $defaultColumns = [])
+    public static function configureInput(InputDefinition $definition, array $columns = [], array $defaultColumns = []): void
     {
         $description = 'The output format: table, csv, tsv, or plain';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');
@@ -87,7 +82,7 @@ class Table implements InputConfiguringInterface
      * @param bool $markDefault
      * @return string
      */
-    private static function formatAvailableColumns($columns, $defaultColumns = [], $markDefault = true)
+    private static function formatAvailableColumns(array $columns, $defaultColumns = [], $markDefault = true): string
     {
         $columnNames = array_keys(static::availableColumns($columns));
         natcasesort($columnNames);
@@ -95,7 +90,7 @@ class Table implements InputConfiguringInterface
             $defaultColumns = array_map('\strtolower', $defaultColumns);
             $columnNames = array_diff($columnNames, $defaultColumns);
             if ($markDefault) {
-                $defaultColumns = array_map(function ($c) { return $c . '*'; }, $defaultColumns);
+                $defaultColumns = array_map(fn($c): string => $c . '*', $defaultColumns);
             }
             $columnNames = array_merge($defaultColumns, $columnNames);
         }
@@ -112,7 +107,7 @@ class Table implements InputConfiguringInterface
      *
      * @return void
      */
-    public function replaceDeprecatedColumns(array $replacements, InputInterface $input, OutputInterface $output)
+    public function replaceDeprecatedColumns(array $replacements, InputInterface $input, OutputInterface $output): void
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $columns = $this->specifiedColumns();
@@ -135,7 +130,7 @@ class Table implements InputConfiguringInterface
      *
      * @return void
      */
-    public function removeDeprecatedColumns(array $remove, $placeholder, InputInterface $input, OutputInterface $output)
+    public function removeDeprecatedColumns(array $remove, $placeholder, InputInterface $input, OutputInterface $output): void
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $columns = $this->specifiedColumns();
@@ -154,7 +149,7 @@ class Table implements InputConfiguringInterface
      * @param string[] $values
      * @param string[] $propertyNames
      */
-    public function renderSimple(array $values, array $propertyNames)
+    public function renderSimple(array $values, array $propertyNames): void
     {
         $data = [];
         foreach ($propertyNames as $key => $label) {
@@ -170,7 +165,7 @@ class Table implements InputConfiguringInterface
      * @param string[] $defaultColumns
      * @return string[] A list of (lower-case) column names.
      */
-    public function columnsToDisplay(array $header, array $defaultColumns = [])
+    public function columnsToDisplay(array $header, array $defaultColumns = []): array
     {
         $availableColumns = array_keys(self::availableColumns($header));
         if (empty($defaultColumns)) {
@@ -191,7 +186,7 @@ class Table implements InputConfiguringInterface
             if ($specifiedColumn === '+') {
                 $requestedCols = \array_merge($requestedCols, $defaultColumns);
             } else {
-                $requestedCols[] = \strtolower($specifiedColumn);
+                $requestedCols[] = \strtolower((string) $specifiedColumn);
             }
         }
 
@@ -220,7 +215,7 @@ class Table implements InputConfiguringInterface
      *   Default columns to display (optional). Columns are identified by
      *   their name in $header, or alternatively by their key in $rows.
      */
-    public function render(array $rows, array $header = [], array $defaultColumns = [])
+    public function render(array $rows, array $header = [], array $defaultColumns = []): void
     {
         $format = $this->getFormat();
 
@@ -262,7 +257,7 @@ class Table implements InputConfiguringInterface
      *   True if the user has specified a machine-readable format via the
      *   --format option (e.g. 'csv' or 'tsv'), false otherwise.
      */
-    public function formatIsMachineReadable()
+    public function formatIsMachineReadable(): bool
     {
         return in_array($this->getFormat(), ['csv', 'tsv', 'plain']);
     }
@@ -272,7 +267,7 @@ class Table implements InputConfiguringInterface
      *
      * @return array
      */
-    protected function specifiedColumns()
+    protected function specifiedColumns(): array
     {
         if (!$this->input->hasOption('columns')) {
             return [];
@@ -280,9 +275,9 @@ class Table implements InputConfiguringInterface
         $val = $this->input->getOption('columns');
         if (\count($val) === 1) {
             $first = \reset($val);
-            if (\strpos($first, '+') !== false) {
-                $first = preg_replace('/([\w%])\+/', '$1,+', $first);
-                $first = preg_replace('/\+([\w%])/', '+,$1', $first);
+            if (str_contains((string) $first, '+')) {
+                $first = preg_replace('/([\w%])\+/', '$1,+', (string) $first);
+                $first = preg_replace('/\+([\w%])/', '+,$1', (string) $first);
                 $val = [$first];
             }
         }
@@ -295,12 +290,12 @@ class Table implements InputConfiguringInterface
      * @param array $header
      * @return array
      */
-    private static function availableColumns(array $header)
+    private static function availableColumns(array $header): array
     {
         $availableColumns = [];
         foreach ($header as $key => $column) {
             $columnName = \is_string($key) ? $key : $column;
-            $availableColumns[\strtolower($columnName)] = $key;
+            $availableColumns[\strtolower((string) $columnName)] = $key;
         }
         return $availableColumns;
     }
@@ -314,7 +309,7 @@ class Table implements InputConfiguringInterface
      *
      * @return array
      */
-    private function filterColumns(array $rows, array $header, array $columnsToDisplay)
+    private function filterColumns(array $rows, array $header, array $columnsToDisplay): array
     {
         if (empty($columnsToDisplay)) {
             return $rows;
@@ -359,7 +354,7 @@ class Table implements InputConfiguringInterface
     protected function getFormat()
     {
         if ($this->input->hasOption('format') && $this->input->getOption('format')) {
-            return strtolower($this->input->getOption('format'));
+            return strtolower((string) $this->input->getOption('format'));
         }
 
         return null;

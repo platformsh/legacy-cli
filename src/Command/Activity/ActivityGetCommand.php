@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -16,6 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:get', description: 'View detailed information on a single activity')]
 class ActivityGetCommand extends ActivityCommandBase
 {
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -53,7 +59,7 @@ class ActivityGetCommand extends ActivityCommandBase
         $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
 
         /** @var ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $loader = $this->activityLoader;
 
         if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
             $apiResource = $this->getSelectedEnvironment();
@@ -66,7 +72,7 @@ class ActivityGetCommand extends ActivityCommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -85,9 +91,9 @@ class ActivityGetCommand extends ActivityCommandBase
         }
 
         /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $properties = $activity->getProperties();
 
@@ -126,7 +132,7 @@ class ActivityGetCommand extends ActivityCommandBase
         $table->renderSimple($rows, $header);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for this activity, run: <info>%s activity:log %s</info>',

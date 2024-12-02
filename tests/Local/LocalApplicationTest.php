@@ -23,7 +23,7 @@ class LocalApplicationTest extends TestCase
         ]);
     }
 
-    public function testBuildFlavorDetectionDrupal()
+    public function testBuildFlavorDetectionDrupal(): void
     {
         $appRoot = 'tests/data/apps/drupal/project';
 
@@ -32,7 +32,7 @@ class LocalApplicationTest extends TestCase
         $this->assertInstanceOf(Drupal::class, $app->getBuildFlavor());
     }
 
-    public function testBuildFlavorDetectionSymfony()
+    public function testBuildFlavorDetectionSymfony(): void
     {
         $appRoot = 'tests/data/apps/symfony';
 
@@ -44,7 +44,7 @@ class LocalApplicationTest extends TestCase
     /**
      * Test the special case of HHVM buildFlavor types being the same as PHP.
      */
-    public function testBuildFlavorAliasHhvm()
+    public function testBuildFlavorAliasHhvm(): void
     {
         $appRoot = 'tests/data/apps/vanilla';
 
@@ -57,7 +57,7 @@ class LocalApplicationTest extends TestCase
         $this->assertInstanceOf(Symfony::class, $buildFlavor);
     }
 
-    public function testBuildFlavorDetectionNone()
+    public function testBuildFlavorDetectionNone(): void
     {
         $fakeAppRoot = 'tests/data/apps/none';
 
@@ -65,7 +65,7 @@ class LocalApplicationTest extends TestCase
         $this->assertInstanceOf(NoBuildFlavor::class, $app->getBuildFlavor(), 'Config does not indicate a specific build flavor');
     }
 
-    public function testGetAppConfig()
+    public function testGetAppConfig(): void
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/simple';
 
@@ -75,7 +75,7 @@ class LocalApplicationTest extends TestCase
         $this->assertEquals('simple', $app->getId());
     }
 
-    public function testGetAppConfigNested()
+    public function testGetAppConfigNested(): void
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/nest/nested';
 
@@ -86,7 +86,7 @@ class LocalApplicationTest extends TestCase
         $this->assertEquals('nested1', $app->getId());
     }
 
-    public function testGetSharedFileMounts()
+    public function testGetSharedFileMounts(): void
     {
         $appRoot = 'tests/data/apps/drupal/project';
         $app = new LocalApplication($appRoot, $this->config);

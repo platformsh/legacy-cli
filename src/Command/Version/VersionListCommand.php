@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Version;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
@@ -13,6 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class VersionListCommand extends CommandBase
 {
     protected string $stability = 'ALPHA';
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -26,14 +33,14 @@ class VersionListCommand extends CommandBase
         $this->validateInput($input, false, true);
         $environment = $this->getSelectedEnvironment();
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));
-        $data = \GuzzleHttp\Utils::jsonDecode((string) $response->getBody(), true);
+        $data = Utils::jsonDecode((string) $response->getBody(), true);
 
         /** @var Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
 
         $header = ['id' => 'ID', 'commit' => 'Commit', 'locked' => 'Locked', 'routing_percentage' => 'Routing %'];
 
@@ -50,8 +57,8 @@ class VersionListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Versions for the project %s, environment %s:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($environment)
+                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getEnvironmentLabel($environment)
             ));
         }
 

@@ -12,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'repo:read', description: 'Read a directory or file in the project repository', aliases: ['read'])]
 class ReadCommand extends RepoCommandBase
 {
+    public function __construct(private readonly GitDataApi $gitDataApi)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -34,7 +38,7 @@ class ReadCommand extends RepoCommandBase
 
         $path = $input->getArgument('path');
         /** @var GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
+        $gitData = $this->gitDataApi;
         $object = $gitData->getObject($path, $environment, $input->getOption('commit'));
         if ($object === false) {
             $this->stdErr->writeln(sprintf('File or directory not found: <error>%s</error>', $path));

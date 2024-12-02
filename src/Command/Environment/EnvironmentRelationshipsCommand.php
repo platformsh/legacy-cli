@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:relationships', description: 'Show an environment\'s relationships', aliases: ['relationships', 'rel'])]
 class EnvironmentRelationshipsCommand extends CommandBase
 {
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -32,8 +38,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
 
@@ -47,8 +53,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        /** @var PropertyFormatter $formatter */
+        $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;

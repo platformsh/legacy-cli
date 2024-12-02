@@ -20,7 +20,7 @@ class SslUtil
      *   An array containing the contents of the certificate files, keyed as
      *   'certificate' (string), 'key' (string), and 'chain' (array).
      */
-    public function validate($certPath, $keyPath, array $chainPaths)
+    public function validate(string $certPath, string $keyPath, array $chainPaths): array
     {
         // Get the contents.
         if (!is_readable($certPath)) {
@@ -65,7 +65,7 @@ class SslUtil
      * @return string[]
      *   Each certificate in the chain.
      */
-    public function validateChain(array $chainPaths)
+    public function validateChain(array $chainPaths): array
     {
         $chain = [];
         foreach ($chainPaths as $chainPath) {

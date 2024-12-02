@@ -22,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ResourcesUtil
 {
     private static array $cachedNextDeployment = [];
-    private OutputInterface $stdErr;
+    private readonly OutputInterface $stdErr;
 
     public function __construct(private readonly Api $api, private readonly Config $config, OutputInterface $output)
     {
@@ -42,7 +42,7 @@ class ResourcesUtil
      * @return array<string, WebApp||Worker|Service>
      *     An array of services keyed by the service name.
      */
-    public function allServices(EnvironmentDeployment $deployment)
+    public function allServices(EnvironmentDeployment $deployment): array
     {
         $webapps = $deployment->webapps;
         $workers = $deployment->workers;
@@ -120,7 +120,7 @@ class ResourcesUtil
         }
         $requestedApps = ArrayArgument::getOption($input, 'app');
         if (!empty($requestedApps)) {
-            $selectedNames = Wildcard::select(array_keys(array_filter($services, function ($s) { return $s instanceof WebApp; })), $requestedApps);
+            $selectedNames = Wildcard::select(array_keys(array_filter($services, fn($s): bool => $s instanceof WebApp)), $requestedApps);
             if (!$selectedNames) {
                 $this->stdErr->writeln('No applications were found matching the name(s): <error>' . implode('</error>, <error>', $requestedApps) . '</error>');
                 return false;
@@ -129,7 +129,7 @@ class ResourcesUtil
         }
         $requestedWorkers = ArrayArgument::getOption($input, 'worker');
         if (!empty($requestedWorkers)) {
-            $selectedNames = Wildcard::select(array_keys(array_filter($services, function ($s) { return $s instanceof Worker; })), $requestedWorkers);
+            $selectedNames = Wildcard::select(array_keys(array_filter($services, fn($s): bool => $s instanceof Worker)), $requestedWorkers);
             if (!$selectedNames) {
                 $this->stdErr->writeln('No workers were found matching the name(s): <error>' . implode('</error>, <error>', $requestedWorkers) . '</error>');
                 return false;
@@ -191,7 +191,7 @@ class ResourcesUtil
      *
      * @return string
      */
-    public function formatChange($previousValue, $newValue, $suffix = '')
+    public function formatChange($previousValue, $newValue, $suffix = ''): string
     {
         if ($previousValue === null || $newValue === $previousValue) {
             return sprintf('<info>%s%s</info>', $newValue, $suffix);
@@ -212,7 +212,7 @@ class ResourcesUtil
      * @return string
      *   A numeric (still comparable) string with 1 decimal place.
      */
-    public function formatCPU($unformatted)
+    public function formatCPU($unformatted): string
     {
         return sprintf('%.1f', $unformatted);
     }

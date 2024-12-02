@@ -14,7 +14,7 @@ class Wildcard
      *
      * @return string[]
      */
-    public static function select(array $subjects, $wildcards)
+    public static function select(array $subjects, $wildcards): array
     {
         $found = [];
         foreach ($wildcards as $wildcard) {

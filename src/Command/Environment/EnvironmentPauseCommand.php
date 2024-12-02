@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,6 +18,10 @@ Pausing an environment helps to reduce resource consumption and carbon emissions
 
 The environment will be unavailable until it is resumed. No data will be lost.
 EOF;
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -34,7 +41,7 @@ EOF;
         if ($environment->status === 'paused') {
             $this->stdErr->writeln(sprintf(
                 'The environment %s is already paused.',
-                $this->api()->getEnvironmentLabel($environment)
+                $this->api->getEnvironmentLabel($environment)
             ));
             return 0;
         }
@@ -42,7 +49,7 @@ EOF;
         if (!$environment->operationAvailable('pause', true)) {
             $this->stdErr->writeln(sprintf(
                 "Operation not available: The environment %s can't be paused.",
-                $this->api()->getEnvironmentLabel($environment, 'error')
+                $this->api->getEnvironmentLabel($environment, 'error')
             ));
 
             if (!$environment->isActive()) {
@@ -52,19 +59,19 @@ EOF;
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
         $text = self::PAUSE_HELP . "\n\n" . sprintf('Are you sure you want to pause the environment <comment>%s</comment>?', $environment->id);
         if (!$questionHelper->confirm($text)) {
             return 1;
         }
 
         $result = $environment->runOperation('pause');
-        $this->api()->clearEnvironmentsCache($environment->project);
+        $this->api->clearEnvironmentsCache($environment->project);
 
         if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+            /** @var ActivityMonitor $activityMonitor */
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
             if (!$success) {
                 return 1;

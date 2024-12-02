@@ -35,7 +35,7 @@ class RouteGetTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string {
         $output = new BufferedOutput();
         $input = new ArrayInput($args);
         $input->setInteractive(false);
@@ -44,27 +44,27 @@ class RouteGetTest extends TestCase
         return $output->fetch();
     }
 
-    public function testGetPrimaryRouteUrl() {
+    public function testGetPrimaryRouteUrl(): void {
         $this->assertEquals(
             'https://example.com',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 '--primary' => true,
                 '--property' => 'url',
             ]), "\n")
         );
     }
 
-    public function testGetRouteByOriginalUrl() {
+    public function testGetRouteByOriginalUrl(): void {
         $this->assertEquals(
             'false',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 'route' => 'http://{default}',
                 '--property' => 'primary',
             ]), "\n")
         );
         $this->assertEquals(
             'true',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 'route' => 'https://{default}',
                 '--property' => 'primary',
             ]), "\n")

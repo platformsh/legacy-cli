@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,6 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ApiCurlCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly CurlCli $curlCli)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -18,14 +24,14 @@ class ApiCurlCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $url = $this->config()->getApiUrl();
+        $url = $this->config->getApiUrl();
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).
-        $this->api();
+        $this->api;
 
         /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
+        $curl = $this->curlCli;
 
         return $curl->run($url, $input, $output);
     }

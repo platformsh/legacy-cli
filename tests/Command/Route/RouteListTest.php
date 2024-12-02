@@ -35,7 +35,7 @@ class RouteListTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string {
         $output = new BufferedOutput();
         $input = new ArrayInput($args);
         $input->setInteractive(false);
@@ -44,7 +44,7 @@ class RouteListTest extends TestCase
         return $output->fetch();
     }
 
-    public function testListRoutes() {
+    public function testListRoutes(): void {
         $this->assertEquals(
             "https://{default}\tupstream\tapp:http\n"
             . "http://{default}\tredirect\thttps://{default}\n",

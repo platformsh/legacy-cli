@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,6 +20,10 @@ class TunnelListCommand extends TunnelCommandBase
         'url' => 'URL',
     ];
     protected $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
+    public function __construct(private readonly Config $config, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -39,7 +44,7 @@ class TunnelListCommand extends TunnelCommandBase
             return 1;
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->get('application.executable');
 
         // Filter tunnels according to the current project and environment, if
         // available.
@@ -56,8 +61,8 @@ class TunnelListCommand extends TunnelCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        /** @var Table $table */
+        $table = $this->table;
         $rows = [];
         foreach ($tunnels as $tunnel) {
             $rows[] = [

@@ -16,7 +16,7 @@ class Variable
      * @return array
      *   An array containing: [ type, name, value ].
      */
-    public function parse($variable)
+    public function parse($variable): array
     {
         if (!preg_match('#^([^:=]+) ?: ?([^=]+) ?= ?([^=]*)$#', $variable, $matches)) {
             throw new \InvalidArgumentException('Variables must be defined as type:name=value.');

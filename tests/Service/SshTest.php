@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class SshTest extends TestCase {
     /** @var Ssh|null */
-    private $ssh;
+    private ?object $ssh;
 
     public function setUp(): void
     {
@@ -22,7 +22,7 @@ class SshTest extends TestCase {
         $this->ssh = $container->get('ssh');
     }
 
-    public function testGetHost()
+    public function testGetHost(): void
     {
         $method = new \ReflectionMethod($this->ssh, 'getHost');
         $method->setAccessible(true);
@@ -36,7 +36,7 @@ class SshTest extends TestCase {
         $this->assertFalse($method->invoke($this->ssh, '###'));
     }
 
-    public function testHostIsInternal()
+    public function testHostIsInternal(): void
     {
         $method = new \ReflectionMethod($this->ssh, 'hostIsInternal');
         $method->setAccessible(true);

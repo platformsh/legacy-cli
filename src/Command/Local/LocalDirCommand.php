@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,6 +13,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalDirCommand extends CommandBase
 {
 
+    public function __construct(private readonly Config $config)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -28,11 +33,11 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
-            'builds' => $this->config()->get('local.build_dir'),
-            'local' => $this->config()->get('local.local_dir'),
-            'shared' => $this->config()->get('local.shared_dir'),
-            'web' => $this->config()->getWithDefault('local.web_root', '_www'),
-            'web_root' => $this->config()->getWithDefault('local.web_root', '_www'),
+            'builds' => $this->config->get('local.build_dir'),
+            'local' => $this->config->get('local.local_dir'),
+            'shared' => $this->config->get('local.shared_dir'),
+            'web' => $this->config->getWithDefault('local.web_root', '_www'),
+            'web_root' => $this->config->getWithDefault('local.web_root', '_www'),
         ];
 
         $subDir = $input->getArgument('subdir');

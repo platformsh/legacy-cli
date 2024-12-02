@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\TokenConfig;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Utils;
 use League\OAuth2\Client\Token\AccessToken;
@@ -15,18 +19,22 @@ use Symfony\Component\Console\Question\Question;
 class ApiTokenLoginCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly TokenConfig $tokenConfig)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $service = $this->config()->get('service.name');
-        $executable = $this->config()->get('application.executable');
+        $service = $this->config->get('service.name');
+        $executable = $this->config->get('application.executable');
 
         $help = 'Use this command to log in to your ' . $service . ' account using an API token.';
-        if ($this->config()->has('service.register_url')) {
-            $help .= "\n\nYou can create an account at:\n    <info>" . $this->config()->get('service.register_url') . '</info>';
+        if ($this->config->has('service.register_url')) {
+            $help .= "\n\nYou can create an account at:\n    <info>" . $this->config->get('service.register_url') . '</info>';
         }
-        if ($this->config()->has('service.api_tokens_url')) {
+        if ($this->config->has('service.api_tokens_url')) {
             $help .= "\n\nIf you have an account, but you do not already have an API token, you can create one here:\n    <info>"
-                . $this->config()->get('service.api_tokens_url') . '</info>';
+                . $this->config->get('service.api_tokens_url') . '</info>';
         }
         $help .= "\n\nAlternatively, to log in to the CLI with a browser, run:\n    <info>" . $executable . ' auth:browser-login</info>';
         $this->setHelp($help);
@@ -34,7 +42,7 @@ class ApiTokenLoginCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($this->api()->hasApiToken(false)) {
+        if ($this->api->hasApiToken(false)) {
             $this->stdErr->writeln('An API token is already set via config');
             return 1;
         }
@@ -44,18 +52,18 @@ class ApiTokenLoginCommand extends CommandBase
             return 1;
         }
 
-        $tokenClient = $this->api()->getExternalHttpClient();
-        $clientId = $this->config()->get('api.oauth2_client_id');
-        $tokenUrl = $this->config()->get('api.oauth2_token_url');
+        $tokenClient = $this->api->getExternalHttpClient();
+        $clientId = $this->config->get('api.oauth2_client_id');
+        $tokenUrl = $this->config->get('api.oauth2_token_url');
 
-        $validator = function ($apiToken) use ($tokenClient, $clientId, $tokenUrl) {
+        $validator = function ($apiToken) use ($tokenClient, $clientId, $tokenUrl): string {
             $apiToken = trim($apiToken);
             if (!strlen($apiToken)) {
                 throw new \RuntimeException('The token cannot be empty');
             }
 
             try {
-                $provider = $this->api()->getClient()->getConnector()->getOAuth2Provider();
+                $provider = $this->api->getClient()->getConnector()->getOAuth2Provider();
                 $token = $provider->getAccessToken(new ApiToken(), [
                     'api_token' => $apiToken,
                 ]);
@@ -74,8 +82,8 @@ class ApiTokenLoginCommand extends CommandBase
             return $apiToken;
         };
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->questionHelper;
         $question = new Question("Please enter an API token:\n> ");
         $question->setValidator($validator);
         $question->setMaxAttempts(5);
@@ -93,14 +101,14 @@ class ApiTokenLoginCommand extends CommandBase
      * @param string      $apiToken
      * @param AccessToken $accessToken
      */
-    private function saveTokens($apiToken, AccessToken $accessToken) {
-        $this->api()->logout();
+    private function saveTokens(string $apiToken, AccessToken $accessToken): void {
+        $this->api->logout();
 
-        /** @var \Platformsh\Cli\Service\TokenConfig $tokenConfig */
-        $tokenConfig = $this->getService('token_config');
+        /** @var TokenConfig $tokenConfig */
+        $tokenConfig = $this->tokenConfig;
         $tokenConfig->storage()->storeToken($apiToken);
 
-        $this->api()
+        $this->api
             ->getClient(false, true)
             ->getConnector()
             ->saveToken($accessToken);
@@ -111,7 +119,7 @@ class ApiTokenLoginCommand extends CommandBase
      *
      * @return bool
      */
-    private function exceptionMeansInvalidToken(\Exception $e) {
+    private function exceptionMeansInvalidToken(\Exception $e): bool {
         if (!$e instanceof BadResponseException || !$e->getResponse() || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
             return false;
         }
@@ -119,13 +127,13 @@ class ApiTokenLoginCommand extends CommandBase
         // Compatibility with legacy auth provider.
         if (isset($json['error'], $json['error_description'])
             && $json['error'] === 'invalid_grant'
-            && stripos($json['error_description'], 'Invalid API token') !== false) {
+            && stripos((string) $json['error_description'], 'Invalid API token') !== false) {
             return true;
         }
         // Compatibility with new auth provider.
         if (isset($json['error'], $json['error_hint'])
             && $json['error'] === 'request_unauthorized'
-            && stripos($json['error_hint'], 'API token') !== false) {
+            && stripos((string) $json['error_hint'], 'API token') !== false) {
             return true;
         }
 

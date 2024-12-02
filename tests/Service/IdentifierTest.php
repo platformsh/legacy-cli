@@ -9,13 +9,13 @@ use Symfony\Component\Console\Exception\InvalidArgumentException;
 
 class IdentifierTest extends TestCase
 {
-    private function config()
+    private function config(): Config
     {
         $configFile = dirname(__DIR__) . '/data/mock-cli-config.yaml';
         return new Config([], $configFile);
     }
 
-    public function testIdentify()
+    public function testIdentify(): void
     {
         $identifier = new Identifier($this->config());
 
@@ -83,7 +83,7 @@ class IdentifierTest extends TestCase
         $this->assertEquals($expected, $identifier->identify($url));
     }
 
-    public function testIdentifyWithEnvironmentIdOf0()
+    public function testIdentifyWithEnvironmentIdOf0(): void
     {
         $identifier = new Identifier($this->config());
 
@@ -106,7 +106,7 @@ class IdentifierTest extends TestCase
         $this->assertEquals($expected, $identifier->identify($url));
     }
 
-    public function testIdentifyWithHyphenPaths()
+    public function testIdentifyWithHyphenPaths(): void
     {
         $identifier = new Identifier($this->config());
 

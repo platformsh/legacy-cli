@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SubCommandRunner
 {
-    private OutputInterface $stdErr;
+    private readonly OutputInterface $stdErr;
 
     public function __construct(
         private readonly Application $application,

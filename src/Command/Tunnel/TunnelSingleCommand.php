@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
@@ -13,6 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:single', description: 'Open a single SSH tunnel to an app relationship')]
 class TunnelSingleCommand extends TunnelCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Ssh $ssh)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -43,8 +49,8 @@ class TunnelSingleCommand extends TunnelCommandBase
         $sshUrl = $container->getSshUrl();
         $host = $this->selectHost($input, false, $container);
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        /** @var Relationships $relationshipsService */
+        $relationshipsService = $this->relationships;
         $relationships = $relationshipsService->getRelationships($host);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
@@ -57,14 +63,14 @@ class TunnelSingleCommand extends TunnelCommandBase
         }
 
         if ($environment->is_main) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            /** @var QuestionHelper $questionHelper */
+            $questionHelper = $this->questionHelper;
             $confirmText = sprintf(
                 'Are you sure you want to open an SSH tunnel to'
                 . ' the relationship <comment>%s</comment> on the'
                 . ' environment <comment>%s</comment>?',
                 $service['_relationship_name'],
-                $this->api()->getEnvironmentLabel($environment, false)
+                $this->api->getEnvironmentLabel($environment, false)
             );
             if (!$questionHelper->confirm($confirmText)) {
                 return 1;
@@ -77,8 +83,8 @@ class TunnelSingleCommand extends TunnelCommandBase
             $sshOptions[] = 'GatewayPorts yes';
         }
 
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
+        /** @var Ssh $ssh */
+        $ssh = $this->ssh;
         $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
 
         $remoteHost = $service['host'];

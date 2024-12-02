@@ -17,7 +17,7 @@ class GitDataApi
 {
     const COMMIT_SYNTAX_HELP = 'This can also accept "HEAD", and caret (^) or tilde (~) suffixes for parent commits.';
 
-    private $api;
+    private readonly Api $api;
     private $cache;
 
     public function __construct(
@@ -36,7 +36,7 @@ class GitDataApi
      * @return int[]
      *   A list of parents.
      */
-    private function parseParents($sha)
+    private function parseParents($sha): array
     {
         if (!strpos($sha, '^') && !strpos($sha, '~')) {
             return [];
@@ -61,17 +61,17 @@ class GitDataApi
     /**
      * Get a Git Commit object for an environment.
      *
-     * @param \Platformsh\Client\Model\Environment $environment
+     * @param Environment $environment
      * @param string|null                          $sha
      *
-     * @return \Platformsh\Client\Model\Git\Commit|false
+     * @return Commit|false
      */
     public function getCommit(Environment $environment, $sha = null)
     {
         $sha = $this->normalizeSha($environment, $sha);
 
         $parents = $this->parseParents($sha);
-        $sha = preg_replace('/[\^~].*$/', '', $sha);
+        $sha = preg_replace('/[\^~].*$/', '', (string) $sha);
         if ($sha === '') {
             return false;
         }
@@ -98,9 +98,9 @@ class GitDataApi
      * @param Environment $environment
      * @param string $sha The "pure" commit SHA hash.
      *
-     * @return \Platformsh\Client\Model\Git\Commit|false
+     * @return Commit|false
      */
-    private function getCommitByShaHash(Environment $environment, $sha)
+    private function getCommitByShaHash(Environment $environment, string $sha): Commit|false
     {
         $cacheKey = $environment->project . ':' . $sha;
         $client = $this->api->getHttpClient();
@@ -128,7 +128,7 @@ class GitDataApi
     /**
      * Normalize a commit SHA for API and caching purposes.
      *
-     * @param \Platformsh\Client\Model\Environment $environment
+     * @param Environment $environment
      * @param string|null                          $sha
      *
      * @return string|null
@@ -138,7 +138,7 @@ class GitDataApi
         if ($sha === null) {
             return $this->getHeadSha($environment);
         }
-        if (strpos($sha, 'HEAD') === 0) {
+        if (str_starts_with($sha, 'HEAD')) {
             $sha = $this->getHeadSha($environment) . substr($sha, 4);
         }
 
@@ -235,9 +235,9 @@ class GitDataApi
      * @param string $path
      * @return string
      */
-    private function normalizePath($path)
+    private function normalizePath($path): string
     {
-        if (strpos($path, './') === 0) {
+        if (str_starts_with($path, './')) {
             $path = substr($path, 2);
         }
         $path = trim($path, '/');

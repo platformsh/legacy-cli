@@ -12,22 +12,11 @@ class SshDiagnostics
 {
     const _SSH_ERROR_EXIT_CODE = 255;
     const _GIT_SSH_ERROR_EXIT_CODE = 128;
+    private readonly OutputInterface $stdErr;
 
-    private $ssh;
-    private $sshKey;
-    private $certifier;
-    private $stdErr;
-    private $api;
-    private $config;
-
-    public function __construct(Ssh $ssh, OutputInterface $output, Certifier $certifier, SshKey $sshKey, Api $api, Config $config)
+    public function __construct(private readonly Ssh $ssh, OutputInterface $output, private readonly Certifier $certifier, private readonly SshKey $sshKey, private readonly Api $api, private readonly Config $config)
     {
-        $this->ssh = $ssh;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->sshKey = $sshKey;
-        $this->certifier = $certifier;
-        $this->api = $api;
-        $this->config = $config;
     }
 
     /**
@@ -37,7 +26,7 @@ class SshDiagnostics
      *
      * @return string
      */
-    private function noServiceAccessMessage(Process $failedProcess)
+    private function noServiceAccessMessage(Process $failedProcess): string
     {
         $errorOutput = $failedProcess->getErrorOutput();
         if (stripos($errorOutput, "you successfully authenticated") !== false) {
@@ -58,7 +47,7 @@ class SshDiagnostics
     private function stepUpAuthenticationParams(Process $failedProcess)
     {
         $errorOutput = $failedProcess->getErrorOutput();
-        if (strpos($errorOutput, 'Error: Access denied') === false) {
+        if (!str_contains($errorOutput, 'Error: Access denied')) {
             return [];
         }
         if (preg_match('/^Parameters: ({.+)$/m', $errorOutput, $matches)) {
@@ -75,7 +64,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function connectionFailedDueToMFA(Process $failedProcess)
+    private function connectionFailedDueToMFA(Process $failedProcess): bool
     {
         return stripos($failedProcess->getErrorOutput(), 'reason: access requires MFA') !== false;
     }
@@ -87,7 +76,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function hostKeyVerificationFailed(Process $failedProcess)
+    private function hostKeyVerificationFailed(Process $failedProcess): bool
     {
         $stdErr = $failedProcess->getErrorOutput();
 
@@ -101,7 +90,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function keyAuthenticationFailed(Process $failedProcess)
+    private function keyAuthenticationFailed(Process $failedProcess): bool
     {
         return stripos($failedProcess->getErrorOutput(), "Permission denied (publickey)") !== false;
     }
@@ -132,12 +121,12 @@ class SshDiagnostics
      * @param string[] $currentMethods
      * @return bool
      */
-    private function authMethodsMatch(array $challengeMethods, array $currentMethods)
+    private function authMethodsMatch(array $challengeMethods, array $currentMethods): bool
     {
         $unmatched = array_diff($challengeMethods, $currentMethods);
         if (in_array('sso:*', $currentMethods, TRUE)) {
             foreach ($unmatched as $key => $method) {
-                if (strpos($method, 'sso:') === 0) {
+                if (str_starts_with($method, 'sso:')) {
                     unset($unmatched[$key]);
                 }
             }
@@ -155,7 +144,7 @@ class SshDiagnostics
      * @param bool $newline
      *   Whether to add a new line before messages.
      */
-    public function diagnoseFailure($uri, Process $failedProcess, $newline = true)
+    public function diagnoseFailure($uri, Process $failedProcess, $newline = true): void
     {
         if (!$this->ssh->hostIsInternal($uri)) {
             return;
@@ -285,7 +274,7 @@ class SshDiagnostics
      * @param int $exitCode
      *   The exit code of the SSH command. Used to check if diagnostics are relevant.
      */
-    public function diagnoseFailureWithTest($uri, $startTime, $exitCode)
+    public function diagnoseFailureWithTest($uri, $startTime, $exitCode): void
     {
         if ($exitCode !== self::_SSH_ERROR_EXIT_CODE || !$this->ssh->hostIsInternal($uri)) {
             return;

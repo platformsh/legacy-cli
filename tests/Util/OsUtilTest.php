@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\OsUtil;
 
 class OsUtilTest extends TestCase
 {
-    public function testEscapePosixShellArg()
+    public function testEscapePosixShellArg(): void
     {
         $this->assertEquals(
             "'This isn'\\''t an argument!'",

@@ -10,19 +10,8 @@ use Platformsh\Client\Model\Project;
 
 class Selection
 {
-    private $environment;
-    private $project;
-    private $appName;
-    private $remoteContainer;
-    private $host;
-
-    public function __construct(Project $project = null, Environment $environment = null, $appName = null, RemoteContainerInterface $remoteContainer = null, HostInterface $host = null)
+    public function __construct(private readonly ?Project $project = null, private readonly ?Environment $environment = null, private $appName = null, private readonly ?RemoteContainerInterface $remoteContainer = null, private readonly ?HostInterface $host = null)
     {
-        $this->project = $project;
-        $this->environment = $environment;
-        $this->appName = $appName;
-        $this->remoteContainer = $remoteContainer;
-        $this->host = $host;
     }
 
     /**
@@ -30,7 +19,7 @@ class Selection
      *
      * @return bool
      */
-    public function hasProject()
+    public function hasProject(): bool
     {
         return !empty($this->project);
     }
@@ -59,7 +48,7 @@ class Selection
      *
      * @return bool
      */
-    public function hasEnvironment()
+    public function hasEnvironment(): bool
     {
         return !empty($this->environment);
     }

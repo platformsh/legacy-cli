@@ -37,7 +37,7 @@ class EnvironmentRelationshipsTest extends TestCase
         putenv('PLATFORM_RELATIONSHIPS=');
     }
 
-    private function runCommand(array $args) {
+    private function runCommand(array $args): string {
         $output = new BufferedOutput();
         $input = new ArrayInput($args);
         $input->setInteractive(false);
@@ -47,19 +47,19 @@ class EnvironmentRelationshipsTest extends TestCase
         return $output->fetch();
     }
 
-    public function testGetRelationshipHost() {
+    public function testGetRelationshipHost(): void {
         $this->assertEquals(
             'database.internal',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 '--property' => 'database.0.host',
             ]), "\n")
         );
     }
 
-    public function testGetRelationshipUrl() {
+    public function testGetRelationshipUrl(): void {
         $this->assertEquals(
             'mysql://main:123@database.internal:3306/main',
-            rtrim($this->runCommand([
+            rtrim((string) $this->runCommand([
                 '--property' => 'database.0.url',
             ]), "\n")
         );
