@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
@@ -29,7 +31,7 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'project:get', description: 'Clone a project locally', aliases: ['get'])]
 class ProjectGetCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly LocalBuild $localBuild, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SshDiagnostics $sshDiagnostics, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly Io $io, private readonly LocalBuild $localBuild, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SshDiagnostics $sshDiagnostics, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -56,7 +58,7 @@ class ProjectGetCommand extends CommandBase
         // Validate input options and arguments.
         $this->validateDepth($input);
         $this->mergeProjectArgument($input);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true, detectCurrentEnv: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true, detectCurrentEnv: false));
 
         // Load the main variables we need.
         $project = $selection->getProject();
@@ -145,14 +147,14 @@ class ProjectGetCommand extends CommandBase
                 return 1;
             }
 
-            $this->debug('Initializing the repository');
+            $this->io->debug('Initializing the repository');
             $git->init($projectRoot, $project->default_branch, true);
 
-            $this->debug('Initializing the project');
+            $this->io->debug('Initializing the project');
             $localProject->mapDirectory($projectRoot, $project);
 
             if($git->getCurrentBranch($projectRoot) != $project->default_branch) {
-                $this->debug('current branch does not match the default_branch, create it.');
+                $this->io->debug('current branch does not match the default_branch, create it.');
                 $git->checkOutNew($project->default_branch, null, null, $projectRoot);
             }
 
@@ -181,7 +183,7 @@ class ProjectGetCommand extends CommandBase
             '--origin',
             $this->config->get('detection.git_remote_name'),
         ];
-        if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
+        if ($this->stdErr->isDecorated() && $this->io->isTerminal(STDERR)) {
             $cloneArgs[] = '--progress';
         }
         if ($input->getOption('depth')) {
@@ -202,11 +204,11 @@ class ProjectGetCommand extends CommandBase
             return 1;
         }
 
-        $this->debug('Initializing the project');
+        $this->io->debug('Initializing the project');
         $localProject->mapDirectory($projectRoot, $project);
         $this->setProjectRoot($projectRoot);
 
-        $this->debug('Downloading submodules (if any)');
+        $this->io->debug('Downloading submodules (if any)');
         $git->updateSubmodules(true, $projectRoot);
 
         $this->stdErr->writeln('');

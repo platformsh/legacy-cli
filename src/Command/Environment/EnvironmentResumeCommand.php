@@ -20,8 +20,8 @@ class EnvironmentResumeCommand extends CommandBase
     }
     protected function configure()
     {
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 

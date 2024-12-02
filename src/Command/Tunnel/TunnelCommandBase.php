@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Config;
@@ -14,6 +16,7 @@ use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
+    private readonly Io $io;
     private readonly Selector $selector;
     private readonly Relationships $relationships;
     private readonly Config $config;
@@ -22,11 +25,12 @@ abstract class TunnelCommandBase extends CommandBase
     protected $tunnelInfo;
     protected bool $canBeRunMultipleTimes = false;
     #[Required]
-    public function autowire(Config $config, Relationships $relationships, Selector $selector) : void
+    public function autowire(Config $config, Io $io, Relationships $relationships, Selector $selector) : void
     {
         $this->config = $config;
         $this->relationships = $relationships;
         $this->selector = $selector;
+        $this->io = $io;
     }
 
     /**
@@ -42,7 +46,7 @@ abstract class TunnelCommandBase extends CommandBase
             if ($this->tunnelsAreEqual($tunnel, $info)) {
                 /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($info['pid']) && function_exists('posix_kill') && !posix_kill($info['pid'], 0)) {
-                    $this->debug(sprintf(
+                    $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
                         $info['localPort']
                     ));
@@ -71,7 +75,7 @@ abstract class TunnelCommandBase extends CommandBase
             // @todo move this to State service (in a new major version)
             $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
-                $this->debug(sprintf('Loading tunnel info from %s', $filename));
+                $this->io->debug(sprintf('Loading tunnel info from %s', $filename));
                 $this->tunnelInfo = (array) json_decode(file_get_contents($filename), true);
             }
         }
@@ -81,7 +85,7 @@ abstract class TunnelCommandBase extends CommandBase
             foreach ($this->tunnelInfo as $key => $tunnel) {
                 /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($tunnel['pid']) && function_exists('posix_kill') && !posix_kill($tunnel['pid'], 0)) {
-                    $this->debug(sprintf(
+                    $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
                         $tunnel['localPort']
                     ));
@@ -101,7 +105,7 @@ abstract class TunnelCommandBase extends CommandBase
     {
         $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
-            $this->debug('Saving tunnel info to: ' . $filename);
+            $this->io->debug('Saving tunnel info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
                 throw new \RuntimeException('Failed to write tunnel info to: ' . $filename);
             }
@@ -269,7 +273,7 @@ abstract class TunnelCommandBase extends CommandBase
         }
 
         if (!$selection->hasProject()) {
-            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+            $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         }
         $project = $selection->getProject();
         $environment = $selection->hasEnvironment() ? $selection->getEnvironment() : null;

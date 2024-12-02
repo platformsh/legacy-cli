@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -21,15 +22,15 @@ class WebCommand extends CommandBase
     protected function configure()
     {
         Url::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Attempt to select the appropriate project and environment.
         try {
-            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+            $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
             $environmentId = $selection->hasEnvironment() ? $selection->getEnvironment()->id : null;
         } catch (\Exception $e) {
             // If a project has been specified but is not found, then error out.

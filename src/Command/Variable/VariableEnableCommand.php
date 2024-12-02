@@ -33,9 +33,9 @@ class VariableEnableCommand extends CommandBase
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use: <info>variable:update --enabled false [variable]</info>"
         );
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

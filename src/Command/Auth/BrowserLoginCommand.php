@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -26,7 +27,7 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'auth:browser-login', description: 'Log in via a browser', aliases: ['login'])]
 class BrowserLoginCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -99,7 +100,7 @@ class BrowserLoginCommand extends CommandBase
                 }
             } catch (BadResponseException $e) {
                 if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
-                    $this->debug('Already logged in, but a test request failed. Continuing with login.');
+                    $this->io->debug('Already logged in, but a test request failed. Continuing with login.');
                 } else {
                     throw $e;
                 }

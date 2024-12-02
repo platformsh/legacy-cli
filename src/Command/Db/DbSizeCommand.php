@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -25,7 +26,7 @@ class DbSizeCommand extends CommandBase
 {
 
     private array $tableHeader = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -89,7 +90,7 @@ class DbSizeCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
 
-        $this->debug('Calculating estimated usage...');
+        $this->io->debug('Calculating estimated usage...');
         $allocatedDisk = $service->disk * self::BYTE_TO_MEGABYTE;
         $estimatedUsage = $this->getEstimatedUsage($host, $database);
         $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
@@ -393,18 +394,18 @@ class DbSizeCommand extends CommandBase
      * @return float Estimated usage in bytes
      */
     private function getMySqlUsage(HostInterface $host, array $database): float {
-        $this->debug('Getting MySQL usage...');
+        $this->io->debug('Getting MySQL usage...');
         $allocatedSizeSupported = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbAllocatedSizeExists());
         $innoDbSize = 0;
         if ($allocatedSizeSupported) {
-            $this->debug('Checking InnoDB separately for more accurate results...');
+            $this->io->debug('Checking InnoDB separately for more accurate results...');
             try {
                 $innoDbSize = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbQuery());
             } catch (RuntimeException $e) {
                 // Some configurations do not have PROCESS privilege(s) and thus have no access to the sys_tablespaces
                 // table. Ignore MySQL's 1227 Access Denied error, and revert to the legacy calculation.
                 if (stripos($e->getMessage(), 'access denied') !== false) {
-                    $this->debug('InnoDB checks not available: ' . $e->getMessage());
+                    $this->io->debug('InnoDB checks not available: ' . $e->getMessage());
                     $allocatedSizeSupported = false;
                 } else {
                     throw $e;

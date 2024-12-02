@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -26,9 +27,9 @@ class UserGetCommand extends UserCommandBase
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         // Backwards compatibility.
         $this->setHiddenAliases(['user:role']);
@@ -56,7 +57,7 @@ class UserGetCommand extends UserCommandBase
             return 1;
         }
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level === 'environment'));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level === 'environment'));
         $project = $selection->getProject();
 
         $this->io->warnAboutDeprecatedOptions(['role']);

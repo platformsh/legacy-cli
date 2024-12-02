@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:verify-phone-number', description: 'Verify your phone number interactively')]
 class VerifyPhoneNumberCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper)
     {
         parent::__construct();
     }
@@ -65,7 +66,7 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->debug('E164-formatted number: ' . $number);
+        $this->io->debug('E164-formatted number: ' . $number);
 
         $httpClient = $this->api->getHttpClient();
 
@@ -104,7 +105,7 @@ class VerifyPhoneNumberCommand extends CommandBase
             }
         });
 
-        $this->debug('Refreshing phone verification status');
+        $this->io->debug('Refreshing phone verification status');
         $response = $httpClient->post( '/me/verification?force_refresh=1');
         $needsVerify = Utils::jsonDecode((string) $response->getBody(), true);
         $this->stdErr->writeln('');

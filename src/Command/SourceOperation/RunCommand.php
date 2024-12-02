@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\SourceOperation;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'source-operation:run', description: 'Run a source operation')]
 class RunCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -42,7 +43,7 @@ class RunCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
 
         $variables = $this->parseVariables($input->getOption('variable'));
-        $this->debug('Parsed variables: ' . json_encode($variables));
+        $this->io->debug('Parsed variables: ' . json_encode($variables));
 
         $environment = $selection->getEnvironment();
         $sourceOps = $environment->getSourceOperations();

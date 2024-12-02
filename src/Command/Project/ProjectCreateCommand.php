@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
@@ -36,7 +37,7 @@ class ProjectCreateCommand extends CommandBase
 {
     private ?array $plansCache = null;
     private $regionsCache;
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -240,13 +241,13 @@ EOF
                     $subscription->refresh(['timeout' => $checkTimeout]);
                 } catch (ConnectException $e) {
                     if (str_contains($e->getMessage(), 'timed out')) {
-                        $this->debug($e->getMessage());
+                        $this->io->debug($e->getMessage());
                     } else {
                         throw $e;
                     }
                 } catch (BadResponseException $e) {
                     if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [502, 503, 524])) {
-                        $this->debug($e->getMessage());
+                        $this->io->debug($e->getMessage());
                     } else {
                         throw $e;
                     }
@@ -288,17 +289,17 @@ EOF
                     if ($project !== false) {
                         break;
                     } else {
-                        $this->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
+                        $this->io->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
                     }
                 } catch (ConnectException $e) {
                     if (str_contains($e->getMessage(), 'timed out')) {
-                        $this->debug($e->getMessage());
+                        $this->io->debug($e->getMessage());
                     } else {
                         throw $e;
                     }
                 } catch (BadResponseException $e) {
                     if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
-                        $this->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
+                        $this->io->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
                     } else {
                         throw $e;
                     }

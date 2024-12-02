@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\SshKey;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Shell;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'ssh-key:add', description: 'Add a new SSH key')]
 class SshKeyAddCommand extends SshKeyCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SshConfig $sshConfig, private readonly SshKey $sshKey)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SshConfig $sshConfig, private readonly SshKey $sshKey)
     {
         parent::__construct();
     }
@@ -91,7 +92,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             }
         } elseif (!str_contains((string) $publicKeyPath, '.pub') && \file_exists($publicKeyPath . '.pub')) {
             $publicKeyPath .= '.pub';
-            $this->debug('Using public key: ' . $publicKeyPath . '.pub');
+            $this->io->debug('Using public key: ' . $publicKeyPath . '.pub');
         }
 
         if (!\file_exists($publicKeyPath)) {

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -22,7 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class MountListCommand extends CommandBase
 {
     private array $tableHeader = ['path' => 'Mount path', 'definition' => 'Definition'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Mount $mount, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly Mount $mount, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -49,7 +50,7 @@ class MountListCommand extends CommandBase
         $mountService = $this->mount;
         if (($applicationEnv = getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
             && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
-            $this->debug('Selected host: localhost');
+            $this->io->debug('Selected host: localhost');
             $config = json_decode(base64_decode($applicationEnv), true) ?: [];
             $mounts = $mountService->mountsFromConfig(new AppConfig($config));
             $appName = $config['name'];
