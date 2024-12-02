@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -33,8 +34,8 @@ class VariableGetCommand extends VariableCommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addOption('pipe', null, InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
         $this->addExample('View the variable "example"', 'example');
     }
@@ -43,7 +44,7 @@ class VariableGetCommand extends VariableCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['pipe']);
         $level = $this->getRequestedLevel($input);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
 
         $name = $input->getArgument('name');
         if ($name) {

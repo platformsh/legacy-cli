@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\ProjectSshInfo;
 use Platformsh\Cli\Service\ResourcesUtil;
@@ -28,7 +29,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentPushCommand extends CommandBase
 {
     const PUSH_FAILURE_EXIT_CODE = 87;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly ProjectSshInfo $projectSshInfo, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
+
+    private array $validResourcesInitOptions = ['parent', 'default', 'minimum', 'manual'];
+
+    public function __construct(private readonly ActivityMonitor $activityMonitor,
+                                private readonly Api             $api,
+                                private readonly Config          $config,
+                                private readonly Git             $git,
+                                private readonly Io              $io,
+                                private readonly LocalProject    $localProject,
+                                private readonly ProjectSshInfo  $projectSshInfo,
+                                private readonly QuestionHelper  $questionHelper,
+                                private readonly ResourcesUtil   $resourcesUtil,
+                                private readonly Selector        $selector,
+                                private readonly Shell           $shell,
+                                private readonly SshDiagnostics  $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -47,13 +62,14 @@ class EnvironmentPushCommand extends CommandBase
             ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Set the environment type (only used with --activate )')
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent branch's data (only used with --activate)");
         $this->resourcesUtil->addOption(
-            ['parent', 'default', 'minimum', 'manual'],
+            $this->getDefinition(),
+            $this->validResourcesInitOptions,
             'Set the resources to use for new services: parent, default, minimum, or manual.'
             . "\n" . 'Currently the default is "default" but this will change to "parent" in future.'
         );
         $this->activityMonitor->addWaitOptions($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-            ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Push code to the current environment');
         $this->addExample('Push code, without waiting for deployment', '--no-wait');
@@ -76,14 +92,14 @@ class EnvironmentPushCommand extends CommandBase
         }
         $git->setDefaultRepositoryDir($gitRoot);
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         $project = $selection->getProject();
         $currentProject = $this->selector->getCurrentProject();
-        $this->ensurePrintSelectedProject();
+        $this->selector->ensurePrintedSelection($selection);
         $this->stdErr->writeln('');
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->resourcesUtil->validateInput($input, $project);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $project, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }
@@ -117,7 +133,7 @@ class EnvironmentPushCommand extends CommandBase
             return 1;
         }
 
-        $this->debug(sprintf('Source revision: %s', $sourceRevision));
+        $this->io->debug(sprintf('Source revision: %s', $sourceRevision));
 
         $questionHelper = $this->questionHelper;
 
@@ -232,7 +248,7 @@ class EnvironmentPushCommand extends CommandBase
                     $gitArgs[] = '--' . $option;
                 }
             }
-            if ($this->stdErr->isDecorated() && $this->isTerminal(STDERR)) {
+            if ($this->stdErr->isDecorated() && $this->io->isTerminal(STDERR)) {
                 $gitArgs[] = '--progress';
             }
             if ($activateRequested) {
@@ -377,7 +393,7 @@ class EnvironmentPushCommand extends CommandBase
             $updates['type'] = $type;
         }
         if (!empty($updates)) {
-            $this->debug('Updating environment ' . $targetEnvironment->id . ' with properties: ' . json_encode($updates));
+            $this->io->debug('Updating environment ' . $targetEnvironment->id . ' with properties: ' . json_encode($updates));
             $activities = array_merge(
                 $activities,
                 $targetEnvironment->update($updates)->getActivities()
@@ -387,10 +403,10 @@ class EnvironmentPushCommand extends CommandBase
             $targetEnvironment->refresh();
         }
         if ($targetEnvironment->status === 'inactive' && $targetEnvironment->operationAvailable('activate')) {
-            $this->debug('Activating inactive environment ' . $targetEnvironment->id);
+            $this->io->debug('Activating inactive environment ' . $targetEnvironment->id);
             $activities = array_merge($activities, $targetEnvironment->runOperation('activate')->getActivities());
         } elseif ($targetEnvironment->status === 'paused' && $targetEnvironment->operationAvailable('resume')) {
-            $this->debug('Resuming paused environment ' . $targetEnvironment->id);
+            $this->io->debug('Resuming paused environment ' . $targetEnvironment->id);
             $activities = array_merge($activities, $targetEnvironment->runOperation('resume')->getActivities());
         }
         $this->api->clearEnvironmentsCache($targetEnvironment->project);

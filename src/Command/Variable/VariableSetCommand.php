@@ -35,9 +35,9 @@ class VariableSetCommand extends CommandBase
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
             ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled');
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"

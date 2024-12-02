@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:open', description: "Open SSH tunnels to an app's relationships")]
 class TunnelOpenCommand extends TunnelCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh)
     {
         parent::__construct();
     }
@@ -117,7 +118,7 @@ EOF
         // forking in some circumstances. Preload classes that are needed here
         // to avoid class not found errors later.
         // TODO find out exactly why this is required
-        $this->debug('Preloading class before forking: ' . ConsoleTerminateEvent::class);
+        $this->io->debug('Preloading class before forking: ' . ConsoleTerminateEvent::class);
 
         $processManager = new ProcessManager();
         $processManager->fork();

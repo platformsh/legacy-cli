@@ -42,8 +42,8 @@ class BackupListCommand extends CommandBase
             ->addHiddenOption('start', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->setHiddenAliases(['snapshots', 'snapshot:list']);
         $this->addExample('Display backups including the "live" and "commit_id" columns', '-c+live,commit_id');
     }

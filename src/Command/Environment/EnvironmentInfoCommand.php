@@ -37,9 +37,9 @@ class EnvironmentInfoCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Read all environment properties')
              ->addExample("Show the environment's status", 'status')
              ->addExample('Show the date the environment was created', 'created_at')

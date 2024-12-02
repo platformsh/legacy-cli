@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -29,7 +30,7 @@ use Symfony\Component\Yaml\Yaml;
 class LocalDrushAliasesCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -136,19 +137,19 @@ class LocalDrushAliasesCommand extends CommandBase
                 // Cache the environment's deployment information.
                 // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
                 if (!$this->api->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
-                    $this->debug('Fetching deployment information for environment: ' . $environment->id);
+                    $this->io->debug('Fetching deployment information for environment: ' . $environment->id);
                     try {
                         $this->api->getCurrentDeployment($environment);
                     } catch (BadResponseException $e) {
                         if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
-                            $this->debug('The deployment is invalid: ' . $e->getMessage());
+                            $this->io->debug('The deployment is invalid: ' . $e->getMessage());
                         } elseif ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
-                            $this->debug('Current deployment not found: ' . $e->getMessage());
+                            $this->io->debug('Current deployment not found: ' . $e->getMessage());
                         } else {
                             throw $e;
                         }
                     } catch (EnvironmentStateException) {
-                        $this->debug('Current deployment not found.');
+                        $this->io->debug('Current deployment not found.');
                     }
                 }
 
@@ -173,7 +174,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         continue;
                     }
                     if (!empty($appRoot)) {
-                        $this->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
+                        $this->io->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
                         $drush->setCachedAppRoot($sshUrl, $appRoot);
                     }
                 }

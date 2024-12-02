@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
@@ -22,7 +23,7 @@ use Symfony\Component\Console\Question\Question;
 class MountUploadCommand extends CommandBase
 {
 
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Io $io, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -153,7 +154,7 @@ class MountUploadCommand extends CommandBase
 
         if (OsUtil::isOsX()) {
             if ($rsync->supportsConvertingFilenames() !== false) {
-                $this->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
+                $this->io->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
                 $rsyncOptions['convert-mac-filenames'] = true;
             } else {
                 $this->stdErr->writeln('');

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -26,16 +27,16 @@ class VariableDeleteCommand extends VariableCommandBase
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
         $this->addLevelOption();
-        $this->selector->addProjectOption($this->getDefinition())
-             ->addEnvironmentOption($this->getDefinition())
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
 
         $variableName = $input->getArgument('name');
 

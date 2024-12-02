@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\CurlCli;
@@ -27,7 +28,7 @@ class CurlCommand extends MetricsCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).

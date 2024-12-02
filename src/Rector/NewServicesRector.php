@@ -30,11 +30,13 @@ class NewServicesRector extends AbstractRector
         $this->transforms = [
             'addResourcesInitOption' => [ResourcesUtil::class, 'addOption', '_'],
             'validateResourcesInitInput' => [ResourcesUtil::class, 'validateInput', '_'],
+            'debug' => [Io::class, 'debug', '_'],
+            'isTerminal' => [Io::class, 'isTerminal', '_'],
             'warnAboutDeprecatedOptions' => [Io::class, 'warnAboutDeprecatedOptions', '_'],
             'runOtherCommand' => [SubCommandRunner::class, 'run', '_'],
             'addWaitOptions' => [ActivityMonitor::class, 'addWaitOptions', [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))]],
             'shouldWait' => [ActivityMonitor::class, 'shouldWait', '_'],
-            'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_']
+            'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_'],
         ];
     }
 
