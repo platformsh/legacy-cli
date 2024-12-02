@@ -8,7 +8,6 @@ use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Selector\Selector;
-use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Command\Command;
@@ -29,10 +28,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /** @var ?bool */
     private static $checkedSelfInstall;
-    /** @var ?bool */
-    private static $checkedMigrate;
-    /** @var ?bool */
-    private static $promptedDeleteOldCli;
 
     /** @var ?bool */
     private static $printedApiTokenWarning;
@@ -98,8 +93,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $this->container()->set('input', $input);
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
-        $this->promptLegacyMigrate();
-
         if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config()->get('application.env_prefix') . 'TOKEN') || $this->api()->hasApiToken(false))) {
             $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
             $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
@@ -131,58 +124,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     }
 
     /**
-     * Prompt the user to migrate from the legacy project file structure.
-     *
-     * If the input is interactive, the user will be asked to migrate up to once
-     * per hour. The time they were last asked will be stored in the project
-     * configuration. If the input is not interactive, the user will be warned
-     * (on every command run) that they should run the 'legacy-migrate' command.
-     */
-    private function promptLegacyMigrate()
-    {
-        static $asked = false;
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        if ($localProject->getLegacyProjectRoot() && $this->getName() !== 'legacy-migrate' && !$asked) {
-            $asked = true;
-
-            $projectRoot = $this->selector()->getProjectRoot();
-            $timestamp = time();
-            $promptMigrate = true;
-            if ($projectRoot) {
-                $projectConfig = $localProject->getProjectConfig($projectRoot);
-                if (isset($projectConfig['migrate']['3.x']['last_asked'])
-                    && $projectConfig['migrate']['3.x']['last_asked'] > $timestamp - 3600) {
-                    $promptMigrate = false;
-                }
-            }
-
-            $this->stdErr->writeln(sprintf(
-                'You are in a project using an old file structure, from previous versions of the %s.',
-                $this->config()->get('application.name')
-            ));
-            if ($this->input->isInteractive() && $promptMigrate) {
-                if ($projectRoot && isset($projectConfig)) {
-                    $projectConfig['migrate']['3.x']['last_asked'] = $timestamp;
-                    $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
-                }
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
-                if ($questionHelper->confirm('Migrate to the new structure?')) {
-                    $code = $this->runOtherCommand('legacy-migrate');
-                    exit($code);
-                }
-            } else {
-                $this->stdErr->writeln(sprintf(
-                    'Fix this with: <comment>%s legacy-migrate</comment>',
-                    $this->config()->get('application.executable')
-                ));
-            }
-            $this->stdErr->writeln('');
-        }
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function interact(InputInterface $input, OutputInterface $output)
@@ -197,11 +138,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $this->checkSelfInstall();
-        // Run migration steps if configured.
-        if ($this->config()->getWithDefault('migrate.prompt', false)) {
-            $this->promptDeleteOldCli();
-            $this->checkMigrateToNewCLI();
-        }
     }
 
     /**
@@ -258,128 +194,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         $this->stdErr->writeln('');
-    }
-
-    private function cliPath()
-    {
-        $thisPath = CLI_ROOT . '/bin/platform';
-        if (defined('CLI_FILE')) {
-            $thisPath = CLI_FILE;
-        }
-        if (extension_loaded('Phar') && ($pharPath = \Phar::running(false))) {
-            $thisPath = $pharPath;
-        }
-        return $thisPath;
-    }
-
-    /**
-     * Returns whether other instances are installed of the CLI.
-     *
-     * Finds programs with the same executable name in the PATH.
-     *
-     * @return bool
-     */
-    private function otherCLIsInstalled()
-    {
-        static $otherPaths;
-        if ($otherPaths === null) {
-            $thisPath = $this->cliPath();
-            $paths = (new OsUtil())->findExecutables($this->config()->get('application.executable'));
-            $otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath) {
-                $realpath = realpath($p);
-                return $realpath && $realpath !== $thisPath;
-            }));
-            if (!empty($otherPaths)) {
-                $this->debug('Other CLI(s) found: ' . implode(", ", $otherPaths));
-            }
-        }
-        return !empty($otherPaths);
-    }
-
-    /**
-     * Check if both CLIs are installed to prompt the user to delete the old one.
-     */
-    private function promptDeleteOldCli()
-    {
-        // Avoid checking more than once in this process.
-        if (self::$promptedDeleteOldCli) {
-            return;
-        }
-        self::$promptedDeleteOldCli = true;
-
-        if ($this->isWrapped() || !$this->otherCLIsInstalled()) {
-            return;
-        }
-        $pharPath = \Phar::running(false);
-        if (!$pharPath || !is_file($pharPath) || !is_writable($pharPath)) {
-            return;
-        }
-
-        // Avoid deleting random directories in path
-        $legacyDir = dirname(dirname($pharPath));
-        if ($legacyDir !== $this->config()->getUserConfigDir()) {
-            return;
-        }
-
-        $message = "\n<comment>Warning:</comment> Multiple CLI instances are installed."
-            . "\nThis is probably due to migration between the Legacy CLI and the new CLI."
-            . "\nIf so, delete this (Legacy) CLI instance to complete the migration."
-            . "\n"
-            . "\n<comment>Remove the following file completely</comment>: $pharPath"
-            . "\nThis operation is safe and doesn't delete any data."
-            . "\n";
-        $this->stdErr->writeln($message);
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        if ($questionHelper->confirm('Do you want to remove this file now?')) {
-            if (unlink($pharPath)) {
-                $this->stdErr->writeln('File successfully removed! Open a new terminal for the changes to take effect.');
-                // Exit because no further Phar classes can be loaded.
-                // This uses a non-zero code because the original command
-                // technically failed.
-                exit(1);
-            } else {
-                $this->stdErr->writeln('<error>Error:</error> Failed to delete the file.');
-            }
-            $this->stdErr->writeln('');
-        }
-    }
-
-    /**
-     * Check for migration to the new CLI.
-     */
-    protected function checkMigrateToNewCLI()
-    {
-        // Avoid checking more than once in this process.
-        if (self::$checkedMigrate) {
-            return;
-        }
-        self::$checkedMigrate = true;
-
-        // Avoid if running within the new CLI or within a CI.
-        if ($this->isWrapped() || $this->isCI()) {
-            return;
-        }
-
-        $config = $this->config();
-
-        // Prompt the user to migrate at most once every 24 hours.
-        $now = time();
-        $embargoTime = $now - $config->getWithDefault('migrate.prompt_interval', 60 * 60 * 24);
-        $state = $this->getService('state');
-        if ($state->get('migrate.last_prompted') > $embargoTime) {
-            return;
-        }
-
-        $message = "<options=bold;fg=yellow>Warning:</>"
-            . "\nRunning the CLI directly under PHP is now referred to as the \"Legacy CLI\", and is no longer recommended.";
-        if ($config->has('migrate.docs_url')) {
-            $message .= "\nInstall the latest release for your operating system by following these instructions: "
-                . "\n" . $config->get('migrate.docs_url');
-        }
-        $message .= "\n";
-        $this->stdErr->writeln($message);
-        $state->set('migrate.last_prompted', time());
     }
 
     /**
@@ -555,31 +369,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return false;
-    }
-
-    /**
-     * Detects if running within a CI or local container system.
-     *
-     * @return bool
-     */
-    private function isCI()
-    {
-        return getenv('CI') !== false // GitHub Actions, Travis CI, CircleCI, Cirrus CI, GitLab CI, AppVeyor, CodeShip, dsari
-            || getenv('BUILD_NUMBER') !== false // Jenkins, TeamCity
-            || getenv('RUN_ID') !== false // TaskCluster, dsari
-            || getenv('LANDO_INFO') !== false // Lando (https://docs.lando.dev/guides/lando-info.html)
-            || getenv('IS_DDEV_PROJECT') === 'true' // DDEV (https://ddev.readthedocs.io/en/latest/users/extend/custom-commands/#environment-variables-provided)
-            || $this->detectRunningInHook(); // PSH
-    }
-
-    /**
-     * Detects if the CLI is running wrapped inside the go wrapper.
-     *
-     * @return bool
-     */
-    protected function isWrapped()
-    {
-        return $this->config()->isWrapped();
     }
 
     /**

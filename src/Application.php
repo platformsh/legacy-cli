@@ -9,6 +9,7 @@ use Platformsh\Cli\Command\MultiAwareInterface;
 use Platformsh\Cli\Console\EventSubscriber;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\LegacyMigration;
 use Platformsh\Cli\Service\SelfUpdateChecker;
 use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Config\FileLocator;
@@ -347,6 +348,13 @@ class Application extends ParentApplication
             /** @var SelfUpdateChecker $checker */
             $checker = $this->container()->get(SelfUpdateChecker::class);
             $checker->checkUpdates();
+        }
+
+        if (!$noChecks && $command->getName() !== 'legacy-migrate') {
+            /** @var LegacyMigration $legacyMigration */
+            $legacyMigration = $this->container()->get(LegacyMigration::class);
+            $legacyMigration->checkMigrateFrom3xTo4x();
+            $legacyMigration->checkMigrateToGoWrapper();
         }
 
         return parent::doRunCommand($command, $input, $output);
