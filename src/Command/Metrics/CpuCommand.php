@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
@@ -50,7 +51,7 @@ class CpuCommand extends MetricsCommandBase
             return 1;
         }
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         $table = $this->table;
 

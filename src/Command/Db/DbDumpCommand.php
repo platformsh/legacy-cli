@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -55,7 +56,7 @@ class DbDumpCommand extends CommandBase
         $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
         if ($host instanceof LocalHost && $this->api->isLoggedIn()) {
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+            $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
         }
 
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;

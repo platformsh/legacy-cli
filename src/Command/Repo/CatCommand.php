@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Repo;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -37,7 +38,7 @@ class CatCommand extends RepoCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         return $this->cat($selection->getEnvironment(), $input, $output);
     }

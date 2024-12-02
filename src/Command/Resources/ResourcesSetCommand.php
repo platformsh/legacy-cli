@@ -326,7 +326,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('Setting the resources on the environment ' . $this->api->getEnvironmentLabel($environment));
         $result = $nextDeployment->update($updates);
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {

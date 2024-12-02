@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Config;
@@ -269,7 +270,7 @@ abstract class TunnelCommandBase extends CommandBase
         }
 
         if (!$selection->hasProject()) {
-            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+            $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
         }
         $project = $selection->getProject();
         $environment = $selection->hasEnvironment() ? $selection->getEnvironment() : null;

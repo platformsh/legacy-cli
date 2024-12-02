@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -41,7 +42,7 @@ class VariableListCommand extends VariableCommandBase
     {
         $level = $this->getRequestedLevel($input);
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($level === 'project')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($level === 'project')));
 
         $project = $selection->getProject();
 

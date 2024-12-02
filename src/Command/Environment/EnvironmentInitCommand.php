@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -42,7 +43,7 @@ class EnvironmentInitCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
         if (!$selection->hasEnvironment()) {
             $this->selectEnvironment($selection->getProject()->default_branch);
         }
@@ -86,7 +87,7 @@ class EnvironmentInitCommand extends CommandBase
 
         $this->api->clearEnvironmentsCache($environment->project);
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             return $success ? 0 : 1;

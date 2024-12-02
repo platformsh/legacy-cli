@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -47,7 +48,7 @@ class DomainAddCommand extends DomainCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['replace'], 'The option --replace has been renamed to --attach.');
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
 
         if (!$this->validateDomainInput($input)) {
             return 1;
@@ -115,7 +116,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

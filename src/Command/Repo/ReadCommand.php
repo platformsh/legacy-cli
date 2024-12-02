@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Repo;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Model\Git\Tree;
@@ -34,7 +35,7 @@ class ReadCommand extends RepoCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true));
         $environment = $selection->getEnvironment();
 
         $path = $input->getArgument('path');

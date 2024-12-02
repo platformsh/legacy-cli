@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Commit;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
@@ -52,7 +53,7 @@ class CommitListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true));
         $environment = $selection->getEnvironment();
 
         $startSha = $input->getArgument('commit');

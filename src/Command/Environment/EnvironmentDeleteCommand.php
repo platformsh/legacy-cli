@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -66,7 +67,7 @@ EOF
         $inputCopy = clone $input;
         $inputCopy->setArgument('environment', null);
         $inputCopy->setOption('environment', null);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
 
         $environments = $this->api->getEnvironments($selection->getProject());
 
@@ -260,7 +261,7 @@ EOF
         $questionHelper = $this->questionHelper;
         $toDeleteBranch = [];
         $toDeactivate = [];
-        $shouldWait = $this->shouldWait($input);
+        $shouldWait = $this->activityMonitor->shouldWait($input);
 
         $byStatus = ['deleting' => [], 'dirty' => [], 'active or paused' => [], 'inactive' => []];
         foreach ($selectedEnvironments as $key => $environment) {
@@ -435,7 +436,7 @@ EOF
             }
         }
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             if (!$activityMonitor->waitMultiple($deactivateActivities, $selection->getProject())) {
                 $error = true;

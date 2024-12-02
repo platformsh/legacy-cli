@@ -48,7 +48,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
 
         $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }

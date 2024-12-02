@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
@@ -75,7 +76,7 @@ class EnvironmentPushCommand extends CommandBase
         }
         $git->setDefaultRepositoryDir($gitRoot);
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
         $project = $selection->getProject();
         $currentProject = $this->selector->getCurrentProject();
         $this->ensurePrintSelectedProject();
@@ -253,7 +254,7 @@ class EnvironmentPushCommand extends CommandBase
             // Build the SSH command to use with Git.
             $extraSshOptions = [];
             $env = [];
-            if (!$this->shouldWait($input)) {
+            if (!$this->activityMonitor->shouldWait($input)) {
                 $extraSshOptions[] = 'SendEnv PLATFORMSH_PUSH_NO_WAIT';
                 $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
             }
@@ -332,7 +333,7 @@ class EnvironmentPushCommand extends CommandBase
         }
 
         // Wait if there are still activities.
-        if ($this->shouldWait($input) && !empty($activities)) {
+        if ($this->activityMonitor->shouldWait($input) && !empty($activities)) {
             $monitor = $this->activityMonitor;
             $success = $monitor->waitMultiple($activities, $project);
             if (!$success) {

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -37,7 +38,7 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
 
         if (!$this->validateDomainInput($input)) {
             return 1;
@@ -77,7 +78,7 @@ class DomainUpdateCommand extends DomainCommandBase
 
         $result = $domain->update(['ssl' => $this->sslOptions]);
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

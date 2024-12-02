@@ -160,7 +160,7 @@ class EnvironmentActivateCommand extends CommandBase
         $success = $processed >= $count;
 
         if ($processed) {
-            if ($this->shouldWait($input)) {
+            if ($this->activityMonitor->shouldWait($input)) {
                 $activityMonitor = $this->activityMonitor;
                 $result = $activityMonitor->waitMultiple($activities, $selection->getProject());
                 $success = $success && $result;

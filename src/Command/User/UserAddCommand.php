@@ -438,7 +438,7 @@ class UserAddCommand extends UserCommandBase
         }
 
         // Wait for activities to complete.
-        if ($activities && $this->shouldWait($input)) {
+        if ($activities && $this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             if (!$activityMonitor->waitMultiple($activities, $project)) {
                 return 1;

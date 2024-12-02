@@ -100,7 +100,7 @@ class EnvironmentMergeCommand extends CommandBase
         }
 
         $result = $selectedEnvironment->runOperation('merge', 'POST', $params);
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {

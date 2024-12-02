@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -42,7 +43,7 @@ class VariableUpdateCommand extends VariableCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($level === self::LEVEL_PROJECT)));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($level === self::LEVEL_PROJECT)));
 
         $name = $input->getArgument('name');
         $variable = $this->getExistingVariable($name, $level);
@@ -95,7 +96,7 @@ class VariableUpdateCommand extends VariableCommandBase
 
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->api->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
+        } elseif ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }

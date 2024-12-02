@@ -128,7 +128,7 @@ class RunCommand extends CommandBase
         }
 
         $success = true;
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $monitor = $this->activityMonitor;
             $success = $monitor->waitMultiple($result->getActivities(), $selection->getProject());
         }

@@ -69,7 +69,7 @@ class EnvironmentInfoCommand extends CommandBase
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $environment, !$this->shouldWait($input));
+            return $this->setProperty($property, $value, $environment, !$this->activityMonitor->shouldWait($input));
         }
 
         $value = match ($property) {

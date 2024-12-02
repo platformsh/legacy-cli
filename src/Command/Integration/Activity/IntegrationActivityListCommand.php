@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
@@ -73,7 +74,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io->warnAboutDeprecatedOptions(['environment']);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
 
         $project = $selection->getProject();
 

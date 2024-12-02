@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -37,7 +38,7 @@ class DomainDeleteCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
 
         $forEnvironment = $input->getOption('environment') !== null;
         $name = $input->getArgument('name');
@@ -89,7 +90,7 @@ class DomainDeleteCommand extends DomainCommandBase
 
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

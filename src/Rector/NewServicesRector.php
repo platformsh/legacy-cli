@@ -58,6 +58,7 @@ class NewServicesRector extends AbstractRector
             'warnAboutDeprecatedOptions' => [Io::class, 'warnAboutDeprecatedOptions', '_'],
             'runSubCommand' => [SubCommandRunner::class, 'run', '_'],
             'addWaitOptions' => [ActivityMonitor::class, 'addWaitOptions', [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))]],
+            'shouldWait' => [ActivityMonitor::class, 'shouldWait', '_'],
         ];
 
         $this->traverseNodesWithCallable($node, function (NodeAbstract $node) use ($transforms, &$injections, &$changed) {
@@ -77,6 +78,7 @@ class NewServicesRector extends AbstractRector
 
             // Replace the method call with a property call.
             $node->var = new PropertyFetch(new Variable('this'), $propertyName);
+            $node->name = new Node\Identifier($methodName);
 
             if ($args !== '_') {
                 $node->args = $args;

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Commit;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
@@ -52,7 +53,7 @@ class CommitGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         $commitSha = $input->getArgument('commit');
         $gitData = $this->gitDataApi;

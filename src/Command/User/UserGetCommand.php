@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -55,7 +56,7 @@ class UserGetCommand extends UserCommandBase
             return 1;
         }
 
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($level !== 'environment')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($level !== 'environment')));
         $project = $selection->getProject();
 
         $this->io->warnAboutDeprecatedOptions(['role']);

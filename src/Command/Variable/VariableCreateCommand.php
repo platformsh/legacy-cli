@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
@@ -44,7 +45,7 @@ class VariableCreateCommand extends VariableCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !true));
 
         // Merge the 'name' argument with the --name option.
         if ($input->getArgument('name')) {
@@ -228,7 +229,7 @@ class VariableCreateCommand extends VariableCommandBase
         $success = true;
         if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
             $this->api->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
+        } elseif ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }

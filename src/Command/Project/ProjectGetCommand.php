@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -55,7 +56,7 @@ class ProjectGetCommand extends CommandBase
         // Validate input options and arguments.
         $this->validateDepth($input);
         $this->mergeProjectArgument($input);
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true, detectCurrentEnv: false));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true, detectCurrentEnv: false));
 
         // Load the main variables we need.
         $project = $selection->getProject();

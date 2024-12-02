@@ -61,7 +61,7 @@ class UserDeleteCommand extends UserCommandBase
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if ($result->getActivities() && $this->shouldWait($input)) {
+        if ($result->getActivities() && $this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         } elseif (!$this->centralizedPermissionsEnabled()) {

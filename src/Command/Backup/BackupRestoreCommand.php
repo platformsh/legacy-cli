@@ -140,7 +140,7 @@ class BackupRestoreCommand extends CommandBase
                 ->setResourcesInit($resourcesInit)
         );
 
-        if ($this->shouldWait($input) && $result->countActivities()) {
+        if ($this->activityMonitor->shouldWait($input) && $result->countActivities()) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
             if (!$success) {

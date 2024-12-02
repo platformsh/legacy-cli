@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
@@ -63,7 +64,7 @@ class ActivityLogCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
         $loader = $this->activityLoader;
 

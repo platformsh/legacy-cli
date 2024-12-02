@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
@@ -82,7 +83,7 @@ class ActivityListCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !$input->getOption('all')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !$input->getOption('all')));
 
         $project = $selection->getProject();
 

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
@@ -78,7 +79,7 @@ class AllMetricsCommand extends MetricsCommandBase
         }
 
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !false, selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !false, selectDefaultEnv: true));
 
         $table = $this->table;
 

@@ -95,7 +95,7 @@ class BackupCreateCommand extends CommandBase
         // waitMultiple() below, allowing the backup_name to be extracted.
         $activities = $result->getActivities();
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             // Strongly recommend using --no-wait in a cron job.
             if (!$this->isTerminal(STDIN)) {
                 $this->stdErr->writeln(

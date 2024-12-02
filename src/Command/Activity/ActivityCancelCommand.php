@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -48,7 +49,7 @@ class ActivityCancelCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
         $loader = $this->activityLoader;
 

@@ -69,7 +69,7 @@ EOF;
         $result = $environment->runOperation('pause');
         $this->api->clearEnvironmentsCache($environment->project);
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {

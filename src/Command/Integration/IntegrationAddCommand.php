@@ -101,7 +101,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

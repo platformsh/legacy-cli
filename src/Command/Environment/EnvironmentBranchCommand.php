@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
@@ -52,7 +53,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->enterEnvText = 'Enter the ID of the parent environment';
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $branchName = $input->getArgument('id');
-        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !($branchName === null)));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($branchName === null)));
         $selectedProject = $selection->getProject();
 
         if ($branchName === null) {
@@ -203,7 +204,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if ($this->shouldWait($input) && !$dryRun && $activities) {
+        if ($this->activityMonitor->shouldWait($input) && !$dryRun && $activities) {
             $activityMonitor = $this->activityMonitor;
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
             $this->api->clearEnvironmentsCache($selectedProject->id);

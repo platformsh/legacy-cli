@@ -70,7 +70,7 @@ class ProjectInfoCommand extends CommandBase
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project, !$this->shouldWait($input));
+            return $this->setProperty($property, $value, $project, !$this->activityMonitor->shouldWait($input));
         }
 
         switch ($property) {
