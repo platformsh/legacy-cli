@@ -77,13 +77,12 @@ class AllMetricsCommand extends MetricsCommandBase
             return 1;
         }
 
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true, chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
+            $this->selector->ensurePrintedSelection($selection);
         }
 
         // Only request the metrics fields that will be displayed.
@@ -122,7 +121,7 @@ class AllMetricsCommand extends MetricsCommandBase
             'tmp_inodes_used' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_inodes_limit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_inodes_percent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
-        ]);
+        ], $selection->getEnvironment());
 
         if (!$table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;

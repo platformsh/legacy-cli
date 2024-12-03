@@ -11,6 +11,7 @@ use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\ApiResponseException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -23,9 +24,9 @@ class TeamUserAddCommand extends TeamCommandBase
     }
     protected function configure()
     {
-        $this->selector->addArgument($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition())
-            ->addTeamOption();
+        $this->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

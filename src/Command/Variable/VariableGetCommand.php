@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
@@ -48,12 +49,12 @@ class VariableGetCommand extends VariableCommandBase
 
         $name = $input->getArgument('name');
         if ($name) {
-            $variable = $this->getExistingVariable($name, $level);
+            $variable = $this->getExistingVariable($name, $selection, $level);
             if (!$variable) {
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-            $variable = $this->chooseVariable($level);
+            $variable = $this->chooseVariable($selection, $level);
             if (!$variable) {
                 $this->stdErr->writeln('No variables found');
                 return 1;
@@ -127,12 +128,7 @@ class VariableGetCommand extends VariableCommandBase
         return 0;
     }
 
-    /**
-     * @param string|null $level
-     *
-     * @return ProjectLevelVariable|EnvironmentLevelVariable|false
-     */
-    private function chooseVariable($level) {
+    private function chooseVariable(Selection $selection, ?string $level): ProjectLevelVariable|EnvironmentLevelVariable|false {
         $projectVariables = [];
         if ($level === 'project' || $level === null) {
             foreach ($selection->getProject()->getVariables() as $variable) {

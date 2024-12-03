@@ -12,6 +12,7 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Team\TeamMember;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:user:list', description: 'List users in a team', aliases: ['team:users'])]
@@ -34,9 +35,9 @@ class TeamUserListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this->selector->addOption($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition())
-            ->addTeamOption();
+        $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }

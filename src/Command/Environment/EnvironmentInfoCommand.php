@@ -10,6 +10,7 @@ use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,8 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:info', description: 'Read or set properties for an environment')]
 class EnvironmentInfoCommand extends CommandBase
 {
-    /** @var PropertyFormatter|null */
-    protected $formatter;
+
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
@@ -61,15 +61,13 @@ class EnvironmentInfoCommand extends CommandBase
 
         $property = $input->getArgument('property');
 
-        $this->formatter = $this->propertyFormatter;
-
         if (!$property) {
             return $this->listProperties($environment);
         }
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $environment, !$this->activityMonitor->shouldWait($input));
+            return $this->setProperty($property, $value, $environment, $selection->getProject(), !$this->activityMonitor->shouldWait($input));
         }
 
         $value = match ($property) {
@@ -77,7 +75,7 @@ class EnvironmentInfoCommand extends CommandBase
             default => $this->api->getNestedProperty($environment, $property),
         };
 
-        $output->writeln($this->formatter->format($value, $property));
+        $output->writeln($this->propertyFormatter->format($value, $property));
 
         return 0;
     }
@@ -93,7 +91,7 @@ class EnvironmentInfoCommand extends CommandBase
         $values = [];
         foreach ($environment->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $this->formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
         $table = $this->table;
         $table->renderSimple($values, $headings);
@@ -101,17 +99,9 @@ class EnvironmentInfoCommand extends CommandBase
         return 0;
     }
 
-    /**
-     * @param string      $property
-     * @param string      $value
-     * @param Environment $environment
-     * @param bool        $noWait
-     *
-     * @return int
-     */
-    protected function setProperty($property, $value, Environment $environment, $noWait): int
+    protected function setProperty(string $property, string $value, Environment $environment, Project $project, bool $noWait): int
     {
-        if (!$this->validateValue($property, $value)) {
+        if (!$this->validateValue($property, $value, $environment, $project)) {
             return 1;
         }
 
@@ -131,7 +121,7 @@ class EnvironmentInfoCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $this->formatter->format($environment->getProperty($property, false), $property)
+                $this->propertyFormatter->format($environment->getProperty($property, false), $property)
             ));
 
             return 0;
@@ -152,7 +142,7 @@ class EnvironmentInfoCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->formatter->format($environment->$property, $property)
+            $this->propertyFormatter->format($environment->$property, $property)
         ));
 
         $this->api->clearEnvironmentsCache($environment->project);
@@ -161,7 +151,7 @@ class EnvironmentInfoCommand extends CommandBase
         $success = true;
         if ($result->countActivities() && !$noWait) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         } elseif (!$result->countActivities() && in_array($property, $rebuildProperties)) {
             $this->api->redeployWarning();
         }
@@ -186,16 +176,10 @@ class EnvironmentInfoCommand extends CommandBase
             'type' => 'string',
         ];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 
-    /**
-     * @param string          $property
-     * @param string          $value
-     *
-     * @return bool
-     */
-    protected function validateValue($property, $value): bool
+    protected function validateValue(string $property, string $value, Environment $environment, Project $project): bool
     {
         $type = $this->getType($property);
         if (!$type) {
@@ -206,19 +190,18 @@ class EnvironmentInfoCommand extends CommandBase
         $valid = true;
         $message = '';
         // @todo find out exactly how these should best be validated
-        $selectedEnvironment = $selection->getEnvironment();
         switch ($property) {
             case 'parent':
                 if ($value === '-') {
                     break;
                 }
-                if ($value === $selectedEnvironment->id) {
+                if ($value === $environment->id) {
                     $message = "An environment cannot be the parent of itself";
                     $valid = false;
-                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $selection->getProject())) {
+                } elseif (!$parentEnvironment = $this->api->getEnvironment($value, $project)) {
                     $message = "Environment not found: <error>$value</error>";
                     $valid = false;
-                } elseif ($parentEnvironment->parent === $selectedEnvironment->id) {
+                } elseif ($parentEnvironment->parent === $environment->id) {
                     $valid = false;
                 }
                 break;

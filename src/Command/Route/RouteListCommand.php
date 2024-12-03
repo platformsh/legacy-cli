@@ -49,6 +49,7 @@ class RouteListCommand extends CommandBase
     {
         // Allow override via PLATFORM_ROUTES.
         $prefix = $this->config->get('service.env_prefix');
+        $selection = null;
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
@@ -60,8 +61,7 @@ class RouteListCommand extends CommandBase
         } else {
             $this->io->debug('Reading routes from the deployments API');
             $selection = $this->selector->getSelection($input);
-            $environment = $selection->getEnvironment();
-            $deployment = $this->api->getCurrentDeployment($environment, $input->getOption('refresh'));
+            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
             $fromEnv = false;
         }
@@ -87,11 +87,11 @@ class RouteListCommand extends CommandBase
             if ($fromEnv) {
                 $this->stdErr->writeln('Routes in the <info>' . $prefix . 'ROUTES</info> environment variable:');
             }
-            if (isset($environment) && !$fromEnv) {
+            if (isset($selection) && !$fromEnv) {
                 $this->stdErr->writeln(sprintf(
                     'Routes on the project %s, environment %s:',
                     $this->api->getProjectLabel($selection->getProject()),
-                    $this->api->getEnvironmentLabel($environment)
+                    $this->api->getEnvironmentLabel($selection->getEnvironment())
                 ));
             }
         }

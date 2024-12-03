@@ -61,7 +61,7 @@ class Selection
      *
      * @return Environment
      */
-    public function getEnvironment()
+    public function getEnvironment(): Environment
     {
         if (!$this->environment) {
             throw new \BadMethodCallException('No environment selected');

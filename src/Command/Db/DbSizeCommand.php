@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -54,7 +55,8 @@ class DbSizeCommand extends CommandBase
             $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable'));
         }
         $this->setHelp($help);
-        $this->selector->addEnvironmentOption($this->getDefinition())->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());
@@ -66,11 +68,10 @@ class DbSizeCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int {
         $relationships = $this->relationships;
 
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
-        $container = $this->selectRemoteContainer($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $relationships->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $container = $selection->getRemoteContainer();
 
-        $host = $this->selectHost($input, $relationships->hasLocalEnvVar(), $container);
+        $host = $this->selector->selectHost($input, null, $selection, $container);
 
         $database = $relationships->chooseDatabase($host, $input, $output, ['mysql', 'pgsql', 'mongodb']);
         if (empty($database)) {

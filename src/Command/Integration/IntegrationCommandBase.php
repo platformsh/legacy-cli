@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -35,6 +36,9 @@ abstract class IntegrationCommandBase extends CommandBase
     private ?Form $form = null;
 
     private array $bitbucketAccessTokens = [];
+
+    protected ?Selection $selection = null;
+
     #[Required]
     public function autowire(Api $api, LocalProject $localProject, PropertyFormatter $propertyFormatter, QuestionHelper $questionHelper, Selector $selector, Table $table) : void
     {
@@ -181,7 +185,7 @@ abstract class IntegrationCommandBase extends CommandBase
     private function selectedProjectIntegrations()
     {
         static $cache = [];
-        $project = $selection->getProject();
+        $project = $this->selection->getProject();
         if (!isset($cache[$project->id])) {
             $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
         }
@@ -223,7 +227,7 @@ abstract class IntegrationCommandBase extends CommandBase
                         return null;
                     }
                     // If the type is supported, check if it is available on the project.
-                    if ($selection->hasProject()) {
+                    if ($this->selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && empty($integrations['config'][$value]['enabled'])) {
                             return "The integration type '$value' is not available on this project.";
@@ -232,7 +236,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     return null;
                 },
                 'optionsCallback' => function () use ($allSupportedTypes): array {
-                    if ($selection->hasProject()) {
+                    if ($this->selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
                             return array_filter($allSupportedTypes, fn($type): bool => !empty($integrations['config'][$type]['enabled']));

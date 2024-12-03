@@ -10,6 +10,7 @@ use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Model\EnvironmentDomain;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -48,7 +49,13 @@ class DomainAddCommand extends DomainCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['replace'], 'The option --replace has been renamed to --attach.');
 
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
+        $selectorConfig = new SelectorConfig(envRequired: false);
+        if ($this->isForEnvironment($input)) {
+            $selectorConfig = new SelectorConfig(
+                chooseEnvFilter: fn(Environment $e): bool => $e->type !== 'production',
+            );
+        }
+        $selection = $this->selector->getSelection($input, $selectorConfig);
 
         if (!$this->validateDomainInput($input, $selection)) {
             return 1;

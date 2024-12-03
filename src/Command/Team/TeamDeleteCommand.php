@@ -17,8 +17,8 @@ class TeamDeleteCommand extends TeamCommandBase
     }
     protected function configure()
     {
-        $this->selector->addOrganizationOptions($this->getDefinition())
-            ->addTeamOption();
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

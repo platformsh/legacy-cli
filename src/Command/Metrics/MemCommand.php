@@ -58,7 +58,7 @@ class MemCommand extends MetricsCommandBase
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
+            $this->selector->ensurePrintedSelection($selection);
         }
 
         $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
@@ -72,7 +72,7 @@ class MemCommand extends MetricsCommandBase
             'used' => new Field('mem_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
             'limit' => new Field('mem_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
             'percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
-        ]);
+        ], $selection->getEnvironment());
 
         if (!$table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;
