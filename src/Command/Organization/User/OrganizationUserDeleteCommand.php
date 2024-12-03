@@ -20,8 +20,8 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
     }
     protected function configure()
     {
-        $this->selector->addOrganizationOptions($this->getDefinition())
-            ->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

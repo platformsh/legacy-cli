@@ -2,11 +2,13 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Client\Model\Environment;
 use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -29,8 +31,12 @@ abstract class VariableCommandBase extends CommandBase
     private readonly PropertyFormatter $propertyFormatter;
     private readonly Config $config;
     private readonly Api $api;
+
     const LEVEL_PROJECT = 'project';
     const LEVEL_ENVIRONMENT = 'environment';
+
+    protected ?Selection $selection = null;
+
     #[Required]
     public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Selector $selector, Table $table) : void
     {
@@ -66,7 +72,7 @@ abstract class VariableCommandBase extends CommandBase
      *
      * @return string|null
      */
-    protected function getRequestedLevel(InputInterface $input)
+    protected function getRequestedLevel(InputInterface $input): ?string
     {
         $str = $input->getOption('level');
         if (empty($str)) {
@@ -83,14 +89,15 @@ abstract class VariableCommandBase extends CommandBase
     /**
      * Finds an existing variable by name.
      *
-     * @param string      $name
+     * @param string $name
+     * @param Selection $selection
      * @param string|null $level
-     * @param bool        $messages Whether to print error messages to
+     * @param bool $messages Whether to print error messages to
      *                              $this->stdErr if the variable is not found.
      *
-     * @return ProjectLevelVariable|\Platformsh\Client\Model\Variable|false
+     * @return ProjectLevelVariable|EnvironmentLevelVariable|false
      */
-    protected function getExistingVariable(string $name, $level = null, $messages = true)
+    protected function getExistingVariable(string $name, Selection $selection, ?string $level, bool $messages = true): EnvironmentLevelVariable|false|ProjectLevelVariable
     {
         $output = $messages ? $this->stdErr : new NullOutput();
 
@@ -159,7 +166,7 @@ abstract class VariableCommandBase extends CommandBase
     /**
      * @return Field[]
      */
-    protected function getFields()
+    protected function getFields(): array
     {
         $fields = [];
 
@@ -185,12 +192,12 @@ abstract class VariableCommandBase extends CommandBase
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
             'questionLine' => 'On what environment should the variable be set?',
-            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($selection->getProject())),
+            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($this->selection->getProject())),
             'asChoice' => false,
             'includeAsOption' => false,
             'defaultCallback' => function () {
-                if ($selection->hasEnvironment()) {
-                    return $selection->getEnvironment()->id;
+                if ($this->selection->hasEnvironment()) {
+                    return $this->selection->getEnvironment()->id;
                 }
                 return null;
             },
@@ -227,7 +234,7 @@ abstract class VariableCommandBase extends CommandBase
                 'name' => fn($name): bool => !str_contains((string) $name, ':')
             ],
             'options' => $this->getPrefixOptions('NAME'),
-            'optionsCallback' => fn(array $previousValues) => $this->getPrefixOptions(isset($previousValues['name']) ? $previousValues['name'] : 'NAME'),
+            'optionsCallback' => fn(array $previousValues) => $this->getPrefixOptions($previousValues['name'] ?? 'NAME'),
             'allowOther' => true,
             'default' => 'none',
         ]);
@@ -274,7 +281,7 @@ abstract class VariableCommandBase extends CommandBase
      *
      * @return array
      */
-    private function getPrefixOptions($name): array
+    private function getPrefixOptions(string $name): array
     {
         return [
             'none' => 'No prefix: The variable will be part of <comment>$' . $this->config->get('service.env_prefix') . 'VARIABLES</comment>.',

@@ -15,6 +15,7 @@ use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
@@ -26,10 +27,15 @@ class TeamCreateCommand extends TeamCommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
-        $this->selector->addOption($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition());
+        $this->addOption('label', null, InputOption::VALUE_REQUIRED, 'The team label')
+            ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')
+            ->addOption('role', 'r', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, "Set the team's project and environment type roles\n"
+                . ArrayArgument::SPLIT_HELP . "\n" . Wildcard::HELP)
+            ->addOption('output-id', null, InputOption::VALUE_NONE, "Output the new team's ID to stdout (instead of displaying the team info)");
+        $this->selector->addOrganizationOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -47,8 +48,7 @@ class BackupCreateCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io->warnAboutDeprecatedOptions(['unsafe']);
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;

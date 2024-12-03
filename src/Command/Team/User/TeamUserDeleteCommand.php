@@ -11,6 +11,7 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamMember;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -23,9 +24,9 @@ class TeamUserDeleteCommand extends TeamCommandBase
     }
     protected function configure()
     {
-        $this->selector->addArgument($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition())
-            ->addTeamOption();
+        $this->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

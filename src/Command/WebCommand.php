@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -34,9 +35,10 @@ class WebCommand extends CommandBase
             $environmentId = $selection->hasEnvironment() ? $selection->getEnvironment()->id : null;
         } catch (\Exception $e) {
             // If a project has been specified but is not found, then error out.
-            if ($input->getOption('project') && !$selection->hasProject()) {
+            if ($input->getOption('project')) {
                 throw $e;
             }
+            $selection = new Selection();
 
             // If an environment ID has been specified but not found, then use
             // the specified ID anyway. This allows building a URL when an

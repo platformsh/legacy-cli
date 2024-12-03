@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
@@ -49,12 +50,9 @@ class AppConfigGetCommand extends CommandBase
             }
             $appConfig = new AppConfig($decoded);
         } else {
-            $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $selection = $this->selector->getSelection($input);
+            $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
             $this->io->warnAboutDeprecatedOptions(['identity-file']);
-
-            $appConfig = $this->selectRemoteContainer($input, false)
-                ->getConfig();
+            $appConfig = $selection->getRemoteContainer()->getConfig();
         }
 
         $formatter = $this->propertyFormatter;
