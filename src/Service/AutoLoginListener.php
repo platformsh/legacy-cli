@@ -31,9 +31,6 @@ readonly class AutoLoginListener
      */
     public function onLoginRequired(LoginRequiredEvent $event): void
     {
-        if (!$this->input->isInteractive()) {
-            throw new LoginRequiredException();
-        }
         $success = false;
         if ($this->input->isInteractive()) {
             $sessionAdvice = [];

@@ -76,22 +76,22 @@ class Shell
     /**
      * Executes a command.
      *
-     * @param string|array $args
-     * @param string|null  $dir
+     * @param array|string $args
+     * @param string|null $dir
      * @param bool         $mustRun
      * @param bool         $quiet
      * @param array        $env
      * @param int|null     $timeout
      * @param string|null  $input
      *
-     * @throws RuntimeException
-     *   If $mustRun is enabled and the command fails.
-     *
      * @return bool|string
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
+     *@throws RuntimeException
+     *   If $mustRun is enabled and the command fails.
+     *
      */
-    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
+    public function execute(array|string $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): bool|string
     {
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
         $result = $this->runProcess($process, $mustRun, $quiet);
@@ -240,7 +240,7 @@ class Shell
      *   The exit code of the process if it fails, true if it succeeds with no
      *   output, or a string if it succeeds with output.
      */
-    protected function runProcess(Process $process, $mustRun = false, $quiet = true): int|null|string|true
+    protected function runProcess(Process $process, bool $mustRun = false, bool $quiet = true): int|bool|string
     {
         try {
             $process->mustRun(function ($type, $buffer) use ($quiet): void {
@@ -291,7 +291,7 @@ class Shell
                 }
                 foreach ($commands as $args) {
                     try {
-                        $result[$command] = $this->execute($args);
+                        $result[$command] = $this->execute($args, null, true);
                     } catch (ProcessFailedException $e) {
                         $result[$command] = false;
                         if ($this->exceptionMeansCommandDoesNotExist($e)) {
@@ -339,7 +339,7 @@ class Shell
      *
      * @return bool
      */
-    public function commandExists($command): bool
+    public function commandExists(string $command): bool
     {
         return (bool) $this->findWhere($command, false);
     }
