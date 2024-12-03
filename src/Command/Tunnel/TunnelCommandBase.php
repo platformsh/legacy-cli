@@ -271,13 +271,10 @@ abstract class TunnelCommandBase extends CommandBase
         if (!$input->getOption('project') && !$this->selector->getProjectRoot()) {
             return $tunnels;
         }
-
-        if (!$selection->hasProject()) {
-            $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
-        }
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         $project = $selection->getProject();
         $environment = $selection->hasEnvironment() ? $selection->getEnvironment() : null;
-        $appName = $selection->hasEnvironment() ? $this->selectApp($input) : null;
+        $appName = $selection->hasEnvironment() ? $selection->getAppName() : null;
         foreach ($tunnels as $key => $tunnel) {
             if ($tunnel['projectId'] !== $project->id
                 || ($environment !== null && $tunnel['environmentId'] !== $environment->id)

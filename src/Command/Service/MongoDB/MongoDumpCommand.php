@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -25,6 +26,7 @@ class MongoDumpCommand extends CommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to dump');
@@ -32,8 +34,8 @@ class MongoDumpCommand extends CommandBase
         $this->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -43,10 +45,12 @@ class MongoDumpCommand extends CommandBase
         $gzip = $input->getOption('gzip');
 
         $envPrefix = $this->config->get('service.env_prefix');
-        $host = $this->selectHost($input, getenv($envPrefix . 'RELATIONSHIPS') !== false);
-
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: getenv($envPrefix . 'RELATIONSHIPS') !== false,
+        ));
+        $host = $selection->getHost();
         if ($host instanceof RemoteHost) {
-            $appName = $this->selectApp($input);
+            $appName = $selection->getAppName();
         } else {
             $appName = getenv($envPrefix . 'APPLICATION_NAME');
         }
@@ -139,16 +143,16 @@ class MongoDumpCommand extends CommandBase
      *
      * @param Environment|null $environment
      * @param string|null      $appName
-     * @param string           $collection
+     * @param ?string           $collection
      * @param bool             $gzip
      *
      * @return string
      */
     private function getDefaultFilename(
         Environment $environment = null,
-        $appName = null,
+        ?string $appName = null,
         ?string $collection = '',
-        $gzip = false): string
+        bool $gzip = false): string
     {
         $prefix = $this->config->get('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');

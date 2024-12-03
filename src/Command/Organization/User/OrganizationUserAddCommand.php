@@ -17,14 +17,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:add', description: 'Invite a user to an organization')]
 class OrganizationUserAddCommand extends OrganizationUserCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, protected readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this->selector->addOrganizationOptions($this->getDefinition())
-            ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addPermissionOption();
     }
 

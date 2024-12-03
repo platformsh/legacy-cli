@@ -47,6 +47,7 @@ class VariableCreateCommand extends VariableCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
+        $this->selection = $selection;
 
         // Merge the 'name' argument with the --name option.
         if ($input->getArgument('name')) {
@@ -63,7 +64,7 @@ class VariableCreateCommand extends VariableCommandBase
             if (($prefix = $input->getOption('prefix')) && $prefix !== 'none') {
                 $name = rtrim((string) $prefix, ':') . ':' .  $name;
             }
-            $existing = $this->getExistingVariable($name, $this->getRequestedLevel($input), false);
+            $existing = $this->getExistingVariable($name, $selection, $this->getRequestedLevel($input));
             if ($existing) {
                 if (!$input->getOption('update')) {
                     $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');

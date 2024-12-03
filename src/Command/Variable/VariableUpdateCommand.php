@@ -44,9 +44,10 @@ class VariableUpdateCommand extends VariableCommandBase
     {
         $level = $this->getRequestedLevel($input);
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
+        $this->selection = $selection;
 
         $name = $input->getArgument('name');
-        $variable = $this->getExistingVariable($name, $level);
+        $variable = $this->getExistingVariable($name, $selection, $level);
         if (!$variable) {
             return 1;
         }

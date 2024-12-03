@@ -40,7 +40,7 @@ class VariableDeleteCommand extends VariableCommandBase
 
         $variableName = $input->getArgument('name');
 
-        $variable = $this->getExistingVariable($variableName, $level);
+        $variable = $this->getExistingVariable($variableName, $selection, $level);
         if (!$variable) {
             return 1;
         }

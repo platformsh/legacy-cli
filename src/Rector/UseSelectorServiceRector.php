@@ -26,12 +26,14 @@ class UseSelectorServiceRector extends AbstractRector
         'addEnvironmentOption' => 'addEnvironmentOption',
         'addAppOption' => 'addAppOption',
         'addOrganizationOptions' => 'addOrganizationOptions',
+        'addRemoteContainerOptions' => 'addRemoteContainerOptions',
     ];
 
     private const SELECTOR_METHODS = [
         'getProjectRoot' => 'getProjectRoot',
         'getCurrentProject' => 'getCurrentProject',
         'validateOrganizationInput' => 'selectOrganization',
+        'selectedProjectIsCurrent' => 'isProjectCurrent',
     ];
 
     private const SELECTION_METHODS = [

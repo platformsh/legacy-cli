@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'organization:subscription:list', description: 'List subscriptions within an organization', aliases: ['org:subs'])]
@@ -22,19 +23,20 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         'created_at' => 'Created at',
         'updated_at' => 'Updated at',
     ];
+
     private array $defaultColumns = ['id', 'project_id', 'project_title', 'project_region'];
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
-        $this->selector->addOption($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition(), true);
+        $this->setHiddenAliases(['organization:subscriptions'])
+            ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')
+            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination. Ignored if --page is specified.');
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 

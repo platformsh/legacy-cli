@@ -41,6 +41,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         );
 
         $selection = $this->selector->getSelection($input);
+        $this->selection = $selection;
 
         $project = $selection->getProject();
 

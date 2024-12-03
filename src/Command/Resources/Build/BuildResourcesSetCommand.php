@@ -11,6 +11,7 @@ use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
@@ -20,10 +21,12 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
-        $this->selector->addOption($this->getDefinition())
-            ->addProjectOption($this->getDefinition());
+        $this->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
+            ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)');
+        $this->selector->addProjectOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

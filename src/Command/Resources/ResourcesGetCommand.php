@@ -42,7 +42,8 @@ class ResourcesGetCommand extends ResourcesCommandBase
             ->addOption('app', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by app name')
             ->addOption('worker', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by worker name')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service, app or worker type, e.g. "postgresql"');
-        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         if ($this->config->has('service.resources_help_url')) {
             $this->setHelp('For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>');
