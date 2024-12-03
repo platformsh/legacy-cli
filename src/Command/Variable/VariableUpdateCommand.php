@@ -2,10 +2,13 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\VariableCommandUtil;
 use Platformsh\ConsoleForm\Form;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,24 +17,27 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'variable:update', description: 'Update a variable')]
-class VariableUpdateCommand extends VariableCommandBase
+class VariableUpdateCommand extends CommandBase
 {
     private ?Form $form = null;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
+    private Selection $selection;
+
+    public function __construct(private readonly ActivityMonitor     $activityMonitor,
+                                private readonly Api                 $api,
+                                private readonly Selector            $selector,
+                                private readonly VariableCommandUtil $variableCommandUtil)
     {
+        $this->selection = new Selection();
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addOption('allow-no-change', null, InputOption::VALUE_NONE, 'Return success (zero exit code) if no changes were provided');
-        $this->addLevelOption();
-        $fields = $this->getFields();
+        $this->variableCommandUtil->addLevelOption($this->getDefinition());
+        $fields = $this->variableCommandUtil->getFields(fn() => $this->selection);
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);
         $this->form = Form::fromArray($fields);
         $this->form->configureInputDefinition($this->getDefinition());
@@ -42,12 +48,12 @@ class VariableUpdateCommand extends VariableCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $level = $this->getRequestedLevel($input);
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
+        $level = $this->variableCommandUtil->getRequestedLevel($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== VariableCommandUtil::LEVEL_PROJECT));
         $this->selection = $selection;
 
         $name = $input->getArgument('name');
-        $variable = $this->getExistingVariable($name, $selection, $level);
+        $variable = $this->variableCommandUtil->getExistingVariable($name, $selection, $level);
         if (!$variable) {
             return 1;
         }
@@ -74,7 +80,7 @@ class VariableUpdateCommand extends VariableCommandBase
         // Validate the is_json setting against the value.
         if ((isset($variable->value) || isset($values['value']))
             && (!empty($values['is_json']) || $variable->is_json)) {
-            $value = isset($values['value']) ? $values['value'] : $variable->value;
+            $value = $values['value'] ?? $variable->value;
             if (json_decode((string) $value) === null && json_last_error()) {
                 $this->stdErr->writeln('The value is not valid JSON: <error>' . $value . '</error>');
 
@@ -91,11 +97,11 @@ class VariableUpdateCommand extends VariableCommandBase
         $result = $variable->update($values);
         $this->stdErr->writeln("Variable <info>{$variable->name}</info> updated");
 
-        $this->displayVariable($variable);
+        $this->variableCommandUtil->displayVariable($variable);
 
         $success = true;
 
-        if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
+        if (!$result->countActivities() || $level === VariableCommandUtil::LEVEL_PROJECT) {
             $this->api->redeployWarning();
         } elseif ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
