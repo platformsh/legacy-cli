@@ -682,26 +682,6 @@ class Selector
     }
 
     /**
-     * Add all standard selection options (project, environment and app).
-     *
-     * @param InputDefinition $inputDefinition
-     * @param bool $includeWorkers
-     * @param bool $includeOrganizations
-     */
-    public function addAllOptions(InputDefinition $inputDefinition, bool $includeWorkers = false, bool $includeOrganizations = false): void
-    {
-        $this->addProjectOption($inputDefinition);
-        $this->addEnvironmentOption($inputDefinition);
-        $this->addAppOption($inputDefinition);
-        if ($includeWorkers) {
-            $inputDefinition->addOption(new InputOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name'));
-        }
-        if ($includeOrganizations) {
-            $this->addOrganizationOptions($inputDefinition);
-        }
-    }
-
-    /**
      * Find what app or worker container the user wants to select.
      *
      * Needs the --app and --worker options, as applicable.
