@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\AccessApi;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
@@ -27,10 +29,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
 #[AsCommand(name: 'user:add', description: 'Add a user to the project')]
-class UserAddCommand extends UserCommandBase
+class UserAddCommand extends CommandBase
 {
 
     public function __construct(
+        private readonly AccessApi $accessApi,
         protected readonly ActivityMonitor $activityMonitor,
         private readonly Api               $api,
         private readonly Config            $config,
@@ -42,7 +45,7 @@ class UserAddCommand extends UserCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
@@ -62,7 +65,7 @@ class UserAddCommand extends UserCommandBase
     /**
      * Adds the --role (-r) option to the command.
      */
-    protected function addRoleOption()
+    protected function addRoleOption(): void
     {
         $this->addOption(
             'role',
@@ -141,7 +144,7 @@ class UserAddCommand extends UserCommandBase
         $email = null;
         $update = stripos((string) $input->getFirstArgument(), ':u');
         if ($emailOrId = $input->getArgument('email')) {
-            $selection = $this->loadProjectUser($project, $emailOrId);
+            $selection = $this->accessApi->loadProjectUser($project, $emailOrId);
             if (!$selection) {
                 if ($update) {
                     throw new InvalidArgumentException('User not found: ' . $emailOrId);
@@ -154,9 +157,9 @@ class UserAddCommand extends UserCommandBase
         } else if (!$input->isInteractive()) {
             throw new InvalidArgumentException('An email address is required (in non-interactive mode).');
         } elseif ($update) {
-            $userId = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user to update:');
+            $userId = $questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user to update:');
             $hasOutput = true;
-            $selection = $this->loadProjectUser($project, $userId);
+            $selection = $this->accessApi->loadProjectUser($project, $userId);
             if (!$selection) {
                 throw new InvalidArgumentException('User not found: ' . $userId);
             }
@@ -176,7 +179,7 @@ class UserAddCommand extends UserCommandBase
             $email = $questionHelper->ask($input, $this->stdErr, $question);
             $hasOutput = true;
             // A user may or may not already exist with this email address.
-            $selection = $this->loadProjectUser($project, $email);
+            $selection = $this->accessApi->loadProjectUser($project, $email);
         }
 
         $existingTypeRoles = [];
@@ -186,13 +189,13 @@ class UserAddCommand extends UserCommandBase
 
         if ($selection instanceof ProjectAccess) {
             $existingUserId = $selection->id;
-            $existingUserLabel = $this->getUserLabel($selection, true);
+            $existingUserLabel = $this->accessApi->getUserLabel($selection, true);
             $existingProjectRole = $selection->role;
             $existingTypeRoles = $this->getTypeRoles($selection, $environmentTypes);
-            $email = $this->legacyUserInfo($selection)['email'];
+            $email = $this->accessApi->legacyUserInfo($selection)['email'];
         } elseif ($selection) {
             $existingUserId = $selection->user_id;
-            $existingUserLabel = $this->getUserLabel($selection, true);
+            $existingUserLabel = $this->accessApi->getUserLabel($selection, true);
             $existingProjectRole = $selection->getProjectRole();
             $existingTypeRoles = $selection->getEnvironmentTypeRoles();
             $email = $selection->getUserInfo()->email;
@@ -285,9 +288,9 @@ class UserAddCommand extends UserCommandBase
             if ($desiredTypeRoles) {
                 foreach ($environmentTypes as $environmentType) {
                     $id = $environmentType->id;
-                    $new = isset($desiredTypeRoles[$id]) ? $desiredTypeRoles[$id] : 'none';
+                    $new = $desiredTypeRoles[$id] ?? 'none';
                     if ($existingTypeRoles) {
-                        $existing = isset($existingTypeRoles[$id]) ? $existingTypeRoles[$id] : 'none';
+                        $existing = $existingTypeRoles[$id] ?? 'none';
                         if ($existing !== $new) {
                             $changesText[] = sprintf('  Role on type <info>%s</info>: <error>%s</error> -> <info>%s</info>', $id, $existing, $new);
                             $typeChanges[$id] = $new;
@@ -452,7 +455,7 @@ class UserAddCommand extends UserCommandBase
             if (!$activityMonitor->waitMultiple($activities, $project)) {
                 return 1;
             }
-        } elseif (!$this->centralizedPermissionsEnabled()) {
+        } elseif (!$this->accessApi->centralizedPermissionsEnabled()) {
             $this->api->redeployWarning();
         }
 
@@ -464,7 +467,7 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function validateProjectRole($value)
+    private function validateProjectRole(string $value): string
     {
         return $this->matchRole($value, ProjectUserAccess::$projectRoles);
     }
@@ -474,7 +477,7 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function validateEnvironmentRole($value)
+    private function validateEnvironmentRole(string $value): string
     {
         return $this->matchRole($value, array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']));
     }
@@ -487,7 +490,7 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function matchRole(string $input, array $roles)
+    private function matchRole(string $input, array $roles): string
     {
         foreach ($roles as $role) {
             if (str_starts_with($role, strtolower($input))) {
@@ -528,12 +531,12 @@ class UserAddCommand extends UserCommandBase
     /**
      * Show the form for entering the project role.
      *
-     * @param string                                          $defaultRole
+     * @param string $defaultRole
      * @param InputInterface $input
      *
      * @return string
      */
-    private function showProjectRoleForm($defaultRole, InputInterface $input): mixed
+    private function showProjectRoleForm(string $defaultRole, InputInterface $input): mixed
     {
         $questionHelper = $this->questionHelper;
 
@@ -606,7 +609,7 @@ class UserAddCommand extends UserCommandBase
         $this->stdErr->writeln('');
         foreach ($environmentTypes as $environmentType) {
             $id = $environmentType->id;
-            $default = isset($defaultTypeRoles[$id]) ? $defaultTypeRoles[$id] : 'none';
+            $default = $defaultTypeRoles[$id] ?? 'none';
             $question = new Question(
                 sprintf('Role on type <info>%s</info> (default: %s) <question>%s</question>: ', $id, $default, $initials),
                 $default
@@ -639,7 +642,7 @@ class UserAddCommand extends UserCommandBase
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array &$roles)
+    private function getSpecifiedProjectRole(array &$roles): ?string
     {
         foreach ($roles as $key => $role) {
             if (!str_contains((string) $role, ':')) {
