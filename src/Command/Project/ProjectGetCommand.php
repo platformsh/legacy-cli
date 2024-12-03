@@ -35,6 +35,7 @@ class ProjectGetCommand extends CommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
@@ -206,7 +207,6 @@ class ProjectGetCommand extends CommandBase
 
         $this->io->debug('Initializing the project');
         $localProject->mapDirectory($projectRoot, $project);
-        $this->setProjectRoot($projectRoot);
 
         $this->io->debug('Downloading submodules (if any)');
         $git->updateSubmodules(true, $projectRoot);

@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\RuntimeOperation;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -40,15 +41,14 @@ class RunCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         $environment = $selection->getEnvironment();
         $deployment = $this->api->getCurrentDeployment($environment);
 
         try {
             if ($input->getOption('app') || $input->getOption('worker')) {
-                $selectedApp = $this->selectRemoteContainer($input);
+                $selectedApp = $selection->getRemoteContainer();
                 $appName = $selectedApp->getName();
                 $operations = [
                     $selectedApp->getName() => $selectedApp->getRuntimeOperations(),

@@ -12,6 +12,7 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Member;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'organization:user:list', description: 'List organization users', aliases: ['org:users'])]
@@ -31,6 +32,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         'updated_at' => 'Updated at',
     ];
     private array $defaultColumns = ['id', 'email', 'owner', 'permissions'];
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
@@ -38,8 +40,11 @@ class OrganizationUserListCommand extends OrganizationCommandBase
 
     protected function configure()
     {
-        $this->selector->setHiddenAliases($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition());
+        $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
+            ->setHiddenAliases(['organization:users']);
+        $this->selector->addOrganizationOptions($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }

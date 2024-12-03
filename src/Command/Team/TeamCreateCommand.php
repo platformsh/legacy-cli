@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Team;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -23,7 +24,7 @@ use Symfony\Component\Console\Question\Question;
 class TeamCreateCommand extends TeamCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(protected ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, protected readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }

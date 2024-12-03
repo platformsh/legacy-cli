@@ -28,7 +28,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             ->addOption('name', null, InputOption::VALUE_REQUIRED, 'A name to identify the key');
 
         $help = 'This command lets you add an SSH key to your account. It can generate a key using OpenSSH.'
-            . "\n\n" . $this->certificateNotice();
+            . "\n\n" . $this->certificateNotice($this->config);
         $this->setHelp($help);
     }
 
@@ -46,7 +46,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             $this->api->getMyAccount()['email']
         ));
 
-        $this->stdErr->writeln($this->certificateNotice(false));
+        $this->stdErr->writeln($this->certificateNotice($this->config, false));
         $this->stdErr->writeln('');
         if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
             $this->stdErr->writeln('');
