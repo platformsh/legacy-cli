@@ -1,16 +1,10 @@
 <?php
+declare(strict_types=1);
 
-namespace Platformsh\Cli\Command\Variable;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Selector\Selection;
-use Platformsh\Cli\Selector\Selector;
-use Platformsh\Cli\Service\Table;
-use Platformsh\Cli\Service\PropertyFormatter;
-use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Api;
-use Symfony\Contracts\Service\Attribute\Required;
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
@@ -18,50 +12,37 @@ use Platformsh\ConsoleForm\Field\BooleanField;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class VariableCommandBase extends CommandBase
+class VariableCommandUtil
 {
-    private readonly Selector $selector;
-    private readonly Table $table;
-    private readonly PropertyFormatter $propertyFormatter;
-    private readonly Config $config;
-    private readonly Api $api;
+    public const LEVEL_PROJECT = 'project';
+    public const LEVEL_ENVIRONMENT = 'environment';
 
-    const LEVEL_PROJECT = 'project';
-    const LEVEL_ENVIRONMENT = 'environment';
+    private OutputInterface $stdErr;
 
-    protected ?Selection $selection = null;
-
-    #[Required]
-    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Selector $selector, Table $table) : void
+    public function __construct(
+        private readonly Api               $api,
+        private readonly Config            $config,
+        private readonly PropertyFormatter $propertyFormatter,
+        private readonly Table             $table,
+        OutputInterface                    $output,
+    )
     {
-        $this->api = $api;
-        $this->config = $config;
-        $this->propertyFormatter = $propertyFormatter;
-        $this->table = $table;
-        $this->selector = $selector;
-    }
-
-    /**
-     * @param string $str
-     *
-     * @return string
-     */
-    protected function escapeShellArg(string $str)
-    {
-        return (new ArgvInput(['example']))->escapeToken($str);
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**
      * Add the --level option.
      */
-    protected function addLevelOption()
+    public function addLevelOption(InputDefinition $definition): void
     {
-        $this->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The variable level ('project', 'environment', 'p' or 'e')");
+        $definition->addOption(new InputOption('level', 'l', InputOption::VALUE_REQUIRED, "The variable level ('project', 'environment', 'p' or 'e')"));
     }
 
     /**
@@ -71,7 +52,7 @@ abstract class VariableCommandBase extends CommandBase
      *
      * @return string|null
      */
-    protected function getRequestedLevel(InputInterface $input): ?string
+    public function getRequestedLevel(InputInterface $input): ?string
     {
         $str = $input->getOption('level');
         if (empty($str)) {
@@ -96,7 +77,7 @@ abstract class VariableCommandBase extends CommandBase
      *
      * @return ProjectLevelVariable|EnvironmentLevelVariable|false
      */
-    protected function getExistingVariable(string $name, Selection $selection, ?string $level, bool $messages = true): EnvironmentLevelVariable|false|ProjectLevelVariable
+    public function getExistingVariable(string $name, Selection $selection, ?string $level, bool $messages = true): EnvironmentLevelVariable|false|ProjectLevelVariable
     {
         $output = $messages ? $this->stdErr : new NullOutput();
 
@@ -127,7 +108,7 @@ abstract class VariableCommandBase extends CommandBase
     /**
      * Display a variable to stdout.
      */
-    protected function displayVariable(ApiResourceBase $variable)
+    public function displayVariable(ApiResourceBase $variable): void
     {
         $table = $this->table;
         $formatter = $this->propertyFormatter;
@@ -147,12 +128,7 @@ abstract class VariableCommandBase extends CommandBase
         $table->renderSimple($values, $headings);
     }
 
-    /**
-     * @param ApiResourceBase $variable
-     *
-     * @return string
-     */
-    protected function getVariableLevel(ApiResourceBase $variable)
+    public function getVariableLevel(ApiResourceBase $variable): string
     {
         if ($variable instanceof EnvironmentLevelVariable) {
             return self::LEVEL_ENVIRONMENT;
@@ -163,9 +139,10 @@ abstract class VariableCommandBase extends CommandBase
     }
 
     /**
-     * @return Field[]
+     * @param callable(): Selection $getSelection
+     * @return array
      */
-    protected function getFields(): array
+    public function getFields(callable $getSelection): array
     {
         $fields = [];
 
@@ -191,15 +168,10 @@ abstract class VariableCommandBase extends CommandBase
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
             'questionLine' => 'On what environment should the variable be set?',
-            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($this->selection->getProject())),
+            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($getSelection()->getProject())),
             'asChoice' => false,
             'includeAsOption' => false,
-            'defaultCallback' => function () {
-                if ($this->selection->hasEnvironment()) {
-                    return $this->selection->getEnvironment()->id;
-                }
-                return null;
-            },
+            'defaultCallback' => fn (): ?string => $getSelection()->hasEnvironment() ? $getSelection()->getEnvironment()->id : null,
         ]);
         $fields['name'] = new Field('Name', [
             'description' => 'The variable name',

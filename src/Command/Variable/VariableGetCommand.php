@@ -1,15 +1,18 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\SelectorConfig;
-use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\VariableCommandUtil;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,21 +22,26 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'variable:get', description: 'View a variable', aliases: ['vget'])]
-class VariableGetCommand extends VariableCommandBase
+class VariableGetCommand extends CommandBase
 {
-    public function __construct(private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner, private readonly Table $table)
+    public function __construct(private readonly Config              $config,
+                                private readonly Io                  $io,
+                                private readonly QuestionHelper      $questionHelper,
+                                private readonly PropertyFormatter   $propertyFormatter,
+                                private readonly Selector            $selector,
+                                private readonly SubCommandRunner    $subCommandRunner,
+                                private readonly Table               $table,
+                                private readonly VariableCommandUtil $variableCommandUtil)
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
+
     protected function configure()
     {
         $this
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property');
-        $this->addLevelOption();
+        $this->variableCommandUtil->addLevelOption($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -44,12 +52,12 @@ class VariableGetCommand extends VariableCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io->warnAboutDeprecatedOptions(['pipe']);
-        $level = $this->getRequestedLevel($input);
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
+        $level = $this->variableCommandUtil->getRequestedLevel($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== VariableCommandUtil::LEVEL_PROJECT));
 
         $name = $input->getArgument('name');
         if ($name) {
-            $variable = $this->getExistingVariable($name, $selection, $level);
+            $variable = $this->variableCommandUtil->getExistingVariable($name, $selection, $level);
             if (!$variable) {
                 return 1;
             }
@@ -92,7 +100,7 @@ class VariableGetCommand extends VariableCommandBase
         }
 
         $properties = $variable->getProperties();
-        $properties['level'] = $this->getVariableLevel($variable);
+        $properties['level'] = $this->variableCommandUtil->getVariableLevel($variable);
 
         if ($property = $input->getOption('property')) {
             if ($property === 'value' && !isset($properties['value']) && $variable->is_sensitive) {
@@ -106,13 +114,12 @@ class VariableGetCommand extends VariableCommandBase
             return 0;
         }
 
-        $this->displayVariable($variable);
+        $this->variableCommandUtil->displayVariable($variable);
 
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config->get('application.executable');
-            $escapedName = $this->escapeShellArg($name);
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To list other variables, run: <info>%s variables</info>',
@@ -121,7 +128,7 @@ class VariableGetCommand extends VariableCommandBase
             $this->stdErr->writeln(sprintf(
                 'To update the variable, use: <info>%s variable:update %s</info>',
                 $executable,
-                $escapedName
+                OsUtil::escapeShellArg($name),
             ));
         }
 
