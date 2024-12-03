@@ -1,10 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\VariableCommandUtil;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -14,7 +16,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'variable:list', description: 'List variables', aliases: ['variables', 'var'])]
-class VariableListCommand extends VariableCommandBase
+class VariableListCommand extends CommandBase
 {
     private array $tableHeader = [
         'name' => 'Name',
@@ -22,17 +24,19 @@ class VariableListCommand extends VariableCommandBase
         'value' => 'Value',
         'is_enabled' => 'Enabled',
     ];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
+
+    public function __construct(private readonly Api                 $api,
+                                private readonly Config              $config,
+                                private readonly Selector            $selector,
+                                private readonly Table               $table,
+                                private readonly VariableCommandUtil $variableCommandUtil)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
-        $this->addLevelOption();
+        $this->variableCommandUtil->addLevelOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -40,7 +44,7 @@ class VariableListCommand extends VariableCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $level = $this->getRequestedLevel($input);
+        $level = $this->variableCommandUtil->getRequestedLevel($input);
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== 'project'));
 
@@ -87,7 +91,7 @@ class VariableListCommand extends VariableCommandBase
         foreach ($variables as $variable) {
             $row = [];
             $row['name'] = $variable->name;
-            $row['level'] = new AdaptiveTableCell($this->getVariableLevel($variable), ['wrap' => false]);
+            $row['level'] = new AdaptiveTableCell($this->variableCommandUtil->getVariableLevel($variable), ['wrap' => false]);
 
             // Handle sensitive variables' value (it isn't exposed in the API).
             if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
