@@ -48,7 +48,7 @@ class TunnelSingleCommand extends TunnelCommandBase
         $container = $selection->getRemoteContainer();
         $appName = $container->getName();
         $sshUrl = $container->getSshUrl();
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $relationshipsService = $this->relationships;
         $relationships = $relationshipsService->getRelationships($host);
