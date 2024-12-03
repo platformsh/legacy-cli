@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -34,9 +35,7 @@ EOF;
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
-
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $environment = $selection->getEnvironment();
 
         if ($environment->status === 'paused') {

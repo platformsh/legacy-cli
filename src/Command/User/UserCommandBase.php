@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -14,13 +15,17 @@ use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 
 abstract class UserCommandBase extends CommandBase
 {
+    protected readonly ActivityMonitor $activityMonitor;
     private readonly Config $config;
     private readonly Api $api;
+
     /** @var ProjectUserAccess|ProjectAccess|null */
     private static ?array $userCache = null;
+
     #[Required]
-    public function autowire(Api $api, Config $config) : void
+    public function autowire(ActivityMonitor $activityMonitor, Api $api, Config $config) : void
     {
+        $this->activityMonitor = $activityMonitor;
         $this->api = $api;
         $this->config = $config;
     }

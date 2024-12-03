@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
@@ -25,8 +26,8 @@ class MongoRestoreCommand extends CommandBase
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -37,7 +38,11 @@ class MongoRestoreCommand extends CommandBase
         }
 
         $relationshipsService = $this->relationships;
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $selection->getHost();
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {

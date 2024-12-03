@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
@@ -26,8 +27,8 @@ class MongoShellCommand extends CommandBase
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Display collection names', "--eval 'printjson(db.getCollectionNames())'");
     }
 
@@ -38,7 +39,11 @@ class MongoShellCommand extends CommandBase
         }
 
         $relationshipsService = $this->relationships;
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $selection->getHost();
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {

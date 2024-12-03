@@ -755,17 +755,14 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /**
      * Updates the Git remote URL for the current project.
-     *
-     * @param string $oldGitUrl
      */
-    protected function updateGitUrl($oldGitUrl)
+    protected function updateGitUrl(string $oldGitUrl, Project $project): void
     {
-        if (!$this->selector->isProjectCurrent()) {
+        if (!$this->selector->isProjectCurrent($project)) {
             return;
         }
-        $project = $this->selector->getCurrentProject();
         $projectRoot = $this->selector->getProjectRoot();
-        if (!$project || !$projectRoot) {
+        if (!$projectRoot) {
             return;
         }
         $project->refresh();

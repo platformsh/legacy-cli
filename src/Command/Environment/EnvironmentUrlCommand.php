@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -49,8 +50,7 @@ class EnvironmentUrlCommand extends CommandBase
             $routes = Route::fromVariables($decoded);
         } else {
             $this->io->debug('Reading URLs from the API');
-            $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $selection = $this->selector->getSelection($input);
+            $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
             $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
             $routes = Route::fromDeploymentApi($deployment->routes);
         }

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
@@ -26,8 +27,8 @@ class RedisCliCommand extends CommandBase
         $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Open the redis-cli shell');
         $this->addExample('Ping the Redis server', 'ping');
         $this->addExample('Show Redis status information', 'info');
@@ -42,7 +43,12 @@ class RedisCliCommand extends CommandBase
         }
 
         $relationshipsService = $this->relationships;
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $selection->getHost();
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['redis']);
         if (!$service) {

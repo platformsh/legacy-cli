@@ -29,7 +29,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
 
         $help = 'This command lets you list SSH keys in your account.'
-            . "\n\n" . $this->certificateNotice();
+            . "\n\n" . $this->certificateNotice($this->config);
         $this->setHelp($help);
     }
 
@@ -73,7 +73,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         $this->stdErr->writeln("Delete an SSH key with: <info>$executable ssh-key:delete [id]</info>");
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln($this->certificateNotice());
+        $this->stdErr->writeln($this->certificateNotice($this->config));
 
         return !empty($keys) ? 0 : 1;
     }

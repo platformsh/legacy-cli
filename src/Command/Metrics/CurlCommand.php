@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Metrics;
 
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\CurlCli;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CurlCommand extends MetricsCommandBase
 {
     protected bool $hiddenInList = true;
-    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli, private readonly Selector $selector)
+    public function __construct(private readonly CurlCli $curlCli, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -30,17 +29,11 @@ class CurlCommand extends MetricsCommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        // Initialize the API service so that it gets CommandBase's event listeners
-        // (allowing for auto login).
-        $this->api;
-
         $link = $this->getMetricsLink($selection->getEnvironment());
         if (!$link) {
             return 1;
         }
 
-        $curl = $this->curlCli;
-
-        return $curl->run($link['href'], $input, $output);
+        return $this->curlCli->run($link['href'], $input, $output);
     }
 }

@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Shell;
@@ -35,8 +36,8 @@ class EnvironmentSshCommand extends CommandBase
             ->addOption('all', null, InputOption::VALUE_NONE, 'Output all SSH URLs (for every app).')
             ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addRemoteContainerOptions($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open a shell over SSH');
         $this->addExample('Pass an extra option to SSH', "-o 'RequestTTY force'");
@@ -48,8 +49,7 @@ class EnvironmentSshCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $environment = $selection->getEnvironment();
 
         if ($input->getOption('all')) {
@@ -58,8 +58,9 @@ class EnvironmentSshCommand extends CommandBase
             return 0;
         }
 
+        $container = $selection->getRemoteContainer();
+
         try {
-            $container = $this->selectRemoteContainer($input);
             $sshUrl = $container->getSshUrl($input->getOption('instance'));
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->id !== $environment->id) {
