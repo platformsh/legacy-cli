@@ -25,7 +25,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
     private array $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
     private array $defaultColumns = ['id', 'title', 'status', 'type'];
 
-    private ?Environment $currentEnvironment = null;
+    private Environment|false $currentEnvironment = false;
     private array $children = [];
     private array $mapping = [];
 
