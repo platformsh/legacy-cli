@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Service;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ServiceListCommand extends CommandBase
 {
     private array $tableHeader = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -29,8 +30,8 @@ class ServiceListCommand extends CommandBase
         $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of service names only');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
@@ -39,11 +40,11 @@ class ServiceListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         // Find a list of deployed services.
         $deployment = $this->api
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
         $services = $deployment->services;
 
         if (!count($services)) {
@@ -78,8 +79,8 @@ class ServiceListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Services on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
-                $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment())
             ));
         }
 

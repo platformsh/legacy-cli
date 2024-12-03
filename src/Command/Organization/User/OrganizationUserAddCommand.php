@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,21 +17,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:add', description: 'Invite a user to an organization')]
 class OrganizationUserAddCommand extends OrganizationUserCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions()
+        $this->selector->addOrganizationOptions($this->getDefinition())
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addPermissionOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input, 'create-member');
+        $organization = $this->selector->selectOrganization($input, 'create-member');
 
         $questionHelper = $this->questionHelper;
 

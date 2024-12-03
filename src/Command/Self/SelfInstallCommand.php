@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class SelfInstallCommand extends CommandBase
 {
     const INSTALLED_FILENAME = 'self_installed';
-    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly Shell $shell)
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -115,7 +116,7 @@ EOT
                 $args['--shell-type'] = $shellType;
             }
             $buffer = new BufferedOutput();
-            $exitCode = $this->runOtherCommand('_completion', $args, $buffer);
+            $exitCode = $this->subCommandRunner->run('_completion', $args, $buffer);
             if ($exitCode === 0 && ($autoCompleteHook = $buffer->fetch())) {
                 $fs->dumpFile($configDir . '/autocompletion.sh', $autoCompleteHook);
                 $this->stdErr->writeln(' <info>done</info>');

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -85,7 +86,7 @@ END_HELP;
 
         $this->stdErr->writeln(sprintf('Created organization %s', $this->api->getOrganizationLabel($organization)));
 
-        $this->runOtherCommand('organization:info', ['--org' => $organization->name], $this->stdErr);
+        $this->subCommandRunner->run('organization:info', ['--org' => $organization->name], $this->stdErr);
 
         return 0;
     }

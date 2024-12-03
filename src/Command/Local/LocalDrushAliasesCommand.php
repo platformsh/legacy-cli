@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -28,7 +29,7 @@ use Symfony\Component\Yaml\Yaml;
 class LocalDrushAliasesCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
     {
         parent::__construct();
     }
@@ -55,7 +56,7 @@ class LocalDrushAliasesCommand extends CommandBase
         // Hide the command in the list while in a project directory, if the
         // project is not Drupal.
         // Avoid checking if running in the home directory.
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if ($projectRoot && $this->config->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
             return true;
         }
@@ -65,8 +66,8 @@ class LocalDrushAliasesCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
-        $project = $this->getCurrentProject();
+        $projectRoot = $this->selector->getProjectRoot();
+        $project = $this->selector->getCurrentProject();
         if (!$projectRoot || !$project) {
             throw new RootNotFoundException();
         }

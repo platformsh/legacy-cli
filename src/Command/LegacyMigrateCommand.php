@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalProject;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LegacyMigrateCommand extends CommandBase
 {
 
-    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalProject $localProject)
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalProject $localProject, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -56,7 +57,7 @@ EOF
         $localProject = $this->localProject;
         $legacyRoot = $localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
-            if ($this->getProjectRoot()) {
+            if ($this->selector->getProjectRoot()) {
                 $this->stdErr->writeln(sprintf(
                     'This project is already compatible with the %s version 3.x.',
                     $this->config->get('application.name')

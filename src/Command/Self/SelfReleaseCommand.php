@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -21,7 +22,7 @@ use Symfony\Component\Process\PhpExecutableFinder;
 class SelfReleaseCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
-    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Shell $shell)
+    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -249,7 +250,7 @@ class SelfReleaseCommand extends CommandBase
         // Build a Phar file, if one doesn't already exist.
         if (!$pharFilename) {
             $pharFilename = sys_get_temp_dir() . '/' . $this->config->get('application.executable') . '.phar';
-            $result = $this->runOtherCommand('self:build', [
+            $result = $this->subCommandRunner->run('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
                 '--replace-version' => $newVersion,

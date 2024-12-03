@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DomainAddCommand extends DomainCommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -28,8 +30,8 @@ class DomainAddCommand extends DomainCommandBase
         $this->addDomainOptions();
         $this->addOption('attach', null, InputOption::VALUE_REQUIRED, "The production domain that this one replaces in the environment's routes. Required for non-production environment domains.");
         $this->addHiddenOption('replace', 'r', InputOption::VALUE_REQUIRED, 'Deprecated: this has been renamed to --attach');
-        $this->addProjectOption()
-            ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition())
             ->addWaitOptions();
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
@@ -43,9 +45,9 @@ class DomainAddCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['replace'], 'The option --replace has been renamed to --attach.');
+        $this->io->warnAboutDeprecatedOptions(['replace'], 'The option --replace has been renamed to --attach.');
 
-        $this->validateInput($input, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
 
         if (!$this->validateDomainInput($input)) {
             return 1;
@@ -53,8 +55,8 @@ class DomainAddCommand extends DomainCommandBase
 
         $questionHelper = $this->questionHelper;
 
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
+        $project = $selection->getProject();
+        $environment = $selection->getEnvironment();
         $this->ensurePrintSelectedEnvironment(true);
 
         $this->stdErr->writeln(sprintf('Adding the domain: <info>%s</info>', $this->domainName));
@@ -113,7 +115,7 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class IntegrationListCommand extends IntegrationCommandBase
 {
     private array $tableHeader = ['ID', 'Type', 'Summary'];
-    public function __construct(private readonly Config $config, private readonly Table $table)
+    public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -27,14 +28,14 @@ class IntegrationListCommand extends IntegrationCommandBase
         $this
             ->addOption('type', 't', InputOption::VALUE_REQUIRED, 'Filter by type');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $integrations = $this->getSelectedProject()
+        $integrations = $selection->getProject()
                         ->getIntegrations();
         if (!$integrations) {
             $this->stdErr->writeln('No integrations found');

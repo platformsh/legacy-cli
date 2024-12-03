@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -13,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalCleanCommand extends CommandBase
 {
         protected bool $hiddenInList = true;
-        public function __construct(private readonly LocalBuild $localBuild)
+        public function __construct(private readonly LocalBuild $localBuild, private readonly Selector $selector)
         {
             parent::__construct();
         }
@@ -44,7 +45,7 @@ class LocalCleanCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }

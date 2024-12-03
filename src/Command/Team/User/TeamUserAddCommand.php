@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -10,22 +11,20 @@ use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\ApiResponseException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:user:add', description: 'Add a user to a team')]
 class TeamUserAddCommand extends TeamCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID')
-            ->addOrganizationOptions()
+        $this->selector->addArgument($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition())
             ->addTeamOption();
     }
 

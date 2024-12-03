@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Repo;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Client\Model\Git\Tree;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -12,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'repo:read', description: 'Read a directory or file in the project repository', aliases: ['read'])]
 class ReadCommand extends RepoCommandBase
 {
-    public function __construct(private readonly GitDataApi $gitDataApi)
+    public function __construct(private readonly GitDataApi $gitDataApi, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,8 +25,8 @@ class ReadCommand extends RepoCommandBase
         $this
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')
             ->addCommitOption();
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -33,8 +34,8 @@ class ReadCommand extends RepoCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $environment = $selection->getEnvironment();
 
         $path = $input->getArgument('path');
         $gitData = $this->gitDataApi;
