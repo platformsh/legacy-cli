@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class UserDeleteCommand extends UserCommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -22,14 +23,14 @@ class UserDeleteCommand extends UserCommandBase
     {
         $this
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
         $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
         $email = $input->getArgument('email');
 
         $selection = $this->loadProjectUser($project, $email);
@@ -60,7 +61,7 @@ class UserDeleteCommand extends UserCommandBase
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if ($result->getActivities() && $this->shouldWait($input)) {
+        if ($result->getActivities() && $this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         } elseif (!$this->centralizedPermissionsEnabled()) {

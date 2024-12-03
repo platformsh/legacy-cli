@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Table;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
     protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -25,19 +26,19 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
         $nextDeployment = $this->loadNextDeployment($environment);
 
         $services = $this->allServices($nextDeployment);

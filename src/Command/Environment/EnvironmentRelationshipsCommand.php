@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Command\CommandBase;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:relationships', description: 'Show an environment\'s relationships', aliases: ['relationships', 'rel'])]
 class EnvironmentRelationshipsCommand extends CommandBase
 {
-    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships)
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -27,9 +28,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the relationships');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addAppOption();
+        $this->selector->addEnvironmentOption($this->getDefinition())
+             ->addAppOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample("View all the current environment's relationships");
         $this->addExample("View the 'main' environment's relationships", 'main');

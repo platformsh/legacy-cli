@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
@@ -22,7 +23,7 @@ class CertificateListCommand extends CommandBase
         'expires' => 'Expires',
         'issuer' => 'Issuer',
     ];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -40,13 +41,13 @@ class CertificateListCommand extends CommandBase
         $this->addOption('pipe-domains', null, InputOption::VALUE_NONE, 'Only return a list of domain names covered by the certificates');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addExample('Output a list of domains covered by valid certificates', '--pipe-domains --no-expired');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         // Set --no-expired by default, if --ignore-expiry and --only-expired
         // are not supplied.
@@ -57,7 +58,7 @@ class CertificateListCommand extends CommandBase
         $filterOptions = ['domain', 'exclude-domain', 'issuer', 'only-auto', 'no-auto', 'only-expired', 'no-expired'];
         $filters = array_filter(array_intersect_key($input->getOptions(), array_flip($filterOptions)));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $certs = $project->getCertificates();
 

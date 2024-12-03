@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:shell', description: 'Use the MongoDB shell', aliases: ['mongo'])]
 class MongoShellCommand extends CommandBase
 {
-    public function __construct(private readonly Relationships $relationships)
+    public function __construct(private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,9 +25,8 @@ class MongoShellCommand extends CommandBase
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addEnvironmentOption($this->getDefinition())
+            ->addAppOption($this->getDefinition());
         $this->addExample('Display collection names', "--eval 'printjson(db.getCollectionNames())'");
     }
 

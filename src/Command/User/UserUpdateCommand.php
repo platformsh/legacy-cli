@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Selector\Selector;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -11,14 +13,18 @@ use Symfony\Component\Console\Input\InputArgument;
 class UserUpdateCommand extends UserAddCommand
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
-        $this->addProjectOption();
-        $this->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Make Bob an admin on the "development" and "staging" environment types', 'bob@example.com -r development:a,staging:a');
         $this->addExample('Make Charlie a contributor on all environment types', 'charlie@example.com -r %:c');

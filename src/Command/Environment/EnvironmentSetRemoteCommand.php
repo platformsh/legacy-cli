@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Local\LocalProject;
@@ -16,7 +17,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
 {
     // @todo remove this command in v3
     protected bool $hiddenInList = true;
-    public function __construct(private readonly Api $api, private readonly Git $git, private readonly LocalProject $localProject)
+    public function __construct(private readonly Api $api, private readonly Git $git, private readonly LocalProject $localProject, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -39,12 +40,12 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->getCurrentProject();
+        $project = $this->selector->getCurrentProject();
         if (!$project) {
             throw new RootNotFoundException();
         }
 
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
         $git = $this->git;
         $git->setDefaultRepositoryDir($projectRoot);

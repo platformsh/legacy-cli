@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,6 +17,10 @@ class VariableDisableCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
+    public function __construct(private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -27,20 +33,20 @@ class VariableDisableCommand extends CommandBase
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use: <info>variable:update --enabled false [variable]</info>"
         );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition())
              ->addWaitOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        return $this->runOtherCommand('variable:update', [
+        return $this->subCommandRunner->run('variable:update', [
                 'name' => $input->getArgument('name'),
                 '--enabled' => 'false',
-                '--project' => $this->getSelectedProject()->id,
-                '--environment' => $this->getSelectedEnvironment()->id,
+                '--project' => $selection->getProject()->id,
+                '--environment' => $selection->getEnvironment()->id,
             ] + array_filter([
                 '--wait' => $input->getOption('wait'),
                 '--no-wait' => $input->getOption('no-wait'),

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -35,7 +37,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         'time_deploy' => 'Deploy time (s)',
     ];
     private array $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
-    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -64,16 +66,16 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
+        $this->io->warnAboutDeprecatedOptions(['environment']);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {

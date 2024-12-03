@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Service\Config;
@@ -14,16 +15,18 @@ use Symfony\Component\Process\Process;
 
 abstract class ServerCommandBase extends CommandBase
 {
+    private readonly Selector $selector;
     private readonly Shell $shell;
     private readonly LocalProject $localProject;
     private readonly Config $config;
     protected $serverInfo;
     #[Required]
-    public function autowire(Config $config, LocalProject $localProject, Shell $shell) : void
+    public function autowire(Config $config, LocalProject $localProject, Selector $selector, Shell $shell) : void
     {
         $this->config = $config;
         $this->localProject = $localProject;
         $this->shell = $shell;
+        $this->selector = $selector;
     }
 
     public function isEnabled(): bool
@@ -409,9 +412,9 @@ abstract class ServerCommandBase extends CommandBase
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 
-        if ($projectRoot === $this->getProjectRoot()) {
+        if ($projectRoot === $this->selector->getProjectRoot()) {
             try {
-                $project = $this->getCurrentProject();
+                $project = $this->selector->getCurrentProject();
                 if ($project) {
                     $env[$envPrefix . 'PROJECT'] = $project->id;
                 }

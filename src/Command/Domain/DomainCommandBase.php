@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
@@ -19,6 +20,7 @@ use Symfony\Component\Console\Input\InputOption;
 abstract class DomainCommandBase extends CommandBase
 {
 
+    private readonly Selector $selector;
     private readonly QuestionHelper $questionHelper;
     private readonly Config $config;
     private readonly Api $api;
@@ -31,11 +33,12 @@ abstract class DomainCommandBase extends CommandBase
 
     protected $attach;
     #[Required]
-    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
     {
         $this->api = $api;
         $this->config = $config;
         $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
     }
 
     /**
@@ -69,7 +72,7 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         if ($input->hasOption('environment') || $input->hasOption('attach')) {
-            $project = $this->getSelectedProject();
+            $project = $selection->getProject();
             $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
                 || ($input->hasOption('attach') && $input->getOption('attach') !== null)
                 || ($input->hasOption('replace') && $input->getOption('replace') !== null);
@@ -78,7 +81,7 @@ abstract class DomainCommandBase extends CommandBase
 
             if ($forEnvironment) {
                 $this->selectEnvironment($input->getOption('environment'), true, false, true, fn(Environment $e): bool => $e->type !== 'production' && $e->id !== $project->default_branch);
-                $environment = $this->getSelectedEnvironment();
+                $environment = $selection->getEnvironment();
                 $this->environmentIsProduction = $environment->id === $project->default_branch;
                 $this->ensurePrintSelectedEnvironment(true);
             } elseif ($project->default_branch === null) {
@@ -107,7 +110,7 @@ abstract class DomainCommandBase extends CommandBase
                     return false;
                 }
                 if (!$this->environmentIsProduction && $this->attach === null) {
-                    $project = $this->getSelectedProject();
+                    $project = $selection->getProject();
                     try {
                         $productionDomains = $project->getDomains();
                         $productionDomainAccess = true;

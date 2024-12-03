@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupGetCommand extends CommandBase
 {
 
-    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -23,15 +24,15 @@ class BackupGetCommand extends CommandBase
         $this
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The backup property to display.');
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $environment = $selection->getEnvironment();
 
         $formatter = $this->propertyFormatter;
 

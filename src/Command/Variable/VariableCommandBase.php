@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
@@ -23,6 +24,7 @@ use Symfony\Component\Console\Output\NullOutput;
 
 abstract class VariableCommandBase extends CommandBase
 {
+    private readonly Selector $selector;
     private readonly Table $table;
     private readonly PropertyFormatter $propertyFormatter;
     private readonly Config $config;
@@ -30,12 +32,13 @@ abstract class VariableCommandBase extends CommandBase
     const LEVEL_PROJECT = 'project';
     const LEVEL_ENVIRONMENT = 'environment';
     #[Required]
-    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Table $table) : void
+    public function autowire(Api $api, Config $config, PropertyFormatter $propertyFormatter, Selector $selector, Table $table) : void
     {
         $this->api = $api;
         $this->config = $config;
         $this->propertyFormatter = $propertyFormatter;
         $this->table = $table;
+        $this->selector = $selector;
     }
 
     /**
@@ -91,10 +94,10 @@ abstract class VariableCommandBase extends CommandBase
     {
         $output = $messages ? $this->stdErr : new NullOutput();
 
-        if ($level === self::LEVEL_ENVIRONMENT || ($this->hasSelectedEnvironment() && $level === null)) {
-            $variable = $this->getSelectedEnvironment()->getVariable($name);
+        if ($level === self::LEVEL_ENVIRONMENT || ($selection->hasEnvironment() && $level === null)) {
+            $variable = $selection->getEnvironment()->getVariable($name);
             if ($variable !== false) {
-                if ($level === null && $this->getSelectedProject()->getVariable($name)) {
+                if ($level === null && $selection->getProject()->getVariable($name)) {
                     $output->writeln('Variable found at both project and environment levels: <error>' . $name . '</error>');
                     $output->writeln("To select a variable, use the --level option ('" . self::LEVEL_PROJECT . "' or '" . self::LEVEL_ENVIRONMENT . "').");
 
@@ -105,7 +108,7 @@ abstract class VariableCommandBase extends CommandBase
             }
         }
         if ($level !== self::LEVEL_ENVIRONMENT) {
-            $variable = $this->getSelectedProject()->getVariable($name);
+            $variable = $selection->getProject()->getVariable($name);
             if ($variable !== false) {
                 return $variable;
             }
@@ -182,12 +185,12 @@ abstract class VariableCommandBase extends CommandBase
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
             'questionLine' => 'On what environment should the variable be set?',
-            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($this->getSelectedProject())),
+            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($selection->getProject())),
             'asChoice' => false,
             'includeAsOption' => false,
             'defaultCallback' => function () {
-                if ($this->hasSelectedEnvironment()) {
-                    return $this->getSelectedEnvironment()->id;
+                if ($selection->hasEnvironment()) {
+                    return $selection->getEnvironment()->id;
                 }
                 return null;
             },

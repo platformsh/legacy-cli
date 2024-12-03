@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
@@ -12,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectCurlCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
-    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli)
+    public function __construct(private readonly Api $api, private readonly CurlCli $curlCli, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -21,19 +22,19 @@ class ProjectCurlCommand extends CommandBase
     {
         CurlCli::configureInput($this->getDefinition());
 
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         // Initialize the API service so that it gets CommandBase's event listeners
         // (allowing for auto login).
         $this->api;
 
-        $url = $this->getSelectedProject()->getUri();
+        $url = $selection->getProject()->getUri();
 
         $curl = $this->curlCli;
 
