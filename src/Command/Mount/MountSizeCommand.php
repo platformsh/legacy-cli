@@ -46,7 +46,7 @@ class MountSizeCommand extends CommandBase
         Ssh::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
-        $this->addRemoteContainerOptions();
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
         $help = <<<EOF
 Use this command to check the disk size and usage for an application's mounts.
 

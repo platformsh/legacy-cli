@@ -760,7 +760,7 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     protected function updateGitUrl($oldGitUrl)
     {
-        if (!$this->selectedProjectIsCurrent()) {
+        if (!$this->selector->isProjectCurrent()) {
             return;
         }
         $project = $this->selector->getCurrentProject();
