@@ -1,39 +1,28 @@
 <?php
 
-namespace Platformsh\Cli\Command\User;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Service\ActivityMonitor;
-use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Service\Api;
-use Symfony\Contracts\Service\Attribute\Required;
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Ref\UserRef;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class UserCommandBase extends CommandBase
+class AccessApi
 {
-    protected readonly ActivityMonitor $activityMonitor;
-    private readonly Config $config;
-    private readonly Api $api;
+    /** @var array<string, ProjectUserAccess|ProjectAccess|null> */
+    private static ?array $userCache = [];
 
-    /** @var ProjectUserAccess|ProjectAccess|null */
-    private static ?array $userCache = null;
+    private OutputInterface $stdErr;
 
-    #[Required]
-    public function autowire(ActivityMonitor $activityMonitor, Api $api, Config $config) : void
+    public function __construct(private readonly Api $api, private readonly Config $config, OutputInterface $output)
     {
-        $this->activityMonitor = $activityMonitor;
-        $this->api = $api;
-        $this->config = $config;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
-    /**
-     * @return bool
-     */
-    protected function centralizedPermissionsEnabled()
+    public function centralizedPermissionsEnabled(): bool
     {
         return $this->config->get('api.centralized_permissions')
             && $this->config->get('api.organizations');
@@ -41,11 +30,6 @@ abstract class UserCommandBase extends CommandBase
 
     /**
      * Loads a legacy project user ("project access" record) by ID.
-     *
-     * @param Project $project
-     * @param string  $id
-     *
-     * @return ProjectAccess|null
      */
     private function doLoadLegacyProjectAccessById(Project $project, string $id): ?ProjectAccess
     {
@@ -66,7 +50,7 @@ abstract class UserCommandBase extends CommandBase
      *  "Centralized Permissions" are enabled, or a ProjectAccess object
      *  otherwise.
      */
-    protected function loadProjectUser(Project $project, string $identifier, $reset = false)
+    public function loadProjectUser(Project $project, string $identifier, bool $reset = false): ProjectUserAccess|ProjectAccess|null
     {
         $byEmail = str_contains($identifier, '@');
         $cacheKey = $project->id . ':' . $identifier;
@@ -92,7 +76,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return ProjectAccess|null
      */
-    private function doLoadLegacyProjectAccessByEmail(Project $project, string $email)
+    private function doLoadLegacyProjectAccessByEmail(Project $project, string $email): ProjectAccess|null
     {
         foreach ($project->getUsers() as $user) {
             $info = $this->legacyUserInfo($user);
@@ -111,7 +95,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return array{id: string, email: string, display_name: string, created_at: string, updated_at: ?string}
      */
-    protected function legacyUserInfo(ProjectAccess $access)
+    public function legacyUserInfo(ProjectAccess $access): array
     {
         $data = $access->getData();
         if (isset($data['_embedded']['users'])) {
@@ -196,7 +180,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return array<string, string> An array of user labels keyed by user ID.
      */
-    protected function listUsers(Project $project)
+    public function listUsers(Project $project): array
     {
         $choices = [];
         if ($this->centralizedPermissionsEnabled()) {
@@ -221,7 +205,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function getUserLabel($access, $formatting = false)
+    public function getUserLabel($access, $formatting = false)
     {
         $format = $formatting ? '<info>%s</info> (%s)' : '%s (%s)';
         if ($access instanceof ProjectAccess) {

@@ -1,8 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
-use Platformsh\Cli\Service\ActivityMonitor;
-use Platformsh\Cli\Selector\Selector;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -12,10 +10,9 @@ use Symfony\Component\Console\Input\InputArgument;
 #[AsCommand(name: 'user:update', description: 'Update user role(s) on a project')]
 class UserUpdateCommand extends UserAddCommand
 {
-    protected function configure()
+    protected function configure(): void
     {
-        $this
-            ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
+        $this->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
         $this->selector->addProjectOption($this->getDefinition());
