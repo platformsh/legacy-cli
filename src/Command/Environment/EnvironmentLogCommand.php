@@ -33,7 +33,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addRemoteContainerOptions();
+             ->addRemoteContainerOptions($this->getDefinition());
         $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
         $this->addExample('Read the deploy log', 'deploy');
