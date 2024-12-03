@@ -35,8 +35,8 @@ class MemCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
+        $this->addMetricsOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
