@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -10,6 +12,8 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
+use Platformsh\Cli\Service\VariableCommandUtil;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
@@ -21,11 +25,21 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'variable:create', description: 'Create a variable')]
-class VariableCreateCommand extends VariableCommandBase
+class VariableCreateCommand extends CommandBase
 {
     private ?Form $form = null;
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+
+    private Selection $selection;
+
+    public function __construct(private readonly ActivityMonitor  $activityMonitor,
+                                private readonly Api              $api,
+                                private readonly Config           $config,
+                                private readonly QuestionHelper   $questionHelper,
+                                private readonly Selector         $selector,
+                                private readonly SubCommandRunner $subCommandRunner,
+                                private readonly VariableCommandUtil $variableCommandUtil)
     {
+        $this->selection = new Selection();
         parent::__construct();
     }
 
@@ -37,7 +51,7 @@ class VariableCreateCommand extends VariableCommandBase
         $this
             ->addArgument('name', InputArgument::OPTIONAL, 'The variable name')
             ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update the variable if it already exists');
-        $this->form = Form::fromArray($this->getFields());
+        $this->form = Form::fromArray($this->variableCommandUtil->getFields(fn () => $this->selection));
         $this->form->configureInputDefinition($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -64,18 +78,17 @@ class VariableCreateCommand extends VariableCommandBase
             if (($prefix = $input->getOption('prefix')) && $prefix !== 'none') {
                 $name = rtrim((string) $prefix, ':') . ':' .  $name;
             }
-            $existing = $this->getExistingVariable($name, $selection, $this->getRequestedLevel($input));
+            $existing = $this->variableCommandUtil->getExistingVariable($name, $selection, $this->variableCommandUtil->getRequestedLevel($input));
             if ($existing) {
                 if (!$input->getOption('update')) {
                     $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
 
                     $executable = $this->config->get('application.executable');
-                    $escapedName = $this->escapeShellArg($name);
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
                         'To view the variable, use: <comment>%s variable:get %s</comment>',
                         $executable,
-                        $escapedName
+                        OsUtil::escapeShellArg($name)
                     ));
                     $this->stdErr->writeln(
                         'To skip this check, use the <comment>--update</comment> (<comment>-u</comment>) option.'
@@ -231,10 +244,10 @@ class VariableCreateCommand extends VariableCommandBase
                 throw new \RuntimeException('Invalid level: ' . $level);
         }
 
-        $this->displayVariable($result->getEntity());
+        $this->variableCommandUtil->displayVariable($result->getEntity());
 
         $success = true;
-        if (!$result->countActivities() || $level === self::LEVEL_PROJECT) {
+        if (!$result->countActivities() || $level === VariableCommandUtil::LEVEL_PROJECT) {
             $this->api->redeployWarning();
         } elseif ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
