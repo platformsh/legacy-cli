@@ -6,6 +6,7 @@ use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Model\EnvironmentDomain;
+use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,6 +19,7 @@ class DomainUpdateCommand extends DomainCommandBase
     {
         parent::__construct();
     }
+
     /**
      * {@inheritdoc}
      */
@@ -38,9 +40,15 @@ class DomainUpdateCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
+        $selectorConfig = new SelectorConfig(envRequired: false);
+        if ($this->isForEnvironment($input)) {
+            $selectorConfig = new SelectorConfig(
+                chooseEnvFilter: fn(Environment $e): bool => $e->type !== 'production',
+            );
+        }
+        $selection = $this->selector->getSelection($input, $selectorConfig);
 
-        if (!$this->validateDomainInput($input)) {
+        if (!$this->validateDomainInput($input, $selection)) {
             return 1;
         }
 

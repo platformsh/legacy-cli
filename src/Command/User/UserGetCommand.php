@@ -6,6 +6,7 @@ use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -57,8 +58,9 @@ class UserGetCommand extends UserCommandBase
             return 1;
         }
 
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level === 'environment'));
-        $project = $selection->getProject();
+        $selectedUser = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level === 'environment'));
+        $project = $selectedUser->getProject();
+        $environment = $selectedUser->hasEnvironment() ? $selectedUser->getEnvironment() : null;
 
         $this->io->warnAboutDeprecatedOptions(['role']);
 
@@ -70,15 +72,15 @@ class UserGetCommand extends UserCommandBase
             $email = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user:');
         }
 
-        $selection = $this->loadProjectUser($project, $email);
-        if (!$selection) {
+        $selectedUser = $this->loadProjectUser($project, $email);
+        if (!$selectedUser) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
 
             return 1;
         }
 
         if ($input->getOption('pipe')) {
-            $this->displayRole($selection, $level, $output);
+            $this->displayRole($selectedUser, $level, $output, $environment);
 
             return 0;
         }
@@ -92,21 +94,16 @@ class UserGetCommand extends UserCommandBase
         return $this->subCommandRunner->run('user:add', $args, $output);
     }
 
-    /**
-     * @param ProjectAccess|ProjectUserAccess $user
-     * @param string $level
-     * @param OutputInterface $output
-     */
-    private function displayRole($user, $level, OutputInterface $output): void
+    private function displayRole(ProjectAccess|ProjectUserAccess $user, string $level, OutputInterface $output, ?Environment $environment = null): void
     {
         if ($level === 'environment') {
             if ($user instanceof ProjectAccess) {
-                $access = $selection->getEnvironment()->getUser($user->id);
+                $access = $environment->getUser($user->id);
                 $currentRole = $access ? $access->role : 'none';
             } else {
                 $typeRoles = $user->getEnvironmentTypeRoles();
-                $envType = $selection->getEnvironment()->type;
-                $currentRole = isset($typeRoles[$envType]) ? $typeRoles[$envType] : 'none';
+                $envType = $environment->type;
+                $currentRole = $typeRoles[$envType] ?? 'none';
             }
         } else {
             $currentRole = $user instanceof ProjectAccess ? $user->role : $user->getProjectRole();

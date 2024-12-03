@@ -38,6 +38,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input);
+        $this->selection = $selection;
         $project = $selection->getProject();
 
         $questionHelper = $this->questionHelper;

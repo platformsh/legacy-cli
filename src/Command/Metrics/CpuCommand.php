@@ -55,7 +55,7 @@ class CpuCommand extends MetricsCommandBase
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
+            $this->selector->ensurePrintedSelection($selection);
         }
 
         $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['cpu_used', 'cpu_percent', 'cpu_limit']);
@@ -67,7 +67,7 @@ class CpuCommand extends MetricsCommandBase
             'used' => new Field('cpu_used', Field::FORMAT_ROUNDED_2DP),
             'limit' => new Field('cpu_limit', Field::FORMAT_ROUNDED_2DP),
             'percent' => new Field('cpu_percent', Field::FORMAT_PERCENT),
-        ]);
+        ], $selection->getEnvironment());
 
         if (!$table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;

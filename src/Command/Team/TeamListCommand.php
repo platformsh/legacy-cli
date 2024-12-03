@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -15,6 +16,7 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:list', description: 'List teams', aliases: ['teams'])]
@@ -41,8 +43,11 @@ class TeamListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this->selector->addOption($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition(), true);
+        $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A team property to sort by', 'label')
+            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order')
+            ->addOption('all', 'A', InputOption::VALUE_NONE, 'List all teams in the organization (regardless of a selected project)');
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addExample('List teams (in the current project, if any)');
@@ -58,6 +63,10 @@ class TeamListCommand extends TeamCommandBase
         $organization = $this->selectOrganization($input);
         if (!$organization) {
             return 1;
+        }
+        $selection = new Selection();
+        if ($input->getOption('project') || $this->selector->getCurrentProject()) {
+            $selection = $this->selector->getSelection($input);
         }
 
         $params = [];
@@ -175,7 +184,7 @@ class TeamListCommand extends TeamCommandBase
                 $info[$item['team_id']] = $item['granted_at'];
             }
             $progress->done();
-            $url = isset($data['_links']['next']['href']) ? $data['_links']['next']['href'] : null;
+            $url = $data['_links']['next']['href'] ?? null;
             $pageNumber++;
         } while ($url);
         return $info;

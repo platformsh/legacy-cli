@@ -39,7 +39,8 @@ class DomainListCommand extends DomainCommandBase
     protected function configure()
     {
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**

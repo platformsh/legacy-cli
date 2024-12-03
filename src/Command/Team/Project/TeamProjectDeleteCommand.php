@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Client\Exception\ApiResponseException;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -18,11 +19,12 @@ class TeamProjectDeleteCommand extends TeamCommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
-        $this->selector->addArgument($this->getDefinition())
-            ->addOrganizationOptions($this->getDefinition())
-            ->addTeamOption();
+        $this->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

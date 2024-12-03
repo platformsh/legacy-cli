@@ -473,11 +473,11 @@ abstract class MetricsCommandBase extends CommandBase
      * @return array
      *   Table rows.
      */
-    protected function buildRows(array $values, $fields)
+    protected function buildRows(array $values, array $fields, Environment $environment): array
     {
         $formatter = $this->propertyFormatter;
 
-        $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
+        $deployment = $this->api->getCurrentDeployment($environment);
 
         // Create a closure which can sort services by name, putting apps and
         // workers first.

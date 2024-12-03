@@ -69,7 +69,7 @@ class DiskUsageCommand extends MetricsCommandBase
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
         if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
+            $this->selector->ensurePrintedSelection($selection);
         }
 
         $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
@@ -95,7 +95,7 @@ class DiskUsageCommand extends MetricsCommandBase
             'tmp_iused' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_ilimit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_ipercent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
-        ]);
+        ], $selection->getEnvironment());
 
         if (!$table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;

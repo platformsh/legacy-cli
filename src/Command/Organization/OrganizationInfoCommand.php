@@ -24,8 +24,8 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     }
     protected function configure()
     {
-        $this->selector->addOrganizationOptions($this->getDefinition(), true)
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
