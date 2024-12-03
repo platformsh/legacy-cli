@@ -53,7 +53,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             allowLocalHost: $relationshipsService->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         ));
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {

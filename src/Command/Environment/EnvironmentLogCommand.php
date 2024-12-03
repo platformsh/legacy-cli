@@ -50,7 +50,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $logDir = '/var/log';
 
