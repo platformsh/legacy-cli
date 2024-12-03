@@ -24,10 +24,12 @@ class EnvironmentDrushCommand extends CommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
