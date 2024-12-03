@@ -43,6 +43,7 @@ class DiskUsageCommand extends MetricsCommandBase
      */
     protected function configure()
     {
+        $this->addMetricsOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
