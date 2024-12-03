@@ -48,7 +48,7 @@ class MongoDumpCommand extends CommandBase
         $selection = $this->selector->getSelection($input, new SelectorConfig(
             allowLocalHost: getenv($envPrefix . 'RELATIONSHIPS') !== false,
         ));
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
         if ($host instanceof RemoteHost) {
             $appName = $selection->getAppName();
         } else {

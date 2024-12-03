@@ -69,9 +69,7 @@ class DbSizeCommand extends CommandBase
         $relationships = $this->relationships;
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $relationships->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
-        $container = $selection->getRemoteContainer();
-
-        $host = $this->selector->selectHost($input, null, $selection, $container);
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $database = $relationships->chooseDatabase($host, $input, $output, ['mysql', 'pgsql', 'mongodb']);
         if (empty($database)) {

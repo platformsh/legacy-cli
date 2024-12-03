@@ -62,7 +62,7 @@ class DbDumpCommand extends CommandBase
         );
         // TODO check if this still allows offline use from the container
         $selection = $this->selector->getSelection($input, $selectorConfig);
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
         $gzip = $input->getOption('gzip');
