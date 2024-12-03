@@ -3,7 +3,6 @@ namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\Selector;
-use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
@@ -13,7 +12,6 @@ use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
-use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;

@@ -31,7 +31,7 @@ class EnvironmentXdebugCommand extends CommandBase
             ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addRemoteContainerOptions();
+             ->addRemoteContainerOptions($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
     }

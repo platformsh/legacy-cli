@@ -95,7 +95,7 @@ class RunCommand extends CommandBase
             $success = $monitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
-        if ($success && $this->selectedProjectIsCurrent()) {
+        if ($success && $this->selector->isProjectCurrent()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You may wish to run <info>git pull</info> to update your local repository.');
         }
