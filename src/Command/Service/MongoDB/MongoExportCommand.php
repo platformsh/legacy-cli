@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
@@ -33,8 +34,8 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         $this->addOption('fields', 'f', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The fields to export');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
     }
 
@@ -48,7 +49,11 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         }
 
         $relationshipsService = $this->relationships;
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $selection->getHost();
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {

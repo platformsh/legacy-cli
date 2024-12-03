@@ -23,7 +23,8 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.');
-        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -53,7 +54,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
             $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
-        $this->updateGitUrl($oldGitUrl);
+        $this->updateGitUrl($oldGitUrl, $project);
 
         return 0;
     }

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Doctrine\Common\Cache\CacheProvider;
@@ -32,8 +33,8 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addRemoteContainerOptions($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
         $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
         $this->addExample('Read the deploy log', 'deploy');
@@ -43,15 +44,13 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         if ($input->getOption('tail') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The --tail option cannot be used with "multi"');
         }
 
-        $container = $this->selectRemoteContainer($input);
-        $host = $this->selectHost($input, false, $container);
+        $host = $selection->getHost();
 
         $logDir = '/var/log';
 

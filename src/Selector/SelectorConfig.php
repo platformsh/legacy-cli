@@ -38,11 +38,17 @@ class SelectorConfig
 
     /**
      * Returns an environment filter to select environments that may be active.
-     *
-     * @return callable
      */
     public static function filterEnvsMaybeActive(): callable
     {
         return fn(Environment $e): bool => \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
+    }
+
+    /**
+     * Returns an environment filter to select environments by status.
+     */
+    public static function filterEnvsByStatus(array $statuses): callable
+    {
+        return fn(Environment $e): bool => \in_array($e->status, $statuses, true);
     }
 }

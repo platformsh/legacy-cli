@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\RuntimeOperation;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
@@ -45,15 +46,14 @@ class ListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
 
         // Fetch a list of operations grouped by service name, either for one
         // service or all of the services in an environment.
         try {
             if ($input->getOption('app') || $input->getOption('worker')) {
-                $selectedApp = $this->selectRemoteContainer($input);
+                $selectedApp = $selection->getRemoteContainer();
                 $operations = [
                     $selectedApp->getName() => $selectedApp->getRuntimeOperations(),
                 ];

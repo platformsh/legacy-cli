@@ -12,11 +12,6 @@ use Symfony\Component\Console\Input\InputArgument;
 #[AsCommand(name: 'user:update', description: 'Update user role(s) on a project')]
 class UserUpdateCommand extends UserAddCommand
 {
-
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Selector $selector)
-    {
-        parent::__construct();
-    }
     protected function configure()
     {
         $this

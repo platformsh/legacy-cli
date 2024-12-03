@@ -28,7 +28,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
             );
         $this->addExample('Delete the key 123', '123');
         $help = 'This command lets you delete SSH keys from your account.'
-            . "\n\n" . $this->certificateNotice();
+            . "\n\n" . $this->certificateNotice($this->config);
         $this->setHelp($help);
     }
 

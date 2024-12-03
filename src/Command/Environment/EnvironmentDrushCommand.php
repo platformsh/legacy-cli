@@ -28,8 +28,8 @@ class EnvironmentDrushCommand extends CommandBase
     {
         $this
             ->addArgument('cmd', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'A command to pass to Drush', ['status']);
-        $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Run "drush status" on the remote environment', 'status');
         $this->addExample('Enable the Overlay module on the remote environment', 'en overlay');
@@ -82,8 +82,8 @@ class EnvironmentDrushCommand extends CommandBase
             }
         }
 
-        $appContainer = $this->selectRemoteContainer($input, false);
-        $host = $this->selectHost($input, false, $appContainer);
+        $appContainer = $selection->getRemoteContainer();
+        $host = $selection->getHost();
         $appName = $appContainer->getName();
 
         $selectedEnvironment = $selection->getEnvironment();

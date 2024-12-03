@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
@@ -22,16 +23,12 @@ class EnvironmentXdebugCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
-        $this
-            ->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
+        $this->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
         $this->selector->addProjectOption($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addRemoteContainerOptions($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Connect to Xdebug on the environment, listening locally on port 9000.');
     }
@@ -58,12 +55,9 @@ class EnvironmentXdebugCommand extends CommandBase
 
     /**
      * Checks if a project contains a PHP app.
-     *
-     * @param string $directory
-     *
-     * @return bool
      */
-    private function isPhp($directory) {
+    private function isPhp(string $directory): bool
+    {
         static $isPhp;
         if (!isset($isPhp)) {
             $isPhp = false;
@@ -82,15 +76,13 @@ class EnvironmentXdebugCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
-        $selection->getEnvironment();
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
-        $container = $this->selectRemoteContainer($input);
+        $container = $selection->getRemoteContainer();
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         $config = $container->getConfig()->getNormalized();
-        $ideKey = isset($config['runtime']['xdebug']['idekey']) ? $config['runtime']['xdebug']['idekey'] : '';
+        $ideKey = $config['runtime']['xdebug']['idekey'] ?? '';
 
         if (!$ideKey) {
             $this->stdErr->writeln('<error>No IDE key found.</error>');

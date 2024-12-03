@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
@@ -31,8 +32,8 @@ class EnvironmentScpCommand extends CommandBase
             ->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
             ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories');
         $this->selector->addProjectOption($this->getDefinition());
-        $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addRemoteContainerOptions($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Copy local files a.txt and b.txt to remote mount var/files', "a.txt b.txt remote:var/files");
         $this->addExample('Copy remote files c.txt to current directory', "remote:c.txt .");
@@ -47,10 +48,9 @@ class EnvironmentScpCommand extends CommandBase
             throw new InvalidArgumentException('No files specified');
         }
 
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $container = $selection->getRemoteContainer();
 
-        $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         $ssh = $this->ssh;

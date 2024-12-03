@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Command\CommandBase;
@@ -28,8 +29,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the relationships');
-        $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addAppOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample("View all the current environment's relationships");
         $this->addExample("View the 'main' environment's relationships", 'main');
@@ -39,8 +40,9 @@ class EnvironmentRelationshipsCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $relationshipsService = $this->relationships;
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $relationshipsService->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $host = $selection->getHost();
 
         $relationships = $relationshipsService->getRelationships($host, $input->getOption('refresh'));
 
