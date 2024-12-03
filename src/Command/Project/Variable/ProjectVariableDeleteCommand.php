@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Project\Variable;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -17,14 +18,12 @@ class ProjectVariableDeleteCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
-    public function __construct(private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
         $this

@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Worker;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -17,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WorkerListCommand extends CommandBase
 {
     private array $tableHeader = ['Name', 'Type', 'Commands'];
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
@@ -40,8 +42,7 @@ class WorkerListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         $deployment = $this->api
             ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));

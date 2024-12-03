@@ -129,8 +129,14 @@ class VariableCreateCommand extends VariableCommandBase
             unset($values['prefix']);
         }
 
+        $environment = $selection->getEnvironment();
+
         if (isset($values['environment'])) {
-            $this->selectEnvironment($values['environment']);
+            $environment = $this->api->getEnvironment($values['environment'], $selection->getProject());
+            if (!$environment) {
+                $this->stdErr->writeln(sprintf('Environment not found: <error>%s</error>', $values['environment']));
+                return 1;
+            }
             unset($values['environment']);
         }
 
@@ -170,7 +176,6 @@ class VariableCreateCommand extends VariableCommandBase
                     unset($values['visible_runtime']);
                 }
 
-                $environment = $selection->getEnvironment();
                 if ($environment->getVariable($values['name'])) {
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the environment <error>%s</error>',

@@ -2,8 +2,10 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Mount;
@@ -53,10 +55,8 @@ class MountDownloadCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input);
-
-        /** @var App $container */
-        $container = $this->selectRemoteContainer($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $container = $selection->getRemoteContainer();
         $mountService = $this->mount;
         $mounts = $mountService->mountsFromConfig($container->getConfig());
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
@@ -200,14 +200,12 @@ class MountDownloadCommand extends CommandBase
         return 0;
     }
 
-    /**
-     * @param App $app
-     * @param string                                    $mountPath
-     *
-     * @return string|null
-     */
-    private function getDefaultTarget(App $app, string $mountPath): ?string
+    private function getDefaultTarget(RemoteContainerInterface $app, string $mountPath): ?string
     {
+        if (!$app instanceof App) {
+            return null;
+        }
+
         $mountService = $this->mount;
 
         $appPath = $this->getLocalAppPath($app);

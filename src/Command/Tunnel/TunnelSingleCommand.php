@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
@@ -40,15 +41,14 @@ class TunnelSingleCommand extends TunnelCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $project = $selection->getProject();
         $environment = $selection->getEnvironment();
 
-        $container = $this->selectRemoteContainer($input, false);
+        $container = $selection->getRemoteContainer();
         $appName = $container->getName();
         $sshUrl = $container->getSshUrl();
-        $host = $this->selectHost($input, false, $container);
+        $host = $selection->getHost();
 
         $relationshipsService = $this->relationships;
         $relationships = $relationshipsService->getRelationships($host);

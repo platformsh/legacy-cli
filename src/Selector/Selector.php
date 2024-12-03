@@ -469,10 +469,6 @@ class Selector
      */
     private function offerProjectChoice(array $projectInfos, SelectorConfig  $config)
     {
-        if (!isset($this->input) || !isset($this->output) || !$this->input->isInteractive()) {
-            throw new \BadMethodCallException('Not interactive: a project choice cannot be offered.');
-        }
-
         if (count($projectInfos) >= 25 || count($projectInfos) > (new Terminal())->getHeight() - 3) {
             $autocomplete = [];
             foreach ($projectInfos as $info) {

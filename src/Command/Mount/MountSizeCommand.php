@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
@@ -69,14 +70,16 @@ EOF;
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $host = $this->selectHost($input, getenv($this->config->get('service.env_prefix') . 'APPLICATION'));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->get('service.env_prefix') . 'APPLICATION')));
+        $host = $selection->getHost();
+
         $mountService = $this->mount;
         if ($host instanceof LocalHost) {
             $envVars = $this->remoteEnvVars;
             $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
             $mounts = $mountService->mountsFromConfig($config);
         } else {
-            $container = $this->selectRemoteContainer($input);
+            $container = $selection->getRemoteContainer();
             $mounts = $mountService->mountsFromConfig($container->getConfig());
         }
 
