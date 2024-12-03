@@ -43,6 +43,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
 use Platformsh\Cli\SshCert\Certifier;
+use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -150,6 +151,10 @@ class InjectCommandServicesRector extends AbstractRector
                     $serviceClassBase = end($parts);
                     $propertyName = lcfirst($serviceClassBase);
                     $injections[$serviceClass] = $propertyName;
+                    // Clear doc comments.
+                    if ($node->getDocComment() !== null) {
+                        $node->setAttribute(AttributeKey::COMMENTS, null);
+                    }
                     return new Assign($node->var, $this->nodeFactory->createPropertyFetch('this', $propertyName));
                 }
             }

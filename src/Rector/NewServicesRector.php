@@ -22,9 +22,20 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 
 class NewServicesRector extends AbstractRector
 {
+    private readonly array $transforms;
+
     public function __construct(
         private readonly DependencyInjection $di,
     ) {
+        $this->transforms = [
+            'addResourcesInitOption' => [ResourcesUtil::class, 'addOption', '_'],
+            'validateResourcesInitInput' => [ResourcesUtil::class, 'validateInput', '_'],
+            'warnAboutDeprecatedOptions' => [Io::class, 'warnAboutDeprecatedOptions', '_'],
+            'runSubCommand' => [SubCommandRunner::class, 'run', '_'],
+            'addWaitOptions' => [ActivityMonitor::class, 'addWaitOptions', [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))]],
+            'shouldWait' => [ActivityMonitor::class, 'shouldWait', '_'],
+            'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_']
+        ];
     }
 
     public function getRuleDefinition(): RuleDefinition
@@ -54,23 +65,13 @@ class NewServicesRector extends AbstractRector
         $changed = false;
         $injections = [];
 
-        $transforms = [
-            'addResourcesInitOption' => [ResourcesUtil::class, 'addOption', '_'],
-            'validateResourcesInitInput' => [ResourcesUtil::class, 'validateInput', '_'],
-            'warnAboutDeprecatedOptions' => [Io::class, 'warnAboutDeprecatedOptions', '_'],
-            'runSubCommand' => [SubCommandRunner::class, 'run', '_'],
-            'addWaitOptions' => [ActivityMonitor::class, 'addWaitOptions', [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))]],
-            'shouldWait' => [ActivityMonitor::class, 'shouldWait', '_'],
-            'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_']
-        ];
-
-        $this->traverseNodesWithCallable($node, function (NodeAbstract $node) use ($transforms, &$injections, &$changed) {
-            if (!$node instanceof MethodCall || !isset($transforms[$node->name->name]) || $node->var->name !== 'this') {
+        $this->traverseNodesWithCallable($node, function (NodeAbstract $node) use (&$injections, &$changed) {
+            if (!$node instanceof MethodCall || !isset($this->transforms[$node->name->name]) || $this->getName($node->var) !== 'this') {
                 return null;
             }
             $changed = true;
             /** @var string|Arg[] $args */
-            [$serviceClassName, $methodName, $args] = $transforms[$node->name->name];
+            [$serviceClassName, $methodName, $args] = $this->transforms[$node->name->name];
 
             // Add the injection.
             $serviceClass = '\\' . $serviceClassName;

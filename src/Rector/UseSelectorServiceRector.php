@@ -25,11 +25,13 @@ class UseSelectorServiceRector extends AbstractRector
         'addProjectOption' => 'addProjectOption',
         'addEnvironmentOption' => 'addEnvironmentOption',
         'addAppOption' => 'addAppOption',
+        'addOrganizationOptions' => 'addOrganizationOptions',
     ];
 
     private const SELECTOR_METHODS = [
         'getProjectRoot' => 'getProjectRoot',
         'getCurrentProject' => 'getCurrentProject',
+        'validateOrganizationInput' => 'selectOrganization',
     ];
 
     private const SELECTION_METHODS = [
@@ -80,7 +82,7 @@ class UseSelectorServiceRector extends AbstractRector
             if (!$node instanceof MethodCall) {
                 return null;
             }
-            if ($node->name->name === 'validateInput') {
+            if ($node->name->name === 'validateInput' && $this->getName($node->var) === 'this') {
                 $injectSelector = true;
                 $args = [new Node\Arg(new Variable('input'))];
                 if (count($node->args) > 1) {
@@ -102,26 +104,26 @@ class UseSelectorServiceRector extends AbstractRector
                     new MethodCall(new PropertyFetch(new Variable('this'), 'selector'), 'getSelection', $args),
                 );
             }
-            if ($node->var instanceof MethodCall && isset(self::DEFINITION_METHODS[$node->name->name])) {
-                // Chained method calls.
+            if (isset(self::DEFINITION_METHODS[$node->name->name]) && ($node->var instanceof MethodCall || $this->getName($node->var) === 'this')) {
                 $injectSelector = true;
-                $node->args = [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))];
-                return $node;
+                if ($node->var instanceof MethodCall) {
+                    $node->var = new MethodCall(new PropertyFetch(new Variable('this'), 'selector'), $node->var->name->name, array_merge([new Arg(new MethodCall(new Variable('this'), 'getDefinition'))], $node->var->args));
+                    $node->name = new Node\Identifier(self::DEFINITION_METHODS[$node->name->name]);
+                    $node->args = array_merge([new Arg(new MethodCall(new Variable('this'), 'getDefinition'))], $node->args);
+                    return $node;
+                }
+                return new MethodCall(new PropertyFetch(new Variable('this'), 'selector'), self::DEFINITION_METHODS[$node->name->name], array_merge([
+                    new Arg(new MethodCall(new Variable('this'), 'getDefinition')),
+                ], $node->args));
             }
-            if ($node->var->name === 'this') {
+            if ($this->getName($node->var) === 'this') {
                 if (isset(self::SELECTION_METHODS[$node->name->name])) {
                     $injectSelector = true;
                     return new MethodCall(new Variable('selection'), self::SELECTION_METHODS[$node->name->name]);
                 }
-                if (isset(self::DEFINITION_METHODS[$node->name->name])) {
-                    $injectSelector = true;
-                    return new MethodCall(new PropertyFetch(new Variable('this'), 'selector'), self::DEFINITION_METHODS[$node->name->name], [
-                        new Arg(new MethodCall(new Variable('this'), 'getDefinition')),
-                    ]);
-                }
                 if (isset(self::SELECTOR_METHODS[$node->name->name])) {
                     $injectSelector = true;
-                    return new MethodCall(new PropertyFetch(new Variable('this'), 'selector'), self::SELECTOR_METHODS[$node->name->name]);
+                    return new MethodCall(new PropertyFetch(new Variable('this'), 'selector'), self::SELECTOR_METHODS[$node->name->name], $node->args);
                 }
             }
             return null;
