@@ -97,7 +97,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
                 if (!$continue) {
                     throw $e;
                 }
-                $application->renderException($e, $this->stdErr);
+                $application->renderThrowable($e, $this->stdErr);
                 $success = false;
             }
         }

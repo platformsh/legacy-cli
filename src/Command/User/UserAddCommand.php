@@ -30,10 +30,18 @@ use Symfony\Component\Console\Question\Question;
 class UserAddCommand extends UserCommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    public function __construct(
+        protected readonly ActivityMonitor $activityMonitor,
+        private readonly Api               $api,
+        private readonly Config            $config,
+        private readonly Io                $io,
+        private readonly QuestionHelper    $questionHelper,
+        protected readonly Selector        $selector
+    )
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this

@@ -43,10 +43,7 @@ class EnvironmentInitCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
-        if (!$selection->hasEnvironment()) {
-            $this->selectEnvironment($selection->getProject()->default_branch);
-        }
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false, selectDefaultEnv: true));
 
         $environment = $selection->getEnvironment();
 

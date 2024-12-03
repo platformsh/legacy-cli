@@ -24,7 +24,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Add an integration with a GitHub repository',
             '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
@@ -107,7 +108,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
-        $this->updateGitUrl($oldGitUrl);
+        $this->updateGitUrl($oldGitUrl, $project);
 
         $this->displayIntegration($integration);
 

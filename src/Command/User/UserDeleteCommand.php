@@ -23,7 +23,8 @@ class UserDeleteCommand extends UserCommandBase
     {
         $this
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
-        $this->selector->addProjectOption($this->getDefinition())->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 

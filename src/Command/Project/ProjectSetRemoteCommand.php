@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -115,16 +116,18 @@ class ProjectSetRemoteCommand extends CommandBase
                 return 1;
             }
             $this->stdErr->writeln('');
-            $this->chooseProjectText = 'Enter a number to choose another project:';
-            $this->enterProjectText = 'Enter the ID of another project';
+            $selectorConfig = new SelectorConfig(chooseProjectText: 'Enter a number to choose another project:', enterProjectText: 'Enter the ID of another project');
+        } else {
+            $selectorConfig = null;
         }
 
         $asking = $projectId === null;
-        $project = $this->selectProject($projectId, null, false);
+        $selection = $this->selector->getSelection($input, $selectorConfig);
         if ($asking) {
             $this->stdErr->writeln('');
         }
 
+        $project = $selection->getProject();
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
                 'The remote project for this repository is already set as: %s',
