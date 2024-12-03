@@ -19,11 +19,11 @@ use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\Console\Exception\ExceptionInterface;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\StreamableInputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -212,13 +212,20 @@ class Application extends ParentApplication
     }
 
     /**
+     * @internal
+     */
+    public function setIO(InputInterface $input, OutputInterface $output): void
+    {
+        $this->container()->set(InputInterface::class, $input);
+        $this->container()->set(OutputInterface::class, $output);
+    }
+
+    /**
      * {@inheritdoc}
      */
     protected function configureIO(InputInterface $input, OutputInterface $output): void
     {
-        // Set the input and output in the service container.
-        $this->container()->set(InputInterface::class, $input);
-        $this->container()->set(OutputInterface::class, $output);
+        $this->setIO($input, $output);
 
         parent::configureIO($input, $output);
 
@@ -261,14 +268,8 @@ class Application extends ParentApplication
             if ($input->hasParameterOption('-n', true)) {
                 $stdErr->writeln('<options=reverse>DEPRECATED</> The -n flag (as a shortcut for --no) is deprecated. It will be removed or changed in a future version.');
             }
-        } elseif (\function_exists('posix_isatty')) {
-            $inputStream = null;
-
-            if ($input instanceof StreamableInputInterface) {
-                $inputStream = $input->getStream();
-            }
-
-            if (!@posix_isatty($inputStream) && false === getenv('SHELL_INTERACTIVE')) {
+        } elseif (\function_exists('posix_isatty') && $input instanceof ArgvInput && defined('STDIN')) {
+            if (!@posix_isatty(STDIN) && false === getenv('SHELL_INTERACTIVE')) {
                 $input->setInteractive(false);
             }
         }
