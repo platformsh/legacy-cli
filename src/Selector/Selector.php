@@ -609,7 +609,7 @@ class Selector
      * @throws \Exception
      * @return Environment|false The current environment.
      */
-    public function getCurrentEnvironment(Project $expectedProject = null, $refresh = null)
+    public function getCurrentEnvironment(Project $expectedProject = null, ?bool $refresh = null): Environment|false
     {
         if (!($projectRoot = $this->getProjectRoot())
             || !($project = $this->getCurrentProject(true))
