@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,19 +12,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationDeleteCommand extends OrganizationCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions(true);
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input);
+        $organization = $this->selector->selectOrganization($input);
 
         $subscriptions = $organization->getSubscriptions();
         if (!empty($subscriptions)) {

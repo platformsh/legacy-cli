@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Commit;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -22,7 +23,7 @@ class CommitListCommand extends CommandBase
 {
 
     private array $tableHeader = ['Date', 'SHA', 'Author', 'Summary'];
-    public function __construct(private readonly Api $api, private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -35,8 +36,8 @@ class CommitListCommand extends CommandBase
         $this
             ->addArgument('commit', InputOption::VALUE_REQUIRED, 'The starting Git commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'The number of commits to display.', 10);
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
 
         $definition = $this->getDefinition();
         Table::configureInput($definition, $this->tableHeader);
@@ -51,8 +52,8 @@ class CommitListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $environment = $selection->getEnvironment();
 
         $startSha = $input->getArgument('commit');
         $gitData = $this->gitDataApi;
@@ -72,7 +73,7 @@ class CommitListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getProjectLabel($selection->getProject()),
                 $this->api->getEnvironmentLabel($environment)
             ));
         }

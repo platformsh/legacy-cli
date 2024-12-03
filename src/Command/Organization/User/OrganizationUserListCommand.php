@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
@@ -11,7 +12,6 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Member;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'organization:user:list', description: 'List organization users', aliases: ['org:users'])]
@@ -31,26 +31,22 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         'updated_at' => 'Updated at',
     ];
     private array $defaultColumns = ['id', 'email', 'owner', 'permissions'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
-            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
-            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
-            ->setHiddenAliases(['organization:users'])
-            ->addOrganizationOptions();
+        $this->selector->setHiddenAliases($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input, 'members');
+        $organization = $this->selector->selectOrganization($input, 'members');
 
         if (!$organization->hasLink('members')) {
             $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');

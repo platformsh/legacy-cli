@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -23,7 +24,7 @@ class MemCommand extends MetricsCommandBase
     ];
 
     private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
-    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -35,9 +36,8 @@ class MemCommand extends MetricsCommandBase
     {
         $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
-        $this->addMetricsOptions()
-            ->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -52,7 +52,7 @@ class MemCommand extends MetricsCommandBase
             return 1;
         }
 
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
 
         $table = $this->table;
 
@@ -60,7 +60,7 @@ class MemCommand extends MetricsCommandBase
             $this->displayEnvironmentHeader();
         }
 
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
+        $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
         if ($values === false) {
             return 1;
         }

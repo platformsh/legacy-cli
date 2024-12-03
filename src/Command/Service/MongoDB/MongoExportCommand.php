@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:export', description: 'Export data from MongoDB', aliases: ['mongoexport'])]
 class MongoExportCommand extends CommandBase implements CompletionAwareInterface
 {
-    public function __construct(private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships)
+    public function __construct(private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -32,9 +33,8 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         $this->addOption('fields', 'f', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The fields to export');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addEnvironmentOption($this->getDefinition())
+            ->addAppOption($this->getDefinition());
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
     }
 

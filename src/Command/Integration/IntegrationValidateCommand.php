@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Client\Exception\OperationUnavailableException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -10,6 +11,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:validate', description: 'Validate an existing integration')]
 class IntegrationValidateCommand extends IntegrationCommandBase
 {
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
@@ -17,7 +22,7 @@ class IntegrationValidateCommand extends IntegrationCommandBase
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->setHelp(<<<EOF
 This command allows you to check whether an integration is valid.
 
@@ -34,9 +39,9 @@ EOF
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {

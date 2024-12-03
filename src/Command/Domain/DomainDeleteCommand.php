@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'domain:delete', description: 'Delete a domain from the project')]
 class DomainDeleteCommand extends DomainCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -25,8 +26,8 @@ class DomainDeleteCommand extends DomainCommandBase
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
-        $this->addProjectOption()
-            ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition())
             ->addWaitOptions();
         $this->addExample('Delete the domain example.com', 'example.com');
     }
@@ -36,15 +37,15 @@ class DomainDeleteCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
 
         $forEnvironment = $input->getOption('environment') !== null;
         $name = $input->getArgument('name');
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         if ($forEnvironment) {
             $httpClient = $this->api->getHttpClient();
-            $environment = $this->getSelectedEnvironment();
+            $environment = $selection->getEnvironment();
             $domain = EnvironmentDomain::get($name, $environment->getLink('#domains'), $httpClient);
         }
         else {
@@ -63,7 +64,7 @@ class DomainDeleteCommand extends DomainCommandBase
         // because looping through all the non-production environments to fetch
         // their domains would not be scalable.
         $isProductionDomain = $domain->getProperty('type', false) === 'production'
-            || (!$forEnvironment || $this->getSelectedEnvironment()->type === 'production');
+            || (!$forEnvironment || $selection->getEnvironment()->type === 'production');
         if ($isProductionDomain && $this->supportsNonProductionDomains($project)) {
             // Check the project has at least 1 non-inactive, non-production environment.
             $hasNonProductionActiveEnvs = count(array_filter($this->api->getEnvironments($project), fn(Environment $e): bool => $e->type !== 'production' && $e->status !== 'inactive')) > 0;
@@ -88,7 +89,7 @@ class DomainDeleteCommand extends DomainCommandBase
 
         $this->stdErr->writeln("The domain <info>$name</info> has been deleted.");
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
         }

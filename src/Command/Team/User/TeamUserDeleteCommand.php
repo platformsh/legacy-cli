@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
@@ -10,22 +11,20 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamMember;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:user:delete', description: 'Remove a user from a team')]
 class TeamUserDeleteCommand extends TeamCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID')
-            ->addOrganizationOptions()
+        $this->selector->addArgument($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition())
             ->addTeamOption();
     }
 

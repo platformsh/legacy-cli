@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Config;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -13,6 +14,7 @@ use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
+    private readonly Selector $selector;
     private readonly Relationships $relationships;
     private readonly Config $config;
     const LOCAL_IP = '127.0.0.1';
@@ -20,10 +22,11 @@ abstract class TunnelCommandBase extends CommandBase
     protected $tunnelInfo;
     protected bool $canBeRunMultipleTimes = false;
     #[Required]
-    public function autowire(Config $config, Relationships $relationships) : void
+    public function autowire(Config $config, Relationships $relationships, Selector $selector) : void
     {
         $this->config = $config;
         $this->relationships = $relationships;
+        $this->selector = $selector;
     }
 
     /**
@@ -261,16 +264,16 @@ abstract class TunnelCommandBase extends CommandBase
      */
     protected function filterTunnels(array $tunnels, InputInterface $input)
     {
-        if (!$input->getOption('project') && !$this->getProjectRoot()) {
+        if (!$input->getOption('project') && !$this->selector->getProjectRoot()) {
             return $tunnels;
         }
 
-        if (!$this->hasSelectedProject()) {
-            $this->validateInput($input, true);
+        if (!$selection->hasProject()) {
+            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
         }
-        $project = $this->getSelectedProject();
-        $environment = $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null;
-        $appName = $this->hasSelectedEnvironment() ? $this->selectApp($input) : null;
+        $project = $selection->getProject();
+        $environment = $selection->hasEnvironment() ? $selection->getEnvironment() : null;
+        $appName = $selection->hasEnvironment() ? $this->selectApp($input) : null;
         foreach ($tunnels as $key => $tunnel) {
             if ($tunnel['projectId'] !== $project->id
                 || ($environment !== null && $tunnel['environmentId'] !== $environment->id)

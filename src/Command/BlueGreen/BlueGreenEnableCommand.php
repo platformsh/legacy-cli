@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BlueGreenEnableCommand extends CommandBase
 {
     protected string $stability = 'ALPHA';
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -31,14 +32,14 @@ class BlueGreenEnableCommand extends CommandBase
             . "\n\n" . '100% of traffic is routed to the current version, and 0% to the new version. This can be flipped or changed with the blue-green:deploy command.'
             . "\n\n" . 'While blue/green deployments are "enabled" (while multiple versions exist), the current version is "locked", and deployments (e.g. from Git pushes) affect the new version.'
         );
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $environment = $selection->getEnvironment();
 
         $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));

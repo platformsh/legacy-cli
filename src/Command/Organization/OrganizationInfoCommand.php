@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -17,14 +18,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationInfoCommand extends OrganizationCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions(true)
+        $this->selector->addOrganizationOptions($this->getDefinition(), true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
@@ -40,7 +40,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $property = $input->getArgument('property');
         $value = $input->getArgument('value');
         $skipCache = $value !== null || $input->getOption('refresh');
-        $organization = $this->validateOrganizationInput($input, '', '', $skipCache);
+        $organization = $this->selector->selectOrganization($input, '', '', $skipCache);
 
         $formatter = $this->propertyFormatter;
 

@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -19,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupCreateCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -32,8 +34,8 @@ class BackupCreateCommand extends CommandBase
                 . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
                 . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.'
             );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition())
              ->addWaitOptions();
         $this->addHiddenOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
         $this->setHiddenAliases(['snapshot:create', 'environment:backup']);
@@ -44,11 +46,11 @@ class BackupCreateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['unsafe']);
+        $this->io->warnAboutDeprecatedOptions(['unsafe']);
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
         if (!$selectedEnvironment->operationAvailable('backup', true)) {
             $this->stdErr->writeln(
@@ -61,7 +63,7 @@ class BackupCreateCommand extends CommandBase
                 $this->stdErr->writeln('The environment is not active.');
             } else {
                 try {
-                    if ($this->isUserAdmin($this->getSelectedProject(), $selectedEnvironment, $this->api->getMyUserId())) {
+                    if ($this->isUserAdmin($selection->getProject(), $selectedEnvironment, $this->api->getMyUserId())) {
                         $this->stdErr->writeln('You must be an administrator to create a backup.');
                     }
                 } catch (\Exception $e) {
@@ -93,7 +95,7 @@ class BackupCreateCommand extends CommandBase
         // waitMultiple() below, allowing the backup_name to be extracted.
         $activities = $result->getActivities();
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             // Strongly recommend using --no-wait in a cron job.
             if (!$this->isTerminal(STDIN)) {
                 $this->stdErr->writeln(
@@ -102,7 +104,7 @@ class BackupCreateCommand extends CommandBase
             }
 
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($activities, $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($activities, $selection->getProject());
             if (!$success) {
                 return 1;
             }

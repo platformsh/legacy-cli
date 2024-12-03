@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
@@ -11,7 +12,6 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Team\TeamMember;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:user:list', description: 'List users in a team', aliases: ['team:users'])]
@@ -24,7 +24,7 @@ class TeamUserListCommand extends TeamCommandBase
         'updated_at' => 'Updated at',
     ];
     private array $defaultColumns = ['id', 'email', 'created_at'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -34,9 +34,8 @@ class TeamUserListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination')
-            ->addOrganizationOptions()
+        $this->selector->addOption($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition())
             ->addTeamOption();
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -26,7 +27,7 @@ class DomainListCommand extends DomainCommandBase
         'type' => 'Type',
     ];
     private array $defaultColumns = ['name', 'ssl', 'created_at'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -37,7 +38,7 @@ class DomainListCommand extends DomainCommandBase
     protected function configure()
     {
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -73,10 +74,10 @@ class DomainListCommand extends DomainCommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
         $forEnvironment = $input->getOption('environment') !== null;
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $executable = $this->config->get('application.executable');
         $defaultColumns = $this->defaultColumns;
 
@@ -84,7 +85,7 @@ class DomainListCommand extends DomainCommandBase
             $defaultColumns[] = 'replacement_for';
             $httpClient = $this->api->getHttpClient();
             try {
-                $domains = EnvironmentDomain::getList($this->getSelectedEnvironment(), $httpClient);
+                $domains = EnvironmentDomain::getList($selection->getEnvironment(), $httpClient);
             } catch (ClientException $e) {
                 $this->handleApiException($e, $project);
                 return 1;
@@ -100,7 +101,7 @@ class DomainListCommand extends DomainCommandBase
 
         if (empty($domains)) {
             if ($forEnvironment) {
-                $environment = $this->getSelectedEnvironment();
+                $environment = $selection->getEnvironment();
                 $this->stdErr->writeln(sprintf(
                     'No domains found for the environment %s on the project %s.',
                     $this->api->getEnvironmentLabel($environment),
@@ -140,7 +141,7 @@ class DomainListCommand extends DomainCommandBase
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s, environment %s:',
                     $this->api->getProjectLabel($project),
-                    $this->api->getEnvironmentLabel($this->getSelectedEnvironment())
+                    $this->api->getEnvironmentLabel($selection->getEnvironment())
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
@@ -155,8 +156,8 @@ class DomainListCommand extends DomainCommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             if ($forEnvironment) {
-                $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' [domain-name]';
-                if (!$this->getSelectedEnvironment()->is_main) {
+                $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($selection->getEnvironment()->name) . ' [domain-name]';
+                if (!$selection->getEnvironment()->is_main) {
                     $exampleAddArgs .= ' --attach [attach]';
                 }
             } else {

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -22,7 +23,7 @@ use Symfony\Component\Console\Question\Question;
 class MountDownloadCommand extends CommandBase
 {
     private $localApps;
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -41,8 +42,8 @@ class MountDownloadCommand extends CommandBase
             ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the download (pattern)')
             ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) not to exclude (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addRemoteContainerOptions();
         Ssh::configureInput($this->getDefinition());
     }
@@ -52,7 +53,7 @@ class MountDownloadCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         /** @var App $container */
         $container = $this->selectRemoteContainer($input);
@@ -233,7 +234,7 @@ class MountDownloadCommand extends CommandBase
     {
         if (!isset($this->localApps)) {
             $this->localApps = [];
-            if ($projectRoot = $this->getProjectRoot()) {
+            if ($projectRoot = $this->selector->getProjectRoot()) {
                 $finder = $this->applicationFinder;
                 $this->localApps = $finder->findApplications($projectRoot);
             }
@@ -267,7 +268,7 @@ class MountDownloadCommand extends CommandBase
      */
     private function getSharedDir(App $app)
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             return null;
         }

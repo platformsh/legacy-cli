@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
@@ -13,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'user:get', description: "View a user's role(s)")]
 class UserGetCommand extends UserCommandBase
 {
-    public function __construct(private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -23,8 +26,8 @@ class UserGetCommand extends UserCommandBase
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
             ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition())
              ->addWaitOptions();
 
         // Backwards compatibility.
@@ -53,10 +56,10 @@ class UserGetCommand extends UserCommandBase
             return 1;
         }
 
-        $this->validateInput($input, $level !== 'environment');
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level === 'environment'));
+        $project = $selection->getProject();
 
-        $this->warnAboutDeprecatedOptions(['role']);
+        $this->io->warnAboutDeprecatedOptions(['role']);
 
         $questionHelper = $this->questionHelper;
 
@@ -85,7 +88,7 @@ class UserGetCommand extends UserCommandBase
             '--project' => $project->id,
             '--yes' => true,
         ];
-        return $this->runOtherCommand('user:add', $args, $output);
+        return $this->subCommandRunner->run('user:add', $args, $output);
     }
 
     /**
@@ -97,11 +100,11 @@ class UserGetCommand extends UserCommandBase
     {
         if ($level === 'environment') {
             if ($user instanceof ProjectAccess) {
-                $access = $this->getSelectedEnvironment()->getUser($user->id);
+                $access = $selection->getEnvironment()->getUser($user->id);
                 $currentRole = $access ? $access->role : 'none';
             } else {
                 $typeRoles = $user->getEnvironmentTypeRoles();
-                $envType = $this->getSelectedEnvironment()->type;
+                $envType = $selection->getEnvironment()->type;
                 $currentRole = isset($typeRoles[$envType]) ? $typeRoles[$envType] : 'none';
             }
         } else {

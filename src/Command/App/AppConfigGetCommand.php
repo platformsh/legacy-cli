@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
@@ -14,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:config-get', description: 'View the configuration of an app')]
 class AppConfigGetCommand extends CommandBase
 {
-    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter)
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -26,9 +28,9 @@ class AppConfigGetCommand extends CommandBase
         $this
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
     }
 
@@ -48,8 +50,8 @@ class AppConfigGetCommand extends CommandBase
             $appConfig = new AppConfig($decoded);
         } else {
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $this->validateInput($input);
-            $this->warnAboutDeprecatedOptions(['identity-file']);
+            $selection = $this->selector->getSelection($input);
+            $this->io->warnAboutDeprecatedOptions(['identity-file']);
 
             $appConfig = $this->selectRemoteContainer($input, false)
                 ->getConfig();

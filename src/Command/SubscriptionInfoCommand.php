@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -20,7 +21,7 @@ class SubscriptionInfoCommand extends CommandBase
 {
     /** @var PropertyFormatter|null */
     protected $formatter;
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -36,7 +37,7 @@ class SubscriptionInfoCommand extends CommandBase
             ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addExample('View all subscription properties')
              ->addExample('View the subscription status', 'status')
              ->addExample('View the storage limit (in MiB)', 'storage');
@@ -47,8 +48,8 @@ class SubscriptionInfoCommand extends CommandBase
         $id = $input->getOption('id');
         $project = null;
         if (empty($id)) {
-            $this->validateInput($input);
-            $project = $this->getSelectedProject();
+            $selection = $this->selector->getSelection($input);
+            $project = $selection->getProject();
             $id = $project->getSubscriptionId();
         }
 

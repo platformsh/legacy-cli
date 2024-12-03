@@ -2,39 +2,38 @@
 
 namespace Platformsh\Cli\Command\Resources\Build;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
 class BuildResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
-            ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)')
-            ->addProjectOption();
+        $this->selector->addOption($this->getDefinition())
+            ->addProjectOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $capabilities = $project->getCapabilities();
 
         $capability = $capabilities->getProperty('build_resources', false);
@@ -138,7 +137,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $this->stdErr->writeln('The settings were successfully updated.');
 
-        return $this->runOtherCommand('resources:build:get', ['--project' => $project->id]);
+        return $this->subCommandRunner->run('resources:build:get', ['--project' => $project->id]);
     }
 
     /**

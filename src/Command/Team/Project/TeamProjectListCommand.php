@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
@@ -11,7 +12,6 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Team\TeamProjectAccess;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:project:list', description: 'List projects in a team', aliases: ['team:projects', 'team:pro'])]
@@ -26,7 +26,7 @@ class TeamProjectListCommand extends TeamCommandBase
         'updated_at' => 'Updated at',
     ];
     private array $defaultColumns = ['id', 'title', 'granted_at'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -36,9 +36,8 @@ class TeamProjectListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page (max: ' . self::MAX_COUNT . '). Use 0 to disable pagination')
-            ->addOrganizationOptions()
+        $this->selector->addOption($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition())
             ->addTeamOption();
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);

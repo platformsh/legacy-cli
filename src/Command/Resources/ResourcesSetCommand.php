@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -17,39 +19,19 @@ use Platformsh\Client\Model\Deployment\Worker;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOption('size', 'S', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
-                'Set the profile size (CPU and memory) of apps, workers, or services.'
-                . "\nItems are in the format <info>name:value</info> and may be comma-separated."
-                . "\nThe % or * characters may be used as a wildcard for the name."
-                . "\nList available sizes with the <info>resources:sizes</info> command."
-                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
-            )
-            ->addOption('count', 'C', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
-                'Set the instance count of apps or workers.'
-                . "\nItems are in the format <info>name:value</info> as above."
-            )
-            ->addOption('disk', 'D', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
-                'Set the disk size (in MB) of apps or services.'
-                . "\nItems are in the format <info>name:value</info> as above."
-                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
-            )
-            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything')
-            ->addProjectOption()
-            ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+            ->addEnvironmentOption($this->getDefinition())
             ->addWaitOptions();
 
         $helpLines = [
@@ -76,13 +58,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         try {
             $nextDeployment = $this->loadNextDeployment($environment);
@@ -120,7 +102,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             return 1;
         }
 
-        if (($exitCode = $this->runOtherCommand('resources:get', [
+        if (($exitCode = $this->subCommandRunner->run('resources:get', [
                 '--project' => $environment->project,
                 '--environment' => $environment->id,
             ], $this->stdErr)) !== 0) {
@@ -269,7 +251,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $organization = $this->api->getClient()->getOrganizationById($project->getProperty('organization'));
         $profile = $organization->getProfile();
         if ($input->getOption('force') === false && isset($profile->resources_limit) && $profile->resources_limit) {
@@ -325,9 +307,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('Setting the resources on the environment ' . $this->api->getEnvironmentLabel($environment));
         $result = $nextDeployment->update($updates);
 
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {
                 return 1;
             }

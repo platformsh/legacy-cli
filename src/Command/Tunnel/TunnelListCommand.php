@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -20,7 +21,7 @@ class TunnelListCommand extends TunnelCommandBase
         'url' => 'URL',
     ];
     protected $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
-    public function __construct(private readonly Config $config, private readonly Table $table)
+    public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -29,9 +30,9 @@ class TunnelListCommand extends TunnelCommandBase
     {
         $this
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
