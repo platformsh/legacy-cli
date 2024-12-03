@@ -14,6 +14,7 @@ use Platformsh\Client\Model\BasicProjectInfo;
 use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
 use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -55,7 +56,11 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         $application = new Application();
         $application->setRunningViaMulti();
         $application->setAutoExit(false);
+        $application->setIO($input, $output);
         $command = $application->find($commandName);
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
+        }
         if (!$command instanceof MultiAwareInterface || !$command->canBeRunMultipleTimes()) {
             $this->stdErr->writeln(sprintf(
                 'The command <error>%s</error> cannot be run via "%s multi".',
