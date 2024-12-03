@@ -58,7 +58,7 @@ class DbSqlCommand extends CommandBase
         );
         // TODO check if this still allows offline use from the container
         $selection = $this->selector->getSelection($input, $selectorConfig);
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
