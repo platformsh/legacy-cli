@@ -1,10 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
-use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Cli\Util\Wildcard;
+use Platformsh\Cli\Selector\Selector;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Input\InputOption;
 
 /**
  * This command is the same as team:create, with different documentation.
@@ -13,15 +11,14 @@ use Symfony\Component\Console\Input\InputOption;
 class TeamUpdateCommand extends TeamCreateCommand
 {
 
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this
-            ->addOption('label', null, InputOption::VALUE_REQUIRED, 'Set a new team label')
-            ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')
-            ->addOption('role', 'r', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, "Set the team's project and environment type roles\n"
-                . ArrayArgument::SPLIT_HELP . "\n" . Wildcard::HELP)
-            ->addTeamOption()
-            ->addOrganizationOptions()
+        $this->selector->addTeamOption($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition())
             ->addWaitOptions();
     }
 }

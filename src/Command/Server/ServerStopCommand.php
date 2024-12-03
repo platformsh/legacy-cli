@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,6 +11,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:stop', description: 'Stop local project web server(s)')]
 class ServerStopCommand extends ServerCommandBase
 {
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
@@ -27,7 +32,7 @@ class ServerStopCommand extends ServerCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         $all = $input->getOption('all');
         if (!$all && !$projectRoot) {
             throw new RootNotFoundException('Specify --all to stop all servers, or go to a project directory');

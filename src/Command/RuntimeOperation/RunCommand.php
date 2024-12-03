@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\RuntimeOperation;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -21,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'operation:run', description: 'Run an operation on the environment')]
 class RunCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -30,19 +31,19 @@ class RunCommand extends CommandBase
         $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name');
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name');
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
         $deployment = $this->api->getCurrentDeployment($environment);
 
         try {
@@ -127,9 +128,9 @@ class RunCommand extends CommandBase
         }
 
         $success = true;
-        if ($this->shouldWait($input)) {
+        if ($this->activityMonitor->shouldWait($input)) {
             $monitor = $this->activityMonitor;
-            $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $success = $monitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

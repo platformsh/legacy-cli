@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -17,7 +18,7 @@ use Symfony\Component\Process\Exception\RuntimeException;
 #[AsCommand(name: 'server:run', description: 'Run a local PHP web server')]
 class ServerRunCommand extends ServerCommandBase
 {
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -34,7 +35,7 @@ class ServerRunCommand extends ServerCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }

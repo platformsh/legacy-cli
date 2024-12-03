@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Mount;
 use Platformsh\Cli\Service\RemoteEnvVars;
@@ -27,7 +28,7 @@ class MountSizeCommand extends CommandBase
         'available' => 'Available',
         'percent_used' => '% Used',
     ];
-    public function __construct(private readonly Config $config, private readonly Mount $mount, private readonly RemoteEnvVars $remoteEnvVars, private readonly Table $table)
+    public function __construct(private readonly Config $config, private readonly Mount $mount, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -42,8 +43,8 @@ class MountSizeCommand extends CommandBase
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addRemoteContainerOptions();
         $help = <<<EOF
 Use this command to check the disk size and usage for an application's mounts.

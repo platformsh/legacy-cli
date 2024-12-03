@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
@@ -27,7 +29,7 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'project:get', description: 'Clone a project locally', aliases: ['get'])]
 class ProjectGetCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly LocalBuild $localBuild, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly LocalBuild $localBuild, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SshDiagnostics $sshDiagnostics, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -41,7 +43,7 @@ class ProjectGetCommand extends CommandBase
         if ($this->config->isCommandEnabled('local:build')) {
             $this->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
         }
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }
@@ -54,11 +56,11 @@ class ProjectGetCommand extends CommandBase
         // Validate input options and arguments.
         $this->validateDepth($input);
         $this->mergeProjectArgument($input);
-        $this->validateInput($input, false, true, false);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true, detectCurrentEnv: false));
 
         // Load the main variables we need.
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
+        $project = $selection->getProject();
+        $environment = $selection->getEnvironment();
         $projectLabel = $this->api->getProjectLabel($project);
 
         // If this is being run from inside a Git repository, suggest setting
@@ -99,7 +101,7 @@ class ProjectGetCommand extends CommandBase
 
             $questionHelper = $this->questionHelper;
             if ($questionHelper->confirm($questionText)) {
-                return $this->runOtherCommand('project:set-remote', ['project' => $project->id], $output);
+                return $this->subCommandRunner->run('project:set-remote', ['project' => $project->id], $output);
             }
 
             return 1;
@@ -223,7 +225,7 @@ class ProjectGetCommand extends CommandBase
         if ($this->getApplication()->has('local:drush-aliases') && Drupal::isDrupal($projectRoot)) {
             $this->stdErr->writeln('');
             try {
-                $this->runOtherCommand('local:drush-aliases');
+                $this->subCommandRunner->run('local:drush-aliases');
             } catch (DependencyMissingException $e) {
                 $this->stdErr->writeln(sprintf('<comment>%s</comment>', $e->getMessage()));
             }

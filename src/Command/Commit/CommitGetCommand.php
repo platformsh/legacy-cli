@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Commit;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\GitDataApi;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -15,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CommitGetCommand extends CommandBase
 {
 
-    public function __construct(private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter)
+    public function __construct(private readonly GitDataApi $gitDataApi, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -27,8 +29,8 @@ class CommitGetCommand extends CommandBase
         $this
             ->addArgument('commit', InputArgument::OPTIONAL, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP, 'HEAD')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The commit property to display.');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
 
         $definition = $this->getDefinition();
         PropertyFormatter::configureInput($definition);
@@ -49,12 +51,12 @@ class CommitGetCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
-        $this->validateInput($input, false, true);
+        $this->io->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
 
         $commitSha = $input->getArgument('commit');
         $gitData = $this->gitDataApi;
-        $commit = $gitData->getCommit($this->getSelectedEnvironment(), $commitSha);
+        $commit = $gitData->getCommit($selection->getEnvironment(), $commitSha);
         if (!$commit) {
             if ($commitSha) {
                 $this->stdErr->writeln('Commit not found: <error>' . $commitSha . '</error>');

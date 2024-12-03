@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -13,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class LocalDirCommand extends CommandBase
 {
 
-    public function __construct(private readonly Config $config)
+    public function __construct(private readonly Config $config, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -25,7 +26,7 @@ class LocalDirCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }

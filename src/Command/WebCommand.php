@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Url;
@@ -13,26 +14,26 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WebCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Url $url)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
     }
     protected function configure()
     {
         Url::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Attempt to select the appropriate project and environment.
         try {
-            $this->validateInput($input, true);
-            $environmentId = $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null;
+            $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: false));
+            $environmentId = $selection->hasEnvironment() ? $selection->getEnvironment()->id : null;
         } catch (\Exception $e) {
             // If a project has been specified but is not found, then error out.
-            if ($input->getOption('project') && !$this->hasSelectedProject()) {
+            if ($input->getOption('project') && !$selection->hasProject()) {
                 throw $e;
             }
 
@@ -42,8 +43,8 @@ class WebCommand extends CommandBase
             $environmentId = $input->getOption('environment');
         }
 
-        if ($this->hasSelectedProject()) {
-            $project = $this->getSelectedProject();
+        if ($selection->hasProject()) {
+            $project = $selection->getProject();
             $url = $this->api->getConsoleURL($project);
             if ($environmentId !== null) {
                 // Console links lack the /environments path component.
