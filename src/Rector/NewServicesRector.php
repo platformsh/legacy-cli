@@ -13,6 +13,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Class_;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\Login;
 use Platformsh\Cli\Service\ProjectSshInfo;
 use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -37,6 +38,8 @@ class NewServicesRector extends AbstractRector
             'addWaitOptions' => [ActivityMonitor::class, 'addWaitOptions', [new Arg(new MethodCall(new Variable('this'), 'getDefinition'))]],
             'shouldWait' => [ActivityMonitor::class, 'shouldWait', '_'],
             'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_'],
+            'getNonInteractiveAuthHelp' => [Login::class, 'getNonInteractiveAuthHelp', '_'],
+            'finalizeLogin' => [Login::class, 'finalize', '_'],
         ];
     }
 
