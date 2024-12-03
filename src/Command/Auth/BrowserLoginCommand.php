@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Login;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -27,7 +28,7 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'auth:browser-login', description: 'Log in via a browser', aliases: ['login'])]
 class BrowserLoginCommand extends CommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly Login $login, private readonly QuestionHelper $questionHelper, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -46,7 +47,7 @@ class BrowserLoginCommand extends CommandBase
             . "\n\nIt launches a temporary local website which redirects you to log in if necessary, and then captures the resulting authorization code."
             . "\n\nYour system's default browser will be used. You can override this using the <info>--browser</info> option."
             . "\n\nAlternatively, to log in using an API token (without a browser), run: <info>$executable auth:api-token-login</info>"
-            . "\n\n" . $this->getNonInteractiveAuthHelp();
+            . "\n\n" . $this->login->getNonInteractiveAuthHelp();
         $this->setHelp(\wordwrap($help, 80));
     }
 
@@ -58,7 +59,7 @@ class BrowserLoginCommand extends CommandBase
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive use of this command is not supported.');
-            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
+            $this->stdErr->writeln("\n" . $this->login->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
         if ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1) {
@@ -266,7 +267,7 @@ class BrowserLoginCommand extends CommandBase
         $session = $this->api->getClient(false)->getConnector()->getSession();
         $this->saveAccessToken($token, $session);
 
-        $this->finalizeLogin();
+        $this->login->finalize();
 
         if (empty($token['refresh_token'])) {
             $this->stdErr->writeln('');
