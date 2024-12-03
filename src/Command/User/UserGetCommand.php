@@ -1,7 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\AccessApi;
+use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -16,13 +19,14 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'user:get', description: "View a user's role(s)")]
-class UserGetCommand extends UserCommandBase
+class UserGetCommand extends CommandBase
 {
-    public function __construct(private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly AccessApi $accessApi, private readonly ActivityMonitor $activityMonitor, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
@@ -69,10 +73,10 @@ class UserGetCommand extends UserCommandBase
         // Load the user.
         $email = $input->getArgument('email');
         if ($email === null && $input->isInteractive()) {
-            $email = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user:');
+            $email = $questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user:');
         }
 
-        $selectedUser = $this->loadProjectUser($project, $email);
+        $selectedUser = $this->accessApi->loadProjectUser($project, $email);
         if (!$selectedUser) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
 
