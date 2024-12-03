@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Login;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -19,7 +20,7 @@ use Symfony\Component\Console\Question\Question;
 class ApiTokenLoginCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly TokenConfig $tokenConfig)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Login $login, private readonly QuestionHelper $questionHelper, private readonly TokenConfig $tokenConfig)
     {
         parent::__construct();
     }
@@ -48,7 +49,7 @@ class ApiTokenLoginCommand extends CommandBase
         }
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive use of this command is not supported.');
-            $this->stdErr->writeln("\n" . $this->getNonInteractiveAuthHelp('comment'));
+            $this->stdErr->writeln("\n" . $this->login->getNonInteractiveAuthHelp('comment'));
             return 1;
         }
 
@@ -89,7 +90,7 @@ class ApiTokenLoginCommand extends CommandBase
         $question->setHidden(true);
         $questionHelper->ask($input, $output, $question);
 
-        $this->finalizeLogin();
+        $this->login->finalize();
 
         return 0;
     }
