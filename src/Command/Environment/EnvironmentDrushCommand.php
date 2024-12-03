@@ -83,7 +83,7 @@ class EnvironmentDrushCommand extends CommandBase
         }
 
         $appContainer = $selection->getRemoteContainer();
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
         $appName = $appContainer->getName();
 
         $selectedEnvironment = $selection->getEnvironment();

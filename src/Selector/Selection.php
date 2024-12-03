@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Selector;
 
-use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\RemoteContainer\App;
 use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Client\Model\Environment;
@@ -10,8 +9,16 @@ use Platformsh\Client\Model\Project;
 
 class Selection
 {
-    public function __construct(private readonly ?Project $project = null, private readonly ?Environment $environment = null, private $appName = null, private readonly ?RemoteContainerInterface $remoteContainer = null, private readonly ?HostInterface $host = null)
+    public readonly SelectorConfig $config;
+
+    public function __construct(
+        ?SelectorConfig           $config = null,
+        private readonly ?Project                  $project = null,
+        private readonly ?Environment              $environment = null,
+        private ?string                            $appName = null,
+        private readonly ?RemoteContainerInterface $remoteContainer = null)
     {
+        $this->config = $config ?: new SelectorConfig();
     }
 
     /**
@@ -95,18 +102,5 @@ class Selection
         }
 
         return $this->remoteContainer;
-    }
-
-    /**
-     * Get the remote host, selected based on the environment.
-     *
-     * @return HostInterface
-     */
-    public function getHost() {
-        if (!$this->host) {
-            throw new \BadMethodCallException('No host selected');
-        }
-
-        return $this->host;
     }
 }

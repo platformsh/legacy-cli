@@ -48,7 +48,7 @@ class RedisCliCommand extends CommandBase
             allowLocalHost: $relationshipsService->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         ));
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['redis']);
         if (!$service) {

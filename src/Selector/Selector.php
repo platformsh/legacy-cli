@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Selector;
 
+use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\RemoteContainer\BrokenEnv;
 use Platformsh\Cli\Model\RemoteContainer\Worker;
 use Platformsh\Cli\Model\RemoteContainer\App;
@@ -12,8 +13,6 @@ use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\LocalProject;
 use Platformsh\Cli\Model\Host\HostInterface;
-use Platformsh\Cli\Model\Host\LocalHost;
-use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Model\RemoteContainer\RemoteContainerInterface;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -21,9 +20,6 @@ use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Service\HostFactory;
 use Platformsh\Cli\Service\Identifier;
 use Platformsh\Cli\Service\QuestionHelper;
-use Platformsh\Cli\Service\Shell;
-use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\WebApp;
@@ -65,13 +61,10 @@ class Selector
         private readonly Identifier $identifier,
         private readonly Config $config,
         private readonly Api $api,
+        private readonly HostFactory $hostFactory,
         private readonly LocalProject $localProject,
         private readonly QuestionHelper $questionHelper,
         private readonly Git $git,
-        private readonly HostFactory $hostFactory,
-        private readonly Shell $shell,
-        private readonly Ssh $ssh,
-        private readonly SshDiagnostics $sshDiagnostics,
         OutputInterface $output,
     ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
@@ -103,15 +96,11 @@ class Selector
 
         // Determine whether the localhost can be used.
         $envPrefix = $this->config->get('service.env_prefix');
-        if (LocalHost::conflictsWithCommandLineOptions($input, $envPrefix)) {
-            $allowLocalHost = false;
-        } else {
-            $allowLocalHost = $config->allowLocalHost;
-        }
+        $allowLocalHost = $config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $envPrefix);
 
-        // If the user is not logged in, then return the localhost without selecting the project/environment.
+        // If the user is not logged in, then return an empty selection.
         if ($allowLocalHost && !$config->requireApiOnLocal && !$this->api->isLoggedIn()) {
-            return new Selection(null, null, getenv($envPrefix . 'APPLICATION_NAME') ?: null, null, $this->hostFactory->local());
+            return new Selection($config);
         }
 
         $projectId = $input->hasOption('project') ? $input->getOption('project') : null;
@@ -198,14 +187,7 @@ class Selector
             $remoteContainer = $this->selectRemoteContainer($environment, $input, $appName);
         }
 
-        $host = null;
-        if ($config->allowLocalHost) {
-            $host = $this->hostFactory->local();
-        } elseif ($remoteContainer !== null && $environment !== null) {
-            $host = $this->hostFactory->remote($remoteContainer->getSshUrl(), $environment);
-        }
-
-        $selection = new Selection($project, $environment, $appName, $remoteContainer, $host);
+        $selection = new Selection($config, $project, $environment, $appName, $remoteContainer);
         if ($this->stdErr->isVerbose()) {
             $this->ensurePrintedSelection($selection);
         }
@@ -218,7 +200,7 @@ class Selector
      *
      * @param bool $blankLine Append an extra newline after the message, if any is printed.
      */
-    public function ensurePrintedSelection(Selection $selection, $blankLine = false): void {
+    public function ensurePrintedSelection(Selection $selection, bool $blankLine = false): void {
         $outputAnything = false;
         if ($selection->hasProject() && $this->printedProject !== $selection->getProject()->id) {
             $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($selection->getProject()));
@@ -235,30 +217,16 @@ class Selector
         }
     }
 
-    /**
-     * @param InputInterface $input
-     * @param SelectorConfig $config
-     * @param Selection|null $selection
-     * @param RemoteContainerInterface|null $remoteContainer
-     * @return HostInterface
-     */
-    public function selectHost(InputInterface $input, ?SelectorConfig $config = null, ?Selection $selection = null, ?RemoteContainerInterface $remoteContainer = null): HostInterface
+    public function getHostFromSelection(InputInterface $input, Selection $selection): HostInterface
     {
-        if ($config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
+        $envPrefix = $this->config->get('service.env_prefix');
+        $allowLocalHost = $selection->config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $envPrefix);
+        if ($allowLocalHost) {
             $this->debug('Selected host: localhost');
-
-            return new LocalHost($this->shell);
+            return $this->hostFactory->local();
         }
 
-        if ($remoteContainer === null) {
-            if (!$selection) {
-                $config = $config ? $config->with(envRequired: true, chooseEnvFilter: $config->chooseEnvFilter ?: SelectorConfig::filterEnvsMaybeActive())
-                    : new SelectorConfig(envRequired: true, chooseEnvFilter: $config->chooseEnvFilter ?: SelectorConfig::filterEnvsMaybeActive());
-                $selection = $this->getSelection($input, $config);
-            }
-            $remoteContainer = $this->selectRemoteContainer($selection->getEnvironment(), $input, $selection->getAppName());
-        }
-
+        $remoteContainer = $selection->getRemoteContainer();
         $instanceId = $input->hasOption('instance') ? $input->getOption('instance') : null;
         if ($input->hasOption('instance') && $instanceId !== null) {
             $instances = $selection->getEnvironment()->getSshInstanceURLs($remoteContainer->getName());
@@ -269,12 +237,9 @@ class Selector
 
         $sshUrl = $remoteContainer->getSshUrl($instanceId);
         $this->debug('Selected host: ' . $sshUrl);
-        return new RemoteHost($sshUrl, $selection->getEnvironment(), $this->ssh, $this->shell, $this->sshDiagnostics);
+        return $this->hostFactory->remote($sshUrl, $selection->getEnvironment());
     }
 
-    /**
-     * @return bool
-     */
     public function isProjectCurrent(Project $project): bool
     {
         $current = $this->getCurrentProject(true);
@@ -283,16 +248,9 @@ class Selector
     }
 
     /**
-     * Select the project for the user, based on input or the environment.
-     *
-     * @param InputInterface $input
-     * @param SelectorConfig $config
-     * @param string|null $projectId
-     * @param string|null $host
-     *
-     * @return Project
+     * Selects the project for the user, based on input or the environment.
      */
-    private function selectProject(InputInterface $input, SelectorConfig $config, $projectId = null, $host = null)
+    private function selectProject(InputInterface $input, SelectorConfig $config, ?string $projectId = null, ?string $host = null): Project
     {
         if (!empty($projectId)) {
             $project = $this->api->getProject($projectId, $host);
@@ -376,8 +334,9 @@ class Selector
      *   environment.
      *
      * @return Environment|null
+     * @throws \Exception
      */
-    private function selectEnvironment(InputInterface $input, Project $project, SelectorConfig $config, ?string $environmentId = null)
+    private function selectEnvironment(InputInterface $input, Project $project, SelectorConfig $config, ?string $environmentId = null): ?Environment
     {
         $envPrefix = $this->config->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -467,7 +426,7 @@ class Selector
      * @return string
      *   The chosen project ID.
      */
-    private function offerProjectChoice(array $projectInfos, SelectorConfig  $config)
+    private function offerProjectChoice(array $projectInfos, SelectorConfig $config): string
     {
         if (count($projectInfos) >= 25 || count($projectInfos) > (new Terminal())->getHeight() - 3) {
             $autocomplete = [];
@@ -506,18 +465,16 @@ class Selector
      * @param InputInterface $input
      * @param Project $project
      * @param SelectorConfig $config
-     * @param Environment[]|null $environments
+     * @param Environment[] $environments
      * @return Environment
      */
-    private function offerEnvironmentChoice(InputInterface $input, Project $project, SelectorConfig $config, array $environments)
+    private function offerEnvironmentChoice(InputInterface $input, Project $project, SelectorConfig $config, array $environments): Environment
     {
         if (!$input->isInteractive()) {
             throw new \BadMethodCallException('Not interactive: an environment choice cannot be offered.');
         }
 
-        $environments = $environments !== null ? $environments : $this->api->getEnvironments($project);
-        $defaultEnvironment = $this->api->getDefaultEnvironment($environments, $project);
-        $defaultEnvironmentId = $defaultEnvironment ? $defaultEnvironment->id : null;
+        $defaultEnvironmentId = $this->api->getDefaultEnvironment($environments, $project)?->id;
 
         if (count($environments) > (new Terminal())->getHeight() / 2) {
             $ids = array_keys($environments);
@@ -557,7 +514,7 @@ class Selector
      *
      * @throws \RuntimeException
      */
-    public function getCurrentProject($suppressErrors = false)
+    public function getCurrentProject(bool $suppressErrors = false): Project|false
     {
         if (isset($this->currentProject)) {
             return $this->currentProject;
@@ -731,7 +688,7 @@ class Selector
      * @param bool $includeWorkers
      * @param bool $includeOrganizations
      */
-    public function addAllOptions(InputDefinition $inputDefinition, $includeWorkers = false, $includeOrganizations = false): void
+    public function addAllOptions(InputDefinition $inputDefinition, bool $includeWorkers = false, bool $includeOrganizations = false): void
     {
         $this->addProjectOption($inputDefinition);
         $this->addEnvironmentOption($inputDefinition);
@@ -750,14 +707,14 @@ class Selector
      * Needs the --app and --worker options, as applicable.
      *
      * @param Environment $environment
-     * @param InputInterface                       $input
+     * @param InputInterface $input
      *   The user input object.
-     * @param string|null                          $appName
+     * @param string|null $appName
      *
      * @return RemoteContainerInterface
      *   A class representing a container that allows SSH access.
      */
-    private function selectRemoteContainer(Environment $environment, InputInterface $input, $appName): BrokenEnv|Worker|App
+    private function selectRemoteContainer(Environment $environment, InputInterface $input, ?string $appName): RemoteContainerInterface
     {
         $includeWorkers = $input->hasOption('worker');
         try {
@@ -911,7 +868,7 @@ class Selector
      *    Adds a --project option which means the organization may be
      *    auto-selected based on the current or specified project.
      */
-    public function addOrganizationOptions(InputDefinition $definition, $includeProjectOption = false): void
+    public function addOrganizationOptions(InputDefinition $definition, bool $includeProjectOption = false): void
     {
         if ($this->config->getWithDefault('api.organizations', false)) {
             $definition->addOption(new InputOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)'));
@@ -941,14 +898,14 @@ class Selector
      *
      * @todo include this in getSelection according to config
      */
-    public function selectOrganization(InputInterface $input, $filterByLink = '', $filterByCapability = '', $skipCache = false)
+    public function selectOrganization(InputInterface $input, string $filterByLink = '', string $filterByCapability = '', bool $skipCache = false): Organization
     {
         if (!$this->config->getWithDefault('api.organizations', false)) {
             throw new \BadMethodCallException('Organizations are not enabled');
         }
 
         $explicitProject = $input->hasOption('project') && $input->getOption('project');
-        $selection = $explicitProject ? $this->getSelection($input, new SelectorConfig()) : new Selection();
+        $selection = $explicitProject ? $this->getSelection($input) : new Selection();
 
         if ($identifier = $input->getOption('org')) {
             // Organization names have to be lower case, while organization IDs are the uppercase ULID format.
@@ -990,7 +947,7 @@ class Selector
             if ($organization) {
                 if ($filterByLink === '' || $organization->hasLink($filterByLink)) {
                     if ($this->stdErr->isVerbose()) {
-                        $this->ensurePrintedSelection(new Selection($currentProject));
+                        $this->ensurePrintedSelection(new Selection(project: $currentProject));
                         $this->stdErr->writeln(\sprintf('Project organization: %s', $this->api->getOrganizationLabel($organization)));
                     }
                     return $organization;

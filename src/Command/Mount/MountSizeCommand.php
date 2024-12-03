@@ -71,7 +71,7 @@ EOF;
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->get('service.env_prefix') . 'APPLICATION')));
-        $host = $selection->getHost();
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $mountService = $this->mount;
         if ($host instanceof LocalHost) {
