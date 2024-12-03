@@ -1,7 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\AccessApi;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -12,14 +14,19 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'user:delete', description: 'Delete a user from the project')]
-class UserDeleteCommand extends UserCommandBase
+class UserDeleteCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    public function __construct(private readonly AccessApi         $accessApi,
+                                protected readonly ActivityMonitor $activityMonitor,
+                                private readonly Api               $api,
+                                private readonly QuestionHelper    $questionHelper,
+                                private readonly Selector          $selector)
     {
         parent::__construct();
     }
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
@@ -34,13 +41,13 @@ class UserDeleteCommand extends UserCommandBase
         $project = $selection->getProject();
         $email = $input->getArgument('email');
 
-        $selection = $this->loadProjectUser($project, $email);
+        $selection = $this->accessApi->loadProjectUser($project, $email);
         if (!$selection) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
             return 1;
         }
         $userId = $selection instanceof ProjectUserAccess ? $selection->user_id : $selection->id;
-        $email = $selection instanceof ProjectUserAccess ? $selection->getUserInfo()->email : $this->legacyUserInfo($selection)['email'];
+        $email = $selection instanceof ProjectUserAccess ? $selection->getUserInfo()->email : $this->accessApi->legacyUserInfo($selection)['email'];
 
         if ($project->owner === $userId) {
             $this->stdErr->writeln(sprintf(
@@ -65,7 +72,7 @@ class UserDeleteCommand extends UserCommandBase
         if ($result->getActivities() && $this->activityMonitor->shouldWait($input)) {
             $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
-        } elseif (!$this->centralizedPermissionsEnabled()) {
+        } elseif (!$this->accessApi->centralizedPermissionsEnabled()) {
             $this->api->redeployWarning();
         }
 

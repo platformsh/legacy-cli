@@ -1,7 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\AccessApi;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -12,9 +14,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'user:list', description: 'List project users', aliases: ['users'])]
-class UserListCommand extends UserCommandBase
+class UserListCommand extends CommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'email' => 'Email address',
         'name' => 'Name',
         'role' => 'Project role',
@@ -23,14 +25,21 @@ class UserListCommand extends UserCommandBase
         'updated_at' => 'Updated at',
     ];
     private array $defaultColumns = ['email', 'name', 'role', 'id'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+
+    public function __construct(
+        private readonly AccessApi $accessApi,
+        private readonly Api               $api,
+        private readonly Config            $config,
+        private readonly PropertyFormatter $propertyFormatter,
+        private readonly Selector          $selector,
+        private readonly Table             $table)
     {
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
-        if ($this->centralizedPermissionsEnabled()) {
+        if ($this->accessApi->centralizedPermissionsEnabled()) {
             $this->tableHeader['permissions'] = 'Permissions';
         }
 
@@ -49,7 +58,7 @@ class UserListCommand extends UserCommandBase
 
         $rows = [];
 
-        if ($this->centralizedPermissionsEnabled()) {
+        if ($this->accessApi->centralizedPermissionsEnabled()) {
             $result = ProjectUserAccess::getCollectionWithParent($project->getUri() . '/user-access', $this->api->getHttpClient(), ['query' => ['page[size]' => 200]]);
             /** @var ProjectUserAccess $item */
             foreach ($result['items'] as $item) {
@@ -66,7 +75,7 @@ class UserListCommand extends UserCommandBase
             }
         } else {
             foreach ($project->getUsers() as $projectAccess) {
-                $info = $this->legacyUserInfo($projectAccess);
+                $info = $this->accessApi->legacyUserInfo($projectAccess);
                 $rows[] = [
                     'email' => $info['email'],
                     'name' => $info['display_name'],
@@ -108,7 +117,7 @@ class UserListCommand extends UserCommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln("To view a user's role(s), run: <info>$executable user:get</info>");
             $this->stdErr->writeln("To change a user's role(s), run: <info>$executable user:update</info>");
-            if ($this->centralizedPermissionsEnabled() && $this->config->get('api.teams')) {
+            if ($this->accessApi->centralizedPermissionsEnabled() && $this->config->get('api.teams')) {
                 $organization = $this->api->getOrganizationById($project->getProperty('organization'));
                 if (in_array('teams', $organization->capabilities) && $organization->hasLink('members')) {
                     $this->stdErr->writeln('');
