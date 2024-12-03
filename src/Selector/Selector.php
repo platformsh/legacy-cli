@@ -162,13 +162,13 @@ class Selector
             }
             if (!is_array($argument)) {
                 $this->debug('Selecting environment based on input argument');
-                $environment = $this->selectEnvironment($input, $project, $argument);
+                $environment = $this->selectEnvironment($input, $project, $config, $argument);
             }
         } elseif ($input->hasOption($envOptionName)) {
             if ($input->getOption($envOptionName) !== null) {
                 $environmentId = $input->getOption($envOptionName);
             }
-            $environment = $this->selectEnvironment($input, $project, $environmentId, $config->envRequired);
+            $environment = $this->selectEnvironment($input, $project, $config, $environmentId);
         }
 
         // Select the app.
@@ -368,18 +368,16 @@ class Selector
      * Select the current environment for the user.
      *
      * @param InputInterface $input
-     * @param Project                                         $project
+     * @param Project $project
      *   The project, or null if no project is selected.
      * @param SelectorConfig $config
-     * @param string|null                                     $environmentId
+     * @param string|null $environmentId
      *   The environment ID specified by the user, or null to auto-detect the
      *   environment.
-     * @param bool                                            $required
-     *   Whether it's required to have an environment.
      *
      * @return Environment|null
      */
-    private function selectEnvironment(InputInterface $input, Project $project, SelectorConfig $config, $environmentId = null, $required = true, $filter = null)
+    private function selectEnvironment(InputInterface $input, Project $project, SelectorConfig $config, ?string $environmentId = null)
     {
         $envPrefix = $this->config->get('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
@@ -427,11 +425,10 @@ class Selector
             }
         }
 
-        if ($required && $input->isInteractive()) {
+        if ($config->envRequired && $input->isInteractive()) {
             $environments = $this->api->getEnvironments($project);
-            $filter = $filter ?: $config->chooseEnvFilter;
-            if ($filter !== null) {
-                $environments = array_filter($environments, $filter);
+            if ($config->chooseEnvFilter !== null) {
+                $environments = array_filter($environments, $config->chooseEnvFilter);
             }
             if (count($environments) === 1) {
                 $only = reset($environments);
@@ -447,7 +444,7 @@ class Selector
                 . "\n" . 'Specify one manually using --environment (-e).');
         }
 
-        if ($required) {
+        if ($config->envRequired) {
             if ($this->getProjectRoot() || !$config->detectCurrentEnv) {
                 $message = 'Could not determine the current environment.'
                     . "\n" . 'Specify it manually using --environment (-e).';
