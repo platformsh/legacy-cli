@@ -3,6 +3,7 @@ namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\Selection;
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
@@ -42,6 +43,13 @@ abstract class DomainCommandBase extends CommandBase
         $this->selector = $selector;
     }
 
+    protected function isForEnvironment(InputInterface $input): bool
+    {
+        return ($input->hasOption('environment') && $input->getOption('environment') !== null)
+            || ($input->hasOption('attach') && $input->getOption('attach') !== null)
+            || ($input->hasOption('replace') && $input->getOption('replace') !== null);
+    }
+
     protected function validateDomainInput(InputInterface $input, Selection $selection): bool
     {
         $this->domainName = $input->getArgument('name');
@@ -69,22 +77,21 @@ abstract class DomainCommandBase extends CommandBase
 
         if ($input->hasOption('environment') || $input->hasOption('attach')) {
             $project = $selection->getProject();
-            $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
-                || ($input->hasOption('attach') && $input->getOption('attach') !== null)
-                || ($input->hasOption('replace') && $input->getOption('replace') !== null);
-
             $supportsNonProduction = $this->supportsNonProductionDomains($project);
 
-            if ($forEnvironment) {
-                $this->selectEnvironment($input->getOption('environment'), true, false, true, fn(Environment $e): bool => $e->type !== 'production' && $e->id !== $project->default_branch);
+            if ($this->isForEnvironment($input)) {
                 $environment = $selection->getEnvironment();
-                $this->environmentIsProduction = $environment->id === $project->default_branch;
-                $this->ensurePrintSelectedEnvironment(true);
+                $this->environmentIsProduction = $environment->type === 'production' || $environment->id === $project->default_branch;
+                $this->selector->ensurePrintedSelection($selection);
             } elseif ($project->default_branch === null) {
                 $this->stdErr->writeln('The <error>default_branch</error> property is not set on the project, so the production environment cannot be determined');
                 return false;
             } else {
-                $this->selectEnvironment($project->default_branch, true, false, false);
+                $environment = $this->api->getEnvironment($project->default_branch, $project);
+                if (!$environment) {
+                    $this->stdErr->writeln(sprintf('Environment not found: <error>%s</error>', $project->default_branch));
+                    return false;
+                }
                 $this->environmentIsProduction = true;
                 if ($input->hasOption('attach') && $supportsNonProduction) {
                     $this->stdErr->writeln('Use the <comment>--environment</comment> option (and optionally <comment>--attach</comment>) to add a domain to a non-production environment.');

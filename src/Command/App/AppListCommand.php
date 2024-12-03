@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\App;
 
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
@@ -42,8 +43,7 @@ class AppListCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $selection = $this->selector->getSelection($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         // Find a list of deployed web apps.
         $deployment = $this->api
@@ -71,7 +71,7 @@ class AppListCommand extends CommandBase
         // @todo The "Local path" column is mainly here for legacy reasons, and can be removed in a future version.
         $showLocalPath = false;
         $localApps = [];
-        if (($projectRoot = $this->selector->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config->has('service.app_config_file')) {
+        if (($projectRoot = $this->selector->getProjectRoot()) && $this->selector->isProjectCurrent($selection->getProject()) && $this->config->has('service.app_config_file')) {
             $finder = $this->applicationFinder;
             $localApps = $finder->findApplications($projectRoot);
             $showLocalPath = true;

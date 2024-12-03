@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -39,15 +40,13 @@ class MountListCommand extends CommandBase
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
-        $this->addRemoteContainerOptions();
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $mountService = $this->mount;
+        $environment = null;
         if (($applicationEnv = getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
             && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
             $this->io->debug('Selected host: localhost');
@@ -64,10 +63,9 @@ class MountListCommand extends CommandBase
                 return 0;
             }
         } else {
-            $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $selection = $this->selector->getSelection($input);
+            $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
             $environment = $selection->getEnvironment();
-            $container = $this->selectRemoteContainer($input);
+            $container = $selection->getRemoteContainer();
             if ($container instanceof BrokenEnv) {
                 $this->stdErr->writeln(sprintf(
                     'Unable to find deployment information for the environment: %s',
@@ -103,9 +101,9 @@ class MountListCommand extends CommandBase
         }
 
         $table = $this->table;
-        if ($selection->hasEnvironment()) {
+        if ($environment !== null) {
             $this->stdErr->writeln(sprintf('Mounts on environment %s, %s <info>%s</info>:',
-                $this->api->getEnvironmentLabel($selection->getEnvironment()),
+                $this->api->getEnvironmentLabel($environment),
                 $appType,
                 $appName
             ));
