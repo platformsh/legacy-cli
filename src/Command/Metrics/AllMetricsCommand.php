@@ -56,11 +56,11 @@ class AllMetricsCommand extends MetricsCommandBase
      */
     protected function configure()
     {
-        $this
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));
         $this->addExample('Show metrics in five-minute intervals over the last hour', '-i 5m -r 1h');
         $this->addExample('Show metrics for all SQL services', '--type mariadb,%sql');
+        $this->addMetricsOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
