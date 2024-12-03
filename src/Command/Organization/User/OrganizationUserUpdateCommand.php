@@ -2,7 +2,6 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
-use Platformsh\Cli\Selector\Selector;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 

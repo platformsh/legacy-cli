@@ -32,7 +32,7 @@ class EnvironmentScpCommand extends CommandBase
             ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition())
-            ->addRemoteContainerOptions();
+            ->addRemoteContainerOptions($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Copy local files a.txt and b.txt to remote mount var/files', "a.txt b.txt remote:var/files");
         $this->addExample('Copy remote files c.txt to current directory', "remote:c.txt .");

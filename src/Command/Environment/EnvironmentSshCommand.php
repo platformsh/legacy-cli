@@ -36,7 +36,7 @@ class EnvironmentSshCommand extends CommandBase
             ->addOption('option', 'o', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Pass an extra option to SSH');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition())
-             ->addRemoteContainerOptions();
+             ->addRemoteContainerOptions($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open a shell over SSH');
         $this->addExample('Pass an extra option to SSH', "-o 'RequestTTY force'");
