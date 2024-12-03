@@ -1,6 +1,10 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -17,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:branch', description: 'Branch an environment', aliases: ['branch'])]
 class EnvironmentBranchCommand extends CommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -31,9 +35,9 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
             ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
-        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->resourcesUtil->addOption(['parent', 'default', 'minimum']);
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition())
              ->addWaitOptions();
         $this->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used');
         $this->addHiddenOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
@@ -42,20 +46,20 @@ class EnvironmentBranchCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['force', 'identity-file']);
+        $this->io->warnAboutDeprecatedOptions(['force', 'identity-file']);
 
         $this->envArgName = 'parent';
         $this->chooseEnvText = 'Enter a number to choose a parent environment:';
         $this->enterEnvText = 'Enter the ID of the parent environment';
         $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $branchName = $input->getArgument('id');
-        $this->validateInput($input, $branchName === null);
-        $selectedProject = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $branchName !== null));
+        $selectedProject = $selection->getProject();
 
         if ($branchName === null) {
             if ($input->isInteractive()) {
                 // List environments.
-                return $this->runOtherCommand(
+                return $this->subCommandRunner->run(
                     'environments',
                     ['--project' => $selectedProject->id]
                 );
@@ -65,14 +69,14 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $parentEnvironment = $this->getSelectedEnvironment();
+        $parentEnvironment = $selection->getEnvironment();
 
         if ($branchName === $parentEnvironment->id && ($e = $this->getCurrentEnvironment($selectedProject)) && $e->id === $branchName) {
             $this->stdErr->writeln('Already on <comment>' . $branchName . '</comment>');
             return 1;
         }
 
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         $dryRun = $input->getOption('dry-run');
         $checkoutLocally = $projectRoot && !$input->getOption('no-checkout');
 
@@ -87,7 +91,7 @@ class EnvironmentBranchCommand extends CommandBase
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
             if ($checkout) {
-                return $this->runOtherCommand(
+                return $this->subCommandRunner->run(
                     'environment:checkout',
                     ['id' => $environment->id]
                 );
@@ -102,7 +106,7 @@ class EnvironmentBranchCommand extends CommandBase
             );
 
             if ($parentEnvironment->getProperty('has_remote', false) === true
-                && ($integration = $this->api->getCodeSourceIntegration($this->getSelectedProject()))
+                && ($integration = $this->api->getCodeSourceIntegration($selection->getProject()))
                 && $integration->getProperty('prune_branches', false) === true) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf("The project's branches are managed externally through its <info>%s</info> integration.", $integration->type));
@@ -121,7 +125,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $selectedProject);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $selectedProject);
         if ($resourcesInit === false) {
             return 1;
         }
@@ -200,7 +204,7 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if ($this->shouldWait($input) && !$dryRun && $activities) {
+        if ($this->activityMonitor->shouldWait($input) && !$dryRun && $activities) {
             $activityMonitor = $this->activityMonitor;
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
             $this->api->clearEnvironmentsCache($selectedProject->id);

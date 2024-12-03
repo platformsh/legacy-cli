@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:mongo:restore', description: 'Restore a binary archive dump of data into MongoDB', aliases: ['mongorestore'])]
 class MongoRestoreCommand extends CommandBase
 {
-    public function __construct(private readonly Relationships $relationships)
+    public function __construct(private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,9 +25,8 @@ class MongoRestoreCommand extends CommandBase
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addEnvironmentOption($this->getDefinition())
+            ->addAppOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

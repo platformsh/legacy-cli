@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -18,14 +19,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:get', description: 'View an organization user')]
 class OrganizationUserGetCommand extends OrganizationCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions()
+        $this->selector->addOrganizationOptions($this->getDefinition())
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'A property to display');
         PropertyFormatter::configureInput($this->getDefinition());
@@ -34,7 +34,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input, 'members');
+        $organization = $this->selector->selectOrganization($input, 'members');
 
         if (!$organization->hasLink('members')) {
             $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');

@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\BlueGreen;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BlueGreenDeployCommand extends CommandBase
 {
     protected string $stability = 'ALPHA';
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -26,14 +27,14 @@ class BlueGreenDeployCommand extends CommandBase
         $this
             ->addOption('routing-percentage', null, InputOption::VALUE_REQUIRED, "Set the latest version's routing percentage", 100)
             ->setHelp('Use this command to deploy the latest (green) version, or otherwise change its routing percentage, during a blue/green deployment.');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(selectDefaultEnv: true));
+        $environment = $selection->getEnvironment();
 
         $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));

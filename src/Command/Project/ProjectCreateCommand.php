@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Git;
@@ -34,7 +36,7 @@ class ProjectCreateCommand extends CommandBase
 {
     private ?array $plansCache = null;
     private $regionsCache;
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -44,7 +46,7 @@ class ProjectCreateCommand extends CommandBase
      */
     protected function configure()
     {
-        $this->addOrganizationOptions();
+        $this->selector->addOrganizationOptions($this->getDefinition());
 
         Form::fromArray($this->getFields())->configureInputDefinition($this->getDefinition());
 
@@ -95,14 +97,14 @@ EOF
         $setupOptions = null;
         if ($this->config->getWithDefault('api.organizations', false)) {
             try {
-                $organization = $this->validateOrganizationInput($input, 'create-subscription');
+                $organization = $this->selector->selectOrganization($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
                 $this->stdErr->writeln('You do not yet own nor belong to an organization in which you can create a project.');
                 if ($e->getTotalNumOrgs() === 0 && $input->isInteractive() && $this->config->isCommandEnabled('organization:create') && $questionHelper->confirm('Do you want to create an organization now?')) {
-                    if ($this->runOtherCommand('organization:create') !== 0) {
+                    if ($this->subCommandRunner->run('organization:create') !== 0) {
                         return 1;
                     }
-                    $organization = $this->validateOrganizationInput($input, 'create-subscription');
+                    $organization = $this->selector->selectOrganization($input, 'create-subscription');
                 } else {
                     return 1;
                 }
@@ -120,7 +122,7 @@ EOF
 
         // Validate the --set-remote option.
         $setRemote = (bool) $input->getOption('set-remote');
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         $gitRoot = $projectRoot !== false ? $projectRoot : $git->getRoot();
         if ($setRemote && $gitRoot === false) {
             $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository directory.');
@@ -134,7 +136,7 @@ EOF
 
         if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
             try {
-                $currentProject = $this->getCurrentProject();
+                $currentProject = $this->selector->getCurrentProject();
             } catch (ProjectNotFoundException) {
                 $currentProject = false;
             } catch (BadResponseException $e) {
@@ -395,7 +397,7 @@ EOF
             $this->stdErr->writeln('Phone number verification is required before creating a project.');
             if ($input->isInteractive()) {
                 $this->stdErr->writeln('');
-                $exitCode = $this->runOtherCommand('auth:verify-phone-number');
+                $exitCode = $this->subCommandRunner->run('auth:verify-phone-number');
                 if ($exitCode === 0) {
                     $this->stdErr->writeln('');
                     return true;

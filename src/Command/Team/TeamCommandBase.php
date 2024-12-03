@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
@@ -18,15 +19,17 @@ use Symfony\Component\Console\Input\InputOption;
 
 class TeamCommandBase extends CommandBase
 {
+    private readonly Selector $selector;
     private readonly QuestionHelper $questionHelper;
     private readonly Config $config;
     private readonly Api $api;
     #[Required]
-    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
     {
         $this->api = $api;
         $this->config = $config;
         $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
     }
     public function isEnabled(): bool
     {
@@ -56,7 +59,7 @@ class TeamCommandBase extends CommandBase
     protected function selectOrganization(InputInterface $input)
     {
         try {
-            $organization = $this->validateOrganizationInput($input, 'members', 'teams');
+            $organization = $this->selector->selectOrganization($input, 'members', 'teams');
         } catch (NoOrganizationsException $e) {
             if ($e->getTotalNumOrgs() === 0) {
                 $this->stdErr->writeln('No organizations found.');

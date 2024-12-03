@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentUrlCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Url $url)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -26,8 +27,8 @@ class EnvironmentUrlCommand extends CommandBase
         $this
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
         Url::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
         $this->addExample('Give a choice of URLs to open (or print all URLs if there is no browser)');
         $this->addExample('Print all URLs', '--pipe');
         $this->addExample('Print and/or open the primary route URL', '--primary');
@@ -48,8 +49,8 @@ class EnvironmentUrlCommand extends CommandBase
         } else {
             $this->debug('Reading URLs from the API');
             $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $this->validateInput($input);
-            $deployment = $this->api->getCurrentDeployment($this->getSelectedEnvironment());
+            $selection = $this->selector->getSelection($input);
+            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
             $routes = Route::fromDeploymentApi($deployment->routes);
         }
         if (empty($routes)) {

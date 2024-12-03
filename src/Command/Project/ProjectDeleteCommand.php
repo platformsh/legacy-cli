@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectDeleteCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -24,7 +25,7 @@ class ProjectDeleteCommand extends CommandBase
     {
         $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -37,9 +38,9 @@ class ProjectDeleteCommand extends CommandBase
             }
             $input->setOption('project', $projectId);
         }
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $subscriptionId = $project->getSubscriptionId();
         $subscription = $this->api->loadSubscription($subscriptionId, $project);
         if (!$subscription) {

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -33,7 +34,7 @@ class ActivityListCommand extends ActivityCommandBase
         'time_deploy' => 'Deploy time (s)',
     ];
     private array $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
-    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -69,8 +70,8 @@ class ActivityListCommand extends ActivityCommandBase
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type push')
@@ -81,13 +82,13 @@ class ActivityListCommand extends ActivityCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, $input->getOption('all'));
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: !$input->getOption('all')));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
             $environmentSpecific = true;
-            $apiResource = $this->getSelectedEnvironment();
+            $apiResource = $selection->getEnvironment();
         } else {
             $environmentSpecific = false;
             $apiResource = $project;

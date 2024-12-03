@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization\Billing;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
@@ -17,14 +18,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationProfileCommand extends OrganizationCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions(true)
+        $this->selector->addOrganizationOptions($this->getDefinition(), true)
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
         PropertyFormatter::configureInput($this->getDefinition());
@@ -33,7 +33,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $org = $this->validateOrganizationInput($input, 'orders');
+        $org = $this->selector->selectOrganization($input, 'orders');
         $profile = $org->getProfile();
 
         $formatter = $this->propertyFormatter;

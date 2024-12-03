@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:get', description: 'View a variable', aliases: ['vget'])]
 class VariableGetCommand extends VariableCommandBase
 {
-    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Table $table)
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -30,17 +33,17 @@ class VariableGetCommand extends VariableCommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property');
         $this->addLevelOption();
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
         $this->addOption('pipe', null, InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
         $this->addExample('View the variable "example"', 'example');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['pipe']);
+        $this->io->warnAboutDeprecatedOptions(['pipe']);
         $level = $this->getRequestedLevel($input);
-        $this->validateInput($input, $level === self::LEVEL_PROJECT);
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level !== self::LEVEL_PROJECT));
 
         $name = $input->getArgument('name');
         if ($name) {
@@ -55,10 +58,10 @@ class VariableGetCommand extends VariableCommandBase
                 return 1;
             }
         } else {
-            return $this->runOtherCommand('variable:list', array_filter([
+            return $this->subCommandRunner->run('variable:list', array_filter([
                 '--level' => $level,
-                '--project' => $this->getSelectedProject()->id,
-                '--environment' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
+                '--project' => $selection->getProject()->id,
+                '--environment' => $selection->hasEnvironment() ? $selection->getEnvironment()->id : null,
                 '--format' => $input->getOption('format'),
             ]));
         }
@@ -131,13 +134,13 @@ class VariableGetCommand extends VariableCommandBase
     private function chooseVariable($level) {
         $projectVariables = [];
         if ($level === 'project' || $level === null) {
-            foreach ($this->getSelectedProject()->getVariables() as $variable) {
+            foreach ($selection->getProject()->getVariables() as $variable) {
                 $projectVariables[$variable->name] = $variable;
             }
         }
         $environmentVariables = [];
         if ($level === 'environment' || $level === null) {
-            foreach ($this->getSelectedEnvironment()->getVariables() as $variable) {
+            foreach ($selection->getEnvironment()->getVariables() as $variable) {
                 $environmentVariables[$variable->name] = $variable;
             }
         }

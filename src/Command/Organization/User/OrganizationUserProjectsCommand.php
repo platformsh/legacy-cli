@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
@@ -33,7 +34,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         'region' => 'Region',
     ];
     protected $defaultColumns = ['project_id', 'project_title', 'roles', 'updated_at'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -51,7 +52,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addHiddenOption('sort-granted', null, InputOption::VALUE_NONE, 'Deprecated option: unused')
             ->addHiddenOption('reverse', null, InputOption::VALUE_NONE, 'Deprecated option: unused');
-        $this->addOrganizationOptions();
+        $this->selector->addOrganizationOptions($this->getDefinition());
         $this->addOption('list-all', null, InputOption::VALUE_NONE, 'List access across all organizations');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
@@ -61,7 +62,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
     {
         $organization = null;
         if (!$input->getOption('list-all')) {
-            $organization = $this->validateOrganizationInput($input, 'members');
+            $organization = $this->selector->selectOrganization($input, 'members');
             if (!$organization->hasLink('members')) {
                 $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');
                 return 1;

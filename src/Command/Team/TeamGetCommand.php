@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -16,14 +17,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TeamGetCommand extends TeamCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions(true)
+        $this->selector->addOrganizationOptions($this->getDefinition(), true)
             ->addTeamOption()
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The name of a property to view');
         PropertyFormatter::configureInput($this->getDefinition());

@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Client\Model\ProjectLevelVariable;
@@ -20,7 +21,7 @@ class VariableListCommand extends VariableCommandBase
         'value' => 'Value',
         'is_enabled' => 'Enabled',
     ];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -32,17 +33,17 @@ class VariableListCommand extends VariableCommandBase
     {
         $this->addLevelOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $level = $this->getRequestedLevel($input);
 
-        $this->validateInput($input, $level === 'project');
+        $selection = $this->selector->getSelection($input, new \Platformsh\Cli\Selector\SelectorConfig(envRequired: $level !== 'project'));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $table = $this->table;
 
@@ -51,7 +52,7 @@ class VariableListCommand extends VariableCommandBase
             $variables = array_merge($variables, $project->getVariables());
         }
         if ($level === 'environment' || $level === null) {
-            $variables = array_merge($variables, $this->getSelectedEnvironment()->getVariables());
+            $variables = array_merge($variables, $selection->getEnvironment()->getVariables());
         }
 
         if (empty($variables)) {
@@ -68,12 +69,12 @@ class VariableListCommand extends VariableCommandBase
                     break;
 
                 case 'environment':
-                    $environmentId = $this->getSelectedEnvironment()->id;
+                    $environmentId = $selection->getEnvironment()->id;
                     $this->stdErr->writeln(sprintf('Environment-level variables on the environment <info>%s</info> of project %s:', $environmentId, $projectLabel));
                     break;
 
                 default:
-                    $environmentId = $this->getSelectedEnvironment()->id;
+                    $environmentId = $selection->getEnvironment()->id;
                     $this->stdErr->writeln(sprintf('Variables on the project %s, environment <info>%s</info>:', $projectLabel, $environmentId));
                     break;
             }

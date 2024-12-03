@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Exception\BadResponseException;
@@ -14,7 +15,6 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'team:list', description: 'List teams', aliases: ['teams'])]
@@ -31,7 +31,7 @@ class TeamListCommand extends TeamCommandBase
         'granted_at' => 'Granted at',
     ];
     private array $defaultColumns = ['id', 'label', 'member_count', 'project_count', 'project_permissions'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -41,12 +41,8 @@ class TeamListCommand extends TeamCommandBase
      */
     protected function configure()
     {
-        $this
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
-            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A team property to sort by', 'label')
-            ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order')
-            ->addOption('all', 'A', InputOption::VALUE_NONE, 'List all teams in the organization (regardless of a selected project)')
-            ->addOrganizationOptions(true);
+        $this->selector->addOption($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition(), true);
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addExample('List teams (in the current project, if any)');
@@ -82,14 +78,14 @@ class TeamListCommand extends TeamCommandBase
         $executable = $this->config->get('application.executable');
 
         // Fetch teams for a specific project.
-        $projectSpecific = !$input->getOption('all') && $this->hasSelectedProject();
+        $projectSpecific = !$input->getOption('all') && $selection->hasProject();
         if ($projectSpecific) {
-            $teamsOnProject = $this->loadTeamsOnProject($this->getSelectedProject());
+            $teamsOnProject = $this->loadTeamsOnProject($selection->getProject());
             if (!$teamsOnProject) {
-                $this->stdErr->writeln(sprintf('No teams found on the project %s.', $this->api->getProjectLabel($this->getSelectedProject(), 'comment')));
+                $this->stdErr->writeln(sprintf('No teams found on the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To list all teams in the organization, run: <info>%s teams --all</info>', $executable));
-                $this->stdErr->writeln(\sprintf('To add this project to a team, run: <info>%s team:project:add %s</info>', $executable, OsUtil::escapeShellArg($this->getSelectedProject()->id)));
+                $this->stdErr->writeln(\sprintf('To add this project to a team, run: <info>%s team:project:add %s</info>', $executable, OsUtil::escapeShellArg($selection->getProject()->id)));
                 return 1;
             }
             $params['filter[id][in]'] = implode(',', array_keys($teamsOnProject));
@@ -129,7 +125,7 @@ class TeamListCommand extends TeamCommandBase
 
         if (!$machineReadable) {
             if ($projectSpecific) {
-                $this->stdErr->writeln(sprintf('Teams with access to the project %s:', $this->api->getProjectLabel($this->getSelectedProject())));
+                $this->stdErr->writeln(sprintf('Teams with access to the project %s:', $this->api->getProjectLabel($selection->getProject())));
             } else {
                 $this->stdErr->writeln(sprintf('Teams in the organization %s:', $this->api->getOrganizationLabel($organization)));
             }

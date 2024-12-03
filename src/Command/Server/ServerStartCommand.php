@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\RootNotFoundException;
@@ -17,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'server:start', description: 'Run PHP web server(s) for the local project')]
 class ServerStartCommand extends ServerCommandBase
 {
-    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Url $url)
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner, private readonly Url $url)
     {
         parent::__construct();
     }
@@ -39,7 +41,7 @@ class ServerStartCommand extends ServerCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
@@ -94,7 +96,7 @@ class ServerStartCommand extends ServerCommandBase
 
             if ($input->getOption('tunnel')) {
                 $bufferedOutput = new BufferedOutput();
-                $result = $this->runOtherCommand(
+                $result = $this->subCommandRunner->run(
                     'tunnel:info',
                     ['--encode' => true] + ($app->isSingle() ? [] : ['--app' => $appId]),
                     $bufferedOutput

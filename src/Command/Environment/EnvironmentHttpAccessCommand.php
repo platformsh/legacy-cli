@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentHttpAccessCommand extends CommandBase
 {
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -41,8 +42,8 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 InputOption::VALUE_REQUIRED,
                 'Whether access control should be enabled: 1 to enable, 0 to disable'
             );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition())
              ->addWaitOptions();
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access allow:69.208.1.192 --access deny:any');
@@ -158,7 +159,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $auth = $input->getOption('auth');
         $access = $input->getOption('access');
@@ -194,7 +195,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             $change = true;
         }
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
 
         $formatter = $this->propertyFormatter;
@@ -211,9 +212,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
             $success = true;
             if (!$result->countActivities()) {
                 $this->api->redeployWarning();
-            } elseif ($this->shouldWait($input)) {
+            } elseif ($this->activityMonitor->shouldWait($input)) {
                 $activityMonitor = $this->activityMonitor;
-                $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+                $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             }
 
             return $success ? 0 : 1;

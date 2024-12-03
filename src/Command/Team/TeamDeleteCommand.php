@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\QuestionHelper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,14 +11,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class TeamDeleteCommand extends TeamCommandBase
 {
 
-    public function __construct(private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addOrganizationOptions()
+        $this->selector->addOrganizationOptions($this->getDefinition())
             ->addTeamOption();
     }
 

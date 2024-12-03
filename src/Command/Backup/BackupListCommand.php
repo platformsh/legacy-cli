@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -28,7 +30,7 @@ class BackupListCommand extends CommandBase
         'updated_at' => 'Updated',
     ];
     private array $defaultColumns = ['created_at', 'id', 'restorable'];
-    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -40,18 +42,18 @@ class BackupListCommand extends CommandBase
             ->addHiddenOption('start', null, InputOption::VALUE_REQUIRED, '[Deprecated] - this option is unused');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition())
+             ->addEnvironmentOption($this->getDefinition());
         $this->setHiddenAliases(['snapshots', 'snapshot:list']);
         $this->addExample('Display backups including the "live" and "commit_id" columns', '-c+live,commit_id');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['limit', 'start']);
-        $this->validateInput($input);
+        $this->io->warnAboutDeprecatedOptions(['limit', 'start']);
+        $selection = $this->selector->getSelection($input);
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         $table = $this->table;
         $formatter = $this->propertyFormatter;
@@ -90,7 +92,7 @@ class BackupListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Backups on the project %s, environment %s:',
-                $this->api->getProjectLabel($this->getSelectedProject()),
+                $this->api->getProjectLabel($selection->getProject()),
                 $this->api->getEnvironmentLabel($environment)
             ));
         }

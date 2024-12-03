@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Team\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
@@ -13,25 +14,21 @@ use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamProjectAccess;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 
 #[AsCommand(name: 'team:project:add', description: 'Add project(s) to a team')]
 class TeamProjectAddCommand extends TeamCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
     protected function configure()
     {
-        $this
-            ->addArgument('projects', InputArgument::IS_ARRAY, "The project ID(s).\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('all', null, InputOption::VALUE_NONE, 'Add all the projects that currently exist in the organization')
-            ->addOrganizationOptions()
+        $this->selector->addOption($this->getDefinition())
+            ->addOrganizationOptions($this->getDefinition())
             ->addTeamOption();
     }
 
