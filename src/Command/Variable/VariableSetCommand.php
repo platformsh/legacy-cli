@@ -20,14 +20,12 @@ class VariableSetCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
     protected string $stability = 'deprecated';
+
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function configure()
     {
         $this
