@@ -9,6 +9,7 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,6 +20,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'list', description: 'Lists commands')]
 class ListCommand extends CommandBase
 {
+
+    public function __construct(private readonly Config $config)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
@@ -53,8 +59,8 @@ EOF
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $helper = new DescriptorHelper();
-        $helper->register('txt', new CustomTextDescriptor());
-        $helper->register('md', new CustomMarkdownDescriptor());
+        $helper->register('txt', new CustomTextDescriptor($this->config->get('application.executable')));
+        $helper->register('md', new CustomMarkdownDescriptor($this->config->get('application.executable')));
         $helper->register('json', new CustomJsonDescriptor());
         $helper->describe(
             $output,
