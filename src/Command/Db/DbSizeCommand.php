@@ -55,6 +55,7 @@ class DbSizeCommand extends CommandBase
             $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable'));
         }
         $this->setHelp($help);
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());

@@ -27,6 +27,7 @@ class MongoShellCommand extends CommandBase
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Display collection names', "--eval 'printjson(db.getCollectionNames())'");

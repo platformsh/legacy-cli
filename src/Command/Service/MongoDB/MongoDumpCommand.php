@@ -34,6 +34,7 @@ class MongoDumpCommand extends CommandBase
         $this->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
     }
