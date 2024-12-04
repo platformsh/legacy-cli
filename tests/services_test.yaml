@@ -1,0 +1,32 @@
+# Configuration file for services (dependency injection) in tests.
+# See ../config/services.yaml for the production configuration.
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: false
+    public: true # Public services for tests
+
+  Platformsh\Cli\Command\:
+    resource: '../src/Command/*'
+    tags: [console.command]
+
+  Platformsh\Cli\Service\:
+    resource: '../src/Service/*'
+
+  Platformsh\Cli\Local\ApplicationFinder: {}
+  Platformsh\Cli\Local\LocalBuild: {}
+  Platformsh\Cli\Local\LocalProject: {}
+  Platformsh\Cli\SshCert\Certifier: {}
+  Platformsh\Cli\Selector\Selector: {}
+
+  Doctrine\Common\Cache\CacheProvider:
+    factory:   'Platformsh\Cli\Service\CacheFactory::createCacheProvider'
+    arguments: ['@Platformsh\Cli\Service\Config']
+
+  Platformsh\Cli\Application: {} # Not synthetic, for tests.
+  Platformsh\Cli\Service\Config:
+    synthetic: true
+  Symfony\Component\Console\Output\OutputInterface:
+    synthetic: true
+  Symfony\Component\Console\Input\InputInterface:
+    synthetic: true

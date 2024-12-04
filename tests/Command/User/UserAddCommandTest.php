@@ -5,8 +5,10 @@ namespace Platformsh\Cli\Tests\Command\User;
 use GuzzleHttp\Client;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\User\UserAddCommand;
+use Platformsh\Cli\Tests\MockApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Output\NullOutput;
 
 class UserAddCommandTest extends TestCase
@@ -39,10 +41,20 @@ class UserAddCommandTest extends TestCase
         }
     }
 
+    private function getCommandInstance(): UserAddCommand
+    {
+        $app = MockApp::instance();
+        $command = $app->find('user:add');
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
+        }
+        return $command;
+    }
+
     public function testGetSpecifiedEnvironmentRoles(): void
     {
         // Set up a mock command to make the private method accessible.
-        $command = new UserAddCommand();
+        $command = $this->getCommandInstance();
         $m = new \ReflectionMethod($command, 'getSpecifiedEnvironmentRoles');
         $m->setAccessible(true);
 
@@ -70,7 +82,7 @@ class UserAddCommandTest extends TestCase
         ];
         foreach ($cases as $i => $case) {
             list($args, $expectedRoles) = $case;
-            $errorMessage = isset($case[2]) ? $case[2] : '';
+            $errorMessage = $case[2] ?? '';
             try {
                 $result = $m->invoke($command, $args, $this->mockEnvironments);
                 $this->assertEquals($expectedRoles, $result, "case $i roles");
@@ -123,7 +135,7 @@ class UserAddCommandTest extends TestCase
     public function testConvertEnvironmentRolesToTypeRoles(): void
     {
         // Set up a mock command to make the private method accessible.
-        $command = new UserAddCommand();
+        $command = $this->getCommandInstance();
         $m = new \ReflectionMethod($command, 'convertEnvironmentRolesToTypeRoles');
         $m->setAccessible(true);
 

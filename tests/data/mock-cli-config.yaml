@@ -1,21 +1,36 @@
 application:
   name: 'Mock CLI'
+  slug: 'mock-cli'
   version: '1.0.0'
   executable: 'mock-cli'
   env_prefix: 'MOCK_CLI_'
-
   user_config_dir: 'mock-cli-user-config'
 
 service:
   name: 'Mock Service'
-  project_config_dir: .mock
-  console_url: https://console.example.com
+  env_prefix: 'PLATFORM_'
+  project_config_dir: '.mock'
+  console_url: 'https://console.example.com'
 
   header_prefix: 'X-Mock' # this is the legacy config key; it will be moved to detection.cluster_header
 
 api:
-  base_url: https://api.example.com
+  base_url: 'http://127.0.0.1'
+  auth_url: 'http://127.0.0.1'
+
+  disable_credential_helpers: true
   disable_cache: true
 
+  organizations: true
+  centralized_permissions: true
+  teams: true
+  user_verification: true
+  metrics: true
+
+  vendor_filter: 'test-vendor'
+
+ssh:
+  domain_wildcards: ['*.mock-cli.example.com']
+
 detection:
-  site_domains: [example.site]
+  site_domains: ['example.com']

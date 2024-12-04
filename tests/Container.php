@@ -12,7 +12,8 @@ class Container
     {
         $container = new ContainerBuilder();
         $loader = new YamlFileLoader($container, new FileLocator());
-        $loader->load(CLI_ROOT . '/services.yaml');
+        $loader->load(__DIR__ . '/services_test.yaml');
+        $container->compile();
         return $container;
     }
 }

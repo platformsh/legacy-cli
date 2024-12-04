@@ -2,14 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Command\Route;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\Route\RouteGetCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 
-/**
- * @group commands
- */
+#[Group('commands')]
 class RouteGetTest extends TestCase
 {
     public function setUp(): void
@@ -35,19 +32,10 @@ class RouteGetTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args): string {
-        $output = new BufferedOutput();
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new RouteGetCommand())->run($input, $output);
-
-        return $output->fetch();
-    }
-
     public function testGetPrimaryRouteUrl(): void {
         $this->assertEquals(
             'https://example.com',
-            rtrim((string) $this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('route:get', [
                 '--primary' => true,
                 '--property' => 'url',
             ]), "\n")
@@ -57,14 +45,14 @@ class RouteGetTest extends TestCase
     public function testGetRouteByOriginalUrl(): void {
         $this->assertEquals(
             'false',
-            rtrim((string) $this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('route:get', [
                 'route' => 'http://{default}',
                 '--property' => 'primary',
             ]), "\n")
         );
         $this->assertEquals(
             'true',
-            rtrim((string) $this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('route:get', [
                 'route' => 'https://{default}',
                 '--property' => 'primary',
             ]), "\n")

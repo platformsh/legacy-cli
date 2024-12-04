@@ -2,22 +2,18 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Git;
-use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
-use Symfony\Component\Console\Input\ArrayInput;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class GitServiceTest extends TestCase
 {
 
     use HasTempDirTrait;
 
-    /** @var Git */
-    protected $git;
+    protected Git $git;
 
     /**
      * @{inheritdoc}
@@ -34,10 +30,7 @@ class GitServiceTest extends TestCase
             throw new \Exception("Failed to create directories.");
         }
 
-        $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
-
-        $this->git = $container->get('git');
+        $this->git = new Git();
         $this->git->init($repository, true);
         $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
