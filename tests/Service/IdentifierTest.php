@@ -12,7 +12,7 @@ class IdentifierTest extends TestCase
     private function config(): Config
     {
         $configFile = dirname(__DIR__) . '/data/mock-cli-config.yaml';
-        return new Config([], $configFile);
+        return (new Config([], $configFile))->withOverrides(['detection.cluster_header' => null, 'detection.site_domains' => ['example.site']]);
     }
 
     public function testIdentify(): void

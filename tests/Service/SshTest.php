@@ -7,19 +7,22 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Tests\Container;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class SshTest extends TestCase {
-    /** @var Ssh|null */
-    private ?object $ssh;
+    private ?Ssh $ssh;
 
     public function setUp(): void
     {
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
-        $container->set('config', (new Config())->withOverrides([
+        $container->set(InputInterface::class, new ArrayInput([]));
+        $container->set(OutputInterface::class, new BufferedOutput());
+        $container->set(Config::class, (new Config())->withOverrides([
             'ssh.domain_wildcards' => ['*.ssh.example.com'],
         ]));
-        $this->ssh = $container->get('ssh');
+        $this->ssh = $container->get(Ssh::class);
     }
 
     public function testGetHost(): void

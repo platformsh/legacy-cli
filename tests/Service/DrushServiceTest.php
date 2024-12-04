@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
@@ -11,21 +12,14 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DrushServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Drush */
-    protected $drush;
-
-    /** @var Project */
-    protected $project;
-
-    /** @var Environment[] */
-    protected $environments = [];
+    protected Drush $drush;
+    protected Project $project;
+    protected array $environments = [];
 
     /**
      * @{inheritdoc}

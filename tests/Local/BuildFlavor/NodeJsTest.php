@@ -2,9 +2,9 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
-/**
- * @group slow
- */
+use PHPUnit\Framework\Attributes\Group;
+
+#[Group('slow')]
 class NodeJsTest extends BuildFlavorTestBase
 {
     public function testBuildNodeJs(): void

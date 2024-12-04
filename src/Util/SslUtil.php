@@ -78,11 +78,9 @@ class SslUtil
             }
             if (\extension_loaded('openssl')) {
                 foreach ($matches[0] as $chainCert) {
-                    $chainResource = openssl_x509_read($chainCert);
-                    if (!$chainResource) {
+                    if (!openssl_x509_read($chainCert)) {
                         throw new \InvalidArgumentException("The chain file contains an invalid X509 certificate: $chainPath");
                     }
-                    openssl_x509_free($chainResource);
                 }
             }
             $chain = \array_merge($chain, $matches[0]);

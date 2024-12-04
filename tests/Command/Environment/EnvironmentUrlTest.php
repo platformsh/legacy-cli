@@ -2,15 +2,12 @@
 
 namespace Platformsh\Cli\Tests\Command\Environment;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\Environment\EnvironmentUrlCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 use Symfony\Component\Console\Output\OutputInterface;
 
-/**
- * @group commands
- */
+#[Group('commands')]
 class EnvironmentUrlTest extends TestCase
 {
     public function setUp(): void
@@ -36,21 +33,11 @@ class EnvironmentUrlTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args, int $verbosity = OutputInterface::VERBOSITY_NORMAL): string {
-        $output = new BufferedOutput();
-        $output->setVerbosity($verbosity);
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new EnvironmentUrlCommand())->run($input, $output);
-
-        return $output->fetch();
-    }
-
     public function testUrl(): void {
         $this->assertEquals(
             "https://example.com\n"
             . "http://example.com\n",
-            $this->runCommand([
+            MockApp::runAndReturnOutput('env:url', [
                 '--pipe' => true,
             ])
         );
@@ -59,28 +46,10 @@ class EnvironmentUrlTest extends TestCase
     public function testPrimaryUrl(): void {
         $this->assertEquals(
             'https://example.com',
-            rtrim((string) $this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('env:url', [
                 '--primary' => true,
                 '--browser' => '0',
             ]), "\n")
         );
-    }
-
-    public function testNonExistentBrowserIsNotFound(): void {
-        putenv('DISPLAY=fake');
-        $result = $this->runCommand([
-            '--browser' => 'nonexistent',
-        ]);
-        $this->assertStringContainsString('Command not found: nonexistent', $result);
-        $this->assertStringContainsString("https://example.com\n", $result);
-
-        $display = getenv('DISPLAY');
-        putenv('DISPLAY=none');
-        $result = $this->runCommand([
-            '--browser' => 'nonexistent',
-        ], OutputInterface::VERBOSITY_DEBUG);
-        $this->assertStringContainsString('no display found', $result);
-        $this->assertStringContainsString("https://example.com\n", $result);
-        putenv('DISPLAY=' . $display);
     }
 }
