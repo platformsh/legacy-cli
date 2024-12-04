@@ -3,12 +3,14 @@
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\HiddenInputOption;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Contracts\Service\Attribute\Required;
 
 abstract class CommandBase extends Command implements MultiAwareInterface
 {
@@ -35,10 +37,18 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      */
     private array $synopsis = [];
 
+    private ?Config $config = null;
+
     public function __construct()
     {
         $this->stdErr = new NullOutput();
         parent::__construct();
+    }
+
+    #[Required]
+    public function setConfig(Config $config): void
+    {
+        $this->config = $config;
     }
 
     /**
@@ -107,26 +117,25 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         return array_diff($this->getAliases(), $this->hiddenAliases);
     }
 
-// TODO
-//    /**
-//     * {@inheritdoc}
-//     *
-//     * Overrides the default method so that the description is not repeated
-//     * twice.
-//     */
-//    public function getProcessedHelp(): string
-//    {
-//        $help = $this->getHelp();
-//        if ($help === '') {
-//            return $help;
-//        }
-//        $name = $this->getName();
-//
-//        $placeholders = ['%command.name%', '%command.full_name%'];
-//        $replacements = [$name, $this->config()->get('application.executable') . ' ' . $name];
-//
-//        return str_replace($placeholders, $replacements, $help);
-//    }
+    /**
+     * {@inheritdoc}
+     *
+     * Overrides the default method so that the description is not repeated
+     * twice.
+     */
+    public function getProcessedHelp(): string
+    {
+        $help = $this->getHelp();
+        if ($help === '') {
+            return $help;
+        }
+        $name = $this->getName();
+
+        $placeholders = ['%command.name%', '%command.full_name%'];
+        $replacements = [$name, $this->config->get('application.executable') . ' ' . $name];
+
+        return str_replace($placeholders, $replacements, $help);
+    }
 
     /**
      * {@inheritdoc}
@@ -156,10 +165,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
             $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
 
             $this->synopsis[$key] = trim(sprintf(
-                // TODO
-                // '%s %s %s',
-                // $this->config()->get('application.executable'),
-                '%s %s',
+                '%s %s %s',
+                $this->config->get('application.executable'),
                 $this->getPreferredName(),
                 $definition->getSynopsis($short)
             ));
@@ -181,14 +188,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         return $this->getName();
     }
 
-// TODO
-//    /**
-//     * {@inheritdoc}
-//     */
-//    public function isEnabled(): bool
-//    {
-//        return $this->config()->isCommandEnabled($this->getName());
-//    }
+    public function isEnabled(): bool
+    {
+        return $this->config->isCommandEnabled($this->getName());
+    }
 
     /**
      * {@inheritDoc}

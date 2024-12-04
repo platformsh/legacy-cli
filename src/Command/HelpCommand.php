@@ -23,18 +23,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'help', description: 'Displays help for a command')]
 class HelpCommand extends CommandBase
 {
-
-    protected $command;
-
-    public function setCommand(Command $command): void
+    public function __construct(private readonly Config $config)
     {
-        $this->command = $command;
+        parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->ignoreValidationErrors();
 
@@ -45,54 +39,35 @@ class HelpCommand extends CommandBase
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command help'),
             ])
             ->setHelp(<<<'EOF'
-The <info>%command.name%</info> command displays help for a given command:
+                The <info>%command.name%</info> command displays help for a given command:
 
-  <info>%command.full_name% list</info>
+                  <info>%command.full_name% list</info>
 
-You can also output the help in other formats by using the <comment>--format</comment> option:
+                You can also output the help in other formats by using the <comment>--format</comment> option:
 
-  <info>%command.full_name% --format=json list</info>
+                  <info>%command.full_name% --format=json list</info>
 
-To display the list of available commands, please use the <info>list</info> command.
-EOF
-            )
-        ;
+                To display the list of available commands, please use the <info>list</info> command.
+                EOF
+            );
     }
 
-    /**
-     * @inheritdoc
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (null === $this->command) {
-            $this->command = $this->getApplication()
-                                  ->find($input->getArgument('command_name'));
-        }
-
-        $config = new Config();
+        $command = $this->getApplication()->find($input->getArgument('command_name'));
 
         $format = $input->getOption('format');
-        $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $options = ['format' => $format, 'raw_text' => $input->getOption('raw'), 'all' => true];
 
         switch ($format) {
-            case 'xml':
-                $stdErr->writeln('<options=reverse>DEPRECATED</> The <comment>xml</comment> help format is deprecated and will be removed in a future version.');
-                if (!extension_loaded('simplexml')) {
-                    $stdErr->writeln('It depends on the <comment>simplexml</comment> PHP extension which is not installed.');
-                    return 1;
-                }
-                $stdErr->writeln('');
-                (new XmlDescriptor())->describe($output, $this->command, $options);
-                return 0;
             case 'md':
-                (new CustomMarkdownDescriptor())->describe($output, $this->command, $options);
+                (new CustomMarkdownDescriptor($this->config->get('application.executable')))->describe($output, $command, $options);
                 return 0;
             case 'json':
-                (new CustomJsonDescriptor())->describe($output, $this->command, $options);
+                (new CustomJsonDescriptor())->describe($output, $command, $options);
                 return 0;
             case 'txt':
-                (new CustomTextDescriptor($config->get('application.executable')))->describe($output, $this->command, $options);
+                (new CustomTextDescriptor($this->config->get('application.executable')))->describe($output, $command, $options);
                 return 0;
         }
 
@@ -101,7 +76,7 @@ EOF
             // If the --format is unrecognised, it might be because the
             // command has its own --format option. Fall back to plain text
             // help.
-            (new CustomTextDescriptor($config->get('application.executable')))->describe($output, $this->command, $options);
+            (new CustomTextDescriptor($this->config->get('application.executable')))->describe($output, $command, $options);
             return 0;
         }
 
