@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\NestedArrayUtil;
 
 class NestedArrayUtilTest extends TestCase
 {
-    protected $testArray = [];
+    protected array $testArray = [];
 
     public function setUp(): void
     {
@@ -54,7 +54,7 @@ class NestedArrayUtilTest extends TestCase
      *
      * @return mixed
      */
-    private function getValue(string $property)
+    private function getValue(string $property): mixed
     {
         return NestedArrayUtil::getNestedArrayValue($this->testArray, explode('.', $property));
     }

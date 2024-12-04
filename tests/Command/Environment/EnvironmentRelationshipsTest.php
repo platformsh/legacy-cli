@@ -2,14 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Command\Environment;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\Environment\EnvironmentRelationshipsCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 
-/**
- * @group commands
- */
+#[Group('commands')]
 class EnvironmentRelationshipsTest extends TestCase
 {
     public function setUp(): void
@@ -37,20 +34,10 @@ class EnvironmentRelationshipsTest extends TestCase
         putenv('PLATFORM_RELATIONSHIPS=');
     }
 
-    private function runCommand(array $args): string {
-        $output = new BufferedOutput();
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new EnvironmentRelationshipsCommand())
-            ->run($input, $output);
-
-        return $output->fetch();
-    }
-
     public function testGetRelationshipHost(): void {
         $this->assertEquals(
             'database.internal',
-            rtrim((string) $this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('rel', [
                 '--property' => 'database.0.host',
             ]), "\n")
         );
@@ -59,7 +46,7 @@ class EnvironmentRelationshipsTest extends TestCase
     public function testGetRelationshipUrl(): void {
         $this->assertEquals(
             'mysql://main:123@database.internal:3306/main',
-            rtrim((string) $this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('rel', [
                 '--property' => 'database.0.url',
             ]), "\n")
         );

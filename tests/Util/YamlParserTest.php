@@ -10,7 +10,7 @@ class YamlParserTest extends TestCase
 {
     public function testParseValidYaml(): void
     {
-        $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
+        $file = 'tests/data/apps/complex-yaml/complex-app.yaml';
         $parsed = (new YamlParser())->parseFile($file);
         $expected = [
             'name' => 'complex-yaml',
@@ -33,7 +33,7 @@ class YamlParserTest extends TestCase
 
     public function testParseInvalidYaml(): void
     {
-        $file = 'tests/data/apps/complex-yaml/_platform.app.yaml';
+        $file = 'tests/data/apps/complex-yaml/complex-app.yaml';
         $content = file_get_contents($file);
         $content .= "\ntest: !include nonexistent.yml";
         $this->expectException(InvalidConfigException::class);

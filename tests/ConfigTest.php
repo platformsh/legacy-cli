@@ -44,7 +44,7 @@ class ConfigTest extends TestCase
      */
     public function testEnvironmentOverrides(): void
     {
-        $config = new Config([], $this->configFile);
+        new Config([], $this->configFile);
         putenv('MOCK_CLI_DISABLE_CACHE=0');
         $config = new Config([
             'MOCK_CLI_APPLICATION_NAME' => 'Overridden application name',

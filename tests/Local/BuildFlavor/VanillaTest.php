@@ -2,11 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Filesystem;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class VanillaTest extends BuildFlavorTestBase
 {
     public function testBuildVanilla(): void

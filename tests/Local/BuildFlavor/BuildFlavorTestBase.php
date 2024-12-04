@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
 use PHPUnit\Framework\TestCase;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Config as CliConfig;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Local\LocalBuild;
@@ -11,6 +12,7 @@ use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -18,19 +20,15 @@ abstract class BuildFlavorTestBase extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var ContainerInterface */
-    private static $container;
+    private static ContainerInterface $container;
 
-    /** @var OutputInterface */
-    protected static $output;
+    protected static OutputInterface $output;
 
-    /** @var CliConfig */
-    protected static $config;
+    protected static CliConfig $config;
 
-    /** @var LocalBuild */
-    protected $builder;
+    protected LocalBuild $builder;
 
-    protected $buildSettings = ['no-clean' => true];
+    protected array $buildSettings = ['no-clean' => true];
 
     /**
      * {@inheritdoc}
@@ -38,17 +36,17 @@ abstract class BuildFlavorTestBase extends TestCase
     public static function setUpBeforeClass(): void
     {
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
+        $container->set(InputInterface::class, new ArrayInput([]));
 
-        self::$output = new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, false);
-        $container->set('output', self::$output);
+        self::$output = new ConsoleOutput(OutputInterface::VERBOSITY_NORMAL, false);
+        $container->set(OutputInterface::class, self::$output);
 
         self::$config = (new CliConfig())->withOverrides([
             // We rename the app config file to avoid confusion when building the
             // CLI itself on platform.sh
             'service.app_config_file' => '_platform.app.yaml',
         ]);
-        $container->set('config', self::$config);
+        $container->set(Config::class, self::$config);
 
         self::$container = $container;
     }
@@ -58,7 +56,7 @@ abstract class BuildFlavorTestBase extends TestCase
      */
     public function setUp(): void
     {
-        $this->builder = self::$container->get('local.build');
+        $this->builder = self::$container->get(LocalBuild::class);
         $this->tempDirSetUp();
     }
 
@@ -70,13 +68,13 @@ abstract class BuildFlavorTestBase extends TestCase
      *   be copied into a dummy project.
      * @param array  $buildSettings
      *   An array of custom build settings.
-     * @param bool   $expectedResult
+     * @param bool $expectedResult
      *   The expected build result.
      *
      * @return string
      *   The project root for the dummy project.
      */
-    protected function assertBuildSucceeds(string $sourceDir, array $buildSettings = [], $expectedResult = true)
+    protected function assertBuildSucceeds(string $sourceDir, array $buildSettings = [], bool $expectedResult = true): string
     {
         $projectRoot = $this->createDummyProject($sourceDir);
         self::$output->writeln("\nTesting build for directory: " . $sourceDir);
@@ -91,7 +89,7 @@ abstract class BuildFlavorTestBase extends TestCase
      *
      * @return string
      */
-    protected function createDummyProject($sourceDir)
+    protected function createDummyProject(string $sourceDir): string
     {
         if (!is_dir($sourceDir)) {
             throw new \InvalidArgumentException("Not a directory: $sourceDir");

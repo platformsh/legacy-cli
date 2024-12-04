@@ -2,14 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Command\Route;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\Route\RouteListCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 
-/**
- * @group commands
- */
+#[Group('commands')]
 class RouteListTest extends TestCase
 {
     public function setUp(): void
@@ -35,20 +32,11 @@ class RouteListTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args): string {
-        $output = new BufferedOutput();
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new RouteListCommand())->run($input, $output);
-
-        return $output->fetch();
-    }
-
     public function testListRoutes(): void {
         $this->assertEquals(
             "https://{default}\tupstream\tapp:http\n"
             . "http://{default}\tredirect\thttps://{default}\n",
-            $this->runCommand([
+            MockApp::runAndReturnOutput('routes', [
                 '--format' => 'tsv',
                 '--columns' => ['route,type,to'],
                 '--no-header' => true,

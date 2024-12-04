@@ -2,24 +2,14 @@
 
 namespace Platformsh\Cli\Tests\Command\App;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\App\AppConfigGetCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 use Symfony\Component\Yaml\Parser;
 
+#[Group('commands')]
 class AppConfigGetTest extends TestCase
 {
-    private function runCommand(array $args): string {
-        $output = new BufferedOutput();
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new AppConfigGetCommand())
-            ->run($input, $output);
-
-        return $output->fetch();
-    }
-
     public function testGetConfig(): void {
         $app = base64_encode(json_encode([
             'type' => 'php:7.3',
@@ -31,19 +21,19 @@ class AppConfigGetTest extends TestCase
         putenv('PLATFORM_APPLICATION=' . $app);
         $this->assertEquals(
             'app',
-            (new Parser)->parse($this->runCommand([
+            (new Parser)->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'name',
             ]))
         );
         $this->assertEquals(
             [],
-            (new Parser)->parse($this->runCommand([
+            (new Parser)->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'mounts',
             ]))
         );
         $this->assertEquals(
             '',
-            (new Parser)->parse($this->runCommand([
+            (new Parser)->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'blank',
             ]))
         );
