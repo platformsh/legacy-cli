@@ -34,6 +34,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         $this->addOption('fields', 'f', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The fields to export');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
