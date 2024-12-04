@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Service\Config;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -22,7 +23,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     protected OutputInterface $stdErr;
 
+    /**
+     * Sets whether the command is hidden in the list.
+     *
+     * The AsCommand attribute has the 'hidden' property, which allows for
+     * hiding lazily-loaded commands. However, it prevents the commands being
+     * accessed via abbreviations. Additionally some commands are dynamically
+     * hidden (by overriding isHidden()), so they must be fully loaded anyway
+     * before rendering the list.
+     *
+     * @var bool
+     */
     protected bool $hiddenInList = false;
+
     protected string $stability = self::STABILITY_STABLE;
     protected bool $canBeRunMultipleTimes = true;
     protected bool $runningViaMulti = false;
@@ -53,14 +66,15 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /**
      * {@inheritdoc}
+     *
+     * This intentionally ignores the 'hidden' argument of Symfony's AsCommand
+     * attribute, because that is already checked during lazy command loading.
      */
     public function isHidden(): bool
     {
         return $this->hiddenInList
             || !in_array($this->stability, [self::STABILITY_STABLE, self::STABILITY_BETA])
-            // TODO
-            // || $this->config()->isCommandHidden($this->getName())
-            ;
+            || $this->config->isCommandHidden($this->getName());
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
