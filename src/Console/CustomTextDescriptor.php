@@ -10,6 +10,7 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
 use Symfony\Component\Console\Helper\Helper;
@@ -84,7 +85,7 @@ class CustomTextDescriptor extends TextDescriptor
      */
     protected function describeApplication(ConsoleApplication $application, array $options = []): void
     {
-        $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
+        $describedNamespace = $options['namespace'] ?? null;
         $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
 
         if (isset($options['raw_text']) && $options['raw_text']) {
@@ -116,9 +117,12 @@ class CustomTextDescriptor extends TextDescriptor
                 $commands = [];
                 foreach ($namespace['commands'] as $name) {
                     $command = $description->getCommand($name);
+                    if ($command instanceof LazyCommand) {
+                        $command = $command->getCommand();
+                    }
 
                     // Ensure the command is only shown under its canonical name.
-                    if ($name === $command->getName()) {
+                    if ($name === $command->getName() && !$command->isHidden()) {
                         $commands[$name] = $command;
                     }
                 }
