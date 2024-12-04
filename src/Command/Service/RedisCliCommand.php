@@ -27,6 +27,7 @@ class RedisCliCommand extends CommandBase
         $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Open the redis-cli shell');
