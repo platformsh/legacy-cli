@@ -806,7 +806,7 @@ class Installer {
                 $authFilename = \getenv('HOME') . '/.global/auth.json';
                 if (\is_readable($authFilename)
                     && ($contents = \file_get_contents($authFilename)) !== false
-                    && ($json = \json_decode($authFilename, true)) !== null
+                    && ($json = \json_decode($contents, true)) !== null
                     && !empty($json['github-oauth'][$host])) {
                     return ['Authorization: token ' . $json['github-oauth'][$host]];
                 }
