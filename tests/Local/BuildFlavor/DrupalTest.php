@@ -2,12 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DrupalTest extends BuildFlavorTestBase
 {
     public function setUp(): void

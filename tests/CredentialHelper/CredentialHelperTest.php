@@ -28,7 +28,6 @@ class CredentialHelperTest extends TestCase
     {
         if (!$this->manager->isSupported()) {
             $this->markTestIncomplete('Skipping credential helper test (not supported on this system)');
-            return;
         }
         $this->manager->install();
 
@@ -38,26 +37,36 @@ class CredentialHelperTest extends TestCase
         $session->setStorage($this->storage);
 
         // Save data.
-        $session->setData($testData);
+        foreach ($testData as $k => $v) {
+            $session->set($k, $v);
+        }
         $session->save();
 
         // Reset the session, reload from the credential helper, and check session data.
-        $session->load(true);
-        $this->assertEquals($testData, $session->getData());
+        $session = new Session();
+        $session->setStorage($this->storage);
+        foreach ($testData as $k => $v) {
+            $this->assertEquals($v, $session->get($k));
+        }
 
         // Clear and reset the session, and check the session is empty.
         $session->clear();
         $session->save();
-        $session->load(true);
-        $this->assertEquals([], $session->getData());
+        $session = new Session();
+        $session->setStorage($this->storage);
+        foreach ($testData as $k => $v) {
+            $this->assertEquals(null, $session->get($k));
+        }
 
         // Write to the session again, and check deleteAllSessions() works.
-        $session->setData($testData);
+        $session->set('some key', 'some value');
         $session->save();
-        $session->load(true);
-        $this->assertNotEmpty($session->getData());
+        $session = new Session();
+        $session->setStorage($this->storage);
+        $this->assertEquals('some value', $session->get('some key'));
         $this->storage->deleteAll();
-        $session->load(true);
-        $this->assertEmpty($session->getData());
+        $session = new Session();
+        $session->setStorage($this->storage);
+        $this->assertEquals(null, $session->get('some key'));
     }
 }

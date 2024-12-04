@@ -2,14 +2,13 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Shell;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DependenciesTest extends BuildFlavorTestBase
 {
-    protected $sourceDir = 'tests/data/apps/build-deps';
+    protected string $sourceDir = 'tests/data/apps/build-deps';
 
     public function testBuildSucceedsIfDepsNotRequired(): void
     {
@@ -53,7 +52,6 @@ class DependenciesTest extends BuildFlavorTestBase
             } catch (\RuntimeException $e) {
                 if (\getenv('TRAVIS') && str_contains($e->getMessage(), 'The command failed') && str_contains($e->getMessage(), 'pip install')) {
                     $this->markTestSkipped('Installing python dependencies is known to fail on Travis');
-                    return;
                 }
                 throw $e;
             }
