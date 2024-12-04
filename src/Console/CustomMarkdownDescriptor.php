@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\MarkdownDescriptor;
 use Symfony\Component\Console\Helper\Helper;
@@ -33,7 +34,14 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
                 $command = $description->getCommand($name);
 
                 // Ensure the command is only shown under its canonical name.
-                if ($name !== $command->getName() || $command->isHidden()) {
+                if ($name !== $command->getName()) {
+                    unset($namespace['commands'][$key]);
+                    continue;
+                }
+                if ($command instanceof LazyCommand) {
+                    $command = $command->getCommand();
+                }
+                if ($command->isHidden()) {
                     unset($namespace['commands'][$key]);
                     continue;
                 }
