@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Application;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -120,6 +121,9 @@ class SelfBuildCommand extends CommandBase
                 '--no-progress',
             ], CLI_ROOT . DIRECTORY_SEPARATOR . 'vendor-bin' . DIRECTORY_SEPARATOR . 'box', true, false);
         }
+
+        $this->stdErr->writeln('Warming application caches');
+        (new Application())->warmCaches();
 
         $boxArgs = [CLI_ROOT . '/vendor-bin/box/vendor/bin/box', 'compile', '--no-interaction'];
         if ($output->isVeryVerbose()) {
