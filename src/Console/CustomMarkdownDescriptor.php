@@ -12,15 +12,8 @@ use Symfony\Component\Console\Input\InputOption;
 
 class CustomMarkdownDescriptor extends MarkdownDescriptor
 {
-    protected $cliExecutableName;
-
-    /**
-     * @param string|null $cliExecutableName
-     *   The name of the CLI command.
-     */
-    public function __construct($cliExecutableName = null)
+    public function __construct(private readonly string $cliExecutableName)
     {
-        $this->cliExecutableName = $cliExecutableName ?: basename((string) $_SERVER['PHP_SELF']);
     }
 
     /**
