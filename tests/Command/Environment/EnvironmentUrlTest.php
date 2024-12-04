@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Tests\Command\Environment;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Tests\MockApp;
-use Symfony\Component\Console\Output\OutputInterface;
 
 #[Group('commands')]
 class EnvironmentUrlTest extends TestCase
