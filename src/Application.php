@@ -230,8 +230,6 @@ class Application extends ParentApplication
     {
         $this->setIO($input, $output);
 
-        parent::configureIO($input, $output);
-
         // Set the input to non-interactive if the yes or no options are used,
         // or if the PLATFORMSH_CLI_NO_INTERACTION variable is not empty.
         // The --no-interaction option is handled in the parent method.
