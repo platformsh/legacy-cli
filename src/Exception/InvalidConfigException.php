@@ -11,7 +11,7 @@ class InvalidConfigException extends \InvalidArgumentException
      * @param string $filename
      * @param string $configKey
      */
-    public function __construct($message = '', $filename = '', $configKey = '')
+    public function __construct($message = '', $filename = '', $configKey = '', ?\Exception $previous = null)
     {
         if ($configKey !== '') {
             $message .= "\nin config key: $configKey";
@@ -21,6 +21,6 @@ class InvalidConfigException extends \InvalidArgumentException
             $message .= "\nin file: $path";
         }
 
-        parent::__construct($message);
+        parent::__construct($message, 0, $previous);
     }
 }

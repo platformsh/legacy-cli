@@ -46,7 +46,7 @@ class YamlParser
         try {
             $parsed = (new Yaml())->parse($content, Yaml::PARSE_CUSTOM_TAGS);
         } catch (ParseException $e) {
-            throw new ParseException($e->getMessage(), $e->getParsedLine(), $e->getSnippet(), $filename, $e->getPrevious());
+            throw new InvalidConfigException($e->getMessage(), $filename, '', $e);
         }
 
         return $this->processTags($parsed, $filename);

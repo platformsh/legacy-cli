@@ -4,9 +4,9 @@ namespace Platformsh\Cli\Tests;
 
 trait HasTempDirTrait
 {
-    protected $tempDir;
+    protected ?string $tempDir;
 
-    protected function tempDirSetUp()
+    protected function tempDirSetUp(): void
     {
         if (!isset($this->tempDir)) {
             $this->tempDir = $this->createTempDir(sys_get_temp_dir(), 'pshCliTmp');
@@ -19,7 +19,7 @@ trait HasTempDirTrait
      *
      * @return string
      */
-    protected function createTempDir(string $parentDir, $prefix = ''): string
+    protected function createTempDir(string $parentDir, string $prefix = ''): string
     {
         if (!($tempDir = tempnam($parentDir, $prefix))
           || !unlink($tempDir)
@@ -35,7 +35,7 @@ trait HasTempDirTrait
      *
      * @return string
      */
-    protected function createTempSubDir($prefix = '')
+    protected function createTempSubDir(string $prefix = ''): string
     {
         $this->tempDirSetUp();
 

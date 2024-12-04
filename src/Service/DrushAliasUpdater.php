@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Application;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\LocalProject;
@@ -15,7 +14,7 @@ readonly class DrushAliasUpdater
     private OutputInterface $stdErr;
 
     public function __construct(
-        private Application  $application,
+        private Config       $config,
         private Drush        $drush,
         private LocalProject $localProject,
         OutputInterface      $output,
@@ -28,12 +27,13 @@ readonly class DrushAliasUpdater
      */
     public function onEnvironmentsChanged(EnvironmentsChangedEvent $event): void
     {
-        $projectRoot = $this->localProject->getProjectRoot();
-        if (!$projectRoot) {
+        // Make sure the local:drush-aliases command is enabled.
+        if (!$this->config->isCommandEnabled('local:drush-aliases')) {
             return;
         }
-        // Make sure the local:drush-aliases command is enabled.
-        if (!$this->application->has('local:drush-aliases')) {
+        // Check we are in a local project.
+        $projectRoot = $this->localProject->getProjectRoot();
+        if (!$projectRoot) {
             return;
         }
         // Double-check that the passed project is the current one.
