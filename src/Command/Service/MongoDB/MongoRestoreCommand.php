@@ -26,6 +26,7 @@ class MongoRestoreCommand extends CommandBase
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
     }
