@@ -61,6 +61,9 @@ class Application extends ParentApplication
         // "Platformsh\Cli\Application".
         $this->container()->set(__CLASS__, $this);
 
+        // Set the Config service.
+        $this->container()->set(Config::class, $this->config);
+
         // Set up the command loader, which will load commands that are tagged
         // appropriately in the services.yaml container configuration (any
         // services tagged with "console.command").
