@@ -643,7 +643,7 @@ class Selector
     public function addProjectOption(InputDefinition $inputDefinition): void
     {
         $inputDefinition->addOption(new InputOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL'));
-        $inputDefinition->addOption(new HiddenInputOption('host', null, InputOption::VALUE_REQUIRED, "The project's API hostname"));
+        $inputDefinition->addOption(new HiddenInputOption('host', null, InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used'));
     }
 
     /**
