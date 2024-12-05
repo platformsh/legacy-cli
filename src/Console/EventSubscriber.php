@@ -4,20 +4,20 @@ namespace Platformsh\Cli\Console;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use GuzzleHttp\Message\RequestInterface;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\PermissionDeniedException;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Psr\Http\Message\RequestInterface;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class EventSubscriber implements EventSubscriberInterface
 {
-    protected $config;
+    protected Config $config;
 
     /**
      * @param \Platformsh\Cli\Service\Config $config
@@ -50,7 +50,7 @@ class EventSubscriber implements EventSubscriberInterface
         if ($error instanceof ConnectException && strpos($error->getMessage(), 'cURL error 6') !== false) {
             $request = $error->getRequest();
             $event->setError(new ConnectionFailedException(
-                "Failed to connect to host: " . $request->getHost()
+                "Failed to connect to host: " . $request->getUri()->getHost()
                 . " \nPlease check your Internet connection.",
                 $error
             ));
@@ -61,7 +61,6 @@ class EventSubscriber implements EventSubscriberInterface
         if (($error instanceof ClientException || $error instanceof ServerException)
             && ($response = $error->getResponse())) {
             $request = $error->getRequest();
-            $requestConfig = $request->getConfig();
             $json = (array) json_decode($response->getBody()->__toString(), true);
 
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
@@ -75,14 +74,14 @@ class EventSubscriber implements EventSubscriberInterface
                     $error
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
+            } elseif ($response->getStatusCode() === 401) {
                 $event->setError(new LoginRequiredException(
                     'Unauthorized.',
                     $this->config,
                     $error
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
+            } elseif ($response->getStatusCode() === 403) {
                 $event->setError(new PermissionDeniedException($this->permissionDeniedMessage($request), $error));
                 $event->stopPropagation();
             }
@@ -109,10 +108,10 @@ class EventSubscriber implements EventSubscriberInterface
             '/environments' => 'environment',
             '/organizations' => 'organization'
         ];
-        $requestUrl = $request->getUrl();
+        $requestUrl = $request->getUri();
         $permissionTypes = [];
         foreach ($pathsPermissionTypes as $path => $pathsPermissionType) {
-            if (strpos($requestUrl, $path) !== false) {
+            if (str_contains($requestUrl, $path)) {
                 $permissionTypes[$pathsPermissionType] = $pathsPermissionType;
             }
         }

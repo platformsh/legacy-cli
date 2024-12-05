@@ -2,6 +2,7 @@
 namespace Platformsh\Cli\Command\Integration;
 
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Client\Model\Integration;
 use Platformsh\Client\Model\Project;
@@ -667,7 +668,7 @@ abstract class IntegrationCommandBase extends CommandBase
         if (isset($this->bitbucketAccessTokens[$credentials['key']])) {
             return $this->bitbucketAccessTokens[$credentials['key']];
         }
-        $result = $this->api()
+        $response = $this->api()
             ->getExternalHttpClient()
             ->post('https://bitbucket.org/site/oauth2/access_token', [
                 'auth' => [$credentials['key'], $credentials['secret']],
@@ -676,7 +677,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
             ]);
 
-        $data = $result->json();
+        $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (!isset($data['access_token'])) {
             throw new \RuntimeException('Access token not found in Bitbucket response');
         }
