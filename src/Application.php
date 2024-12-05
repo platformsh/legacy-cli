@@ -18,7 +18,6 @@ use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
 use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
-use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -324,11 +323,6 @@ class Application extends ParentApplication
         if ($command instanceof MultiAwareInterface) {
             $command->setRunningViaMulti($this->runningViaMulti);
         }
-
-        // Build the command synopsis early, so it doesn't include default
-        // options and arguments (such as --help and <command>).
-        // @todo find a better solution for this?
-        $command->getSynopsis();
 
         // Work around a bug in Console which means the default command's input
         // is always considered to be interactive.
