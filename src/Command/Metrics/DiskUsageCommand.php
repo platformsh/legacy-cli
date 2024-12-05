@@ -9,6 +9,7 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'metrics:disk-usage', description: 'Show disk usage of an environment', aliases: ['disk'])]
@@ -43,6 +44,8 @@ class DiskUsageCommand extends MetricsCommandBase
      */
     protected function configure()
     {
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+            ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')');
         $this->addMetricsOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
