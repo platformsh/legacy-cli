@@ -123,7 +123,7 @@ class CustomTextDescriptor extends TextDescriptor
                     }
 
                     // Ensure the command is only shown under its canonical name.
-                    if ($name === $command->getName() && !$command->isHidden()) {
+                    if ($name === $command->getName() && !$command->isHidden() && $command->isEnabled()) {
                         $commands[$name] = $command;
                     }
                 }
