@@ -39,9 +39,6 @@ services:
 
     # Configure synthetic services, which may be created and set after the
     # container is compiled.
-    Platformsh\Cli\Application:
-        public: true
-        synthetic: true
     Platformsh\Cli\Service\Config:
         public: true
         synthetic: true

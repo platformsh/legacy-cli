@@ -3,38 +3,39 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Application;
-use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SubCommandRunner
+readonly class SubCommandRunner
 {
-    private readonly OutputInterface $stdErr;
+    private OutputInterface $stdErr;
 
     public function __construct(
-        private readonly Application $application,
-        private readonly InputInterface $input,
-        private readonly OutputInterface $output,
-    ) {
-        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
+        private Config          $config,
+        private InputInterface  $input,
+        private OutputInterface $output)
+    {
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**
-     * Runs another command in this CLI application.
+     * Runs another CLI command.
      *
      * @param string $commandName
      * @param array $arguments
      * @param OutputInterface|null $output
      *
      * @return int
-     * @throws ExceptionInterface
+     * @throws \Exception
      */
     public function run(string $commandName, array $arguments = [], OutputInterface $output = null): int
     {
-        $command = $this->application->find($commandName);
+        $application = new Application($this->config);
+        $application->setIO($this->input, $output ?: $this->output);
+        $command = $application->find($commandName);
 
         $this->forwardStandardOptions($arguments, $this->input, $command->getDefinition());
 
@@ -50,16 +51,7 @@ class SubCommandRunner
             OutputInterface::VERBOSITY_DEBUG
         );
 
-        $currentCommand = $this->application->getCurrentCommand();
-        $this->application->setCurrentCommand($command);
-
-        try {
-            $result = $command->run($cmdInput, $output ?: $this->output);
-        } finally {
-            $this->application->setCurrentCommand($currentCommand);
-        }
-
-        return $result;
+        return $application->run($cmdInput, $output ?: $this->output);
     }
 
     /**
