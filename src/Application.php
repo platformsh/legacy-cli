@@ -320,6 +320,10 @@ class Application extends ParentApplication
      */
     protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output): int
     {
+        if (!$command->isEnabled()) {
+            throw new \InvalidArgumentException(sprintf('The command "%s" is not enabled.', $command->getName()));
+        }
+
         if ($command instanceof MultiAwareInterface) {
             $command->setRunningViaMulti($this->runningViaMulti);
         }

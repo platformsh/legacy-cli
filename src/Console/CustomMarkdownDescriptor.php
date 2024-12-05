@@ -41,7 +41,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
                 if ($command instanceof LazyCommand) {
                     $command = $command->getCommand();
                 }
-                if ($command->isHidden()) {
+                if ($command->isHidden() || !$command->isEnabled()) {
                     unset($namespace['commands'][$key]);
                     continue;
                 }
