@@ -34,7 +34,18 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
 
         $this->write($title."\n".str_repeat('=', Helper::strlen($title)));
 
+        $commands = [];
         foreach ($description->getNamespaces() as $namespace) {
+            foreach ($namespace['commands'] as $key => $name) {
+                $command = $description->getCommand($name);
+
+                // Ensure the command is only shown under its canonical name.
+                if ($name !== $command->getName() || $command->isHidden()) {
+                    unset($namespace['commands'][$key]);
+                    continue;
+                }
+                $commands[$name] = $command;
+            }
             if (empty($namespace['commands'])) {
                 continue;
             }
@@ -49,7 +60,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             }, $namespace['commands'])));
         }
 
-        foreach ($description->getCommands() as $command) {
+        foreach ($commands as $command) {
             $this->write("\n\n");
             $this->describeCommand($command);
         }
