@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Local;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
 use Platformsh\Cli\Local\BuildFlavor\Symfony;
@@ -9,12 +10,13 @@ use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Config;
 
-class LocalApplicationTest extends \PHPUnit_Framework_TestCase
+class LocalApplicationTest extends TestCase
 {
 
     private $config;
 
-    public function setUp() {
+    public function setUp(): void
+    {
         $this->config = (new Config())->withOverrides([
             'service.app_config_file' => '_platform.app.yaml',
             'service.applications_config_file' =>  '_platform/applications.yaml',

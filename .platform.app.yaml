@@ -1,5 +1,5 @@
 name: app
-type: php:7.4
+type: php:8.2
 
 dependencies:
   php:

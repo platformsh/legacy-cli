@@ -2,9 +2,10 @@
 
 namespace Platformsh\Cli\Tests\Util;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Util\VersionUtil;
 
-class VersionUtilTest extends \PHPUnit_Framework_TestCase
+class VersionUtilTest extends TestCase
 {
     public function testNextVersions()
     {

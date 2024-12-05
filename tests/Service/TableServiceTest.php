@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\Csv;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -10,7 +11,7 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\NullOutput;
 
-class TableServiceTest extends \PHPUnit_Framework_TestCase
+class TableServiceTest extends TestCase
 {
     /**
      * Test a table filtered by allowed column names.
@@ -67,7 +68,7 @@ class TableServiceTest extends \PHPUnit_Framework_TestCase
 
         $header = ['Name', 'Value 1', 'Value 3'];
 
-        $this->setExpectedException('InvalidArgumentException');
+        $this->expectException(\InvalidArgumentException::class);
         $tableService->columnsToDisplay($header);
     }
 }

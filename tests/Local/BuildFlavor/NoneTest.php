@@ -5,7 +5,7 @@ namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 /**
  * @group slow
  */
-class NoneTest extends BaseBuildFlavorTest
+class NoneTest extends BuildFlavorTestBase
 {
     public function testBuildNone()
     {

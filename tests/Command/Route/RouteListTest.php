@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Command\Route;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\Route\RouteListCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -9,9 +10,10 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @group commands
  */
-class RouteListTest extends \PHPUnit_Framework_TestCase
+class RouteListTest extends TestCase
 {
-    public function setUp() {
+    public function setUp(): void
+    {
         $mockRoutes = base64_encode(json_encode([
             'http://example.com' => [
                 'type' => 'redirect',
@@ -28,7 +30,8 @@ class RouteListTest extends \PHPUnit_Framework_TestCase
         putenv('PLATFORM_ROUTES=' . $mockRoutes);
     }
 
-    public function tearDown() {
+    public function tearDown(): void
+    {
         putenv('PLATFORM_ROUTES=');
     }
 

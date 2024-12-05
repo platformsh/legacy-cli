@@ -25,7 +25,7 @@ For manual installation, you can also [download the latest binaries](https://git
 
 _This installation method is considered legacy and is discouraged, use one of the methods above instead. Starting with version 5.x, this installation method will not be supported._
 
-In order to use the Legacy installer, you need to have an operating system supported by PHP (Linux, OS X, or Windows) and PHP 5.5.9 or higher, with the following extensions: `curl`, `json`, `pcre`, and `phar`.
+In order to use the Legacy installer, you need to have an operating system supported by PHP (Linux, OS X, or Windows) and PHP 8.2 or higher, with the following extensions: `curl`, `json`, `pcre`, and `phar`.
 
 Run this command to install the CLI using the legacy installer, given that you have PHP already installed:
 
