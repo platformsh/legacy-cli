@@ -34,8 +34,6 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Application extends ParentApplication
 {
-    private ?ConsoleCommand $currentCommand = null;
-
     private readonly Config $config;
 
     private ContainerInterface $container;
@@ -56,10 +54,6 @@ class Application extends ParentApplication
             $this->config->getWithDefault('application.timezone', null)
                 ?: TimezoneUtil::getTimezone()
         );
-
-        // Set this application as the synthetic service named
-        // "Platformsh\Cli\Application".
-        $this->container()->set(__CLASS__, $this);
 
         // Set the Config service.
         $this->container()->set(Config::class, $this->config);
@@ -327,7 +321,6 @@ class Application extends ParentApplication
      */
     protected function doRunCommand(ConsoleCommand $command, InputInterface $input, OutputInterface $output): int
     {
-        $this->setCurrentCommand($command);
         if ($command instanceof MultiAwareInterface) {
             $command->setRunningViaMulti($this->runningViaMulti);
         }
@@ -335,7 +328,7 @@ class Application extends ParentApplication
         // Build the command synopsis early, so it doesn't include default
         // options and arguments (such as --help and <command>).
         // @todo find a better solution for this?
-        $this->currentCommand->getSynopsis();
+        $command->getSynopsis();
 
         // Work around a bug in Console which means the default command's input
         // is always considered to be interactive.
@@ -368,51 +361,6 @@ class Application extends ParentApplication
         }
 
         return parent::doRunCommand($command, $input, $output);
-    }
-
-    /**
-     * Set the current command. This is used for error handling.
-     *
-     * @param ConsoleCommand|null $command
-     */
-    public function setCurrentCommand(ConsoleCommand $command = null): void
-    {
-        // The parent class has a similar (private) property named
-        // $runningCommand.
-        $this->currentCommand = $command;
-    }
-
-    /**
-     * Get the current command.
-     *
-     * @return ConsoleCommand|null
-     */
-    public function getCurrentCommand(): ?ConsoleCommand
-    {
-        return $this->currentCommand;
-    }
-
-    public function renderThrowable(\Throwable $e, OutputInterface $output): void
-    {
-        $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-
-        $this->doRenderThrowable($e, $output);
-
-        if (isset($this->currentCommand)
-            && $this->currentCommand->getName() !== 'welcome'
-            && $e instanceof ExceptionInterface) {
-            $output->writeln(
-                sprintf('Usage: <info>%s</info>', $this->currentCommand->getSynopsis()),
-                OutputInterface::VERBOSITY_QUIET
-            );
-            $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-            $output->writeln(sprintf(
-                'For more information, type: <info>%s help %s</info>',
-                $this->config->get('application.executable'),
-                $this->currentCommand->getName()
-            ), OutputInterface::VERBOSITY_QUIET);
-            $output->writeln('', OutputInterface::VERBOSITY_QUIET);
-        }
     }
 
     public function setRunningViaMulti(): void
