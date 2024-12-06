@@ -5,7 +5,6 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\Descriptor;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -50,13 +49,10 @@ class CustomJsonDescriptor extends Descriptor
      */
     protected function describeApplication(Application $application, array $options = []): void
     {
-        $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
-        $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
-        $commands = [];
+        $describedNamespace = $options['namespace'] ?? null;
+        $description = (new DescriptorUtils())->describeNamespaces($application, $describedNamespace, !empty($options['all']));
 
-        foreach ($description->getCommands() as $command) {
-            $commands[] = $this->getCommandData($command);
-        }
+        $commands = array_map($this->getCommandData(...), $description['commands']);
 
         $data = [];
         if ('UNKNOWN' !== $application->getName()) {
@@ -72,7 +68,7 @@ class CustomJsonDescriptor extends Descriptor
             $data['namespace'] = $describedNamespace;
         } else {
             // Only show namespaces with at least one (non-hidden) command.
-            $data['namespaces'] = array_values(array_filter($description->getNamespaces(), fn($n): bool => !empty($n['commands'])));
+            $data['namespaces'] = array_values(array_filter($description['namespaces'], fn($n): bool => !empty($n['commands'])));
         }
 
         $this->writeData($data, $options);
@@ -83,15 +79,12 @@ class CustomJsonDescriptor extends Descriptor
      */
     private function writeData(array $data, array $options): void
     {
-        $flags = isset($options['json_encoding']) ? $options['json_encoding'] : 0;
+        $flags = $options['json_encoding'] ?? 0;
         $flags |= JSON_UNESCAPED_SLASHES;
 
         $this->write(json_encode($data, $flags));
     }
 
-    /**
-     * @return array
-     */
     private function getInputArgumentData(InputArgument $argument): array
     {
         return [
@@ -103,9 +96,6 @@ class CustomJsonDescriptor extends Descriptor
         ];
     }
 
-    /**
-     * @return array
-     */
     private function getInputOptionData(InputOption $option): array
     {
         return [
@@ -120,15 +110,9 @@ class CustomJsonDescriptor extends Descriptor
         ];
     }
 
-    /**
-     * @return array
-     */
     private function getInputDefinitionData(InputDefinition $definition): array
     {
-        $inputArguments = [];
-        foreach ($definition->getArguments() as $name => $argument) {
-            $inputArguments[$name] = $this->getInputArgumentData($argument);
-        }
+        $inputArguments = array_map($this->getInputArgumentData(...), $definition->getArguments());
 
         $inputOptions = [];
         foreach ($definition->getOptions() as $name => $option) {
@@ -144,9 +128,6 @@ class CustomJsonDescriptor extends Descriptor
         ];
     }
 
-    /**
-     * @return array
-     */
     private function getCommandData(Command $command): array
     {
         $command->getSynopsis();

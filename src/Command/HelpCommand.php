@@ -10,26 +10,34 @@ use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
-use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'help', description: 'Displays help for a command')]
 class HelpCommand extends CommandBase
 {
+    private ?Command $command = null;
+
     public function __construct(private readonly Config $config)
     {
         parent::__construct();
+        parent::setConfig($this->config);
+    }
+
+    public function setCommand(Command $command): void
+    {
+        $this->command = $command;
     }
 
     protected function configure(): void
     {
         $this->ignoreValidationErrors();
 
-        $this
+        $this->setName('help')
+            ->setDescription('Displays help for a command')
             ->setDefinition([
                 new InputArgument('command_name', InputArgument::OPTIONAL, 'The command name', 'help'),
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, json, or md)', 'txt'),
@@ -51,7 +59,7 @@ class HelpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $command = $this->getApplication()->find($input->getArgument('command_name'));
+        $command = $this->command ?: $this->getApplication()->find($input->getArgument('command_name'));
 
         $format = $input->getOption('format');
         $options = ['format' => $format, 'raw_text' => $input->getOption('raw'), 'all' => true];
