@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Platformsh\Cli;
 
 use Doctrine\Common\Cache\CacheProvider;
+use Platformsh\Cli\Command\HelpCommand;
+use Platformsh\Cli\Command\ListCommand;
 use Platformsh\Cli\Command\WelcomeCommand;
 use Platformsh\Cli\Command\MultiAwareInterface;
 use Platformsh\Cli\Console\EventSubscriber;
@@ -179,8 +181,10 @@ class Application extends ParentApplication
      */
     protected function getDefaultCommands(): array
     {
-        // All commands are lazy-loaded.
-        return [];
+        return [
+            new HelpCommand($this->config),
+            new ListCommand($this->config),
+        ];
     }
 
     /**
