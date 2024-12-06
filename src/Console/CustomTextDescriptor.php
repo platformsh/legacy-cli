@@ -10,7 +10,6 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
 use Symfony\Component\Console\Helper\Helper;
@@ -87,17 +86,16 @@ class CustomTextDescriptor extends TextDescriptor
     protected function describeApplication(ConsoleApplication $application, array $options = []): void
     {
         $describedNamespace = $options['namespace'] ?? null;
-        $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
+        $description = (new DescriptorUtils())->describeNamespaces($application, $describedNamespace, !empty($options['all']));
+        $commands = $description['commands'];
 
+        $width = $this->getColumnWidth($commands);
         if (isset($options['raw_text']) && $options['raw_text']) {
-            $width = $this->getColumnWidth($description->getCommands());
-
-            foreach ($description->getCommands() as $command) {
+            foreach ($commands as $command) {
                 $this->writeText(sprintf("%-{$width}s %s", $command->getName(), $command->getDescription()), $options);
                 $this->writeText("\n");
             }
         } else {
-            $width = $this->getColumnWidth($description->getCommands());
 
             $this->writeText($application->getHelp(), $options);
             $this->writeText("\n\n");
@@ -112,24 +110,9 @@ class CustomTextDescriptor extends TextDescriptor
             }
 
             // Display commands grouped by namespace.
-            foreach ($description->getNamespaces() as $namespace) {
-                // Filter hidden commands in the namespace.
-                /** @var Command[] $commands */
-                $commands = [];
-                foreach ($namespace['commands'] as $name) {
-                    $command = $description->getCommand($name);
-                    if ($command instanceof LazyCommand) {
-                        $command = $command->getCommand();
-                    }
-
-                    // Ensure the command is only shown under its canonical name.
-                    if ($name === $command->getName() && !$command->isHidden() && $command->isEnabled()) {
-                        $commands[$name] = $command;
-                    }
-                }
-
+            foreach ($description['namespaces'] as $namespace) {
                 // Skip the namespace if it doesn't contain any commands.
-                if (!count($commands)) {
+                if (!count($namespace['commands'])) {
                     continue;
                 }
 
@@ -140,7 +123,7 @@ class CustomTextDescriptor extends TextDescriptor
                 }
 
                 // Display each command.
-                foreach ($commands as $name => $command) {
+                foreach ($namespace['commands'] as $command) {
                     $aliases = $command instanceof CommandBase
                         ? $command->getVisibleAliases()
                         : $command->getAliases();
@@ -149,7 +132,7 @@ class CustomTextDescriptor extends TextDescriptor
                     $this->writeText(
                         sprintf(
                             "  %-{$width}s %s",
-                            "<info>$name</info>" . $this->formatAliases($aliases),
+                            '<info>' . $command->getName() . '</info>' . $this->formatAliases($aliases),
                             $command->getDescription()
                         ),
                         $options
@@ -161,14 +144,11 @@ class CustomTextDescriptor extends TextDescriptor
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function writeText($content, array $options = [])
+    protected function writeText(string $content, array $options = []): void
     {
         $this->write(
-            isset($options['raw_text']) && $options['raw_text'] ? strip_tags((string) $content) : $content,
-            isset($options['raw_output']) ? !$options['raw_output'] : true
+            isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
+            !isset($options['raw_output']) || !$options['raw_output']
         );
     }
 
@@ -189,27 +169,18 @@ class CustomTextDescriptor extends TextDescriptor
      *
      * @return string
      */
-    protected function formatDefaultValue($default)
+    protected function formatDefaultValue(mixed $default): string
     {
-        if (PHP_VERSION_ID < 50400) {
-            return str_replace('\/', '/', json_encode($default));
-        }
-
-        return json_encode($default, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return json_encode($default, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
-    /**
-     * @param Command[] $commands
-     *
-     * @return int
-     */
-    protected function getColumnWidth(array $commands)
+    protected function getColumnWidth(array $commands): int
     {
         $width = 0;
         foreach ($commands as $command) {
             $aliasesString = $this->formatAliases($command->getAliases());
             $commandWidth = strlen((string) $command->getName()) + strlen($aliasesString);
-            $width = $commandWidth > $width ? $commandWidth : $width;
+            $width = max($commandWidth, $width);
         }
 
         // Limit to a maximum.
@@ -252,7 +223,7 @@ class CustomTextDescriptor extends TextDescriptor
             }
         }
 
-        $totalWidth = isset($options['total_width']) ? $options['total_width'] : $this->calculateTotalWidthForOptions(array($option));
+        $totalWidth = $options['total_width'] ?? $this->calculateTotalWidthForOptions(array($option));
         $synopsis = sprintf('%s%s',
             $option->getShortcut() ? sprintf('-%s, ', $option->getShortcut()) : '    ',
             sprintf('--%s%s', $option->getName(), $value)
@@ -282,7 +253,7 @@ class CustomTextDescriptor extends TextDescriptor
      *
      * @return int
      */
-    private function calculateTotalWidthForOptions(array $options)
+    private function calculateTotalWidthForOptions(array $options): int
     {
         $totalWidth = 0;
         foreach ($options as $option) {
