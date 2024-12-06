@@ -1,20 +1,27 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:info', description: 'Read or set properties for a project')]
 class ProjectInfoCommand extends CommandBase
 {
-    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
-    protected $formatter;
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -22,26 +29,24 @@ class ProjectInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('project:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
-            ->setDescription('Read or set properties for a project');
+            ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')
              ->addExample("Change the project's title", 'title "My project"');
         $this->setHiddenAliases(['project:metadata']);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
-        $this->formatter = $this->getService('property_formatter');
+        $project = $selection->getProject();
 
         if ($input->getOption('refresh')) {
             $project->refresh();
@@ -63,7 +68,7 @@ class ProjectInfoCommand extends CommandBase
 
         $value = $input->getArgument('value');
         if ($value !== null) {
-            return $this->setProperty($property, $value, $project, !$this->shouldWait($input));
+            return $this->setProperty($property, $value, $project, !$this->activityMonitor->shouldWait($input));
         }
 
         switch ($property) {
@@ -79,10 +84,10 @@ class ProjectInfoCommand extends CommandBase
                 throw new \InvalidArgumentException('Property not found: ' . $property);
 
             default:
-                $value = $this->api()->getNestedProperty($project, $property);
+                $value = $this->api->getNestedProperty($project, $property);
         }
 
-        $output->writeln($this->formatter->format($value, $property));
+        $output->writeln($this->propertyFormatter->format($value, $property));
 
         return 0;
     }
@@ -92,16 +97,15 @@ class ProjectInfoCommand extends CommandBase
      *
      * @return int
      */
-    protected function listProperties(array $properties)
+    protected function listProperties(array $properties): int
     {
         $headings = [];
         $values = [];
         foreach ($properties as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $this->formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $headings);
 
         return 0;
@@ -115,7 +119,7 @@ class ProjectInfoCommand extends CommandBase
      *
      * @return int
      */
-    protected function setProperty($property, $value, Project $project, $noWait)
+    protected function setProperty($property, $value, Project $project, $noWait): int
     {
         $type = $this->getType($property);
         if (!$type) {
@@ -129,7 +133,7 @@ class ProjectInfoCommand extends CommandBase
         $currentValue = $project->getProperty($property);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-                "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
+                "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property)
             );
 
             return 0;
@@ -140,16 +144,15 @@ class ProjectInfoCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->formatter->format($value, $property)
+            $this->propertyFormatter->format($value, $property)
         ));
 
-        $this->api()->clearProjectsCache();
+        $this->api->clearProjectsCache();
 
         $success = true;
         if (!$noWait) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $activityMonitor = $this->activityMonitor;
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
         return $success ? 0 : 1;
@@ -162,7 +165,7 @@ class ProjectInfoCommand extends CommandBase
      *
      * @return string|false
      */
-    protected function getType($property)
+    protected function getType($property): string|false
     {
         $writableProperties = [
             'title' => 'string',

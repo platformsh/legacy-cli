@@ -13,7 +13,7 @@ use Symfony\Component\Finder\Finder;
  */
 class ApplicationFinder
 {
-    private $config;
+    private readonly Config $config;
 
     public function __construct(Config $config = null)
     {
@@ -41,7 +41,7 @@ class ApplicationFinder
             if ($configuredRoot !== null && !\is_dir($configuredRoot)) {
                 throw new InvalidConfigException('Directory not found: ' . $configuredRoot, $configFile, 'source.root');
             }
-            $appRoot = $configuredRoot !== null ? $configuredRoot : \dirname($configFile);
+            $appRoot = $configuredRoot !== null ? $configuredRoot : \dirname((string) $configFile);
             $appName = isset($appConfig['name']) ? $appConfig['name'] : null;
             if ($appName && isset($applications[$appConfig['name']])) {
                 throw new InvalidConfigException(sprintf('An application named %s is already defined', $appConfig['name']), $configFile, 'name');
@@ -78,7 +78,7 @@ class ApplicationFinder
      *
      * @return array
      */
-    private function findGroupedApplications($directory)
+    private function findGroupedApplications(string $directory): array
     {
         $configFile = $directory . DIRECTORY_SEPARATOR . $this->config->get('service.applications_config_file');
         if (!\file_exists($configFile)) {
@@ -120,13 +120,13 @@ class ApplicationFinder
      *
      * @return string|null
      */
-    private function getExplicitRoot(array $appConfig, $sourceDir)
+    private function getExplicitRoot(array $appConfig, string $sourceDir): ?string
     {
         if (!isset($appConfig['source']['root'])) {
             return null;
         }
 
-        return \rtrim($sourceDir . DIRECTORY_SEPARATOR . \ltrim($appConfig['source']['root'], '\\/'), DIRECTORY_SEPARATOR);
+        return \rtrim($sourceDir . DIRECTORY_SEPARATOR . \ltrim((string) $appConfig['source']['root'], '\\/'), DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -136,7 +136,7 @@ class ApplicationFinder
      *
      * @return Finder|array
      */
-    private function findAppConfigFiles($directory)
+    private function findAppConfigFiles(string|array $directory): array|Finder
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.

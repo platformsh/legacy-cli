@@ -10,11 +10,10 @@ class Filesystem
 {
 
     protected $relative = false;
-    protected $fs;
+    protected SymfonyFilesystem $fs;
     protected $copyOnWindows = false;
 
-    /** @var Shell */
-    protected $shell;
+    protected Shell $shell;
 
     /**
      * @param Shell|null             $shell
@@ -29,7 +28,7 @@ class Filesystem
     /**
      * @param bool $copyOnWindows
      */
-    public function setCopyOnWindows($copyOnWindows = true)
+    public function setCopyOnWindows($copyOnWindows = true): void
     {
         $this->copyOnWindows = $copyOnWindows;
     }
@@ -39,7 +38,7 @@ class Filesystem
      *
      * @param bool $relative
      */
-    public function setRelativeLinks($relative = true)
+    public function setRelativeLinks($relative = true): void
     {
         // This is not possible on Windows.
         if (OsUtil::isWindows()) {
@@ -86,7 +85,7 @@ class Filesystem
      * @return bool
      *   True on success, false on failure.
      */
-    protected function unprotect($files, $recursive = false)
+    protected function unprotect($files, $recursive = false): bool
     {
         if (!$files instanceof \Traversable) {
             $files = new \ArrayObject(is_array($files) ? $files : array($files));
@@ -115,7 +114,7 @@ class Filesystem
      * @param string $dir
      * @param int $mode
      */
-    public function mkdir($dir, $mode = 0755)
+    public function mkdir($dir, $mode = 0755): void
     {
         $this->fs->mkdir($dir, $mode);
     }
@@ -127,7 +126,7 @@ class Filesystem
      * @param string $destination
      * @param bool   $override
      */
-    public function copy($source, $destination, $override = false)
+    public function copy($source, $destination, $override = false): void
     {
         if (is_dir($destination) && !is_dir($source)) {
             $destination = rtrim($destination, '/') . '/' . basename($source);
@@ -143,7 +142,7 @@ class Filesystem
      * @param array  $skip
      * @param bool   $override
      */
-    public function copyAll($source, $destination, array $skip = ['.git', '.DS_Store'], $override = false)
+    public function copyAll(string $source, string $destination, array $skip = ['.git', '.DS_Store'], $override = false): void
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -154,7 +153,7 @@ class Filesystem
         if (is_dir($source)) {
             // Prevent infinite recursion when the destination is inside the
             // source.
-            if (strpos($destination, $source) === 0) {
+            if (str_starts_with($destination, $source)) {
                 $relative = str_replace($source, '', $destination);
                 $parts = explode('/', ltrim($relative, '/'), 2);
                 $skip[] = $parts[0];
@@ -193,7 +192,7 @@ class Filesystem
      * @param string $target The target to link to (must already exist).
      * @param string $link   The name of the symbolic link.
      */
-    public function symlink($target, $link)
+    public function symlink($target, $link): void
     {
         if (!file_exists($target)) {
             throw new \InvalidArgumentException('Target not found: ' . $target);
@@ -218,12 +217,12 @@ class Filesystem
      * @return string
      *   The $path, relative to the $reference.
      */
-    public function makePathRelative($path, $reference)
+    public function makePathRelative($path, $reference): string
     {
         $path = realpath($path) ?: $path;
         $reference = realpath($reference) ?: $reference;
 
-        return rtrim($this->fs->makePathRelative($path, $reference), DIRECTORY_SEPARATOR);
+        return rtrim((string) $this->fs->makePathRelative($path, $reference), DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -236,7 +235,7 @@ class Filesystem
     public function formatPathForDisplay($path)
     {
         $relative = $this->makePathRelative($path, getcwd());
-        if (strpos($relative, '../..') === false && strlen($relative) < strlen($path)) {
+        if (!str_contains($relative, '../..') && strlen($relative) < strlen($path)) {
             return $relative;
         }
 
@@ -251,7 +250,7 @@ class Filesystem
      *
      * @return bool
      */
-    protected function fileInList($filename, array $list)
+    protected function fileInList($filename, array $list): bool
     {
         foreach ($list as $pattern) {
             if (fnmatch($pattern, $filename, FNM_PATHNAME | FNM_CASEFOLD)) {
@@ -276,12 +275,12 @@ class Filesystem
      */
     public function symlinkAll(
         $source,
-        $destination,
+        string $destination,
         $skipExisting = true,
         $recursive = false,
         $exclude = [],
         $copy = false
-    ) {
+    ): void {
         if (!is_dir($destination)) {
             mkdir($destination);
         }
@@ -337,7 +336,7 @@ class Filesystem
      *
      * @return string
      */
-    public function makePathAbsolute($relativePath)
+    public function makePathAbsolute($relativePath): string
     {
         if (file_exists($relativePath) && !is_link($relativePath) && ($realPath = realpath($relativePath))) {
             $absolute = $realPath;
@@ -362,7 +361,7 @@ class Filesystem
      *
      * @return bool
      */
-    public function canWrite($name)
+    public function canWrite($name): bool
     {
         if (is_writable($name)) {
             return true;
@@ -386,7 +385,7 @@ class Filesystem
      * @param string $contents
      * @param bool   $backup
      */
-    public function writeFile($filename, $contents, $backup = true)
+    public function writeFile($filename, $contents, $backup = true): void
     {
         $fs = new SymfonyFilesystem();
         if (file_exists($filename) && $backup && $contents !== file_get_contents($filename)) {
@@ -402,7 +401,7 @@ class Filesystem
      * @param string $dir
      * @param string $destination
      */
-    public function archiveDir($dir, $destination)
+    public function archiveDir($dir, $destination): void
     {
         $tar = $this->getTarExecutable();
         $dir = $this->fixTarPath($dir);
@@ -416,7 +415,7 @@ class Filesystem
      * @param string $archive
      * @param string $destination
      */
-    public function extractArchive($archive, $destination)
+    public function extractArchive($archive, $destination): void
     {
         if (!file_exists($archive)) {
             throw new \InvalidArgumentException("Archive not found: $archive");
@@ -444,9 +443,7 @@ class Filesystem
         if (OsUtil::isWindows()) {
             $path = preg_replace_callback(
                 '#^([A-Z]):/#i',
-                function (array $matches) {
-                    return '/' . strtolower($matches[1]) . '/';
-                },
+                fn(array $matches): string => '/' . strtolower((string) $matches[1]) . '/',
                 str_replace('\\', '/', $path)
             );
         }
@@ -457,7 +454,7 @@ class Filesystem
     /**
      * @return string
      */
-    protected function getTarExecutable()
+    protected function getTarExecutable(): string
     {
         $candidates = ['tar', 'tar.exe', 'bsdtar.exe'];
         foreach ($candidates as $command) {
@@ -474,7 +471,7 @@ class Filesystem
      * @param string $directory
      * @param bool   $writable
      */
-    public function validateDirectory($directory, $writable = false)
+    public function validateDirectory($directory, $writable = false): void
     {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException(sprintf('Directory not found: %s', $directory));

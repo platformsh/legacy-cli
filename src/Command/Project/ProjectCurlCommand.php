@@ -1,39 +1,35 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'project:curl', description: "Run an authenticated cURL request on a project's API")]
 class ProjectCurlCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
+    public function __construct(private readonly CurlCli $curlCli, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('project:curl')
-            ->setDescription("Run an authenticated cURL request on a project's API");
-
         CurlCli::configureInput($this->getDefinition());
 
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
+        $url = $selection->getProject()->getUri();
 
-        // Initialize the API service so that it gets CommandBase's event listeners
-        // (allowing for auto login).
-        $this->api();
-
-        $url = $this->getSelectedProject()->getUri();
-
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
-
-        return $curl->run($url, $input, $output);
+        return $this->curlCli->run($url, $input, $output);
     }
 }

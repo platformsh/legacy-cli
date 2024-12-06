@@ -7,14 +7,14 @@ use Platformsh\Cli\Util\SslUtil;
 
 class SslUtilTest extends TestCase
 {
-    private $dir;
+    private string $dir;
 
     protected function setUp(): void
     {
         $this->dir = dirname(__DIR__) . '/data/ssl';
     }
 
-    public function testValidate()
+    public function testValidate(): void
     {
         $result = (new SslUtil())->validate($this->dir . '/cert.pem', $this->dir . '/key.pem', [$this->dir . '/chain.crt']);
         $this->assertArrayHasKey('certificate', $result);
@@ -22,14 +22,14 @@ class SslUtilTest extends TestCase
         $this->assertCount(3, $result['chain']);
     }
 
-    public function testValidateWrongFilename()
+    public function testValidateWrongFilename(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('The private key file could not be read');
         (new SslUtil())->validate($this->dir . '/cert.pem', $this->dir . '/nonexistent-key.pem', []);
     }
 
-    public function testValidateWrongKey()
+    public function testValidateWrongKey(): void
     {
         if (!\extension_loaded('openssl')) {
             $this->markTestIncomplete('openssl extension not loaded');
@@ -40,7 +40,7 @@ class SslUtilTest extends TestCase
         }
     }
 
-    public function testValidateInvalidKey()
+    public function testValidateInvalidKey(): void
     {
         if (!\extension_loaded('openssl')) {
             $this->markTestIncomplete('openssl extension not loaded');
@@ -51,7 +51,7 @@ class SslUtilTest extends TestCase
         }
     }
 
-    public function testValidateInvalidCert()
+    public function testValidateInvalidCert(): void
     {
         if (!\extension_loaded('openssl')) {
             $this->markTestIncomplete('openssl extension not loaded');

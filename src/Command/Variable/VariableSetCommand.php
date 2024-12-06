@@ -1,7 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,36 +15,36 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use variable:create and variable:update instead (with --level environment)
  */
+#[AsCommand(name: 'variable:set', description: 'Set a variable for an environment', aliases: ['vset'])]
 class VariableSetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
 
-    /**
-     * {@inheritdoc}
-     */
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this
-            ->setName('variable:set')
-            ->setAliases(['vset'])
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addArgument('value', InputArgument::REQUIRED, 'The variable value')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Mark the value as JSON')
-            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled')
-            ->setDescription('Set a variable for an environment');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+            ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled');
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $variableName = $input->getArgument('name');
         $variableValue = $input->getArgument('value');
@@ -53,7 +57,7 @@ class VariableSetCommand extends CommandBase
 
         // Check whether the variable already exists. If there is no change,
         // quit early.
-        $existing = $this->getSelectedEnvironment()
+        $existing = $selection->getEnvironment()
                          ->getVariable($variableName);
         if ($existing
             && $existing->value === $variableValue
@@ -65,18 +69,17 @@ class VariableSetCommand extends CommandBase
         }
 
         // Set the variable to a new value.
-        $result = $this->getSelectedEnvironment()
+        $result = $selection->getEnvironment()
                        ->setVariable($variableName, $variableValue, $json, $enabled);
 
         $this->stdErr->writeln("Variable <info>$variableName</info> set to: $variableValue");
 
         $success = true;
         if (!$result->countActivities()) {
-            $this->redeployWarning();
-        } elseif ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+            $this->api->redeployWarning();
+        } elseif ($this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;
@@ -92,6 +95,6 @@ class VariableSetCommand extends CommandBase
         if ($string === 'null') {
             return true;
         }
-        return \json_decode($string) !== null;
+        return \json_decode((string) $string) !== null;
     }
 }

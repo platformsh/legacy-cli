@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Model\RemoteContainer;
 
+use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Client\Model\Deployment\RuntimeOperation;
 
 /**
@@ -28,7 +29,7 @@ interface RemoteContainerInterface
     /**
      * Gets the container config.
      *
-     * @return \Platformsh\Cli\Model\AppConfig
+     * @return AppConfig
      */
     public function getConfig();
 

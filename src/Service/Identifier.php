@@ -10,31 +10,20 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class Identifier
 {
-    private $config;
-    private $api;
-    private $stdErr;
+    private readonly Config $config;
+    private readonly Api $api;
     private $cache;
+    private readonly Io $io;
 
-    /**
-     * Constructor.
-     *
-     * @param \Platformsh\Cli\Service\Config|null $config
-     * @param \Platformsh\Cli\Service\Api|null $api
-     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
-     * @param CacheProvider|null $cache
-     */
-    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null, CacheProvider $cache = null)
+    public function __construct(Config $config = null, Api $api = null, CacheProvider $cache = null, Io $io = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
-        $output = $output ?: new NullOutput();
-        $this->stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+        $this->io = $io ?: new Io(new ConsoleOutput());
     }
 
     /**
@@ -46,10 +35,10 @@ class Identifier
      *   An array containing keys 'projectId', 'environmentId', 'host', and
      *   'appId'. At least the 'projectId' will be populated.
      */
-    public function identify($url)
+    public function identify(string $url)
     {
         $result = $this->parseProjectId($url);
-        if (empty($result['projectId']) && strpos($url, '.') !== false && $this->config->has('detection.cluster_header')) {
+        if (empty($result['projectId']) && str_contains($url, '.') && $this->config->has('detection.cluster_header')) {
             $result = $this->identifyFromHeaders($url);
         }
         if (empty($result['projectId'])) {
@@ -67,7 +56,7 @@ class Identifier
      *
      * @return array
      */
-    private function parseProjectId($url)
+    private function parseProjectId(string $url): array
     {
         $result = [];
 
@@ -83,7 +72,7 @@ class Identifier
             return $result;
         }
 
-        $this->debug('Parsing URL to determine project ID: ' . $url);
+        $this->io->debug('Parsing URL to determine project ID: ' . $url);
 
         $host = $urlParts['host'];
         $path = isset($urlParts['path']) ? $urlParts['path'] : '';
@@ -111,9 +100,9 @@ class Identifier
             return $result;
         }
 
-        if (strpos($path, '/projects/') !== false || strpos($fragment, '/projects/') !== false) {
+        if (str_contains($path, '/projects/') || str_contains($fragment, '/projects/')) {
             $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            $result['projectId'] = basename((string) preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
             if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
                 $result['environmentId'] = rawurldecode(basename($matches[1]));
             }
@@ -144,18 +133,18 @@ class Identifier
      *
      * @return array
      */
-    private function identifyFromHeaders($url)
+    private function identifyFromHeaders(string $url): array
     {
         if (!strpos($url, '.')) {
             throw new \InvalidArgumentException('Invalid URL: ' . $url);
         }
-        if (strpos($url, '//') === false) {
+        if (!str_contains($url, '//')) {
             $url = 'https://' . $url;
         }
         $result = ['projectId' => null, 'environmentId' => null];
         $cluster = $this->getClusterHeader($url);
         if (!empty($cluster)) {
-            $this->debug('Identified project cluster: ' . $cluster);
+            $this->io->debug('Identified project cluster: ' . $cluster);
             list($result['projectId'], $result['environmentId']) = explode('-', $cluster, 2);
         }
 
@@ -169,7 +158,7 @@ class Identifier
      *
      * @return string|false
      */
-    private function getClusterHeader($url)
+    private function getClusterHeader(string $url)
     {
         if (!$this->config->has('detection.cluster_header')) {
             return false;
@@ -177,7 +166,7 @@ class Identifier
         $cacheKey = 'project-cluster:' . $url;
         $cluster = $this->cache ? $this->cache->fetch($cacheKey) : false;
         if ($cluster === false) {
-            $this->debug('Making a HEAD request to identify project from URL: ' . $url);
+            $this->io->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
                 $response = $this->api->getExternalHttpClient()
                     ->head($url, [
@@ -191,7 +180,7 @@ class Identifier
                 if ($e->getResponse()) {
                     $response = $e->getResponse();
                 } else {
-                    $this->debug($e->getMessage());
+                    $this->io->debug($e->getMessage());
 
                     return false;
                 }
@@ -205,13 +194,5 @@ class Identifier
         }
 
         return is_array($cluster) ? reset($cluster) : false;
-    }
-
-    /**
-     * @param string $message
-     */
-    private function debug($message)
-    {
-        $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
 }

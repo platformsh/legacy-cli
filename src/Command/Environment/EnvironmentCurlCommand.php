@@ -1,39 +1,37 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:curl', description: "Run an authenticated cURL request on an environment's API")]
 class EnvironmentCurlCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
+
+    public function __construct(private readonly CurlCli $curlCli, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('environment:curl')
-            ->setDescription("Run an authenticated cURL request on an environment's API");
-
         CurlCli::configureInput($this->getDefinition());
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
+        $url = $selection->getEnvironment()->getUri();
 
-        // Initialize the API service so that it gets CommandBase's event listeners
-        // (allowing for auto login).
-        $this->api();
-
-        $url = $this->getSelectedEnvironment()->getUri();
-
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
-
-        return $curl->run($url, $input, $output);
+        return $this->curlCli->run($url, $input, $output);
     }
 }

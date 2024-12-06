@@ -1,0 +1,50 @@
+# Configuration file for services (dependency injection).
+#
+# See https://symfony.com/doc/current/service_container.html
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: false
+
+    # Set up all classes in src/Command as console commands.
+    Platformsh\Cli\Command\:
+        resource: '../src/Command/*'
+        tags: [console.command]
+
+    # Set up all classes in src/Service as services automatically.
+    Platformsh\Cli\Service\:
+        resource: '../src/Service/*'
+
+    # A few services are not inside the \Platformsh\Cli\Service namespace.
+    Platformsh\Cli\Local\ApplicationFinder: {}
+    Platformsh\Cli\Local\LocalBuild: {}
+    Platformsh\Cli\Local\LocalProject:
+        public: true
+    Platformsh\Cli\SshCert\Certifier: {}
+    Platformsh\Cli\Selector\Selector: {}
+
+    # A few other services have to be public; they are used in Application.
+    Platformsh\Cli\Service\LegacyMigration:
+        public: true
+    Platformsh\Cli\Service\SelfInstallChecker:
+      public: true
+    Platformsh\Cli\Service\SelfUpdateChecker:
+        public: true
+
+    # Configure the cache service, which is created via a factory.
+    Doctrine\Common\Cache\CacheProvider:
+        public: true
+        factory:   'Platformsh\Cli\Service\CacheFactory::createCacheProvider'
+        arguments: ['@Platformsh\Cli\Service\Config']
+
+    # Configure synthetic services, which may be created and set after the
+    # container is compiled.
+    Platformsh\Cli\Service\Config:
+        public: true
+        synthetic: true
+    Symfony\Component\Console\Output\OutputInterface:
+        public: true
+        synthetic: true
+    Symfony\Component\Console\Input\InputInterface:
+        public: true
+        synthetic: true

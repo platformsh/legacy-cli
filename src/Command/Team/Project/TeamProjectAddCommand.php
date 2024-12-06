@@ -1,6 +1,9 @@
 <?php
 namespace Platformsh\Cli\Command\Team\Project;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -9,6 +12,7 @@ use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Organization\Project as OrgProject;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamProjectAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,30 +20,33 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 
+#[AsCommand(name: 'team:project:add', description: 'Add project(s) to a team')]
 class TeamProjectAddCommand extends TeamCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
-        $this->setName('team:project:add')
-            ->setDescription('Add project(s) to a team')
-            ->addArgument('projects', InputArgument::IS_ARRAY, "The project ID(s).\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('all', null, InputOption::VALUE_NONE, 'Add all the projects that currently exist in the organization')
-            ->addOrganizationOptions()
-            ->addTeamOption();
+        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function configure()
+    {
+        $this->addArgument('projects', InputArgument::IS_ARRAY, "The project ID(s).\n" . ArrayArgument::SPLIT_HELP)
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Add all the projects that currently exist in the organization');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $team = $this->validateTeamInput($input);
         if (!$team) {
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $teamProjects = $this->loadTeamProjects($team);
-        $teamProjectIds = array_map(function (TeamProjectAccess $a) { return $a->project_id; }, $teamProjects);
+        $teamProjectIds = array_map(fn(TeamProjectAccess $a) => $a->project_id, $teamProjects);
 
         $projectIds = ArrayArgument::getArgument($input, 'projects');
 
@@ -55,7 +62,7 @@ class TeamProjectAddCommand extends TeamCommandBase
             }
             foreach ($orgProjects as $orgProject) {
                 // Pre-cache the label for this project.
-                $this->api()->getProjectLabel($orgProject);
+                $this->api->getProjectLabel($orgProject);
                 $projectIds[] = $orgProject->id;
             }
         } elseif (!$projectIds && $input->isInteractive()) {
@@ -64,13 +71,11 @@ class TeamProjectAddCommand extends TeamCommandBase
                 $this->stdErr->writeln(sprintf("No projects were found in the team's organization (%s)", $team->organization_id));
                 return 1;
             }
-            $orgProjectsFiltered = array_filter($orgProjects, function (OrgProject $orgProject) use ($teamProjectIds) {
-                return !in_array($orgProject->id, $teamProjectIds);
-            });
+            $orgProjectsFiltered = array_filter($orgProjects, fn(OrgProject $orgProject): bool => !in_array($orgProject->id, $teamProjectIds));
             if (!$orgProjectsFiltered) {
                 $this->stdErr->writeln('The team currently has access to the project(s): ');
                 foreach ($teamProjects as $teamProject) {
-                    $this->stdErr->writeln(sprintf(' • %s', $this->api()->getProjectLabel($teamProject)));
+                    $this->stdErr->writeln(sprintf(' • %s', $this->api->getProjectLabel($teamProject)));
                 }
                 $this->stdErr->writeln('No new projects were found to add.');
                 return 1;
@@ -80,7 +85,7 @@ class TeamProjectAddCommand extends TeamCommandBase
             if ($asChoice) {
                 $options = [];
                 foreach ($orgProjectsFiltered as $orgProject) {
-                    $options[$orgProject->id] = $this->api()->getProjectLabel($orgProject, false);
+                    $options[$orgProject->id] = $this->api->getProjectLabel($orgProject, false);
                 }
                 natcasesort($options);
                 $choiceQuestionText = 'Enter a number to select a project to add to the team:';
@@ -115,7 +120,7 @@ class TeamProjectAddCommand extends TeamCommandBase
                 $questionText = 'Enter an ID to select a project to add to the team';
                 $first = true;
                 do {
-                    $choice = $questionHelper->askInput($questionText, null, array_values($autocomplete), function ($value) use ($autocomplete, $first, $teamProjectIds) {
+                    $choice = $questionHelper->askInput($questionText, null, array_values($autocomplete), function ($value) use ($autocomplete, $first, $teamProjectIds): ?string {
                         list($id, ) = explode(' - ', $value);
                         if (empty(trim($id))) {
                             if (!$first) {
@@ -151,7 +156,7 @@ class TeamProjectAddCommand extends TeamCommandBase
 
         foreach ($projectIds as $key => $projectId) {
             if (in_array($projectId, $teamProjectIds)) {
-                $this->stdErr->writeln(sprintf('The team already has access to the project %s', $this->api()->getProjectLabel($projectId, 'comment')));
+                $this->stdErr->writeln(sprintf('The team already has access to the project %s', $this->api->getProjectLabel($projectId, 'comment')));
                 unset($projectIds[$key]);
             }
         }
@@ -163,7 +168,7 @@ class TeamProjectAddCommand extends TeamCommandBase
 
         if (count($projectIds) === 1) {
             $projectId = reset($projectIds);
-            if (!$questionHelper->confirm(sprintf('Are you sure you want to add the project %s to the team %s?', $this->api()->getProjectLabel($projectId), $this->getTeamLabel($team)))) {
+            if (!$questionHelper->confirm(sprintf('Are you sure you want to add the project %s to the team %s?', $this->api->getProjectLabel($projectId), $this->getTeamLabel($team)))) {
                 return 1;
             }
         } else {
@@ -181,7 +186,7 @@ class TeamProjectAddCommand extends TeamCommandBase
         }
 
         try {
-            $this->api()->getHttpClient()->post($team->getUri() . '/project-access', ['json' => $payload]);
+            $this->api->getHttpClient()->post($team->getUri() . '/project-access', ['json' => $payload]);
         } catch (BadResponseException $e) {
             throw ApiResponseException::create($e->getRequest(), $e->getResponse(), $e);
         }
@@ -197,11 +202,11 @@ class TeamProjectAddCommand extends TeamCommandBase
      *
      * @param string[] $projectIds
      */
-    private function displayProjectsAsList($projectIds, OutputInterface $output)
+    private function displayProjectsAsList($projectIds, OutputInterface $output): void
     {
         $selections = [];
         foreach ($projectIds as $projectId) {
-            $selections[] = ' • ' . $this->api()->getProjectLabel($projectId);
+            $selections[] = ' • ' . $this->api->getProjectLabel($projectId);
         }
         natcasesort($selections);
         $output->writeln($selections);
@@ -213,9 +218,9 @@ class TeamProjectAddCommand extends TeamCommandBase
      * @param Team $team
      * @return OrgProject[]
      */
-    private function loadOrgProjects(Team $team)
+    private function loadOrgProjects(Team $team): array
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $url = '/organizations/' . rawurlencode($team->organization_id) . '/projects';
         /** @var OrgProject[] $projects */
         $projects = [];

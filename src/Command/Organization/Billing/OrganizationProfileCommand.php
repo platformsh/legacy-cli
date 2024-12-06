@@ -1,54 +1,57 @@
 <?php
 namespace Platformsh\Cli\Command\Organization\Billing;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Profile;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:billing:profile', description: "View or change an organization's billing profile")]
 class OrganizationProfileCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('organization:billing:profile')
-            ->setDescription("View or change an organization's billing profile")
-            ->addOrganizationOptions(true)
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $org = $this->validateOrganizationInput($input, 'orders');
+        $org = $this->selector->selectOrganization($input, 'orders');
         $profile = $org->getProfile();
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $property = $input->getArgument('property');
         if ($property === null) {
             $headings = [];
             $values = [];
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             foreach ($profile->getProperties() as $key => $value) {
                 $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
                 $values[] = $formatter->format($value, $key);
             }
 
-            /** @var Table $table */
-            $table = $this->getService('table');
+            $table = $this->table;
 
             if (!$table->formatIsMachineReadable()) {
-                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api()->getOrganizationLabel($org)));
+                $this->stdErr->writeln(\sprintf('Billing profile for the organization %s:', $this->api->getOrganizationLabel($org)));
             }
 
             $table->renderSimple($values, $headings);
@@ -76,13 +79,12 @@ class OrganizationProfileCommand extends OrganizationCommandBase
      *
      * @return int
      */
-    protected function setProperty($property, $value, Profile $profile)
+    protected function setProperty($property, $value, Profile $profile): int
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $currentValue = $profile->getProperty($property, false);
         if ($currentValue === $value) {
@@ -127,7 +129,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
      *
      * @return string|false
      */
-    private function getType($property)
+    private function getType($property): string|false
     {
         $writableProperties = [
             'company_name' => 'string',

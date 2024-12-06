@@ -10,11 +10,7 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
  */
 class Git
 {
-    /** @var Shell */
-    private $shell;
-
-    /** @var Ssh|null */
-    private $ssh;
+    private readonly Shell $shell;
 
     /** @var string|null */
     private $repositoryDir = null;
@@ -22,17 +18,15 @@ class Git
     /** @var string|null */
     private $sshCommandFile;
 
-    /** @var array */
-    private $extraSshOptions = [];
+    private array $extraSshOptions = [];
 
     /**
      * @param Shell|null $shell
      * @param Ssh|null   $ssh
      */
-    public function __construct(Shell $shell = null, Ssh $ssh = null)
+    public function __construct(Shell $shell = null, private readonly ?Ssh $ssh = null)
     {
         $this->shell = $shell ?: new Shell();
-        $this->ssh = $ssh;
     }
 
     /**
@@ -60,7 +54,7 @@ class Git
      *
      * @throws DependencyMissingException
      */
-    public function ensureInstalled()
+    public function ensureInstalled(): void
     {
         try {
             $this->execute(['--version'], null, true);
@@ -79,7 +73,7 @@ class Git
      * @param string $dir
      *   The path to a Git repository.
      */
-    public function setDefaultRepositoryDir($dir)
+    public function setDefaultRepositoryDir($dir): void
     {
         $this->repositoryDir = $dir;
     }
@@ -149,7 +143,7 @@ class Git
      *
      * @return bool
      */
-    public function init($dir, $initial_branch = '', $mustRun = false)
+    public function init(string $dir, $initial_branch = '', $mustRun = false): bool
     {
         if (is_dir($dir . '/.git')) {
             throw new \InvalidArgumentException("Already a repository: $dir");
@@ -174,7 +168,7 @@ class Git
      *
      * @return bool
      */
-    public function remoteRefExists($url, $ref = null, $heads = true)
+    public function remoteRefExists($url, $ref = null, $heads = true): bool
     {
         $args = ['ls-remote', $url];
         if ($heads) {
@@ -200,15 +194,13 @@ class Git
      *
      * @return bool
      */
-    public function branchExists($branchName, $dir = null, $mustRun = false)
+    public function branchExists($branchName, $dir = null, $mustRun = false): bool
     {
         // The porcelain command 'git branch' is less strict about character
         // encoding than (otherwise simpler) plumbing commands such as
         // 'git show-ref'.
         $result = $this->execute(['branch', '--list', '--no-color', '--no-column'], $dir, $mustRun);
-        $branches = array_map(function ($line) {
-            return trim(ltrim($line, '* '));
-        }, explode("\n", $result));
+        $branches = array_map(fn($line): string => trim(ltrim((string) $line, '* ')), explode("\n", $result));
 
         return in_array($branchName, $branches, true);
     }
@@ -223,7 +215,7 @@ class Git
      *
      * @return bool
      */
-    public function remoteBranchExists($remote, $branchName, $dir = null, $mustRun = false)
+    public function remoteBranchExists($remote, $branchName, $dir = null, $mustRun = false): bool
     {
         $args = ['ls-remote', $remote, $branchName];
         $result = $this->execute($args, $dir, $mustRun, true, [], true);
@@ -242,7 +234,7 @@ class Git
      *
      * @return bool
      */
-    public function checkOutNew($name, $parent = null, $upstream = null, $dir = null, $mustRun = false)
+    public function checkOutNew($name, $parent = null, $upstream = null, $dir = null, $mustRun = false): bool
     {
         $args = ['checkout', '-b', $name];
         if ($parent !== null) {
@@ -266,7 +258,7 @@ class Git
      *
      * @return bool
      */
-    public function fetch($remote, $branch = null, $uri = '', $dir = null, $mustRun = false)
+    public function fetch($remote, $branch = null, $uri = '', $dir = null, $mustRun = false): bool
     {
         $args = ['fetch', $remote];
         if ($branch !== null) {
@@ -287,7 +279,7 @@ class Git
      *
      * @return bool
      */
-    public function pull($repository = null, $ref = null, $dir = null, $mustRun = true, $quiet = false) {
+    public function pull($repository = null, $ref = null, $dir = null, $mustRun = true, $quiet = false): bool {
         $args = ['pull'];
         if ($repository !== null) {
             $args[] = $repository;
@@ -311,7 +303,7 @@ class Git
      *
      * @return bool
      */
-    public function checkOut($name, $dir = null, $mustRun = false, $quiet = false)
+    public function checkOut($name, $dir = null, $mustRun = false, $quiet = false): bool
     {
         return (bool) $this->execute([
             'checkout',
@@ -365,7 +357,7 @@ class Git
      *
      * @return bool
      */
-    public function setUpstream($upstream, $branch = null, $dir = null, $mustRun = false)
+    public function setUpstream($upstream, $branch = null, $dir = null, $mustRun = false): bool
     {
         $args = ['branch'];
         if ($upstream !== false) {
@@ -383,7 +375,7 @@ class Git
     /**
      * @return bool
      */
-    public function supportsGitSshCommand()
+    public function supportsGitSshCommand(): bool
     {
         return version_compare($this->getVersion(), '2.3', '>=');
     }
@@ -391,7 +383,7 @@ class Git
     /**
      * @return bool
      */
-    public function supportsGitInitialBranchFlag()
+    public function supportsGitInitialBranchFlag(): bool
     {
         return version_compare($this->getVersion(), '2.28', '>=');
     }
@@ -412,7 +404,7 @@ class Git
      *
      * @return bool
      */
-    public function cloneRepo($urlOrPath, $destination = null, array $args = [], $mustRun = false)
+    public function cloneRepo($urlOrPath, $destination = null, array $args = [], $mustRun = false): bool
     {
         $args = array_merge(['clone', $urlOrPath], $args);
         if ($destination) {
@@ -469,7 +461,7 @@ class Git
      *
      * @return bool
      */
-    public function checkIgnore($file, $dir = null)
+    public function checkIgnore($file, $dir = null): bool
     {
         return (bool) $this->execute(['check-ignore', $file], $dir);
     }
@@ -486,7 +478,7 @@ class Git
      *
      * @return bool
      */
-    public function updateSubmodules($recursive = false, $dir = null, $mustRun = false)
+    public function updateSubmodules($recursive = false, $dir = null, $mustRun = false): bool
     {
         $args = ['submodule', 'update', '--init'];
         if ($recursive) {
@@ -520,7 +512,7 @@ class Git
      *
      * @param string[] $options
      */
-    public function setExtraSshOptions(array $options)
+    public function setExtraSshOptions(array $options): void
     {
         $this->extraSshOptions = $options;
     }
@@ -561,7 +553,7 @@ class Git
      *
      * @return string
      */
-    private function writeSshFile($sshCommand)
+    private function writeSshFile(string $sshCommand): string
     {
         $tempDir = sys_get_temp_dir();
         $tempFile = tempnam($tempDir, 'cli-git-ssh');

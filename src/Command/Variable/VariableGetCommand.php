@@ -1,58 +1,77 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Selector\Selection;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\VariableCommandUtil;
+use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable as EnvironmentLevelVariable;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class VariableGetCommand extends VariableCommandBase
+#[AsCommand(name: 'variable:get', description: 'View a variable', aliases: ['vget'])]
+class VariableGetCommand extends CommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
+    public function __construct(private readonly Config              $config,
+                                private readonly Io                  $io,
+                                private readonly QuestionHelper      $questionHelper,
+                                private readonly PropertyFormatter   $propertyFormatter,
+                                private readonly Selector            $selector,
+                                private readonly SubCommandRunner    $subCommandRunner,
+                                private readonly Table               $table,
+                                private readonly VariableCommandUtil $variableCommandUtil)
+    {
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this
-            ->setName('variable:get')
-            ->setAliases(['vget'])
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property')
-            ->setDescription('View a variable');
-        $this->addLevelOption();
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'View a single variable property');
+        $this->variableCommandUtil->addLevelOption($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addOption('pipe', null, InputOption::VALUE_NONE, '[Deprecated option] Output the variable value only');
         $this->addExample('View the variable "example"', 'example');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['pipe']);
-        $level = $this->getRequestedLevel($input);
-        $this->validateInput($input, $level === self::LEVEL_PROJECT);
+        $this->io->warnAboutDeprecatedOptions(['pipe']);
+        $level = $this->variableCommandUtil->getRequestedLevel($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level !== VariableCommandUtil::LEVEL_PROJECT));
 
         $name = $input->getArgument('name');
         if ($name) {
-            $variable = $this->getExistingVariable($name, $level);
+            $variable = $this->variableCommandUtil->getExistingVariable($name, $selection, $level);
             if (!$variable) {
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-            $variable = $this->chooseVariable($level);
+            $variable = $this->chooseVariable($selection, $level);
             if (!$variable) {
                 $this->stdErr->writeln('No variables found');
                 return 1;
             }
         } else {
-            return $this->runOtherCommand('variable:list', array_filter([
+            return $this->subCommandRunner->run('variable:list', array_filter([
                 '--level' => $level,
-                '--project' => $this->getSelectedProject()->id,
-                '--environment' => $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment()->id : null,
+                '--project' => $selection->getProject()->id,
+                '--environment' => $selection->hasEnvironment() ? $selection->getEnvironment()->id : null,
                 '--format' => $input->getOption('format'),
             ]));
         }
@@ -61,7 +80,7 @@ class VariableGetCommand extends VariableCommandBase
             $this->stdErr->writeln(sprintf(
                 "The variable <comment>%s</comment> is disabled.\nEnable it with: <comment>%s variable:enable %s</comment>",
                 $variable->name,
-                $this->config()->get('application.executable'),
+                $this->config->get('application.executable'),
                 escapeshellarg($variable->name)
             ));
         }
@@ -81,7 +100,7 @@ class VariableGetCommand extends VariableCommandBase
         }
 
         $properties = $variable->getProperties();
-        $properties['level'] = $this->getVariableLevel($variable);
+        $properties['level'] = $this->variableCommandUtil->getVariableLevel($variable);
 
         if ($property = $input->getOption('property')) {
             if ($property === 'value' && !isset($properties['value']) && $variable->is_sensitive) {
@@ -89,21 +108,18 @@ class VariableGetCommand extends VariableCommandBase
                 return 1;
             }
 
-            /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $formatter->displayData($output, $properties, $property);
 
             return 0;
         }
 
-        $this->displayVariable($variable);
+        $this->variableCommandUtil->displayVariable($variable);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
-            $escapedName = $this->escapeShellArg($name);
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To list other variables, run: <info>%s variables</info>',
@@ -112,28 +128,23 @@ class VariableGetCommand extends VariableCommandBase
             $this->stdErr->writeln(sprintf(
                 'To update the variable, use: <info>%s variable:update %s</info>',
                 $executable,
-                $escapedName
+                OsUtil::escapeShellArg($name),
             ));
         }
 
         return 0;
     }
 
-    /**
-     * @param string|null $level
-     *
-     * @return ProjectLevelVariable|EnvironmentLevelVariable|false
-     */
-    private function chooseVariable($level) {
+    private function chooseVariable(Selection $selection, ?string $level): ProjectLevelVariable|EnvironmentLevelVariable|false {
         $projectVariables = [];
         if ($level === 'project' || $level === null) {
-            foreach ($this->getSelectedProject()->getVariables() as $variable) {
+            foreach ($selection->getProject()->getVariables() as $variable) {
                 $projectVariables[$variable->name] = $variable;
             }
         }
         $environmentVariables = [];
         if ($level === 'environment' || $level === null) {
-            foreach ($this->getSelectedEnvironment()->getVariables() as $variable) {
+            foreach ($selection->getEnvironment()->getVariables() as $variable) {
                 $environmentVariables[$variable->name] = $variable;
             }
         }
@@ -146,12 +157,11 @@ class VariableGetCommand extends VariableCommandBase
             $options[$projectPrefix . $name] = $name
                 . (isset($options[$name]) ? ' (project-level)' : '');
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
         $key = $questionHelper->choose($options, 'Enter a number to choose a variable:');
-        if (strpos($key, $projectPrefix) === 0) {
-            return $projectVariables[substr($key, strlen($projectPrefix))];
+        if (str_starts_with((string) $key, $projectPrefix)) {
+            return $projectVariables[substr((string) $key, strlen($projectPrefix))];
         }
 
         return $environmentVariables[$key];

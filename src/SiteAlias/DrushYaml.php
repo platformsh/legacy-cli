@@ -10,7 +10,7 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getFilename($groupName)
+    protected function getFilename($groupName): string
     {
         return $this->drush->getSiteAliasDir() . '/' . $groupName . '.site.yml';
     }
@@ -18,7 +18,7 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function formatAliases(array $aliases)
+    protected function formatAliases(array $aliases): string
     {
         return Yaml::dump($aliases, 5, 2);
     }
@@ -55,7 +55,7 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getHeader(Project $project)
+    protected function getHeader(Project $project): string
     {
         return <<<EOT
 # Drush aliases for the {$this->config->get('service.name')} project "{$project->title}".

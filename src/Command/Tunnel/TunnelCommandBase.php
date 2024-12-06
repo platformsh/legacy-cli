@@ -1,6 +1,12 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,10 +16,22 @@ use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
+    private readonly Io $io;
+    private readonly Selector $selector;
+    private readonly Relationships $relationships;
+    private readonly Config $config;
     const LOCAL_IP = '127.0.0.1';
 
     protected $tunnelInfo;
-    protected $canBeRunMultipleTimes = false;
+    protected bool $canBeRunMultipleTimes = false;
+    #[Required]
+    public function autowire(Config $config, Io $io, Relationships $relationships, Selector $selector) : void
+    {
+        $this->config = $config;
+        $this->relationships = $relationships;
+        $this->selector = $selector;
+        $this->io = $io;
+    }
 
     /**
      * Check whether a tunnel is already open.
@@ -28,7 +46,7 @@ abstract class TunnelCommandBase extends CommandBase
             if ($this->tunnelsAreEqual($tunnel, $info)) {
                 /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($info['pid']) && function_exists('posix_kill') && !posix_kill($info['pid'], 0)) {
-                    $this->debug(sprintf(
+                    $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
                         $info['localPort']
                     ));
@@ -55,9 +73,9 @@ abstract class TunnelCommandBase extends CommandBase
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
+            $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
             if (file_exists($filename)) {
-                $this->debug(sprintf('Loading tunnel info from %s', $filename));
+                $this->io->debug(sprintf('Loading tunnel info from %s', $filename));
                 $this->tunnelInfo = (array) json_decode(file_get_contents($filename), true);
             }
         }
@@ -67,7 +85,7 @@ abstract class TunnelCommandBase extends CommandBase
             foreach ($this->tunnelInfo as $key => $tunnel) {
                 /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($tunnel['pid']) && function_exists('posix_kill') && !posix_kill($tunnel['pid'], 0)) {
-                    $this->debug(sprintf(
+                    $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
                         $tunnel['localPort']
                     ));
@@ -85,9 +103,9 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected function saveTunnelInfo()
     {
-        $filename = $this->config()->getWritableUserDir() . '/tunnel-info.json';
+        $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
-            $this->debug('Saving tunnel info to: ' . $filename);
+            $this->io->debug('Saving tunnel info to: ' . $filename);
             if (!file_put_contents($filename, json_encode($this->tunnelInfo))) {
                 throw new \RuntimeException('Failed to write tunnel info to: ' . $filename);
             }
@@ -123,9 +141,7 @@ abstract class TunnelCommandBase extends CommandBase
         if (file_exists($pidFile)) {
             $success = unlink($pidFile) && $success;
         }
-        $this->tunnelInfo = array_filter($this->tunnelInfo, function ($info) use ($tunnel) {
-            return !$this->tunnelsAreEqual($info, $tunnel);
-        });
+        $this->tunnelInfo = array_filter($this->tunnelInfo, fn($info): bool => !$this->tunnelsAreEqual($info, $tunnel));
         $this->saveTunnelInfo();
 
         return $success;
@@ -187,8 +203,7 @@ abstract class TunnelCommandBase extends CommandBase
      */
     protected function getTunnelUrl(array $tunnel, array $service)
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
         $localService = array_merge($service, array_intersect_key([
             'host' => self::LOCAL_IP,
             'port' => $tunnel['localPort'],
@@ -216,7 +231,7 @@ abstract class TunnelCommandBase extends CommandBase
     protected function getPidFile(array $tunnel)
     {
         $key = $this->getTunnelKey($tunnel);
-        $dir = $this->config()->getWritableUserDir() . '/.tunnels';
+        $dir = $this->config->getWritableUserDir() . '/.tunnels';
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }
@@ -231,7 +246,7 @@ abstract class TunnelCommandBase extends CommandBase
      * @param int $localPort
      * @param array $extraArgs
      *
-     * @return \Symfony\Component\Process\Process
+     * @return Process
      */
     protected function createTunnelProcess($url, $remoteHost, $remotePort, $localPort, array $extraArgs = [])
     {
@@ -253,16 +268,13 @@ abstract class TunnelCommandBase extends CommandBase
      */
     protected function filterTunnels(array $tunnels, InputInterface $input)
     {
-        if (!$input->getOption('project') && !$this->getProjectRoot()) {
+        if (!$input->getOption('project') && !$this->selector->getProjectRoot()) {
             return $tunnels;
         }
-
-        if (!$this->hasSelectedProject()) {
-            $this->validateInput($input, true);
-        }
-        $project = $this->getSelectedProject();
-        $environment = $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null;
-        $appName = $this->hasSelectedEnvironment() ? $this->selectApp($input) : null;
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
+        $project = $selection->getProject();
+        $environment = $selection->hasEnvironment() ? $selection->getEnvironment() : null;
+        $appName = $selection->hasEnvironment() ? $selection->getAppName() : null;
         foreach ($tunnels as $key => $tunnel) {
             if ($tunnel['projectId'] !== $project->id
                 || ($environment !== null && $tunnel['environmentId'] !== $environment->id)

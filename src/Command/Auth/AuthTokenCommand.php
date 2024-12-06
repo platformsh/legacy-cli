@@ -1,24 +1,28 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:token', description: 'Obtain an OAuth 2 access token for API requests')]
 class AuthTokenCommand extends CommandBase
 {
     const RFC6750_PREFIX = 'Authorization: Bearer ';
 
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
+    public function __construct(private readonly Api $api, private readonly Config $config)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('auth:token')
-            ->setDescription(sprintf(
-                'Obtain an OAuth 2 access token for requests to %s APIs',
-                $this->config()->get('service.name')
-            ))
+        $this
             ->addOption('header', 'H', InputOption::VALUE_NONE, 'Prefix the token with "' . self::RFC6750_PREFIX . '" to make an RFC 6750 header')
             ->addOption('no-warn', 'W', InputOption::VALUE_NONE, 'Suppress the warning that is printed by default to stderr.'
                 . ' This option is preferred over redirecting stderr, as that would hide other potentially useful messages.');
@@ -28,11 +32,11 @@ class AuthTokenCommand extends CommandBase
             . "\n\n" . 'Using this command is not generally recommended, as it increases the chance of the token being leaked.'
             . ' Take care not to expose the token in a shared program or system, or to send the token to the wrong API domain.'
         );
-        $executable = $this->config()->get('application.executable');
-        $apiUrl = $this->config()->getApiUrl();
+        $executable = $this->config->get('application.executable');
+        $apiUrl = $this->config->getApiUrl();
         $examples = [
             'Print the payload for JWT-formatted tokens' => \sprintf('%s auth:token -W | cut -d. -f2 | base64 -d', $executable),
-            'Use the token in a curl command' => \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim($apiUrl, '/')),
+            'Use the token in a curl command' => \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim((string) $apiUrl, '/')),
         ];
         $help .= "\n\n<comment>Examples:</comment>";
         foreach ($examples as $description => $example) {
@@ -41,7 +45,7 @@ class AuthTokenCommand extends CommandBase
         $this->setHelp($help);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!$input->getOption('no-warn')) {
             $this->stdErr->writeln(
@@ -49,7 +53,7 @@ class AuthTokenCommand extends CommandBase
             );
         }
 
-        $token = $this->api()->getAccessToken();
+        $token = $this->api->getAccessToken();
 
         $output->write($input->getOption('header') ? self::RFC6750_PREFIX . $token : $token);
 

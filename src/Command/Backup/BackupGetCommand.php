@@ -1,35 +1,40 @@
 <?php
 namespace Platformsh\Cli\Command\Backup;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'backup:get', description: 'View an environment backup')]
 class BackupGetCommand extends CommandBase
 {
 
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
-            ->setName('backup:get')
-            ->setDescription('View an environment backup')
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The backup property to display.');
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input);
+        $environment = $selection->getEnvironment();
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         if ($id = $input->getArgument('backup')) {
             $backup = $environment->getBackup($id);
@@ -54,8 +59,7 @@ class BackupGetCommand extends CommandBase
                 }
                 $choices[$id] = sprintf('%s (%s)', $backup->id, $formatter->format($backup->created_at, 'created_at'));
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $choice = $questionHelper->choose($choices, 'Enter a number to choose a backup:', $default);
             $backup = $byId[$choice];
         }

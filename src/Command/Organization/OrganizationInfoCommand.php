@@ -1,25 +1,31 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Organization;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:info', description: 'View or change organization details')]
 class OrganizationInfoCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('organization:info')
-            ->setDescription('View or change organization details')
-            ->addOrganizationOptions(true)
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         PropertyFormatter::configureInput($this->getDefinition());
@@ -29,15 +35,14 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             ->addExample('Change the organization label', '--org acme label "ACME Inc."');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $property = $input->getArgument('property');
         $value = $input->getArgument('value');
         $skipCache = $value !== null || $input->getOption('refresh');
-        $organization = $this->validateOrganizationInput($input, '', '', $skipCache);
+        $organization = $this->selector->selectOrganization($input, '', '', $skipCache);
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         if ($property === null) {
             $this->listProperties($organization);
@@ -52,7 +57,10 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         return $this->setProperty($property, $value, $organization);
     }
 
-    private function getProperties(Organization $organization)
+    /**
+     * @return mixed[]
+     */
+    private function getProperties(Organization $organization): array
     {
         $data = $organization->getProperties();
 
@@ -65,18 +73,16 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         return $data;
     }
 
-    private function listProperties(Organization $organization)
+    private function listProperties(Organization $organization): void
     {
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         foreach ($this->getProperties($organization) as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $formatter->format($value, $key);
         }
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $headings);
     }
 
@@ -87,13 +93,12 @@ class OrganizationInfoCommand extends OrganizationCommandBase
      *
      * @return int
      */
-    protected function setProperty($property, $value, Organization $organization)
+    protected function setProperty($property, $value, Organization $organization): int
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $currentValue = $organization->getProperty($property, false);
         if ($currentValue === $value) {
@@ -122,7 +127,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             }
             throw $e;
         }
-        $this->api()->clearOrganizationCache($organization);
+        $this->api->clearOrganizationCache($organization);
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
@@ -139,7 +144,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
      *
      * @return string|false
      */
-    private function getType($property)
+    private function getType($property): string|false
     {
         $writableProperties = [
             'name' => 'string',

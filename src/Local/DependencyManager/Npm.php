@@ -10,7 +10,7 @@ class Npm extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getInstallHelp()
+    public function getInstallHelp(): string
     {
         return 'See https://docs.npmjs.com/getting-started/installing-node for installation instructions.';
     }
@@ -18,7 +18,7 @@ class Npm extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths($prefix): array
     {
         return [$prefix . '/node_modules/.bin'];
     }
@@ -26,7 +26,7 @@ class Npm extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies, $global = false)
+    public function install($path, array $dependencies, $global = false): void
     {
         if ($global) {
             $this->installGlobal($dependencies);
@@ -51,7 +51,7 @@ class Npm extends DependencyManagerBase
      *
      * @param array $dependencies
      */
-    private function installGlobal(array $dependencies)
+    private function installGlobal(array $dependencies): void
     {
         foreach ($dependencies as $package => $version) {
             if (!$this->isInstalledGlobally($package)) {
@@ -66,7 +66,7 @@ class Npm extends DependencyManagerBase
      *
      * @return bool
      */
-    private function isInstalledGlobally($package)
+    private function isInstalledGlobally(int|string $package): bool
     {
         if (!isset($this->globalList)) {
             $this->globalList = $this->shell->execute(
@@ -74,6 +74,6 @@ class Npm extends DependencyManagerBase
             );
         }
 
-        return $this->globalList && strpos($this->globalList, $package . '@') !== false;
+        return $this->globalList && str_contains((string) $this->globalList, $package . '@');
     }
 }

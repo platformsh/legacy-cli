@@ -11,16 +11,12 @@ class ActivityCommandBase extends CommandBase implements CompletionAwareInterfac
 {
     public function completeOptionValues($optionName, CompletionContext $context)
     {
-        switch ($optionName) {
-            case 'type':
-            case 'exclude-type':
-                return ActivityLoader::getAvailableTypes();
-            case 'state':
-                return ['in_progress', 'pending', 'complete', 'cancelled'];
-            case 'result':
-                return ['success', 'failure'];
-        }
-        return [];
+        return match ($optionName) {
+            'type', 'exclude-type' => ActivityLoader::getAvailableTypes(),
+            'state' => ['in_progress', 'pending', 'complete', 'cancelled'],
+            'result' => ['success', 'failure'],
+            default => [],
+        };
     }
 
     public function completeArgumentValues($argumentName, CompletionContext $context)

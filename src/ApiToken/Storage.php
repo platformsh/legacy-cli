@@ -15,7 +15,7 @@ class Storage
      *
      * @return StorageInterface
      */
-    public static function factory(Config $config) {
+    public static function factory(Config $config): CredentialHelperStorage|FileStorage {
         $manager = new Manager($config);
         if ($manager->isSupported()) {
             return new CredentialHelperStorage($config, $manager);

@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Organization\Billing;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -8,37 +10,40 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Address;
 use Platformsh\Client\Model\Organization\Organization;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:billing:address', description: "View or change an organization's billing address")]
 class OrganizationAddressCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('organization:billing:address')
-            ->setDescription("View or change an organization's billing address")
-            ->addOrganizationOptions(true)
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $property = $input->getArgument('property');
         $updates = $this->parseUpdates($input);
 
         // The 'orders' link depends on the billing permission.
-        $org = $this->validateOrganizationInput($input, 'orders');
+        $org = $this->selector->selectOrganization($input, 'orders');
         $address = $org->getAddress();
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $result = 0;
         if ($property !== null) {
@@ -57,20 +62,18 @@ class OrganizationAddressCommand extends OrganizationCommandBase
 
     protected function display(Address $address, Organization $org, InputInterface $input)
     {
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         foreach ($address->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $formatter->format($value, $key);
         }
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api()->getOrganizationLabel($org)));
+            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api->getOrganizationLabel($org)));
         }
 
         $table->renderSimple($values, $headings);
@@ -81,7 +84,10 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         }
     }
 
-    protected function parseUpdates(InputInterface $input)
+    /**
+     * @return mixed[]
+     */
+    protected function parseUpdates(InputInterface $input): array
     {
         $property = $input->getArgument('property');
         $value = $input->getArgument('value');
@@ -122,7 +128,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
      *
      * @return int
      */
-    protected function setProperties(array $updates, Address $address)
+    protected function setProperties(array $updates, Address $address): int
     {
         $currentValues = \array_intersect_key($address->getProperties(), $updates);
         if ($currentValues == $updates) {
@@ -163,7 +169,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
      *
      * @return string|false
      */
-    private function getType($property)
+    private function getType($property): string|false
     {
         $writableProperties = [
             'country' => 'string',

@@ -1,24 +1,43 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\ProjectSshInfo;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Model\Environment;
+use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:delete', description: 'Delete one or more environments')]
 class EnvironmentDeleteCommand extends CommandBase
 {
+
+    public function __construct(
+        private readonly ActivityMonitor $activityMonitor,
+        private readonly Api             $api,
+        private readonly Config          $config,
+        private readonly ProjectSshInfo  $projectSshInfo,
+        private readonly QuestionHelper  $questionHelper,
+        private readonly Selector        $selector
+    ) {
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
-            ->setName('environment:delete')
             ->setHiddenAliases(['environment:deactivate'])
-            ->setDescription('Delete one or more environments')
             ->addArgument('environment', InputArgument::IS_ARRAY, "The environment(s) to delete.\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('delete-branch', null, InputOption::VALUE_NONE, 'Delete Git branch(es) for inactive environments, without confirmation')
             ->addOption('no-delete-branch', null, InputOption::VALUE_NONE, 'Do not delete any Git branch(es) (inactive environments)')
@@ -32,34 +51,34 @@ class EnvironmentDeleteCommand extends CommandBase
             ->addOption('exclude-status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Environment status(es) of which not to delete' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('merged', null, InputOption::VALUE_NONE, 'Delete all merged environments (adding to any others selected)')
             ->addOption('allow-delete-parent', null, InputOption::VALUE_NONE, 'Allow environments that have children to be deleted');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the currently checked out environment');
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with their parent', '--merged');
-        $service = $this->config()->get('service.name');
+        $service = $this->config->get('service.name');
         $this->setHelp(<<<EOF
-When a {$service} environment is deleted, it will become "inactive": it will
-exist only as a Git branch, containing code but no services, databases nor
-files.
+            When a {$service} environment is deleted, it will become "inactive": it will
+            exist only as a Git branch, containing code but no services, databases nor
+            files.
 
-This command allows you to delete environments as well as their Git branches.
-EOF
+            This command allows you to delete environments as well as their Git branches.
+            EOF
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Select the current project, deliberately ignoring the 'environment'
         // argument and option, as those will be processed separately.
         $inputCopy = clone $input;
         $inputCopy->setArgument('environment', null);
         $inputCopy->setOption('environment', null);
-        $this->validateInput($inputCopy, true);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
 
-        $environments = $this->api()->getEnvironments($this->getSelectedProject());
+        $environments = $this->api->getEnvironments($selection->getProject());
 
         /**
          * A list of selected environments, keyed by ID to avoid duplication.
@@ -77,12 +96,12 @@ EOF
         }
         if ($specifiedEnvironmentIds) {
             $anythingSpecified = true;
-            $allIds = \array_map(function (Environment $e) { return $e->id; }, $environments);
+            $allIds = \array_map(fn(Environment $e) => $e->id, $environments);
             $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             if (!empty($notFound)) {
                 // Refresh the environments list if any environment is not found.
-                $environments = $this->api()->getEnvironments($this->getSelectedProject(), true);
+                $environments = $this->api->getEnvironments($selection->getProject(), true);
                 $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             }
             foreach ($notFound as $notFoundId) {
@@ -107,10 +126,9 @@ EOF
             }
             $inactive = array_filter(
                 $environments,
-                function ($environment) {
+                fn($environment): bool =>
                     /** @var Environment $environment */
-                    return $environment->status == 'inactive';
-                }
+                    $environment->status == 'inactive'
             );
             $this->stdErr->writeln($this->formatPlural(count($inactive), 'inactive environment') . ' found.');
             $this->stdErr->writeln('');
@@ -162,8 +180,8 @@ EOF
         // Add the current environment if nothing is otherwise specified.
         if (!$anythingSpecified
             && empty($selectedEnvironments)
-            && ($current = $this->getCurrentEnvironment($this->getSelectedProject()))) {
-            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api()->getEnvironmentLabel($current));
+            && ($current = $this->selector->getCurrentEnvironment($selection->getProject()))) {
+            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api->getEnvironmentLabel($current));
             $this->stdErr->writeln('');
             $selectedEnvironments[$current->id] = $current;
         }
@@ -171,7 +189,7 @@ EOF
         // Exclude environment type(s) specified via --exclude-type or --only-type.
         $excludeTypes = ArrayArgument::getOption($input, 'exclude-type');
         $onlyTypes = ArrayArgument::getOption($input, 'only-type');
-        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes, $onlyTypes) {
+        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeTypes, $onlyTypes): bool {
             if (\in_array($environment->type, $excludeTypes, true)) {
                 return false;
             }
@@ -189,7 +207,7 @@ EOF
         // Exclude environment status(es) specified via --exclude-status or --only-status.
         $excludeStatuses = ArrayArgument::getOption($input, 'exclude-status');
         $onlyStatuses = ArrayArgument::getOption($input, 'only-status');
-        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeStatuses, $onlyStatuses) {
+        $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($excludeStatuses, $onlyStatuses): bool {
             if (\in_array($environment->status, $excludeStatuses, true)) {
                 return false;
             }
@@ -217,7 +235,7 @@ EOF
 
         // Exclude environments which have children.
         if (!$input->getOption('allow-delete-parent')) {
-            $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($environments) {
+            $filtered = \array_filter($selectedEnvironments, function (Environment $environment) use ($environments): bool {
                 foreach ($environments as $potentialChild) {
                     if ($potentialChild->parent === $environment->id) {
                         return false;
@@ -249,11 +267,10 @@ EOF
 
         // Confirm which of the environments the user wishes to be deleted.
         ksort($selectedEnvironments, SORT_NATURAL|SORT_FLAG_CASE);
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $toDeleteBranch = [];
         $toDeactivate = [];
-        $shouldWait = $this->shouldWait($input);
+        $shouldWait = $this->activityMonitor->shouldWait($input);
 
         $byStatus = ['deleting' => [], 'dirty' => [], 'active or paused' => [], 'inactive' => []];
         foreach ($selectedEnvironments as $key => $environment) {
@@ -265,8 +282,8 @@ EOF
         }
 
         $codeSourceIntegration = null;
-        if ($this->hasExternalGitHost($this->getSelectedProject())) {
-            $codeSourceIntegration = $this->api()->getCodeSourceIntegration($this->getSelectedProject());
+        if ($this->projectSshInfo->hasExternalGitHost($selection->getProject())) {
+            $codeSourceIntegration = $this->api->getCodeSourceIntegration($selection->getProject());
         }
         $integrationPrunesBranches = $codeSourceIntegration && $codeSourceIntegration->getProperty('prune_branches', false);
 
@@ -279,7 +296,7 @@ EOF
             switch ($status) {
                 case 'dirty':
                     if ($isSingle) {
-                        $this->stdErr->writeln(sprintf("The environment %s has in-progress activity, and therefore can't be deleted yet.", $this->api()->getEnvironmentLabel(reset($environments), 'error')));
+                        $this->stdErr->writeln(sprintf("The environment %s has in-progress activity, and therefore can't be deleted yet.", $this->api->getEnvironmentLabel(reset($environments), 'error')));
                     } elseif ($isSubSet) {
                         $this->stdErr->writeln("The following environments have in-progress activity, and therefore can't be deleted yet: " . $this->listEnvironments($environments, 'error'));
                     } else {
@@ -290,7 +307,7 @@ EOF
                     break;
                 case 'deleting':
                     if ($isSingle) {
-                        $this->stdErr->writeln(sprintf('The environment %s is already being deleted.', $this->api()->getEnvironmentLabel(reset($environments), 'error')));
+                        $this->stdErr->writeln(sprintf('The environment %s is already being deleted.', $this->api->getEnvironmentLabel(reset($environments), 'error')));
                     } elseif ($isSubSet) {
                         $this->stdErr->writeln('The following environments are already being deleted: ' . $this->listEnvironments($environments, 'error'));
                     } else {
@@ -302,7 +319,7 @@ EOF
                     $confirmText = 'Are you sure you want to delete them?';
                     $deleteConfirmText = 'Delete the inactive environments (Git branches) too?';
                     if ($isSingle) {
-                        $this->stdErr->writeln(sprintf('The environment %s is currently active.', $this->api()->getEnvironmentLabel(reset($environments), 'comment')));
+                        $this->stdErr->writeln(sprintf('The environment %s is currently active.', $this->api->getEnvironmentLabel(reset($environments), 'comment')));
                         $this->stdErr->writeln('Deleting it <options=bold>will delete all associated data</>.');
                         $confirmText = 'Are you sure you want to delete this environment?';
                         $deleteConfirmText = 'Delete the inactive environment (Git branch) too?';
@@ -336,7 +353,7 @@ EOF
                 case 'inactive':
                     if ($input->getOption('no-delete-branch')) {
                         if ($isSingle) {
-                            $this->stdErr->writeln(sprintf('The environment %s is inactive and <comment>--no-delete-branch</comment> was specified, so it will not be deleted.', $this->api()->getEnvironmentLabel(reset($environments), 'comment')));
+                            $this->stdErr->writeln(sprintf('The environment %s is inactive and <comment>--no-delete-branch</comment> was specified, so it will not be deleted.', $this->api->getEnvironmentLabel(reset($environments), 'comment')));
                         } elseif ($isSubSet) {
                             $this->stdErr->writeln('The following environment(s) are inactive and <comment>--no-delete-branch</comment> was specified, so they will not be deleted: ' . $this->listEnvironments($environments, 'comment'));
                         } else {
@@ -352,7 +369,7 @@ EOF
                         break;
                     }
                     if ($isSingle) {
-                        $message = sprintf('Are you sure you want to delete the inactive environment %s?', $this->api()->getEnvironmentLabel(reset($environments), 'comment'));
+                        $message = sprintf('Are you sure you want to delete the inactive environment %s?', $this->api->getEnvironmentLabel(reset($environments), 'comment'));
                     } elseif ($isSubSet) {
                         $message = 'The following environment(s) are inactive: ' . $this->listEnvironments($environments, 'comment')
                             . "\nAre you sure you want to delete them?";
@@ -381,13 +398,13 @@ EOF
         if (empty($toDeleteBranch) && empty($toDeactivate)) {
             $this->stdErr->writeln('No environments to delete.');
             if (!$anythingSpecified) {
-                $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config->get('application.executable')));
             }
 
             return $error ? 1 : 0;
         }
 
-        $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $input) && !$error;
+        $success = $this->deleteMultiple($toDeactivate, $toDeleteBranch, $selection->getProject(), $input) && !$error;
 
         return $success ? 0 : 1;
     }
@@ -398,21 +415,14 @@ EOF
      *
      * @return string
      */
-    private function listEnvironments(array $environments, $tag = 'info')
+    private function listEnvironments(array $environments, string $tag = 'info'): string
     {
-        $uniqueIds = \array_unique(\array_map(function(Environment $e) { return $e->id; }, $environments));
+        $uniqueIds = \array_unique(\array_map(fn(Environment $e) => $e->id, $environments));
         natcasesort($uniqueIds);
         return "<$tag>" . implode("</$tag>, <$tag>", $uniqueIds) . "</$tag>";
     }
 
-    /**
-     * @param array $toDeactivate
-     * @param array $toDeleteBranch
-     * @param InputInterface $input
-     *
-     * @return bool
-     */
-    protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, InputInterface $input)
+    protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, Project $project, InputInterface $input): bool
     {
         $error = false;
         $deactivateActivities = [];
@@ -428,10 +438,9 @@ EOF
             }
         }
 
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            if (!$activityMonitor->waitMultiple($deactivateActivities, $this->getSelectedProject())) {
+        if ($this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
+            if (!$activityMonitor->waitMultiple($deactivateActivities, $project)) {
                 $error = true;
             }
         }
@@ -467,7 +476,7 @@ EOF
         }
 
         if (($deleted || $deactivated || $error) && isset($environment)) {
-            $this->api()->clearEnvironmentsCache($environment->project);
+            $this->api->clearEnvironmentsCache($environment->project);
         }
 
         return !$error;
@@ -481,7 +490,7 @@ EOF
      * @param string|null $plural
      * @return string
      */
-    private function formatPlural($count, $singular, $plural = null)
+    private function formatPlural(int $count, string $singular, $plural = null): string
     {
         if ($count === 1) {
             $name = $singular;

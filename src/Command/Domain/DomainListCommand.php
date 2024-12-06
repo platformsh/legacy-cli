@@ -1,17 +1,24 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use GuzzleHttp\Exception\ClientException;
 use Platformsh\Cli\Model\EnvironmentDomain;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Domain;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'domain:list', description: 'Get a list of all domains', aliases: ['domains'])]
 class DomainListCommand extends DomainCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'name' => 'Name',
         'ssl' => 'SSL enabled',
         'created_at' => 'Creation date',
@@ -20,19 +27,20 @@ class DomainListCommand extends DomainCommandBase
         'replacement_for' => 'Attached domain',
         'type' => 'Type',
     ];
-    private $defaultColumns = ['name', 'ssl', 'created_at'];
+    private array $defaultColumns = ['name', 'ssl', 'created_at'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('domain:list')
-            ->setAliases(['domains'])
-            ->setDescription('Get a list of all domains');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
     }
 
     /**
@@ -42,12 +50,11 @@ class DomainListCommand extends DomainCommandBase
      *
      * @return array
      */
-    protected function buildDomainRows(array $tree)
+    protected function buildDomainRows(array $tree): array
     {
         $rows = [];
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         foreach ($tree as $domain) {
             $rows[] = [
@@ -67,20 +74,20 @@ class DomainListCommand extends DomainCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, true);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         $forEnvironment = $input->getOption('environment') !== null;
 
-        $project = $this->getSelectedProject();
-        $executable = $this->config()->get('application.executable');
+        $project = $selection->getProject();
+        $executable = $this->config->get('application.executable');
         $defaultColumns = $this->defaultColumns;
 
         if ($forEnvironment) {
             $defaultColumns[] = 'replacement_for';
-            $httpClient = $this->api()->getHttpClient();
+            $httpClient = $this->api->getHttpClient();
             try {
-                $domains = EnvironmentDomain::getList($this->getSelectedEnvironment(), $httpClient);
+                $domains = EnvironmentDomain::getList($selection->getEnvironment(), $httpClient);
             } catch (ClientException $e) {
                 $this->handleApiException($e, $project);
                 return 1;
@@ -96,11 +103,11 @@ class DomainListCommand extends DomainCommandBase
 
         if (empty($domains)) {
             if ($forEnvironment) {
-                $environment = $this->getSelectedEnvironment();
+                $environment = $selection->getEnvironment();
                 $this->stdErr->writeln(sprintf(
                     'No domains found for the environment %s on the project %s.',
-                    $this->api()->getEnvironmentLabel($environment),
-                    $this->api()->getProjectLabel($project)
+                    $this->api->getEnvironmentLabel($environment),
+                    $this->api->getProjectLabel($project)
                 ));
                 $this->stdErr->writeln('');
                 if ($environment->is_main) {
@@ -118,7 +125,7 @@ class DomainListCommand extends DomainCommandBase
                 }
             }
             else {
-                $this->stdErr->writeln('No domains found for ' . $this->api()->getProjectLabel($project) . '.');
+                $this->stdErr->writeln('No domains found for ' . $this->api->getProjectLabel($project) . '.');
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(
                     'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'
@@ -128,21 +135,20 @@ class DomainListCommand extends DomainCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $rows = $this->buildDomainRows($domains);
 
         if (!$table->formatIsMachineReadable()) {
             if ($forEnvironment) {
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s, environment %s:',
-                    $this->api()->getProjectLabel($project),
-                    $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                    $this->api->getProjectLabel($project),
+                    $this->api->getEnvironmentLabel($selection->getEnvironment())
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s:',
-                    $this->api()->getProjectLabel($project)
+                    $this->api->getProjectLabel($project)
                 ));
             }
         }
@@ -152,8 +158,8 @@ class DomainListCommand extends DomainCommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             if ($forEnvironment) {
-                $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($this->getSelectedEnvironment()->name) . ' [domain-name]';
-                if (!$this->getSelectedEnvironment()->is_main) {
+                $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($selection->getEnvironment()->name) . ' [domain-name]';
+                if (!$selection->getEnvironment()->is_main) {
                     $exampleAddArgs .= ' --attach [attach]';
                 }
             } else {

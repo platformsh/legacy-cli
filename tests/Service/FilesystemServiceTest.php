@@ -10,8 +10,7 @@ class FilesystemServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Filesystem */
-    protected $fs;
+    protected Filesystem $fs;
 
     /**
      * @{inheritdoc}
@@ -25,7 +24,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test our own self::tempDir().
      */
-    public function testTempDir()
+    public function testTempDir(): void
     {
         $tempDir = $this->tempDir();
         $this->assertTrue(is_dir($tempDir));
@@ -38,7 +37,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::remove() on directories.
      */
-    public function testRemoveDir()
+    public function testRemoveDir(): void
     {
         // Create a test directory containing some files in several levels.
         $testDir = $this->tempDir(true);
@@ -51,7 +50,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::copyAll().
      */
-    public function testCopyAll()
+    public function testCopyAll(): void
     {
         $source = $this->tempDir(true);
         $destination = $this->tempDir();
@@ -69,7 +68,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::symlinkDir().
      */
-    public function testSymlinkDir()
+    public function testSymlinkDir(): void
     {
         $testTarget = $this->tempDir();
         $testLink = $this->tempDir() . '/link';
@@ -82,7 +81,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::makePathAbsolute().
      */
-    public function testMakePathAbsolute()
+    public function testMakePathAbsolute(): void
     {
         $testDir = $this->tempDir();
         chdir($testDir);
@@ -107,7 +106,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::symlinkAll().
      */
-    public function testSymlinkAll()
+    public function testSymlinkAll(): void
     {
         $testSource = $this->tempDir(true);
         $testDestination = $this->tempDir();
@@ -129,7 +128,7 @@ class FilesystemServiceTest extends TestCase
 
         // Test with relative links. This has no effect on Windows.
         $testDestination = $this->tempDir();
-        $this->fs->setRelativeLinks(true);
+        $this->fs->setRelativeLinks();
         $this->fs->symlinkAll($testSource, $testDestination);
         $this->fs->setRelativeLinks(false);
         $this->assertFileExists($testDestination . '/test-file');
@@ -145,7 +144,7 @@ class FilesystemServiceTest extends TestCase
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
     }
 
-    public function testCanWrite()
+    public function testCanWrite(): void
     {
         \umask(0002);
 
@@ -182,7 +181,7 @@ class FilesystemServiceTest extends TestCase
      *
      * @return string
      */
-    protected function tempDir($fill = false)
+    protected function tempDir(?bool $fill = false): string
     {
         $testDir = $this->createTempSubDir();
         if ($fill) {

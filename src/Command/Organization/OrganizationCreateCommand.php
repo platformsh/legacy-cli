@@ -1,23 +1,31 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Cocur\Slugify\Slugify;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
 use Platformsh\ConsoleForm\Form;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:create', description: 'Create a new organization')]
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly SubCommandRunner $subCommandRunner)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('organization:create')
-            ->setDescription('Create a new organization');
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $serviceName = $this->config()->get('service.name');
+        $serviceName = $this->config->get('service.name');
         $help = <<<END_HELP
 Organizations allow you to manage your $serviceName projects, users and billing. Projects are owned by organizations.
 
@@ -28,7 +36,7 @@ END_HELP;
         $this->setHelp($help);
     }
 
-    private function getForm()
+    private function getForm(): Form
     {
         $countryList = $this->countryList();
         return Form::fromArray([
@@ -37,35 +45,28 @@ END_HELP;
             ]),
             'name' => new Field('Name', [
                 'description' => 'The organization machine name, used for URL paths and similar purposes.',
-                'defaultCallback' => function ($values) {
-                    return isset($values['label']) ? (new Slugify())->slugify($values['label']) : null;
-                },
+                'defaultCallback' => fn($values) => isset($values['label']) ? (new Slugify())->slugify($values['label']) : null,
             ]),
             'country' => new OptionsField('Country', [
                 'description' => 'The organization country. Used as the default for the billing address.',
                 'options' => $countryList,
                 'asChoice' => false,
-                'defaultCallback' => function () {
-                    return $this->api()->getUser()->country ?: null;
-                },
-                'normalizer' => function ($value) { return $this->normalizeCountryCode($value); },
-                'validator' => function ($countryCode) use ($countryList) {
-                    return isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode";
-                },
+                'defaultCallback' => fn() => $this->api->getUser()->country ?: null,
+                'normalizer' => fn($value) => $this->normalizeCountryCode($value),
+                'validator' => fn($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
             ]),
         ]);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Ensure login before presenting the form.
-        $client = $this->api()->getClient();
+        $client = $this->api->getClient();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $form = $this->getForm();
         if (($name = $input->getOption('name')) && $input->getOption('label') === null) {
-            $form->getField('label')->set('default', \ucfirst($name));
+            $form->getField('label')->set('default', \ucfirst((string) $name));
         }
         $values = $form->resolveOptions($input, $output, $questionHelper);
 
@@ -83,9 +84,9 @@ END_HELP;
             throw $e;
         }
 
-        $this->stdErr->writeln(sprintf('Created organization %s', $this->api()->getOrganizationLabel($organization)));
+        $this->stdErr->writeln(sprintf('Created organization %s', $this->api->getOrganizationLabel($organization)));
 
-        $this->runOtherCommand('organization:info', ['--org' => $organization->name], $this->stdErr);
+        $this->subCommandRunner->run('organization:info', ['--org' => $organization->name], $this->stdErr);
 
         return 0;
     }

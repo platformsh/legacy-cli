@@ -2,18 +2,23 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Member;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:list', description: 'List organization users', aliases: ['org:users'])]
 class OrganizationUserListCommand extends OrganizationCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'first_name' => 'First name',
         'last_name' => 'Last name',
@@ -26,35 +31,37 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         'created_at' => 'Created at',
         'updated_at' => 'Updated at',
     ];
-    private $defaultColumns = ['id', 'email', 'owner', 'permissions'];
+    private array $defaultColumns = ['id', 'email', 'owner', 'permissions'];
+
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('organization:user:list')
-            ->setDescription('List organization users')
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
+        $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
-            ->setAliases(['org:users'])
-            ->setHiddenAliases(['organization:users'])
-            ->addOrganizationOptions();
+            ->setHiddenAliases(['organization:users']);
+        $this->selector->addOrganizationOptions($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input, 'members');
+        $organization = $this->selector->selectOrganization($input, 'members');
 
         if (!$organization->hasLink('members')) {
-            $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api()->getOrganizationLabel($organization, 'comment') . '.');
+            $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');
             return 1;
         }
 
         $options = [];
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
+        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 100) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 100, or 0 to disable pagination.');
@@ -71,13 +78,13 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         }
 
         $options['query']['page[size]'] = $itemsPerPage;
-        $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
         if ($count === '0') {
             $fetchAllPages = true;
             $options['query']['page[size]'] = 100;
         }
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $url = $organization->getLink('members');
         /** @var Member[] $members */
         $members = [];
@@ -98,8 +105,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             return 1;
         }
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $rows = [];
         foreach ($members as $member) {
@@ -119,11 +125,10 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             ];
             $rows[] = $row;
         }
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln('Users in the organization ' . $this->api()->getOrganizationLabel($organization) . ':');
+            $this->stdErr->writeln('Users in the organization ' . $this->api->getOrganizationLabel($organization) . ':');
         }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);

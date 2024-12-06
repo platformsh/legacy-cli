@@ -2,28 +2,33 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\Animation;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'bot', description: 'The Platform.sh Bot')]
 class BotCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('bot')
-            ->setDescription('The ' . $this->config()->get('service.name') . ' Bot')
+        $this
             ->addOption('party', null, InputOption::VALUE_NONE)
             ->addOption('parrot', null, InputOption::VALUE_NONE);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $dir = CLI_ROOT . '/resources/bot';
-        $signature = $this->config()->get('service.name');
+        $signature = $this->config->get('service.name');
         $party = $input->getOption('party');
         $interval = $party ? 120000 : 500000;
 
@@ -53,14 +58,14 @@ class BotCommand extends CommandBase
 
         if (!$output->isDecorated()) {
             $animation->render();
-            return;
+            return 0;
         }
 
         // Stay positive: return code 0 when the user quits.
         if (function_exists('pcntl_signal')) {
             declare(ticks = 1);
             /** @noinspection PhpComposerExtensionStubsInspection */
-            pcntl_signal(SIGINT, function () {
+            pcntl_signal(SIGINT, function (): void {
                 echo "\n";
                 exit;
             });
@@ -71,20 +76,21 @@ class BotCommand extends CommandBase
         }
     }
 
-    private function addSignature(array $frames, $signature)
+    private function addSignature(array $frames, $signature): array
     {
         $indent = '    ';
-        if (strlen($signature) > 0) {
-            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - floor(strlen($signature) / 2));
+        if (strlen((string) $signature) > 0) {
+            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - floor(strlen((string) $signature) / 2));
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 
-        return array_map(function ($frame) use ($indent, $signature) {
-            return preg_replace('/^/m', $indent, $frame) . $signature;
-        }, $frames);
+        return array_map(fn($frame) => preg_replace('/^/m', $indent, (string) $frame) . $signature, $frames);
     }
 
-    private function addColor(array $frames)
+    /**
+     * @return non-falsy-string[]
+     */
+    private function addColor(array $frames): array
     {
         $colors = ['red', 'yellow', 'green', 'blue', 'magenta', 'cyan', 'white'];
         $partyFrames = [];

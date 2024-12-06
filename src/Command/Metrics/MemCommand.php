@@ -1,17 +1,21 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'metrics:memory', description: 'Show memory usage of an environment', aliases: ['mem', 'memory'])]
 class MemCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -20,20 +24,21 @@ class MemCommand extends MetricsCommandBase
         'percent' => 'Used %',
     ];
 
-    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
+    private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this->setName('metrics:memory')
-            ->setAliases(['mem', 'memory'])
-            ->setDescription('Show memory usage of an environment')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
-        $this->addMetricsOptions()
-            ->addProjectOption()
-            ->addEnvironmentOption();
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
+        $this->addMetricsOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -41,23 +46,22 @@ class MemCommand extends MetricsCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $timeSpec = $this->validateTimeInput($input);
         if ($timeSpec === false) {
             return 1;
         }
 
-        $this->validateInput($input, false, true);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
+            $this->selector->ensurePrintedSelection($selection);
         }
 
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
+        $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['mem_used', 'mem_percent', 'mem_limit']);
         if ($values === false) {
             return 1;
         }
@@ -68,11 +72,10 @@ class MemCommand extends MetricsCommandBase
             'used' => new Field('mem_used', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
             'limit' => new Field('mem_limit', $bytes ? Field::FORMAT_ROUNDED : Field::FORMAT_MEMORY),
             'percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
-        ]);
+        ], $selection->getEnvironment());
 
         if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average memory usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),

@@ -1,22 +1,29 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:http-access', description: 'Update HTTP access settings for an environment', aliases: ['httpaccess'])]
 class EnvironmentHttpAccessCommand extends CommandBase
 {
 
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         parent::configure();
         $this
-            ->setName('environment:http-access')
-            ->setAliases(['httpaccess'])
-            ->setDescription('Update HTTP access settings for an environment')
             ->addOption(
                 'access',
                 null,
@@ -35,9 +42,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 InputOption::VALUE_REQUIRED,
                 'Whether access control should be enabled: 1 to enable, 0 to disable'
             );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access allow:69.208.1.192 --access deny:any');
         $this->addExample('Remove the password requirement, keeping IP restrictions', '--auth 0');
@@ -51,9 +58,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
      *
      * @return array
      */
-    protected function parseAuth($auth)
+    protected function parseAuth($auth): array
     {
-        $parts = explode(':', $auth, 2);
+        $parts = explode(':', (string) $auth, 2);
         if (count($parts) != 2) {
             $message = sprintf('Auth "<error>%s</error>" is not valid. The format should be username:password', $auth);
             throw new InvalidArgumentException($message);
@@ -80,9 +87,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
      *
      * @return array
      */
-    protected function parseAccess($access)
+    protected function parseAccess($access): array
     {
-        $parts = explode(':', $access, 2);
+        $parts = explode(':', (string) $access, 2);
         if (count($parts) != 2) {
             $message = sprintf(
                 'Access "<error>%s</error>" is not valid, please use the format: permission:address',
@@ -150,9 +157,9 @@ class EnvironmentHttpAccessCommand extends CommandBase
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $auth = $input->getOption('auth');
         $access = $input->getOption('access');
@@ -188,16 +195,15 @@ class EnvironmentHttpAccessCommand extends CommandBase
             $change = true;
         }
 
-        $selectedEnvironment = $this->getSelectedEnvironment();
+        $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         // Patch the environment with the changes.
         if ($change) {
             $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
-            $this->api()->clearEnvironmentsCache($selectedEnvironment->project);
+            $this->api->clearEnvironmentsCache($selectedEnvironment->project);
 
             $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
@@ -205,11 +211,10 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
             $success = true;
             if (!$result->countActivities()) {
-                $this->redeployWarning();
-            } elseif ($this->shouldWait($input)) {
-                /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-                $activityMonitor = $this->getService('activity_monitor');
-                $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+                $this->api->redeployWarning();
+            } elseif ($this->activityMonitor->shouldWait($input)) {
+                $activityMonitor = $this->activityMonitor;
+                $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             }
 
             return $success ? 0 : 1;

@@ -1,50 +1,65 @@
 <?php
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\AccessApi;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserDeleteCommand extends UserCommandBase
+#[AsCommand(name: 'user:delete', description: 'Delete a user from the project')]
+class UserDeleteCommand extends CommandBase
 {
 
-    protected function configure()
+    public function __construct(private readonly AccessApi         $accessApi,
+                                protected readonly ActivityMonitor $activityMonitor,
+                                private readonly Api               $api,
+                                private readonly QuestionHelper    $questionHelper,
+                                private readonly Selector          $selector)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('user:delete')
-            ->setDescription('Delete a user from the project')
             ->addArgument('email', InputArgument::REQUIRED, "The user's email address");
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete Alice from the project', 'alice@example.com');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
         $email = $input->getArgument('email');
 
-        $selection = $this->loadProjectUser($project, $email);
+        $selection = $this->accessApi->loadProjectUser($project, $email);
         if (!$selection) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
             return 1;
         }
         $userId = $selection instanceof ProjectUserAccess ? $selection->user_id : $selection->id;
-        $email = $selection instanceof ProjectUserAccess ? $selection->getUserInfo()->email : $this->legacyUserInfo($selection)['email'];
+        $email = $selection instanceof ProjectUserAccess ? $selection->getUserInfo()->email : $this->accessApi->legacyUserInfo($selection)['email'];
 
         if ($project->owner === $userId) {
             $this->stdErr->writeln(sprintf(
                 'The user <error>%s</error> is the owner of the project %s.',
                 $email,
-                $this->api()->getProjectLabel($project, 'error')
+                $this->api->getProjectLabel($project, 'error')
             ));
             $this->stdErr->writeln("The project's owner cannot be deleted.");
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?")) {
             return 1;
@@ -54,18 +69,17 @@ class UserDeleteCommand extends UserCommandBase
 
         $this->stdErr->writeln("User <info>$email</info> deleted");
 
-        if ($result->getActivities() && $this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+        if ($result->getActivities() && $this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
             $activityMonitor->waitMultiple($result->getActivities(), $project);
-        } elseif (!$this->centralizedPermissionsEnabled()) {
-            $this->redeployWarning();
+        } elseif (!$this->accessApi->centralizedPermissionsEnabled()) {
+            $this->api->redeployWarning();
         }
 
         // If the user was deleting themselves from the project, then invalidate
         // the projects cache.
-        if ($this->api()->getMyUserId() === $userId) {
-            $this->api()->clearProjectsCache();
+        if ($this->api->getMyUserId() === $userId) {
+            $this->api->clearProjectsCache();
         }
 
         return 0;

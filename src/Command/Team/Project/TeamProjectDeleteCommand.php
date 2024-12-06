@@ -1,38 +1,45 @@
 <?php
 namespace Platformsh\Cli\Command\Team\Project;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Client\Exception\ApiResponseException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:project:delete', description: 'Remove a project from a team')]
 class TeamProjectDeleteCommand extends TeamCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
-        $this->setName('team:project:delete')
-            ->setDescription('Remove a project from a team')
-            ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
-            ->addOrganizationOptions()
-            ->addTeamOption();
+        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function configure()
+    {
+        $this->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $team = $this->validateTeamInput($input);
         if (!$team) {
             return 1;
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $teamProjects = $this->loadTeamProjects($team);
 
         $projectLabels = [];
         foreach ($teamProjects as $teamProject) {
-            $projectLabels[$teamProject->project_id] = $this->api()->getProjectLabel($teamProject, false);
+            $projectLabels[$teamProject->project_id] = $this->api->getProjectLabel($teamProject, false);
         }
 
         $projectId = $input->getArgument('project');
@@ -59,7 +66,7 @@ class TeamProjectDeleteCommand extends TeamCommandBase
         }
 
         try {
-            $this->api()->getHttpClient()->delete($team->getUri() . '/project-access/' . rawurlencode($projectId));
+            $this->api->getHttpClient()->delete($team->getUri() . '/project-access/' . rawurlencode((string) $projectId));
         } catch (BadResponseException $e) {
             throw ApiResponseException::create($e->getRequest(), $e->getResponse(), $e);
         }

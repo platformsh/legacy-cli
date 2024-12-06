@@ -1,6 +1,14 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selection;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
@@ -19,11 +27,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
-    /** @var Form */
-    private $form;
+    private readonly Selector $selector;
+    private readonly Table $table;
+    private readonly QuestionHelper $questionHelper;
+    private readonly PropertyFormatter $propertyFormatter;
+    private readonly LocalProject $localProject;
+    private readonly Api $api;
+    private ?Form $form = null;
 
-    /** @var array */
-    private $bitbucketAccessTokens = [];
+    private array $bitbucketAccessTokens = [];
+
+    protected ?Selection $selection = null;
+
+    #[Required]
+    public function autowire(Api $api, LocalProject $localProject, PropertyFormatter $propertyFormatter, QuestionHelper $questionHelper, Selector $selector, Table $table) : void
+    {
+        $this->api = $api;
+        $this->localProject = $localProject;
+        $this->propertyFormatter = $propertyFormatter;
+        $this->questionHelper = $questionHelper;
+        $this->table = $table;
+        $this->selector = $selector;
+    }
 
     /**
      * @param Project $project
@@ -44,8 +69,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
                 return false;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($integrations as $integration) {
                 $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
@@ -56,7 +80,7 @@ abstract class IntegrationCommandBase extends CommandBase
         $integration = $project->getIntegration($id);
         if (!$integration) {
             try {
-                $integration = $this->api()->matchPartialId($id, $project->getIntegrations(), 'Integration');
+                $integration = $this->api->matchPartialId($id, $project->getIntegrations(), 'Integration');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return false;
@@ -122,8 +146,8 @@ abstract class IntegrationCommandBase extends CommandBase
                 unset($values['bitbucket_url']);
             }
             // Split bitbucket_server "repository" into project/repository.
-            if (isset($values['repository']) && strpos($values['repository'], '/', 1) !== false) {
-                list($values['project'], $values['repository']) = explode('/', $values['repository'], 2);
+            if (isset($values['repository']) && str_contains(substr((string) $values['repository'], 1), '/')) {
+                list($values['project'], $values['repository']) = explode('/', (string) $values['repository'], 2);
             }
         }
 
@@ -138,7 +162,7 @@ abstract class IntegrationCommandBase extends CommandBase
         if (isset($values['headers'])) {
             $map = [];
             foreach ($values['headers'] as $header) {
-                $parts = explode(':', $header, 2);
+                $parts = explode(':', (string) $header, 2);
                 $map[$parts[0]] = isset($parts[1]) ? ltrim($parts[1]) : '';
             }
             $values['headers'] = $map;
@@ -161,7 +185,7 @@ abstract class IntegrationCommandBase extends CommandBase
     private function selectedProjectIntegrations()
     {
         static $cache = [];
-        $project = $this->getSelectedProject();
+        $project = $this->selection->getProject();
         if (!isset($cache[$project->id])) {
             $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
         }
@@ -171,7 +195,7 @@ abstract class IntegrationCommandBase extends CommandBase
     /**
      * @return Field[]
      */
-    private function getFields()
+    private function getFields(): array
     {
         $allSupportedTypes = [
             'bitbucket',
@@ -197,13 +221,13 @@ abstract class IntegrationCommandBase extends CommandBase
                 'description' => 'The integration type',
                 'questionLine' => '',
                 'options' => $allSupportedTypes,
-                'validator' => function ($value) use ($allSupportedTypes) {
+                'validator' => function ($value) use ($allSupportedTypes): ?string {
                     // If the type isn't supported at all, fall back to the default validator.
                     if (!in_array($value, $allSupportedTypes, true)) {
                         return null;
                     }
                     // If the type is supported, check if it is available on the project.
-                    if ($this->hasSelectedProject()) {
+                    if ($this->selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && empty($integrations['config'][$value]['enabled'])) {
                             return "The integration type '$value' is not available on this project.";
@@ -211,13 +235,11 @@ abstract class IntegrationCommandBase extends CommandBase
                     }
                     return null;
                 },
-                'optionsCallback' => function () use ($allSupportedTypes) {
-                    if ($this->hasSelectedProject()) {
+                'optionsCallback' => function () use ($allSupportedTypes): array {
+                    if ($this->selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
-                            return array_filter($allSupportedTypes, function ($type) use ($integrations) {
-                                return !empty($integrations['config'][$type]['enabled']);
-                            });
+                            return array_filter($allSupportedTypes, fn($type): bool => !empty($integrations['config'][$type]['enabled']));
                         }
                     }
                     return $allSupportedTypes;
@@ -278,9 +300,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'gitlab',
                 ]],
                 'description' => 'The project (e.g. \'namespace/repo\')',
-                'validator' => function ($string) {
-                    return strpos($string, '/', 1) !== false;
-                },
+                'validator' => fn($string): bool => str_contains(substr((string) $string, 1), '/'),
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
@@ -290,9 +310,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'The repository to track (e.g. \'owner/repository\')',
                 'questionLine' => 'The repository (e.g. \'owner/repository\')',
-                'validator' => function ($string) {
-                    return substr_count($string, '/', 1) === 1;
-                },
+                'validator' => fn($string): bool => substr_count((string) $string, '/', 1) === 1,
                 'normalizer' => function ($string) {
                     if (preg_match('#^https?://#', $string)) {
                         return parse_url($string, PHP_URL_PATH);
@@ -443,7 +461,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'contentsAsValue' => true,
                 'description' => 'The name of a local file that contains the script to upload',
                 'normalizer' => function ($value) {
-                    if (getenv('HOME') && strpos($value, '~/') === 0) {
+                    if (getenv('HOME') && str_starts_with($value, '~/')) {
                         return getenv('HOME') . '/' . substr($value, 2);
                     }
 
@@ -497,8 +515,8 @@ abstract class IntegrationCommandBase extends CommandBase
                     'health.email',
                 ]],
                 'description' => 'The recipient email address(es)',
-                'validator' => function ($emails) {
-                    $invalid = array_filter($emails, function ($email) {
+                'validator' => function ($emails): string|true {
+                    $invalid = array_filter($emails, function ($email): bool {
                         // The special placeholders #viewers and #admins are
                         // valid recipients.
                         if (in_array($email, ['#viewers', '#admins'])) {
@@ -530,7 +548,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => 'sumologic'],
                 'description' => 'The Sumo Logic category, used for filtering',
                 'required' => false,
-                'normalizer' => function ($val) { return (string) $val; },
+                'normalizer' => fn($val): string => (string) $val,
             ]),
             'index' => new Field('Index', [
                 'conditions' => ['type' => 'splunk'],
@@ -561,7 +579,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => ['syslog']],
                 'description' => 'Syslog relay/collector port',
                 'autoCompleterValues' => ['6514'],
-                'validator' => function ($value) { return is_numeric($value) && $value >= 0 && $value <= 65535 ? true : "Invalid port number: $value"; },
+                'validator' => fn($value) => is_numeric($value) && $value >= 0 && $value <= 65535 ? true : "Invalid port number: $value",
             ]),
             'facility' => new Field('Facility', [
                 'conditions' => ['type' => ['syslog']],
@@ -569,7 +587,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'default' => 1,
                 'required' => false,
                 'avoidQuestion' => true,
-                'validator' => function ($value) { return is_numeric($value) && $value >= 0 && $value <= 23 ? true : "Invalid syslog facility code: $value"; },
+                'validator' => fn($value) => is_numeric($value) && $value >= 0 && $value <= 23 ? true : "Invalid syslog facility code: $value",
             ]),
             'message_format' => new OptionsField('Message format', [
                 'conditions' => ['type' => ['syslog']],
@@ -617,7 +635,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 // QuestionHelper reads only one input line, it is not
                 // practical to ask for headers interactively.
                 'avoidQuestion' => false,
-                'validator' => function ($headers) {
+                'validator' => function ($headers): string|true {
                     $uniqueNames = [];
                     foreach ($headers as $header) {
                         $parts = \explode(':', $header, 2);
@@ -640,10 +658,8 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     protected function displayIntegration(Integration $integration)
     {
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
 
         $info = [];
         foreach ($integration->getProperties() as $property => $value) {
@@ -668,7 +684,7 @@ abstract class IntegrationCommandBase extends CommandBase
         if (isset($this->bitbucketAccessTokens[$credentials['key']])) {
             return $this->bitbucketAccessTokens[$credentials['key']];
         }
-        $response = $this->api()
+        $response = $this->api
             ->getExternalHttpClient()
             ->post('https://bitbucket.org/site/oauth2/access_token', [
                 'auth' => [$credentials['key'], $credentials['secret']],
@@ -715,7 +731,7 @@ abstract class IntegrationCommandBase extends CommandBase
      * Lists validation errors found in an integration.
      *
      * @param array                                             $errors
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param OutputInterface $output
      */
     protected function listValidationErrors(array $errors, OutputInterface $output)
     {
@@ -739,17 +755,14 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /**
      * Updates the Git remote URL for the current project.
-     *
-     * @param string $oldGitUrl
      */
-    protected function updateGitUrl($oldGitUrl)
+    protected function updateGitUrl(string $oldGitUrl, Project $project): void
     {
-        if (!$this->selectedProjectIsCurrent()) {
+        if (!$this->selector->isProjectCurrent($project)) {
             return;
         }
-        $project = $this->getCurrentProject();
-        $projectRoot = $this->getProjectRoot();
-        if (!$project || !$projectRoot) {
+        $projectRoot = $this->selector->getProjectRoot();
+        if (!$projectRoot) {
             return;
         }
         $project->refresh();
@@ -758,8 +771,7 @@ abstract class IntegrationCommandBase extends CommandBase
             return;
         }
         $this->stdErr->writeln(sprintf('Updating Git remote URL from %s to %s', $oldGitUrl, $newGitUrl));
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $localProject->ensureGitRemote($projectRoot, $newGitUrl);
     }
 }

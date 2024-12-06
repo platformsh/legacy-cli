@@ -1,16 +1,24 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Integration;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:list', description: 'View a list of project integration(s)', aliases: ['integrations'])]
 class IntegrationListCommand extends IntegrationCommandBase
 {
-    private $tableHeader = ['ID', 'Type', 'Summary'];
+    private array $tableHeader = ['ID', 'Type', 'Summary'];
+    public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -18,19 +26,16 @@ class IntegrationListCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:list')
-            ->setAliases(['integrations'])
-            ->setDescription('View a list of project integration(s)')
             ->addOption('type', 't', InputOption::VALUE_REQUIRED, 'Filter by type');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $integrations = $this->getSelectedProject()
+        $integrations = $selection->getProject()
                         ->getIntegrations();
         if (!$integrations) {
             $this->stdErr->writeln('No integrations found');
@@ -39,13 +44,10 @@ class IntegrationListCommand extends IntegrationCommandBase
         }
 
         if ($type = $input->getOption('type')) {
-            $integrations = array_filter($integrations, function (Integration $i) use ($type) {
-                return $i->type === $type;
-            });
+            $integrations = array_filter($integrations, fn(Integration $i): bool => $i->type === $type);
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $rows = [];
 
         foreach ($integrations as $integration) {
@@ -59,7 +61,7 @@ class IntegrationListCommand extends IntegrationCommandBase
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
             $this->stdErr->writeln('');
@@ -75,7 +77,7 @@ class IntegrationListCommand extends IntegrationCommandBase
      *
      * @return string
      */
-    protected function getIntegrationSummary(Integration $integration)
+    protected function getIntegrationSummary(Integration $integration): string|false
     {
         $details = $integration->getProperties();
         unset($details['id'], $details['type']);

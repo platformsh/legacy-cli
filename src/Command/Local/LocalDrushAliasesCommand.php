@@ -1,6 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\RemoteEnvVars;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\Ssh;
+use Platformsh\Cli\Service\SshDiagnostics;
+use Symfony\Component\Process\Exception\RuntimeException;
 use Cocur\Slugify\Slugify;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
@@ -9,59 +20,60 @@ use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
+#[AsCommand(name: 'local:drush-aliases', description: 'Find the project\'s Drush aliases', aliases: ['drush-aliases'])]
 class LocalDrushAliasesCommand extends CommandBase
 {
-    protected $local = true;
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
-            ->setName('local:drush-aliases')
-            ->setAliases(['drush-aliases'])
             ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
             ->addOption('group', 'g', InputOption::VALUE_REQUIRED, 'Recreate the aliases with a new group name.')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).')
-            ->setDescription('Find the project\'s Drush aliases');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the current group name (do nothing else).');
         $this->addExample('Change the alias group to @example', '-g example');
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         if (parent::isHidden()) {
             return true;
         }
 
         // Only show this command if drush_aliases are enabled.
-        if (!$this->config()->get('application.drush_aliases')) {
+        if (!$this->config->get('application.drush_aliases')) {
             return true;
         }
 
         // Hide the command in the list while in a project directory, if the
         // project is not Drupal.
         // Avoid checking if running in the home directory.
-        $projectRoot = $this->getProjectRoot();
-        if ($projectRoot && $this->config()->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
+        $projectRoot = $this->selector->getProjectRoot();
+        if ($projectRoot && $this->config->getHomeDirectory() !== getcwd() && !Drupal::isDrupal($projectRoot)) {
             return true;
         }
 
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
-        $project = $this->getCurrentProject();
+        $projectRoot = $this->selector->getProjectRoot();
+        $project = $this->selector->getCurrentProject();
         if (!$projectRoot || !$project) {
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Service\Drush $drush */
-        $drush = $this->getService('drush');
+        $drush = $this->drush;
 
         $apps = $drush->getDrupalApps($projectRoot);
         if (empty($apps)) {
@@ -88,7 +100,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         $aliases = $drush->getAliases($current_group);
-        $new_group = ltrim($input->getOption('group'), '@');
+        $new_group = ltrim((string) $input->getOption('group'), '@');
         if (empty($aliases) && !$new_group && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
         }
@@ -98,8 +110,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
 
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
 
             if ($new_group !== $current_group) {
                 $existing = $drush->getAliases($new_group);
@@ -112,37 +123,33 @@ class LocalDrushAliasesCommand extends CommandBase
                 $drush->setAliasGroup($new_group, $projectRoot);
             }
 
-            $environments = $this->api()->getEnvironments($project, true, false);
+            $environments = $this->api->getEnvironments($project, true, false);
 
             // Attempt to find the absolute application root directory for
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
-            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVarsService */
-            $envVarsService = $this->getService('remote_env_vars');
-            /** @var \Platformsh\Cli\Service\Ssh $ssh */
-            $ssh = $this->getService('ssh');
-            /** @var \Platformsh\Cli\Service\SshDiagnostics $sshDiagnostics */
-            $sshDiagnostics = $this->getService('ssh_diagnostics');
-            /** @var \Platformsh\Cli\Service\Shell $shell */
-            $shell = $this->getService('shell');
+            $envVarsService = $this->remoteEnvVars;
+            $ssh = $this->ssh;
+            $sshDiagnostics = $this->sshDiagnostics;
+            $shell = $this->shell;
             foreach ($environments as $environment) {
 
                 // Cache the environment's deployment information.
                 // This will at least be used for \Platformsh\Cli\Service\Drush::getSiteUrl().
-                if (!$this->api()->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
-                    $this->debug('Fetching deployment information for environment: ' . $environment->id);
+                if (!$this->api->hasCachedCurrentDeployment($environment) && $environment->isActive()) {
+                    $this->io->debug('Fetching deployment information for environment: ' . $environment->id);
                     try {
-                        $this->api()->getCurrentDeployment($environment);
+                        $this->api->getCurrentDeployment($environment);
                     } catch (BadResponseException $e) {
                         if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
-                            $this->debug('The deployment is invalid: ' . $e->getMessage());
+                            $this->io->debug('The deployment is invalid: ' . $e->getMessage());
                         } elseif ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
-                            $this->debug('Current deployment not found: ' . $e->getMessage());
+                            $this->io->debug('Current deployment not found: ' . $e->getMessage());
                         } else {
                             throw $e;
                         }
-                    } catch (EnvironmentStateException $_) {
-                        $this->debug('Current deployment not found.');
+                    } catch (EnvironmentStateException) {
+                        $this->io->debug('Current deployment not found.');
                     }
                 }
 
@@ -157,17 +164,17 @@ class LocalDrushAliasesCommand extends CommandBase
                     }
                     try {
                         $appRoot = $envVarsService->getEnvVar('APP_DIR', new RemoteHost($sshUrl, $environment, $ssh, $shell, $sshDiagnostics));
-                    } catch (\Symfony\Component\Process\Exception\RuntimeException $e) {
+                    } catch (RuntimeException $e) {
                         $this->stdErr->writeln(sprintf(
                             'Unable to find app root for environment %s, app %s',
-                            $this->api()->getEnvironmentLabel($environment, 'comment'),
+                            $this->api->getEnvironmentLabel($environment, 'comment'),
                             '<comment>' . $app->getName() . '</comment>'
                         ));
                         $this->stdErr->writeln($e->getMessage());
                         continue;
                     }
                     if (!empty($appRoot)) {
-                        $this->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
+                        $this->io->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
                         $drush->setCachedAppRoot($sshUrl, $appRoot);
                     }
                 }
@@ -191,7 +198,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         if (!empty($aliases)) {
-            $this->stdErr->writeln('Drush aliases for ' . $this->api()->getProjectLabel($project) . ':');
+            $this->stdErr->writeln('Drush aliases for ' . $this->api->getProjectLabel($project) . ':');
             foreach (array_keys($aliases) as $name) {
                 $output->writeln('    @' . ltrim($name, '@'));
             }
@@ -203,7 +210,7 @@ class LocalDrushAliasesCommand extends CommandBase
     /**
      * Ensure that the .drush/drush.yml file has the right config.
      *
-     * @param \Platformsh\Cli\Service\Drush $drush
+     * @param Drush $drush
      */
     protected function ensureDrushConfig(Drush $drush)
     {
@@ -230,8 +237,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $drushConfig['drush']['paths']['alias-path'][] = $aliasPath;
 
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
+            $fs = $this->filesystem;
             $fs->writeFile($drushYml, Yaml::dump($drushConfig, 5));
         }
     }
@@ -239,7 +245,7 @@ class LocalDrushAliasesCommand extends CommandBase
     /**
      * Migrate old alias file(s) from ~/.drush to ~/.drush/site-aliases.
      *
-     * @param \Platformsh\Cli\Service\Drush $drush
+     * @param Drush $drush
      */
     protected function migrateAliasFiles(Drush $drush)
     {
@@ -249,8 +255,7 @@ class LocalDrushAliasesCommand extends CommandBase
             return;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $newDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $newDrushDir);
         $confirmText = "Do you want to move your global Drush alias files from <comment>~/.drush</comment> to <comment>$newDrushDirRelative</comment>?";
         if (!$questionHelper->confirm($confirmText)) {

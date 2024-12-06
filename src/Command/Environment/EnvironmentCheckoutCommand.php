@@ -1,23 +1,40 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:checkout', description: 'Check out an environment', aliases: ['checkout'])]
 class EnvironmentCheckoutCommand extends CommandBase
 {
+
+    public function __construct(
+        private readonly Api            $api,
+        private readonly Config         $config,
+        private readonly Git            $git,
+        private readonly LocalProject   $localProject,
+        private readonly Selector       $selector,
+        private readonly QuestionHelper $questionHelper
+    )
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
-            ->setName('environment:checkout')
-            ->setAliases(['checkout'])
-            ->setDescription('Check out an environment')
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
@@ -27,10 +44,10 @@ class EnvironmentCheckoutCommand extends CommandBase
         $this->addExample('Check out the environment "develop"', 'develop');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->getCurrentProject();
-        $projectRoot = $this->getProjectRoot();
+        $project = $this->selector->getCurrentProject();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$project || !$projectRoot) {
             throw new RootNotFoundException();
         }
@@ -49,12 +66,11 @@ class EnvironmentCheckoutCommand extends CommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
+        $git = $this->git;
         $git->setDefaultRepositoryDir($projectRoot);
 
         $existsLocally = $git->branchExists($branch);
-        if (!$existsLocally && !$this->api()->getEnvironment($branch, $project)) {
+        if (!$existsLocally && !$this->api->getEnvironment($branch, $project)) {
             $this->stdErr->writeln('Branch not found: <error>' . $branch . '</error>');
 
             return 1;
@@ -68,13 +84,12 @@ class EnvironmentCheckoutCommand extends CommandBase
         }
 
         // Make sure that remotes are set up correctly.
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $localProject->ensureGitRemote($projectRoot, $project->getGitUrl());
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
-        $upstreamRemote = $this->config()->get('detection.git_remote_name');
+        $upstreamRemote = $this->config->get('detection.git_remote_name');
         $originRemoteUrl = $git->getConfig('remote.origin.url');
         if ($originRemoteUrl !== $project->getGitUrl() && $git->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
@@ -102,12 +117,12 @@ class EnvironmentCheckoutCommand extends CommandBase
      * @return string|false
      *   The branch name, or false on failure.
      */
-    protected function offerBranchChoice(Project $project, $projectRoot)
+    protected function offerBranchChoice(Project $project, $projectRoot): false|string|int|null
     {
-        $environments = $this->api()->getEnvironments($project);
-        $currentEnvironment = $this->getCurrentEnvironment($project);
+        $environments = $this->api->getEnvironments($project);
+        $currentEnvironment = $this->selector->getCurrentEnvironment($project);
         if ($currentEnvironment) {
-            $this->stdErr->writeln("The current environment is " . $this->api()->getEnvironmentLabel($currentEnvironment) . ".");
+            $this->stdErr->writeln("The current environment is " . $this->api->getEnvironmentLabel($currentEnvironment) . ".");
             $this->stdErr->writeln('');
         }
         $environmentList = [];
@@ -118,10 +133,9 @@ class EnvironmentCheckoutCommand extends CommandBase
             if ($currentEnvironment && (string) $id === $currentEnvironment->id) {
                 continue;
             }
-            $environmentList[$id] = $this->api()->getEnvironmentLabel($environment, false);
+            $environmentList[$id] = $this->api->getEnvironmentLabel($environment, false);
         }
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $projectConfig = $localProject->getProjectConfig($projectRoot);
         if (!empty($projectConfig['mapping'])) {
             foreach ($projectConfig['mapping'] as $branch => $id) {
@@ -134,14 +148,13 @@ class EnvironmentCheckoutCommand extends CommandBase
         if (!count($environmentList)) {
             $this->stdErr->writeln(sprintf(
                 'To create a new environment, run: <info>%s branch [new-branch]</info>',
-                $this->config()->get('application.executable')
+                $this->config->get('application.executable')
             ));
 
             return false;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $helper */
-        $helper = $this->getService('question_helper');
+        $helper = $this->questionHelper;
 
         // If there's more than one choice, present the user with a list.
         if (count($environmentList) > 1) {
@@ -157,7 +170,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         // interact. But we still need interactive confirmation at this point.
         $environmentId = key($environmentList);
         if ($environmentId !== false) {
-            $label = $this->api()->getEnvironmentLabel($environments[$environmentId]);
+            $label = $this->api->getEnvironmentLabel($environments[$environmentId]);
             if ($helper->confirm(sprintf('Check out environment %s?', $label))) {
                 return $environmentId;
             }

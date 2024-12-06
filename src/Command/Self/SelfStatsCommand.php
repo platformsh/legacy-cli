@@ -1,41 +1,46 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Client;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:stats', description: 'View stats on GitHub package downloads')]
 class SelfStatsCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
-    private $tableHeader = ['Release', 'Date', 'Asset', 'Downloads'];
+    private array $tableHeader = ['Release', 'Date', 'Asset', 'Downloads'];
+    public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
-            ->setName('self:stats')
-            ->setDescription('View stats on GitHub package downloads')
             ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)
             ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'Results per page (max: 100)', 20);
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
-        return $this->config()->has('application.github_repo');
+        return $this->config->has('application.github_repo');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $repo = $this->config()->get('application.github_repo');
-        $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
+        $repo = $this->config->get('application.github_repo');
+        $repoUrl = implode('/', array_map('rawurlencode', explode('/', (string) $repo)));
         $response = (new Client())
             ->get('https://api.github.com/repos/' . $repoUrl . '/releases', [
                 'headers' => [
@@ -54,10 +59,8 @@ class SelfStatsCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($releases as $release) {
             $row = [];
