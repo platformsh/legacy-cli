@@ -10,25 +10,25 @@ use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
 use Platformsh\Cli\Service\Config;
-use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'list', description: 'Lists commands')]
 class ListCommand extends CommandBase
 {
 
     public function __construct(private readonly Config $config)
     {
         parent::__construct();
+        parent::setConfig($this->config);
     }
 
     protected function configure()
     {
-        $this
+        $this->setName('list')
+            ->setDescription('List commands')
             ->setDefinition([
                 new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name'),
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'),

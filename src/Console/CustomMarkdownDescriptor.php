@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\MarkdownDescriptor;
 use Symfony\Component\Console\Helper\Helper;
@@ -22,31 +21,12 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
      */
     protected function describeApplication(Application $application, array $options = array()): void
     {
-        $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
-        $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
+        $describedNamespace = $options['namespace'] ?? null;
+        $description = (new DescriptorUtils())->describeNamespaces($application, $describedNamespace, !empty($options['all']));
         $title = sprintf('%s %s', $application->getName(), $application->getVersion());
-
         $this->write($title."\n".str_repeat('=', Helper::width($title)));
 
-        $commands = [];
-        foreach ($description->getNamespaces() as $namespace) {
-            foreach ($namespace['commands'] as $key => $name) {
-                $command = $description->getCommand($name);
-
-                // Ensure the command is only shown under its canonical name.
-                if ($name !== $command->getName()) {
-                    unset($namespace['commands'][$key]);
-                    continue;
-                }
-                if ($command instanceof LazyCommand) {
-                    $command = $command->getCommand();
-                }
-                if ($command->isHidden() || !$command->isEnabled()) {
-                    unset($namespace['commands'][$key]);
-                    continue;
-                }
-                $commands[$name] = $command;
-            }
+        foreach ($description['namespaces'] as $namespace) {
             if (empty($namespace['commands'])) {
                 continue;
             }
@@ -56,10 +36,12 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             }
 
             $this->write("\n\n");
-            $this->write(implode("\n", array_map(fn($commandName): string => sprintf('* [`%s`](#%s)', $commandName, str_replace(':', '', $description->getCommand($commandName)->getName())), $namespace['commands'])));
+            $this->write(implode("\n", array_map(function (Command $command): string {
+                return sprintf('* [`%s`](#%s)', $command->getName(), str_replace(':', '', $command->getName()));
+            }, $namespace['commands'])));
         }
 
-        foreach ($commands as $command) {
+        foreach ($description['commands'] as $command) {
             $this->write("\n\n");
             $this->describeCommand($command);
         }
