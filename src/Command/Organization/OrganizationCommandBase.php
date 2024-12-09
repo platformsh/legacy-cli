@@ -71,52 +71,6 @@ class OrganizationCommandBase extends CommandBase
     }
 
     /**
-     * Returns a list of countries, keyed by 2-letter country code.
-     *
-     * @return array
-     */
-    protected function countryList()
-    {
-        static $data;
-        if (isset($data)) {
-            return $data;
-        }
-        $filename = CLI_ROOT . '/resources/cldr/countries.json';
-        $data = \json_decode((string) \file_get_contents($filename), true);
-        if (!$data) {
-            throw new \RuntimeException('Failed to read CLDR file: ' . $filename);
-        }
-        return $data;
-    }
-
-    /**
-     * Normalizes a given country, transforming it into a country code, if possible.
-     *
-     * @param string $country
-     *
-     * @return string
-     */
-    protected function normalizeCountryCode($country)
-    {
-        $countryList = $this->countryList();
-        if (isset($countryList[$country])) {
-            return $country;
-        }
-        // Exact match.
-        if (($code = \array_search($country, $countryList)) !== false) {
-            return $code;
-        }
-        // Case-insensitive match.
-        $lower = \strtolower($country);
-        foreach ($countryList as $code => $name) {
-            if ($lower === \strtolower((string) $name) || $lower === \strtolower($code)) {
-                return $code;
-            }
-        }
-        return $country;
-    }
-
-    /**
      * Presents an interactive choice to pick a member in the organization.
      *
      * @param Organization $organization
