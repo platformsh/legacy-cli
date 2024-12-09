@@ -5,14 +5,14 @@ namespace Platformsh\Cli\Service;
 class CountryService
 {
 
-    private $cache;
+    private array $cache;
 
     /**
      * Returns a list of countries, keyed by 2-letter country code.
      *
      * @return array<string, string>
      */
-    public function listCountries()
+    public function listCountries(): array
     {
         if (isset($this->cache)) {
             return $this->cache;
@@ -32,7 +32,7 @@ class CountryService
      *
      * @return string
      */
-    public function countryToCode($country)
+    public function countryToCode(string $country): string
     {
         $countryList = $this->listCountries();
         if (isset($countryList[$country])) {
