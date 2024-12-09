@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\CountryService;
 use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly CountryService $countryService, private readonly QuestionHelper $questionHelper, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -38,7 +39,7 @@ END_HELP;
 
     private function getForm(): Form
     {
-        $countryList = $this->countryList();
+        $countryList = $this->countryService->listCountries();
         return Form::fromArray([
             'label' => new Field('Label', [
                 'description' => 'The full name of the organization, e.g. "ACME Inc."',
@@ -52,7 +53,7 @@ END_HELP;
                 'options' => $countryList,
                 'asChoice' => false,
                 'defaultCallback' => fn() => $this->api->getUser()->country ?: null,
-                'normalizer' => fn($value) => $this->normalizeCountryCode($value),
+                'normalizer' => $this->countryService->countryToCode(...),
                 'validator' => fn($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
             ]),
         ]);
