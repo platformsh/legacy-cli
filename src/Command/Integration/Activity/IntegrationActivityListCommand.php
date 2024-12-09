@@ -2,20 +2,28 @@
 
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:activity:list', description: 'Get a list of activities for an integration', aliases: ['integration:activities'])]
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'created' => 'Created',
         'completed' => 'Completed',
@@ -29,7 +37,11 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         'time_build' => 'Build time (s)',
         'time_deploy' => 'Deploy time (s)',
     ];
-    private $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
+    private array $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -37,8 +49,6 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
     protected function configure()
     {
         $this
-            ->setName('integration:activity:list')
-            ->setAliases(['integration:activities'])
             ->setHiddenAliases(['int:act', 'i:act'])
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
@@ -54,28 +64,26 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
-            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
-            ->setDescription('Get a list of activities for an integration');
+            ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['environment']);
-        $this->validateInput($input, true);
+        $this->io->warnAboutDeprecatedOptions(['environment']);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $loader = $this->activityLoader;
         $activities = $loader->loadFromInput($integration, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
@@ -83,10 +91,8 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
 
         $timingTypes = ['execute', 'wait', 'build', 'deploy'];
 
@@ -112,7 +118,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Activities on the project %s, integration <info>%s</info> (%s):',
-                $this->api()->getProjectLabel($project),
+                $this->api->getProjectLabel($project),
                 $integration->id,
                 $integration->type
             ));
@@ -121,7 +127,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;

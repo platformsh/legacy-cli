@@ -11,7 +11,7 @@ class VersionUtil
      *
      * @return string[]
      */
-    public function nextVersions($version)
+    public function nextVersions($version): array
     {
         if (preg_match('/^([0-9]+)\.([0-9]+)\.([0-9]+)(-.+)?$/', $version, $matches)) {
             $major = (int) $matches[1];
@@ -35,7 +35,7 @@ class VersionUtil
      *
      * @return bool
      */
-    public function isPreRelease($version)
+    public function isPreRelease($version): bool
     {
         return \preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?-.+/', $version) === 1;
     }
@@ -45,7 +45,7 @@ class VersionUtil
      *
      * @return int
      */
-    public function majorVersion($version)
+    public function majorVersion(string $version): int
     {
         if ($dotPos = strpos($version, '.', 1)) {
             $major = substr($version, 0, $dotPos);

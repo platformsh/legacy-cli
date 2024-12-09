@@ -2,12 +2,12 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
-/**
- * @group slow
- */
+use PHPUnit\Framework\Attributes\Group;
+
+#[Group('slow')]
 class NoneTest extends BuildFlavorTestBase
 {
-    public function testBuildNone()
+    public function testBuildNone(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/none');
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');

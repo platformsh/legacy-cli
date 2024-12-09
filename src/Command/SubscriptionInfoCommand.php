@@ -2,19 +2,29 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Subscription;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'subscription:info', description: 'Read or modify subscription properties')]
 class SubscriptionInfoCommand extends CommandBase
 {
-    /** @var \Platformsh\Cli\Service\PropertyFormatter|null */
+    /** @var PropertyFormatter|null */
     protected $formatter;
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -22,37 +32,35 @@ class SubscriptionInfoCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('subscription:info')
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
             ->addArgument('value', InputArgument::OPTIONAL, 'Set a new value for the property')
-            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID')
-            ->setDescription('Read or modify subscription properties');
+            ->addOption('id', 's', InputOption::VALUE_REQUIRED, 'The subscription ID');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
         $this->addExample('View all subscription properties')
              ->addExample('View the subscription status', 'status')
              ->addExample('View the storage limit (in MiB)', 'storage');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $id = $input->getOption('id');
         $project = null;
         if (empty($id)) {
-            $this->validateInput($input);
-            $project = $this->getSelectedProject();
+            $selection = $this->selector->getSelection($input);
+            $project = $selection->getProject();
             $id = $project->getSubscriptionId();
         }
 
-        $subscription = $this->api()->loadSubscription($id, $project, $input->getArgument('value') !== null);
+        $subscription = $this->api->loadSubscription($id, $project, $input->getArgument('value') !== null);
         if (!$subscription) {
             $this->stdErr->writeln(sprintf('Subscription not found: <error>%s</error>', $id));
 
             return 1;
         }
 
-        $this->formatter = $this->getService('property_formatter');
+        $this->formatter = $this->propertyFormatter;
 
         $property = $input->getArgument('property');
 
@@ -65,14 +73,10 @@ class SubscriptionInfoCommand extends CommandBase
             return $this->setProperty($property, $value, $subscription);
         }
 
-        switch ($property) {
-            case 'url':
-                $value = $subscription->getUri(true);
-                break;
-
-            default:
-                $value = $this->api()->getNestedProperty($subscription, $property);
-        }
+        $value = match ($property) {
+            'url' => $subscription->getUri(true),
+            default => $this->api->getNestedProperty($subscription, $property),
+        };
 
         $output->writeln($this->formatter->format($value, $property));
 
@@ -84,7 +88,7 @@ class SubscriptionInfoCommand extends CommandBase
      *
      * @return int
      */
-    protected function listProperties(Subscription $subscription)
+    protected function listProperties(Subscription $subscription): int
     {
         $headings = [];
         $values = [];
@@ -92,8 +96,7 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->renderSimple($values, $headings);
 
         return 0;
@@ -106,7 +109,7 @@ class SubscriptionInfoCommand extends CommandBase
      *
      * @return int
      */
-    protected function setProperty($property, $value, Subscription $subscription)
+    protected function setProperty($property, $value, Subscription $subscription): int
     {
         $type = $this->getType($property);
         if (!$type) {
@@ -126,15 +129,14 @@ class SubscriptionInfoCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         $confirmMessage = sprintf(
             "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",
             $property,
             $this->formatter->format($currentValue, $property),
             $this->formatter->format($value, $property)
         );
-        if ($this->config()->getWithDefault('warnings.project_users_billing', true)) {
+        if ($this->config->getWithDefault('warnings.project_users_billing', true)) {
             $warning = sprintf(
                 '<comment>This action may %s the cost of your subscription.</comment>',
                 is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
@@ -162,7 +164,7 @@ class SubscriptionInfoCommand extends CommandBase
      *
      * @return string|false
      */
-    protected function getType($property)
+    protected function getType($property): string|false
     {
         $writableProperties = ['plan' => 'string', 'environments' => 'int', 'storage' => 'int'];
 

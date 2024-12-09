@@ -1,32 +1,37 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Psr7\Uri;
 use Platformsh\Cli\Service\CurlCli;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:curl', description: "Run an authenticated cURL request on an organization's API")]
 class OrganizationCurlCommand extends OrganizationCommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config, private readonly CurlCli $curlCli, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('organization:curl')
-            ->setDescription("Run an authenticated cURL request on an organization's API")
-            ->addOrganizationOptions(true);
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
         CurlCli::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input);
+        $organization = $this->selector->selectOrganization($input);
 
-        $apiUri = new Uri($this->config()->getApiUrl());
+        $apiUri = new Uri($this->config->getApiUrl());
         $absoluteUrl = $apiUri->withPath($organization->getUri());
 
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
+        $curl = $this->curlCli;
         return $curl->run($absoluteUrl, $input, $output);
     }
 }

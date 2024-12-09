@@ -12,7 +12,7 @@ use Symfony\Component\Process\Process;
 class ProcessFailedException extends \Symfony\Component\Process\Exception\ProcessFailedException
 {
     /**
-     * @param \Symfony\Component\Process\Process $process
+     * @param Process $process
      *     The failed process.
      * @param bool $includeOutput
      *     Whether to include the output in the exception message. Set to false

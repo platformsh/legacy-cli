@@ -11,12 +11,12 @@ class ShellServiceTest extends TestCase
     /**
      * Test ShellHelper::execute().
      */
-    public function testExecute()
+    public function testExecute(): void
     {
         $shell = new Shell();
 
         // Find a command that will work on all platforms.
-        $workingCommand = strpos(PHP_OS, 'WIN') !== false ? 'help' : 'pwd';
+        $workingCommand = str_contains(PHP_OS, 'WIN') ? 'help' : 'pwd';
 
         // Test commandExists().
         $this->assertTrue($shell->commandExists($workingCommand));

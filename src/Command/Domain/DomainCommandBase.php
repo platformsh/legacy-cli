@@ -1,12 +1,17 @@
 <?php
 namespace Platformsh\Cli\Command\Domain;
 
+use Platformsh\Cli\Selector\Selection;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Utils;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\SslUtil;
-use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,6 +20,10 @@ use Symfony\Component\Console\Input\InputOption;
 abstract class DomainCommandBase extends CommandBase
 {
 
+    private readonly Selector $selector;
+    private readonly QuestionHelper $questionHelper;
+    private readonly Config $config;
+    private readonly Api $api;
     // The final array of SSL options for the client parameters.
     protected $sslOptions = [];
 
@@ -23,13 +32,23 @@ abstract class DomainCommandBase extends CommandBase
     protected $environmentIsProduction;
 
     protected $attach;
+    #[Required]
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
+    {
+        $this->api = $api;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+        $this->selector = $selector;
+    }
 
-    /**
-     * @param InputInterface $input
-     *
-     * @return bool
-     */
-    protected function validateDomainInput(InputInterface $input)
+    protected function isForEnvironment(InputInterface $input): bool
+    {
+        return ($input->hasOption('environment') && $input->getOption('environment') !== null)
+            || ($input->hasOption('attach') && $input->getOption('attach') !== null)
+            || ($input->hasOption('replace') && $input->getOption('replace') !== null);
+    }
+
+    protected function validateDomainInput(InputInterface $input, Selection $selection): bool
     {
         $this->domainName = $input->getArgument('name');
         if (!$this->validDomain($this->domainName)) {
@@ -55,25 +74,22 @@ abstract class DomainCommandBase extends CommandBase
         }
 
         if ($input->hasOption('environment') || $input->hasOption('attach')) {
-            $project = $this->getSelectedProject();
-            $forEnvironment = ($input->hasOption('environment') && $input->getOption('environment') !== null)
-                || ($input->hasOption('attach') && $input->getOption('attach') !== null)
-                || ($input->hasOption('replace') && $input->getOption('replace') !== null);
-
+            $project = $selection->getProject();
             $supportsNonProduction = $this->supportsNonProductionDomains($project);
 
-            if ($forEnvironment) {
-                $this->selectEnvironment($input->getOption('environment'), true, false, true, function (Environment $e) use ($project) {
-                    return $e->type !== 'production' && $e->id !== $project->default_branch;
-                });
-                $environment = $this->getSelectedEnvironment();
-                $this->environmentIsProduction = $environment->id === $project->default_branch;
-                $this->ensurePrintSelectedEnvironment(true);
+            if ($this->isForEnvironment($input)) {
+                $environment = $selection->getEnvironment();
+                $this->environmentIsProduction = $environment->type === 'production' || $environment->id === $project->default_branch;
+                $this->selector->ensurePrintedSelection($selection);
             } elseif ($project->default_branch === null) {
                 $this->stdErr->writeln('The <error>default_branch</error> property is not set on the project, so the production environment cannot be determined');
                 return false;
             } else {
-                $this->selectEnvironment($project->default_branch, true, false, false);
+                $environment = $this->api->getEnvironment($project->default_branch, $project);
+                if (!$environment) {
+                    $this->stdErr->writeln(sprintf('Environment not found: <error>%s</error>', $project->default_branch));
+                    return false;
+                }
                 $this->environmentIsProduction = true;
                 if ($input->hasOption('attach') && $supportsNonProduction) {
                     $this->stdErr->writeln('Use the <comment>--environment</comment> option (and optionally <comment>--attach</comment>) to add a domain to a non-production environment.');
@@ -88,14 +104,14 @@ abstract class DomainCommandBase extends CommandBase
                     return false;
                 }
                 if (!$this->environmentIsProduction && !$supportsNonProduction) {
-                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api()->getProjectLabel($project, 'error')));
-                    if ($this->config()->has('warnings.non_production_domains_msg')) {
-                        $this->stdErr->writeln("\n". trim($this->config()->get('warnings.non_production_domains_msg')));
+                    $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api->getProjectLabel($project, 'error')));
+                    if ($this->config->has('warnings.non_production_domains_msg')) {
+                        $this->stdErr->writeln("\n". trim((string) $this->config->get('warnings.non_production_domains_msg')));
                     }
                     return false;
                 }
                 if (!$this->environmentIsProduction && $this->attach === null) {
-                    $project = $this->getSelectedProject();
+                    $project = $selection->getProject();
                     try {
                         $productionDomains = $project->getDomains();
                         $productionDomainAccess = true;
@@ -130,8 +146,7 @@ abstract class DomainCommandBase extends CommandBase
                                 $choices[$productionDomain->name] = $productionDomain->name;
                             }
                         }
-                        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                        $questionHelper = $this->getService('question_helper');
+                        $questionHelper = $this->questionHelper;
                         $questionText = '<options=bold>Attachment</> (<info>--attach</info>)'
                             . "\nA non-production domain must be attached to an existing production domain."
                             . "\nIt will inherit the same routing behavior."

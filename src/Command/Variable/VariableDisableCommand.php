@@ -1,7 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Variable;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -9,10 +13,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use "variable:update --enabled false" instead
  */
+#[AsCommand(name: 'variable:disable', description: 'Disable an enabled environment-level variable')]
 class VariableDisableCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
+
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -20,27 +30,25 @@ class VariableDisableCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('variable:disable')
-            ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable')
-            ->setDescription('Disable an enabled environment-level variable');
+            ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
             . "\nInstead, use: <info>variable:update --enabled false [variable]</info>"
         );
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        return $this->runOtherCommand('variable:update', [
+        return $this->subCommandRunner->run('variable:update', [
                 'name' => $input->getArgument('name'),
                 '--enabled' => 'false',
-                '--project' => $this->getSelectedProject()->id,
-                '--environment' => $this->getSelectedEnvironment()->id,
+                '--project' => $selection->getProject()->id,
+                '--environment' => $selection->getEnvironment()->id,
             ] + array_filter([
                 '--wait' => $input->getOption('wait'),
                 '--no-wait' => $input->getOption('no-wait'),

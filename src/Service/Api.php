@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Service;
 
+use Symfony\Component\Filesystem\Filesystem;
+use GuzzleHttp\Exception\RequestException;
+use Platformsh\Client\Model\Integration;
 use Composer\CaBundle\CaBundle;
 use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Client;
@@ -42,6 +45,7 @@ use Platformsh\Client\PlatformClient;
 use Platformsh\Client\Session\Session;
 use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\File;
+use Platformsh\Client\Session\Storage\SessionStorageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -50,80 +54,63 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * Decorates the PlatformClient API client to provide aggressive caching.
  */
 class Api
 {
-    /** @var EventDispatcherInterface */
-    public $dispatcher;
+    private static bool $printedApiTokenWarning = false;
 
-    /** @var Config */
-    private $config;
-
-    /** @var \Doctrine\Common\Cache\CacheProvider */
-    private $cache;
-
-    /** @var OutputInterface */
-    private $output;
-
-    /** @var OutputInterface */
-    private $stdErr;
-
-    /** @var TokenConfig */
-    private $tokenConfig;
-
-    /** @var FileLock */
-    private $fileLock;
+    private readonly EventDispatcherInterface $dispatcher;
+    private readonly  Config $config;
+    private readonly  CacheProvider $cache;
+    private readonly  OutputInterface $output;
+    private readonly  OutputInterface $stdErr;
+    private readonly  TokenConfig $tokenConfig;
+    private readonly  FileLock $fileLock;
+    private readonly Io $io;
 
     /**
      * The library's API client object.
      *
      * This is static so that a freshly logged-in client can then be reused by a parent command with a different service container.
-     *
-     * @var PlatformClient|null
      */
-    private static $client;
+    private static ?PlatformClient $client = null;
 
     /**
      * A cache of environments lists, keyed by project ID.
      *
      * @var array<string, Environment[]>
      */
-    private static $environmentsCache = [];
+    private static array $environmentsCache = [];
 
     /**
      * A cache of environment deployments.
      *
      * @var array<string, EnvironmentDeployment>
      */
-    private static $deploymentsCache = [];
+    private static array $deploymentsCache = [];
 
     /**
      * A cache of not-found environment IDs.
      *
      * @see Api::getEnvironment()
-     *
-     * @var string[]
      */
-    private static $notFound = [];
+    private static array $notFound = [];
 
     /**
      * Session storage, via files or credential helpers.
      *
      * @see Api::initSessionStorage()
-     *
-     * @var \Platformsh\Client\Session\Storage\SessionStorageInterface|null
      */
-    private $sessionStorage;
+    private ?SessionStorageInterface $sessionStorage = null;
 
     /**
      * Sets whether we are currently verifying login using a test request.
-     *
-     * @var bool
      */
-    public $inLoginCheck = false;
+    public bool $inLoginCheck = false;
 
     /**
      * Constructor.
@@ -134,22 +121,47 @@ class Api
      * @param TokenConfig|null $tokenConfig
      * @param EventDispatcherInterface|null $dispatcher
      * @param FileLock|null $fileLock
+     * @param Io|null $io
      */
     public function __construct(
-        Config $config = null,
-        CacheProvider $cache = null,
-        OutputInterface $output = null,
-        TokenConfig $tokenConfig = null,
-        FileLock $fileLock = null,
-        EventDispatcherInterface $dispatcher = null
+        Config                   $config = null,
+        CacheProvider            $cache = null,
+        OutputInterface          $output = null,
+        Io                       $io = null,
+        TokenConfig              $tokenConfig = null,
+        FileLock                 $fileLock = null,
+        EventDispatcherInterface $dispatcher = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
         $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
+        $this->io = $io ?: new Io($this->output);
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->fileLock = $fileLock ?: new FileLock($this->config);
         $this->dispatcher = $dispatcher ?: new EventDispatcher();
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+    }
+
+    /**
+     * Sets up listeners (called by the DI container).
+     *
+     * @param AutoLoginListener $autoLoginListener
+     * @param DrushAliasUpdater $drushAliasUpdater
+     */
+    #[Required]
+    public function injectListeners(
+        AutoLoginListener $autoLoginListener,
+        DrushAliasUpdater $drushAliasUpdater
+    ): void
+    {
+        $this->dispatcher->addListener(
+            'login.required',
+            $autoLoginListener->onLoginRequired(...)
+        );
+        $this->dispatcher->addListener(
+            'environments.changed',
+            $drushAliasUpdater->onEnvironmentsChanged(...)
+        );
     }
 
     /**
@@ -159,7 +171,7 @@ class Api
      *
      * @return bool
      */
-    public function hasApiToken($includeStored = true)
+    public function hasApiToken($includeStored = true): bool
     {
         return $this->tokenConfig->getAccessToken() || $this->tokenConfig->getApiToken($includeStored);
     }
@@ -171,7 +183,7 @@ class Api
      *
      * @return string[]
      */
-    public function listSessionIds()
+    public function listSessionIds(): array
     {
         $ids = [];
         if ($this->sessionStorage instanceof CredentialHelperStorage) {
@@ -184,9 +196,7 @@ class Api
                 $ids[] = $matches[1];
             }
         }
-        $ids = \array_filter($ids, function ($id) {
-           return strpos($id, 'api-token-') !== 0;
-        });
+        $ids = \array_filter($ids, fn($id): bool => !str_starts_with((string) $id, 'api-token-'));
 
         return \array_unique($ids);
     }
@@ -210,7 +220,7 @@ class Api
     /**
      * Logs out of the current session.
      */
-    public function logout()
+    public function logout(): void
     {
         // Delete the stored API token, if any.
         $this->tokenConfig->storage()->deleteToken();
@@ -225,7 +235,7 @@ class Api
         // Ensure the session directory is wiped.
         $dir = $this->config->getSessionDir(true);
         if (is_dir($dir)) {
-            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+            (new Filesystem())->remove($dir);
         }
 
         // Wipe the client so it is re-initialized when needed.
@@ -235,14 +245,14 @@ class Api
     /**
      * Deletes all sessions.
      */
-    public function deleteAllSessions()
+    public function deleteAllSessions(): void
     {
         if ($this->sessionStorage instanceof CredentialHelperStorage) {
             $this->sessionStorage->deleteAll();
         }
         $dir = $this->config->getSessionDir();
         if (is_dir($dir)) {
-            (new \Symfony\Component\Filesystem\Filesystem())->remove($dir);
+            (new Filesystem())->remove($dir);
         }
     }
 
@@ -253,7 +263,7 @@ class Api
      *
      * @return array
      */
-    private function getConnectorOptions() {
+    private function getConnectorOptions(): array {
         $connectorOptions = [];
         $connectorOptions['api_url'] = $this->config->getApiUrl();
         if ($this->config->has('api.accounts_api_url')) {
@@ -284,9 +294,9 @@ class Api
         // different CLI processes.
         $refreshLockName = 'refresh--' . $this->config->getSessionIdSlug();
         $connectorOptions['on_refresh_start'] = function ($originalRefreshToken) use ($refreshLockName) {
-            $this->debug('Refreshing access token');
+            $this->io->debug('Refreshing access token');
             $connector = $this->getClient(false)->getConnector();
-            return $this->fileLock->acquireOrWait($refreshLockName, function () {
+            return $this->fileLock->acquireOrWait($refreshLockName, function (): void {
                 $this->stdErr->writeln('Waiting for token refresh lock', OutputInterface::VERBOSITY_VERBOSE);
             }, function () use ($connector, $originalRefreshToken) {
                 $session = $connector->getSession();
@@ -295,17 +305,13 @@ class Api
                     ? $accessToken : null;
             });
         };
-        $connectorOptions['on_refresh_end'] = function () use ($refreshLockName) {
+        $connectorOptions['on_refresh_end'] = function () use ($refreshLockName): void {
             $this->fileLock->release($refreshLockName);
         };
 
-        $connectorOptions['on_refresh_error'] = function (IdentityProviderException $e) {
-            return $this->onRefreshError($e);
-        };
+        $connectorOptions['on_refresh_error'] = fn(IdentityProviderException $e): ?AccessToken => $this->onRefreshError($e);
 
-        $connectorOptions['on_step_up_auth_response'] = function (ResponseInterface $response) {
-            return $this->onStepUpAuthResponse($response);
-        };
+        $connectorOptions['on_step_up_auth_response'] = fn(ResponseInterface $response) => $this->onStepUpAuthResponse($response);
 
         $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
 
@@ -314,16 +320,12 @@ class Api
         // Debug responses.
         $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getWithDefault('api.debug', false));
         // Handle 403 errors.
-        $connectorOptions['middlewares'][] = function (callable $handler) {
-            return function (RequestInterface $request, array $options) use ($handler) {
-                return $handler($request, $options)->then(function (ResponseInterface $response) use ($request) {
-                    if ($response->getStatusCode() === 403) {
-                        $this->on403($request);
-                    }
-                    return $response;
-                });
-            };
-        };
+        $connectorOptions['middlewares'][] = fn(callable $handler): \Closure => fn(RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
+            if ($response->getStatusCode() === 403) {
+                $this->on403($request);
+            }
+            return $response;
+        });
 
         return $connectorOptions;
     }
@@ -342,22 +344,9 @@ class Api
         static $path;
         if ($path === null) {
             $path = CaBundle::getSystemCaRootBundlePath();
-            $this->debug('Determined CA bundle path: ' . $path);
+            $this->io->debug('Determined CA bundle path: ' . $path);
         }
         return $path;
-    }
-
-    /**
-     * Logs a debug message.
-     *
-     * @param string $message
-     * @return void
-     */
-    private function debug($message)
-    {
-        if ($this->stdErr && $this->stdErr->isDebug()) {
-            $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message);
-        }
     }
 
     private function onStepUpAuthResponse(ResponseInterface $response) {
@@ -365,9 +354,7 @@ class Api
             return null;
         }
 
-        if ($this->stdErr->isVeryVerbose()) {
-            $this->stdErr->writeln(ApiResponseException::getErrorDetails($response));
-        }
+        $this->io->debug(ApiResponseException::getErrorDetails($response));
 
         $session = $this->getClient(false)->getConnector()->getSession();
         $previousAccessToken = $session->get('accessToken');
@@ -376,7 +363,7 @@ class Api
         $authMethods = isset($body['amr']) ? $body['amr'] : [];
         $maxAge = isset($body['max_age']) ? $body['max_age'] : null;
 
-        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent($authMethods, $maxAge, $this->hasApiToken()));
+        $this->dispatcher->dispatch(new LoginRequiredEvent($authMethods, $maxAge, $this->hasApiToken()), 'login.required');
 
         $this->stdErr->writeln('');
         $session = $this->getClient(false)->getConnector()->getSession();
@@ -405,7 +392,7 @@ class Api
             return null;
         }
 
-        $this->debug($e->getMessage());
+        $this->io->debug($e->getMessage());
 
         $this->logout();
 
@@ -419,7 +406,7 @@ class Api
 
         $this->stdErr->writeln('');
 
-        $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
+        $this->dispatcher->dispatch(new LoginRequiredEvent([], null, $this->hasApiToken()), 'login.required');
         $session = $this->getClient(false)->getConnector()->getSession();
 
         return $this->tokenFromSession($session);
@@ -432,7 +419,7 @@ class Api
     {
         if (isset($data['error']) && $data['error'] === 'invalid_grant') {
             return isset($errDetails['error_description'])
-                && str_contains($errDetails['error_description'], 'SSO session has expired');
+                && str_contains((string) $errDetails['error_description'], 'SSO session has expired');
         }
         return false;
     }
@@ -444,7 +431,7 @@ class Api
     {
         if (is_array($body) && isset($body['error']) && $body['error'] === 'invalid_grant') {
             return isset($errDetails['error_description'])
-                && str_contains($errDetails['error_description'], 'API token');
+                && str_contains((string) $errDetails['error_description'], 'API token');
         }
         return false;
     }
@@ -456,7 +443,7 @@ class Api
      *
      * @return AccessToken|null
      */
-    private function tokenFromSession(SessionInterface $session) {
+    private function tokenFromSession(SessionInterface $session): ?AccessToken {
         if (!$session->get('accessToken')) {
             return null;
         }
@@ -484,7 +471,7 @@ class Api
      *
      * @return array
      */
-    public function getGuzzleOptions() {
+    public function getGuzzleOptions(): array {
         $options = [
             'headers' => ['User-Agent' => $this->config->getUserAgent()],
             'debug' => false,
@@ -511,7 +498,7 @@ class Api
      *
      * @return string[]
      */
-    private function guzzleProxyConfig()
+    private function guzzleProxyConfig(): array
     {
         return array_map(function($proxyUrl) {
             // If Guzzle is going to use PHP's built-in HTTP streams,
@@ -532,7 +519,7 @@ class Api
      *
      * @return PlatformClient
      */
-    public function getClient($autoLogin = true, $reset = false)
+    public function getClient(bool $autoLogin = true, bool $reset = false): PlatformClient
     {
         if (!isset(self::$client) || $reset) {
             $options = $this->getConnectorOptions();
@@ -543,7 +530,7 @@ class Api
             // This ensures file storage from other credentials will not be
             // reused.
             if (!empty($options['api_token'])) {
-                $sessionId = 'api-token-' . \substr(\hash('sha256', $options['api_token']), 0, 32);
+                $sessionId = 'api-token-' . \substr(\hash('sha256', (string) $options['api_token']), 0, 32);
             }
 
             // Set up a session to store OAuth2 tokens.
@@ -554,7 +541,7 @@ class Api
             // (unless an access token was set directly).
             if (!isset($options['api_token']) || $options['api_token_type'] !== 'access') {
                 $this->initSessionStorage();
-                $this->debug('Loading session');
+                $this->io->debug('Loading session');
                 try {
                     $session->setStorage($this->sessionStorage);
                 } catch (\RuntimeException $e) {
@@ -574,8 +561,16 @@ class Api
 
             self::$client = new PlatformClient($connector);
 
+            if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config->get('application.env_prefix') . 'TOKEN') || $this->hasApiToken(false))) {
+                $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
+                $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
+                $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
+                $this->stdErr->writeln('');
+                self::$printedApiTokenWarning = true;
+            }
+
             if ($autoLogin && !$connector->isLoggedIn()) {
-                $this->dispatcher->dispatch('login_required', new LoginRequiredEvent([], null, $this->hasApiToken()));
+                $this->dispatcher->dispatch(new LoginRequiredEvent([], null, $this->hasApiToken()), 'login.required');
             }
         }
 
@@ -583,17 +578,30 @@ class Api
     }
 
     /**
+     * Detects if running on an application container.
+     *
+     * @return bool
+     */
+    private function onContainer(): bool
+    {
+        $envPrefix = $this->config->get('service.env_prefix');
+        return getenv($envPrefix . 'PROJECT') !== false
+            && getenv($envPrefix . 'BRANCH') !== false
+            && getenv($envPrefix . 'TREE_ID') !== false;
+    }
+
+    /**
      * Initializes session credential storage.
      */
-    private function initSessionStorage() {
+    private function initSessionStorage(): void {
         if (!isset($this->sessionStorage)) {
             // Attempt to use the docker-credential-helpers.
             $manager = new Manager($this->config);
             if ($manager->isSupported()) {
                 if ($manager->isInstalled()) {
-                    $this->debug('Using Docker credential helper for session storage');
+                    $this->io->debug('Using Docker credential helper for session storage');
                 } else {
-                    $this->debug('Installing Docker credential helper for session storage');
+                    $this->io->debug('Installing Docker credential helper for session storage');
                     $manager->install();
                 }
                 $this->sessionStorage = new CredentialHelperStorage($manager, $this->config->get('application.slug'));
@@ -601,7 +609,7 @@ class Api
             }
 
             // Fall back to file storage.
-            $this->debug('Using filesystem for session storage');
+            $this->io->debug('Using filesystem for session storage');
             $this->sessionStorage = new File($this->config->getSessionDir());
         }
     }
@@ -629,7 +637,7 @@ class Api
      * @param BasicProjectInfo $project
      * @return bool
      */
-    private function matchesVendorFilter($filters, BasicProjectInfo $project)
+    private function matchesVendorFilter($filters, BasicProjectInfo $project): bool
     {
         if (empty($filters)) {
             return true;
@@ -659,14 +667,14 @@ class Api
         } elseif ($refresh || !$cached) {
             $projects = [];
             if ($new) {
-                $this->debug('Loading extended access information to fetch the projects list');
+                $this->io->debug('Loading extended access information to fetch the projects list');
                 foreach ($this->getClient()->getMyProjects() as $project) {
                     if ($this->matchesVendorFilter($vendorFilter, $project)) {
                         $projects[] = $project;
                     }
                 }
             } else {
-                $this->debug('Loading account information to fetch the projects list');
+                $this->io->debug('Loading account information to fetch the projects list');
                 foreach ($this->getClient()->getProjectStubs((bool) $refresh) as $stub) {
                     $project = BasicProjectInfo::fromStub($stub);
                     if ($this->matchesVendorFilter($vendorFilter, $project)) {
@@ -677,7 +685,7 @@ class Api
             $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
         } else {
             $projects = $cached;
-            $this->debug('Loaded user project data from cache');
+            $this->io->debug('Loaded user project data from cache');
         }
 
         return $projects;
@@ -692,7 +700,7 @@ class Api
      *
      * @return Project|false
      */
-    public function getProject($id, $host = null, $refresh = null)
+    public function getProject(string $id, $host = null, $refresh = null)
     {
         // Ignore the $host if an api.base_url is configured.
         $apiUrl = $this->config->getWithDefault('api.base_url', '');
@@ -723,7 +731,7 @@ class Api
             $baseUrl = $cached['_endpoint'];
             unset($cached['_endpoint']);
             $project = new Project($cached, $baseUrl, $guzzleClient);
-            $this->debug('Loaded project from cache: ' . $id);
+            $this->io->debug('Loaded project from cache: ' . $id);
         }
         if ($apiUrl !== '') {
             $project->setApiUrl($apiUrl);
@@ -770,8 +778,8 @@ class Api
             // Dispatch an event if the list of environments has changed.
             if ($events && (!$cached || array_diff_key($environments, $cached))) {
                 $this->dispatcher->dispatch(
+                    new EnvironmentsChangedEvent($project, $environments),
                     'environments_changed',
-                    new EnvironmentsChangedEvent($project, $environments)
                 );
             }
 
@@ -783,7 +791,7 @@ class Api
             foreach ((array) $cached as $id => $data) {
                 $environments[$id] = new Environment($data, $endpoint, $guzzleClient, true);
             }
-            $this->debug('Loaded environments from cache');
+            $this->io->debug('Loaded environments from cache');
         }
 
         self::$environmentsCache[$projectId] = $environments;
@@ -802,7 +810,7 @@ class Api
      *
      * @return Environment|false The environment, or false if not found.
      */
-    public function getEnvironment($id, Project $project, $refresh = null, $tryMachineName = false)
+    public function getEnvironment(string $id, Project $project, $refresh = null, $tryMachineName = false)
     {
         // Statically cache not found environments.
         $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
@@ -862,16 +870,14 @@ class Api
             return [];
         } elseif ($refresh || !$cached) {
             $types = $project->getEnvironmentTypes();
-            $cachedTypes = \array_map(function (EnvironmentType $type) {
-                return $type->getData() + ['_uri' => $type->getUri()];
-            }, $types);
+            $cachedTypes = \array_map(fn(EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
             $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->getWithDefault('api.environments_ttl', 120));
         } else {
             $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $data) {
                 $types[] = new EnvironmentType($data, $data['_uri'], $guzzleClient);
             }
-            $this->debug('Loaded environment types from cache for project: ' . $project->id);
+            $this->io->debug('Loaded environment types from cache for project: ' . $project->id);
         }
 
         return $types;
@@ -912,7 +918,7 @@ class Api
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         $info = $this->cache->fetch($cacheKey);
         if (!$reset && $info) {
-            $this->debug('Loaded account information from cache');
+            $this->io->debug('Loaded account information from cache');
         } else {
             $info = $this->getClient()->getAccountInfo($reset);
             $this->cache->save($cacheKey, $info, (int) $this->config->getWithDefault('api.users_ttl', 600));
@@ -926,7 +932,7 @@ class Api
      *
      * @return string|false
      */
-    public function getMyUserId($reset = false)
+    public function getMyUserId(bool $reset = false): string|false
     {
         return $this->getClient()->getMyUserId($reset);
     }
@@ -938,7 +944,7 @@ class Api
      *
      * @return SshKey[]
      */
-    public function getSshKeys($reset = false)
+    public function getSshKeys($reset = false): array
     {
         $data = $this->getLegacyAccountInfo($reset);
 
@@ -971,7 +977,7 @@ class Api
             }
             $this->cache->save($cacheKey, $user->getData(), (int) $this->config->getWithDefault('api.users_ttl', 600));
         } else {
-            $this->debug('Loaded user info from cache: ' . $id);
+            $this->io->debug('Loaded user info from cache: ' . $id);
             $connector = $this->getClient()->getConnector();
             $user = new User($data, $connector->getApiUrl() . '/users', $connector->getClient());
         }
@@ -985,12 +991,12 @@ class Api
      *
      * @param string $projectId
      */
-    public function clearEnvironmentsCache($projectId)
+    public function clearEnvironmentsCache(string $projectId): void
     {
         $this->cache->delete('environments:' . $projectId);
         unset(self::$environmentsCache[$projectId]);
         foreach (array_keys(self::$notFound) as $key) {
-            if (strpos($key, $projectId . ':') === 0) {
+            if (str_starts_with($key, $projectId . ':')) {
                 unset(self::$notFound[$key]);
             }
         }
@@ -1001,7 +1007,7 @@ class Api
      *
      * @return string
      */
-    private function myProjectsCacheKey()
+    private function myProjectsCacheKey(): string
     {
         $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
@@ -1011,7 +1017,7 @@ class Api
     /**
      * Clears the projects cache.
      */
-    public function clearProjectsCache()
+    public function clearProjectsCache(): void
     {
         $this->cache->delete($this->myProjectsCacheKey());
     }
@@ -1027,15 +1033,13 @@ class Api
      *
      * @return void
      */
-    public static function sortResources(array &$resources, $propertyPath, $reverse = false)
+    public static function sortResources(array &$resources, $propertyPath, $reverse = false): void
     {
-        uasort($resources, function (ApiResource $a, ApiResource $b) use ($propertyPath, $reverse) {
-            return Sort::compare(
-                static::getNestedProperty($a, $propertyPath, false),
-                static::getNestedProperty($b, $propertyPath, false),
-                $reverse
-            );
-        });
+        uasort($resources, fn(ApiResource $a, ApiResource $b) => Sort::compare(
+            static::getNestedProperty($a, $propertyPath, false),
+            static::getNestedProperty($b, $propertyPath, false),
+            $reverse
+        ));
     }
 
     /**
@@ -1049,7 +1053,7 @@ class Api
      *
      * @return mixed
      */
-    public static function getNestedProperty(ApiResource $resource, $propertyPath, $lazyLoad = true)
+    public static function getNestedProperty(ApiResource $resource, $propertyPath, bool $lazyLoad = true)
     {
         if (!strpos($propertyPath, '.')) {
             return $resource->getProperty($propertyPath, true, $lazyLoad);
@@ -1076,7 +1080,7 @@ class Api
     /**
      * @return bool
      */
-    public function isLoggedIn()
+    public function isLoggedIn(): bool
     {
         return $this->getClient(false)->getConnector()->isLoggedIn();
     }
@@ -1089,7 +1093,7 @@ class Api
      *
      * @return string
      */
-    public function getProjectLabel($project, $tag = 'info')
+    public function getProjectLabel($project, $tag = 'info'): string
     {
         static $titleCache = [];
         if ($project instanceof Project || $project instanceof BasicProjectInfo || $project instanceof \Platformsh\Client\Model\Organization\Project) {
@@ -1133,7 +1137,7 @@ class Api
      *
      * @return string
      */
-    public function getEnvironmentLabel(Environment $environment, $tag = 'info', $showType = true)
+    public function getEnvironmentLabel(Environment $environment, $tag = 'info', $showType = true): string
     {
         $id = $environment->id;
         $title = $environment->title;
@@ -1159,7 +1163,7 @@ class Api
      *
      * @return string
      */
-    public function getOrganizationLabel(Organization $organization, $tag = 'info')
+    public function getOrganizationLabel(Organization $organization, $tag = 'info'): string
     {
         $name = $organization->name;
         $label = $organization->label;
@@ -1182,16 +1186,12 @@ class Api
      * @return ApiResource
      *   The resource, if one (and only one) is matched.
      */
-    public function matchPartialId($id, array $resources, $name = 'Resource')
+    public function matchPartialId($id, array $resources, $name = 'Resource'): ApiResource
     {
-        $matched = array_filter($resources, function (ApiResource $resource) use ($id) {
-            return strpos($resource->getProperty('id'), $id) === 0;
-        });
+        $matched = array_filter($resources, fn(ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
 
         if (count($matched) > 1) {
-            $matchedIds = array_map(function (ApiResource $resource) {
-                return $resource->getProperty('id');
-            }, $matched);
+            $matchedIds = array_map(fn(ApiResource $resource): mixed => $resource->getProperty('id'), $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',
                 $id,
@@ -1244,7 +1244,7 @@ class Api
      *
      * @return ClientInterface
      */
-    public function getHttpClient()
+    public function getHttpClient(): ClientInterface
     {
         return $this->getClient()->getConnector()->getClient();
     }
@@ -1256,7 +1256,7 @@ class Api
      *
      * @return ClientInterface
      */
-    public function getExternalHttpClient()
+    public function getExternalHttpClient(): Client
     {
         return new Client($this->getGuzzleOptions());
     }
@@ -1294,7 +1294,7 @@ class Api
             $data['_uri'] = $deployment->getUri();
             $this->cache->save($cacheKey, $data);
         } else {
-            $this->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
+            $this->io->debug('Loaded environment deployment from cache for environment: ' . $environment->id);
             $deployment = new EnvironmentDeployment($data, $data['_uri'], $this->getHttpClient(), true);
         }
 
@@ -1308,7 +1308,7 @@ class Api
      *
      * @return bool
      */
-    public function hasCachedCurrentDeployment(Environment $environment)
+    public function hasCachedCurrentDeployment(Environment $environment): bool
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
 
@@ -1347,17 +1347,13 @@ class Api
         }
 
         // Check if there is only one "production" environment.
-        $prod = \array_filter($envs, function (Environment $environment) {
-            return $environment->type === 'production';
-        });
+        $prod = \array_filter($envs, fn(Environment $environment): bool => $environment->type === 'production');
         if (\count($prod) === 1) {
             return \reset($prod);
         }
 
         // Check if there is only one "main" environment.
-        $main = \array_filter($envs, function (Environment $environment) {
-            return $environment->is_main;
-        });
+        $main = \array_filter($envs, fn(Environment $environment) => $environment->is_main);
         if (\count($main) === 1) {
             return \reset($main);
         }
@@ -1368,9 +1364,9 @@ class Api
     /**
      * Get the preferred site URL for an environment and app.
      *
-     * @param \Platformsh\Client\Model\Environment                           $environment
+     * @param Environment $environment
      * @param string                                                         $appName
-     * @param \Platformsh\Client\Model\Deployment\EnvironmentDeployment|null $deployment
+     * @param EnvironmentDeployment|null $deployment
      *
      * @return string|null
      */
@@ -1381,9 +1377,7 @@ class Api
 
         // Return the first route that matches this app.
         // The routes will already have been sorted.
-        $routes = \array_filter($routes, function (Route $route) use ($appName) {
-            return $route->type === 'upstream' && $route->getUpstreamName() === $appName;
-        });
+        $routes = \array_filter($routes, fn(Route $route): bool => $route->type === 'upstream' && $route->getUpstreamName() === $appName);
         $route = reset($routes);
         if ($route) {
             return $route->url;
@@ -1423,12 +1417,12 @@ class Api
      * @param Project|null $project
      * @param bool $forWrite
      *
-     * @throws \GuzzleHttp\Exception\RequestException
+     * @throws RequestException
      *
      * @return false|Subscription
      *   The subscription or false if not found.
      */
-    public function loadSubscription($id, Project $project = null, $forWrite = true)
+    public function loadSubscription(string $id, Project $project = null, $forWrite = true)
     {
         $organizations_enabled = $this->config->getWithDefault('api.organizations', false);
         if (!$organizations_enabled) {
@@ -1451,7 +1445,7 @@ class Api
                 $subscription = false;
             }
             if ($subscription) {
-                $this->debug('Loaded the subscription directly');
+                $this->io->debug('Loaded the subscription directly');
                 return $subscription;
             }
         }
@@ -1469,17 +1463,17 @@ class Api
             }
         }
         if (empty($organizationId)) {
-            $this->debug('Failed to find the organization ID for the subscription: ' . $id);
+            $this->io->debug('Failed to find the organization ID for the subscription: ' . $id);
             return false;
         }
         $organization = $this->getOrganizationById($organizationId);
         if (!$organization) {
-            $this->debug('Project organization not found: ' . $organizationId);
+            $this->io->debug('Project organization not found: ' . $organizationId);
             return false;
         }
         $subscription = $organization->getSubscription($id);
         if (!$subscription) {
-            $this->debug('Failed to load subscription: ' . $id);
+            $this->io->debug('Failed to load subscription: ' . $id);
             return false;
         }
 
@@ -1523,7 +1517,7 @@ class Api
      *
      * @return string
      */
-    public function getUserRefLabel(UserRef $userRef, $tag = 'info')
+    public function getUserRefLabel(UserRef $userRef, $tag = 'info'): string
     {
         $name = trim($userRef->first_name . ' ' . $userRef->last_name);
         $pattern = $name !== '' ? '%2$s \<%3$s>' : '%3$s';
@@ -1540,11 +1534,11 @@ class Api
      * @param bool $reset
      * @return Organization|false
      */
-    public function getOrganizationById($id, $reset = false)
+    public function getOrganizationById(string $id, $reset = false)
     {
         $cacheKey = 'organization:' . $id;
         if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
-            $this->debug('Loaded organization from cache: ' . $id);
+            $this->io->debug('Loaded organization from cache: ' . $id);
             return new Organization($cached, $cached['_url'], $this->getHttpClient());
         }
         $organization = $this->getClient()->getOrganizationById($id);
@@ -1563,7 +1557,7 @@ class Api
      * @param bool $reset
      * @return Organization|false
      */
-    public function getOrganizationByName($name, $reset = false)
+    public function getOrganizationByName(string $name, $reset = false)
     {
         return $this->getOrganizationById('name=' . $name, $reset);
     }
@@ -1574,7 +1568,7 @@ class Api
      * @param Organization $org
      * @return void
      */
-    public function clearOrganizationCache(Organization $org)
+    public function clearOrganizationCache(Organization $org): void
     {
         $this->cache->delete('organization:' . $org->id);
         $this->cache->delete('organization:name=' . $org->name);
@@ -1606,7 +1600,7 @@ class Api
                 }
             }
 
-            return ltrim($this->config->get('service.console_url'), '/') . '/' . rawurlencode($firstSegment) . '/' . rawurlencode($project->id);
+            return ltrim($this->config->get('service.console_url'), '/') . '/' . rawurlencode((string) $firstSegment) . '/' . rawurlencode($project->id);
         }
         $subscription = $this->loadSubscription($project->getSubscriptionId(), $project);
         return $subscription ? $subscription->project_ui : false;
@@ -1700,7 +1694,7 @@ class Api
      * Loads the code source integration for a project.
      *
      * @param Project $project
-     * @return \Platformsh\Client\Model\Integration|null
+     * @return Integration|null
      */
     public function getCodeSourceIntegration(Project $project)
     {
@@ -1711,5 +1705,76 @@ class Api
             }
         }
         return null;
+    }
+
+    /**
+     * Shows information about the currently logged in user and their session, if applicable.
+     *
+     * @param bool $logout  Whether this should avoid re-authentication (if an API token is set).
+     * @param bool $newline Whether to prepend a newline if there is output.
+     */
+    public function showSessionInfo(bool $logout = false, bool $newline = true): void
+    {
+        $sessionId = $this->config->getSessionId();
+        if ($sessionId !== 'default' || count($this->listSessionIds()) > 1) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+                $newline = false;
+            }
+            $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
+            if (!$this->config->isSessionIdFromEnv()) {
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
+            }
+        }
+        if (!$logout && $this->isLoggedIn()) {
+            if ($newline) {
+                $this->stdErr->writeln('');
+            }
+            $account = $this->getMyAccount();
+            $this->stdErr->writeln(\sprintf(
+                'You are logged in as <info>%s</info> (<info>%s</info>)',
+                $account['username'],
+                $account['email']
+            ));
+        }
+    }
+
+    /**
+     * Warn the user if a project is suspended.
+     *
+     * @param Project $project
+     */
+    public function warnIfSuspended(Project $project): void
+    {
+        if ($project->isSuspended()) {
+            $this->stdErr->writeln('This project is <error>suspended</error>.');
+            if ($this->config->getWithDefault('warnings.project_suspended_payment', true)) {
+                $orgId = $project->getProperty('organization', false);
+                if ($orgId) {
+                    try {
+                        $organization = $this->getClient()->getOrganizationById($orgId);
+                    } catch (BadResponseException) {
+                        $organization = false;
+                    }
+                    if ($organization && $organization->hasLink('payment-source')) {
+                        $this->stdErr->writeln(sprintf('To re-activate it, update the payment details for your organization, %s.', $this->getOrganizationLabel($organization, 'comment')));
+                    }
+                } elseif ($project->owner === $this->getMyUserId()) {
+                    $this->stdErr->writeln('To re-activate it, update your payment details.');
+                }
+            }
+        }
+    }
+
+    /**
+     * Warn the user that the remote environment needs redeploying.
+     */
+    public function redeployWarning(): void
+    {
+        $this->stdErr->writeln([
+            '',
+            '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
+            'To redeploy an environment, run: <info>' . $this->config->get('application.executable') . ' redeploy</info>',
+        ]);
     }
 }

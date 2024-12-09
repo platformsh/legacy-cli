@@ -1,25 +1,34 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Client\Model\Activity;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'activity:log', description: 'Display the log for an activity')]
 class ActivityLogCommand extends ActivityCommandBase
 {
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
         $this
-            ->setName('activity:log')
-            ->setDescription('Display the log for an activity')
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
             ->addOption(
                 'refresh',
@@ -46,32 +55,31 @@ class ActivityLogCommand extends ActivityCommandBase
                 . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addExample('Display the log for the last push on the current environment', '--type environment.push')
             ->addExample('Display the log for the last activity on the current project', '--all')
             ->addExample('Display the log for the last push, with microsecond timestamps', "-a -t --type %push --date-fmt 'Y-m-d\TH:i:s.uP'");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, $input->getOption('all') || $input->getArgument('id'));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $loader = $this->activityLoader;
 
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
-            $apiResource = $this->getSelectedEnvironment();
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
+            $apiResource = $selection->getEnvironment();
         } else {
-            $apiResource = $this->getSelectedProject();
+            $apiResource = $selection->getProject();
         }
 
         $id = $input->getArgument('id');
         if ($id) {
-            $activity = $this->getSelectedProject()
+            $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -89,8 +97,7 @@ class ActivityLogCommand extends ActivityCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
@@ -106,18 +113,17 @@ class ActivityLogCommand extends ActivityCommandBase
         if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
             $timestamps = $input->getOption('date-fmt');
         } elseif ($timestamps) {
-            $timestamps = $this->config()->getWithDefault('application.date_format', 'c');
+            $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
 
-        /** @var ActivityMonitor $monitor */
-        $monitor = $this->getService('activity_monitor');
+        $monitor = $this->activityMonitor;
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $monitor->waitAndLog($activity, $refresh, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
             // clear the cache.
-            $this->api()->clearEnvironmentsCache($activity->project);
+            $this->api->clearEnvironmentsCache($activity->project);
         } else {
             $items = $activity->readLog();
             $output->write($monitor->formatLog($items, $timestamps));

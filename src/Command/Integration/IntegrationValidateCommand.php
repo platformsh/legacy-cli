@@ -1,23 +1,28 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:validate', description: 'Validate an existing integration')]
 class IntegrationValidateCommand extends IntegrationCommandBase
 {
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
         $this
-            ->setName('integration:validate')
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->setDescription('Validate an existing integration');
-        $this->addProjectOption();
+            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');
+        $this->selector->addProjectOption($this->getDefinition());
         $this->setHelp(<<<EOF
 This command allows you to check whether an integration is valid.
 
@@ -32,11 +37,11 @@ EOF
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
@@ -51,7 +56,7 @@ EOF
 
         try {
             $errors = $integration->validate();
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             $this->stdErr->writeln('This integration does not support validation.');
 
             return 1;

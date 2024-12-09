@@ -1,28 +1,36 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\QuestionHelper;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:delete', description: 'Delete an integration from a project')]
 class IntegrationDeleteCommand extends IntegrationCommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
         $this
-            ->setName('integration:delete')
-            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.')
-            ->setDescription('Delete an integration from a project');
-        $this->addProjectOption()->addWaitOptions();
+            ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.');
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
@@ -30,8 +38,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
         }
 
         $confirmText = sprintf('Delete the integration <info>%s</info> (type: %s)?', $integration->id, $integration->type);
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
         if (!$questionHelper->confirm($confirmText)) {
             return 1;
         }
@@ -42,13 +49,12 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
 
         $this->stdErr->writeln(sprintf('Deleted integration <info>%s</info>', $integration->id));
 
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
+            $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
-        $this->updateGitUrl($oldGitUrl);
+        $this->updateGitUrl($oldGitUrl, $project);
 
         return 0;
     }

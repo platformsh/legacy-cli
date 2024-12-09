@@ -2,43 +2,48 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Url;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'docs', description: 'Open the online documentation')]
 class DocsCommand extends CommandBase
 {
 
+    public function __construct(private readonly Config $config, private readonly Url $url)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
-            ->setName('docs')
-            ->setDescription('Open the online documentation')
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');
         $this->addExample('Search for information about the CLI', 'CLI');
         Url::configureInput($this->getDefinition());
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
-        return $this->config()->has('service.docs_url')
-            && $this->config()->has('service.docs_search_url')
+        return $this->config->has('service.docs_url')
+            && $this->config->has('service.docs_search_url')
             && parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($searchArguments = $input->getArgument('search')) {
             $query = $this->getSearchQuery($searchArguments);
-            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config()->get('service.docs_search_url'));
+            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config->get('service.docs_search_url'));
         } else {
-            $url = $this->config()->get('service.docs_url');
+            $url = $this->config->get('service.docs_url');
         }
 
-        /** @var \Platformsh\Cli\Service\Url $urlService */
-        $urlService = $this->getService('url');
+        $urlService = $this->url;
         $urlService->openUrl($url);
+        return 0;
     }
 
     /**
@@ -51,10 +56,8 @@ class DocsCommand extends CommandBase
      *
      * @return string
      */
-    protected function getSearchQuery(array $args)
+    protected function getSearchQuery(array $args): string
     {
-        return implode(' ', array_map(function ($term) {
-            return strpos($term, ' ') ? '"' . $term . '"' : $term;
-        }, $args));
+        return implode(' ', array_map(fn($term) => strpos((string) $term, ' ') ? '"' . $term . '"' : $term, $args));
     }
 }

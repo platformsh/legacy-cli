@@ -39,10 +39,9 @@ class NestedArrayUtil
      *
      * @param array &$array
      * @param array $parents
-     * @param mixed $value
      * @param bool  $force
      */
-    public static function setNestedArrayValue(array &$array, array $parents, $value, $force = false)
+    public static function setNestedArrayValue(array &$array, array $parents, mixed $value, $force = false): void
     {
         $ref = &$array;
         foreach ($parents as $parent) {

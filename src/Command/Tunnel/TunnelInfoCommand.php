@@ -1,22 +1,31 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Relationships;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:info', description: "View relationship info for SSH tunnels")]
 class TunnelInfoCommand extends TunnelCommandBase
 {
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
-          ->setName('tunnel:info')
-          ->setDescription("View relationship info for SSH tunnels")
           ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
           ->addOption('encode', 'c', InputOption::VALUE_NONE, 'Output as base64-encoded JSON');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
 
         // Deprecated options, left for backwards compatibility
         $this->addHiddenOption('format', null, InputOption::VALUE_REQUIRED, 'DEPRECATED');
@@ -24,12 +33,11 @@ class TunnelInfoCommand extends TunnelCommandBase
         $this->addHiddenOption('no-header', null, InputOption::VALUE_NONE, 'DEPRECATED');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
+        $this->io->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
 
         $tunnels = $this->getTunnelInfo();
         $relationships = [];
@@ -53,7 +61,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             if (count($tunnels) > count($relationships)) {
                 $this->stdErr->writeln(sprintf(
                     'List all tunnels with: <info>%s tunnels --all</info>',
-                    $this->config()->get('application.executable')
+                    $this->config->get('application.executable')
                 ));
             }
 
@@ -70,8 +78,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
         $formatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;

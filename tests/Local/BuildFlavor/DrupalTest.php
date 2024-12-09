@@ -2,12 +2,11 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DrupalTest extends BuildFlavorTestBase
 {
     public function setUp(): void
@@ -17,7 +16,7 @@ class DrupalTest extends BuildFlavorTestBase
         }
     }
 
-    public function testBuildDrupalInProjectMode()
+    public function testBuildDrupalInProjectMode(): void
     {
         $sourceDir = 'tests/data/apps/drupal/project';
         $projectRoot = $this->createDummyProject($sourceDir);
@@ -71,7 +70,7 @@ class DrupalTest extends BuildFlavorTestBase
         $this->assertTrue($success2, 'Second build success for dir: ' . $sourceDir);
     }
 
-    public function testBuildDrupalInProfileMode()
+    public function testBuildDrupalInProfileMode(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/profile');
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
@@ -82,7 +81,7 @@ class DrupalTest extends BuildFlavorTestBase
         $this->assertFileExists($webRoot . '/profiles/test/modules/test_module/test_module_file.php');
     }
 
-    public function testBuildUpdateLock()
+    public function testBuildUpdateLock(): void
     {
         $sourceDir = 'tests/data/apps/drupal/yaml';
         self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
@@ -95,7 +94,7 @@ class DrupalTest extends BuildFlavorTestBase
      *
      * This is not Drupal-specific, but this is the simplest example.
      */
-    public function testArchiveAndExtract()
+    public function testArchiveAndExtract(): void
     {
         $projectRoot = $this->createDummyProject('tests/data/apps/drupal/project');
 
@@ -116,7 +115,7 @@ class DrupalTest extends BuildFlavorTestBase
         $this->assertTrue($success);
     }
 
-    public function testDoNotSymlinkBuildsIntoSitesDefault()
+    public function testDoNotSymlinkBuildsIntoSitesDefault(): void
     {
         $repository = $this->createTempSubDir('repo');
         $fsHelper = new Filesystem();

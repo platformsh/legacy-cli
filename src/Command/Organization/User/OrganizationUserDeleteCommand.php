@@ -2,37 +2,43 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:delete', description: 'Remove a user from an organization')]
 class OrganizationUserDeleteCommand extends OrganizationCommandBase
 {
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('organization:user:delete')
-            ->setDescription('Remove a user from an organization')
-            ->addOrganizationOptions()
-            ->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // The 'create-member' link shows the user has the ability to read/write members.
-        $organization = $this->validateOrganizationInput($input, 'create-member');
+        $organization = $this->selector->selectOrganization($input, 'create-member');
 
         $email = $input->getArgument('email');
 
-        $member = $this->api()->loadMemberByEmail($organization, $email);
+        $member = $this->api->loadMemberByEmail($organization, $email);
         if (!$member) {
             $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the user <comment>%s</comment> from the organization %s?', $email, $this->api()->getOrganizationLabel($organization, 'comment')))) {
+        $questionHelper = $this->questionHelper;
+        if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the user <comment>%s</comment> from the organization %s?', $email, $this->api->getOrganizationLabel($organization, 'comment')))) {
             return 1;
         }
 

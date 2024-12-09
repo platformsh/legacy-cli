@@ -1,35 +1,43 @@
 <?php
 namespace Platformsh\Cli\Command\Self;
 
+use Platformsh\Cli\Application;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'self:build', description: 'Build a new package of the CLI')]
 class SelfBuildCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $local = true;
+    protected bool $hiddenInList = true;
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly QuestionHelper $questionHelper, private readonly Shell $shell)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
         $this
-            ->setName('self:build')
-            ->setDescription('Build a new package of the CLI')
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config()->get('application.executable') . '.phar')
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config->get('application.executable') . '.phar')
             ->addOption('replace-version', null, InputOption::VALUE_OPTIONAL, 'Replace the version number in config.yaml')
             ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
     }
 
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         // You can't build a Phar from another Phar.
         return !extension_loaded('Phar') || !\Phar::running(false);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!file_exists(CLI_ROOT . '/vendor')) {
             $this->stdErr->writeln('Directory not found: <error>' . CLI_ROOT . '/vendor</error>');
@@ -37,8 +45,7 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        $fs = $this->filesystem;
 
         $outputFilename = $input->getOption('output');
         if ($outputFilename && !$fs->canWrite($outputFilename)) {
@@ -54,12 +61,10 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $shell = $this->shell;
+        $questionHelper = $this->questionHelper;
 
-        $version = $this->config()->getVersion();
+        $version = $this->config->getVersion();
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
         } else {
@@ -117,6 +122,9 @@ class SelfBuildCommand extends CommandBase
             ], CLI_ROOT . DIRECTORY_SEPARATOR . 'vendor-bin' . DIRECTORY_SEPARATOR . 'box', true, false);
         }
 
+        $this->stdErr->writeln('Warming application caches');
+        (new Application())->warmCaches();
+
         $boxArgs = [CLI_ROOT . '/vendor-bin/box/vendor/bin/box', 'compile', '--no-interaction'];
         if ($output->isVeryVerbose()) {
             $boxArgs[] = '-vvv';
@@ -168,7 +176,7 @@ class SelfBuildCommand extends CommandBase
      *
      * @return bool
      */
-    private function checkInstallerFile()
+    private function checkInstallerFile(): bool
     {
         $installerFile = CLI_ROOT . '/dist/installer.php';
         $installerContents = \file_get_contents($installerFile);
@@ -185,15 +193,15 @@ class SelfBuildCommand extends CommandBase
             return false;
         }
         $newConfig = \var_export([
-            'envPrefix' => $this->config()->get('application.env_prefix'),
-            'manifestUrl' => $this->config()->get('application.manifest_url'),
-            'configDir' => $this->config()->get('application.user_config_dir'),
-            'executable' => $this->config()->get('application.executable'),
-            'cliName' => $this->config()->get('application.name'),
-            'userAgent' => $this->config()->get('application.slug'),
-            'serviceEnvPrefix' => $this->config()->get('service.env_prefix'),
-            'migratePrompt' => $this->config()->getWithDefault('migrate.prompt', false),
-            'migrateDocsUrl' => $this->config()->getWithDefault('migrate.docs_url', ''),
+            'envPrefix' => $this->config->get('application.env_prefix'),
+            'manifestUrl' => $this->config->get('application.manifest_url'),
+            'configDir' => $this->config->get('application.user_config_dir'),
+            'executable' => $this->config->get('application.executable'),
+            'cliName' => $this->config->get('application.name'),
+            'userAgent' => $this->config->get('application.slug'),
+            'serviceEnvPrefix' => $this->config->get('service.env_prefix'),
+            'migratePrompt' => $this->config->getWithDefault('migrate.prompt', false),
+            'migrateDocsUrl' => $this->config->getWithDefault('migrate.docs_url', ''),
         ], true);
         $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
         if ($newContents !== $installerContents) {

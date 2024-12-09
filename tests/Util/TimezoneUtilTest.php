@@ -7,9 +7,9 @@ use Platformsh\Cli\Util\TimezoneUtil;
 
 class TimezoneUtilTest extends TestCase
 {
-    private $originalSetting;
-    private $originalIni;
-    private $originalEnv;
+    private string $originalSetting;
+    private string|bool $originalIni;
+    private string|array|bool $originalEnv;
 
     public function setUp(): void
     {
@@ -32,26 +32,26 @@ class TimezoneUtilTest extends TestCase
         }
     }
 
-    public function testGetTimezoneReturnsIni()
+    public function testGetTimezoneReturnsIni(): void
     {
         // Pick a rare timezone.
         ini_set('date.timezone', 'Pacific/Galapagos');
         $this->assertEquals('Pacific/Galapagos', TimezoneUtil::getTimezone());
     }
 
-    public function testGetTimezoneReturnsCurrent()
+    public function testGetTimezoneReturnsCurrent(): void
     {
         ini_set('date.timezone', 'Antarctica/McMurdo');
         date_default_timezone_set('Antarctica/Troll');
         $this->assertEquals('Antarctica/Troll', TimezoneUtil::getTimezone());
     }
 
-    public function testGetTimezoneReturnsSomething()
+    public function testGetTimezoneReturnsSomething(): void
     {
         $this->assertNotEmpty(TimezoneUtil::getTimezone());
     }
 
-    public function testConvertTz()
+    public function testConvertTz(): void
     {
         $util = new TimezoneUtil();
         $method = new \ReflectionMethod($util,'convertTz');

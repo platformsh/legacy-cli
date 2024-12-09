@@ -9,6 +9,7 @@ namespace Platformsh\Cli\Command;
 use Platformsh\Cli\Console\CustomJsonDescriptor;
 use Platformsh\Cli\Console\CustomMarkdownDescriptor;
 use Platformsh\Cli\Console\CustomTextDescriptor;
+use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Helper\DescriptorHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,16 +19,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ListCommand extends CommandBase
 {
 
+    public function __construct(private readonly Config $config)
+    {
+        parent::__construct();
+        parent::setConfig($this->config);
+    }
+
     protected function configure()
     {
-        $this
-            ->setName('list')
+        $this->setName('list')
+            ->setDescription('List commands')
             ->setDefinition([
                 new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name'),
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'),
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, xml, json, or md)', 'txt'),
             ])
-            ->setDescription('Lists commands')
             ->setHelp(<<<'EOF'
 The <info>%command.name%</info> command lists all commands:
 
@@ -50,11 +56,11 @@ EOF
         $this->addOption('all', null, InputOption::VALUE_NONE, 'Show all commands, including hidden ones');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $helper = new DescriptorHelper();
-        $helper->register('txt', new CustomTextDescriptor());
-        $helper->register('md', new CustomMarkdownDescriptor());
+        $helper->register('txt', new CustomTextDescriptor($this->config->get('application.executable')));
+        $helper->register('md', new CustomMarkdownDescriptor($this->config->get('application.executable')));
         $helper->register('json', new CustomJsonDescriptor());
         $helper->describe(
             $output,
@@ -66,5 +72,6 @@ EOF
                 'all' => $input->getOption('all'),
             ]
         );
+        return 0;
     }
 }

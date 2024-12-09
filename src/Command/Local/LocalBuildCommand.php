@@ -1,25 +1,32 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'local:build', description: 'Build the current project locally', aliases: ['build'])]
 class LocalBuildCommand extends CommandBase
 {
-    protected $local = true;
 
+    public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalBuild $localBuild, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
         $this
-            ->setName('local:build')
-            ->setAliases(['build'])
             ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
-            ->setDescription('Build the current project locally')
             ->addOption(
                 'abslinks',
                 'a',
@@ -36,7 +43,7 @@ class LocalBuildCommand extends CommandBase
                 'destination',
                 'd',
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config()->getWithDefault('local.web_root', '_www')
+                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config->getWithDefault('local.web_root', '_www')
             )
             ->addOption(
                 'copy',
@@ -116,18 +123,17 @@ class LocalBuildCommand extends CommandBase
         $this->addExample('Rebuild the current project without using an archive', '--no-archive');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $sourceDirOption = $input->getOption('source');
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
-            $default = file_exists($this->config()->get('service.project_config_dir')) || is_dir('.git') ? '.' : null;
+            $default = file_exists($this->config->get('service.project_config_dir')) || is_dir('.git') ? '.' : null;
             $sourceDirOption = $questionHelper->askInput('Source directory', $default);
         }
 
@@ -139,7 +145,7 @@ class LocalBuildCommand extends CommandBase
 
             // Sensible handling if the user provides a project root as the
             // source directory.
-            if (file_exists($sourceDir . $this->config()->get('local.project_config'))) {
+            if (file_exists($sourceDir . $this->config->get('local.project_config'))) {
                 $projectRoot = $sourceDir;
             }
         } elseif (!$projectRoot) {
@@ -153,25 +159,24 @@ class LocalBuildCommand extends CommandBase
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
-                ? $this->config()->getWithDefault('local.web_root', '_www')
+                ? $this->config->getWithDefault('local.web_root', '_www')
                 : null;
             $destination = $questionHelper->askInput('Build destination', $default);
         }
 
         if ($destination) {
-            /** @var \Platformsh\Cli\Service\Filesystem $fs */
-            $fs = $this->getService('fs');
+            $fs = $this->filesystem;
             $destination = $fs->makePathAbsolute($destination);
         } elseif (!$projectRoot) {
             throw new RootNotFoundException(
                 'Project root not found. Specify --destination or go to a project directory.'
             );
         } else {
-            $destination = $projectRoot . '/' . $this->config()->getWithDefault('local.web_root', '_www');
+            $destination = $projectRoot . '/' . $this->config->getWithDefault('local.web_root', '_www');
         }
 
         // Ensure no conflicts between source and destination.
-        if (strpos($sourceDir, $destination) === 0) {
+        if (str_starts_with($sourceDir, (string) $destination)) {
             throw new InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
         }
 
@@ -199,8 +204,7 @@ class LocalBuildCommand extends CommandBase
 
         $apps = $input->getArgument('app');
 
-        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
-        $builder = $this->getService('local.build');
+        $builder = $this->localBuild;
         $success = $builder->build($settings, $sourceDir, $destination, $apps);
 
         return $success ? 0 : 1;

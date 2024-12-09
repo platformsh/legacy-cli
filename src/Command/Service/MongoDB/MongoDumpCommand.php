@@ -2,45 +2,56 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:mongo:dump', description: 'Create a binary archive dump of data from MongoDB', aliases: ['mongodump'])]
 class MongoDumpCommand extends CommandBase
 {
+    public function __construct(private readonly Config $config, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this->setName('service:mongo:dump');
-        $this->setAliases(['mongodump']);
-        $this->setDescription('Create a binary archive dump of data from MongoDB');
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to dump');
         $this->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip');
         $this->addOption('stdout', 'o', InputOption::VALUE_NONE, 'Output to STDOUT instead of a file');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
         $gzip = $input->getOption('gzip');
 
-        $envPrefix = $this->config()->get('service.env_prefix');
-        $host = $this->selectHost($input, getenv($envPrefix . 'RELATIONSHIPS') !== false);
-
+        $envPrefix = $this->config->get('service.env_prefix');
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: getenv($envPrefix . 'RELATIONSHIPS') !== false,
+        ));
+        $host = $this->selector->getHostFromSelection($input, $selection);
         if ($host instanceof RemoteHost) {
-            $appName = $this->selectApp($input);
+            $appName = $selection->getAppName();
         } else {
             $appName = getenv($envPrefix . 'APPLICATION_NAME');
         }
@@ -48,14 +59,13 @@ class MongoDumpCommand extends CommandBase
         $dumpFile = false;
 
         if (!$input->getOption('stdout')) {
-            $defaultFilename = $this->getDefaultFilename($this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null, $appName, $input->getOption('collection'), $gzip);
+            $defaultFilename = $this->getDefaultFilename($selection->hasEnvironment() ? $selection->getEnvironment() : null, $appName, $input->getOption('collection'), $gzip);
             $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
         }
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                $questionHelper = $this->questionHelper;
                 if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
                 }
@@ -67,8 +77,7 @@ class MongoDumpCommand extends CommandBase
             ));
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
+        $relationshipsService = $this->relationships;
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
@@ -115,9 +124,8 @@ class MongoDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
-            /** @var \Platformsh\Cli\Service\Git $git */
-            $git = $this->getService('git');
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with($dumpFile, $projectRoot)) {
+            $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
                 if ($pos = strrpos($dumpFile, '.bson')) {
@@ -136,18 +144,18 @@ class MongoDumpCommand extends CommandBase
      *
      * @param Environment|null $environment
      * @param string|null      $appName
-     * @param string           $collection
+     * @param ?string           $collection
      * @param bool             $gzip
      *
      * @return string
      */
     private function getDefaultFilename(
         Environment $environment = null,
-        $appName = null,
-        $collection = '',
-        $gzip = false)
+        ?string $appName = null,
+        ?string $collection = '',
+        bool $gzip = false): string
     {
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentId = $environment ? $environment->id : getenv($prefix . 'BRANCH');
         $defaultFilename = $projectId ?: 'db';

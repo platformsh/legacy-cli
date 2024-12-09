@@ -2,28 +2,34 @@
 
 namespace Platformsh\Cli\Command\Service;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:redis-cli', description: 'Access the Redis CLI', aliases: ['redis'])]
 class RedisCliCommand extends CommandBase
 {
+    public function __construct(private readonly Io $io, private readonly Relationships $relationships, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('service:redis-cli');
-        $this->setAliases(['redis']);
-        $this->setDescription('Access the Redis CLI');
         $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Open the redis-cli shell');
         $this->addExample('Ping the Redis server', 'ping');
         $this->addExample('Show Redis status information', 'info');
@@ -31,15 +37,19 @@ class RedisCliCommand extends CommandBase
         $this->addExample('Scan keys matching a pattern', '-- "--scan --pattern \'*-11*\'"');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->runningViaMulti && !$input->getArgument('args')) {
             throw new \RuntimeException('The redis-cli command cannot run as a shell via multi');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+        $relationshipsService = $this->relationships;
+
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['redis']);
         if (!$service) {
@@ -55,9 +65,9 @@ class RedisCliCommand extends CommandBase
             if (count($args) === 1) {
                 $redisCommand .= ' ' . $args[0];
             } else {
-                $redisCommand .= ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $args));
+                $redisCommand .= ' ' . implode(' ', array_map(OsUtil::escapePosixShellArg(...), $args));
             }
-        } elseif ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+        } elseif ($this->io->isTerminal(STDIN) && $host instanceof RemoteHost) {
             // Force TTY output when the input is a terminal.
             $host->setExtraSshOptions(['RequestTTY yes']);
         }

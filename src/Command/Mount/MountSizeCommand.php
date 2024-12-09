@@ -2,19 +2,27 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\RemoteEnvVars;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'mount:size', description: 'Check the disk usage of mounts')]
 class MountSizeCommand extends CommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'mounts' => 'Mount(s)',
         'sizes' => 'Size(s)',
         'max' => 'Disk',
@@ -22,6 +30,10 @@ class MountSizeCommand extends CommandBase
         'available' => 'Available',
         'percent_used' => '% Used',
     ];
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly Mount $mount, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
@@ -29,15 +41,13 @@ class MountSizeCommand extends CommandBase
     protected function configure()
     {
         $this
-            ->setName('mount:size')
-            ->setDescription('Check the disk usage of mounts')
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Refresh the cache');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addRemoteContainerOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
         $help = <<<EOF
 Use this command to check the disk size and usage for an application's mounts.
 
@@ -46,11 +56,11 @@ filesystem. They are configured in the <info>mounts</info> key in the applicatio
 
 The filesystem's total size is determined by the <info>disk</info> key in the same file.
 EOF;
-        if ($this->config()->getWithDefault('api.metrics', false)) {
+        if ($this->config->getWithDefault('api.metrics', false)) {
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
-            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config()->get('application.executable'));
+            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config->get('application.executable'));
         }
         $this->setHelp($help);
     }
@@ -58,18 +68,18 @@ EOF;
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $host = $this->selectHost($input, getenv($this->config()->get('service.env_prefix') . 'APPLICATION'));
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->get('service.env_prefix') . 'APPLICATION')));
+        $host = $this->selector->getHostFromSelection($input, $selection);
+
+        $mountService = $this->mount;
         if ($host instanceof LocalHost) {
-            /** @var \Platformsh\Cli\Service\RemoteEnvVars $envVars */
-            $envVars = $this->getService('remote_env_vars');
+            $envVars = $this->remoteEnvVars;
             $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
             $mounts = $mountService->mountsFromConfig($config);
         } else {
-            $container = $this->selectRemoteContainer($input);
+            $container = $selection->getRemoteContainer();
             $mounts = $mountService->mountsFromConfig($container->getConfig());
         }
 
@@ -97,7 +107,7 @@ EOF;
         //      mounts.
         //   3. Run a 'du' command on each of the mounted paths, to find their
         //      individual sizes.
-        $appDirVar = $this->config()->get('service.env_prefix') . 'APP_DIR';
+        $appDirVar = $this->config->get('service.env_prefix') . 'APP_DIR';
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
@@ -120,7 +130,7 @@ EOF;
         $result = $host->runCommand($command);
 
         // Separate the commands' output.
-        list($appDir, $dfOutput, $duOutput) = explode("\n\n", $result, 3);
+        list($appDir, $dfOutput, $duOutput) = explode("\n\n", (string) $result, 3);
 
         // Parse the output.
         $volumeInfo = $this->parseDf($dfOutput, $appDir, $mountPaths);
@@ -143,7 +153,7 @@ EOF;
                 $row['used'] = $info['used'];
                 $row['available'] = $info['available'];
             } else {
-                $row['sizes'] = implode("\n", array_map([Helper::class, 'formatMemory'], $mountUsage));
+                $row['sizes'] = implode("\n", array_map(Helper::formatMemory(...), $mountUsage));
                 $row['max'] = Helper::formatMemory($info['total']);
                 $row['used'] = Helper::formatMemory($info['used']);
                 $row['available'] = Helper::formatMemory($info['available']);
@@ -152,8 +162,7 @@ EOF;
             $rows[] = $row;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
@@ -166,11 +175,11 @@ EOF;
                 'To increase the available space, edit the <info>disk</info> key in the application configuration.'
             );
 
-            if ($this->config()->getWithDefault('api.metrics', false) && $this->config()->isCommandEnabled('metrics:disk')) {
+            if ($this->config->getWithDefault('api.metrics', false) && $this->config->isCommandEnabled('metrics:disk')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
                 $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
-                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config->get('application.executable')));
             }
         }
 
@@ -188,7 +197,7 @@ EOF;
      *
      * @return string
      */
-    private function getDfColumn($line, $columnName)
+    private function getDfColumn(string $line, string $columnName): string
     {
         $columnPatterns = [
             'filesystem' => '/^(.+?)(\s+[0-9])/',
@@ -216,7 +225,7 @@ EOF;
      *
      * @return array
      */
-    private function parseDf($dfOutput, $appDir, array $mountPaths)
+    private function parseDf(string $dfOutput, string $appDir, array $mountPaths): array
     {
         $results = [];
         foreach (explode("\n", $dfOutput) as $i => $line) {
@@ -226,10 +235,10 @@ EOF;
             try {
                 $path = $this->getDfColumn($line, 'path');
             } catch (\RuntimeException $e) {
-                $this->debug($e->getMessage());
+                $this->io->debug($e->getMessage());
                 continue;
             }
-            if (strpos($path, $appDir . '/') !== 0) {
+            if (!str_starts_with($path, $appDir . '/')) {
                 continue;
             }
             $mountPath = ltrim(substr($path, strlen($appDir)), '/');
@@ -261,7 +270,7 @@ EOF;
      *
      * @return array A list of mount sizes (in bytes) keyed by mount path.
      */
-    private function parseDu($duOutput, array $mountPaths)
+    private function parseDu(string $duOutput, array $mountPaths): array
     {
         $mountSizes = [];
         $duOutputSplit = explode("\n", $duOutput, count($mountPaths));

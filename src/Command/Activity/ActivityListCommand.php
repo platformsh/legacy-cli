@@ -1,18 +1,25 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityLoader;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'activity:list', description: 'Get a list of activities for an environment or project', aliases: ['activities', 'act'])]
 class ActivityListCommand extends ActivityCommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'created' => 'Created',
         'completed' => 'Completed',
@@ -27,21 +34,21 @@ class ActivityListCommand extends ActivityCommandBase
         'time_build' => 'Build time (s)',
         'time_deploy' => 'Deploy time (s)',
     ];
-    private $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
+    private array $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
+    public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     /**
      * {@inheritdoc}
      */
     protected function configure()
     {
-        $this
-            ->setName('activity:list')
-            ->setAliases(['activities', 'act']);
-
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';
-        if ($this->config()->has('service.activity_type_list_url')) {
-            $typeDescription .= "\nFor a list of types see: <info>" . $this->config()->get('service.activity_type_list_url') . '</info>';
+        if ($this->config->has('service.activity_type_list_url')) {
+            $typeDescription .= "\nFor a list of types see: <info>" . $this->config->get('service.activity_type_list_url') . '</info>';
         }
         $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             $typeDescription
@@ -61,12 +68,11 @@ class ActivityListCommand extends ActivityCommandBase
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
-            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments')
-            ->setDescription('Get a list of activities for an environment or project');
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type push')
@@ -75,22 +81,21 @@ class ActivityListCommand extends ActivityCommandBase
              ->addExample('List up to 25 incomplete activities', '--limit 25 -i');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, $input->getOption('all'));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !$input->getOption('all')));
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
-        if ($this->hasSelectedEnvironment() && !$input->getOption('all')) {
+        if ($selection->hasEnvironment() && !$input->getOption('all')) {
             $environmentSpecific = true;
-            $apiResource = $this->getSelectedEnvironment();
+            $apiResource = $selection->getEnvironment();
         } else {
             $environmentSpecific = false;
             $apiResource = $project;
         }
 
-        /** @var \Platformsh\Cli\Service\ActivityLoader $loader */
-        $loader = $this->getService('activity_loader');
+        $loader = $this->activityLoader;
         $activities = $loader->loadFromInput($apiResource, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
@@ -98,10 +103,8 @@ class ActivityListCommand extends ActivityCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $table = $this->table;
+        $formatter = $this->propertyFormatter;
 
         $defaultColumns = $this->defaultColumns;
 
@@ -135,13 +138,13 @@ class ActivityListCommand extends ActivityCommandBase
             if ($environmentSpecific) {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s, environment %s:',
-                    $this->api()->getProjectLabel($project),
-                    $this->api()->getEnvironmentLabel($apiResource)
+                    $this->api->getProjectLabel($project),
+                    $this->api->getEnvironmentLabel($apiResource)
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s:',
-                    $this->api()->getProjectLabel($project)
+                    $this->api->getProjectLabel($project)
                 ));
             }
         }
@@ -149,7 +152,7 @@ class ActivityListCommand extends ActivityCommandBase
         $table->render($rows, $this->tableHeader, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;
@@ -179,7 +182,7 @@ class ActivityListCommand extends ActivityCommandBase
         return 0;
     }
 
-    private function suggestExclusions(array $activities)
+    private function suggestExclusions(array $activities): void
     {
         $counts = [];
         foreach ($activities as $activity) {

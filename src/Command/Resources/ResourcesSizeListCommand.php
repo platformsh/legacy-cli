@@ -2,36 +2,44 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:size:list', description: 'List container profile sizes', aliases: ['resources:sizes'])]
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
     protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('resources:size:list')
-            ->setAliases(['resources:sizes'])
-            ->setDescription('List container profile sizes')
+        $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
         $nextDeployment = $this->loadNextDeployment($environment);
 
         $services = $this->allServices($nextDeployment);
@@ -60,8 +68,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $options = [];
             foreach ($servicesByProfile as $profile => $serviceNames) {
                 $options[$profile] = sprintf('%s (for %s: %s)', $profile, count($serviceNames) === 1 ? 'service' : 'services', implode(', ', $serviceNames));
@@ -74,8 +81,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             throw new InvalidArgumentException('The --service or --profile is required.');
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         $rows = [];
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {

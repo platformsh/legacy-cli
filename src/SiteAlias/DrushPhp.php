@@ -9,7 +9,7 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getFilename($groupName)
+    protected function getFilename($groupName): string
     {
         return $this->drush->getSiteAliasDir() . '/' . $groupName . '.aliases.drushrc.php';
     }
@@ -17,7 +17,7 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function formatAliases(array $aliases)
+    protected function formatAliases(array $aliases): string
     {
         $formatted = [];
         foreach ($aliases as $aliasName => $newAlias) {
@@ -45,7 +45,7 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getHeader(Project $project)
+    protected function getHeader(Project $project): string
     {
         return <<<EOT
 <?php

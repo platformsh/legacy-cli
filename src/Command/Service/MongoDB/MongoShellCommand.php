@@ -2,40 +2,49 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:mongo:shell', description: 'Use the MongoDB shell', aliases: ['mongo'])]
 class MongoShellCommand extends CommandBase
 {
+    public function __construct(private readonly Io $io, private readonly Relationships $relationships, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('service:mongo:shell');
-        $this->setAliases(['mongo']);
-        $this->setDescription('Use the MongoDB shell');
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addExample('Display collection names', "--eval 'printjson(db.getCollectionNames())'");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($this->runningViaMulti) {
             throw new \RuntimeException('The mongo-shell command cannot run via multi');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
+        $relationshipsService = $this->relationships;
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
@@ -55,7 +64,7 @@ class MongoShellCommand extends CommandBase
         }
 
         // Force TTY output when the input is a terminal.
-        if ($this->isTerminal(STDIN) && $host instanceof RemoteHost) {
+        if ($this->io->isTerminal(STDIN) && $host instanceof RemoteHost) {
             $host->setExtraSshOptions(['RequestTTY yes']);
         }
 

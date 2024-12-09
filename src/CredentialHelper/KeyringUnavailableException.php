@@ -11,7 +11,7 @@ use Symfony\Component\Process\Exception\ProcessTimedOutException;
  */
 class KeyringUnavailableException extends \RuntimeException
 {
-    public static function fromTimeout(ProcessTimedOutException $_)
+    public static function fromTimeout(ProcessTimedOutException $_): \Platformsh\Cli\CredentialHelper\KeyringUnavailableException
     {
         $type = OsUtil::isOsX() ? 'keychain' : 'keyring';
         $message = sprintf('The credential helper process timed out while trying to access the %s.', $type);
@@ -19,12 +19,12 @@ class KeyringUnavailableException extends \RuntimeException
         return new KeyringUnavailableException($message);
     }
 
-    public static function fromFailure(ProcessFailedException $e)
+    public static function fromFailure(ProcessFailedException $e): \Platformsh\Cli\CredentialHelper\KeyringUnavailableException
     {
         $type = OsUtil::isOsX() ? 'keychain' : 'keyring';
         $message = sprintf('The credential helper process failed while trying to access the %s.', $type);
         $process = $e->getProcess();
-        if ($process->getExitCode() === 2 && strpos($process->getErrorOutput(), 'libsecret-CRITICAL') !== false) {
+        if ($process->getExitCode() === 2 && str_contains($process->getErrorOutput(), 'libsecret-CRITICAL')) {
             $message .= "\n" . sprintf('This can happen when the password dialog is dismissed. Is the login %s unlocked?', $type);
         } else {
             $message .= "\n" . $e->getMessage();

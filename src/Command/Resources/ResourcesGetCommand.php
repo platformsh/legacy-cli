@@ -2,13 +2,19 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:get', description: 'View the resources of apps and services on an environment', aliases: ['resources', 'res'])]
 class ResourcesGetCommand extends ResourcesCommandBase
 {
     protected $tableHeader = [
@@ -24,38 +30,41 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'memory_ratio' => 'Memory ratio',
     ];
     protected $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
     protected function configure()
     {
-        $this->setName('resources:get')
-            ->setAliases(['resources', 'res'])
-            ->setDescription('View the resources of apps and services on an environment')
+        $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service name. This can select any service, including apps and workers.')
             ->addOption('app', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by app name')
             ->addOption('worker', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by worker name')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service, app or worker type, e.g. "postgresql"');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        if ($this->config()->has('service.resources_help_url')) {
-            $this->setHelp('For more information on managing resources, see: <info>' . $this->config()->get('service.resources_help_url') . '</info>');
+        if ($this->config->has('service.resources_help_url')) {
+            $this->setHelp('For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>');
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         try {
             $nextDeployment = $this->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
-                $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api->getEnvironmentLabel($environment, 'comment')));
                 return 1;
             }
             throw $e;
@@ -72,15 +81,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
+        $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(sprintf('Resource configuration for the project %s, environment %s:', $this->api()->getProjectLabel($this->getSelectedProject()), $this->api()->getEnvironmentLabel($environment)));
+            $this->stdErr->writeln(sprintf('Resource configuration for the project %s, environment %s:', $this->api->getProjectLabel($selection->getProject()), $this->api->getEnvironmentLabel($environment)));
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
+        $formatter = $this->propertyFormatter;
 
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
         $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
@@ -136,7 +143,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config()->get('application.executable');
+            $executable = $this->config->get('application.executable');
             $isOriginalCommand = $input instanceof ArgvInput;
             if ($isOriginalCommand) {
                 $this->stdErr->writeln('');

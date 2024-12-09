@@ -2,9 +2,16 @@
 
 namespace Platformsh\Cli\Command\RuntimeOperation;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,32 +20,35 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @see \Platformsh\Cli\Command\SourceOperation\RunCommand
  */
+#[AsCommand(name: 'operation:run', description: 'Run an operation on the environment')]
 class RunCommand extends CommandBase
 {
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
     protected function configure()
     {
-        $this->setName('operation:run')
-            ->setDescription('Run an operation on the environment')
+        $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name');
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name');
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
-        $environment = $this->getSelectedEnvironment();
-        $deployment = $this->api()->getCurrentDeployment($environment);
+        $environment = $selection->getEnvironment();
+        $deployment = $this->api->getCurrentDeployment($environment);
 
         try {
             if ($input->getOption('app') || $input->getOption('worker')) {
-                $selectedApp = $this->selectRemoteContainer($input);
+                $selectedApp = $selection->getRemoteContainer();
                 $appName = $selectedApp->getName();
                 $operations = [
                     $selectedApp->getName() => $selectedApp->getRuntimeOperations(),
@@ -57,8 +67,7 @@ class RunCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $operationName = $input->getArgument('operation');
         if (!$operationName) {
@@ -93,12 +102,12 @@ class RunCommand extends CommandBase
             }
             if (!$found) {
                 if ($appName !== null) {
-                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s, app <comment>%s</comment>.', $operationName, $this->api()->getEnvironmentLabel($environment, 'comment'), $appName));
+                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s, app <comment>%s</comment>.', $operationName, $this->api->getEnvironmentLabel($environment, 'comment'), $appName));
                 } else {
-                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s.', $operationName, $this->api()->getEnvironmentLabel($environment, 'comment')));
+                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s.', $operationName, $this->api->getEnvironmentLabel($environment, 'comment')));
                 }
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf('To list operations, run: <comment>%s ops</comment>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To list operations, run: <comment>%s ops</comment>', $this->config->get('application.executable')));
                 return 1;
             }
         }
@@ -114,15 +123,14 @@ class RunCommand extends CommandBase
 
         try {
             $result = $deployment->execRuntimeOperation($operationName, $appName);
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support runtime operations.');
         }
 
         $success = true;
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
-            $monitor = $this->getService('activity_monitor');
-            $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityMonitor->shouldWait($input)) {
+            $monitor = $this->activityMonitor;
+            $success = $monitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

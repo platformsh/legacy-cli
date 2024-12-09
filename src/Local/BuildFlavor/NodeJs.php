@@ -7,12 +7,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class NodeJs extends BuildFlavorBase
 {
-    public function getStacks()
+    public function getStacks(): array
     {
         return ['nodejs'];
     }
 
-    public function build()
+    public function build(): void
     {
         $buildDir = $this->copyToBuildDir();
 
@@ -41,7 +41,7 @@ class NodeJs extends BuildFlavorBase
         $this->processSpecialDestinations();
     }
 
-    public function install()
+    public function install(): void
     {
         parent::install();
         $this->copyGitIgnore('gitignore-nodejs');

@@ -1,23 +1,27 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Local\LocalBuild;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'local:clean', description: 'Remove old project builds', aliases: ['clean'])]
 class LocalCleanCommand extends CommandBase
 {
-    protected $local = true;
-    protected $hiddenInList = true;
+        protected bool $hiddenInList = true;
+        public function __construct(private readonly LocalBuild $localBuild, private readonly Selector $selector)
+        {
+            parent::__construct();
+        }
 
     protected function configure()
     {
         $this
-            ->setName('local:clean')
-            ->setAliases(['clean'])
-            ->setDescription('Remove old project builds')
             ->addOption(
                 'keep',
                 null,
@@ -39,15 +43,14 @@ class LocalCleanCommand extends CommandBase
             );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
 
-        /** @var \Platformsh\Cli\Local\LocalBuild $builder */
-        $builder = $this->getService('local.build');
+        $builder = $this->localBuild;
         $result = $builder->cleanBuilds(
             $projectRoot,
             $input->getOption('max-age'),
@@ -71,5 +74,6 @@ class LocalCleanCommand extends CommandBase
         if ($archivesResult[0]) {
             $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }
+        return 0;
     }
 }

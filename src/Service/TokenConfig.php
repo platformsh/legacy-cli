@@ -2,12 +2,15 @@
 
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\ApiToken\CredentialHelperStorage;
+use Platformsh\Cli\ApiToken\FileStorage;
+use Platformsh\Cli\ApiToken\StorageInterface;
 use Platformsh\Cli\ApiToken\Storage;
 
 class TokenConfig
 {
-    private $config;
-    private $apiTokenStorage;
+    private readonly Config $config;
+    private readonly CredentialHelperStorage|FileStorage $apiTokenStorage;
 
     public function __construct(Config $config = null)
     {
@@ -16,7 +19,7 @@ class TokenConfig
     }
 
     /**
-     * @return \Platformsh\Cli\ApiToken\StorageInterface
+     * @return StorageInterface
      */
     public function storage()
     {
@@ -66,9 +69,9 @@ class TokenConfig
      *
      * @return string
      */
-    private function loadTokenFromFile($filename)
+    private function loadTokenFromFile(string $filename): string
     {
-        if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
+        if (!str_starts_with($filename, '/') && !str_starts_with($filename, '\\')) {
             $filename = $this->config->getUserConfigDir() . '/' . $filename;
         }
 

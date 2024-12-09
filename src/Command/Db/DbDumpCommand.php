@@ -1,25 +1,36 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\Environment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Helper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'db:dump', description: 'Create a local dump of the remote database')]
 class DbDumpCommand extends CommandBase
 {
 
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+
     protected function configure()
     {
-        $this->setName('db:dump')
-            ->setDescription('Create a local dump of the remote database');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'A custom directory for the dump')
@@ -30,7 +41,9 @@ class DbDumpCommand extends CommandBase
             ->addOption('exclude-table', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Table(s) to exclude')
             ->addOption('schema-only', null, InputOption::VALUE_NONE, 'Dump only schemas, no data')
             ->addOption('charset', null, InputOption::VALUE_REQUIRED, 'The character set encoding for the dump');
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->setHiddenAliases(['sql-dump', 'environment:sql-dump']);
@@ -38,29 +51,29 @@ class DbDumpCommand extends CommandBase
         $this->addExample('Create a gzipped SQL dump file named "dump.sql.gz"', '--gzip -f dump.sql.gz');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
+        $relationships = $this->relationships;
 
-        $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
-        if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
-            $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-            $this->validateInput($input, true);
-        }
+        $selectorConfig = new SelectorConfig(
+            envRequired: false,
+            allowLocalHost: $relationships->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        );
+        // TODO check if this still allows offline use from the container
+        $selection = $this->selector->getSelection($input, $selectorConfig);
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
         $timestamp = $input->getOption('timestamp') ? date('Ymd-His-T') : null;
         $gzip = $input->getOption('gzip');
         $includedTables = $input->getOption('table');
         $excludedTables = $input->getOption('exclude-table');
         $schemaOnly = $input->getOption('schema-only');
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
 
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        $fs = $this->filesystem;
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $questionHelper = $this->questionHelper;
 
         $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
@@ -68,10 +81,10 @@ class DbDumpCommand extends CommandBase
         }
 
         $service = false;
-        if ($this->hasSelectedEnvironment()) {
+        if ($selection->hasEnvironment()) {
             // Get information about the deployed service associated with the
             // selected relationship.
-            $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
             $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
         }
 
@@ -105,8 +118,7 @@ class DbDumpCommand extends CommandBase
             }
             $schema = null;
             if (!empty($choices)) {
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
+                $questionHelper = $this->questionHelper;
                 $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
             }
             if (empty($schema)) {
@@ -129,7 +141,7 @@ class DbDumpCommand extends CommandBase
 
                     return 1;
                 }
-                $dumpFile = rtrim($fileOption, '/');
+                $dumpFile = rtrim((string) $fileOption, '/');
                 if (!$gzip && preg_match('/\.gz$/i', $dumpFile)) {
                     $this->stdErr->writeln('Warning: the filename ends with ".gz", but the dump will be plain-text.');
                     $this->stdErr->writeln('Use <comment>--gzip</comment> to create a compressed dump.');
@@ -137,7 +149,7 @@ class DbDumpCommand extends CommandBase
                 }
             } else {
                 $defaultFilename = $this->getDefaultFilename(
-                    $this->hasSelectedEnvironment() ? $this->getSelectedEnvironment() : null,
+                    $selection->hasEnvironment() ? $selection->getEnvironment() : null,
                     $database['service'],
                     $schema,
                     $includedTables,
@@ -155,12 +167,12 @@ class DbDumpCommand extends CommandBase
 
                     return 1;
                 }
-                $dumpFile = rtrim($directoryOption, '/') . '/' . basename($dumpFile);
+                $dumpFile = rtrim((string) $directoryOption, '/') . '/' . basename($dumpFile);
             }
 
             // Insert a timestamp into the filename, before the
             // extension.
-            if ($timestamp !== null && strpos($dumpFile, $timestamp) === false) {
+            if ($timestamp !== null && !str_contains($dumpFile, $timestamp)) {
                 $basename = basename($dumpFile);
                 $prefix = substr($dumpFile, 0, - strlen($basename));
                 if (($dotPos = strpos($basename, '.')) > 0) {
@@ -221,9 +233,7 @@ class DbDumpCommand extends CommandBase
                 }
                 if ($includedTables) {
                     $dumpCommand .= ' --tables '
-                        . implode(' ', array_map(function ($table) {
-                            return OsUtil::escapePosixShellArg($table);
-                        }, $includedTables));
+                        . implode(' ', array_map(fn($table) => OsUtil::escapePosixShellArg($table), $includedTables));
                 }
                 if (!empty($service->configuration['properties']['max_allowed_packet'])) {
                     $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
@@ -255,7 +265,7 @@ class DbDumpCommand extends CommandBase
 
         $append = '';
         if ($dumpFile) {
-            $append .= ' > ' . escapeshellarg($dumpFile);
+            $append .= ' > ' . escapeshellarg((string) $dumpFile);
         }
 
         set_time_limit(0);
@@ -274,13 +284,12 @@ class DbDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && $projectRoot && strpos($dumpFile, $projectRoot) === 0) {
-            /** @var \Platformsh\Cli\Service\Git $git */
-            $git = $this->getService('git');
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with((string) $dumpFile, $projectRoot)) {
+            $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
-                if ($pos = strrpos($dumpFile, '--dump.sql')) {
-                    $extension = substr($dumpFile, $pos);
+                if ($pos = strrpos((string) $dumpFile, '--dump.sql')) {
+                    $extension = substr((string) $dumpFile, $pos);
                     $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
                     $this->stdErr->writeln('    *' . $extension);
                 }
@@ -310,9 +319,9 @@ class DbDumpCommand extends CommandBase
         array $includedTables = [],
         array $excludedTables = [],
         $schemaOnly = false,
-        $gzip = false)
+        $gzip = false): string
     {
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->get('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentMachineName = $environment ? $environment->machine_name : getenv($prefix . 'ENVIRONMENT');
         $defaultFilename = $projectId ?: 'db';
