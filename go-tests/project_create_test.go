@@ -36,11 +36,14 @@ func TestProjectCreate(t *testing.T) {
 	projectID := strings.TrimSpace(stdOut)
 	assert.NotEmpty(t, projectID)
 
+	consoleURL := "https://console.cli-tests.example.com/cli-tests/" + projectID
+
 	// stderr should contain various messages.
 	assert.Contains(t, stdErr, "The estimated monthly cost of this project is: $1,000 USD")
 	assert.Contains(t, stdErr, "Region: "+region)
 	assert.Contains(t, stdErr, "Project ID: "+projectID)
 	assert.Contains(t, stdErr, "Project title: "+title)
+	assert.Contains(t, stdErr, "Console URL: "+consoleURL)
 }
 
 func TestProjectCreate_CanCreateError(t *testing.T) {

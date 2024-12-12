@@ -315,7 +315,9 @@ EOF
         $this->stdErr->writeln("  Region: <info>{$subscription->project_region}</info>");
         $this->stdErr->writeln("  Project ID: <info>{$subscription->project_id}</info>");
         $this->stdErr->writeln("  Project title: <info>{$subscription->project_title}</info>");
-        $this->stdErr->writeln("  URL: <info>{$subscription->project_ui}</info>");
+        $this->stdErr->writeln('');
+
+        $this->stdErr->writeln(sprintf("  Console URL: <info>%s</info>", $this->api()->getConsoleURL($project)));
 
         $this->stdErr->writeln("  Git URL: <info>{$project->getGitUrl()}</info>");
 
