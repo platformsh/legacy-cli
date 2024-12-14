@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,7 +29,8 @@ class CurlCli implements InputConfiguringInterface {
         $definition->addOption(new InputOption('head', 'I', InputOption::VALUE_NONE, 'Fetch headers only'));
         $definition->addOption(new InputOption('disable-compression', null, InputOption::VALUE_NONE, 'Do not use the curl --compressed flag'));
         $definition->addOption(new InputOption('enable-glob', null, InputOption::VALUE_NONE, 'Enable curl globbing (remove the --globoff flag)'));
-        $definition->addOption(new InputOption('fail', 'f', InputOption::VALUE_NONE, 'Fail with no output on an error response'));
+        $definition->addOption(new InputOption('no-retry-401', null, InputOption::VALUE_NONE, 'Disable automatic retry on 401 errors'));
+        $definition->addOption(new InputOption('fail', 'f', InputOption::VALUE_NONE, 'Fail with no output on an error response. Default, unless --no-retry-401 is added.'));
         $definition->addOption(new InputOption('header', 'H', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Extra header(s)'));
     }
 
@@ -54,7 +56,90 @@ class CurlCli implements InputConfiguringInterface {
             $url .= '/' . ltrim($path, '/');
         }
 
+        $retryOn401 = !$input->getOption('no-retry-401');
+        if ($retryOn401) {
+            // Force --fail if retrying on 401 errors.
+            // This ensures that the error's output will not be printed, which
+            // is difficult to prevent otherwise.
+            $input->setOption('fail', true);
+        }
+
         $token = $this->api->getAccessToken();
+
+        // Censor the access token: this can be applied to verbose output.
+        $censor = function ($str) use (&$token) {
+            return str_replace($token, '[token]', $str);
+        };
+
+        $commandline = $this->buildCurlCommand($url, $token, $input);
+
+        // Add --verbose if -vv is provided, or if retrying on 401 errors.
+        // In the latter case the verbose output will be intercepted and hidden.
+        if ($stdErr->isVeryVerbose() || $retryOn401) {
+            $commandline .= ' --verbose';
+        }
+
+        $process = new Process($commandline);
+        $shouldRetry = false;
+        $newToken = '';
+        $onOutput = function ($type, $buffer) use ($censor, $output, $stdErr, $process, $retryOn401, &$newToken, &$shouldRetry) {
+            if ($shouldRetry) {
+                // Ensure there is no output after a retry is triggered.
+                return;
+            }
+            if ($type === Process::OUT) {
+                $output->write($buffer);
+                return;
+            }
+            if ($type === Process::ERR) {
+                if ($retryOn401 && $this->parseCurlStatusCode($buffer) === 401 && $this->api->isLoggedIn()) {
+                    $shouldRetry = true;
+                    $process->clearErrorOutput();
+                    $process->clearOutput();
+
+                    $newToken = $this->api->getAccessToken(true);
+                    $stdErr->writeln('The access token has been refreshed. Retrying request.');
+
+                    $process->stop();
+                    return;
+                }
+                if ($stdErr->isVeryVerbose()) {
+                    $stdErr->write($censor($buffer));
+                }
+            }
+        };
+
+        $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
+
+        $process->run($onOutput);
+
+        if ($shouldRetry) {
+            // Create a new curl process, replacing the access token.
+            $commandline = $this->buildCurlCommand($url, $newToken, $input);
+            $process = new Process($commandline);
+            $shouldRetry = false;
+
+            // Update the $token variable in the $censor closure.
+            $token = $newToken;
+
+            $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
+            $process->run($onOutput);
+        }
+
+        return $process->getExitCode();
+    }
+
+    /**
+     * Builds a curl command with a URL and access token.
+     *
+     * @param string $url
+     * @param string $token
+     * @param InputInterface $input
+     *
+     * @return string
+     */
+    private function buildCurlCommand($url, $token, InputInterface $input)
+    {
         $commandline = sprintf(
             'curl -H %s %s',
             escapeshellarg('Authorization: Bearer ' . $token),
@@ -74,8 +159,7 @@ class CurlCli implements InputConfiguringInterface {
 
         if ($data = $input->getOption('json')) {
             if (\json_decode($data) === null && \json_last_error() !== JSON_ERROR_NONE) {
-                $stdErr->writeln('The value of --json contains invalid JSON.');
-                return 1;
+                throw new InvalidArgumentException('The value of --json contains invalid JSON.');
             }
             $commandline .= ' --data ' . escapeshellarg($data);
             $commandline .= ' --header ' . escapeshellarg('Content-Type: application/json');
@@ -98,28 +182,22 @@ class CurlCli implements InputConfiguringInterface {
             $commandline .= ' --header ' . escapeshellarg($header);
         }
 
-        if ($output->isVeryVerbose()) {
-            $commandline .= ' --verbose';
-        } else {
-            $commandline .= ' --silent --show-error';
+        $commandline .= ' --no-progress-meter';
+
+        return $commandline;
+    }
+
+    /**
+     * Parses an HTTP response status code from cURL verbose output.
+     *
+     * @param string $buffer
+     * @return int|null
+     */
+    private function parseCurlStatusCode($buffer)
+    {
+        if (preg_match('#< HTTP/[1-3]+(?:\.[0-9]+)? ([1-5][0-9]{2})\s#', $buffer, $matches)) {
+            return (int) $matches[1];
         }
-
-        // Censor the access token: this can be applied to verbose output.
-        $censor = function ($str) use ($token) {
-            return str_replace($token, '[token]', $str);
-        };
-
-        $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
-
-        $process = new Process($commandline);
-        $process->run(function ($type, $buffer) use ($censor, $output, $stdErr) {
-            if ($type === Process::ERR) {
-                $stdErr->write($censor($buffer));
-            } else {
-                $output->write($buffer);
-            }
-        });
-
-        return $process->getExitCode();
+        return null;
     }
 }
