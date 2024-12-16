@@ -33,11 +33,11 @@ class InstallationInfo
                 $realpath = realpath($p);
                 return $realpath && $realpath !== $thisPath;
             }));
-            if (!empty($otherPaths)) {
-                $this->io->debug('Other CLI(s) found: ' . implode(", ", $otherPaths));
+            if (!empty(self::$otherPaths)) {
+                $this->io->debug('Other CLI(s) found: ' . implode(", ", self::$otherPaths));
             }
         }
-        return !empty($otherPaths);
+        return !empty(self::$otherPaths);
     }
 
     private function cliPath(): string

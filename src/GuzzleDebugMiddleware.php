@@ -36,7 +36,7 @@ class GuzzleDebugMiddleware
             /** @var PromiseInterface $promise */
             $promise = $next($request, $options);
 
-            return $promise->then(function (ResponseInterface $response) use ($request, $seq, $started): ResponseInterface|PromiseInterface {
+            return $promise->then(function (ResponseInterface $response) use ($seq, $started): ResponseInterface|PromiseInterface {
                 $this->stdErr->writeln(sprintf(
                     '<options=reverse>\<</> Received response for #%d after %d ms: %s',
                     $seq, (microtime(true) - $started) * 1000, $this->formatMessage($response, '< ')

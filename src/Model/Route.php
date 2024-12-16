@@ -13,12 +13,12 @@ use Platformsh\Client\DataStructure\ReadOnlyStructureTrait;
  * @property-read string|null $id
  * @property-read string      $url
  */
-class Route
+final class Route
 {
     use ReadOnlyStructureTrait;
 
-    public static function fromData(array $data): static {
-        return new static($data + ['id' => null, 'primary' => false]);
+    public static function fromData(array $data): self {
+        return new self($data + ['id' => null, 'primary' => false]);
     }
 
     /**
@@ -37,22 +37,21 @@ class Route
     /**
      * Translates routes found in $environment->getRoutes() to Route objects.
      *
-     * @see \Platformsh\Client\Model\Environment::getRoutes()
-     *
      * @param \Platformsh\Client\Model\Deployment\Route[] $routes
      *
-     * @return \Platformsh\Cli\Model\Route[]
+     * @return Route[]
+     * @see \Platformsh\Client\Model\Environment::getRoutes()
      */
-    public static function fromDeploymentApi(array $routes)
+    public static function fromDeploymentApi(array $routes): array
     {
         $result = [];
         foreach ($routes as $url => $route) {
             $properties = $route->getProperties();
             $properties['url'] = $url;
-            $result[] = static::fromData($properties);
+            $result[] = self::fromData($properties);
         }
 
-        return static::sort($result);
+        return self::sort($result);
     }
 
     /**
@@ -60,18 +59,18 @@ class Route
      *
      * @param array $routes
      *
-     * @return \Platformsh\Cli\Model\Route[]
+     * @return Route[]
      */
-    public static function fromVariables(array $routes)
+    public static function fromVariables(array $routes): array
     {
         $result = [];
 
         foreach ($routes as $url => $route) {
             $route['url'] = $url;
-            $result[] = static::fromData($route);
+            $result[] = self::fromData($route);
         }
 
-        return static::sort($result);
+        return self::sort($result);
     }
 
     /**
