@@ -7,7 +7,7 @@ use Platformsh\Cli\Service\Filesystem;
 /**
  * @group slow
  */
-class VanillaTest extends BaseBuildFlavorTest
+class VanillaTest extends BuildFlavorTestBase
 {
     public function testBuildVanilla()
     {
