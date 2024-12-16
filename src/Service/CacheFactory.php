@@ -14,7 +14,7 @@ class CacheFactory
      *
      * @return CacheProvider
      */
-    public static function createCacheProvider(Config $cliConfig): VoidCache|FilesystemCache
+    public static function createCacheProvider(Config $cliConfig): CacheProvider
     {
         if ($cliConfig->getWithDefault('api.disable_cache', false)) {
             return new VoidCache();
