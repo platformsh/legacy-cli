@@ -132,26 +132,6 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /**
      * {@inheritdoc}
-     *
-     * Overrides the default method so that the description is not repeated
-     * twice.
-     */
-    public function getProcessedHelp(): string
-    {
-        $help = $this->getHelp();
-        if ($help === '') {
-            return $help;
-        }
-        $name = $this->getName();
-
-        $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, $this->config->get('application.executable') . ' ' . $name];
-
-        return str_replace($placeholders, $replacements, $help);
-    }
-
-    /**
-     * {@inheritdoc}
      */
     public function canBeRunMultipleTimes(): bool
     {
