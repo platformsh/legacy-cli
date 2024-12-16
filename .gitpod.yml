@@ -1,0 +1,9 @@
+image:
+  file: .gitpod/.gitpod.Dockerfile
+tasks:
+  - name: Prepare Environment
+    init: |
+      composer install
+    command: | 
+      ./.gitpod/scripts/login.sh
+      printf "\n\n All set! Be sure to test your changes by running: vendor/bin/phpunit\n\n"
