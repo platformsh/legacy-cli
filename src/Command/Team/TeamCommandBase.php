@@ -44,7 +44,7 @@ class TeamCommandBase extends CommandBase
      *
      * @return self
      */
-    protected function addTeamOption(): static
+    protected function addTeamOption(): self
     {
         $this->addOption('team', 't', InputOption::VALUE_REQUIRED, 'The team ID');
         return $this;
@@ -153,11 +153,11 @@ class TeamCommandBase extends CommandBase
      *
      * @param Organization $organization The organization.
      * @param bool $fetchAllPages If false, only one page will be fetched.
-     * @param bool $params Extra query parameters.
+     * @param array $params Extra query parameters.
      *
      * @return Team[]
      */
-    protected function loadTeams(Organization $organization, $fetchAllPages = true, $params = []): array
+    protected function loadTeams(Organization $organization, bool $fetchAllPages = true, array $params = []): array
     {
         $httpClient = $this->api->getHttpClient();
         $options = ['query' => array_merge(['filter[organization_id]' => $organization->id, 'sort' => 'label'], $params)];

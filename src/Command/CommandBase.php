@@ -110,7 +110,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @param array $hiddenAliases
      *
-     * @return CommandBase
+     * @return static
      */
     protected function setHiddenAliases(array $hiddenAliases): static
     {

@@ -15,7 +15,7 @@ class DescriptorUtils
      *
      * Resolves lazy-loaded commands to check if they are hidden or disabled.
      *
-     * @return array{'namespaces': array<array{id: string, commands: array<string, Command[]>}>, 'commands': array<string, Command[]>}
+     * @return array{'namespaces': array<array{id: string, commands: array<string, Command>}>, 'commands': array<string, Command>}
      */
     public function describeNamespaces(Application $application, ?string $namespace = null, bool $showHidden = false): array
     {

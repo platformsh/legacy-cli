@@ -810,7 +810,7 @@ class Api
      *
      * @return Environment|false The environment, or false if not found.
      */
-    public function getEnvironment(string $id, Project $project, $refresh = null, $tryMachineName = false)
+    public function getEnvironment(string $id, Project $project, ?bool $refresh = null, bool $tryMachineName = false): Environment|false
     {
         // Statically cache not found environments.
         $cacheKey = $project->id . ':' . $id . ($tryMachineName ? ':mn' : '');
@@ -818,7 +818,7 @@ class Api
             return false;
         }
 
-        $environmentsRefreshed = $refresh === true || ($refresh === null && empty(static::$environmentsCache[$project->id]) && !$this->cache->fetch('environments:' . $project->id));
+        $environmentsRefreshed = $refresh === true || ($refresh === null && empty(self::$environmentsCache[$project->id]) && !$this->cache->fetch('environments:' . $project->id));
         $environments = $this->getEnvironments($project, $refresh);
 
         // Look for the environment by ID.
@@ -1256,7 +1256,7 @@ class Api
      *
      * @return ClientInterface
      */
-    public function getExternalHttpClient(): Client
+    public function getExternalHttpClient(): ClientInterface
     {
         return new Client($this->getGuzzleOptions());
     }

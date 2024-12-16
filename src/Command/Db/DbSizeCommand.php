@@ -91,7 +91,7 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln(sprintf('Checking database service <comment>%s</comment>...', $dbServiceName));
 
         $this->io->debug('Calculating estimated usage...');
-        $allocatedDisk = $service->disk * self::BYTE_TO_MEGABYTE;
+        $allocatedDisk = ((int) $service->disk) * self::BYTE_TO_MEGABYTE;
         $estimatedUsage = $this->getEstimatedUsage($host, $database);
         $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
 
@@ -220,7 +220,7 @@ class DbSizeCommand extends CommandBase
      *
      * @return void
      */
-    private function showWarnings(float $percentageUsed): void {
+    private function showWarnings(int|float $percentageUsed): void {
         if ($percentageUsed > self::RED_WARNING_THRESHOLD) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=red>Warning:</>');
@@ -426,7 +426,7 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function formatPercentage(float $percentage, $machineReadable): string {
+    private function formatPercentage(int|float $percentage, bool $machineReadable): string {
         if ($machineReadable) {
             $format = '%d';
         } elseif ($percentage > self::RED_WARNING_THRESHOLD) {

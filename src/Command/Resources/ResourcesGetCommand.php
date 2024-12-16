@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
@@ -30,7 +31,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'memory_ratio' => 'Memory ratio',
     ];
     protected $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -61,7 +62,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $environment = $selection->getEnvironment();
 
         try {
-            $nextDeployment = $this->loadNextDeployment($environment);
+            $nextDeployment = $this->resourcesUtil->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
                 $this->stdErr->writeln(sprintf('The environment %s is not active so resource configuration cannot be read.', $this->api->getEnvironmentLabel($environment, 'comment')));
@@ -70,13 +71,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
             throw $e;
         }
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->resourcesUtil->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
         }
 
-        $services = $this->filterServices($services, $input);
+        $services = $this->resourcesUtil->filterServices($services, $input);
         if (empty($services)) {
             return 1;
         }
@@ -112,7 +113,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
 
             if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {
                 $profileInfo = $containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']];
-                $row['cpu'] = isset($profileInfo['cpu']) ? $this->formatCPU($profileInfo['cpu']) : '';
+                $row['cpu'] = isset($profileInfo['cpu']) ? $this->resourcesUtil->formatCPU($profileInfo['cpu']) : '';
                 $row['memory'] = isset($profileInfo['cpu']) ? $profileInfo['memory'] : '';
             }
 
@@ -125,7 +126,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
                 }
             }
 
-            if (!$this->supportsDisk($service)) {
+            if (!$this->resourcesUtil->supportsDisk($service)) {
                 $row['disk'] = $notApplicable;
             } elseif (array_key_exists('disk', $properties)) {
                 if (empty($properties['disk'])) {

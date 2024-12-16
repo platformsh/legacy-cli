@@ -39,7 +39,7 @@ class ResourcesUtil
      *
      * @param EnvironmentDeployment $deployment
      *
-     * @return array<string, WebApp||Worker|Service>
+     * @return array<string, WebApp|Worker|Service>
      *     An array of services keyed by the service name.
      */
     public function allServices(EnvironmentDeployment $deployment): array
@@ -231,7 +231,7 @@ class ResourcesUtil
      *
      * @see ResourcesUtil::validateResourcesInitInput()
      */
-    public function addOption(InputDefinition $definition, array $values, string $description = ''): static
+    public function addOption(InputDefinition $definition, array $values, string $description = ''): self
     {
         if (!$this->featureEnabled()) {
             return $this;

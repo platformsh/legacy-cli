@@ -105,7 +105,7 @@ class DependencyInstaller
      *
      * @return DependencyManagerInterface
      */
-    protected function getManager($name): Pip|Npm|Bundler|Composer
+    protected function getManager(string $name): DependencyManagerInterface
     {
         // Python has 'python', 'python2', and 'python3'.
         if (str_starts_with($name, 'python')) {
