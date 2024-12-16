@@ -1,6 +1,111 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$description\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityGetCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityGetCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$project\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$state\\.$#"
+			count: 2
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$type\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:isComplete\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:readLog\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Activity/ActivityLogCommand.php
+
+		-
+			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Connection\\\\ConnectorInterface\\:\\:getOAuth2Provider\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Auth/ApiTokenLoginCommand.php
+
+		-
+			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Connection\\\\ConnectorInterface\\:\\:saveToken\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Auth/ApiTokenLoginCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
+			count: 3
+			path: src/Command/Auth/VerifyPhoneNumberCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\Backup\\:\\:\\$safe\\.$#"
+			count: 2
+			path: src/Command/Backup/BackupListCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:delete\\(\\)\\.$#"
+			count: 1
+			path: src/Command/BlueGreen/BlueGreenConcludeCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Command/BlueGreen/BlueGreenConcludeCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Command/BlueGreen/BlueGreenDeployCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:patch\\(\\)\\.$#"
+			count: 1
+			path: src/Command/BlueGreen/BlueGreenDeployCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Command/BlueGreen/BlueGreenEnableCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
+			count: 1
+			path: src/Command/BlueGreen/BlueGreenEnableCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
+			count: 3
+			path: src/Command/Certificate/CertificateDeleteCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$is_provisioned\\.$#"
+			count: 1
+			path: src/Command/Certificate/CertificateDeleteCommand.php
+
+		-
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Domain\\\\DomainCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Domain/DomainCommandBase.php
@@ -19,6 +124,56 @@ parameters:
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Domain\\\\DomainCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Domain/DomainCommandBase.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$description\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityGetCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityGetCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$project\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$state\\.$#"
+			count: 2
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$type\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:isComplete\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:readLog\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
 
 		-
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
@@ -91,6 +246,11 @@ parameters:
 			path: src/Command/Organization/OrganizationCommandBase.php
 
 		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Project/ProjectCreateCommand.php
+
+		-
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Repo\\\\RepoCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Repo/RepoCommandBase.php
@@ -104,6 +264,11 @@ parameters:
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Resources\\\\ResourcesCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Resources/ResourcesCommandBase.php
+
+		-
+			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\Deployment\\\\Service\\|Platformsh\\\\Client\\\\Model\\\\Deployment\\\\WebApp\\|Platformsh\\\\Client\\\\Model\\\\Deployment\\\\Worker\\:\\:\\$container_profile\\.$#"
+			count: 3
+			path: src/Command/Resources/ResourcesSizeListCommand.php
 
 		-
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Server\\\\ServerCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
@@ -126,6 +291,16 @@ parameters:
 			path: src/Command/Server/ServerCommandBase.php
 
 		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Team/Project/TeamProjectAddCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:delete\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Team/Project/TeamProjectDeleteCommand.php
+
+		-
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Team\\\\TeamCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Team/TeamCommandBase.php
@@ -146,6 +321,16 @@ parameters:
 			path: src/Command/Team/TeamCommandBase.php
 
 		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Team/TeamListCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Team/User/TeamUserAddCommand.php
+
+		-
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Tunnel\\\\TunnelCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Tunnel/TunnelCommandBase.php
@@ -164,3 +349,13 @@ parameters:
 			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Tunnel\\\\TunnelCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: src/Command/Tunnel/TunnelCommandBase.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: src/Command/Version/VersionListCommand.php
+
+		-
+			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:head\\(\\)\\.$#"
+			count: 1
+			path: src/Service/Identifier.php

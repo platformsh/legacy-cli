@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
@@ -16,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
     protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
-    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
@@ -40,9 +41,9 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         }
 
         $environment = $selection->getEnvironment();
-        $nextDeployment = $this->loadNextDeployment($environment);
+        $nextDeployment = $this->resourcesUtil->loadNextDeployment($environment);
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->resourcesUtil->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -85,7 +86,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
 
         $rows = [];
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            $rows[] = ['size' => $sizeName, 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
+            $rows[] = ['size' => $sizeName, 'cpu' => $this->resourcesUtil->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
         }
 
         if (!$table->formatIsMachineReadable()) {

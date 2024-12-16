@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources\Build;
 
+use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
 class BuildResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
@@ -98,7 +99,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         if ($cpuOption === null && $memoryOption === null) {
             $cpuOption = $questionHelper->askInput(
                 'CPU size',
-                $this->formatCPU($settings['build_resources']['cpu']),
+                $this->resourcesUtil->formatCPU($settings['build_resources']['cpu']),
                 [],
                 $validateCpu,
                 'current: '
@@ -154,11 +155,11 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
     private function summarizeChanges(array $updates, array $current): void
     {
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
-        $this->stdErr->writeln('  CPU: ' . $this->formatChange(
-            $this->formatCPU($current['cpu']),
-            $this->formatCPU(isset($updates['cpu']) ? $updates['cpu'] : $current['cpu'])
+        $this->stdErr->writeln('  CPU: ' . $this->resourcesUtil->formatChange(
+            $this->resourcesUtil->formatCPU($current['cpu']),
+            $this->resourcesUtil->formatCPU(isset($updates['cpu']) ? $updates['cpu'] : $current['cpu'])
         ));
-        $this->stdErr->writeln('  Memory: ' . $this->formatChange(
+        $this->stdErr->writeln('  Memory: ' . $this->resourcesUtil->formatChange(
             $current['memory'],
             isset($updates['memory']) ? $updates['memory'] : $current['memory'],
             ' MB'

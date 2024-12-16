@@ -40,6 +40,13 @@ class NewServicesRector extends AbstractRector
             'hasExternalGitHost' => [ProjectSshInfo::class, 'hasExternalGitHost', '_'],
             'getNonInteractiveAuthHelp' => [Login::class, 'getNonInteractiveAuthHelp', '_'],
             'finalizeLogin' => [Login::class, 'finalize', '_'],
+            'allServices' => [ResourcesUtil::class, 'allServices', '_'],
+            'supportsDisk' => [ResourcesUtil::class, 'supportsDisk', '_'],
+            'loadNextDeployment' => [ResourcesUtil::class, 'loadNextDeployment', '_'],
+            'filterServices' => [ResourcesUtil::class, 'filterServices', '_'],
+            'sizeInfo' => [ResourcesUtil::class, 'sizeInfo', '_'],
+            'formatChange' => [ResourcesUtil::class, 'formatChange', '_'],
+            'formatCPU' => [ResourcesUtil::class, 'formatCPU', '_'],
         ];
     }
 

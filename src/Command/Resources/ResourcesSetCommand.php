@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\ResourcesUtil;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -20,17 +21,37 @@ use Platformsh\Client\Model\Deployment\Worker;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
-    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
     protected function configure()
     {
+        $this->addOption('size', 'S', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Set the profile size (CPU and memory) of apps, workers, or services.'
+                . "\nItems are in the format <info>name:value</info> and may be comma-separated."
+                . "\nThe % or * characters may be used as a wildcard for the name."
+                . "\nList available sizes with the <info>resources:sizes</info> command."
+                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
+            )
+            ->addOption('count', 'C', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Set the instance count of apps or workers.'
+                . "\nItems are in the format <info>name:value</info> as above."
+            )
+            ->addOption('disk', 'D', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                'Set the disk size (in MB) of apps or services.'
+                . "\nItems are in the format <info>name:value</info> as above."
+                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
+            )
+            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything');
+
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->activityMonitor->addWaitOptions($this->getDefinition());
@@ -68,7 +89,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $environment = $selection->getEnvironment();
 
         try {
-            $nextDeployment = $this->loadNextDeployment($environment);
+            $nextDeployment = $this->resourcesUtil->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
                 $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api->getEnvironmentLabel($environment, 'comment')));
@@ -77,7 +98,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             throw $e;
         }
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->resourcesUtil->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -212,7 +233,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             }
 
             // Set the disk size.
-            if ($this->supportsDisk($service)) {
+            if ($this->resourcesUtil->supportsDisk($service)) {
                 if (isset($givenDiskSizes[$name])) {
                     if ($givenDiskSizes[$name] !== $service->disk) {
                         $updates[$group][$name]['disk'] = $givenDiskSizes[$name];
@@ -352,27 +373,27 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $properties = $service->getProperties();
         if (isset($updates['resources']['profile_size'])) {
-            $sizeInfo = $this->sizeInfo($properties, $containerProfiles);
+            $sizeInfo = $this->resourcesUtil->sizeInfo($properties, $containerProfiles);
             $newProperties = array_replace_recursive($properties, $updates);
-            $newSizeInfo = $this->sizeInfo($newProperties, $containerProfiles);
-            $this->stdErr->writeln('    CPU: ' . $this->formatChange(
-                $this->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
-                $this->formatCPU($newSizeInfo['cpu'])
+            $newSizeInfo = $this->resourcesUtil->sizeInfo($newProperties, $containerProfiles);
+            $this->stdErr->writeln('    CPU: ' . $this->resourcesUtil->formatChange(
+                $this->resourcesUtil->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
+                $this->resourcesUtil->formatCPU($newSizeInfo['cpu'])
             ));
-            $this->stdErr->writeln('    Memory: ' . $this->formatChange(
+            $this->stdErr->writeln('    Memory: ' . $this->resourcesUtil->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,
                 $newSizeInfo['memory'],
             ' MB'
             ));
         }
         if (isset($updates['instance_count'])) {
-            $this->stdErr->writeln('    Instance count: ' . $this->formatChange(
+            $this->stdErr->writeln('    Instance count: ' . $this->resourcesUtil->formatChange(
                 isset($properties['instance_count']) ? $properties['instance_count'] : 1,
                 $updates['instance_count']
             ));
         }
         if (isset($updates['disk'])) {
-            $this->stdErr->writeln('    Disk: ' . $this->formatChange(
+            $this->stdErr->writeln('    Disk: ' . $this->resourcesUtil->formatChange(
                 isset($properties['disk']) ? $properties['disk'] : null,
                 $updates['disk'],
                 ' MB'
@@ -455,7 +476,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
      */
     protected function validateDiskSize($value, $serviceName, $service)
     {
-        if (!$this->supportsDisk($service)) {
+        if (!$this->resourcesUtil->supportsDisk($service)) {
             throw new InvalidArgumentException(sprintf(
                 'The %s <error>%s</error> does not support a persistent disk.', $this->typeName($service), $serviceName
             ));
@@ -556,7 +577,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @return array{array<string, mixed>, bool}
      *     An array of settings per service, and whether an error occurred.
      */
-    private function parseSetting(InputInterface $input, string $optionName, array $services, \Closure $validator): array
+    private function parseSetting(InputInterface $input, string $optionName, array $services, ?callable $validator): array
     {
         $items = ArrayArgument::getOption($input, $optionName);
         $serviceNames = array_keys($services);

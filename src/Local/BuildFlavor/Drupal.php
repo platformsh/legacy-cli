@@ -27,7 +27,7 @@ class Drupal extends BuildFlavorBase
      *
      * @return bool
      */
-    public static function isDrupal($directory, string|int|array $depth = '< 2'): bool
+    public static function isDrupal(string $directory, mixed $depth = '< 2'): bool
     {
         if (!is_dir($directory)) {
             return false;

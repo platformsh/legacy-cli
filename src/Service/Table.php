@@ -61,10 +61,10 @@ class Table implements InputConfiguringInterface
         $description = 'Columns to display.';
         if (!empty($columns)) {
             if (!empty($defaultColumns)) {
-                $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns, $defaultColumns) . ' (* = default columns).';
+                $description .= "\n" . 'Available columns: ' . self::formatAvailableColumns($columns, $defaultColumns) . ' (* = default columns).';
                 $description .= "\n" . 'The character "+" can be used as a placeholder for the default columns.';
             } else {
-                $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns) . '.';
+                $description .= "\n" . 'Available columns: ' . self::formatAvailableColumns($columns) . '.';
             }
         }
         $description .= "\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP;
@@ -84,7 +84,7 @@ class Table implements InputConfiguringInterface
      */
     private static function formatAvailableColumns(array $columns, $defaultColumns = [], $markDefault = true): string
     {
-        $columnNames = array_keys(static::availableColumns($columns));
+        $columnNames = array_keys(self::availableColumns($columns));
         natcasesort($columnNames);
         if ($defaultColumns) {
             $defaultColumns = array_map('\strtolower', $defaultColumns);
