@@ -117,7 +117,7 @@ class TeamProjectListCommand extends TeamCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            if (isset($collection['next'])) {
+            if ($result['collection']->hasNextPage()) {
                 $this->stdErr->writeln('More projects are available');
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
             }

@@ -418,8 +418,8 @@ class Api
     private function isSsoSessionExpired(array $data): bool
     {
         if (isset($data['error']) && $data['error'] === 'invalid_grant') {
-            return isset($errDetails['error_description'])
-                && str_contains((string) $errDetails['error_description'], 'SSO session has expired');
+            return isset($data['error_description'])
+                && str_contains((string) $data['error_description'], 'SSO session has expired');
         }
         return false;
     }
@@ -430,8 +430,8 @@ class Api
     private function isApiTokenInvalid(mixed $body): bool
     {
         if (is_array($body) && isset($body['error']) && $body['error'] === 'invalid_grant') {
-            return isset($errDetails['error_description'])
-                && str_contains((string) $errDetails['error_description'], 'API token');
+            return isset($body['error_description'])
+                && str_contains((string) $body['error_description'], 'API token');
         }
         return false;
     }
@@ -461,7 +461,7 @@ class Api
             }
         }
 
-        return new AccessToken($tokenData['access_token'], $session->get('tokenType') ?: null, $tokenData);
+        return new AccessToken($tokenData);
     }
 
     /**
@@ -1456,7 +1456,7 @@ class Api
             $organizationId = $project->getProperty('organization', false, false);
         } else {
             foreach ($this->getMyProjects() as $info) {
-                if ($info->subscription_id === $id && (!isset($project) || $project->id === $info->id)) {
+                if ($info->subscription_id === $id) {
                     $organizationId = !empty($info->organization_ref->id) ? $info->organization_ref->id : false;
                     break;
                 }
