@@ -53,11 +53,7 @@ class ApiTokenLoginCommand extends CommandBase
             return 1;
         }
 
-        $tokenClient = $this->api->getExternalHttpClient();
-        $clientId = $this->config->get('api.oauth2_client_id');
-        $tokenUrl = $this->config->get('api.oauth2_token_url');
-
-        $validator = function ($apiToken) use ($tokenClient, $clientId, $tokenUrl): string {
+        $validator = function (string $apiToken): string {
             $apiToken = trim($apiToken);
             if (!strlen($apiToken)) {
                 throw new \RuntimeException('The token cannot be empty');

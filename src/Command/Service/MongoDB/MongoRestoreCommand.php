@@ -34,6 +34,7 @@ class MongoRestoreCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $streams = [STDIN];
+        $write = $except = null;
         if (!stream_select($streams, $write, $except, 0)) {
             throw new InvalidArgumentException('This command requires a mongodump archive to be piped into STDIN');
         }

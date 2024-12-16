@@ -1,0 +1,166 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Domain\\\\DomainCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Domain/DomainCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Domain\\\\DomainCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Domain/DomainCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Domain\\\\DomainCommandBase has an uninitialized readonly property \\$questionHelper\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Domain/DomainCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Domain\\\\DomainCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Domain/DomainCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$localProject\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$propertyFormatter\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$questionHelper\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Integration\\\\IntegrationCommandBase has an uninitialized readonly property \\$table\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Integration/IntegrationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Metrics\\\\MetricsCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Metrics/MetricsCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Metrics\\\\MetricsCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Metrics/MetricsCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Metrics\\\\MetricsCommandBase has an uninitialized readonly property \\$io\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Metrics/MetricsCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Metrics\\\\MetricsCommandBase has an uninitialized readonly property \\$propertyFormatter\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Metrics/MetricsCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Metrics\\\\MetricsCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Metrics/MetricsCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Organization\\\\OrganizationCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Organization/OrganizationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Organization\\\\OrganizationCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Organization/OrganizationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Organization\\\\OrganizationCommandBase has an uninitialized readonly property \\$questionHelper\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Organization/OrganizationCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Repo\\\\RepoCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Repo/RepoCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Repo\\\\RepoCommandBase has an uninitialized readonly property \\$gitDataApi\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Repo/RepoCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Resources\\\\ResourcesCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Resources/ResourcesCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Server\\\\ServerCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Server/ServerCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Server\\\\ServerCommandBase has an uninitialized readonly property \\$localProject\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Server/ServerCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Server\\\\ServerCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Server/ServerCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Server\\\\ServerCommandBase has an uninitialized readonly property \\$shell\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Server/ServerCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Team\\\\TeamCommandBase has an uninitialized readonly property \\$api\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Team/TeamCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Team\\\\TeamCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Team/TeamCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Team\\\\TeamCommandBase has an uninitialized readonly property \\$questionHelper\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Team/TeamCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Team\\\\TeamCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Team/TeamCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Tunnel\\\\TunnelCommandBase has an uninitialized readonly property \\$config\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Tunnel/TunnelCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Tunnel\\\\TunnelCommandBase has an uninitialized readonly property \\$io\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Tunnel/TunnelCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Tunnel\\\\TunnelCommandBase has an uninitialized readonly property \\$relationships\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Tunnel/TunnelCommandBase.php
+
+		-
+			message: "#^Class Platformsh\\\\Cli\\\\Command\\\\Tunnel\\\\TunnelCommandBase has an uninitialized readonly property \\$selector\\. Assign it in the constructor\\.$#"
+			count: 1
+			path: src/Command/Tunnel/TunnelCommandBase.php

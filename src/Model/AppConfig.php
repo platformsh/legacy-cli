@@ -8,9 +8,9 @@ use Platformsh\Client\Model\Deployment\WebApp;
 /**
  * A class to help reading and normalizing an application's configuration.
  */
-class AppConfig
+final class AppConfig
 {
-    private $normalizedConfig;
+    private array $normalizedConfig;
 
     /**
      * AppConfig constructor.
@@ -25,11 +25,11 @@ class AppConfig
     /**
      * @param WebApp $app
      *
-     * @return static
+     * @return self
      */
-    public static function fromWebApp(WebApp $app): static
+    public static function fromWebApp(WebApp $app): self
     {
-        return new static($app->getProperties());
+        return new self($app->getProperties());
     }
 
     /**
@@ -37,7 +37,7 @@ class AppConfig
      *
      * @return array
      */
-    public function getNormalized()
+    public function getNormalized(): array
     {
         if (!isset($this->normalizedConfig)) {
             $this->normalizedConfig = $this->normalizeConfig($this->config);

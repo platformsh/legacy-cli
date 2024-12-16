@@ -1,0 +1,11 @@
+parameters:
+	level: 1
+	paths:
+		- src
+		- tests
+	scanFiles:
+		- dist/installer.php
+		- config/cache/container.php
+
+includes:
+	- phpstan-baseline.neon

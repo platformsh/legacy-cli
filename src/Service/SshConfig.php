@@ -141,12 +141,6 @@ class SshConfig {
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
         $includerFilename = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config';
-        if (empty($lines)) {
-            if (\file_exists($includerFilename) || \file_exists($sessionSpecificFilename)) {
-                $this->fs->remove([$includerFilename, $sessionSpecificFilename]);
-            }
-            return false;
-        }
 
         // Add other configured options.
         if ($configuredOptions = $this->config->get('ssh.options')) {
