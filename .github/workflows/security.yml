@@ -1,13 +1,11 @@
-name: Secret scanning
+name: Security
+on: [pull_request]
 
-on:
-  push:
-    branches:
-  pull_request:
-    branches:
+permissions:
+  contents: read
 
 jobs:
-  scan:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,7 +13,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Scan for secrets
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v4
+
+      - name: 'Scan for secrets'
         uses: trufflesecurity/trufflehog@main
         with:
           extra_args: --only-verified
