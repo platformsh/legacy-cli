@@ -53,7 +53,7 @@ func TestProjectInfo(t *testing.T) {
 		},
 	})
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
 	expectedLines := `Property	Value
 id	eer4jee4ri3mo
@@ -67,18 +67,18 @@ created_at	2014-04-01T09:00:00+00:00
 updated_at	2014-04-02T09:00:00+00:00
 git	git@git.region-1.example.com:mock-project.git`
 
-	output := run("pro:info", "-p", projectID, "--format", "plain", "--refresh")
+	output := f.Run("pro:info", "-p", projectID, "--format", "plain", "--refresh")
 
 	for _, line := range strings.Split(expectedLines, "\n") {
 		assert.True(t, strings.Contains(output, line+"\n"))
 	}
 
-	assert.Equal(t, "2014-04-01\n", run("pro:info", "-p", projectID, "created_at", "--date-fmt", "Y-m-d"))
+	assert.Equal(t, "2014-04-01\n", f.Run("pro:info", "-p", projectID, "created_at", "--date-fmt", "Y-m-d"))
 
-	assert.Equal(t, "Project 1\n", run("pro:info", "-p", projectID, "title"))
+	assert.Equal(t, "Project 1\n", f.Run("pro:info", "-p", projectID, "title"))
 
-	run("pro:info", "-v", "-p", projectID, "title", "New Title")
+	f.Run("pro:info", "-v", "-p", projectID, "title", "New Title")
 
 	// TODO --refresh should not be needed here
-	assert.Equal(t, "New Title\n", run("pro:info", "-p", projectID, "title", "--refresh"))
+	assert.Equal(t, "New Title\n", f.Run("pro:info", "-p", projectID, "title", "--refresh"))
 }

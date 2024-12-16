@@ -3,10 +3,7 @@ package tests
 import (
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/platformsh/cli/pkg/mockapi"
 )
@@ -72,9 +69,9 @@ func TestProjectList(t *testing.T) {
 		},
 	})
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +--------------+-----------+----------+--------------+
 | ID           | Title     | Region   | Organization |
 +--------------+-----------+----------+--------------+
@@ -82,32 +79,32 @@ func TestProjectList(t *testing.T) {
 | project-id-2 | Project 2 | region-2 | org-2        |
 | project-id-3 | Project 3 | region-2 | org-2        |
 +--------------+-----------+----------+--------------+
-`, "\n"), run("pro", "-v"))
+`, f.Run("pro", "-v"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 ID	Title	Region	Organization
 project-id-1	Project 1	region-1	org-1
 project-id-2	Project 2	region-2	org-2
 project-id-3	Project 3	region-2	org-2
-`, "\n"), run("pro", "-v", "--format", "plain"))
+`, f.Run("pro", "-v", "--format", "plain"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 ID,Organization ID
 project-id-1,org-id-1
 project-id-2,org-id-2
 project-id-3,org-id-2
-`, "\n"), run("pro", "-v", "--format", "csv", "--columns", "id,organization_id"))
+`, f.Run("pro", "-v", "--format", "csv", "--columns", "id,organization_id"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 ID	Title	Region	Organization
 project-id-1	Project 1	region-1	org-1
-`, "\n"), run("pro", "-v", "--format", "plain", "--my"))
+`, f.Run("pro", "-v", "--format", "plain", "--my"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 project-id-1
 project-id-2
 project-id-3
-`, "\n"), run("pro", "-v", "--pipe"))
+`, f.Run("pro", "-v", "--pipe"))
 }
 
 func makeProject(id, org, vendor, title, region string) *mockapi.Project {

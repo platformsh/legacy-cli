@@ -2,13 +2,12 @@ package tests
 
 import (
 	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/platformsh/cli/pkg/mockapi"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAppList(t *testing.T) {
@@ -54,23 +53,22 @@ func TestAppList(t *testing.T) {
 
 	apiHandler.SetEnvironments(envs)
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 Name	Type
 app	golang:1.23
-`, "\n"), run("apps", "-p", projectID, "-e", ".", "--refresh", "--format", "tsv"))
+`, f.Run("apps", "-p", projectID, "-e", ".", "--refresh", "--format", "tsv"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +--------------+-------------+-------------------+
 | Name         | Type        | Commands          |
 +--------------+-------------+-------------------+
 | app--worker1 | golang:1.23 | start: 'sleep 60' |
 +--------------+-------------+-------------------+
-`, "\n"), run("workers", "-v", "-p", projectID, "-e", "."))
+`, f.Run("workers", "-v", "-p", projectID, "-e", "."))
 
-	runCombinedOutput := runnerCombinedOutput(t, apiServer.URL, authServer.URL)
-	co, err := runCombinedOutput("services", "-p", projectID, "-e", "main")
+	_, stdErr, err := f.RunCombinedOutput("services", "-p", projectID, "-e", "main")
 	require.NoError(t, err)
-	assert.Contains(t, co, "No services found")
+	assert.Contains(t, stdErr, "No services found")
 }

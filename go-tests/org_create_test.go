@@ -2,7 +2,6 @@ package tests
 
 import (
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,39 +24,37 @@ func TestOrgCreate(t *testing.T) {
 	apiServer := httptest.NewServer(apiHandler)
 	defer apiServer.Close()
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
 	// TODO disable the cache?
-	run("cc")
+	f.Run("cc")
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +------+-----------+--------------------------------------+
 | Name | Label     | Owner email                          |
 +------+-----------+--------------------------------------+
 | acme | ACME Inc. | user-for-org-create-test@example.com |
 +------+-----------+--------------------------------------+
-`, "\n"), run("orgs"))
+`, f.Run("orgs"))
 
-	runCombinedOutput := runnerCombinedOutput(t, apiServer.URL, authServer.URL)
-
-	co, err := runCombinedOutput("org:create", "--name", "hooli", "--yes")
+	_, stdErr, err := f.RunCombinedOutput("org:create", "--name", "hooli", "--yes")
 	assert.Error(t, err)
-	assert.Contains(t, co, "--country is required")
+	assert.Contains(t, stdErr, "--country is required")
 
-	co, err = runCombinedOutput("org:create", "--name", "hooli", "--yes", "--country", "XY")
+	_, stdErr, err = f.RunCombinedOutput("org:create", "--name", "hooli", "--yes", "--country", "XY")
 	assert.Error(t, err)
-	assert.Contains(t, co, "Invalid country: XY")
+	assert.Contains(t, stdErr, "Invalid country: XY")
 
-	co, err = runCombinedOutput("org:create", "--name", "hooli", "--yes", "--country", "US")
+	_, stdErr, err = f.RunCombinedOutput("org:create", "--name", "hooli", "--yes", "--country", "US")
 	assert.NoError(t, err)
-	assert.Contains(t, co, "Hooli")
+	assert.Contains(t, stdErr, "Hooli")
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +-------+-----------+--------------------------------------+
 | Name  | Label     | Owner email                          |
 +-------+-----------+--------------------------------------+
 | acme  | ACME Inc. | user-for-org-create-test@example.com |
 | hooli | Hooli     | user-for-org-create-test@example.com |
 +-------+-----------+--------------------------------------+
-`, "\n"), run("orgs"))
+`, f.Run("orgs"))
 }

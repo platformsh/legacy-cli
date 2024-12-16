@@ -2,10 +2,7 @@ package tests
 
 import (
 	"net/http/httptest"
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/platformsh/cli/pkg/mockapi"
 )
@@ -59,9 +56,9 @@ func TestUserList(t *testing.T) {
 		},
 	})
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +------------------------+-----------------+--------------+------------+
 | Email address          | Name            | Project role | ID         |
 +------------------------+-----------------+--------------+------------+
@@ -69,12 +66,12 @@ func TestUserList(t *testing.T) {
 | user-id-2@example.com  | User user-id-2  | viewer       | user-id-2  |
 | user-id-3@example.com  | User user-id-3  | viewer       | user-id-3  |
 +------------------------+-----------------+--------------+------------+
-`, "\n"), run("users", "-p", mockProjectID))
+`, f.Run("users", "-p", mockProjectID))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 Email address	Name	Project role	ID	Permissions
 my-user-id@example.com	User my-user-id	admin	my-user-id	admin
 user-id-2@example.com	User user-id-2	viewer	user-id-2	viewer, development:viewer
 user-id-3@example.com	User user-id-3	viewer	user-id-3	viewer, production:viewer, development:admin, staging:contributor
-`, "\n"), run("users", "-p", mockProjectID, "--format", "plain", "--columns", "+perm%"))
+`, f.Run("users", "-p", mockProjectID, "--format", "plain", "--columns", "+perm%"))
 }

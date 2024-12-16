@@ -1,10 +1,7 @@
 package tests
 
 import (
-	"bytes"
-	"io"
 	"net/http/httptest"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -30,30 +27,20 @@ func TestProjectCreate(t *testing.T) {
 	title := "Test Project Title"
 	region := "test-region"
 
-	cmd := authenticatedCommand(t, apiServer.URL, authServer.URL,
-		"project:create", "-v", "--region", region, "--title", title, "--org", "cli-tests")
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	var stdErrBuf bytes.Buffer
-	var stdOutBuf bytes.Buffer
-	cmd.Stderr = &stdErrBuf
-	if testing.Verbose() {
-		cmd.Stderr = io.MultiWriter(&stdErrBuf, os.Stderr)
-	}
-	cmd.Stdout = &stdOutBuf
-	t.Log("Running:", cmd)
-	require.NoError(t, cmd.Run())
+	stdOut, stdErr, err := f.RunCombinedOutput("project:create", "-v", "--region", region, "--title", title, "--org", "cli-tests")
+	require.NoError(t, err)
 
 	// stdout should contain the project ID.
-	projectID := strings.TrimSpace(stdOutBuf.String())
+	projectID := strings.TrimSpace(stdOut)
 	assert.NotEmpty(t, projectID)
 
 	// stderr should contain various messages.
-	stderr := stdErrBuf.String()
-
-	assert.Contains(t, stderr, "The estimated monthly cost of this project is: $1,000 USD")
-	assert.Contains(t, stderr, "Region: "+region)
-	assert.Contains(t, stderr, "Project ID: "+projectID)
-	assert.Contains(t, stderr, "Project title: "+title)
+	assert.Contains(t, stdErr, "The estimated monthly cost of this project is: $1,000 USD")
+	assert.Contains(t, stdErr, "Region: "+region)
+	assert.Contains(t, stdErr, "Project ID: "+projectID)
+	assert.Contains(t, stdErr, "Project title: "+title)
 }
 
 func TestProjectCreate_CanCreateError(t *testing.T) {
@@ -198,18 +185,11 @@ func TestProjectCreate_CanCreateError(t *testing.T) {
 	}
 	apiHandler.SetOrgs(orgs)
 
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
+
 	for _, c := range cases {
 		t.Run("can_create_"+c.orgName, func(t *testing.T) {
-			cmd := authenticatedCommand(t, apiServer.URL, authServer.URL,
-				"project:create", "-v", "--org", c.orgName)
-			var stdErrBuf bytes.Buffer
-			cmd.Stderr = &stdErrBuf
-			if testing.Verbose() {
-				cmd.Stderr = io.MultiWriter(&stdErrBuf, os.Stderr)
-			}
-			t.Log("Running:", cmd)
-			err := cmd.Run()
-			stdErr := stdErrBuf.String()
+			_, stdErr, err := f.RunCombinedOutput("project:create", "-v", "--org", c.orgName)
 			ee := &exec.ExitError{}
 			require.ErrorAs(t, err, &ee)
 			assert.Equal(t, 1, ee.ExitCode())

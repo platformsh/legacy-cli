@@ -2,12 +2,10 @@ package tests
 
 import (
 	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/platformsh/cli/pkg/mockapi"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAuthInfo(t *testing.T) {
@@ -33,9 +31,9 @@ func TestAuthInfo(t *testing.T) {
 	apiServer := httptest.NewServer(apiHandler)
 	defer apiServer.Close()
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +-----------------------+---------------------+
 | Property              | Value               |
 +-----------------------+---------------------+
@@ -46,7 +44,7 @@ func TestAuthInfo(t *testing.T) {
 | email                 | my-user@example.com |
 | phone_number_verified | true                |
 +-----------------------+---------------------+
-`, "\n"), run("auth:info", "-v", "--refresh"))
+`, f.Run("auth:info", "-v", "--refresh"))
 
-	assert.Equal(t, "my-user-id\n", run("auth:info", "-P", "id"))
+	assert.Equal(t, "my-user-id\n", f.Run("auth:info", "-P", "id"))
 }

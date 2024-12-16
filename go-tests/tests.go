@@ -1,16 +1,19 @@
 // Package tests contains integration tests, which run the CLI as a shell command and verify its output.
 //
 // A TEST_CLI_PATH environment variable can be provided to override the path to a
-// CLI executable. It defaults to `platform` in the repository root.
+// CLI executable. It defaults to `bin/platform` in the repository root.
 package tests
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/platformsh/cli/pkg/mockapi"
@@ -53,50 +56,60 @@ func getCommandName(t *testing.T) string {
 	return _validatedCommand
 }
 
-func command(t *testing.T, args ...string) *exec.Cmd {
-	cmd := exec.Command(getCommandName(t), args...) //nolint:gosec
+type cmdFactory struct {
+	t        *testing.T
+	apiURL   string
+	authURL  string
+	extraEnv []string
+}
+
+func newCommandFactory(t *testing.T, apiURL, authURL string) *cmdFactory {
+	return &cmdFactory{t: t, apiURL: apiURL, authURL: authURL}
+}
+
+// Run runs a command, asserts that it did not error, and returns its normal (stdout) output.
+func (f *cmdFactory) Run(args ...string) string {
+	cmd := f.buildCommand(args...)
+	f.t.Log("Running:", cmd)
+	b, err := cmd.Output()
+	require.NoError(f.t, err)
+	return string(b)
+}
+
+// RunCombinedOutput runs a command and returns its stdout, stderr and the error.
+func (f *cmdFactory) RunCombinedOutput(args ...string) (string, string, error) {
+	cmd := f.buildCommand(args...)
+	var stdOutBuffer bytes.Buffer
+	var stdErrBuffer bytes.Buffer
+	cmd.Stdout = &stdOutBuffer
+	cmd.Stderr = &stdErrBuffer
+	if testing.Verbose() {
+		cmd.Stderr = io.MultiWriter(&stdErrBuffer, os.Stderr)
+	}
+	f.t.Log("Running:", cmd)
+	err := cmd.Run()
+	return stdOutBuffer.String(), stdErrBuffer.String(), err
+}
+
+func (f *cmdFactory) buildCommand(args ...string) *exec.Cmd {
+	cmd := exec.Command(getCommandName(f.t), args...) //nolint:gosec
 	cmd.Env = testEnv()
 	cmd.Dir = os.TempDir()
 	if testing.Verbose() {
 		cmd.Stderr = os.Stderr
 	}
+	if f.apiURL != "" {
+		cmd.Env = append(cmd.Env, EnvPrefix+"API_BASE_URL="+f.apiURL)
+	}
+	if f.authURL != "" {
+		cmd.Env = append(cmd.Env, EnvPrefix+"API_AUTH_URL="+f.authURL, EnvPrefix+"TOKEN="+mockapi.ValidAPITokens[0])
+	}
+	cmd.Env = append(cmd.Env, f.extraEnv...)
 	return cmd
 }
 
-func authenticatedCommand(t *testing.T, apiURL, authURL string, args ...string) *exec.Cmd {
-	cmd := command(t, args...)
-	cmd.Env = append(
-		cmd.Env,
-		EnvPrefix+"API_BASE_URL="+apiURL,
-		EnvPrefix+"API_AUTH_URL="+authURL,
-		EnvPrefix+"TOKEN="+mockapi.ValidAPITokens[0],
-	)
-	return cmd
-}
-
-// runnerWithAuth returns a function to authenticate and run a CLI command, returning stdout output.
-// This asserts that the command has not failed.
-func runnerWithAuth(t *testing.T, apiURL, authURL string) func(args ...string) string {
-	return func(args ...string) string {
-		cmd := authenticatedCommand(t, apiURL, authURL, args...)
-		t.Log("Running:", cmd)
-		b, err := cmd.Output()
-		require.NoError(t, err)
-		return string(b)
-	}
-}
-
-// runnerCombinedOutput returns a function to authenticate and run a CLI command, returning combined output.
-func runnerCombinedOutput(t *testing.T, apiURL, authURL string) func(args ...string) (string, error) {
-	return func(args ...string) (string, error) {
-		cmd := authenticatedCommand(t, apiURL, authURL, args...)
-		var b bytes.Buffer
-		cmd.Stdout = &b
-		cmd.Stderr = &b
-		t.Log("Running:", cmd)
-		err := cmd.Run()
-		return b.String(), err
-	}
+func assertTrimmed(t *testing.T, expected, actual string) {
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(actual))
 }
 
 const EnvPrefix = "TEST_CLI_"

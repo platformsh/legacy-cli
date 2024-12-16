@@ -2,7 +2,6 @@ package tests
 
 import (
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -64,25 +63,25 @@ func TestBackupList(t *testing.T) {
 		},
 	})
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +---------------------------+-----------+------------+
 | Created                   | Backup ID | Restorable |
 +---------------------------+-----------+------------+
 | 2015-04-01T09:00:00+00:00 | 456       | true       |
 | 2014-04-01T09:00:00+00:00 | 123       | true       |
 +---------------------------+-----------+------------+
-`, "\n"), run("backups", "-p", projectID, "-e", "."))
+`, f.Run("backups", "-p", projectID, "-e", "."))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +---------------------------+-----------+------------+-----------+-----------+
 | Created                   | Backup ID | Restorable | Automated | Commit ID |
 +---------------------------+-----------+------------+-----------+-----------+
 | 2015-04-01T09:00:00+00:00 | 456       | true       | true      | bar       |
 | 2014-04-01T09:00:00+00:00 | 123       | true       | false     | foo       |
 +---------------------------+-----------+------------+-----------+-----------+
-`, "\n"), run("backups", "-p", projectID, "-e", ".", "--columns", "+automated,commit_id"))
+`, f.Run("backups", "-p", projectID, "-e", ".", "--columns", "+automated,commit_id"))
 }
 
 func TestBackupCreate(t *testing.T) {
@@ -110,9 +109,9 @@ func TestBackupCreate(t *testing.T) {
 	main.Links["#backup"] = mockapi.HALLink{HREF: "/projects/" + projectID + "/environments/main/backups"}
 	apiHandler.SetEnvironments([]*mockapi.Environment{main})
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	run("backup", "-p", projectID, "-e", ".")
+	f.Run("backup", "-p", projectID, "-e", ".")
 
-	assert.NotEmpty(t, run("backups", "-p", projectID, "-e", "."))
+	assert.NotEmpty(t, f.Run("backups", "-p", projectID, "-e", "."))
 }

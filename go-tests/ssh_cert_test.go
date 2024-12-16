@@ -20,9 +20,9 @@ func TestSSHCerts(t *testing.T) {
 	apiServer := httptest.NewServer(apiHandler)
 	defer apiServer.Close()
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	output := run("ssh-cert:info")
+	output := f.Run("ssh-cert:info")
 	assert.Regexp(t, `(?m)^filename: .+?id_ed25519-cert\.pub$`, output)
 	assert.Contains(t, output, "key_id: test-key-id\n")
 	assert.Contains(t, output, "key_type: ssh-ed25519-cert-v01@openssh.com\n")

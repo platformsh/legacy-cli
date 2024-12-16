@@ -3,10 +3,7 @@ package tests
 import (
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/platformsh/cli/pkg/mockapi"
 )
@@ -28,9 +25,9 @@ func TestOrgList(t *testing.T) {
 	apiServer := httptest.NewServer(apiHandler)
 	defer apiServer.Close()
 
-	run := runnerWithAuth(t, apiServer.URL, authServer.URL)
+	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 +--------------+--------------------------------+-----------------------+
 | Name         | Label                          | Owner email           |
 +--------------+--------------------------------+-----------------------+
@@ -38,20 +35,20 @@ func TestOrgList(t *testing.T) {
 | duff         | Duff Beer                      | user-id-2@example.com |
 | four-seasons | Four Seasons Total Landscaping | user-id-1@example.com |
 +--------------+--------------------------------+-----------------------+
-`, "\n"), run("orgs"))
+`, f.Run("orgs"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 Name	Label	Owner email
 acme	ACME Inc.	user-id-1@example.com
 duff	Duff Beer	user-id-2@example.com
 four-seasons	Four Seasons Total Landscaping	user-id-1@example.com
-`, "\n"), run("orgs", "--format", "plain"))
+`, f.Run("orgs", "--format", "plain"))
 
-	assert.Equal(t, strings.TrimLeft(`
+	assertTrimmed(t, `
 org-id-1,acme
 org-id-3,duff
 org-id-2,four-seasons
-`, "\n"), run("orgs", "--format", "csv", "--columns", "id,name", "--no-header"))
+`, f.Run("orgs", "--format", "csv", "--columns", "id,name", "--no-header"))
 }
 
 func makeOrg(id, name, label, owner string) *mockapi.Org {
