@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -67,6 +68,9 @@ dev	Dev	Active	development
 }
 
 func makeEnv(projectID, name, envType, status string, parent any) *mockapi.Environment {
+	created, _ := time.Parse(time.RFC3339, "2014-04-01T10:00:00Z")
+	updated, _ := time.Parse(time.RFC3339, "2014-04-01T11:00:00Z")
+
 	return &mockapi.Environment{
 		ID:          name,
 		Name:        name,
@@ -76,8 +80,11 @@ func makeEnv(projectID, name, envType, status string, parent any) *mockapi.Envir
 		Type:        envType,
 		Status:      status,
 		Project:     projectID,
+		CreatedAt:   created,
+		UpdatedAt:   updated,
 		Links: mockapi.MakeHALLinks(
-			"self=/projects/" + url.PathEscape(projectID) + "/environments/" + url.PathEscape(name),
+			"self=/projects/"+url.PathEscape(projectID)+"/environments/"+url.PathEscape(name),
+			"#edit=/projects/"+url.PathEscape(projectID)+"/environments/"+url.PathEscape(name),
 		),
 	}
 }
