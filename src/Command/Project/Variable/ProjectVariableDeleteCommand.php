@@ -33,6 +33,7 @@ class ProjectVariableDeleteCommand extends CommandBase
             . "\nInstead, use: <info>variable:delete --level project [variable]</info>"
         );
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 

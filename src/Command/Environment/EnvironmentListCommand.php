@@ -12,15 +12,13 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'environment:list', description: 'Get a list of environments', aliases: ['environments', 'env'])]
-class EnvironmentListCommand extends CommandBase implements CompletionAwareInterface
+class EnvironmentListCommand extends CommandBase
 {
     private array $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
     private array $defaultColumns = ['id', 'title', 'status', 'type'];
@@ -48,11 +46,12 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
             ->addOption('status', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter environments by status (active, inactive, dirty, paused, deleting).' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a simple list of environment IDs.')
             ->addOption('refresh', null, InputOption::VALUE_REQUIRED, 'Whether to refresh the list.', 1)
-            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title')
+            ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by', 'title', ['id', 'title', 'status', 'name', 'machine_name', 'parent', 'created_at', 'updated_at'])
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse (descending) order')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter the list by environment type(s).' . "\n" . ArrayArgument::SPLIT_HELP);
+            ->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter the list by environment type(s).' . "\n" . ArrayArgument::SPLIT_HELP, null, ['development', 'staging', 'production']);
         $this->table->configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     /**
@@ -293,28 +292,5 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         if (!empty($filters['status'])) {
             $environments = array_filter($environments, fn(Environment $environment): bool => \in_array($environment->status, $filters['status']));
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        if ($optionName === 'type') {
-            // @todo fetch types from the project if known? not necessary until custom types are available
-            return ['development', 'staging', 'production'];
-        }
-        if ($optionName === 'sort') {
-            return ['id', 'title', 'status', 'name', 'machine_name', 'parent', 'created_at', 'updated_at'];
-        }
-        return [];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        return [];
     }
 }

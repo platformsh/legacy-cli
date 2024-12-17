@@ -22,6 +22,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.');
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 

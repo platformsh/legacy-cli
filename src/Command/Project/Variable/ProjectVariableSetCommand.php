@@ -38,6 +38,7 @@ class ProjectVariableSetCommand extends CommandBase
             . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
         );
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 

@@ -14,7 +14,6 @@
         "symfony/finder": "^7",
         "symfony/filesystem": "^7",
         "symfony/process": "^7",
-        "stecman/symfony-console-completion": "^0.14",
         "symfony/event-dispatcher": "^7",
         "padraic/phar-updater": "^1.0",
         "symfony/dependency-injection": "^7",

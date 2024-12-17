@@ -18,6 +18,7 @@ class ProjectClearBuildCacheCommand extends CommandBase
     protected function configure(): void
     {
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

@@ -2,9 +2,12 @@
 
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Console\CompleterInterface;
 use Platformsh\Cli\Console\HiddenInputOption;
 use Platformsh\Cli\Service\Config;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Completion\CompletionInput;
+use Symfony\Component\Console\Completion\CompletionSuggestions;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -50,6 +53,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     private array $synopsis = [];
 
     private ?Config $config = null;
+
+    /** @var CompleterInterface[] */
+    private array $completers = [];
 
     public function __construct()
     {
@@ -216,5 +222,19 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         }
 
         return $description;
+    }
+
+    protected function addCompleter(CompleterInterface $completer): self
+    {
+        $this->completers[] = $completer;
+        return $this;
+    }
+
+    public function complete(CompletionInput $input, CompletionSuggestions $suggestions): void
+    {
+        parent::complete($input, $suggestions);
+        foreach ($this->completers as $completer) {
+            $completer->complete($input, $suggestions);
+        }
     }
 }

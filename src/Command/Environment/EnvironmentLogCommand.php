@@ -9,8 +9,6 @@ use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
@@ -19,22 +17,30 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'environment:logs', description: "Read an environment's logs", aliases: ['log'])]
-class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterface
+class EnvironmentLogCommand extends CommandBase
 {
 
     public function __construct(private readonly CacheProvider $cacheProvider, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
     }
+
     protected function configure(): void
     {
         $this
-            ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
+            ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"', null, [
+                'access',
+                'error',
+                'cron',
+                'deploy',
+                'app',
+            ])
             ->addOption('lines', null, InputOption::VALUE_REQUIRED, 'The number of lines to show', 100)
             ->addOption('tail', null, InputOption::VALUE_NONE, 'Continuously tail the log');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addRemoteContainerOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->setHiddenAliases(['logs']);
         $this->addExample('Display a choice of logs that can be read');
         $this->addExample('Read the deploy log', 'deploy');
@@ -107,32 +113,5 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
         $this->stdErr->writeln(sprintf('Reading log file <info>%s:%s</info>', $host->getLabel(), $logFilename));
 
         return $host->runCommandDirect($command);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        $values = [];
-        if ($argumentName === 'type') {
-            $values = [
-                'access',
-                'error',
-                'cron',
-                'deploy',
-                'app',
-            ];
-        }
-
-        return $values;
     }
 }

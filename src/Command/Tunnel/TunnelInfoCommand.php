@@ -26,6 +26,7 @@ class TunnelInfoCommand extends TunnelCommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
 
         // Deprecated options, left for backwards compatibility
         $this->addHiddenOption('format', null, InputOption::VALUE_REQUIRED, 'DEPRECATED');

@@ -56,6 +56,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             ->addHiddenOption('sort-granted', null, InputOption::VALUE_NONE, 'Deprecated option: unused')
             ->addHiddenOption('reverse', null, InputOption::VALUE_NONE, 'Deprecated option: unused');
         $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('list-all', null, InputOption::VALUE_NONE, 'List access across all organizations');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());

@@ -21,6 +21,7 @@ class IntegrationValidateCommand extends IntegrationCommandBase
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->setHelp(<<<EOF
 This command allows you to check whether an integration is valid.
 

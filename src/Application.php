@@ -18,6 +18,8 @@ use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as ParentApplication;
 use Symfony\Component\Console\Command\Command as ConsoleCommand;
+use Symfony\Component\Console\Command\CompleteCommand;
+use Symfony\Component\Console\Command\DumpCompletionCommand;
 use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -184,6 +186,8 @@ class Application extends ParentApplication
         return [
             new HelpCommand($this->config),
             new ListCommand($this->config),
+            new CompleteCommand(),
+            new DumpCompletionCommand(),
         ];
     }
 

@@ -26,6 +26,7 @@ class IntegrationGetCommand extends IntegrationCommandBase
             ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view');
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

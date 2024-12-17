@@ -47,6 +47,7 @@ class ProjectGetCommand extends CommandBase
             $this->addOption('build', null, InputOption::VALUE_NONE, 'Build the project after cloning');
         }
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Clone the project "abc123" into the directory "my-project"', 'abc123 my-project');
     }

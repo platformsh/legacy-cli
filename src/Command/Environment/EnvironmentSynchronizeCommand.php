@@ -11,8 +11,6 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +18,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'environment:synchronize', description: "Synchronize an environment's code, data and/or resources rom its parent", aliases: ['sync'])]
-class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwareInterface
+class EnvironmentSynchronizeCommand extends CommandBase
 {
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
@@ -32,14 +30,15 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
     {
         if ($this->config->get('api.sizing')) {
             $this->setDescription("Synchronize an environment's code, data and/or resources from its parent");
-            $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'List what to synchronize: "code", "data", and/or "resources".');
+            $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'List what to synchronize: "code", "data", and/or "resources".', null, ['code', 'data', 'resources']);
         } else {
             $this->setDescription("Synchronize an environment's code and/or data from its parent");
-            $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both');
+            $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'What to synchronize: "code", "data" or both', null, ['code', 'data', 'both']);
         }
         $this->addOption('rebase', null, InputOption::VALUE_NONE, 'Synchronize code by rebasing instead of merging');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Synchronize data from the parent environment', 'data');
@@ -236,25 +235,5 @@ EOT;
         }
 
         return 0;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        if ($argumentName === 'synchronize') {
-            return $this->config->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
-        }
-
-        return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        return [];
     }
 }

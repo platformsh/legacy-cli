@@ -21,6 +21,7 @@ class OrganizationCurlCommand extends OrganizationCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         CurlCli::configureInput($this->getDefinition());
     }
 

@@ -35,6 +35,7 @@ class VariableSetCommand extends CommandBase
             ->addOption('disabled', null, InputOption::VALUE_NONE, 'Mark the variable as disabled');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'

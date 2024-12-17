@@ -32,6 +32,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             ->addArgument('activity', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent integration activity.')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view');
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());

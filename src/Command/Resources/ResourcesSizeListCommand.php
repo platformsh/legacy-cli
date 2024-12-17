@@ -29,6 +29,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 

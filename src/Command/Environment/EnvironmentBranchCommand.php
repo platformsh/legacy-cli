@@ -50,6 +50,7 @@ class EnvironmentBranchCommand extends CommandBase
         $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used');
         $this->addHiddenOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');

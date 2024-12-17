@@ -25,6 +25,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update');
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',

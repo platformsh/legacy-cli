@@ -25,6 +25,7 @@ class CatCommand extends RepoCommandBase
             ->addCommitOption();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample(
             'Read the services configuration file',
             $this->config->get('service.project_config_dir') . '/services.yaml'

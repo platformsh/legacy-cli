@@ -29,6 +29,7 @@ class LsCommand extends RepoCommandBase
             ->addCommitOption();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     /**

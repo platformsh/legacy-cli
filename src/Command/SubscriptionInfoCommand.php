@@ -33,6 +33,7 @@ class SubscriptionInfoCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('View all subscription properties')
              ->addExample('View the subscription status', 'status')
              ->addExample('View the storage limit (in MiB)', 'storage');
