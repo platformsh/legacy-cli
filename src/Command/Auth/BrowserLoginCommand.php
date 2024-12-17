@@ -32,6 +32,7 @@ class BrowserLoginCommand extends CommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $applicationName = $this->config->get('application.name');
@@ -87,20 +88,13 @@ class BrowserLoginCommand extends CommandBase
                     $account['email']
                 ));
 
-                if ($input->isInteractive()) {
-                    $questionHelper = $this->questionHelper;
-                    if (!$questionHelper->confirm('Log in anyway?', false)) {
-                        return 1;
-                    }
-                    $force = true;
-                } else {
-                    // USE THE FORCE
-                    $this->stdErr->writeln('Use the <comment>--force</comment> (<comment>-f</comment>) option to log in again.');
-
-                    return 0;
+                $questionHelper = $this->questionHelper;
+                if (!$questionHelper->confirm('Log in anyway?', false)) {
+                    return 1;
                 }
+                $force = true;
             } catch (BadResponseException $e) {
-                if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
+                if (in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
                     $this->io->debug('Already logged in, but a test request failed. Continuing with login.');
                 } else {
                     throw $e;
@@ -165,7 +159,7 @@ class BrowserLoginCommand extends CommandBase
             'CLI_OAUTH_FILE' => $responseFile,
             'CLI_OAUTH_METHODS' => implode(' ', ArrayArgument::getOption($input, 'method')),
             'CLI_OAUTH_MAX_AGE' => $input->getOption('max-age'),
-        ] + $this->getParentEnv());
+        ] + getenv());
         $process->setTimeout(null);
         $this->stdErr->writeln('Starting local web server with command: <info>' . $process->getCommandLine() . '</info>', OutputInterface::VERBOSITY_VERY_VERBOSE);
         $process->start();
@@ -281,23 +275,6 @@ class BrowserLoginCommand extends CommandBase
         }
 
         return 0;
-    }
-
-    /**
-     * Attempts to find parent environment variables for the local server.
-     *
-     * @return array
-     */
-    private function getParentEnv(): string|array|false
-    {
-        if (PHP_VERSION_ID >= 70100) {
-            return getenv();
-        }
-        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
-            return $_ENV;
-        }
-
-        return [];
     }
 
     /**

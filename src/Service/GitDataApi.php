@@ -126,14 +126,9 @@ class GitDataApi
     }
 
     /**
-     * Normalize a commit SHA for API and caching purposes.
-     *
-     * @param Environment $environment
-     * @param string|null                          $sha
-     *
-     * @return string|null
+     * Normalizes a commit SHA for API and caching purposes.
      */
-    private function normalizeSha(Environment $environment, $sha = null)
+    private function normalizeSha(Environment $environment, ?string $sha = null): string
     {
         if ($sha === null) {
             return $this->getHeadSha($environment);

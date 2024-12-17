@@ -209,9 +209,7 @@ abstract class MetricsCommandBase extends CommandBase
 
         $deploymentType = $this->getDeploymentType($environment);
         if (!isset($this->fields[$deploymentType])) {
-            if (($fallback = key($this->fields)) === false) {
-                throw new \InvalidArgumentException('No query fields are defined');
-            }
+            $fallback = key($this->fields);
             $this->stdErr->writeln(sprintf(
                 'No query fields are defined for the deployment type: <comment>%s</comment>. Falling back to: <comment>%s</comment>',
                 $deploymentType,

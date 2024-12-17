@@ -24,6 +24,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
     {
         parent::__construct();
     }
+
     protected function configure()
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
@@ -143,7 +144,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             return 0;
         } catch (BadResponseException $e) {
             // Translate validation error messages.
-            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+            if ($e->getResponse()->getStatusCode() === 400 && ($body = $e->getResponse()->getBody())) {
                 $detail = \json_decode((string) $body, true);
                 if (\is_array($detail) && isset($detail['title']) && \is_string($detail['title'])) {
                     $this->stdErr->writeln($detail['title']);

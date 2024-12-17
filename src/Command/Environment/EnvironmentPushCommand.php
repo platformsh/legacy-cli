@@ -151,7 +151,7 @@ class EnvironmentPushCommand extends CommandBase
             } else {
                 $default = $currentBranch !== false ? $currentBranch : null;
                 $target = $questionHelper->askInput('Enter the target branch name', $default, array_keys($allEnvironments));
-                if ($target === null) {
+                if ($target === '') {
                     $this->stdErr->writeln('A target branch name (<error>--target</error>) is required.');
                     return 1;
                 }

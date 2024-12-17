@@ -217,7 +217,7 @@ EOT;
             $result = $selectedEnvironment->runOperation('synchronize', 'POST', $params);
         } catch (BadResponseException $e) {
             // Translate validation error messages.
-            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+            if ($e->getResponse()->getStatusCode() === 400 && ($body = $e->getResponse()->getBody())) {
                 $data = \json_decode((string) $body, true);
                 if (\is_array($data) && !empty($data['detail']['error'])) {
                     $this->stdErr->writeln('');

@@ -115,7 +115,7 @@ class ApiTokenLoginCommand extends CommandBase
      * @return bool
      */
     private function exceptionMeansInvalidToken(\Exception $e): bool {
-        if (!$e instanceof BadResponseException || !$e->getResponse() || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
+        if (!$e instanceof BadResponseException || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
             return false;
         }
         $json = Utils::jsonDecode($e->getResponse(), true);

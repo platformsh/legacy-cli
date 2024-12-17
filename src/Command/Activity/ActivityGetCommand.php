@@ -10,7 +10,6 @@ use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
-use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,6 +23,7 @@ class ActivityGetCommand extends ActivityCommandBase
     {
         parent::__construct();
     }
+
     /**
      * {@inheritdoc}
      */
@@ -74,15 +74,9 @@ class ActivityGetCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
-
-                    return 1;
-                }
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 1);
-            /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No activities found');
@@ -97,7 +91,7 @@ class ActivityGetCommand extends ActivityCommandBase
         $properties = $activity->getProperties();
 
         if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
-            $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
+            $properties['description'] = ActivityMonitor::getFormattedDescription($activity);
         } else {
             $properties['description'] = $activity->description;
         }

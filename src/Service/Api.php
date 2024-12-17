@@ -1439,7 +1439,7 @@ class Api
             try {
                 $subscription = $this->getClient()->getSubscription($id);
             } catch (BadResponseException $e) {
-                if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                if ($e->getResponse()->getStatusCode() !== 403) {
                     throw $e;
                 }
                 $subscription = false;
@@ -1593,7 +1593,7 @@ class Api
                     $firstSegment = $organization->name;
                 }
             } catch (BadResponseException $e) {
-                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                if ($e->getResponse()->getStatusCode() === 403) {
                     trigger_error($e->getMessage(), E_USER_WARNING);
                 } else {
                     throw $e;

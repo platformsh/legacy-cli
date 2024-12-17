@@ -86,8 +86,7 @@ class RouteListCommand extends CommandBase
         if (!$table->formatIsMachineReadable()) {
             if ($fromEnv) {
                 $this->stdErr->writeln('Routes in the <info>' . $prefix . 'ROUTES</info> environment variable:');
-            }
-            if (isset($selection) && !$fromEnv) {
+            } else {
                 $this->stdErr->writeln(sprintf(
                     'Routes on the project %s, environment %s:',
                     $this->api->getProjectLabel($selection->getProject()),

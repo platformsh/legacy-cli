@@ -151,7 +151,7 @@ class TeamCreateCommand extends TeamCommandBase
             try {
                 $team = $organization->createTeam($label, $projectPermissions);
             } catch (BadResponseException $e) {
-                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 409) {
+                if ($e->getResponse()->getStatusCode() === 409) {
                     $this->stdErr->writeln(\sprintf('A team already exists with the same label: <error>%s</error>', $label));
                     return 1;
                 }
