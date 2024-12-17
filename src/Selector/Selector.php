@@ -205,12 +205,12 @@ class Selector
         if ($selection->hasProject() && $this->printedProject !== $selection->getProject()->id) {
             $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($selection->getProject()));
             $outputAnything = true;
-            $this->printedProject = true;
+            $this->printedProject = $selection->getProject()->id;
         }
         if ($selection->hasEnvironment() && $this->printedEnvironment !== $selection->getEnvironment()->id) {
             $this->stdErr->writeln('Selected environment: ' . $this->api->getEnvironmentLabel($selection->getEnvironment()));
             $outputAnything = true;
-            $this->printedProject = true;
+            $this->printedEnvironment = $selection->getEnvironment()->id;
         }
         if ($blankLine && $outputAnything) {
             $this->stdErr->writeln('');

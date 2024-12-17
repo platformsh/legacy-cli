@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Command\Metrics;
 
 use Platformsh\Cli\Service\Io;
-use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
@@ -28,11 +27,11 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
-    private readonly Io $io;
-    private readonly Selector $selector;
-    private readonly PropertyFormatter $propertyFormatter;
-    private readonly Config $config;
-    private readonly Api $api;
+    private Io $io;
+    private PropertyFormatter $propertyFormatter;
+    private Config $config;
+    private Api $api;
+
     const MIN_INTERVAL = 60; // 1 minute
 
     const MIN_RANGE = 300; // 5 minutes
@@ -99,12 +98,11 @@ abstract class MetricsCommandBase extends CommandBase
         ],
     ];
     #[Required]
-    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter, Selector $selector) : void
+    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter) : void
     {
         $this->api = $api;
         $this->config = $config;
         $this->propertyFormatter = $propertyFormatter;
-        $this->selector = $selector;
         $this->io = $io;
     }
 

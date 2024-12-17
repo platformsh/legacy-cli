@@ -19,10 +19,11 @@ use Symfony\Component\Console\Input\InputOption;
 
 class TeamCommandBase extends CommandBase
 {
-    private readonly Selector $selector;
-    private readonly QuestionHelper $questionHelper;
-    private readonly Config $config;
-    private readonly Api $api;
+    private Selector $selector;
+    private QuestionHelper $questionHelper;
+    private Config $config;
+    private Api $api;
+
     #[Required]
     public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
     {
@@ -31,6 +32,7 @@ class TeamCommandBase extends CommandBase
         $this->questionHelper = $questionHelper;
         $this->selector = $selector;
     }
+
     public function isEnabled(): bool
     {
         return $this->config->get('api.teams')
@@ -51,50 +53,13 @@ class TeamCommandBase extends CommandBase
     }
 
     /**
-     * Selects an organization that has teams support.
-     *
-     * @param InputInterface $input
-     * @return false|Organization
-     */
-    protected function selectOrganization(InputInterface $input)
-    {
-        try {
-            $organization = $this->selector->selectOrganization($input, 'members', 'teams');
-        } catch (NoOrganizationsException $e) {
-            if ($e->getTotalNumOrgs() === 0) {
-                $this->stdErr->writeln('No organizations found.');
-                if ($this->getApplication()->has('organization:create')) {
-                    $this->stdErr->writeln('');
-                    $this->stdErr->writeln(sprintf('To create an organization, run: <comment>%s org:create</comment>', $this->config->get('application.executable')));
-                }
-                return false;
-            }
-            $this->stdErr->writeln('No organizations were found in which you can manage teams.');
-            if ($this->getApplication()->has('organization:list')) {
-                $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf('To list organizations, run: <comment>%s organizations</comment>', $this->config->get('application.executable')));
-            }
-            return false;
-        }
-        if (!in_array('teams', $organization->capabilities)) {
-            $this->stdErr->writeln(sprintf('The organization %s does not have teams support.', $this->api->getOrganizationLabel($organization, 'comment')));
-            return false;
-        }
-        if (!$organization->hasLink('members')) {
-            $this->stdErr->writeln(sprintf('You do not have permission to manage teams in the organization %s.', $this->api->getOrganizationLabel($organization, 'comment')));
-            return false;
-        }
-        return $organization;
-    }
-
-    /**
      * Validates the --team option or asks for a team interactively.
      *
      * @param InputInterface $input
      * @param Organization|null $organization
      * @return Team|false
      */
-    public function validateTeamInput(InputInterface $input, Organization $organization = null)
+    public function validateTeamInput(InputInterface $input, Organization $organization = null): false|Team
     {
         if ($organization === null && $input->hasOption('org') && $input->getOption('org') !== null) {
             $organization = $this->selectOrganization($input);
@@ -149,6 +114,41 @@ class TeamCommandBase extends CommandBase
     }
 
     /**
+     * Selects an organization that has teams support.
+     * @noinspection PhpUnused
+     */
+    protected function selectOrganization(InputInterface $input): Organization|false
+    {
+        try {
+            $organization = $this->selector->selectOrganization($input, 'members', 'teams');
+        } catch (NoOrganizationsException $e) {
+            if ($e->getTotalNumOrgs() === 0) {
+                $this->stdErr->writeln('No organizations found.');
+                if ($this->getApplication()->has('organization:create')) {
+                    $this->stdErr->writeln('');
+                    $this->stdErr->writeln(sprintf('To create an organization, run: <comment>%s org:create</comment>', $this->config->get('application.executable')));
+                }
+                return false;
+            }
+            $this->stdErr->writeln('No organizations were found in which you can manage teams.');
+            if ($this->getApplication()->has('organization:list')) {
+                $this->stdErr->writeln('');
+                $this->stdErr->writeln(sprintf('To list organizations, run: <comment>%s organizations</comment>', $this->config->get('application.executable')));
+            }
+            return false;
+        }
+        if (!in_array('teams', $organization->capabilities)) {
+            $this->stdErr->writeln(sprintf('The organization %s does not have teams support.', $this->api->getOrganizationLabel($organization, 'comment')));
+            return false;
+        }
+        if (!$organization->hasLink('members')) {
+            $this->stdErr->writeln(sprintf('You do not have permission to manage teams in the organization %s.', $this->api->getOrganizationLabel($organization, 'comment')));
+            return false;
+        }
+        return $organization;
+    }
+
+    /**
      * Loads teams in an organization.
      *
      * @param Organization $organization The organization.
@@ -185,7 +185,7 @@ class TeamCommandBase extends CommandBase
      * @param Team[] $teams
      * @return Team
      */
-    protected function chooseTeam($teams)
+    protected function chooseTeam(array $teams): Team
     {
         $choices = [];
         $byId = [];
@@ -235,7 +235,7 @@ class TeamCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function getTeamLabel(Team $team, $tag = 'info'): string
+    protected function getTeamLabel(Team $team, string|false $tag = 'info'): string
     {
         $pattern = $tag !== false ? '<%1$s>%2$s</%1$s> (%3$s)' : '%2$s (%3$s)';
 
