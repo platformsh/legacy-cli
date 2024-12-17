@@ -21,10 +21,8 @@ class TunnelSingleCommand extends TunnelCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');

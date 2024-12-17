@@ -27,7 +27,7 @@ class RunCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name');
@@ -57,7 +57,7 @@ class RunCommand extends CommandBase
                 $appName = null;
                 $operations = $deployment->getRuntimeOperations();
             }
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support runtime operations.');
         }
 

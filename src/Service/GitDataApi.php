@@ -18,7 +18,7 @@ class GitDataApi
     const COMMIT_SYNTAX_HELP = 'This can also accept "HEAD", and caret (^) or tilde (~) suffixes for parent commits.';
 
     private readonly Api $api;
-    private $cache;
+    private readonly CacheProvider $cache;
 
     public function __construct(
         Api $api = null,
@@ -36,7 +36,7 @@ class GitDataApi
      * @return int[]
      *   A list of parents.
      */
-    private function parseParents($sha): array
+    private function parseParents(string $sha): array
     {
         if (!strpos($sha, '^') && !strpos($sha, '~')) {
             return [];
@@ -59,19 +59,14 @@ class GitDataApi
     }
 
     /**
-     * Get a Git Commit object for an environment.
-     *
-     * @param Environment $environment
-     * @param string|null                          $sha
-     *
-     * @return Commit|false
+     * Gets a Git Commit object for an environment.
      */
-    public function getCommit(Environment $environment, $sha = null)
+    public function getCommit(Environment $environment, ?string $sha = null): false|Commit
     {
         $sha = $this->normalizeSha($environment, $sha);
 
         $parents = $this->parseParents($sha);
-        $sha = preg_replace('/[\^~].*$/', '', (string) $sha);
+        $sha = preg_replace('/[\^~].*$/', '', $sha);
         if ($sha === '') {
             return false;
         }
@@ -147,7 +142,7 @@ class GitDataApi
      *
      * @return string
      */
-    private function getHeadSha(Environment $environment)
+    private function getHeadSha(Environment $environment): string
     {
         if ($environment->head_commit === null) {
             throw new EnvironmentStateException('No commit(s) found. The environment is empty.', $environment);
@@ -167,7 +162,7 @@ class GitDataApi
      * @return string|false
      *   The raw contents of the file, or false if the file is not found.
      */
-    public function readFile($filename, Environment $environment, $commitSha = null)
+    public function readFile(string $filename, Environment $environment, ?string $commitSha = null): string|false
     {
         $commitSha = $this->normalizeSha($environment, $commitSha);
         $cacheKey = implode(':', ['raw', $environment->project, $filename, $commitSha]);
@@ -197,7 +192,7 @@ class GitDataApi
      * @return Tree|Blob|false
      *   The object or false if not found.
      */
-    public function getObject($filename, Environment $environment, $commitSha = null)
+    public function getObject(string $filename, Environment $environment, ?string $commitSha = null): Tree|Blob|false
     {
         $commitSha = $this->normalizeSha($environment, $commitSha);
         $cacheKey = implode(':', ['obj', $environment->project, $filename, $commitSha]);
@@ -226,11 +221,7 @@ class GitDataApi
         return $object;
     }
 
-    /**
-     * @param string $path
-     * @return string
-     */
-    private function normalizePath($path): string
+    private function normalizePath(string $path): string
     {
         if (str_starts_with($path, './')) {
             $path = substr($path, 2);
@@ -249,7 +240,7 @@ class GitDataApi
      *
      * @return Tree|false
      */
-    public function getTree(Environment $environment, $path = '.', $commitSha = null, $onlyUseCache = false)
+    public function getTree(Environment $environment, string $path = '.', ?string $commitSha = null, bool $onlyUseCache = false): Tree|false
     {
         $normalizedSha = $this->normalizeSha($environment, $commitSha);
         $normalizedPath = $this->normalizePath($path);

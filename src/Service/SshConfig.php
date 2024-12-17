@@ -179,7 +179,7 @@ class SshConfig {
      *
      * @return string[]
      */
-    public function formattedPaths($path): array
+    public function formattedPaths(string $path): array
     {
         // Convert absolute Windows paths (e.g. beginning "C:\") to Unix paths.
         // OpenSSH apparently treats the Windows format as a relative path.
@@ -217,12 +217,8 @@ class SshConfig {
      * the HOME environment variable is set to a directory other than the
      * current user's (notably on GitHub Actions containers), because the
      * OpenSSH client does not support reading HOME.
-     *
-     * @param string $path
-     *
-     * @return string
      */
-    private function quoteFilePath($path)
+    private function quoteFilePath(string $path): string
     {
         // Quote all paths containing a space.
         if (str_contains($path, ' ')) {
@@ -235,12 +231,8 @@ class SshConfig {
 
     /**
      * Creates or updates an SSH config include file.
-     *
-     * @param string $filename
-     * @param array|string $lines
-     * @param bool   $allowDelete
      */
-    private function writeSshIncludeFile(string $filename, $lines, $allowDelete = true): void
+    private function writeSshIncludeFile(string $filename, array|string $lines, bool $allowDelete = true): void
     {
         if (empty($lines) && $allowDelete && \file_exists($filename)) {
             $this->stdErr->writeln(sprintf('Deleting SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERBOSE);
@@ -426,7 +418,7 @@ class SshConfig {
      *
      * @return string The new file contents.
      */
-    private function getUserSshConfigChanges(string $currentConfig, string $newConfig)
+    private function getUserSshConfigChanges(string $currentConfig, string $newConfig): string
     {
         $serviceName = (string)$this->config->get('service.name');
         $begin = '# BEGIN: ' . $serviceName . ' certificate configuration' . PHP_EOL;
@@ -481,7 +473,7 @@ class SshConfig {
      *
      * @return string|false
      */
-    private function findVersion($reset = false)
+    private function findVersion(bool $reset = false): string|false
     {
         if (isset($this->openSshVersion) && !$reset) {
             return $this->openSshVersion;

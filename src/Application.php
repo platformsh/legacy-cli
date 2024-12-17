@@ -43,7 +43,7 @@ class Application extends ParentApplication
 
     private bool $runningViaMulti = false;
 
-    public function __construct(Config $config = null)
+    public function __construct(?Config $config = null)
     {
         // Initialize configuration (from config.yaml).
         $this->config = $config ?: new Config();

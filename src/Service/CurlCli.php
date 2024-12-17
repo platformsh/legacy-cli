@@ -10,9 +10,9 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
-class CurlCli implements InputConfiguringInterface {
+readonly class CurlCli implements InputConfiguringInterface {
 
-    public function __construct(private readonly Api $api)
+    public function __construct(private Api $api)
     {
     }
 
@@ -32,14 +32,8 @@ class CurlCli implements InputConfiguringInterface {
 
     /**
      * Runs the curl command.
-     *
-     * @param string $baseUrl
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     *
-     * @return int
      */
-    public function run($baseUrl, InputInterface $input, OutputInterface $output): ?int {
+    public function run(string $baseUrl, InputInterface $input, OutputInterface $output): int {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $url = rtrim($baseUrl, '/');
 

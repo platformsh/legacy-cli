@@ -11,11 +11,11 @@ use Symfony\Component\Finder\Finder;
 /**
  * Finds all applications inside a source directory.
  */
-class ApplicationFinder
+readonly class ApplicationFinder
 {
-    private readonly Config $config;
+    private Config $config;
 
-    public function __construct(Config $config = null)
+    public function __construct(?Config $config = null)
     {
         $this->config = $config ?: new Config();
     }
@@ -28,7 +28,7 @@ class ApplicationFinder
      *
      * @return LocalApplication[]
      */
-    public function findApplications($directory)
+    public function findApplications(string $directory): array
     {
         $applications = [];
 
@@ -42,7 +42,7 @@ class ApplicationFinder
                 throw new InvalidConfigException('Directory not found: ' . $configuredRoot, $configFile, 'source.root');
             }
             $appRoot = $configuredRoot !== null ? $configuredRoot : \dirname((string) $configFile);
-            $appName = isset($appConfig['name']) ? $appConfig['name'] : null;
+            $appName = $appConfig['name'] ?? null;
             if ($appName && isset($applications[$appConfig['name']])) {
                 throw new InvalidConfigException(sprintf('An application named %s is already defined', $appConfig['name']), $configFile, 'name');
             }
@@ -74,7 +74,7 @@ class ApplicationFinder
     /**
      * Finds applications via the grouped config file, e.g. .platform/applications.yaml.
      *
-     * @param $directory
+     * @param string $directory
      *
      * @return array
      */
@@ -100,7 +100,7 @@ class ApplicationFinder
                 throw new InvalidConfigException('Directory not found: ' . $appRoot, $configFile, $key . '.source.root');
             }
             $appRoot = \realpath($appRoot) ?: $appRoot;
-            $appName = isset($appConfig['name']) ? $appConfig['name'] : null;
+            $appName = $appConfig['name'] ?? null;
             if ($appName && isset($applications[$appName])) {
                 throw new InvalidConfigException(sprintf('An application named %s is already defined', $appConfig['name']), $configFile, $key . '.name');
             }
@@ -136,7 +136,7 @@ class ApplicationFinder
      *
      * @return Finder|array
      */
-    private function findAppConfigFiles(string|array $directory): array|Finder
+    private function findAppConfigFiles(string $directory): array|Finder
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.

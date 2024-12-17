@@ -31,7 +31,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('cmd', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The command to execute')
@@ -111,14 +111,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     }
 
     /**
-     * Show a checklist using the dialog utility.
-     *
-     * @param string $text
-     * @param array  $options
-     *
-     * @return array
+     * Shows a checklist using the dialog utility.
      */
-    protected function showDialogChecklist(array $options, $text = 'Choose item(s)'): array
+    protected function showDialogChecklist(array $options, string $text = 'Choose item(s)'): array
     {
         $width = 80;
         $height = 20;
@@ -167,7 +162,7 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
      *
      * @return BasicProjectInfo[]
      */
-    protected function getAllProjectsBasicInfo(InputInterface $input)
+    protected function getAllProjectsBasicInfo(InputInterface $input): array
     {
         $projects = $this->api->getMyProjects();
         if ($input->getOption('sort')) {
@@ -253,13 +248,9 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     }
 
     /**
-     * Split a list of project IDs.
-     *
-     * @param string $list
-     *
-     * @return string[]
+     * Splits a list of project IDs.
      */
-    private function splitProjectList($list): array
+    private function splitProjectList(string $list): array
     {
         return array_filter(array_unique(preg_split('/[,\s]+/', $list) ?: []));
     }

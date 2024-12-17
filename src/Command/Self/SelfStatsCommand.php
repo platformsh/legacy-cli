@@ -23,7 +23,7 @@ class SelfStatsCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('page', 'p', InputOption::VALUE_REQUIRED, 'Page number', 1)

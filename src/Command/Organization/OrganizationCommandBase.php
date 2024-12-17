@@ -35,7 +35,7 @@ class OrganizationCommandBase extends CommandBase
         return parent::isEnabled();
     }
 
-    protected function memberLabel(Member $member)
+    protected function memberLabel(Member $member): string
     {
         if ($info = $member->getUserInfo()) {
             return $info->email;
@@ -78,7 +78,7 @@ class OrganizationCommandBase extends CommandBase
      * @param Organization $organization
      * @return Member
      */
-    protected function chooseMember(Organization $organization)
+    protected function chooseMember(Organization $organization): Member
     {
         $httpClient = $this->api->getHttpClient();
         $options = ['query' => ['page[size]' => 100]];

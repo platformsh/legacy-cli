@@ -51,15 +51,11 @@ class Url implements InputConfiguringInterface
     }
 
     /**
-     * Open a URL in the browser, or print it.
+     * Opens a URL in the browser, or prints it.
      *
-     * @param string $url
-     * @param bool   $print
-     *
-     * @return bool
-     *     True if a browser was used, false otherwise.
+     * @return bool True if a browser was used, false otherwise.
      */
-    public function openUrl($url, $print = true)
+    public function openUrl(string $url, bool $print = true): bool
     {
         $browserOption = $this->input->hasOption('browser') ? $this->input->getOption('browser') : null;
         $open = true;
@@ -127,7 +123,7 @@ class Url implements InputConfiguringInterface
      * @return string|false A browser command, or false if no browser can or
      *                      should be used.
      */
-    private function getBrowser($browserOption = null)
+    private function getBrowser(?string $browserOption = null): string|false
     {
         if ($browserOption === '0') {
             return false;

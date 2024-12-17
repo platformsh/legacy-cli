@@ -21,7 +21,7 @@ class MongoRestoreCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to restore');
         Relationships::configureInput($this->getDefinition());

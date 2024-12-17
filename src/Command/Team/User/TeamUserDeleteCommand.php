@@ -22,7 +22,7 @@ class TeamUserDeleteCommand extends TeamCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID');
         $this->selector->addOrganizationOptions($this->getDefinition());

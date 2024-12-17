@@ -21,7 +21,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
         $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
@@ -158,13 +158,13 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
     /**
      * Validates an email address.
      *
-     * @param string $value
+     * @param string|null $value
      *
      * @throws InvalidArgumentException
      *
      * @return string
      */
-    private function validateEmail(?string $value)
+    private function validateEmail(?string $value): string
     {
         if (empty($value)) {
             throw new InvalidArgumentException('An email address is required.');

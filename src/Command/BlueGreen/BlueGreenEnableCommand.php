@@ -23,7 +23,7 @@ class BlueGreenEnableCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('routing-percentage', '%', InputOption::VALUE_REQUIRED, "Set the latest version's routing percentage", 100);

@@ -8,10 +8,10 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 /**
  * Stores API tokens using a hidden file.
  */
-class FileStorage implements StorageInterface {
-    private readonly SymfonyFilesystem $fs;
+readonly class FileStorage implements StorageInterface {
+    private SymfonyFilesystem $fs;
 
-    public function __construct(private readonly Config $config, SymfonyFilesystem $fs = null)
+    public function __construct(private Config $config, ?SymfonyFilesystem $fs = null)
     {
         $this->fs = $fs ?: new SymfonyFilesystem();
     }
@@ -21,7 +21,8 @@ class FileStorage implements StorageInterface {
      *
      * @return string
      */
-    public function getToken() {
+    public function getToken(): string
+    {
         return $this->load();
     }
 
@@ -30,7 +31,7 @@ class FileStorage implements StorageInterface {
      *
      * @param string $value
      */
-    public function storeToken($value): void {
+    public function storeToken(string $value): void {
         $this->save($value);
     }
 
@@ -41,10 +42,7 @@ class FileStorage implements StorageInterface {
         $this->save('');
     }
 
-    /**
-     * @param string $token
-     */
-    private function save($token): void {
+    private function save(string $token): void {
         $filename = $this->getFilename();
         if (empty($token)) {
             if (file_exists($filename)) {
@@ -83,12 +81,8 @@ class FileStorage implements StorageInterface {
 
     /**
      * Makes a relative path absolute, based on the user config dir.
-     *
-     * @param string $tokenFile
-     *
-     * @return string
      */
-    private function resolveTokenFile($tokenFile): string {
+    private function resolveTokenFile(string $tokenFile): string {
         if (!str_starts_with($tokenFile, '/') && !str_starts_with($tokenFile, '\\')) {
             $tokenFile = $this->config->getUserConfigDir() . '/' . $tokenFile;
         }

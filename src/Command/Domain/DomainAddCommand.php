@@ -24,10 +24,8 @@ class DomainAddCommand extends DomainCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this->addDomainOptions();
         $this->addOption('attach', null, InputOption::VALUE_REQUIRED, "The production domain that this one replaces in the environment's routes. Required for non-production environment domains.");

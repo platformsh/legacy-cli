@@ -38,10 +38,7 @@ class TeamListCommand extends TeamCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A team property to sort by', 'label')

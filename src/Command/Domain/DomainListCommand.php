@@ -33,10 +33,7 @@ class DomainListCommand extends DomainCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->selector->addProjectOption($this->getDefinition());

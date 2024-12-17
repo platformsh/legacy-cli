@@ -17,6 +17,7 @@ use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -48,7 +49,7 @@ class EnvironmentPushCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('source', InputArgument::OPTIONAL, 'The Git source ref, e.g. a branch name or a commit hash.', 'HEAD')
@@ -292,8 +293,8 @@ class EnvironmentPushCommand extends CommandBase
             $log = $process->getErrorOutput();
 
             // Check the push log for services that need resources configured ("flexible resources").
-            if (str_contains((string) $log, 'Invalid deployment')
-                && str_contains((string) $log, 'Resources must be configured')) {
+            if (str_contains($log, 'Invalid deployment')
+                && str_contains($log, 'Resources must be configured')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('The push completed but resources must be configured before deployment can succeed.');
                 if ($this->config->isCommandEnabled('resources:set')) {
@@ -319,7 +320,7 @@ class EnvironmentPushCommand extends CommandBase
             // Check the push log for other possible deployment error messages.
             $messages = $this->config->getWithDefault('detection.push_deploy_error_messages', []);
             foreach ($messages as $message) {
-                if (str_contains((string) $log, (string) $message)) {
+                if (str_contains($log, (string) $message)) {
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(\sprintf('The push completed but there was a deployment error ("<error>%s</error>").', $message));
 
@@ -373,14 +374,9 @@ class EnvironmentPushCommand extends CommandBase
      * This may branch (creating a new environment), or resume or activate,
      * depending on the current state.
      *
-     * @param Environment $targetEnvironment
-     * @param string|null $parentId
-     * @param bool $cloneParent
-     * @param string|null $type
-     *
-     * @return array A list of activities, if any.
+     * @return Activity[]
      */
-    private function ensureActive(Environment $targetEnvironment, $parentId, bool $cloneParent, $type): array {
+    private function ensureActive(Environment $targetEnvironment, ?string $parentId, bool $cloneParent, ?string $type): array {
         $activities = [];
         $updates = [];
         if ($parentId !== null && $targetEnvironment->parent !== $parentId) {
@@ -424,7 +420,7 @@ class EnvironmentPushCommand extends CommandBase
      *
      * @return bool
      */
-    private function determineShouldActivate(InputInterface $input, Project $project, $target, $targetEnvironment)
+    private function determineShouldActivate(InputInterface $input, Project $project, string $target, Environment|false $targetEnvironment): bool
     {
         if ($target === $project->default_branch || ($targetEnvironment && $targetEnvironment->is_main)) {
             return false;

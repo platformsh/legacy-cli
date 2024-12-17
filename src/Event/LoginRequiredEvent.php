@@ -8,12 +8,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class LoginRequiredEvent extends Event
 {
-    /**
-     * @param string[] $authMethods
-     * @param int|null $maxAge
-     * @param bool $hasApiToken
-     */
-    public function __construct(private array $authMethods = [], private $maxAge = null, private $hasApiToken = false)
+    public function __construct(private readonly array $authMethods = [], private readonly ?int $maxAge = null, private readonly bool $hasApiToken = false)
     {
     }
 
@@ -35,7 +30,7 @@ class LoginRequiredEvent extends Event
         return $message;
     }
 
-    public function getExtendedMessage(Config $config)
+    public function getExtendedMessage(Config $config): string
     {
         $message = $this->getMessage();
         if ($this->hasApiToken) {
@@ -79,10 +74,7 @@ class LoginRequiredEvent extends Event
         return implode(' ', $args);
     }
 
-    /**
-     * @return bool
-     */
-    public function hasApiToken()
+    public function hasApiToken(): bool
     {
         return $this->hasApiToken;
     }

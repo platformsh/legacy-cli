@@ -39,10 +39,7 @@ class DbSizeCommand extends CommandBase
 
     const ESTIMATE_WARNING = 'This is an estimate of the database disk usage. The real size on disk is usually higher because of overhead.';
 
-    /**
-     * {@inheritDoc}
-     */
-    protected function configure() {
+    protected function configure(): void {
         $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
@@ -143,14 +140,8 @@ class DbSizeCommand extends CommandBase
 
     /**
      * Displays a list of InnoDB tables that can be usefully cleaned up.
-     *
-     * @param HostInterface  $host
-     * @param array          $database
-     * @param InputInterface $input
-     *
-     * @return void
      */
-    private function checkInnoDbTablesInNeedOfOptimizing($host, array $database, InputInterface $input): void {
+    private function checkInnoDbTablesInNeedOfOptimizing(HostInterface $host, array $database, InputInterface $input): void {
         $tablesNeedingCleanup = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlTablesInNeedOfOptimizing());
         $queries = [];
         if (is_string($tablesNeedingCleanup)) {
@@ -361,7 +352,7 @@ class DbSizeCommand extends CommandBase
      *
      * @return float Estimated usage in bytes.
      */
-    private function getEstimatedUsage(HostInterface $host, array $database) {
+    private function getEstimatedUsage(HostInterface $host, array $database): float {
         return match ($database['scheme']) {
             'pgsql' => $this->getPgSqlUsage($host, $database),
             'mongodb' => $this->getMongoDbUsage($host, $database),

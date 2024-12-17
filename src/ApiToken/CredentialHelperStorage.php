@@ -8,10 +8,10 @@ use Platformsh\Cli\Service\Config;
 /**
  * Stores API tokens using the docker credential helpers.
  */
-class CredentialHelperStorage implements StorageInterface {
-    private readonly string $serverUrl;
+readonly class CredentialHelperStorage implements StorageInterface {
+    private string $serverUrl;
 
-    public function __construct(Config $config, private readonly Manager $manager)
+    public function __construct(Config $config, private Manager $manager)
     {
         $this->serverUrl = sprintf(
             '%s/%s/api-token',
@@ -23,7 +23,7 @@ class CredentialHelperStorage implements StorageInterface {
     /**
      * @inheritDoc
      */
-    public function getToken()
+    public function getToken(): string
     {
         return $this->manager->get($this->serverUrl) ?: '';
     }

@@ -18,10 +18,8 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID of the integration to update');

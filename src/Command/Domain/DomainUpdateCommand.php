@@ -20,10 +20,7 @@ class DomainUpdateCommand extends DomainCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->addDomainOptions();
         $this->selector->addProjectOption($this->getDefinition());

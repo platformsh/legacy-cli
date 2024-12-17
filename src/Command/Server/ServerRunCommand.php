@@ -22,7 +22,7 @@ class ServerRunCommand extends ServerCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting server')

@@ -24,8 +24,8 @@ use Platformsh\Cli\Util\YamlParser;
 class LocalApplication
 {
 
-    protected $appRoot;
-    protected $sourceDir;
+    protected string $appRoot;
+    protected string $sourceDir;
     protected Config $cliConfig;
     protected Mount $mount;
 
@@ -37,7 +37,7 @@ class LocalApplication
      * @param string|null $sourceDir
      * @param AppConfig|null $config
      */
-    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null, protected ?AppConfig $config = null)
+    public function __construct(string $appRoot, ?Config $cliConfig = null, ?string $sourceDir = null, protected ?AppConfig $config = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
@@ -53,21 +53,19 @@ class LocalApplication
      *
      * @return string
      */
-    public function getId()
+    public function getId(): string
     {
         return ($this->getName() ?: $this->getPath()) ?: 'default';
     }
 
     /**
      * Returns the type of the app.
-     *
-     * @return string|null
      */
-    public function getType()
+    public function getType(): ?string
     {
         $config = $this->getConfig();
 
-        return isset($config['type']) ? $config['type'] : null;
+        return $config['type'] ?? null;
     }
 
     /**
@@ -81,61 +79,44 @@ class LocalApplication
     }
 
     /**
-     * Set that this is is the only application in the project.
-     *
-     * @param bool $single
+     * Sets that this is is the only application in the project.
      */
-    public function setSingle($single = true): void
+    public function setSingle(bool $single = true): void
     {
         $this->single = $single;
     }
 
     /**
-     * Get the source directory where the application was found.
+     * Gets the source directory where the application was found.
      *
      * In a single-app project, this is usually the project root.
-     *
-     * @return string
      */
-    public function getSourceDir()
+    public function getSourceDir(): string
     {
         return $this->sourceDir;
     }
 
-    /**
-     * @return string
-     */
-    protected function getPath(): string|array
+    protected function getPath(): string
     {
         return str_replace($this->sourceDir . '/', '', $this->appRoot);
     }
 
-    /**
-     * @return string|null
-     */
-    public function getName()
+    public function getName(): ?string
     {
         $config = $this->getConfig();
 
         return !empty($config['name']) ? $config['name'] : null;
     }
 
-    /**
-     * @return string
-     */
-    public function getRoot()
+    public function getRoot(): string
     {
         return $this->appRoot;
     }
 
     /**
-     * Get the absolute path to the local web root of this app.
-     *
-     * @param string|null $destination
-     *
-     * @return string
+     * Finds the absolute path to the local web root of this app.
      */
-    public function getLocalWebRoot($destination = null)
+    public function getLocalWebRoot(?string $destination = null): string
     {
         $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->getWithDefault('local.web_root', '_www');
         if ($this->isSingle()) {
@@ -151,7 +132,7 @@ class LocalApplication
      * @return array
      * @throws \Exception
      */
-    public function getConfig()
+    public function getConfig(): array
     {
         return $this->getConfigObject()->getNormalized();
     }
@@ -162,10 +143,8 @@ class LocalApplication
      * @throws InvalidConfigException if config is not found or invalid
      * @throws ParseException if config cannot be parsed
      * @throws \Exception if the config file cannot be read
-     *
-     * @return AppConfig
      */
-    private function getConfigObject()
+    private function getConfigObject(): AppConfig
     {
         if (!isset($this->config)) {
             if ($this->cliConfig->has('service.app_config_file')) {
@@ -184,11 +163,9 @@ class LocalApplication
     }
 
     /**
-     * Get a list of shared file mounts configured for the app.
-     *
-     * @return array
+     * Gets a list of shared file mounts configured for the app.
      */
-    public function getSharedFileMounts()
+    public function getSharedFileMounts(): array
     {
         $config = $this->getConfig();
 
@@ -215,17 +192,15 @@ class LocalApplication
      * Get the build flavor for the application.
      *
      * @throws InvalidConfigException If a build flavor is not found.
-     *
-     * @return BuildFlavorInterface
      */
-    public function getBuildFlavor()
+    public function getBuildFlavor(): BuildFlavorInterface
     {
         $appConfig = $this->getConfig();
         if (!isset($appConfig['type'])) {
             throw new InvalidConfigException('Application configuration key not found: `type`');
         }
 
-        $key = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
+        $key = $appConfig['build']['flavor'] ?? 'default';
         list($stack, ) = explode(':', (string) $appConfig['type'], 2);
         foreach (self::getBuildFlavors() as $candidate) {
             if (in_array($key, $candidate->getKeys())
@@ -237,25 +212,17 @@ class LocalApplication
     }
 
     /**
-     * Get the configured document root for the application, as a relative path.
-     *
-     * @param string $default
-     *
-     * @todo stop using 'public' as the default
-     *
-     * @return string
+     * Finds the configured document root for the application, as a relative path.
      */
-    public function getDocumentRoot($default = 'public')
+    public function getDocumentRoot(string $default = 'public'): string
     {
         return $this->getConfigObject()->getDocumentRoot() ?: $default;
     }
 
     /**
-     * Check whether the whole app should be moved into the document root.
-     *
-     * @return bool
+     * Checks whether the whole app should be moved into the document root.
      */
-    public function shouldMoveToRoot()
+    public function shouldMoveToRoot(): bool
     {
         $config = $this->getConfig();
 

@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Local\DependencyManager;
 
 class Bundler extends DependencyManagerBase
 {
-    protected $command = 'bundler';
+    protected string $command = 'bundler';
 
     /**
      * {@inheritdoc}
@@ -17,7 +17,7 @@ class Bundler extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix): array
+    public function getBinPaths(string $prefix): array
     {
         return [$prefix . '/bin'];
     }

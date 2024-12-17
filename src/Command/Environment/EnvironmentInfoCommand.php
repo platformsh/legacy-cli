@@ -26,10 +26,7 @@ class EnvironmentInfoCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
@@ -166,7 +163,7 @@ class EnvironmentInfoCommand extends CommandBase
      *
      * @return string|false
      */
-    protected function getType($property): string|false
+    protected function getType(string $property): string|false
     {
         $writableProperties = [
             'enable_smtp' => 'boolean',

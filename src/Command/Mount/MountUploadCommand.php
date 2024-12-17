@@ -28,10 +28,8 @@ class MountUploadCommand extends CommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')

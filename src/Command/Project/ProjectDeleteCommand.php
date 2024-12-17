@@ -21,7 +21,7 @@ class ProjectDeleteCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
@@ -78,8 +78,7 @@ class ProjectDeleteCommand extends CommandBase
         try {
             $subscription->delete();
         } catch (ClientException $e) {
-            $response = $e->getResponse();
-            if ($response !== null && $response->getStatusCode() === 403 && !$this->config->getWithDefault('api.organizations', false)) {
+            if ($e->getResponse()->getStatusCode() === 403 && !$this->config->getWithDefault('api.organizations', false)) {
                 if ($project->owner !== $this->api->getMyUserId()) {
                     $this->stdErr->writeln("Only the project's owner can delete it.");
                     return 1;

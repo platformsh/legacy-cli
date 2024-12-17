@@ -13,10 +13,10 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityLoader
+readonly class ActivityLoader
 {
 
-    private readonly OutputInterface $stdErr;
+    private OutputInterface $stdErr;
 
     /**
      * @param OutputInterface $output
@@ -26,10 +26,7 @@ class ActivityLoader
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
-    /**
-     * @return OutputInterface
-     */
-    private function getProgressOutput()
+    private function getProgressOutput(): OutputInterface
     {
         return $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
     }
@@ -45,7 +42,7 @@ class ActivityLoader
      *
      * @return Activity[]
      */
-    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null, $state = [], $withOperation = '')
+    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, ?int $limit = null, array $state = [], string $withOperation = ''): array
     {
         if ($state === [] && $input->hasOption('state')) {
             $state = ArrayArgument::getOption($input, 'state');
@@ -119,7 +116,7 @@ class ActivityLoader
      *
      * @return Activity[]
      */
-    public function load(HasActivitiesInterface $apiResource, $limit = null, array $types = [], $startsAt = null, array|string|null $state = null, array|string|null $result = null, callable $stopCondition = null): array
+    public function load(HasActivitiesInterface $apiResource, ?int $limit = null, array $types = [], int|DateTime|null $startsAt = null, array|string|null $state = null, array|string|null $result = null, ?callable $stopCondition = null): array
     {
         $progress = new ProgressBar($this->getProgressOutput());
         $progress->setMessage('Loading activities...');

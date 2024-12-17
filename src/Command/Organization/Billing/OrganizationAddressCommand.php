@@ -25,7 +25,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
@@ -61,7 +61,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         return $result;
     }
 
-    protected function display(Address $address, Organization $org, InputInterface $input)
+    protected function display(Address $address, Organization $org, InputInterface $input): void
     {
         $table = $this->table;
 
@@ -85,9 +85,6 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         }
     }
 
-    /**
-     * @return mixed[]
-     */
     protected function parseUpdates(InputInterface $input): array
     {
         $property = $input->getArgument('property');
@@ -170,7 +167,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
      *
      * @return string|false
      */
-    private function getType($property): string|false
+    private function getType(string $property): string|false
     {
         $writableProperties = [
             'country' => 'string',
@@ -185,16 +182,10 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             'postal_code' => 'string',
         ];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 
-    /**
-     * @param string $property
-     * @param string &$value
-     *
-     * @return bool
-     */
-    private function validateValue($property, &$value)
+    private function validateValue(string $property, string &$value): bool
     {
         $type = $this->getType($property);
         if (!$type) {

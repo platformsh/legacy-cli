@@ -36,7 +36,7 @@ class ProjectGetCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID')
@@ -308,12 +308,9 @@ class ProjectGetCommand extends CommandBase
     }
 
     /**
-     * Suggest SSH key commands for the user, if the Git connection fails.
-     *
-     * @param string $gitUrl
-     * @param Process $process
+     * Suggests SSH key commands for the user, if the Git connection fails.
      */
-    protected function suggestSshRemedies($gitUrl, Process $process)
+    protected function suggestSshRemedies(string $gitUrl, Process $process): void
     {
         // Remove the path from the git URI to get the SSH part.
         $gitSshUri = '';

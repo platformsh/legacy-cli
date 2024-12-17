@@ -199,13 +199,8 @@ class AccessApi
 
     /**
      * Returns a label describing a user.
-     *
-     * @param ProjectAccess|ProjectUserAccess $access
-     * @param bool $formatting
-     *
-     * @return string
      */
-    public function getUserLabel($access, $formatting = false)
+    public function getUserLabel(ProjectUserAccess|ProjectAccess $access, bool $formatting = false): string
     {
         $format = $formatting ? '<info>%s</info> (%s)' : '%s (%s)';
         if ($access instanceof ProjectAccess) {

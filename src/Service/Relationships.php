@@ -37,13 +37,9 @@ class Relationships implements InputConfiguringInterface
     /**
      * Choose a database for the user.
      *
-     * @param HostInterface $host
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     *
-     * @return array|false
+     * @param string[] $types A service type filter.
      */
-    public function chooseDatabase(HostInterface $host, InputInterface $input, OutputInterface $output, $types  = ['mysql', 'pgsql'])
+    public function chooseDatabase(HostInterface $host, InputInterface $input, OutputInterface $output, array $types = ['mysql', 'pgsql']): false|array
     {
         return $this->chooseService($host, $input, $output, $types);
     }
@@ -58,7 +54,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return array|false
      */
-    public function chooseService(HostInterface $host, InputInterface $input, OutputInterface $output, $schemes = [])
+    public function chooseService(HostInterface $host, InputInterface $input, OutputInterface $output, array $schemes = []): array|false
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $relationships = $this->getRelationships($host);
@@ -80,7 +76,7 @@ class Relationships implements InputConfiguringInterface
             if (!empty($schemes)) {
                 $stdErr->writeln(sprintf('No relationships found matching scheme(s): <error>%s</error>.', implode(', ', $schemes)));
             } else {
-                $stdErr->writeln(sprintf('No relationships found'));
+                $stdErr->writeln('No relationships found');
             }
             return false;
         }
@@ -171,7 +167,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return array
      */
-    public function getRelationships(HostInterface $host, $refresh = false)
+    public function getRelationships(HostInterface $host, bool $refresh = false): array
     {
         return $this->normalizeRelationships(
             $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh)
@@ -237,7 +233,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return string
      */
-    public function mariaDbCommandWithFallback($cmd)
+    public function mariaDbCommandWithFallback(string $cmd): string
     {
         if ($cmd === 'mariadb') {
             return 'cmd="$(command -v mariadb || echo -n mysql)"; "$cmd"';
@@ -265,7 +261,7 @@ class Relationships implements InputConfiguringInterface
      * @return string
      *   The command line arguments (excluding the $command).
      */
-    public function getDbCommandArgs(string $command, array $database, $schema = null)
+    public function getDbCommandArgs(string $command, array $database, ?string $schema = null): string
     {
         if ($schema === null) {
             $schema = $database['path'];
@@ -398,7 +394,7 @@ class Relationships implements InputConfiguringInterface
      *
      * @return string[]
      */
-    public function getServiceSchemas(Service $service)
+    public function getServiceSchemas(Service $service): array
     {
         if (!empty($service->configuration['schemas'])) {
             return $service->configuration['schemas'];

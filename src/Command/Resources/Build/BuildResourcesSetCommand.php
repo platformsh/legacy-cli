@@ -23,7 +23,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
             ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)');

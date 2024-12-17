@@ -35,7 +35,7 @@ class EnvironmentActivateCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('environment', InputArgument::IS_ARRAY, 'The environment(s) to activate')

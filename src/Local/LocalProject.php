@@ -18,9 +18,9 @@ class LocalProject
     protected Git $git;
     protected Io $io;
 
-    protected static $projectConfigs = [];
+    protected static array $projectConfigs = [];
 
-    public function __construct(Config $config = null, Git $git = null, Io $io = null)
+    public function __construct(?Config $config = null, ?Git $git = null, ?Io $io = null)
     {
         $this->config = $config ?: new Config();
         $this->git = $git ?: new Git();
@@ -36,7 +36,7 @@ class LocalProject
      *
      * @return array|null
      */
-    public function readProjectConfigFile(string $dir, string $configFile)
+    public function readProjectConfigFile(string $dir, string $configFile): ?array
     {
         $result = null;
         $filename = $dir . '/' . $this->config->get('service.project_config_dir') . '/' . $configFile;
@@ -49,12 +49,10 @@ class LocalProject
     }
 
     /**
-     * @param string $gitUrl
-     *
      * @return array|false
      *   An array containing 'id' and 'host', or false on failure.
      */
-    public function parseGitUrl($gitUrl): false|array
+    public function parseGitUrl(string $gitUrl): false|array
     {
         $gitDomain = $this->config->get('detection.git_domain');
         $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote((string) $gitDomain) . '):\1\.git$/';
@@ -66,6 +64,8 @@ class LocalProject
     }
 
     /**
+     * Finds the git remote URL for a repository.
+     *
      * @param string $dir
      *
      * @throws \RuntimeException
@@ -74,7 +74,7 @@ class LocalProject
      * @return string|false
      *   The Git remote URL.
      */
-    protected function getGitRemoteUrl($dir)
+    protected function getGitRemoteUrl(string $dir): string|false
     {
         $this->git->ensureInstalled();
         foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
@@ -94,7 +94,7 @@ class LocalProject
      * @param string $url
      *   The Git URL.
      */
-    public function ensureGitRemote(string $dir, $url): void
+    public function ensureGitRemote(string $dir, string $url): void
     {
         if (!file_exists($dir . '/.git')) {
             throw new \InvalidArgumentException('The directory is not a Git repository');
@@ -125,9 +125,10 @@ class LocalProject
      *
      * @param string $file
      *   The filename to look for.
-     * @param string $startDir
+     * @param ?string $startDir
      *   An absolute path to a directory to start in.
-     * @param callable $callback
+     *   Defaults to the current directory.
+     * @param ?callable $callback
      *   A callback to validate the directory when found. Accepts one argument
      *   (the directory path). Return true to use the directory, or false to
      *   continue traversing upwards.
@@ -136,7 +137,7 @@ class LocalProject
      *   The path to the directory, or false if the file is not found. Where
      *   possible this will be an absolute, real path.
      */
-    protected static function findTopDirectoryContaining(string $file, $startDir = null, callable $callback = null)
+    protected static function findTopDirectoryContaining(string $file, ?string $startDir = null, ?callable $callback = null): string|false
     {
         static $roots = [];
         $startDir = $startDir ?: getcwd();
@@ -198,13 +199,9 @@ class LocalProject
     }
 
     /**
-     * Find the legacy root of the current project, from CLI versions <3.
-     *
-     * @param string|null $startDir
-     *
-     * @return string|false
+     * Finds the legacy root of the current project, from CLI versions <3.
      */
-    public function getLegacyProjectRoot($startDir = null)
+    public function getLegacyProjectRoot(?string $startDir = null): string|false
     {
         if (!$this->config->has('local.project_config_legacy')) {
             return false;
@@ -248,14 +245,14 @@ class LocalProject
     }
 
     /**
-     * Get the configuration for the current project.
-     *
-     * @param string|null $projectRoot
+     * Gets the configuration for the current project.
      *
      * @return array|null
      *   The current project's configuration.
+     *
+     * @throws \Exception
      */
-    public function getProjectConfig($projectRoot = null)
+    public function getProjectConfig(?string $projectRoot = null): array|null
     {
         $projectRoot = $projectRoot ?: $this->getProjectRoot();
         if (isset(self::$projectConfigs[$projectRoot])) {
@@ -278,16 +275,16 @@ class LocalProject
     }
 
     /**
-     * Write configuration for a project.
+     * Writes configuration for a project.
      *
      * Configuration is stored as YAML, in the location configured by
      * 'local.project_config'.
      *
      * @param array $config
      *   The configuration.
-     * @param string $projectRoot
+     * @param ?string $projectRoot
      *   The project root.
-     * @param bool   $merge
+     * @param bool $merge
      *   Whether to merge with existing configuration.
      *
      * @throws \Exception On failure
@@ -295,7 +292,7 @@ class LocalProject
      * @return array
      *   The updated project configuration.
      */
-    public function writeCurrentProjectConfig(array $config, $projectRoot = null, $merge = false)
+    public function writeCurrentProjectConfig(array $config, ?string $projectRoot = null, bool $merge = false): array
     {
         $projectRoot = $projectRoot ?: $this->getProjectRoot();
         if (!$projectRoot) {

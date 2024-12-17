@@ -16,7 +16,7 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
     }

@@ -26,7 +26,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('type', InputArgument::OPTIONAL, 'The log type, e.g. "access" or "error"')
@@ -56,7 +56,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
 
         // Special handling for Dedicated Generation 2 environments, for which
         // the SSH URL contains something like "ssh://1.ent-" or "1.ent-" or "ent-".
-        if (preg_match('%(^|[/.])ent-[a-z0-9]%', (string) $host->getLabel())) {
+        if (preg_match('%(^|[/.])ent-[a-z0-9]%', $host->getLabel())) {
             $logDir = '/var/log/platform/"$USER"';
             $this->io->debug('Detected Dedicated environment: using log directory: ' . $logDir);
         }

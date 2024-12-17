@@ -16,7 +16,7 @@ class Csv
      * @param string $delimiter The delimiter character between cells.
      * @param string $lineBreak The break character(s) between lines.
      */
-    public function __construct(private $delimiter = ',', private $lineBreak = "\r\n")
+    public function __construct(private readonly string $delimiter = ',', private readonly string $lineBreak = "\r\n")
     {
     }
 
@@ -32,7 +32,7 @@ class Csv
      *
      * @return string
      */
-    public function format(array $data, $appendLineBreak = true): string
+    public function format(array $data, bool $appendLineBreak = true): string
     {
         return implode($this->lineBreak, array_map([$this, 'formatRow'], $data))
             . ($appendLineBreak ? $this->lineBreak : '');

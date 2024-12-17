@@ -23,7 +23,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
         $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')

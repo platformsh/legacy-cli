@@ -19,7 +19,7 @@ class BackupGetCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Defaults to the most recent one.')

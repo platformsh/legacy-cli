@@ -24,7 +24,7 @@ class ApiTokenLoginCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $service = $this->config->get('service.name');
         $executable = $this->config->get('application.executable');
@@ -118,7 +118,7 @@ class ApiTokenLoginCommand extends CommandBase
         if (!$e instanceof BadResponseException || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
             return false;
         }
-        $json = Utils::jsonDecode((string) $e->getResponse()->getBody(), true);
+        $json = (array) Utils::jsonDecode((string) $e->getResponse()->getBody(), true);
         // Compatibility with legacy auth provider.
         if (isset($json['error'], $json['error_description'])
             && $json['error'] === 'invalid_grant'

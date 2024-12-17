@@ -26,7 +26,7 @@ class VariableSetCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
@@ -85,16 +85,11 @@ class VariableSetCommand extends CommandBase
         return $success ? 0 : 1;
     }
 
-    /**
-     * @param $string
-     *
-     * @return bool
-     */
-    protected function validateJson($string)
+    protected function validateJson(string $string): bool
     {
         if ($string === 'null') {
             return true;
         }
-        return \json_decode((string) $string) !== null;
+        return \json_decode($string) !== null;
     }
 }

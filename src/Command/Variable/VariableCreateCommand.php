@@ -43,10 +43,7 @@ class VariableCreateCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('name', InputArgument::OPTIONAL, 'The variable name')

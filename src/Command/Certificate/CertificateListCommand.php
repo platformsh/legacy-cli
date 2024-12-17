@@ -28,7 +28,7 @@ class CertificateListCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('domain', null, InputOption::VALUE_REQUIRED, 'Filter by domain name (case-insensitive search)');
         $this->addOption('exclude-domain', null, InputOption::VALUE_REQUIRED, 'Exclude certificates, matching by domain name (case-insensitive search)');
@@ -119,7 +119,7 @@ class CertificateListCommand extends CommandBase
         return 0;
     }
 
-    protected function filterCerts(array &$certs, array $filters)
+    protected function filterCerts(array &$certs, array $filters): void
     {
         foreach ($filters as $filter => $value) {
             switch ($filter) {
@@ -150,7 +150,7 @@ class CertificateListCommand extends CommandBase
                     break;
 
                 case 'only-auto':
-                    $certs = array_filter($certs, fn(Certificate $cert): bool => (bool) $cert->is_provisioned);
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => $cert->is_provisioned);
                     break;
 
                 case 'no-auto':
@@ -162,7 +162,7 @@ class CertificateListCommand extends CommandBase
                     break;
 
                 case 'only-expired':
-                    $certs = array_filter($certs, fn(Certificate $cert) => $this->isExpired($cert));
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => $this->isExpired($cert));
                     break;
             }
         }
@@ -180,13 +180,7 @@ class CertificateListCommand extends CommandBase
         return time() >= strtotime($cert->expires_at);
     }
 
-    /**
-     * @param Certificate $cert
-     * @param string                               $alias
-     *
-     * @return string|bool
-     */
-    protected function getCertificateIssuerByAlias(Certificate $cert, $alias) {
+    private function getCertificateIssuerByAlias(Certificate $cert, string $alias): string|false {
         foreach ($cert->issuer as $issuer) {
             if (isset($issuer['alias'], $issuer['value']) && $issuer['alias'] === $alias) {
                 return $issuer['value'];

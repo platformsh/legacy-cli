@@ -37,7 +37,7 @@ class RemoteEnvVars
      *
      * @return string The environment variable or an empty string.
      */
-    public function getEnvVar(string $variable, HostInterface $host, $refresh = false, $ttl = 3600)
+    public function getEnvVar(string $variable, HostInterface $host, bool $refresh = false, int $ttl = 3600): string
     {
         $varName = $this->config->get('service.env_prefix') . $variable;
         if ($host instanceof LocalHost) {
@@ -73,9 +73,9 @@ class RemoteEnvVars
      * @param bool $refresh
      *
      * @return array
-     * @see \Platformsh\Cli\Service\RemoteEnvVars::getEnvVar()
+     * @see RemoteEnvVars::getEnvVar
      */
-    public function getArrayEnvVar($variable, HostInterface $host, $refresh = false)
+    public function getArrayEnvVar(string $variable, HostInterface $host, bool $refresh = false): array
     {
         $value = $this->getEnvVar($variable, $host, $refresh);
 

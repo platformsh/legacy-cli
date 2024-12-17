@@ -8,37 +8,31 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
 class Filesystem
 {
-
-    protected $relative = false;
-    protected SymfonyFilesystem $fs;
-    protected $copyOnWindows = false;
-
     protected Shell $shell;
+    protected SymfonyFilesystem $fs;
+
+    protected bool $relative = false;
+    protected bool $copyOnWindows = false;
 
     /**
      * @param Shell|null             $shell
      * @param SymfonyFilesystem|null $fs
      */
-    public function __construct(Shell $shell = null, SymfonyFilesystem $fs = null)
+    public function __construct(?Shell $shell = null, ?SymfonyFilesystem $fs = null)
     {
         $this->shell = $shell ?: new Shell();
         $this->fs = $fs ?: new SymfonyFilesystem();
     }
 
-    /**
-     * @param bool $copyOnWindows
-     */
-    public function setCopyOnWindows($copyOnWindows = true): void
+    public function setCopyOnWindows(bool $copyOnWindows = true): void
     {
         $this->copyOnWindows = $copyOnWindows;
     }
 
     /**
-     * Set whether to use relative links.
-     *
-     * @param bool $relative
+     * Sets whether to use relative links.
      */
-    public function setRelativeLinks($relative = true): void
+    public function setRelativeLinks(bool $relative = true): void
     {
         // This is not possible on Windows.
         if (OsUtil::isWindows()) {
@@ -50,15 +44,15 @@ class Filesystem
     /**
      * Delete a file or directory.
      *
-     * @param string|array|\Traversable $files
-     *   A filename, an array of files, or a \Traversable instance to delete.
-     * @param bool   $retryWithChmod
+     * @param string|iterable $files
+     *   A filename or an iterable list of files to delete.
+     * @param bool $retryWithChmod
      *   Whether to retry deleting on error, after recursively changing file
      *   modes to add read/write/exec permissions. A bit like 'rm -rf'.
      *
      * @return bool
      */
-    public function remove($files, $retryWithChmod = false)
+    public function remove(string|iterable $files, bool $retryWithChmod = false): bool
     {
         try {
             $this->fs->remove($files);
@@ -77,15 +71,15 @@ class Filesystem
     /**
      * Make files writable by the current user.
      *
-     * @param string|array|\Traversable $files
-     *   A filename, an array of files, or a \Traversable instance.
+     * @param string|iterable $files
+     *   A filename or an iterable list of files.
      * @param bool $recursive
      *   Whether to change the mode recursively or not.
      *
      * @return bool
      *   True on success, false on failure.
      */
-    protected function unprotect($files, $recursive = false): bool
+    protected function unprotect(string|iterable $files, bool $recursive = false): bool
     {
         if (!$files instanceof \Traversable) {
             $files = new \ArrayObject(is_array($files) ? $files : array($files));
@@ -110,23 +104,15 @@ class Filesystem
         return true;
     }
 
-    /**
-     * @param string $dir
-     * @param int $mode
-     */
-    public function mkdir($dir, $mode = 0755): void
+    public function mkdir(string $dir, int $mode = 0755): void
     {
         $this->fs->mkdir($dir, $mode);
     }
 
     /**
-     * Copy a file, if it is newer than the destination.
-     *
-     * @param string $source
-     * @param string $destination
-     * @param bool   $override
+     * Copies a file, if it is newer than the destination.
      */
-    public function copy($source, $destination, $override = false): void
+    public function copy(string $source, string $destination, bool $override = false): void
     {
         if (is_dir($destination) && !is_dir($source)) {
             $destination = rtrim($destination, '/') . '/' . basename($source);
@@ -135,14 +121,9 @@ class Filesystem
     }
 
     /**
-     * Copy all files and folders between directories.
-     *
-     * @param string $source
-     * @param string $destination
-     * @param array  $skip
-     * @param bool   $override
+     * Copies all files and folders between directories.
      */
-    public function copyAll(string $source, string $destination, array $skip = ['.git', '.DS_Store'], $override = false): void
+    public function copyAll(string $source, string $destination, array $skip = ['.git', '.DS_Store'], bool $override = false): void
     {
         if (is_dir($source) && !is_dir($destination)) {
             if (!mkdir($destination, 0755, true)) {
@@ -192,7 +173,7 @@ class Filesystem
      * @param string $target The target to link to (must already exist).
      * @param string $link   The name of the symbolic link.
      */
-    public function symlink($target, $link): void
+    public function symlink(string $target, string $link): void
     {
         if (!file_exists($target)) {
             throw new \InvalidArgumentException('Target not found: ' . $target);
@@ -212,27 +193,23 @@ class Filesystem
      * @param string $path      An absolute path.
      * @param string $reference The path to which it will be made relative.
      *
-     * @see SymfonyFilesystem::makePathRelative()
-     *
      * @return string
      *   The $path, relative to the $reference.
+     *
+     * @see SymfonyFilesystem::makePathRelative()
      */
-    public function makePathRelative($path, $reference): string
+    public function makePathRelative(string $path, string $reference): string
     {
         $path = realpath($path) ?: $path;
         $reference = realpath($reference) ?: $reference;
 
-        return rtrim((string) $this->fs->makePathRelative($path, $reference), DIRECTORY_SEPARATOR);
+        return rtrim($this->fs->makePathRelative($path, $reference), DIRECTORY_SEPARATOR);
     }
 
     /**
-     * Format a path for display (use the relative path if it's simpler).
-     *
-     * @param string $path
-     *
-     * @return string
+     * Formats a path for display (uses the relative path if it's simpler).
      */
-    public function formatPathForDisplay($path)
+    public function formatPathForDisplay(string $path): string
     {
         $relative = $this->makePathRelative($path, getcwd());
         if (!str_contains($relative, '../..') && strlen($relative) < strlen($path)) {
@@ -245,12 +222,12 @@ class Filesystem
     /**
      * Check if a filename is in a list.
      *
-     * @param string   $filename
+     * @param string $filename
      * @param string[] $list
      *
      * @return bool
      */
-    protected function fileInList($filename, array $list): bool
+    protected function fileInList(string $filename, array $list): bool
     {
         foreach ($list as $pattern) {
             if (fnmatch($pattern, $filename, FNM_PATHNAME | FNM_CASEFOLD)) {
@@ -264,22 +241,22 @@ class Filesystem
     /**
      * Symlink or copy all files and folders between two directories.
      *
-     * @param string   $source
+     * @param string $source
      * @param string   $destination
-     * @param bool     $skipExisting
-     * @param bool     $recursive
+     * @param bool $skipExisting
+     * @param bool $recursive
      * @param string[] $exclude
-     * @param bool     $copy
+     * @param bool $copy
      *
      * @throws \Exception When a conflict is discovered.
      */
     public function symlinkAll(
-        $source,
+        string $source,
         string $destination,
-        $skipExisting = true,
-        $recursive = false,
-        $exclude = [],
-        $copy = false
+        bool   $skipExisting = true,
+        bool   $recursive = false,
+        array  $exclude = [],
+        bool $copy = false,
     ): void {
         if (!is_dir($destination)) {
             mkdir($destination);
@@ -325,18 +302,14 @@ class Filesystem
     }
 
     /**
-     * Make a relative path into an absolute one.
+     * Makes a relative path into an absolute one.
      *
      * The realpath() function will only work for existing files, and not for
      * symlinks. This is a more flexible solution.
      *
-     * @param string $relativePath
-     *
      * @throws \InvalidArgumentException If the parent directory is not found.
-     *
-     * @return string
      */
-    public function makePathAbsolute($relativePath): string
+    public function makePathAbsolute(string $relativePath): string
     {
         if (file_exists($relativePath) && !is_link($relativePath) && ($realPath = realpath($relativePath))) {
             $absolute = $realPath;
@@ -355,13 +328,9 @@ class Filesystem
     }
 
     /**
-     * Test whether a file or directory is writable even if it does not exist.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests whether a file or directory is writable even if it does not exist.
      */
-    public function canWrite($name): bool
+    public function canWrite(string $name): bool
     {
         if (is_writable($name)) {
             return true;
@@ -379,13 +348,9 @@ class Filesystem
     }
 
     /**
-     * Write a file and create a backup if the contents have changed.
-     *
-     * @param string $filename
-     * @param string $contents
-     * @param bool   $backup
+     * Writes a file and creates a backup if the contents have changed.
      */
-    public function writeFile($filename, $contents, $backup = true): void
+    public function writeFile(string $filename, string $contents, bool $backup = true): void
     {
         $fs = new SymfonyFilesystem();
         if (file_exists($filename) && $backup && $contents !== file_get_contents($filename)) {
@@ -396,12 +361,9 @@ class Filesystem
     }
 
     /**
-     * Create a gzipped tar archive of a directory's contents.
-     *
-     * @param string $dir
-     * @param string $destination
+     * Creates a gzipped tar archive of a directory's contents.
      */
-    public function archiveDir($dir, $destination): void
+    public function archiveDir(string $dir, string $destination): void
     {
         $tar = $this->getTarExecutable();
         $dir = $this->fixTarPath($dir);
@@ -410,12 +372,9 @@ class Filesystem
     }
 
     /**
-     * Extract a gzipped tar archive into the specified destination directory.
-     *
-     * @param string $archive
-     * @param string $destination
+     * Extracts a gzipped tar archive into the specified destination directory.
      */
-    public function extractArchive($archive, $destination): void
+    public function extractArchive(string $archive, string $destination): void
     {
         if (!file_exists($archive)) {
             throw new \InvalidArgumentException("Archive not found: $archive");
@@ -430,15 +389,11 @@ class Filesystem
     }
 
     /**
-     * Fix a path so that it can be used with tar on Windows.
+     * Fixes a path so that it can be used with tar on Windows.
      *
      * @see http://betterlogic.com/roger/2009/01/tar-woes-with-windows/
-     *
-     * @param string $path
-     *
-     * @return string
      */
-    protected function fixTarPath($path)
+    protected function fixTarPath(string $path): string
     {
         if (OsUtil::isWindows()) {
             $path = preg_replace_callback(
@@ -467,11 +422,8 @@ class Filesystem
 
     /**
      * Validates a directory.
-     *
-     * @param string $directory
-     * @param bool   $writable
      */
-    public function validateDirectory($directory, $writable = false): void
+    public function validateDirectory(string $directory, bool $writable = false): void
     {
         if (!is_dir($directory)) {
             throw new \InvalidArgumentException(sprintf('Directory not found: %s', $directory));

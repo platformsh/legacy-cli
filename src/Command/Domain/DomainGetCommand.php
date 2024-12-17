@@ -24,10 +24,8 @@ class DomainGetCommand extends DomainCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('name', InputArgument::OPTIONAL, 'The domain name')

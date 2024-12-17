@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputOption;
 class OrganizationUserCommandBase extends OrganizationCommandBase implements CompletionAwareInterface
 {
     // @todo add 'admin'
-    protected static $allPermissions = ['billing', 'members', 'plans', 'projects:create', 'projects:list'];
+    protected static array $allPermissions = ['billing', 'members', 'plans', 'projects:create', 'projects:list'];
 
     /**
      * Returns a list of permissions formatted for display.
@@ -21,7 +21,7 @@ class OrganizationUserCommandBase extends OrganizationCommandBase implements Com
      *
      * @return string
      */
-    protected function listPermissions($permissions = null): string
+    protected function listPermissions(?array $permissions = null): string
     {
         if ($permissions === []) {
             return '<info>[none]</info>';

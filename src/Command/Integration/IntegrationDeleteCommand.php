@@ -16,10 +16,8 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The integration ID. Leave blank to choose from a list.');

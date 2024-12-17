@@ -25,10 +25,7 @@ class ActivityGetCommand extends ActivityCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The activity ID. Defaults to the most recent activity.')
@@ -79,6 +76,7 @@ class ActivityGetCommand extends ActivityCommandBase
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 1);
+            /** @var Activity|false $activity */
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No activities found');
@@ -100,7 +98,7 @@ class ActivityGetCommand extends ActivityCommandBase
 
         // Add the fake "duration" property.
         if (!isset($properties['duration'])) {
-            $properties['duration'] = (new \Platformsh\Cli\Model\Activity())->getDuration($activity);
+            $properties['duration'] = (new Activity())->getDuration($activity);
         }
 
         if ($property = $input->getOption('property')) {

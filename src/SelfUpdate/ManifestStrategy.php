@@ -11,8 +11,7 @@ class ManifestStrategy implements StrategyInterface
 {
     private ?array $manifest = null;
 
-    /** @var array|null */
-    private $availableVersions;
+    private ?array $availableVersions = null;
 
     private static array $requiredKeys = ['sha256', 'version', 'url'];
 
@@ -27,17 +26,17 @@ class ManifestStrategy implements StrategyInterface
     /**
      * ManifestStrategy constructor.
      *
-     * @param string $localVersion  The local version.
-     * @param string $manifestUrl   The URL to a JSON manifest file. The
-     *                              manifest contains an array of objects, each
-     *                              containing a 'version', 'sha256', and 'url'.
-     * @param bool   $allowMajor    Whether to allow updating between major
-     *                              versions.
-     * @param bool   $allowUnstable Whether to allow updating to an unstable
-     *                              version. Ignored if $localVersion is unstable
-     *                              and there are no new stable versions.
+     * @param string $localVersion The local version.
+     * @param string $manifestUrl The URL to a JSON manifest file. The
+     *                            manifest contains an array of objects, each
+     *                            containing a 'version', 'sha256', and 'url'.
+     * @param bool $allowMajor Whether to allow updating between major
+     *                         versions.
+     * @param bool $allowUnstable Whether to allow updating to an unstable
+     *                            version. Ignored if $localVersion is unstable
+     *                            and there are no new stable versions.
      */
-    public function __construct(private $localVersion, private $manifestUrl, private $allowMajor = false, private $allowUnstable = false)
+    public function __construct(private readonly string $localVersion, private readonly string $manifestUrl, private readonly bool $allowMajor = false, private readonly bool $allowUnstable = false)
     {
     }
 
@@ -49,10 +48,7 @@ class ManifestStrategy implements StrategyInterface
         $this->streamContextOptions = $opts;
     }
 
-    /**
-     * @param int $manifestTimeout
-     */
-    public function setManifestTimeout($manifestTimeout): void
+    public function setManifestTimeout(int $manifestTimeout): void
     {
         $this->manifestTimeout = $manifestTimeout;
     }
@@ -60,7 +56,7 @@ class ManifestStrategy implements StrategyInterface
     /**
      * {@inheritdoc}
      */
-    public function getCurrentLocalVersion(Updater $updater)
+    public function getCurrentLocalVersion(Updater $updater): string
     {
         return $this->localVersion;
     }
@@ -68,7 +64,7 @@ class ManifestStrategy implements StrategyInterface
     /**
      * {@inheritdoc}
      */
-    public function getCurrentRemoteVersion(Updater $updater)
+    public function getCurrentRemoteVersion(Updater $updater): bool|string
     {
         $versions = array_keys($this->getAvailableVersions());
         if (!$this->allowMajor) {
@@ -94,14 +90,9 @@ class ManifestStrategy implements StrategyInterface
     }
 
     /**
-     * Find update/upgrade notes for the new remote version.
-     *
-     * @param string $currentVersion
-     * @param string $targetVersion
-     *
-     * @return array
+     * Finds update/upgrade notes for the new remote version.
      */
-    public function getUpdateNotesByVersion($currentVersion, $targetVersion): array
+    public function getUpdateNotesByVersion(string $currentVersion, string $targetVersion): array
     {
         $notes = [];
         foreach ($this->getAvailableVersions() as $version => $item) {
@@ -163,11 +154,20 @@ class ManifestStrategy implements StrategyInterface
     /**
      * Get available versions to update to.
      *
-     * @return array
+     * @return array<string, array{
+     *     version: string,
+     *     sha256: string,
+     *     url: string,
+     *     php?: array{
+     *       min?: string,
+     *       max?: string
+     *     },
+     *     notes?: string|array<string, string>
+     *   }>
      *   An array keyed by the version name, whose elements are arrays
-     *   containing version information ('version', 'sha256', and 'url').
+     *   containing version information.
      */
-    private function getAvailableVersions()
+    private function getAvailableVersions(): array
     {
         if (!isset($this->availableVersions)) {
             $this->availableVersions = [];
@@ -193,7 +193,7 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return array
      */
-    private function getRemoteVersionInfo(Updater $updater)
+    private function getRemoteVersionInfo(Updater $updater): array
     {
         $version = $this->getCurrentRemoteVersion($updater);
         if ($version === false) {
@@ -208,11 +208,9 @@ class ManifestStrategy implements StrategyInterface
     }
 
     /**
-     * Download and decode the JSON manifest file.
-     *
-     * @return array
+     * Downloads and decodes the JSON manifest file.
      */
-    private function getManifest()
+    private function getManifest(): array
     {
         if (!isset($this->manifest)) {
             $opts = $this->streamContextOptions;

@@ -23,7 +23,7 @@ class EnvironmentXdebugCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('port', null, InputArgument::OPTIONAL, 'The local port', 9000);
         $this->selector->addProjectOption($this->getDefinition());

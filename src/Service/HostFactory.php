@@ -6,8 +6,8 @@ use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Client\Model\Environment;
 
-class HostFactory {
-    public function __construct(private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+readonly class HostFactory {
+    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics)
     {
     }
 

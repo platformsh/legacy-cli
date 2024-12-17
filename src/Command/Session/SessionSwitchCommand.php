@@ -21,7 +21,7 @@ class SessionSwitchCommand extends CommandBase {
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'The new session ID');

@@ -23,7 +23,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
@@ -58,9 +58,6 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         return $this->setProperty($property, $value, $organization);
     }
 
-    /**
-     * @return mixed[]
-     */
     private function getProperties(Organization $organization): array
     {
         $data = $organization->getProperties();
@@ -87,14 +84,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $table->renderSimple($values, $headings);
     }
 
-    /**
-     * @param string      $property
-     * @param string      $value
-     * @param Organization $organization
-     *
-     * @return int
-     */
-    protected function setProperty($property, $value, Organization $organization): int
+    protected function setProperty(string $property, string $value, Organization $organization): int
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
@@ -139,13 +129,9 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     }
 
     /**
-     * Get the type of a writable property.
-     *
-     * @param string $property
-     *
-     * @return string|false
+     * Gets the type of a writable property.
      */
-    private function getType($property): string|false
+    private function getType(string $property): string|false
     {
         $writableProperties = [
             'name' => 'string',
@@ -153,16 +139,10 @@ class OrganizationInfoCommand extends OrganizationCommandBase
             'country' => 'string',
         ];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 
-    /**
-     * @param string $property
-     * @param string &$value
-     *
-     * @return bool
-     */
-    private function validateValue($property, &$value)
+    private function validateValue(string $property, string &$value): bool
     {
         $type = $this->getType($property);
         if (!$type) {

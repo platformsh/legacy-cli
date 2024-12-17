@@ -30,10 +30,7 @@ class MemCommand extends MetricsCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addMetricsOptions();

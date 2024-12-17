@@ -13,18 +13,14 @@ use Symfony\Component\Process\Process;
 
 class Shell
 {
-
-    /** @var OutputInterface */
-    protected $output;
-
-    /** @var OutputInterface */
-    protected $stdErr;
+    protected OutputInterface $output;
+    protected OutputInterface $stdErr;
 
     private string $debugPrefix = '<options=reverse>#</> ';
 
     private static ?string $phpVersion = null;
 
-    public function __construct(OutputInterface $output = null)
+    public function __construct(?OutputInterface $output = null)
     {
         $this->setOutput($output ?: new NullOutput());
     }
@@ -43,16 +39,12 @@ class Shell
     }
 
     /**
-     * Execute a command, using STDIN, STDERR and STDOUT directly.
-     *
-     * @param string      $commandline
-     * @param string|null $dir
-     * @param array       $env
+     * Executes a command, using STDIN, STDERR and STDOUT directly.
      *
      * @return int
      *   The command's exit code (0 on success, a different integer on failure).
      */
-    public function executeSimple($commandline, $dir = null, array $env = []): int
+    public function executeSimple(string $commandline, ?string $dir = null, array $env = []): int
     {
         $this->stdErr->writeln(
             sprintf( '%sRunning command: <info>%s</info>', $this->debugPrefix, $commandline),
@@ -61,7 +53,7 @@ class Shell
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
-            $env = $env + $this->getParentEnv();
+            $env = $env + getenv();
         } else {
             $env = null;
         }
@@ -101,18 +93,8 @@ class Shell
 
     /**
      * Executes a command and returns the process object.
-     *
-     * @param string|array $args
-     * @param string|null $dir
-     * @param bool $mustRun
-     * @param bool $quiet
-     * @param array $env
-     * @param int|null $timeout
-     * @param string|null $input
-     *
-     * @return Process
      */
-    public function executeCaptureProcess($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
+    public function executeCaptureProcess(string|array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): Process
     {
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
         $this->runProcess($process, $mustRun, $quiet);
@@ -121,15 +103,8 @@ class Shell
 
     /**
      * Sets up a Process and reports to the user that the command is being run.
-     *
-     * @param $args
-     * @param $dir
-     * @param array $env
-     * @param $timeout
-     * @param $input
-     * @return Process
      */
-    private function setupProcess($args, $dir = null, array $env = [], $timeout = 3600, $input = null)
+    private function setupProcess(string|array $args, ?string $dir = null, array $env = [], int|null $timeout = 3600, mixed $input = null): Process
     {
         if (is_string($args)) {
             $process = Process::fromShellCommandline($args, null, null, $input, $timeout);
@@ -152,7 +127,7 @@ class Shell
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
-            $process->setEnv($env + $this->getParentEnv());
+            $process->setEnv($env + getenv());
         }
 
         if ($dir && is_dir($dir)) {
@@ -163,10 +138,7 @@ class Shell
         return $process;
     }
 
-    /**
-     * @param string|null $dir
-     */
-    private function showWorkingDirMessage($dir): void
+    private function showWorkingDirMessage(?string $dir): void
     {
         if ($dir !== null && $this->stdErr->isDebug()) {
             $this->stdErr->writeln($this->debugPrefix . '  Working directory: ' . $dir);
@@ -185,45 +157,6 @@ class Shell
             }
             $this->stdErr->writeln($message);
         }
-    }
-
-    /**
-     * Attempt to read useful environment variables from the parent process.
-     *
-     * @return array
-     */
-    protected function getParentEnv(): string|array|false
-    {
-        if (PHP_VERSION_ID >= 70100) {
-            return getenv();
-        }
-        // In PHP <7.1 there isn't a way to read all of the current environment
-        // variables. If PHP is running with a variables_order that includes
-        // 'e', then $_ENV should be populated.
-        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
-            return $_ENV;
-        }
-
-        // If $_ENV is empty, then guess all the variables that we might want to use.
-        $candidates = [
-            'TERM',
-            'TERM_SESSION_ID',
-            'TMPDIR',
-            'SSH_AGENT_PID',
-            'SSH_AUTH_SOCK',
-            'PATH',
-            'LANG',
-            'LC_ALL',
-            'LC_CTYPE',
-            'PAGER',
-            'LESS',
-        ];
-        $variables = [];
-        foreach ($candidates as $name) {
-            $variables[$name] = getenv($name);
-        }
-
-        return array_filter($variables, fn($value): bool => $value !== false);
     }
 
     /**
@@ -274,10 +207,10 @@ class Shell
      * @param string $command
      * @param bool $noticeOnError
      *
-     * @return string|bool
+     * @return string|false
      *   A list of command paths (one per line) or false on failure.
      */
-    protected function findWhere($command, $noticeOnError = true)
+    protected function findWhere(string $command, bool $noticeOnError = true): string|false
     {
         static $result;
         if (!isset($result[$command])) {
@@ -345,13 +278,9 @@ class Shell
     }
 
     /**
-     * Find the absolute path to an executable.
-     *
-     * @param string $command
-     *
-     * @return string
+     * Finds the absolute path to an executable.
      */
-    public function resolveCommand($command)
+    public function resolveCommand(string $command): string
     {
         if ($fullPaths = $this->findWhere($command)) {
             $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
@@ -366,10 +295,8 @@ class Shell
      *
      * Falls back to the version of PHP running the CLI (which may or may not
      * be the same).
-     *
-     * @return string
      */
-    public function getPhpVersion()
+    public function getPhpVersion(): string
     {
         if (!isset(self::$phpVersion)) {
             $result = $this->execute([

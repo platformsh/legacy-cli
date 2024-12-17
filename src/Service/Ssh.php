@@ -46,7 +46,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @return array
      */
-    public function getSshArgs($uri, array $extraOptions = [], $remoteCommand = null): array
+    public function getSshArgs(string $uri, array $extraOptions = [], array|string|null $remoteCommand = null): array
     {
         $options = array_merge($this->getSshOptions($this->hostIsInternal($uri)), $extraOptions);
 
@@ -82,7 +82,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @return string[] An array of SSH options.
      */
-    private function getSshOptions($hostIsInternal): array
+    private function getSshOptions(?bool $hostIsInternal): array
     {
         $options = [];
 
@@ -182,7 +182,7 @@ class Ssh implements InputConfiguringInterface
      *
      * @return string
      */
-    public function getSshCommand($url, array $extraOptions = [], $remoteCommand = null, $omitUrl = false, $autoConfigure = true): string
+    public function getSshCommand(string $url, array $extraOptions = [], array|string|null $remoteCommand = null, bool $omitUrl = false, bool $autoConfigure = true): string
     {
         $command = 'ssh';
         if (!$omitUrl) {
@@ -248,7 +248,7 @@ class Ssh implements InputConfiguringInterface
      * @return bool|null
      *  True if the URI is for an internal server, false if it's external, or null if it cannot be determined.
      */
-    public function hostIsInternal($uri): ?bool
+    public function hostIsInternal(string $uri): ?bool
     {
         $host = $this->getHost($uri);
         if (!$host) {

@@ -18,7 +18,7 @@ class BotCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('party', null, InputOption::VALUE_NONE)
@@ -64,7 +64,6 @@ class BotCommand extends CommandBase
         // Stay positive: return code 0 when the user quits.
         if (function_exists('pcntl_signal')) {
             declare(ticks = 1);
-            /** @noinspection PhpComposerExtensionStubsInspection */
             pcntl_signal(SIGINT, function (): void {
                 echo "\n";
                 exit;
@@ -76,11 +75,11 @@ class BotCommand extends CommandBase
         }
     }
 
-    private function addSignature(array $frames, $signature): array
+    private function addSignature(array $frames, string $signature): array
     {
         $indent = '    ';
-        if (strlen((string) $signature) > 0) {
-            $signatureIndent = str_repeat(' ', (int) (strlen($indent) + 5 - floor(strlen((string) $signature) / 2)));
+        if (strlen($signature) > 0) {
+            $signatureIndent = str_repeat(' ', (int) (strlen($indent) + 5 - floor(strlen($signature) / 2)));
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 
