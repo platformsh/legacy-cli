@@ -33,21 +33,26 @@ class ActivityGetCommand extends ActivityCommandBase
             ->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter by type (when selecting a default activity).'
                 . "\n" . ArrayArgument::SPLIT_HELP
-                . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities."
+                . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities.",
+                null,
+                ActivityLoader::getAvailableTypes(),
             )
             ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Exclude by type (when selecting a default activity).'
                  . "\n" . ArrayArgument::SPLIT_HELP
-                 . "\nThe % or * characters can be used as a wildcard to exclude types."
+                 . "\nThe % or * characters can be used as a wildcard to exclude types.",
+                null,
+                ActivityLoader::getAvailableTypes(),
             )
-            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP, null, self::STATE_VALUES)
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure', null, self::RESULT_VALUES)
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
                 'Include only incomplete activities (when selecting a default activity).'
                 . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition());
         PropertyFormatter::configureInput($this->getDefinition());
         $this->addExample('Find the time a project was created', '--all --type project.create -P completed_at');

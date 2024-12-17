@@ -35,6 +35,7 @@ class DbSqlCommand extends CommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open an SQL console on the remote database');

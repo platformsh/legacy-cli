@@ -36,6 +36,7 @@ class EnvironmentInfoCommand extends CommandBase
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Read all environment properties')
              ->addExample("Show the environment's status", 'status')

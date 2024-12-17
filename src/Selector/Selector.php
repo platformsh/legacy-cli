@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Selector;
 
+use Platformsh\Cli\Console\CompleterInterface;
+use Platformsh\Cli\Local\ApplicationFinder;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\RemoteContainer\BrokenEnv;
 use Platformsh\Cli\Model\RemoteContainer\Worker;
@@ -26,6 +28,9 @@ use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Completion\CompletionInput;
+use Symfony\Component\Console\Completion\CompletionSuggestions;
+use Symfony\Component\Console\Completion\Suggestion;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidArgumentException as ConsoleInvalidArgumentException;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -38,7 +43,7 @@ use Symfony\Component\Console\Terminal;
 /**
  * Service allowing the user to select the current project, environment, app, and organization.
  */
-class Selector
+class Selector implements CompleterInterface
 {
     const DEFAULT_ENVIRONMENT_CODE = '.';
 
@@ -999,5 +1004,117 @@ class Selector
 
         $id = $this->questionHelper->choose($options, 'Enter a number to choose an organization (<fg=cyan>-o</>):', $default);
         return $byId[$id];
+    }
+
+    /**
+     * Runs autocompletion for Selector options.
+     */
+    public function complete(CompletionInput $input, CompletionSuggestions $suggestions): void
+    {
+        if ($input->mustSuggestOptionValuesFor('project')
+            || $input->mustSuggestArgumentValuesFor('project')) {
+            $suggestions->suggestValues($this->getProjectAutocompletionSuggestions());
+        } elseif ($input->mustSuggestOptionValuesFor('environment')
+            || $input->mustSuggestArgumentValuesFor('environment')
+            || $input->mustSuggestArgumentValuesFor('parent')) {
+            $suggestions->suggestValues($this->getEnvironmentAutocompletionSuggestions($input));
+        } elseif ($input->mustSuggestOptionValuesFor('app')) {
+            $suggestions->suggestValues($this->getAppAutocompletionSuggestions($input));
+        }
+    }
+
+    /**
+     * Get the preferred project for autocompletion.
+     *
+     * The project is either defined by an ID that the user has specified in
+     * the command (via the 'project' argument or '--project' option), or it is
+     * determined from the current path.
+     *
+     * @param CompletionInput $input
+     * @return Project|false
+     */
+    private function getProjectForAutocompletion(CompletionInput $input): Project|false
+    {
+        if (!$this->api->isLoggedIn()) {
+            return false;
+        }
+        if ($input->hasOption('project')) {
+            $id = $input->getOption('project');
+        } elseif ($input->hasArgument('project')) {
+            $id = $input->getArgument('project');
+        } elseif ($input->hasArgument('get')) {
+            $id = $input->getArgument('get');
+        } else {
+            $id = null;
+        }
+        if ($id !== null) {
+            return $this->api->getProject($id, null, false);
+        }
+        if ($currentProject = $this->getCurrentProject(true)) {
+            return $currentProject;
+        }
+        return false;
+    }
+
+    /**
+     * @return Suggestion[]
+     */
+    private function getEnvironmentAutocompletionSuggestions(CompletionInput $input): array
+    {
+        $project = $this->getProjectForAutocompletion($input);
+        if (!$project) {
+            return [];
+        }
+        $environments = $this->api->getEnvironments($project, false, false);
+        $environments = $environments ?: $this->api->getEnvironments($project, null, false);
+        $suggestions =  array_map(
+            function (Environment $e): Suggestion {
+                return new Suggestion($e->id, $e->title && $e->title !== $e->id ? $e->title : '');
+            },
+            $environments,
+        );
+        if (count($environments) > 1 && $this->api->getDefaultEnvironment($environments, $project, true) !== null) {
+            array_unshift($suggestions, new Suggestion(self::DEFAULT_ENVIRONMENT_CODE, 'Default environment'));
+        }
+        return $suggestions;
+    }
+
+    /**
+     * @return Suggestion[]
+     */
+    private function getProjectAutocompletionSuggestions(): array
+    {
+        if (!$this->api->isLoggedIn()) {
+            return [];
+        }
+        $projects = $this->api->getMyProjects(false) ?: $this->api->getMyProjects();
+        return array_map(
+            fn(BasicProjectInfo $p): Suggestion => new Suggestion($p->id, $p->title),
+            $projects,
+        );
+    }
+
+    /**
+     * @return array<string|Suggestion>
+     */
+    private function getAppAutocompletionSuggestions(CompletionInput $input): array
+    {
+        $apps = [];
+        if ($projectRoot = $this->getProjectRoot()) {
+            $finder = new ApplicationFinder();
+            foreach ($finder->findApplications($projectRoot) as $app) {
+                $name = $app->getName();
+                if ($name !== null) {
+                    $apps[] = $name;
+                }
+            }
+        } elseif ($project = $this->getProjectForAutocompletion($input)) {
+            $environments = $this->api->getEnvironments($project, null, false);
+            if ($environments && ($environment = $this->api->getDefaultEnvironment($environments, $project))) {
+                $apps = array_keys($environment->getSshUrls());
+            }
+        }
+
+        return $apps;
     }
 }

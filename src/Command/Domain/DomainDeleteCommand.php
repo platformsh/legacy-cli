@@ -27,6 +27,7 @@ class DomainDeleteCommand extends DomainCommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The domain name');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the domain example.com', 'example.com');
     }

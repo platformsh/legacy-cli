@@ -32,6 +32,7 @@ class ProjectInfoCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Read all project properties')
              ->addExample("Show the project's Git URL", 'git')

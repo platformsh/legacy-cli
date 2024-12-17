@@ -32,6 +32,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, '[Deprecated option, not used]');
     }
 

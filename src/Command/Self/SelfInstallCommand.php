@@ -109,20 +109,17 @@ EOT
 
         $this->stdErr->write('Setting up autocompletion...');
         try {
-            $args = [
-                '--generate-hook' => true,
-                '--program' => $this->config->get('application.executable'),
-            ];
+            $args = [];
             if ($shellType) {
-                $args['--shell-type'] = $shellType;
+                $args['shell'] = $shellType;
             }
             $buffer = new BufferedOutput();
-            $exitCode = $this->subCommandRunner->run('_completion', $args, $buffer);
+            $exitCode = $this->subCommandRunner->run('completion', $args, $buffer);
             if ($exitCode === 0 && ($autoCompleteHook = $buffer->fetch())) {
                 $fs->dumpFile($configDir . '/autocompletion.sh', $autoCompleteHook);
                 $this->stdErr->writeln(' <info>done</info>');
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // If stdout is not a terminal, then we tried but
             // autocompletion probably isn't needed at all, as we are in the
             // context of some kind of automated build. So ignore the error.

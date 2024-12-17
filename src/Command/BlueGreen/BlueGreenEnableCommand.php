@@ -35,6 +35,7 @@ class BlueGreenEnableCommand extends CommandBase
         );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

@@ -11,8 +11,6 @@ use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +18,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'service:mongo:export', description: 'Export data from MongoDB', aliases: ['mongoexport'])]
-class MongoExportCommand extends CommandBase implements CompletionAwareInterface
+class MongoExportCommand extends CommandBase
 {
     public function __construct(private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
@@ -37,6 +35,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
     }
 
@@ -133,25 +132,5 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         $collections = json_decode($result, true) ?: [];
 
         return array_filter($collections, fn($collection): bool => !str_starts_with((string) $collection, 'system.'));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        if ($optionName === 'type') {
-            return ['csv'];
-        }
-
-        return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        return [];
     }
 }

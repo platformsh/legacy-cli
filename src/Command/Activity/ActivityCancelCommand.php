@@ -33,16 +33,21 @@ class ActivityCancelCommand extends ActivityCommandBase
             ->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter by type (when selecting a default activity).'
                 . "\n" . ArrayArgument::SPLIT_HELP
-                . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities."
+                . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities.",
+                null,
+                ActivityLoader::getAvailableTypes(),
             )
             ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Exclude by type (when selecting a default activity).'
                 . "\n" . ArrayArgument::SPLIT_HELP
-                . "\nThe % or * characters can be used as a wildcard to exclude types."
+                . "\nThe % or * characters can be used as a wildcard to exclude types.",
+                null,
+                ActivityLoader::getAvailableTypes(),
             )
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

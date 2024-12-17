@@ -27,6 +27,7 @@ class CertificateGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to view');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

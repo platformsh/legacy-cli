@@ -30,6 +30,7 @@ class CommitGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The commit property to display.');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
 
         $definition = $this->getDefinition();
         PropertyFormatter::configureInput($definition);

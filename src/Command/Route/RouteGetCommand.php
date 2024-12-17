@@ -35,6 +35,7 @@ class RouteGetCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('app', 'A', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addOption('identity-file', 'i', InputOption::VALUE_REQUIRED, '[Deprecated option, no longer used]');
         $this->addExample('View the URL to the https://{default}/ route', "'https://{default}/' -P url");

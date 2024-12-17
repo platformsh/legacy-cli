@@ -26,6 +26,7 @@ class CertificateDeleteCommand extends CommandBase
         $this
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 

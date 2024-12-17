@@ -30,10 +30,11 @@ class UserGetCommand extends CommandBase
     {
         $this
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
-            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
+            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", null, ['project', 'environment'])
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         // Backwards compatibility.

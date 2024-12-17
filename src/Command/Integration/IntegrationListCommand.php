@@ -26,6 +26,7 @@ class IntegrationListCommand extends IntegrationCommandBase
             ->addOption('type', 't', InputOption::VALUE_REQUIRED, 'Filter by type');
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

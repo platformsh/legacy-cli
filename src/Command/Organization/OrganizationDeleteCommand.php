@@ -19,6 +19,7 @@ class OrganizationDeleteCommand extends OrganizationCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

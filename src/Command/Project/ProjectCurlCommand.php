@@ -22,6 +22,7 @@ class ProjectCurlCommand extends CommandBase
         CurlCli::configureInput($this->getDefinition());
 
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('Change the project title', '-X PATCH -d \'{"title": "New title"}\'');
     }
 

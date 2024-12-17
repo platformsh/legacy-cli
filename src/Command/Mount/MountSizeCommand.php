@@ -45,6 +45,7 @@ class MountSizeCommand extends CommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addRemoteContainerOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $help = <<<EOF
 Use this command to check the disk size and usage for an application's mounts.
 

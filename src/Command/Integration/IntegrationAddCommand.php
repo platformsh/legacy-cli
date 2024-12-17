@@ -23,6 +23,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Add an integration with a GitHub repository',

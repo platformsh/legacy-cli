@@ -45,6 +45,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Require a username and password', '--auth myname:mypassword');
         $this->addExample('Restrict access to only one IP address', '--access allow:69.208.1.192 --access deny:any');

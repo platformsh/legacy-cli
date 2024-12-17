@@ -42,6 +42,7 @@ class CertificateListCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('Output a list of domains covered by valid certificates', '--pipe-domains --no-expired');
     }
 

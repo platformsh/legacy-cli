@@ -54,6 +54,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $helpLines = [

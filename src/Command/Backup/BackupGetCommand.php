@@ -26,6 +26,7 @@ class BackupGetCommand extends CommandBase
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The backup property to display.');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 

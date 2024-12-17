@@ -53,25 +53,30 @@ class ActivityListCommand extends ActivityCommandBase
             $typeDescription
             . "\n" . ArrayArgument::SPLIT_HELP
             . "\nThe first part of the activity name can be omitted, e.g. 'cron' can select 'environment.cron' activities."
-            . "\nThe % or * characters can be used as a wildcard, e.g. '%var%' to select variable-related activities."
+            . "\nThe % or * characters can be used as a wildcard, e.g. '%var%' to select variable-related activities.",
+            null,
+            ActivityLoader::getAvailableTypes(),
         );
         $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             'Exclude activities by type.'
             . "\n" . ArrayArgument::SPLIT_HELP
             . "\nThe first part of the activity name can be omitted, e.g. 'cron' can exclude 'environment.cron' activities."
-            . "\nThe % or * characters can be used as a wildcard to exclude types."
+            . "\nThe % or * characters can be used as a wildcard to exclude types.",
+            null,
+            ActivityLoader::getAvailableTypes(),
         );
 
         $this->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
-            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP)
-            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure')
+            ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state: in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP, null, self::STATE_VALUES)
+            ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result: success or failure', null, self::RESULT_VALUES)
             ->addOption('incomplete', 'i', InputOption::VALUE_NONE, 'Only list incomplete activities')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'List activities on all environments');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type push')

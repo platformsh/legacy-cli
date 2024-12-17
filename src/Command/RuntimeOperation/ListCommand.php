@@ -39,6 +39,7 @@ class ListCommand extends CommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name');
 
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);

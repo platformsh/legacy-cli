@@ -44,6 +44,7 @@ class BackupListCommand extends CommandBase
         PropertyFormatter::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->setHiddenAliases(['snapshots', 'snapshot:list']);
         $this->addExample('Display backups including the "live" and "commit_id" columns', '-c+live,commit_id');
     }

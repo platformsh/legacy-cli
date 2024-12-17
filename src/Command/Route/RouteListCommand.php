@@ -40,6 +40,7 @@ class RouteListCommand extends CommandBase
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

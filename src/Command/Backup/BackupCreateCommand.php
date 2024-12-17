@@ -37,6 +37,7 @@ class BackupCreateCommand extends CommandBase
             );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addHiddenOption('unsafe', null, InputOption::VALUE_NONE, 'Deprecated option: use --live instead');
         $this->setHiddenAliases(['snapshot:create', 'environment:backup']);

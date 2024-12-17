@@ -35,6 +35,7 @@ class ProjectVariableGetCommand extends CommandBase
         );
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->setHiddenAliases(['project:variable:list']);
     }
 

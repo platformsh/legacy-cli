@@ -55,6 +55,7 @@ class DbSizeCommand extends CommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Relationships::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         Ssh::configureInput($this->getDefinition());

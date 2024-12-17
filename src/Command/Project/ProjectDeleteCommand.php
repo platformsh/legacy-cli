@@ -26,6 +26,7 @@ class ProjectDeleteCommand extends CommandBase
         $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

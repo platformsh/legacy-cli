@@ -30,6 +30,7 @@ class EnvironmentRelationshipsCommand extends CommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->addExample("View all the current environment's relationships");
         $this->addExample("View the 'main' environment's relationships", 'main');

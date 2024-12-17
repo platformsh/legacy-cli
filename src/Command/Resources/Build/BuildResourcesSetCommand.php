@@ -28,6 +28,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         $this->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
             ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)');
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

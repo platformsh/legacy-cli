@@ -34,12 +34,12 @@ class EnvironmentCheckoutCommand extends CommandBase
 
     protected function configure(): void
     {
-        $this
-            ->addArgument(
-                'id',
-                InputArgument::OPTIONAL,
-                'The ID of the environment to check out. For example: "sprint2"'
-            );
+        $this->addArgument(
+            'environment',
+            InputArgument::OPTIONAL,
+            'The ID of the environment to check out. For example: "sprint2"'
+        );
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Check out the environment "develop"', 'develop');
     }
@@ -52,7 +52,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $branch = $input->getArgument('id');
+        $branch = $input->getArgument('environment');
         if ($branch === null) {
             if ($input->isInteractive()) {
                 $branch = $this->offerBranchChoice($project, $projectRoot);

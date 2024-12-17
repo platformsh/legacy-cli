@@ -32,6 +32,7 @@ class AppListCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of app names only');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 

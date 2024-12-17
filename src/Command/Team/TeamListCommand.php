@@ -45,6 +45,7 @@ class TeamListCommand extends TeamCommandBase
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order')
             ->addOption('all', 'A', InputOption::VALUE_NONE, 'List all teams in the organization (regardless of a selected project)');
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addExample('List teams (in the current project, if any)');

@@ -55,6 +55,7 @@ class UserAddCommand extends CommandBase
         $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
 
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');

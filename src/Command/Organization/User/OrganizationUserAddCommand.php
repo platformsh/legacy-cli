@@ -24,6 +24,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addPermissionOption();
     }

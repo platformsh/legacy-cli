@@ -71,6 +71,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Push code to the current environment');
         $this->addExample('Push code, without waiting for deployment', '--no-wait');
