@@ -34,6 +34,7 @@ readonly class SubCommandRunner
     public function run(string $commandName, array $arguments = [], ?OutputInterface $output = null): int
     {
         $application = new Application($this->config);
+        $application->setAutoExit(false);
         $application->setIO($this->input, $output ?: $this->output);
         $command = $application->find($commandName);
 
