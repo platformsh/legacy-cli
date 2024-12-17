@@ -10,7 +10,7 @@ readonly class TokenConfig
     private Config $config;
     private StorageInterface $apiTokenStorage;
 
-    public function __construct(Config $config = null)
+    public function __construct(?Config $config = null)
     {
         $this->config = $config ?: new Config();
         $this->apiTokenStorage = Storage::factory($this->config);

@@ -23,10 +23,7 @@ class ProjectInfoCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
@@ -111,15 +108,7 @@ class ProjectInfoCommand extends CommandBase
         return 0;
     }
 
-    /**
-     * @param string  $property
-     * @param string  $value
-     * @param Project $project
-     * @param bool    $noWait
-     *
-     * @return int
-     */
-    protected function setProperty($property, $value, Project $project, $noWait): int
+    protected function setProperty(string $property, string $value, Project $project, bool $noWait): int
     {
         $type = $this->getType($property);
         if (!$type) {
@@ -159,13 +148,9 @@ class ProjectInfoCommand extends CommandBase
     }
 
     /**
-     * Get the type of a writable property.
-     *
-     * @param string $property
-     *
-     * @return string|false
+     * Gets the type of a writable property.
      */
-    protected function getType($property): string|false
+    protected function getType(string $property): string|false
     {
         $writableProperties = [
             'title' => 'string',
@@ -174,6 +159,6 @@ class ProjectInfoCommand extends CommandBase
             'default_branch' => 'string',
         ];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 }

@@ -34,12 +34,8 @@ class OsUtil
      * PHP's escapeshellarg() function adapts its output depending on the
      * system. So to escape arguments consistently for remote non-Windows
      * systems, we need our own method.
-     *
-     * @param string $arg
-     *
-     * @return string
      */
-    public static function escapePosixShellArg($arg)
+    public static function escapePosixShellArg(string $arg): string
     {
         // Skip quoting the argument if it only contains safe characters.
         // This uses a fairly conservative allow-list.
@@ -53,17 +49,13 @@ class OsUtil
      * Escapes a shell argument, with Windows compatibility.
      *
      * @see \Symfony\Component\Process\Process::escapeArgument()
-     *
-     * @param string $argument
-     *
-     * @return string
      */
-    public static function escapeShellArg($argument)
+    public static function escapeShellArg(string $argument): string
     {
         if ('\\' !== \DIRECTORY_SEPARATOR) {
             return self::escapePosixShellArg($argument);
         }
-        if ('' === $argument = (string) $argument) {
+        if ('' === $argument) {
             return '""';
         }
         if (str_contains($argument, "\0")) {
@@ -103,7 +95,7 @@ class OsUtil
         foreach ($suffixes as $suffix) {
             foreach ($dirs as $dir) {
                 if (@is_file($file = $dir.\DIRECTORY_SEPARATOR.$name.$suffix) && ($isWindows || @is_executable($file))) {
-                    array_push($found, $file);
+                    $found[] = $file;
                 }
             }
         }

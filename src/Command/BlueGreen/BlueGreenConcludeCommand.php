@@ -22,7 +22,7 @@ class BlueGreenConcludeCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setHelp('Use this command to delete the old version after a blue/green deployment, and return to the default deployment flow.');

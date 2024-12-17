@@ -7,14 +7,10 @@ class StringUtil
     /**
      * Finds a substring between two delimiters.
      *
-     * @param string $str
-     * @param string $begin
-     * @param string $end
-     *
      * @return string|null
      *   The substring, or null if the delimiters are not found.
      */
-    public static function between($str, $begin, $end): ?string
+    public static function between(string $str, string $begin, string $end): ?string
     {
         $first = \strpos($str, $begin);
         $last = \strrpos($str, $end, $first);
@@ -28,16 +24,8 @@ class StringUtil
 
     /**
      * Formats a list of items.
-     *
-     * @param string[] $items
-     * @param string $before
-     * @param string $after
-     * @param string $andOr
-     * @param string $separator
-     *
-     * @return string
      */
-    public static function formatItemList($items, $before = '', $after = '', $andOr = ' or ', $separator = ', ')
+    public static function formatItemList(array $items, string $before = '', string $after = '', string $andOr = ' or ', string $separator = ', '): string
     {
         if (count($items) === 0) {
             return '';

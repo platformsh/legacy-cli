@@ -20,7 +20,7 @@ class EnvironmentResumeCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());

@@ -31,7 +31,7 @@ readonly class SubCommandRunner
      * @return int
      * @throws \Exception
      */
-    public function run(string $commandName, array $arguments = [], OutputInterface $output = null): int
+    public function run(string $commandName, array $arguments = [], ?OutputInterface $output = null): int
     {
         $application = new Application($this->config);
         $application->setIO($this->input, $output ?: $this->output);

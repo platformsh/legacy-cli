@@ -29,10 +29,7 @@ class MountListCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('paths', null, InputOption::VALUE_NONE, 'Output the mount paths only (one per line)')

@@ -27,7 +27,7 @@ class SelfReleaseCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $defaultRepo = $this->config->get('application.github_repo');
         $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'main');
@@ -85,7 +85,7 @@ class SelfReleaseCommand extends CommandBase
 
         if ($shell->commandExists('gh')) {
             $process = $shell->executeCaptureProcess('gh auth status --show-token', null, true);
-            if (!preg_match('/Token: (\S+)/', (string) $process->getOutput(), $matches)) {
+            if (!preg_match('/Token: (\S+)/', $process->getOutput(), $matches)) {
                 $this->stdErr->writeln('Unable to obtain a GitHub token.');
                 $this->stdErr->writeln('Log in to the GitHub CLI with: <info>gh auth login</info>');
                 return 1;
@@ -404,7 +404,7 @@ class SelfReleaseCommand extends CommandBase
      *
      * @return string[] The filename and the current changelog.
      */
-    private function getReleaseChangelog($lastVersionTag, string $newVersionTag): array
+    private function getReleaseChangelog(string $lastVersionTag, string $newVersionTag): array
     {
         $filename = CLI_ROOT . '/release-changelog-' . $newVersionTag . '.md';
         if (file_exists($filename)) {

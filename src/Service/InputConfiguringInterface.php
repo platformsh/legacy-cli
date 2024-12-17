@@ -6,5 +6,5 @@ use Symfony\Component\Console\Input\InputDefinition;
 
 interface InputConfiguringInterface
 {
-    public static function configureInput(InputDefinition $definition);
+    public static function configureInput(InputDefinition $definition): void;
 }

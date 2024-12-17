@@ -31,7 +31,7 @@ class GitServiceTest extends TestCase
         }
 
         $this->git = new Git();
-        $this->git->init($repository, true);
+        $this->git->init($repository, '', true);
         $this->git->setDefaultRepositoryDir($repository);
         chdir($repository);
 

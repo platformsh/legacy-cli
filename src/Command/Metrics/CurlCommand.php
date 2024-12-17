@@ -17,7 +17,7 @@ class CurlCommand extends MetricsCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         CurlCli::configureInput($this->getDefinition());
 

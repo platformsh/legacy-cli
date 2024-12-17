@@ -7,9 +7,9 @@ use Platformsh\Client\Session\Storage\SessionStorageInterface;
 /**
  * Stores sessions using the Credential Helper.
  */
-class SessionStorage implements SessionStorageInterface
+readonly class SessionStorage implements SessionStorageInterface
 {
-    private readonly string $serverUrlBase;
+    private string $serverUrlBase;
 
     /**
      * CredentialsHelperStorage constructor.
@@ -21,7 +21,7 @@ class SessionStorage implements SessionStorageInterface
      *   is more helpful to the user. In Windows this will be described as the
      *   "Internet or network address".
      */
-    public function __construct(private readonly Manager $manager, $serverUrlPrefix)
+    public function __construct(private Manager $manager, string $serverUrlPrefix)
     {
         $this->serverUrlBase = rtrim($serverUrlPrefix, '/');
     }
@@ -100,7 +100,7 @@ class SessionStorage implements SessionStorageInterface
     /**
      * {@inheritdoc}
      */
-    public function save($sessionId, array $data): void
+    public function save(string $sessionId, array $data): void
     {
         $serverUrl = $this->serverUrl($sessionId);
         if (empty($data)) {
@@ -137,7 +137,7 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return array
      */
-    private function deserialize($data): array
+    private function deserialize(string $data): array
     {
         $result = json_decode(base64_decode($data, true), true);
 

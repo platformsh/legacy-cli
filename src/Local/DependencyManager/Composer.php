@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Local\DependencyManager;
 
 class Composer extends DependencyManagerBase
 {
-    protected $command = 'composer';
+    protected string $command = 'composer';
 
     /**
      * {@inheritdoc}

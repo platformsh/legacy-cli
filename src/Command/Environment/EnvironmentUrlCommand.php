@@ -24,7 +24,7 @@ class EnvironmentUrlCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('primary', '1', InputOption::VALUE_NONE, 'Only return the URL for the primary route');
@@ -134,7 +134,7 @@ class EnvironmentUrlCommand extends CommandBase
      *
      * @return string|null
      */
-    private function findPrimaryRouteUrl(array $routes)
+    private function findPrimaryRouteUrl(array $routes): ?string
     {
         foreach ($routes as $route) {
             if ($route->primary) {

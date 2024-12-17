@@ -15,10 +15,8 @@ class IntegrationValidateCommand extends IntegrationCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');

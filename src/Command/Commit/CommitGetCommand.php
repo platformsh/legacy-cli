@@ -22,10 +22,8 @@ class CommitGetCommand extends CommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('commit', InputArgument::OPTIONAL, 'The commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP, 'HEAD')

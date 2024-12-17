@@ -36,12 +36,8 @@ class Certifier
 
     /**
      * Generates a new certificate.
-     *
-     * @param Certificate|null $previousCert
-     *
-     * @return Certificate
      */
-    public function generateCertificate($previousCert, $forceNewKey = false)
+    public function generateCertificate(?Certificate $previousCert, bool $forceNewKey = false): Certificate
     {
         // Ensure the user is logged in to the API, so that an auto-login will
         // not be triggered after we have generated keys (auto-login triggers a
@@ -78,12 +74,9 @@ class Certifier
     /**
      * Inner function to generate the actual certificate.
      *
-     * @param bool $forceNewKey
-     * @return Certificate
-     *
      * @see self::generateCertificate()
      */
-    private function doGenerateCertificate($forceNewKey = false): Certificate
+    private function doGenerateCertificate(bool $forceNewKey = false): Certificate
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $this->fs->mkdir($dir, 0700);
@@ -202,7 +195,7 @@ class Certifier
      *
      * @return bool
      */
-    public function certificateConflictsWithJwt(Certificate $certificate, $jwt = null): bool
+    public function certificateConflictsWithJwt(Certificate $certificate, ?string $jwt = null): bool
     {
         $extensions = $certificate->metadata()->getExtensions();
         if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh']) && !isset($extensions['token-claims@platform.sh'])) {

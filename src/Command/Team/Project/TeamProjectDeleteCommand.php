@@ -20,7 +20,7 @@ class TeamProjectDeleteCommand extends TeamCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
         $this->selector->addOrganizationOptions($this->getDefinition());

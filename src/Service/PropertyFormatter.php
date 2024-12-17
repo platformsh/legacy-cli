@@ -13,16 +13,12 @@ class PropertyFormatter implements InputConfiguringInterface
 {
     protected Config $config;
 
-    public function __construct(protected ?InputInterface $input = null, Config $config = null)
+    public function __construct(protected ?InputInterface $input = null, ?Config $config = null)
     {
         $this->config = $config ?: new Config();
     }
 
-    /**
-     * @param string $property
-     * @return string
-     */
-    public function format(mixed $value, $property = null)
+    public function format(mixed $value, ?string $property = null): string
     {
         if ($value === null && $property !== 'parent') {
             return '';
@@ -103,10 +99,8 @@ class PropertyFormatter implements InputConfiguringInterface
 
     /**
      * Returns the configured date format.
-     *
-     * @return string
      */
-    private function dateFormat()
+    private function dateFormat(): string
     {
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {
             return $this->input->getOption('date-fmt');
@@ -136,22 +130,13 @@ class PropertyFormatter implements InputConfiguringInterface
 
     /**
      * Formats a UNIX timestamp.
-     *
-     * @param int $value
-     *
-     * @return string
      */
-    public function formatUnixTimestamp($value): string
+    public function formatUnixTimestamp(int $value): string
     {
         return date($this->dateFormat(), $value);
     }
 
-    /**
-     * @param array|string|null $httpAccess
-     *
-     * @return string
-     */
-    protected function formatHttpAccess($httpAccess)
+    protected function formatHttpAccess(array|string|null $httpAccess): string
     {
         $info = (array) $httpAccess;
         $info += [
@@ -166,14 +151,14 @@ class PropertyFormatter implements InputConfiguringInterface
     }
 
     /**
-     * Display a complex data structure.
+     * Displays a complex data structure.
      *
-     * @param OutputInterface $output     An output object.
-     * @param array           $data       The data to display.
-     * @param string|null     $property   The property of the data to display
-     *                                    (a dot-separated string).
+     * @param OutputInterface $output An output object.
+     * @param array $data The data to display.
+     * @param string|null $property The property of the data to display
+     *                              (a dot-separated string).
      */
-    public function displayData(OutputInterface $output, array $data, $property = null): void
+    public function displayData(OutputInterface $output, array $data, ?string $property = null): void
     {
         $key = null;
 

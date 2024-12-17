@@ -21,10 +21,8 @@ class AppConfigGetCommand extends CommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The configuration property to view')

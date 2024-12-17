@@ -15,15 +15,11 @@ class Field
     const FORMAT_DISK = 'disk';
     const FORMAT_MEMORY = 'memory';
 
-    /**
-     * @param string $name
-     * @param string $format
-     */
-    public function __construct(private $name, private $format)
+    public function __construct(private readonly string $name, private readonly string $format)
     {
     }
 
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -36,7 +32,7 @@ class Field
      *
      * @return string
      */
-    private function formatPercent(float $pc, $warn = true): string
+    private function formatPercent(float $pc, bool $warn = true): string
     {
         if ($warn) {
             if ($pc >= self::RED_WARNING_THRESHOLD) {
@@ -58,7 +54,7 @@ class Field
      *
      * @return string
      */
-    public function format(Sketch $value, $warn = true)
+    public function format(Sketch $value, bool $warn = true): string
     {
         if ($value->isInfinite()) {
             return '∞';

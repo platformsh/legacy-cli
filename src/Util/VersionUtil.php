@@ -6,18 +6,14 @@ class VersionUtil
 {
     /**
      * Finds the next patch, minor and major versions after a given version.
-     *
-     * @param string $version
-     *
-     * @return string[]
      */
-    public function nextVersions($version): array
+    public function nextVersions(string $version): array
     {
         if (preg_match('/^([0-9]+)\.([0-9]+)\.([0-9]+)(-.+)?$/', $version, $matches)) {
             $major = (int) $matches[1];
             $minor = (int) $matches[2];
             $patch = (int) $matches[3];
-            $suffix = isset($matches[4]) ? $matches[4] : '';
+            $suffix = $matches[4] ?? '';
             $format = '%d.%d.%d%s';
             $nextPatch = \sprintf($format, $major, $minor, $patch + 1, $suffix);
             $nextMinor = \sprintf($format, $major, $minor + 1, 0, $suffix);
@@ -29,13 +25,9 @@ class VersionUtil
 
 
     /**
-     * Check if a version number is for a pre-release version.
-     *
-     * @param string $version
-     *
-     * @return bool
+     * Checks if a version number is for a pre-release version.
      */
-    public function isPreRelease($version): bool
+    public function isPreRelease(string $version): bool
     {
         return \preg_match('/^[0-9]+\.[0-9]+(\.[0-9]+)?-.+/', $version) === 1;
     }

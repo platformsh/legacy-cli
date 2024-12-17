@@ -6,14 +6,8 @@ class Pager
 {
     /**
      * Creates a Page.
-     *
-     * @param array $items
-     * @param int $pageNumber
-     * @param int $itemsPerPage
-     *
-     * @return Page
      */
-    public function page(array $items, $pageNumber, $itemsPerPage): Page
+    public function page(array $items, int $pageNumber, int $itemsPerPage): Page
     {
         if ($pageNumber < 1) {
             throw new \InvalidArgumentException('The page number cannot be less than 1');

@@ -11,13 +11,9 @@ use Platformsh\Client\Model\Environment;
  * Used when an environment doesn't have a working deployments API, due to
  * application validation errors on the server side.
  */
-class BrokenEnv implements RemoteContainerInterface
+readonly class BrokenEnv implements RemoteContainerInterface
 {
-    /**
-     * @param Environment $environment
-     * @param string                               $appName
-     */
-    public function __construct(private readonly Environment $environment, private $appName)
+    public function __construct(private Environment $environment, private string $appName)
     {
     }
 
@@ -32,7 +28,7 @@ class BrokenEnv implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->appName;
     }

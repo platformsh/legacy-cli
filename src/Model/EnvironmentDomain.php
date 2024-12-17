@@ -25,14 +25,9 @@ class EnvironmentDomain extends ApiResourceBase
     }
 
     /**
-     * @param ClientInterface $client
-     * @param Environment $environment
-     * @param string $name
-     * @param string $replacementFor
-     * @param array $ssl
-     * @return Result
+     * Adds a domain to an environment.
      */
-    public static function add(ClientInterface $client, Environment $environment, $name, $replacementFor = '', $ssl = [])
+    public static function add(ClientInterface $client, Environment $environment, string $name, string $replacementFor = '', array $ssl = []): Result
     {
         $body = ['name' => $name];
         if (!empty($replacementFor)) {

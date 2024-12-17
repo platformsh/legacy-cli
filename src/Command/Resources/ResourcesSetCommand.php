@@ -31,7 +31,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('size', 'S', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Set the profile size (CPU and memory) of apps, workers, or services.'
@@ -243,7 +243,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     if ($service->disk) {
                         $default = $service->disk;
                     } else {
-                        $default = isset($properties['resources']['default']['disk']) ? $properties['resources']['default']['disk'] : '512';
+                        $default = $properties['resources']['default']['disk'] ?? '512';
                     }
                     $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  fn($v) => $this->validateDiskSize($v, $name, $service));
                     if ($diskSize !== $service->disk) {
@@ -360,14 +360,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     /**
      * Summarizes changes per service.
-     *
-     * @param string $name The service name
-     * @param WebApp|Worker|Service $service
-     * @param array $updates
-     * @param array $containerProfiles
-     * @return void
      */
-    private function summarizeChangesPerService($name, $service, array $updates, array $containerProfiles): void
+    private function summarizeChangesPerService(string $name, WebApp|Worker|Service $service, array $updates, array $containerProfiles): void
     {
         $this->stdErr->writeln(sprintf('  <options=bold>%s: </><options=bold,underscore>%s</>', ucfirst($this->typeName($service)), $name));
 
@@ -388,13 +382,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
         if (isset($updates['instance_count'])) {
             $this->stdErr->writeln('    Instance count: ' . $this->resourcesUtil->formatChange(
-                isset($properties['instance_count']) ? $properties['instance_count'] : 1,
+                $properties['instance_count'] ?? 1,
                 $updates['instance_count']
             ));
         }
         if (isset($updates['disk'])) {
             $this->stdErr->writeln('    Disk: ' . $this->resourcesUtil->formatChange(
-                isset($properties['disk']) ? $properties['disk'] : null,
+                $properties['disk'] ?? null,
                 $updates['disk'],
                 ' MB'
             ));
@@ -403,11 +397,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     /**
      * Returns the group for a service (where it belongs in the deployment object).
-     *
-     * @param Service|WebApp|Worker $service
-     * @return string
      */
-    protected function group($service): string
+    protected function group(WebApp|Worker|Service $service): string
     {
         if ($service instanceof WebApp) {
             return 'webapps';
@@ -420,12 +411,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     /**
      * Returns the service type name for a service.
-     *
-     * @param Service|WebApp|Worker $service
-     *
-     * @return string
      */
-    protected function typeName($service): string
+    protected function typeName(WebApp|Worker|Service $service): string
     {
         if ($service instanceof WebApp) {
             return 'app';
@@ -439,16 +426,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Validates a given instance count.
      *
-     * @param string $value
-     * @param string $serviceName
-     * @param Service|WebApp|Worker $service
-     * @param int|null $limit
-     *
      * @throws InvalidArgumentException
-     *
-     * @return int
      */
-    protected function validateInstanceCount($value, $serviceName, $service, $limit): int
+    protected function validateInstanceCount(string $value, string $serviceName, WebApp|Worker|Service $service, ?int $limit): int
     {
         if ($service instanceof Service) {
             throw new InvalidArgumentException(sprintf('The instance count of the service <error>%s</error> cannot be changed.', $serviceName));
@@ -464,17 +444,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
     }
 
     /**
-     * Validate a given disk size.
-     *
-     * @param string $value
-     * @param string $serviceName
-     * @param Service|WebApp|Worker $service
+     * Validates a given disk size.
      *
      * @throws InvalidArgumentException
-     *
-     * @return int
      */
-    protected function validateDiskSize($value, $serviceName, $service)
+    protected function validateDiskSize(string $value, string $serviceName, WebApp|Worker|Service $service): int
     {
         if (!$this->resourcesUtil->supportsDisk($service)) {
             throw new InvalidArgumentException(sprintf(
@@ -510,18 +484,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
     }
 
     /**
-     * Validate a given profile size.
-     *
-     * @param string $value
-     * @param string $serviceName
-     * @param Service|WebApp|Worker $service
-     * @param EnvironmentDeployment $deployment
+     * Validates a given profile size.
      *
      * @throws InvalidArgumentException
-     *
-     * @return string
      */
-    protected function validateProfileSize($value, $serviceName, $service, EnvironmentDeployment $deployment)
+    protected function validateProfileSize(string $value, string $serviceName, WebApp|Worker|Service $service, EnvironmentDeployment $deployment): string
     {
         $properties = $service->getProperties();
         if ($value === 'default') {

@@ -24,7 +24,7 @@ class ProjectSetRemoteCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');

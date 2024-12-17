@@ -18,7 +18,7 @@ class CertificateAddCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to the certificate file')

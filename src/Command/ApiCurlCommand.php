@@ -17,7 +17,7 @@ class ApiCurlCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         CurlCli::configureInput($this->getDefinition());
     }

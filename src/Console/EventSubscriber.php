@@ -17,10 +17,10 @@ use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class EventSubscriber implements EventSubscriberInterface
+readonly class EventSubscriber implements EventSubscriberInterface
 {
 
-    public function __construct(private readonly CacheProvider $cache, private readonly Config $config)
+    public function __construct(private CacheProvider $cache, private Config $config)
     {
     }
 

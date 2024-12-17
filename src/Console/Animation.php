@@ -9,9 +9,9 @@ class Animation
     /** @var AnimationFrame[] */
     protected array $frames;
 
-    protected $currentFrame = 0;
-    protected $lastFrame;
-    protected $lastFrameTime;
+    protected int $currentFrame = 0;
+    protected ?int $lastFrame = null;
+    protected null|int|float $lastFrameTime = null;
 
     /**
      * @param OutputInterface $output
@@ -21,7 +21,7 @@ class Animation
      * @param int             $interval
      *    Minimum interval between frames in microseconds.
      */
-    public function __construct(protected OutputInterface $output, array $frames, protected $interval = 500000)
+    public function __construct(protected OutputInterface $output, array $frames, protected int $interval = 500000)
     {
         $this->frames = \array_map(fn($frame) => \is_string($frame) ? new AnimationFrame($frame, $this->interval) : $frame, $frames);
     }
@@ -43,7 +43,7 @@ class Animation
      *
      * @param string $placeholder
      */
-    public function render($placeholder = '.'): void
+    public function render(string $placeholder = '.'): void
     {
         // Ensure that at least $this->interval microseconds have passed since
         // the last frame.

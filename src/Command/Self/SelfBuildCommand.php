@@ -22,7 +22,7 @@ class SelfBuildCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')

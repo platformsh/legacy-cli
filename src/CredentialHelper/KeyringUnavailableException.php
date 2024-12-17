@@ -11,7 +11,7 @@ use Symfony\Component\Process\Exception\ProcessTimedOutException;
  */
 class KeyringUnavailableException extends \RuntimeException
 {
-    public static function fromTimeout(ProcessTimedOutException $_): \Platformsh\Cli\CredentialHelper\KeyringUnavailableException
+    public static function fromTimeout(ProcessTimedOutException $_): KeyringUnavailableException
     {
         $type = OsUtil::isOsX() ? 'keychain' : 'keyring';
         $message = sprintf('The credential helper process timed out while trying to access the %s.', $type);
@@ -19,7 +19,7 @@ class KeyringUnavailableException extends \RuntimeException
         return new KeyringUnavailableException($message);
     }
 
-    public static function fromFailure(ProcessFailedException $e): \Platformsh\Cli\CredentialHelper\KeyringUnavailableException
+    public static function fromFailure(ProcessFailedException $e): KeyringUnavailableException
     {
         $type = OsUtil::isOsX() ? 'keychain' : 'keyring';
         $message = sprintf('The credential helper process failed while trying to access the %s.', $type);

@@ -3,47 +3,44 @@
 namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableCellStyle;
 
 /**
  * Extends the Symfony Console Table to make it adaptive to the terminal width.
  */
 class AdaptiveTableCell extends TableCell
 {
-    protected $wrap = true;
+    protected bool $wrap = true;
 
+    /**
+     * @param string $value
+     * @param array{rowspan?: int, colspan?: int, wrap?: bool, style?: ?TableCellStyle} $options
+     */
     public function __construct(string $value, array $options = [])
     {
-        foreach (['wrap'] as $flag) {
-            if (isset($options[$flag])) {
-                $this->{$flag} = (bool) $options[$flag];
-                unset($options[$flag]);
-            }
+        if (isset($options['wrap'])) {
+            $this->wrap = (bool) $options['wrap'];
+            unset($options['wrap']);
         }
 
         parent::__construct($value, $options);
     }
 
-    /**
-     * @return bool
-     */
-    public function canWrap()
+    public function canWrap(): bool
     {
         return $this->wrap;
     }
 
     /**
-     * Create a new cell object based on this, with a new value.
-     *
-     * @param string $value
-     *
-     * @return self
+     * Creates a new cell object based on this, with a new value.
      */
-    public function withValue($value): self
+    public function withValue(string $value): self
     {
         $options = [
             'colspan' => $this->getColspan(),
             'rowspan' => $this->getRowspan(),
             'wrap' => $this->canWrap(),
+            'style' => $this->getStyle(),
         ];
 
         return new self($value, $options);

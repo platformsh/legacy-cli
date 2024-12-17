@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Service\HostFactory;
 use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -8,16 +9,12 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\RemoteEnvVars;
-use Platformsh\Cli\Service\Shell;
-use Platformsh\Cli\Service\Ssh;
-use Platformsh\Cli\Service\SshDiagnostics;
 use Symfony\Component\Process\Exception\RuntimeException;
 use Cocur\Slugify\Slugify;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
-use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Drush;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -30,11 +27,12 @@ use Symfony\Component\Yaml\Yaml;
 class LocalDrushAliasesCommand extends CommandBase
 {
 
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly HostFactory $hostFactory, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector)
     {
         parent::__construct();
     }
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addOption('recreate', 'r', InputOption::VALUE_NONE, 'Recreate the aliases.')
@@ -129,9 +127,6 @@ class LocalDrushAliasesCommand extends CommandBase
             // each Enterprise environment. This will be cached by the Drush
             // service ($drush), for use while generating aliases.
             $envVarsService = $this->remoteEnvVars;
-            $ssh = $this->ssh;
-            $sshDiagnostics = $this->sshDiagnostics;
-            $shell = $this->shell;
             foreach ($environments as $environment) {
 
                 // Cache the environment's deployment information.
@@ -163,7 +158,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         continue;
                     }
                     try {
-                        $appRoot = $envVarsService->getEnvVar('APP_DIR', new RemoteHost($sshUrl, $environment, $ssh, $shell, $sshDiagnostics));
+                        $appRoot = $envVarsService->getEnvVar('APP_DIR', $this->hostFactory->remote($sshUrl, $environment));
                     } catch (RuntimeException $e) {
                         $this->stdErr->writeln(sprintf(
                             'Unable to find app root for environment %s, app %s',
@@ -208,11 +203,9 @@ class LocalDrushAliasesCommand extends CommandBase
     }
 
     /**
-     * Ensure that the .drush/drush.yml file has the right config.
-     *
-     * @param Drush $drush
+     * Ensures that the .drush/drush.yml file has the right config.
      */
-    protected function ensureDrushConfig(Drush $drush)
+    protected function ensureDrushConfig(Drush $drush): void
     {
         if (!is_dir($drush->getSiteAliasDir())) {
             return;
@@ -243,11 +236,9 @@ class LocalDrushAliasesCommand extends CommandBase
     }
 
     /**
-     * Migrate old alias file(s) from ~/.drush to ~/.drush/site-aliases.
-     *
-     * @param Drush $drush
+     * Migrates old alias file(s) from ~/.drush to ~/.drush/site-aliases.
      */
-    protected function migrateAliasFiles(Drush $drush)
+    protected function migrateAliasFiles(Drush $drush): void
     {
         $newDrushDir = $drush->getHomeDir() . '/.drush/site-aliases';
         $oldFilenames = $drush->getLegacyAliasFiles();

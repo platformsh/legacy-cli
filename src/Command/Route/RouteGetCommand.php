@@ -23,10 +23,8 @@ class RouteGetCommand extends CommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('route', InputArgument::OPTIONAL, "The route's original URL")

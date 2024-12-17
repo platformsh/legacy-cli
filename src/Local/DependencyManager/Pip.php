@@ -6,7 +6,7 @@ use Platformsh\Cli\Service\Shell;
 
 class Pip extends DependencyManagerBase
 {
-    public function __construct(Shell $shell, private $stack)
+    public function __construct(Shell $shell, private readonly string $stack)
     {
         parent::__construct($shell);
     }

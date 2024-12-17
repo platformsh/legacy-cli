@@ -28,7 +28,7 @@ class TeamProjectAddCommand extends TeamCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addArgument('projects', InputArgument::IS_ARRAY, "The project ID(s).\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('all', null, InputOption::VALUE_NONE, 'Add all the projects that currently exist in the organization');
@@ -199,10 +199,8 @@ class TeamProjectAddCommand extends TeamCommandBase
 
     /**
      * Displays a list of projects.
-     *
-     * @param string[] $projectIds
      */
-    private function displayProjectsAsList($projectIds, OutputInterface $output): void
+    private function displayProjectsAsList(array $projectIds, OutputInterface $output): void
     {
         $selections = [];
         foreach ($projectIds as $projectId) {

@@ -18,7 +18,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument(

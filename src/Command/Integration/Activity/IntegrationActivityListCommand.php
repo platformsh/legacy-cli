@@ -43,10 +43,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setHiddenAliases(['int:act', 'i:act'])

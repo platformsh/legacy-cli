@@ -12,14 +12,11 @@ class RemoteHost implements HostInterface
 {
     private array $extraSshOptions = [];
 
-    public function __construct(private $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private readonly string $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
     {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getLabel()
+    public function getLabel(): string
     {
         return $this->sshUrl;
     }
@@ -35,7 +32,7 @@ class RemoteHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): bool|string
     {
         try {
             return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, $this->sshService->getEnv(), 3600, $input);
@@ -52,15 +49,12 @@ class RemoteHost implements HostInterface
      *
      * @return string
      */
-    private function wrapCommandLine($commandLine)
+    private function wrapCommandLine(string $commandLine): string
     {
         return $this->sshService->getSshCommand($this->sshUrl, $this->extraSshOptions, $commandLine);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function runCommandDirect($commandLine, $append = '')
+    public function runCommandDirect($commandLine, $append = ''): int
     {
         $start = \time();
         $exitCode = $this->shell->executeSimple($this->wrapCommandLine($commandLine) . $append, null, $this->sshService->getEnv());
@@ -68,17 +62,14 @@ class RemoteHost implements HostInterface
         return $exitCode;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function getCacheKey(): string
     {
         return $this->sshUrl . '--' . $this->environment->head_commit;
     }
 
-    public function lastChanged()
+    public function lastChanged(): string
     {
         $deployment_state = $this->environment->getProperty('deployment_state', false, false);
-        return isset($deployment_state['last_deployment_at']) ? $deployment_state['last_deployment_at'] : '';
+        return $deployment_state['last_deployment_at'] ?? '';
     }
 }

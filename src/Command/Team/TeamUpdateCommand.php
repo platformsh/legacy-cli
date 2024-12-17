@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 #[AsCommand(name: 'team:update', description: 'Update a team')]
 class TeamUpdateCommand extends TeamCreateCommand
 {
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('label', null, InputOption::VALUE_REQUIRED, 'Set a new team label')
             ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')

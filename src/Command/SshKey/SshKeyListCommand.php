@@ -24,7 +24,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
 

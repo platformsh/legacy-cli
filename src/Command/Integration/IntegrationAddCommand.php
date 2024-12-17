@@ -18,10 +18,8 @@ class IntegrationAddCommand extends IntegrationCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());

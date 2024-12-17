@@ -21,7 +21,7 @@ class TeamGetCommand extends TeamCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
         $this->addTeamOption()

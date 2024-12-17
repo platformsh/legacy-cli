@@ -34,16 +34,15 @@ class ActivityListCommand extends ActivityCommandBase
         'time_build' => 'Build time (s)',
         'time_deploy' => 'Deploy time (s)',
     ];
+
     private array $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
+
     public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';

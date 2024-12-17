@@ -20,7 +20,8 @@ class EnvironmentHttpAccessCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+
+    protected function configure(): void
     {
         parent::configure();
         $this
@@ -52,15 +53,13 @@ class EnvironmentHttpAccessCommand extends CommandBase
     }
 
     /**
-     * @param $auth
-     *
      * @throws InvalidArgumentException
      *
-     * @return array
+     * @return array{username: string, password: string}
      */
-    protected function parseAuth($auth): array
+    protected function parseAuth(string $auth): array
     {
-        $parts = explode(':', (string) $auth, 2);
+        $parts = explode(':', $auth, 2);
         if (count($parts) != 2) {
             $message = sprintf('Auth "<error>%s</error>" is not valid. The format should be username:password', $auth);
             throw new InvalidArgumentException($message);
@@ -81,15 +80,13 @@ class EnvironmentHttpAccessCommand extends CommandBase
     }
 
     /**
-     * @param $access
-     *
      * @throws InvalidArgumentException
      *
-     * @return array
+     * @return array{address: string, permission: string}
      */
-    protected function parseAccess($access): array
+    protected function parseAccess(string $access): array
     {
-        $parts = explode(':', (string) $access, 2);
+        $parts = explode(':', $access, 2);
         if (count($parts) != 2) {
             $message = sprintf(
                 'Access "<error>%s</error>" is not valid, please use the format: permission:address',
@@ -130,11 +127,11 @@ class EnvironmentHttpAccessCommand extends CommandBase
     }
 
     /**
-     * @param string $address
+     * Validates an IP address.
      *
      * @throws InvalidArgumentException
      */
-    protected function validateAddress($address)
+    protected function validateAddress(string $address): void
     {
         if ($address == 'any') {
             return;

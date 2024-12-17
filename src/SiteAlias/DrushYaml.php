@@ -10,7 +10,7 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getFilename($groupName): string
+    protected function getFilename(string $groupName): string
     {
         return $this->drush->getSiteAliasDir() . '/' . $groupName . '.site.yml';
     }
@@ -26,7 +26,7 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getExistingAliases($currentGroup, $previousGroup = null)
+    protected function getExistingAliases(string $currentGroup, $previousGroup = null): array
     {
         $aliases = parent::getExistingAliases($currentGroup, $previousGroup);
         if (empty($aliases)) {
@@ -44,7 +44,7 @@ class DrushYaml extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function normalize(array $aliases)
+    protected function normalize(array $aliases): array
     {
         return $this->swapKeys($aliases, [
             'remote-host' => 'host',

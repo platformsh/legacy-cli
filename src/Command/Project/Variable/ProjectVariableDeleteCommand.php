@@ -24,7 +24,7 @@ class ProjectVariableDeleteCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name');

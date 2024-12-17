@@ -22,7 +22,7 @@ class RedisCliCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->addArgument('args', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arguments to add to the Redis command');
         Relationships::configureInput($this->getDefinition());

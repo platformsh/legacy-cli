@@ -46,18 +46,18 @@ class DependencyInstaller
     }
 
     /**
-     * Install dependencies into a directory.
+     * Installs dependencies into a directory.
      *
      * @param string $destination
      * @param array  $dependencies
-     * @param bool   $global
-     *
-     * @throws \Exception If a dependency fails to install.
+     * @param bool $global
      *
      * @return bool
      *     False if a dependency manager is not available; otherwise true.
+     *
+     * @throws \Exception If a dependency fails to install.
      */
-    public function installDependencies(string $destination, array $dependencies, $global = false)
+    public function installDependencies(string $destination, array $dependencies, bool $global = false): bool
     {
         $success = true;
         foreach ($dependencies as $stack => $stackDependencies) {
@@ -88,10 +88,7 @@ class DependencyInstaller
         return $success;
     }
 
-    /**
-     * @param string $path
-     */
-    protected function ensureDirectory(string $path)
+    protected function ensureDirectory(string $path): void
     {
         if (!is_dir($path) && !mkdir($path, 0755, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $path);

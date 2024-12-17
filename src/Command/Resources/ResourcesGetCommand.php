@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:get', description: 'View the resources of apps and services on an environment', aliases: ['resources', 'res'])]
 class ResourcesGetCommand extends ResourcesCommandBase
 {
-    protected $tableHeader = [
+    protected array $tableHeader = [
         'service' => 'App or service',
         'type' => 'Type',
         'profile' => 'Profile',
@@ -30,13 +30,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'base_memory' => 'Base memory',
         'memory_ratio' => 'Memory ratio',
     ];
-    protected $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
+    protected array $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service name. This can select any service, including apps and workers.')

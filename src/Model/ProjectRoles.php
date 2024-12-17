@@ -6,13 +6,8 @@ class ProjectRoles
 {
     /**
      * Formats project-related permissions.
-     *
-     * @param string[] $permissions
-     * @param bool $machineReadable
-     *
-     * @return string
      */
-    public function formatPermissions(array $permissions, $machineReadable)
+    public function formatPermissions(array $permissions, bool $machineReadable): string
     {
         if (empty($permissions)) {
             return '';

@@ -7,7 +7,7 @@ use Platformsh\Cli\Exception\ProcessFailedException;
 /**
  * Helper class which runs rsync.
  */
-class Rsync
+readonly class Rsync
 {
 
     /**
@@ -17,18 +17,14 @@ class Rsync
      * @param Ssh $ssh
      * @param SshDiagnostics $sshDiagnostics
      */
-    public function __construct(private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics)
     {
     }
 
     /**
      * Returns environment variables for configuring rsync.
-     *
-     * @param string $sshUrl
-     *
-     * @return array
      */
-    private function env($sshUrl) {
+    private function env(string $sshUrl): array {
         return [
             'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, [], null, true),
         ] + $this->ssh->getEnv();
@@ -39,7 +35,7 @@ class Rsync
      *
      * @return bool|null
      */
-    public function supportsConvertingFilenames()
+    public function supportsConvertingFilenames(): ?bool
     {
         static $supportsIconv;
         if (!isset($supportsIconv)) {
@@ -54,13 +50,8 @@ class Rsync
 
     /**
      * Syncs files from a local to a remote location.
-     *
-     * @param string $sshUrl
-     * @param string $localDir
-     * @param string $remoteDir
-     * @param array  $options
      */
-    public function syncUp($sshUrl, $localDir, $remoteDir, array $options = []): void
+    public function syncUp(string $sshUrl, string $localDir, string $remoteDir, array $options = []): void
     {
         // Ensure a trailing slash on the "from" path, to copy the directory's
         // contents rather than the directory itself.
@@ -76,13 +67,8 @@ class Rsync
 
     /**
      * Syncs files from a remote to a local location.
-     *
-     * @param string $sshUrl
-     * @param string $remoteDir
-     * @param string $localDir
-     * @param array  $options
      */
-    public function syncDown($sshUrl, $remoteDir, $localDir, array $options = []): void
+    public function syncDown(string $sshUrl, string $remoteDir, string $localDir, array $options = []): void
     {
         $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
         $to = $localDir;
@@ -96,13 +82,8 @@ class Rsync
 
     /**
      * Runs rsync.
-     *
-     * @param string $from
-     * @param string $to
-     * @param string $sshUrl
-     * @param array $options
      */
-    private function doSync(string $from, $to, $sshUrl, array $options = []): void
+    private function doSync(string $from, string $to, string $sshUrl, array $options = []): void
     {
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 

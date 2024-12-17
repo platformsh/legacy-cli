@@ -24,10 +24,8 @@ class TunnelOpenCommand extends TunnelCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
         $this->selector->addProjectOption($this->getDefinition());

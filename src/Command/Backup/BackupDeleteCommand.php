@@ -20,7 +20,7 @@ class BackupDeleteCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('backup', InputArgument::OPTIONAL, 'The ID of the backup. Required in non-interactive mode.');

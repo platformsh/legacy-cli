@@ -34,7 +34,7 @@ class VariableListCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->variableCommandUtil->addLevelOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);
