@@ -163,25 +163,24 @@ class Selector
         // Select the app.
         $appName = null;
         $remoteContainer = null;
-        if ($input->hasOption('app') && $input->getOption('app') === null) {
-            // An app ID might be provided from the parsed project URL.
-            if (isset($result['appId'])) {
+        if ($input->hasOption('app')) {
+            if ($input->getOption('app')) {
+                $appName = $input->getOption('app');
+            } elseif (isset($result['appId'])) {
+                // An app ID might be provided from the parsed project URL.
                 $appName = $result['appId'];
                 $this->debug(sprintf(
                     'App name identified as: %s',
                     $input->getOption('app')
                 ));
-            }
-            // Or from an environment variable.
-            elseif (getenv($envPrefix . 'APPLICATION_NAME')) {
+            } elseif (getenv($envPrefix . 'APPLICATION_NAME')) {
+                // Or from an environment variable.
                 $appName = getenv($envPrefix . 'APPLICATION_NAME');
                 $this->stdErr->writeln(sprintf(
                     'App name read from environment variable %s: %s',
                     $envPrefix . 'APPLICATION_NAME',
                     $input->getOption('app')
                 ), OutputInterface::VERBOSITY_VERBOSE);
-            } elseif ($input->getOption('app')) {
-                $appName = $input->getOption('app');
             }
 
             $remoteContainer = $this->selectRemoteContainer($environment, $input, $appName);
@@ -530,11 +529,11 @@ class Selector
             try {
                 $project = $this->api->getProject($config['id'], $config['host'] ?? null);
             } catch (BadResponseException $e) {
-                if ($suppressErrors && $e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
+                if ($suppressErrors && in_array($e->getResponse()->getStatusCode(), [403, 404])) {
                     return $this->currentProject = false;
                 }
                 if ($this->config->has('api.base_url')
-                    && $e->getResponse() && $e->getResponse()->getStatusCode() === 401
+                    && $e->getResponse()->getStatusCode() === 401
                     && parse_url($this->config->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
                     $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getUri()->getHost());
                     return $this->currentProject = false;
@@ -902,9 +901,11 @@ class Selector
             }
 
             // Check for a conflict between the --org and the --project options.
-            if ($explicitProject && $selection->hasProject() && ($project = $selection->getProject())
-                && $project->getProperty('organization', true, false) !== $organization->id) {
-                throw new InvalidArgumentException("The project $project->id is not part of the organization $organization->id");
+            if ($explicitProject && $selection->hasProject()) {
+                $project = $selection->getProject();
+                if ($project->getProperty('organization', true, false) !== $organization->id) {
+                    throw new InvalidArgumentException("The project $project->id is not part of the organization $organization->id");
+                }
             }
 
             return $organization;

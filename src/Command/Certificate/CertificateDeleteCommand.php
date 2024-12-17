@@ -58,7 +58,7 @@ class CertificateDeleteCommand extends CommandBase
         try {
             $result = $certificate->delete();
         } catch (BadResponseException $e) {
-            if (($response = $e->getResponse()) && $response->getStatusCode() === 403 && $certificate->is_provisioned) {
+            if ($e->getResponse()->getStatusCode() === 403 && $certificate->is_provisioned) {
                 $this->stdErr->writeln(sprintf('The certificate <error>%s</error> is automatically provisioned; it cannot be deleted.', $certificate->id));
                 return 1;
             }

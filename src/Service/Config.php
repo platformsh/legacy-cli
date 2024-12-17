@@ -12,10 +12,11 @@ use Symfony\Component\Yaml\Yaml;
 class Config
 {
     private array $config;
-    private $configFile;
-    private $env;
-    private $fs;
-    private $version;
+    private string $configFile;
+    private array $env;
+
+    private ?Filesystem $fs = null;
+    private ?string $version = null;
     private ?string $homeDir = null;
 
     /**
@@ -24,7 +25,7 @@ class Config
      */
     public function __construct(array $env = null, $file = null)
     {
-        $this->env = $env !== null ? $env : $this->getDefaultEnv();
+        $this->env = $env !== null ? $env : getenv();
 
         if ($file === null) {
             $file = $this->getEnv('CLI_CONFIG_FILE', false) ?: CLI_ROOT . '/config.yaml';
@@ -64,16 +65,6 @@ class Config
         if (isset($this->config['api']['session_id'])) {
             $this->validateSessionId($this->config['api']['session_id']);
         }
-    }
-
-    /**
-     * Find all current environment variables.
-     *
-     * @return array
-     */
-    private function getDefaultEnv(): string|array|false
-    {
-        return PHP_VERSION_ID >= 70100 ? getenv() : $_ENV;
     }
 
     /**
@@ -180,12 +171,12 @@ class Config
         return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
     }
 
-    /**
-     * @return Filesystem
-     */
-    private function fs()
+    private function fs(): Filesystem
     {
-        return $this->fs ?: new Filesystem();
+        if (!isset($this->fs)) {
+            $this->fs = new Filesystem();
+        }
+        return $this->fs;
     }
 
     /**

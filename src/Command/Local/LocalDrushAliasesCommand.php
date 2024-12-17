@@ -141,9 +141,9 @@ class LocalDrushAliasesCommand extends CommandBase
                     try {
                         $this->api->getCurrentDeployment($environment);
                     } catch (BadResponseException $e) {
-                        if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
+                        if ($e->getResponse()->getStatusCode() === 400) {
                             $this->io->debug('The deployment is invalid: ' . $e->getMessage());
-                        } elseif ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
+                        } elseif ($e->getResponse()->getStatusCode() === 404) {
                             $this->io->debug('Current deployment not found: ' . $e->getMessage());
                         } else {
                             throw $e;

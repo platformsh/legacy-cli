@@ -141,7 +141,7 @@ EOF
             } catch (ProjectNotFoundException) {
                 $currentProject = false;
             } catch (BadResponseException $e) {
-                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                if ($e->getResponse()->getStatusCode() === 403) {
                     $currentProject = false;
                 } else {
                     throw $e;
@@ -246,7 +246,7 @@ EOF
                         throw $e;
                     }
                 } catch (BadResponseException $e) {
-                    if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [502, 503, 524])) {
+                    if (in_array($e->getResponse()->getStatusCode(), [502, 503, 524])) {
                         $this->io->debug($e->getMessage());
                     } else {
                         throw $e;
@@ -298,7 +298,7 @@ EOF
                         throw $e;
                     }
                 } catch (BadResponseException $e) {
-                    if ($e->getResponse() && in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
+                    if (in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
                         $this->io->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
                     } else {
                         throw $e;

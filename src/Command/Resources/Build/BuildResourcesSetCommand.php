@@ -148,7 +148,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
     /**
      * Summarizes all the changes that would be made.
      *
-     * @param array{cpu: int, memory: int} $updates
+     * @param array{cpu?: int, memory?: int} $updates
      * @param array{cpu: int, memory: int} $current
      * @return void
      */
@@ -157,11 +157,11 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
         $this->stdErr->writeln('  CPU: ' . $this->resourcesUtil->formatChange(
             $this->resourcesUtil->formatCPU($current['cpu']),
-            $this->resourcesUtil->formatCPU(isset($updates['cpu']) ? $updates['cpu'] : $current['cpu'])
+            $this->resourcesUtil->formatCPU($updates['cpu'] ?? $current['cpu'])
         ));
         $this->stdErr->writeln('  Memory: ' . $this->resourcesUtil->formatChange(
             $current['memory'],
-            isset($updates['memory']) ? $updates['memory'] : $current['memory'],
+                $updates['memory'] ?? $current['memory'],
             ' MB'
         ));
     }

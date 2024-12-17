@@ -78,7 +78,7 @@ END_HELP;
         try {
             $organization = $client->createOrganization($values['name'], $values['label'], $values['country']);
         } catch (BadResponseException $e) {
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 409) {
+            if ($e->getResponse()->getStatusCode() === 409) {
                 $this->stdErr->writeln(\sprintf('An organization already exists with the same name: <error>%s</error>', $values['name']));
                 return 1;
             }

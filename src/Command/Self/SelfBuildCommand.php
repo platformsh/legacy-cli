@@ -186,7 +186,8 @@ class SelfBuildCommand extends CommandBase
         }
         $start = "/* START_CONFIG */";
         $end = "/* END_CONFIG */";
-        $startPos = \strpos($installerContents, $start) + \strlen($start);
+        $commentStart = \strpos($installerContents, $start);
+        $startPos = $commentStart ? $commentStart + \strlen($start) : false;
         $endPos = \strpos($installerContents, $end);
         if ($startPos === false || $endPos === false || $endPos < $startPos) {
             $this->stdErr->writeln('Failed to locate config in installer file: <error>' . $installerFile . '</error>');

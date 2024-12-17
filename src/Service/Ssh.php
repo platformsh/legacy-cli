@@ -221,9 +221,9 @@ class Ssh implements InputConfiguringInterface
      *
      * @param string $uri
      *
-     * @return string|false|null
+     * @return string|false
      */
-    private function getHost(string $uri): false|int|string|array|null
+    private function getHost(string $uri): string|false
     {
         if (str_contains($uri, '@')) {
             list(, $uri) = \explode('@', $uri, 2);
