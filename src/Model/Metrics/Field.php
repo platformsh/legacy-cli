@@ -67,7 +67,7 @@ class Field
             self::FORMAT_ROUNDED => (string) round($value->average()),
             self::FORMAT_ROUNDED_2DP => (string) round($value->average(), 2),
             self::FORMAT_PERCENT => $this->formatPercent($value->average(), $warn),
-            self::FORMAT_DISK, self::FORMAT_MEMORY => FormatterHelper::formatMemory($value->average()),
+            self::FORMAT_DISK, self::FORMAT_MEMORY => FormatterHelper::formatMemory((int) $value->average()),
             default => throw new \InvalidArgumentException('Formatter not found: ' . $this->format),
         };
     }

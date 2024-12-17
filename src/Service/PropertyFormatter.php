@@ -117,11 +117,11 @@ class PropertyFormatter implements InputConfiguringInterface
     /**
      * Formats a string datetime.
      *
-     * @param string $value
+     * @param int|string $value
      *
      * @return string|null
      */
-    public function formatDate($value): ?string
+    public function formatDate(int|string $value): ?string
     {
         // Workaround for the ssl.expires_on date, which is currently a
         // timestamp in milliseconds.

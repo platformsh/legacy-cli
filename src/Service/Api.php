@@ -1186,7 +1186,7 @@ class Api
      * @return ApiResource
      *   The resource, if one (and only one) is matched.
      */
-    public function matchPartialId($id, array $resources, $name = 'Resource'): ApiResource
+    public function matchPartialId(string $id, array $resources, string $name = 'Resource'): ApiResource
     {
         $matched = array_filter($resources, fn(ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
 
@@ -1686,7 +1686,7 @@ class Api
         $request = new Request('GET', $project->getUri() . '/settings');
         $response = $this->getHttpClient()->send($request);
         $settings = Utils::jsonDecode((string) $response->getBody(), true);
-        $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
+        $this->cache->save($cacheKey, $settings, (int) $this->config->get('api.projects_ttl'));
         return !empty($settings['sizing_api_enabled']);
     }
 

@@ -7,6 +7,7 @@ use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Client\Model\Certificate;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -43,6 +44,7 @@ class CertificateDeleteCommand extends CommandBase
         $certificate = $project->getCertificate($id);
         if (!$certificate) {
             try {
+                /** @var Certificate $certificate */
                 $certificate = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());

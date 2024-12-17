@@ -49,12 +49,12 @@ class ArrayArgument
      *
      * @return array
      */
-    public static function split($args): array
+    public static function split(array $args): array
     {
         $split = [];
         foreach ($args as $arg) {
             $split = \array_merge($split, \preg_split('/[,\s]+/', $arg));
         }
-        return \array_filter($split, '\\strlen');
+        return \array_filter($split, fn(string $a): bool => \strlen($a) > 0);
     }
 }

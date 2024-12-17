@@ -101,7 +101,7 @@ class DbSizeCommand extends CommandBase
 
         $values = [
             'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
-            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory($estimatedUsage),
+            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory((int) $estimatedUsage),
             'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
         ];
 

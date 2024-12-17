@@ -3,11 +3,13 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
+use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Csv;
 use Platformsh\Cli\Util\PlainFormat;
 use Platformsh\Cli\Util\Wildcard;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -146,8 +148,8 @@ class Table implements InputConfiguringInterface
     /**
      * Render an single-dimensional array of values, with their property names.
      *
-     * @param string[] $values
-     * @param string[] $propertyNames
+     * @param array<string|TableCell> $values
+     * @param array<string|TableCell> $propertyNames
      */
     public function renderSimple(array $values, array $propertyNames): void
     {

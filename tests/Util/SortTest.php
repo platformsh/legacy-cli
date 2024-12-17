@@ -44,7 +44,7 @@ class SortTest extends TestCase
             list($property, $reverse, $expected) = $case;
             $o = $objects;
             Sort::sortObjects($o, $property, $reverse);
-            $this->assertEquals($expected, $o, $i);
+            $this->assertEquals($expected, $o, (string) $i);
         }
     }
 

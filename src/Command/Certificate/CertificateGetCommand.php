@@ -5,6 +5,7 @@ use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Client\Model\Certificate;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,6 +38,7 @@ class CertificateGetCommand extends CommandBase
         $cert = $project->getCertificate($id);
         if (!$cert) {
             try {
+                /** @var Certificate $cert */
                 $cert = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());

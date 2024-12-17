@@ -118,7 +118,7 @@ class ApiTokenLoginCommand extends CommandBase
         if (!$e instanceof BadResponseException || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
             return false;
         }
-        $json = Utils::jsonDecode($e->getResponse(), true);
+        $json = Utils::jsonDecode((string) $e->getResponse()->getBody(), true);
         // Compatibility with legacy auth provider.
         if (isset($json['error'], $json['error_description'])
             && $json['error'] === 'invalid_grant'

@@ -53,11 +53,11 @@ class Csv
     /**
      * Format a CSV cell.
      *
-     * @param string|object $cell
+     * @param string|\Stringable $cell
      *
      * @return string
      */
-    protected function formatCell($cell): string|array|null
+    protected function formatCell(string|\Stringable $cell): string
     {
         // Cast cell data to a string.
         $cell = (string) $cell;
@@ -68,8 +68,6 @@ class Csv
         }
 
         // Standardize line breaks.
-        $cell = preg_replace('/\R/u', $this->lineBreak, $cell);
-
-        return $cell;
+        return preg_replace('/\R/u', $this->lineBreak, $cell);
     }
 }
