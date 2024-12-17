@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a235b1e565d1e83ba325bc88e8881ed0",
+    "content-hash": "0e838e21ace212c4819b8505327a61fc",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -1602,56 +1602,6 @@
                 }
             ],
             "time": "2023-11-16T16:16:50+00:00"
-        },
-        {
-            "name": "stecman/symfony-console-completion",
-            "version": "v0.14.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/stecman/symfony-console-completion.git",
-                "reference": "93b88586e50c05b7375a547031f535bf1ea970f5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/stecman/symfony-console-completion/zipball/93b88586e50c05b7375a547031f535bf1ea970f5",
-                "reference": "93b88586e50c05b7375a547031f535bf1ea970f5",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.1",
-                "symfony/console": "~6.4 || ^7.1"
-            },
-            "require-dev": {
-                "dms/phpunit-arraysubset-asserts": "^0.4.0",
-                "phpunit/phpunit": "^9.5"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "0.14.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Stecman\\Component\\Symfony\\Console\\BashCompletion\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Stephen Holdaway",
-                    "email": "stephen@stecman.co.nz"
-                }
-            ],
-            "description": "Automatic BASH completion for Symfony Console Component based applications.",
-            "support": {
-                "issues": "https://github.com/stecman/symfony-console-completion/issues",
-                "source": "https://github.com/stecman/symfony-console-completion/tree/v0.14.0"
-            },
-            "time": "2024-11-09T03:07:26+00:00"
         },
         {
             "name": "symfony/config",

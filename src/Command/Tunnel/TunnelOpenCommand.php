@@ -31,6 +31,7 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->setHelp(<<<EOF
 This command opens SSH tunnels to all of the relationships of an application.

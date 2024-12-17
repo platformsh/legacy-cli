@@ -33,6 +33,7 @@ class VariableDeleteCommand extends CommandBase
         $this->variableCommandUtil->addLevelOption($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Delete the variable "example"', 'example');
     }

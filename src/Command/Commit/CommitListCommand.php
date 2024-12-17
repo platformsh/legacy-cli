@@ -36,6 +36,7 @@ class CommitListCommand extends CommandBase
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'The number of commits to display.', 10);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
 
         $definition = $this->getDefinition();
         Table::configureInput($definition, $this->tableHeader);

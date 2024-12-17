@@ -28,6 +28,7 @@ class ProjectSetRemoteCommand extends CommandBase
     {
         $this
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
+        $this->addCompleter($this->selector);
         $this->addExample('Set the remote project for this repository to "abcdef123456"', 'abcdef123456');
         $this->addExample('Unset the remote project for this repository', '-');
     }

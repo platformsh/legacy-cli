@@ -4,11 +4,9 @@ namespace Platformsh\Cli\Command\Organization\User;
 
 use Symfony\Component\Console\Command\Command;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Input\InputOption;
 
-class OrganizationUserCommandBase extends OrganizationCommandBase implements CompletionAwareInterface
+class OrganizationUserCommandBase extends OrganizationCommandBase
 {
     // @todo add 'admin'
     protected static array $allPermissions = ['billing', 'members', 'plans', 'projects:create', 'projects:list'];
@@ -41,20 +39,9 @@ class OrganizationUserCommandBase extends OrganizationCommandBase implements Com
             null,
             InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
             'Permission(s) for the user on the organization. '
-            . "\n" . 'Valid permissions are: <info>' . implode('</info>, <info>', self::$allPermissions) . '</info>'
+            . "\n" . 'Valid permissions are: <info>' . implode('</info>, <info>', self::$allPermissions) . '</info>',
+            null,
+            self::$allPermissions,
         );
-    }
-
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        if ($optionName === 'permission') {
-            return self::$allPermissions;
-        }
-        return [];
-    }
-
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        return [];
     }
 }

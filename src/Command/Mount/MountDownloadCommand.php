@@ -45,6 +45,7 @@ class MountDownloadCommand extends CommandBase
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
         $this->selector->addRemoteContainerOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
     }
 

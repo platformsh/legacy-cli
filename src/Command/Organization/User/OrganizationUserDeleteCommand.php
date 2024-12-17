@@ -21,6 +21,7 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addArgument('email', InputArgument::REQUIRED, 'The email address of the user');
     }
 

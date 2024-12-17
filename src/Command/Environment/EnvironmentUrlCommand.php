@@ -31,6 +31,7 @@ class EnvironmentUrlCommand extends CommandBase
         Url::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('Give a choice of URLs to open (or print all URLs if there is no browser)');
         $this->addExample('Print all URLs', '--pipe');
         $this->addExample('Print and/or open the primary route URL', '--primary');

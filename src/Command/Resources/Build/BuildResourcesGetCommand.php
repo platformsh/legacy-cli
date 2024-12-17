@@ -28,6 +28,7 @@ class BuildResourcesGetCommand extends CommandBase
     protected function configure(): void
     {
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         if ($this->config->has('service.resources_help_url')) {
             $this->setHelp('For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>');

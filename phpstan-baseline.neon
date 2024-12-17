@@ -56,11 +56,6 @@ parameters:
 			path: src/Command/BotCommand.php
 
 		-
-			message: "#^Parameter \\#1 \\$commandName of class Stecman\\\\Component\\\\Symfony\\\\Console\\\\BashCompletion\\\\Completion constructor expects string, null given\\.$#"
-			count: 6
-			path: src/Command/CompletionCommand.php
-
-		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
 			count: 1
 			path: src/Command/Integration/IntegrationCommandBase.php

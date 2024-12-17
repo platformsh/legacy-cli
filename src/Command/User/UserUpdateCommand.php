@@ -16,6 +16,7 @@ class UserUpdateCommand extends UserAddCommand
 
         $this->addRoleOption();
         $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Make Bob an admin on the "development" and "staging" environment types', 'bob@example.com -r development:a,staging:a');

@@ -30,6 +30,7 @@ class BlueGreenDeployCommand extends CommandBase
             ->setHelp('Use this command to deploy the latest (green) version, or otherwise change its routing percentage, during a blue/green deployment.');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

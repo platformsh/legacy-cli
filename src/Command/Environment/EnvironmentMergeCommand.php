@@ -31,6 +31,7 @@ class EnvironmentMergeCommand extends CommandBase
         $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(

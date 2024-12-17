@@ -34,6 +34,7 @@ class CpuCommand extends MetricsCommandBase
         $this->addMetricsOptions();
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }

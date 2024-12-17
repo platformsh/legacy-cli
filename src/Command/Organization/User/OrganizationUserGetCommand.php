@@ -26,6 +26,7 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'A property to display');
         PropertyFormatter::configureInput($this->getDefinition());

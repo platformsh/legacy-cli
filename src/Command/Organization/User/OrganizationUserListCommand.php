@@ -44,7 +44,8 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
             ->setHiddenAliases(['organization:users']);
-        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }

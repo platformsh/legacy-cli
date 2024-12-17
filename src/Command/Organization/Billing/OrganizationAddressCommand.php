@@ -28,6 +28,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs');

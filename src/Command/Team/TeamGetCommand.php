@@ -24,6 +24,7 @@ class TeamGetCommand extends TeamCommandBase
     protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         $this->addTeamOption()
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The name of a property to view');
         PropertyFormatter::configureInput($this->getDefinition());

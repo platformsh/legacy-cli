@@ -11,8 +11,6 @@ use Platformsh\Cli\Application;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\BasicProjectInfo;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
@@ -23,9 +21,10 @@ use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'multi', description: 'Execute a command on multiple projects')]
-class MultiCommand extends CommandBase implements CompletionAwareInterface
+class MultiCommand extends CommandBase
 {
     protected bool $canBeRunMultipleTimes = false;
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Identifier $identifier, private readonly Shell $shell)
     {
         parent::__construct();
@@ -253,34 +252,5 @@ class MultiCommand extends CommandBase implements CompletionAwareInterface
     private function splitProjectList(string $list): array
     {
         return array_filter(array_unique(preg_split('/[,\s]+/', $list) ?: []));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        if ($argumentName === 'cmd') {
-            $commandNames = [];
-            foreach ($this->getApplication()->all() as $command) {
-                if ($command instanceof MultiAwareInterface
-                    && $command->canBeRunMultipleTimes()
-                    && $command->getDefinition()->hasOption('project')) {
-                    $commandNames[] = $command->getName();
-                }
-            }
-
-            return $commandNames;
-        }
-
-        return [];
     }
 }

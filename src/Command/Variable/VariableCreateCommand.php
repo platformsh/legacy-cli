@@ -52,6 +52,7 @@ class VariableCreateCommand extends CommandBase
         $this->form->configureInputDefinition($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
