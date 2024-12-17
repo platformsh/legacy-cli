@@ -291,11 +291,10 @@ class LocalBuild
                 if (!empty($this->settings['no-deps'])) {
                     $this->output->writeln('Skipping build dependencies');
                 } else {
-                    $result = $this->dependencyInstaller->installDependencies(
+                    $success = $this->dependencyInstaller->installDependencies(
                         $depsDir,
                         $appConfig['dependencies']
                     );
-                    $success = $success && $result;
                 }
 
                 // Use the dependencies' PATH and other environment variables

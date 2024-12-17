@@ -23,6 +23,7 @@ class ActivityLogCommand extends ActivityCommandBase
     {
         parent::__construct();
     }
+
     /**
      * {@inheritdoc}
      */
@@ -80,15 +81,9 @@ class ActivityLogCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
-
-                    return 1;
-                }
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 1);
-            /** @var Activity $activity */
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No activities found');

@@ -67,11 +67,6 @@ class ActivityCancelCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Activity not found: <error>$id</error>");
-
-                    return 1;
-                }
             }
         } else {
             $activities = $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
@@ -106,7 +101,7 @@ class ActivityCancelCommand extends ActivityCommandBase
         try {
             $activity->cancel();
         } catch (BadResponseException $e) {
-            if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && \strpos($e->getMessage(), 'cannot be cancelled')) {
+            if ($e->getResponse()->getStatusCode() === 400 && \strpos($e->getMessage(), 'cannot be cancelled')) {
                 if (\strpos($e->getMessage(), 'cannot be cancelled in its current state')) {
                     $activity->refresh();
                     $this->stdErr->writeln(\sprintf('The activity cannot be cancelled in its current state (<error>%s</error>).', $activity->state));

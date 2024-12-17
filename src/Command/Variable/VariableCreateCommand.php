@@ -207,7 +207,7 @@ class VariableCreateCommand extends CommandBase
                 } catch (BadResponseException $e) {
 
                     // Explain the error with visible_build on older API versions.
-                    if ($e->getResponse() && $e->getResponse()->getStatusCode() === 400 && !empty($values['visible_build'])) {
+                    if ($e->getResponse()->getStatusCode() === 400 && !empty($values['visible_build'])) {
                         $info = $project->systemInformation();
                         if (\version_compare($info->version, '12', '<')) {
                             $this->stdErr->writeln('');

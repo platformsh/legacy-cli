@@ -96,6 +96,11 @@ parameters:
 			path: src/Command/BlueGreen/BlueGreenEnableCommand.php
 
 		-
+			message: "#^While loop condition is always true\\.$#"
+			count: 1
+			path: src/Command/BotCommand.php
+
+		-
 			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
 			count: 3
 			path: src/Command/Certificate/CertificateDeleteCommand.php
@@ -186,11 +191,41 @@ parameters:
 			path: src/Command/Team/User/TeamUserAddCommand.php
 
 		-
+			message: "#^Dead catch \\- Platformsh\\\\ConsoleForm\\\\Exception\\\\ConditionalFieldException is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Command/Variable/VariableCreateCommand.php
+
+		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
 			count: 1
 			path: src/Command/Version/VersionListCommand.php
 
 		-
+			message: "#^While loop condition is always true\\.$#"
+			count: 1
+			path: src/Command/WinkyCommand.php
+
+		-
+			message: "#^Negated boolean expression is always true\\.$#"
+			count: 1
+			path: src/Local/LocalProject.php
+
+		-
+			message: "#^Ternary operator condition is always false\\.$#"
+			count: 1
+			path: src/Service/ActivityMonitor.php
+
+		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:head\\(\\)\\.$#"
 			count: 1
 			path: src/Service/Identifier.php
+
+		-
+			message: "#^Dead catch \\- InvalidArgumentException is never thrown in the try block\\.$#"
+			count: 1
+			path: tests/Command/User/UserAddCommandTest.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Tests\\\\Command\\\\User\\\\UserAddCommandTest\\:\\:\\$mockTypes is never read, only written\\.$#"
+			count: 1
+			path: tests/Command/User/UserAddCommandTest.php

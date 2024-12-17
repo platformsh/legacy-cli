@@ -711,7 +711,7 @@ abstract class IntegrationCommandBase extends CommandBase
             $this->getBitbucketAccessToken($credentials);
         } catch (\Exception $e) {
             $message = '<error>Invalid Bitbucket credentials</error>';
-            if ($e instanceof BadResponseException && $e->getResponse() && $e->getResponse()->getStatusCode() === 400) {
+            if ($e instanceof BadResponseException && $e->getResponse()->getStatusCode() === 400) {
                 $message .= "\n" . 'Ensure that the OAuth consumer key and secret are valid.'
                     . "\n" . 'Additionally, ensure that the OAuth consumer has a callback URL set (even just to <comment>http://localhost</comment>).';
             }

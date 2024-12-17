@@ -117,7 +117,7 @@ abstract class DomainCommandBase extends CommandBase
                         $productionDomains = $project->getDomains();
                         $productionDomainAccess = true;
                     } catch (BadResponseException $e) {
-                        if ($e->getResponse() && $e->getResponse()->getStatusCode() === 403) {
+                        if ($e->getResponse()->getStatusCode() === 403) {
                             $productionDomainAccess = false;
                             $productionDomains = [];
                         } else {
@@ -166,7 +166,7 @@ abstract class DomainCommandBase extends CommandBase
                         }
                     } catch (BadResponseException $e) {
                         // Ignore access denied errors.
-                        if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
+                        if ($e->getResponse()->getStatusCode() !== 403) {
                             throw $e;
                         }
                     }
@@ -209,9 +209,6 @@ abstract class DomainCommandBase extends CommandBase
     protected function handleApiException(ClientException $e, Project $project)
     {
         $response = $e->getResponse();
-        if (!$response) {
-            throw $e;
-        }
         if ($response->getStatusCode() === 403) {
             $project->ensureFull();
             $data = $project->getData();

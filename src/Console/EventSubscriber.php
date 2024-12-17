@@ -55,8 +55,8 @@ class EventSubscriber implements EventSubscriberInterface
         }
 
         // Handle Guzzle exceptions, i.e. HTTP 4xx or 5xx errors.
-        if (($error instanceof ClientException || $error instanceof ServerException)
-            && ($response = $error->getResponse())) {
+        if ($error instanceof ClientException || $error instanceof ServerException) {
+            $response = $error->getResponse();
             $request = $error->getRequest();
             $json = (array) json_decode($response->getBody()->__toString(), true);
 

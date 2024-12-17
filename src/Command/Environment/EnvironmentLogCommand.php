@@ -95,7 +95,7 @@ class EnvironmentLogCommand extends CommandBase implements CompletionAwareInterf
             $files = $result && is_string($result) ? explode("\n", $result) : $defaultFiles;
 
             // Ask the user to choose a file.
-            $files = array_combine($files, array_map(fn($file): string|array => str_replace('.log', '', basename(trim((string) $file))), $files));
+            $files = array_combine($files, array_map(fn($file): string => str_replace('.log', '', basename(trim((string) $file))), $files));
             $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 

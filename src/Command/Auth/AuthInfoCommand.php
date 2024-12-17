@@ -75,13 +75,13 @@ class AuthInfoCommand extends CommandBase
         if ($property) {
             if (!isset($info[$property])) {
                 // Backwards compatibility.
-                if ($property === 'display_name' && isset($info['first_name'], $info['last_name'])) {
+                if ($property === 'display_name') {
                     $this->stdErr->writeln('<options=reverse>Deprecated:</> the "display_name" property has been replaced by "first_name" and "last_name".');
                     $info[$property] = \sprintf('%s %s', $info['first_name'], $info['last_name']);
-                } elseif ($property === 'mail' && isset($info['email'])) {
+                } elseif ($property === 'mail') {
                     $this->stdErr->writeln('<options=reverse>Deprecated:</> the "mail" property is now named "email".');
                     $info[$property] = $info['email'];
-                } elseif ($property === 'uuid' && isset($info['id'])) {
+                } elseif ($property === 'uuid') {
                     $this->stdErr->writeln('<options=reverse>Deprecated:</> the "uuid" property is now named "id".');
                     $info[$property] = $info['id'];
                 } else {
@@ -96,10 +96,8 @@ class AuthInfoCommand extends CommandBase
         $values = [];
         $header = [];
         foreach ($propertiesToDisplay as $property) {
-            if (isset($info[$property])) {
-                $values[] = $formatter->format($info[$property], $property);
-                $header[] = $property;
-            }
+            $values[] = $formatter->format($info[$property], $property);
+            $header[] = $property;
         }
         $table = $this->table;
         $table->renderSimple($values, $header);

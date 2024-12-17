@@ -116,7 +116,7 @@ class OrganizationCommandBase extends CommandBase
             }
             $userId = $questionHelper->choose($choices, 'Enter a number to choose a user:', $default);
         } else {
-            $userId = $questionHelper->askInput('Enter an email address to choose a user', null, array_values($emailAddresses), function (string $email) use ($emailAddresses): int|string {
+            $userId = $questionHelper->askInput('Enter an email address to choose a user', null, array_values($emailAddresses), function (string $email) use ($emailAddresses): string {
                 if (($key = array_search($email, $emailAddresses)) === false) {
                     throw new InvalidArgumentException('User not found: ' . $email);
                 }

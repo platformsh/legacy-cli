@@ -130,7 +130,7 @@ class EnvironmentInfoCommand extends CommandBase
             $result = $environment->update([$property => $value]);
         } catch (BadResponseException $e) {
             // Translate validation error messages.
-            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+            if ($e->getResponse()->getStatusCode() === 400 && ($body = $e->getResponse()->getBody())) {
                 $detail = \json_decode((string) $body, true);
                 if (\is_array($detail) && !empty($detail['detail'][$property])) {
                     $this->stdErr->writeln("Invalid value for <error>$property</error>: " . $detail['detail'][$property]);

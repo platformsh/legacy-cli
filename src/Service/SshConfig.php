@@ -511,7 +511,7 @@ class SshConfig {
      * @return bool
      *   True if the version is determined and it is lower than the $test value, false otherwise.
      */
-    private function versionIsBelow(string $test): int|bool
+    private function versionIsBelow(string $test): bool
     {
         $version = $this->findVersion();
         if (!$version) {

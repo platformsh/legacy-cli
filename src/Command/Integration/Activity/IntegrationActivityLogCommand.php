@@ -54,11 +54,6 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             $activity = $project->getActivity($id);
             if (!$activity) {
                 $activity = $this->api->matchPartialId($id, $integration->getActivities(), 'Activity');
-                if (!$activity) {
-                    $this->stdErr->writeln("Integration activity not found: <error>$id</error>");
-
-                    return 1;
-                }
             }
         } else {
             $activities = $integration->getActivities();
