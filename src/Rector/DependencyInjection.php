@@ -48,7 +48,6 @@ readonly class DependencyInjection
         } else {
             $property = $this->builderFactory->property($propertyName)
                 ->makePrivate()
-                ->makeReadonly()
                 ->setType($serviceClass)
                 ->getNode();
             array_unshift($classNode->stmts, $property);

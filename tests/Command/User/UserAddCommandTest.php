@@ -48,6 +48,7 @@ class UserAddCommandTest extends TestCase
         if ($command instanceof LazyCommand) {
             $command = $command->getCommand();
         }
+        /** @var UserAddCommand $command */
         return $command;
     }
 

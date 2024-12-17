@@ -79,7 +79,7 @@ class EnvironmentActivateCommand extends CommandBase
         // Validate the --resources-init option.
         $resourcesInit = $this->resourcesUtil->validateInput($input, $project, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
-            return 1;
+            return false;
         }
 
         $count = count($environments);

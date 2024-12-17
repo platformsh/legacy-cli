@@ -14,14 +14,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RepoCommandBase extends CommandBase
 {
-    private readonly GitDataApi $gitDataApi;
-    private readonly Config $config;
+    private GitDataApi $gitDataApi;
+    private Config $config;
+
     #[Required]
     public function autowire(Config $config, GitDataApi $gitDataApi) : void
     {
         $this->config = $config;
         $this->gitDataApi = $gitDataApi;
     }
+
     /**
      * Adds the --commit (-c) command option.
      */

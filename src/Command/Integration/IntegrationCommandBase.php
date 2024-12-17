@@ -27,12 +27,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class IntegrationCommandBase extends CommandBase
 {
-    private readonly Selector $selector;
-    private readonly Table $table;
-    private readonly QuestionHelper $questionHelper;
-    private readonly PropertyFormatter $propertyFormatter;
-    private readonly LocalProject $localProject;
-    private readonly Api $api;
+    private Selector $selector;
+    private Table $table;
+    private QuestionHelper $questionHelper;
+    private PropertyFormatter $propertyFormatter;
+    private LocalProject $localProject;
+    private Api $api;
+
     private ?Form $form = null;
 
     private array $bitbucketAccessTokens = [];
@@ -50,14 +51,7 @@ abstract class IntegrationCommandBase extends CommandBase
         $this->selector = $selector;
     }
 
-    /**
-     * @param Project $project
-     * @param string|null $id
-     * @param bool $interactive
-     *
-     * @return Integration|false
-     */
-    protected function selectIntegration(Project $project, $id, $interactive) {
+    protected function selectIntegration(Project $project, ?string $id, bool $interactive): Integration|false {
         if (!$id && !$interactive) {
             $this->stdErr->writeln('An integration ID is required.');
 
@@ -80,6 +74,7 @@ abstract class IntegrationCommandBase extends CommandBase
         $integration = $project->getIntegration($id);
         if (!$integration) {
             try {
+                /** @var Integration $integration */
                 $integration = $this->api->matchPartialId($id, $project->getIntegrations(), 'Integration');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
