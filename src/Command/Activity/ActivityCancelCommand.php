@@ -66,6 +66,7 @@ class ActivityCancelCommand extends ActivityCommandBase
             $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
+                /** @var Activity $activity */
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
             }
         } else {

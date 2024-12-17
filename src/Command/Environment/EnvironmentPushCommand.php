@@ -279,7 +279,7 @@ class EnvironmentPushCommand extends CommandBase
             // Perform the push, capturing the Process object so that the STDERR
             // output can be read.
             $shell = $this->shell;
-            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv($gitUrl), $this->config->get('api.git_push_timeout'));
+            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv($gitUrl), (int) $this->config->get('api.git_push_timeout'));
             if ($process->getExitCode() !== 0) {
                 $diagnostics = $this->sshDiagnostics;
                 $diagnostics->diagnoseFailure($project->getGitUrl(), $process);

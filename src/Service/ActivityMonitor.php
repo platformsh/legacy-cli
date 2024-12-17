@@ -704,7 +704,7 @@ class ActivityMonitor
                 throw new \RuntimeException('Failed to open activity log stream: ' . $url);
             }
             $bar->advance();
-            \usleep($interval * 1000000);
+            \usleep((int) $interval * 1000000);
             $bar->advance();
             $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         }

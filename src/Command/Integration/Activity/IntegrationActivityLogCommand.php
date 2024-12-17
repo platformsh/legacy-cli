@@ -53,6 +53,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
         if ($id) {
             $activity = $project->getActivity($id);
             if (!$activity) {
+                /** @var Activity $activity */
                 $activity = $this->api->matchPartialId($id, $integration->getActivities(), 'Activity');
             }
         } else {

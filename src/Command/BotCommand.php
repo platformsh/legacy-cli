@@ -80,7 +80,7 @@ class BotCommand extends CommandBase
     {
         $indent = '    ';
         if (strlen((string) $signature) > 0) {
-            $signatureIndent = str_repeat(' ', strlen($indent) + 5 - floor(strlen((string) $signature) / 2));
+            $signatureIndent = str_repeat(' ', (int) (strlen($indent) + 5 - floor(strlen((string) $signature) / 2)));
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 

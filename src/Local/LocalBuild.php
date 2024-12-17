@@ -563,7 +563,7 @@ class LocalBuild
      *
      * @return int[]
      */
-    protected function cleanDirectory(string $directory, $maxAge = null, $keepMax = 5, array $exclude = [], $quiet = true): array
+    protected function cleanDirectory(string $directory, ?int $maxAge = null, int $keepMax = 5, array $exclude = [], bool $quiet = true): array
     {
         if (!is_dir($directory)) {
             return [0, 0];
@@ -575,7 +575,7 @@ class LocalBuild
         // Sort files by modified time (descending).
         usort(
             $files,
-            fn($a, $b): bool => filemtime($a) < filemtime($b)
+            fn(string $a, string $b): int => filemtime($a) <=> filemtime($b)
         );
         $now = time();
         $numDeleted = 0;
