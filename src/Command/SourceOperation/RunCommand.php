@@ -25,7 +25,7 @@ class RunCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name')

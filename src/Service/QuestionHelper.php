@@ -43,7 +43,7 @@ class QuestionHelper extends BaseQuestionHelper
      *
      * @return bool
      */
-    public function confirm($questionText, $default = true)
+    public function confirm(string $questionText, bool $default = true): bool
     {
         if (!$this->input->isInteractive() && !$default) {
             trigger_error(
@@ -75,18 +75,18 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Provides an interactive choice question.
      *
-     * @param array  $items     An associative array of choices.
-     * @param string $text      Some text to precede the choices.
-     * @param mixed  $default   A default (as a key in $items).
-     * @param bool   $skipOnOne Whether to skip the choice if there is only one
+     * @param array $items An associative array of choices.
+     * @param string $text Some text to precede the choices.
+     * @param mixed $default A default (as a key in $items).
+     * @param bool $skipOnOne Whether to skip the choice if there is only one
      *                          item.
-     *
-     * @throws \RuntimeException on failure
      *
      * @return int|string|null
      *   The chosen item (as a key in $items).
+     *
+     * @throws \RuntimeException on failure
      */
-    public function choose(array $items, $text = 'Enter a number to choose an item:', mixed $default = null, $skipOnOne = true): int|string|null
+    public function choose(array $items, string $text = 'Enter a number to choose an item:', mixed $default = null, bool $skipOnOne = true): int|string|null
     {
         if (count($items) === 1) {
             if ($skipOnOne) {
@@ -136,16 +136,16 @@ class QuestionHelper extends BaseQuestionHelper
      * @param array  $items     An associative array of choices.
      * @param string $text      Some text to precede the choices.
      * @param mixed  $default   A default (as a key in $items).
-     * @param bool   $skipOnOne Whether to skip the choice if there is only one
+     * @param bool $skipOnOne Whether to skip the choice if there is only one
      *                          item.
-     * @param bool   $newLine   Whether to output a newline after asking the question.
-     *
-     * @throws \RuntimeException on failure
+     * @param bool $newLine   Whether to output a newline after asking the question.
      *
      * @return int|string|null
      *   The chosen item (as a key in $items).
+     *@throws \RuntimeException on failure
+     *
      */
-    public function chooseAssoc(array $items, $text = 'Choose an item:', mixed $default = null, $skipOnOne = true, $newLine = true)
+    public function chooseAssoc(array $items, string $text = 'Choose an item:', mixed $default = null, bool $skipOnOne = true, bool $newLine = true): int|string|null
     {
         if (count($items) === 1) {
             if ($skipOnOne) {

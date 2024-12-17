@@ -15,7 +15,7 @@ class ProjectClearBuildCacheCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addProjectOption($this->getDefinition());
     }

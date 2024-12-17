@@ -37,14 +37,9 @@ class ActivityMonitor
     }
 
     /**
-     * Indent a multi-line string.
-     *
-     * @param string $string
-     * @param string $prefix
-     *
-     * @return string
+     * Indents a multi-line string.
      */
-    protected function indent($string, $prefix = '    '): ?string
+    protected function indent(string $string, string $prefix = '    '): string
     {
         return preg_replace('/^/m', $prefix, $string);
     }
@@ -115,7 +110,7 @@ class ActivityMonitor
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null, $noResult = false): bool
+    public function waitAndLog(Activity $activity, int $pollInterval = 3, bool|string $timestamps = false, bool $context = true, ?OutputInterface $logOutput = null, bool $noResult = false): bool
     {
         $stdErr = $this->stdErr;
         $logOutput = $logOutput ?: $stdErr;
@@ -318,7 +313,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    public function formatLog(array $items, $timestamps = false): string {
+    public function formatLog(array $items, bool|string $timestamps = false): string {
         $timestampFormat = false;
         if ($timestamps !== false) {
             $timestampFormat = $timestamps ?: $this->config->getWithDefault('application.date_format', 'Y-m-d H:i:s');
@@ -349,7 +344,7 @@ class ActivityMonitor
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public function waitMultiple(array $activities, Project $project, $context = true, $noLog = false, $noResult = false)
+    public function waitMultiple(array $activities, Project $project, bool $context = true, bool $noLog = false, bool $noResult = false): bool
     {
         $stdErr = $this->stdErr;
 
@@ -577,28 +572,19 @@ class ActivityMonitor
     }
 
     /**
-     * Format a state name.
-     *
-     * @param string $state
-     *
-     * @return string
+     * Formats a state name.
      */
-    public static function formatState($state)
+    public static function formatState(string $state): string
     {
-        return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
+        return self::$stateNames[$state] ?? $state;
     }
 
     /**
-     * Format a result.
-     *
-     * @param string $result
-     * @param bool   $decorate
-     *
-     * @return string
+     * Formats an activity result.
      */
-    public static function formatResult($result, $decorate = true)
+    public static function formatResult(string $result, bool $decorate = true): string
     {
-        $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
+        $name = self::$resultNames[$result] ?? $result;
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
@@ -631,7 +617,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity, $withDecoration = true, $withId = false, $fgColor = ''): string
+    public static function getFormattedDescription(Activity $activity, bool $withDecoration = true, bool $withId = false, string $fgColor = ''): string
     {
         if (!$withDecoration) {
             if ($withId) {

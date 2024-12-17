@@ -6,12 +6,7 @@ class InvalidConfigException extends \InvalidArgumentException
 {
     protected $code = 4;
 
-    /**
-     * @param string $message
-     * @param string $filename
-     * @param string $configKey
-     */
-    public function __construct($message = '', $filename = '', $configKey = '', ?\Exception $previous = null)
+    public function __construct(string $message = '', string $filename = '', string $configKey = '', ?\Exception $previous = null)
     {
         if ($configKey !== '') {
             $message .= "\nin config key: $configKey";

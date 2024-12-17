@@ -20,10 +20,8 @@ class CertificateDeleteCommand extends CommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)');

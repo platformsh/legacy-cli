@@ -23,7 +23,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function createAliases(Project $project, $aliasGroup, array $apps, array $environments, $previousGroup = null)
+    public function createAliases(Project $project, string $aliasGroup, array $apps, array $environments, ?string $previousGroup = null): bool
     {
         if (!count($apps)) {
             return false;
@@ -76,14 +76,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     }
 
     /**
-     * Merge new aliases with existing ones.
-     *
-     * @param array $new
-     * @param array $existing
-     *
-     * @return array
+     * Merges new aliases with existing ones.
      */
-    protected function mergeExisting($new, $existing)
+    protected function mergeExisting(array $new, array $existing): array
     {
         foreach ($new as $aliasName => &$newAlias) {
             // If the alias already exists, recursively replace existing
@@ -103,7 +98,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    protected function normalize(array $aliases)
+    protected function normalize(array $aliases): array
     {
         return $aliases;
     }
@@ -115,7 +110,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return string
      */
-    abstract protected function getFilename($groupName);
+    abstract protected function getFilename(string $groupName): string;
 
     /**
      * Get the header at the top of the file.
@@ -124,18 +119,18 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return string
      */
-    abstract protected function getHeader(Project $project);
+    abstract protected function getHeader(Project $project): string;
 
     /**
      * Find the existing defined aliases so they can be merged with new ones.
      *
-     * @param string      $currentGroup
+     * @param string $currentGroup
      * @param string|null $previousGroup
      *
      * @return array
      *   The aliases, with their group prefixes removed.
      */
-    protected function getExistingAliases($currentGroup, $previousGroup = null)
+    protected function getExistingAliases(string $currentGroup, ?string $previousGroup = null): array
     {
         $aliases = [];
         foreach (array_filter([$currentGroup, $previousGroup]) as $groupName) {
@@ -161,7 +156,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    protected function generateNewAliases(array $apps, array $environments)
+    protected function generateNewAliases(array $apps, array $environments): array
     {
         $aliases = [];
 
@@ -204,7 +199,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return string
      */
-    abstract protected function formatAliases(array $aliases);
+    abstract protected function formatAliases(array $aliases): string;
 
     /**
      * Generate an alias for the local environment.
@@ -213,7 +208,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    protected function generateLocalAlias(LocalApplication $app)
+    protected function generateLocalAlias(LocalApplication $app): array
     {
         return [
             'root' => $app->getLocalWebRoot(),
@@ -231,13 +226,13 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array|false
      */
-    protected function generateRemoteAlias(Environment $environment, LocalApplication $app)
+    protected function generateRemoteAlias(Environment $environment, LocalApplication $app): array|false
     {
         if (!$environment->hasLink('ssh')) {
             return false;
         }
 
-        $sshUrl = $environment->getSshUrl($app->getName());
+        $sshUrl = $environment->getSshUrl((string) $app->getName());
 
         $alias = [
             'options' => [
@@ -250,7 +245,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
         if ($environment->deployment_target !== 'local') {
             $appRoot = $this->drush->getCachedAppRoot($sshUrl);
             if ($appRoot) {
-                $alias['root'] = rtrim((string) $appRoot, '/') . '/' . $app->getDocumentRoot();
+                $alias['root'] = rtrim($appRoot, '/') . '/' . $app->getDocumentRoot();
             }
         } else {
             $alias['root'] = '/app/' . $app->getDocumentRoot();
@@ -298,7 +293,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @return array
      */
-    protected function swapKeys(array $aliases, array $map)
+    protected function swapKeys(array $aliases, array $map): array
     {
         return array_map(function ($alias) use ($map) {
             foreach ($map as $from => $to) {

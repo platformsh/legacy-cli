@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpComposerExtensionStubsInspection */
+<?php
 
 namespace Platformsh\Cli\Console;
 
@@ -43,7 +43,7 @@ use Symfony\Component\Process\Process;
 class ProcessManager
 {
     /** @var Process[] */
-    protected $processes = [];
+    protected array $processes = [];
 
     /**
      * @return bool
@@ -93,7 +93,7 @@ class ProcessManager
      * @param bool $error
      *   Whether the parent process should exit with an error status.
      */
-    public static function killParent($error = false): void
+    public static function killParent(bool $error = false): void
     {
         if (!posix_kill(posix_getppid(), $error ? SIGTERM : SIGCHLD)) {
             throw new \RuntimeException('Failed to kill parent process');
@@ -116,7 +116,7 @@ class ProcessManager
      * @return int
      *   The process PID.
      */
-    public function startProcess(Process $process, string $pidFile, OutputInterface $log): ?int
+    public function startProcess(Process $process, string $pidFile, OutputInterface $log): int
     {
         $this->processes[$pidFile] = $process;
         $errLog = $log instanceof ConsoleOutputInterface ? $log->getErrorOutput() : $log;
@@ -184,12 +184,7 @@ class ProcessManager
         }
     }
 
-    /**
-     * @param int $exitCode
-     *
-     * @return string|false
-     */
-    private function getSignal($exitCode): false|string
+    private function getSignal(int $exitCode): false|string
     {
         if ($exitCode < 128 || $exitCode > 162) {
             return false;

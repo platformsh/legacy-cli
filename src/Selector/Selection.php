@@ -41,7 +41,7 @@ class Selection
      *
      * @return Project
      */
-    public function getProject()
+    public function getProject(): Project
     {
         if (!$this->project) {
             throw new \BadMethodCallException('No project selected');
@@ -82,7 +82,7 @@ class Selection
      *
      * @return string|null
      */
-    public function getAppName()
+    public function getAppName(): ?string
     {
         if ($this->appName === null && $this->remoteContainer instanceof App) {
             $this->appName = $this->remoteContainer->getName();
@@ -93,10 +93,8 @@ class Selection
 
     /**
      * Get the remote container selected by the user.
-     *
-     * @return RemoteContainerInterface
      */
-    public function getRemoteContainer() {
+    public function getRemoteContainer(): RemoteContainerInterface {
         if (!$this->remoteContainer) {
             throw new \BadMethodCallException('No container selected');
         }

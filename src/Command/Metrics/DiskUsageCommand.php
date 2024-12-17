@@ -39,10 +39,7 @@ class DiskUsageCommand extends MetricsCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
             ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')');

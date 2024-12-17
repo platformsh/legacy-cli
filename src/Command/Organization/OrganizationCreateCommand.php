@@ -23,7 +23,7 @@ class OrganizationCreateCommand extends OrganizationCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $serviceName = $this->config->get('service.name');

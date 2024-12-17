@@ -26,7 +26,7 @@ class SelfInstallCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
              ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
@@ -184,9 +184,7 @@ EOT
                 }
             }
 
-            $this->stdErr->writeln(sprintf(
-                'To set up the CLI, add this directory to your Path environment variable:'
-            ));
+            $this->stdErr->writeln('To set up the CLI, add this directory to your Path environment variable:');
             $this->stdErr->writeln(sprintf('<info>%s</info>', $binDir));
             $this->stdErr->writeln('Then open a new terminal to continue.');
 
@@ -209,7 +207,7 @@ EOT
 
         $configDirRelative = $this->config->getUserConfigDir(false);
         $rcDestination = $configDirRelative . DIRECTORY_SEPARATOR . 'shell-config.rc';
-        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg((string) $this->config->getHomeDirectory()) . '}';
+        $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',
             '"$HOME/"' . escapeshellarg($configDirRelative . '/bin')
@@ -301,15 +299,7 @@ EOT
         }
     }
 
-    /**
-     * @param string $shellConfigFile
-     * @param string $binDir
-     * @param bool|null $inPath
-     * @param bool $newTerminal
-     *
-     * @return string[]
-     */
-    private function getRunAdvice($shellConfigFile, string $binDir, $inPath = null, bool $newTerminal = false): array
+    private function getRunAdvice(string $shellConfigFile, string $binDir, ?bool $inPath = null, bool $newTerminal = false): array
     {
         $advice = [
             sprintf('To use the %s,%s run:', $this->config->get('application.name'), $newTerminal ? ' open a new terminal, and' : '')
@@ -328,13 +318,9 @@ EOT
     }
 
     /**
-     * Check if a directory is in the PATH.
-     *
-     * @param string $dir
-     *
-     * @return bool
+     * Checks if a directory is in the PATH.
      */
-    private function inPath(string $dir)
+    private function inPath(string $dir): bool
     {
         $PATH = getenv('PATH');
         $realpath = realpath($dir);
@@ -362,8 +348,8 @@ EOT
         if (DIRECTORY_SEPARATOR !== '\\') {
             $realpath = realpath($filename);
             $homeDir = $this->config->getHomeDirectory();
-            if ($realpath && str_starts_with($realpath, (string) $homeDir)) {
-                $arg = '~/' . ltrim(substr($realpath, strlen((string) $homeDir)), '/');
+            if ($realpath && str_starts_with($realpath, $homeDir)) {
+                $arg = '~/' . ltrim(substr($realpath, strlen($homeDir)), '/');
             }
         }
 
@@ -379,19 +365,15 @@ EOT
     }
 
     /**
-     * Shorten a filename for display.
-     *
-     * @param string $filename
-     *
-     * @return string
+     * Shortens a filename for display.
      */
-    private function getShortPath($filename)
+    private function getShortPath(string $filename): string
     {
         if (getcwd() === dirname($filename)) {
             return basename($filename);
         }
         $homeDir = $this->config->getHomeDirectory();
-        if (str_starts_with($filename, (string) $homeDir)) {
+        if (str_starts_with($filename, $homeDir)) {
             return str_replace($homeDir, '~', $filename);
         }
 
@@ -401,12 +383,10 @@ EOT
     /**
      * Finds a shell configuration file for the user.
      *
-     * @param string|null $shellType The shell type.
-     *
      * @return string|false
      *   The absolute path to a shell config file, or false on failure.
      */
-    protected function findShellConfigFile($shellType)
+    protected function findShellConfigFile(string|null $shellType): string|false
     {
         // Special handling for the .environment file on Platform.sh environments.
         $envPrefix = $this->config->get('service.env_prefix');
@@ -473,12 +453,12 @@ EOT
      * Indents and word-wraps a string.
      *
      * @param string $str
-     * @param int    $indent
-     * @param int    $width
+     * @param int $indent
+     * @param int $width
      *
      * @return string
      */
-    private function indentAndWrap(string $str, $indent = 4, $width = 75)
+    private function indentAndWrap(string $str, int $indent = 4, int $width = 75): string
     {
         $spaces = str_repeat(' ', $indent);
         $wrapped = wordwrap($str, $width - $indent, PHP_EOL);
@@ -493,7 +473,7 @@ EOT
      *
      * @return string
      */
-    private function generateBatContents($binTarget): string
+    private function generateBatContents(string $binTarget): string
     {
         return "@ECHO OFF\r\n".
             "setlocal DISABLEDELAYEDEXPANSION\r\n".

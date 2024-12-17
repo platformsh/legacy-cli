@@ -26,7 +26,7 @@ class BackupCreateCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
@@ -120,7 +120,7 @@ class BackupCreateCommand extends CommandBase
         return 0;
     }
 
-    private function isUserAdmin(Project $project, Environment $environment, string $userId)
+    private function isUserAdmin(Project $project, Environment $environment, string $userId): bool
     {
         if ($this->config->get('api.centralized_permissions') && $this->config->get('api.organizations')) {
             $client = $this->api->getHttpClient();

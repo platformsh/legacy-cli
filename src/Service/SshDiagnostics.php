@@ -44,7 +44,7 @@ class SshDiagnostics
      *
      * @return array{amr?: string[], max_age?: int}
      */
-    private function stepUpAuthenticationParams(Process $failedProcess)
+    private function stepUpAuthenticationParams(Process $failedProcess): array
     {
         $errorOutput = $failedProcess->getErrorOutput();
         if (!str_contains($errorOutput, 'Error: Access denied')) {
@@ -104,7 +104,7 @@ class SshDiagnostics
      * @return Process
      *   A process (already run) that tested the SSH connection.
      */
-    private function testConnection($uri, $timeout = 5)
+    private function testConnection(string $uri, float|int $timeout = 5): Process
     {
         $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
         $process = Process::fromShellCommandline($this->ssh->getSshCommand($uri, [], 'exit', false, false), null, $this->ssh->getEnv());
@@ -144,7 +144,7 @@ class SshDiagnostics
      * @param bool $newline
      *   Whether to add a new line before messages.
      */
-    public function diagnoseFailure($uri, Process $failedProcess, $newline = true): void
+    public function diagnoseFailure(string $uri, Process $failedProcess, bool $newline = true): void
     {
         if (!$this->ssh->hostIsInternal($uri)) {
             return;
@@ -181,7 +181,7 @@ class SshDiagnostics
                 }
             }
 
-            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null, $this->api->hasApiToken());
+            $loginRequiredEvent = new LoginRequiredEvent($params['amr'] ?? [], $params['max_age'] ?? null, $this->api->hasApiToken());
             $this->stdErr->writeln($loginRequiredEvent->getExtendedMessage($this->config));
             return;
         }
@@ -274,7 +274,7 @@ class SshDiagnostics
      * @param int $exitCode
      *   The exit code of the SSH command. Used to check if diagnostics are relevant.
      */
-    public function diagnoseFailureWithTest($uri, $startTime, $exitCode): void
+    public function diagnoseFailureWithTest(string $uri, int $startTime, int $exitCode): void
     {
         if ($exitCode !== self::_SSH_ERROR_EXIT_CODE || !$this->ssh->hostIsInternal($uri)) {
             return;

@@ -11,7 +11,7 @@ class JsonLines
      *
      * @return array
      */
-    public static function decode($str): array
+    public static function decode(string $str): array
     {
         $items = [];
         foreach (explode("\n", trim($str, "\n")) as $line) {

@@ -9,7 +9,7 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function getFilename($groupName): string
+    protected function getFilename(string $groupName): string
     {
         return $this->drush->getSiteAliasDir() . '/' . $groupName . '.aliases.drushrc.php';
     }
@@ -34,7 +34,7 @@ class DrushPhp extends DrushAlias
     /**
      * {@inheritdoc}
      */
-    protected function normalize(array $aliases)
+    protected function normalize(array $aliases): array
     {
         return $this->swapKeys($aliases, [
             'host' => 'remote-host',

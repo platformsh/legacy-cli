@@ -18,7 +18,7 @@ class LogoutCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')

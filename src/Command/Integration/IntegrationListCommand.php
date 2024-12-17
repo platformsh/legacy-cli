@@ -20,10 +20,7 @@ class IntegrationListCommand extends IntegrationCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('type', 't', InputOption::VALUE_REQUIRED, 'Filter by type');
@@ -77,7 +74,7 @@ class IntegrationListCommand extends IntegrationCommandBase
      *
      * @return string
      */
-    protected function getIntegrationSummary(Integration $integration): string|false
+    protected function getIntegrationSummary(Integration $integration): string
     {
         $details = $integration->getProperties();
         unset($details['id'], $details['type']);

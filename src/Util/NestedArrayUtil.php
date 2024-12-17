@@ -7,15 +7,15 @@ class NestedArrayUtil
     /**
      * Get a nested value in an array.
      *
-     * @see Copied from \Drupal\Component\Utility\NestedArray::getValue()
-     *
      * @param array $array
      * @param array $parents
-     * @param bool  $keyExists
+     * @param bool $keyExists
      *
      * @return mixed
+     * @noinspection PhpMissingParamTypeInspection
+     * @see Copied from \Drupal\Component\Utility\NestedArray::getValue()
      */
-    public static function &getNestedArrayValue(array &$array, array $parents, &$keyExists = false)
+    public static function &getNestedArrayValue(array &$array, array $parents, &$keyExists = false): mixed
     {
         $ref = &$array;
         foreach ($parents as $parent) {
@@ -33,15 +33,11 @@ class NestedArrayUtil
     }
 
     /**
-     * Set a nested value in an array.
+     * Sets a nested value in an array.
      *
      * @see Copied from \Drupal\Component\Utility\NestedArray::setValue()
-     *
-     * @param array &$array
-     * @param array $parents
-     * @param bool  $force
      */
-    public static function setNestedArrayValue(array &$array, array $parents, mixed $value, $force = false): void
+    public static function setNestedArrayValue(array &$array, array $parents, mixed $value, bool $force = false): void
     {
         $ref = &$array;
         foreach ($parents as $parent) {

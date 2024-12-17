@@ -158,10 +158,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         return $this->canBeRunMultipleTimes;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function setRunningViaMulti($runningViaMulti = true): void
+    public function setRunningViaMulti(bool $runningViaMulti = true): void
     {
         $this->runningViaMulti = $runningViaMulti;
     }

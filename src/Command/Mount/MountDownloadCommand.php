@@ -24,16 +24,14 @@ use Symfony\Component\Console\Question\Question;
 #[AsCommand(name: 'mount:download', description: 'Download files from a mount, using rsync')]
 class MountDownloadCommand extends CommandBase
 {
-    private $localApps;
+    private ?array $localApps = null;
+
     public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Download from all mounts')
@@ -228,7 +226,7 @@ class MountDownloadCommand extends CommandBase
     /**
      * @return LocalApplication[]
      */
-    private function getLocalApps()
+    private function getLocalApps(): array
     {
         if (!isset($this->localApps)) {
             $this->localApps = [];
@@ -243,12 +241,8 @@ class MountDownloadCommand extends CommandBase
 
     /**
      * Returns the local path to an app.
-     *
-     * @param App $app
-     *
-     * @return string|null
      */
-    private function getLocalAppPath(App $app)
+    private function getLocalAppPath(App $app): ?string
     {
         foreach ($this->getLocalApps() as $path => $candidateApp) {
             if ($candidateApp->getName() === $app->getName()) {
@@ -259,12 +253,7 @@ class MountDownloadCommand extends CommandBase
         return null;
     }
 
-    /**
-     * @param App $app
-     *
-     * @return string|null
-     */
-    private function getSharedDir(App $app)
+    private function getSharedDir(App $app): ?string
     {
         $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {

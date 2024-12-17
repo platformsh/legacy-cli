@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Util;
 
 class PortUtil
 {
-    protected static $unsafePorts = [
+    protected static array $unsafePorts = [
         2049, // nfs
         3659, // apple-sasl / PasswordServer
         4045, // lockd
@@ -28,7 +28,7 @@ class PortUtil
      *
      * @return int
      */
-    public static function getPort(int|string $start = 3000, ?string $hostname = null, ?int $end = null)
+    public static function getPort(int|string $start = 3000, ?string $hostname = null, ?int $end = null): int
     {
         $end = $end ?: (int) $start + 30;
         for ($port = (int) $start; $port <= $end; $port++) {
@@ -40,13 +40,9 @@ class PortUtil
     }
 
     /**
-     * Validate a port number.
-     *
-     * @param int|string $port
-     *
-     * @return bool
+     * Validates a port number.
      */
-    public static function validatePort($port)
+    public static function validatePort(int|string $port): bool
     {
         if (!is_numeric($port) || $port <= 1023 || $port > 65535) {
             return false;
@@ -56,16 +52,11 @@ class PortUtil
     }
 
     /**
-     * Check whether a port is open.
-     *
-     * @param int         $port
-     * @param string|null $hostname
-     *
-     * @return bool
+     * Checks whether a port is open.
      */
-    public static function isPortInUse($port, $hostname = null): bool
+    public static function isPortInUse(int|string $port, ?string $hostname = null): bool
     {
-        $fp = @fsockopen($hostname !== null ? $hostname : '127.0.0.1', $port, $errno, $errstr, 10);
+        $fp = @fsockopen($hostname !== null ? $hostname : '127.0.0.1', (int) $port, $errno, $errstr, 10);
         if ($fp !== false) {
             fclose($fp);
 

@@ -15,7 +15,7 @@ class TeamDeleteCommand extends TeamCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
         $this->addTeamOption();

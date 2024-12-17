@@ -15,16 +15,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:build:get', description: 'View the build resources of a project', aliases: ['build-resources:get', 'build-resources'])]
 class BuildResourcesGetCommand extends CommandBase
 {
-    protected $tableHeader = [
+    protected array $tableHeader = [
         'cpu' => 'CPU',
         'memory' => 'Memory (MB)',
     ];
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addProjectOption($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader);

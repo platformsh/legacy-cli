@@ -24,10 +24,7 @@ class WorkerListCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')

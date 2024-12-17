@@ -55,11 +55,8 @@ class ResourcesUtil
 
     /**
      * Checks whether a service needs a persistent disk.
-     *
-     * @param WebApp|Service|Worker $service
-     * @return bool
      */
-    public function supportsDisk($service)
+    public function supportsDisk(WebApp|Worker|Service $service): bool
     {
         // Workers use the disk of their parent app.
         if ($service instanceof Worker) {
@@ -72,12 +69,8 @@ class ResourcesUtil
      * Loads the next environment deployment and caches it statically.
      *
      * The static cache means it can be reused while running a sub-command.
-     *
-     * @param Environment $environment
-     * @param bool $reset
-     * @return EnvironmentDeployment
      */
-    public function loadNextDeployment(Environment $environment, $reset = false)
+    public function loadNextDeployment(Environment $environment, bool $reset = false): EnvironmentDeployment
     {
         $cacheKey = $environment->project . ':' . $environment->id;
         if (isset(self::$cachedNextDeployment[$cacheKey]) && !$reset) {
@@ -105,7 +98,7 @@ class ResourcesUtil
      * @return WebApp[]|Service[]|Worker[]|false
      *   False on error, or an array of services.
      */
-    public function filterServices($services, InputInterface $input)
+    public function filterServices(array $services, InputInterface $input): array|false
     {
         $selectedNames = [];
 
@@ -170,7 +163,7 @@ class ResourcesUtil
      *
      * @return array{'cpu': string, 'memory': string}|null
      */
-    public function sizeInfo(array $properties, array $containerProfiles)
+    public function sizeInfo(array $properties, array $containerProfiles): ?array
     {
         if (isset($properties['resources']['profile_size'])) {
             $size = $properties['resources']['profile_size'];
@@ -191,7 +184,7 @@ class ResourcesUtil
      *
      * @return string
      */
-    public function formatChange($previousValue, $newValue, $suffix = ''): string
+    public function formatChange(int|float|string|null $previousValue, int|float|string|null $newValue, string $suffix = ''): string
     {
         if ($previousValue === null || $newValue === $previousValue) {
             return sprintf('<info>%s%s</info>', $newValue, $suffix);
@@ -212,7 +205,7 @@ class ResourcesUtil
      * @return string
      *   A numeric (still comparable) string with 1 decimal place.
      */
-    public function formatCPU($unformatted): string
+    public function formatCPU(int|float|string $unformatted): string
     {
         return sprintf('%.1f', $unformatted);
     }
@@ -259,7 +252,7 @@ class ResourcesUtil
      *
      * @see ResourcesUtil::addResourcesInitOption()
      */
-    public function validateInput(InputInterface $input, Project $project, array $allowedValues)
+    public function validateInput(InputInterface $input, Project $project, array $allowedValues): false|string|null
     {
         $resourcesInit = $input->hasOption('resources-init') ? $input->getOption('resources-init') : null;
         if ($resourcesInit !== null) {

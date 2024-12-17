@@ -31,7 +31,7 @@ class ListCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('full', null, InputOption::VALUE_NONE, 'Do not limit the length of command to display. The default limit is ' . self::COMMAND_MAX_LENGTH . ' lines.');
@@ -119,12 +119,12 @@ class ListCommand extends CommandBase
         return 0;
     }
 
-    private function truncateCommand($cmd): string
+    private function truncateCommand(string $cmd): string
     {
-        $lines = \preg_split('/\r?\n/', (string) $cmd);
+        $lines = \preg_split('/\r?\n/', $cmd);
         if (count($lines) > self::COMMAND_MAX_LENGTH) {
             return trim(implode("\n", array_slice($lines, 0, self::COMMAND_MAX_LENGTH))) . "\n# ...";
         }
-        return trim((string) $cmd);
+        return trim($cmd);
     }
 }

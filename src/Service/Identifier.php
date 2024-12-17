@@ -11,14 +11,14 @@ use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
-class Identifier
+readonly class Identifier
 {
-    private readonly Config $config;
-    private readonly Api $api;
-    private $cache;
-    private readonly Io $io;
+    private Config $config;
+    private Api $api;
+    private CacheProvider $cache;
+    private Io $io;
 
-    public function __construct(Config $config = null, Api $api = null, CacheProvider $cache = null, Io $io = null)
+    public function __construct(?Config $config = null, ?Api $api = null, ?CacheProvider $cache = null, ?Io $io = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
@@ -27,15 +27,13 @@ class Identifier
     }
 
     /**
-     * Identify a project from an ID or URL.
+     * Identifies a project from an ID or URL.
      *
      * @param string $url
      *
-     * @return array
-     *   An array containing keys 'projectId', 'environmentId', 'host', and
-     *   'appId'. At least the 'projectId' will be populated.
+     * @return array{projectId: string, environmentId: ?string, host: ?string, appId: ?string}
      */
-    public function identify(string $url)
+    public function identify(string $url): array
     {
         $result = $this->parseProjectId($url);
         if (empty($result['projectId']) && str_contains($url, '.') && $this->config->has('detection.cluster_header')) {
@@ -75,8 +73,8 @@ class Identifier
         $this->io->debug('Parsing URL to determine project ID: ' . $url);
 
         $host = $urlParts['host'];
-        $path = isset($urlParts['path']) ? $urlParts['path'] : '';
-        $fragment = isset($urlParts['fragment']) ? $urlParts['fragment'] : '';
+        $path = $urlParts['path'] ?? '';
+        $fragment = $urlParts['fragment'] ?? '';
 
         $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config->get('detection.site_domains'))) . ')';
         $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
@@ -127,11 +125,7 @@ class Identifier
     }
 
     /**
-     * Identify a project and environment from a URL's response headers.
-     *
-     * @param string $url
-     *
-     * @return array
+     * Identifies a project and environment from a URL's response headers.
      */
     private function identifyFromHeaders(string $url): array
     {
@@ -152,19 +146,15 @@ class Identifier
     }
 
     /**
-     * Get a project cluster from its URL.
-     *
-     * @param string $url
-     *
-     * @return string|false
+     * Finds a project cluster from its URL.
      */
-    private function getClusterHeader(string $url)
+    private function getClusterHeader(string $url): string|false
     {
         if (!$this->config->has('detection.cluster_header')) {
             return false;
         }
         $cacheKey = 'project-cluster:' . $url;
-        $cluster = $this->cache ? $this->cache->fetch($cacheKey) : false;
+        $cluster = $this->cache->fetch($cacheKey);
         if ($cluster === false) {
             $this->io->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {

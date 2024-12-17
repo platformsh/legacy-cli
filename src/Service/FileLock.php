@@ -31,7 +31,7 @@ class FileLock
      *
      * @return mixed|null
      */
-    public function acquireOrWait($lockName, callable $onWait = null, callable $check = null)
+    public function acquireOrWait(string $lockName, ?callable $onWait = null, ?callable $check = null): mixed
     {
         if ($this->disabled) {
             return null;
@@ -68,10 +68,8 @@ class FileLock
 
     /**
      * Releases a lock that was created by acquire().
-     *
-     * @param string $lockName
      */
-    public function release($lockName): void
+    public function release(string $lockName): void
     {
         if (!$this->disabled && isset($this->locks[$lockName])) {
             $this->writeWithLock($this->filename($lockName), '');
@@ -91,11 +89,8 @@ class FileLock
 
     /**
      * Finds the filename for a lock.
-     *
-     * @param string $lockName
-     * @return string
      */
-    private function filename($lockName): string
+    private function filename(string $lockName): string
     {
         return $this->config->getWritableUserDir()
             . DIRECTORY_SEPARATOR . 'locks'
@@ -110,7 +105,7 @@ class FileLock
      * @param string $filename
      * @return string
      */
-    private function readWithLock(string $filename): string|false
+    private function readWithLock(string $filename): string
     {
         $handle = \fopen($filename, 'r');
         if (!$handle) {

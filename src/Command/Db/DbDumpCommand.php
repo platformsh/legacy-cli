@@ -29,7 +29,7 @@ class DbDumpCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to dump. Omit to use the default schema (usually "main").')
             ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'A custom filename for the dump')
@@ -72,8 +72,6 @@ class DbDumpCommand extends CommandBase
         $projectRoot = $this->selector->getProjectRoot();
 
         $fs = $this->filesystem;
-
-        $questionHelper = $this->questionHelper;
 
         $database = $relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
@@ -118,8 +116,7 @@ class DbDumpCommand extends CommandBase
             }
             $schema = null;
             if (!empty($choices)) {
-                $questionHelper = $this->questionHelper;
-                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
+                $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $database['path'], true);
             }
             if (empty($schema)) {
                 $this->stdErr->writeln('The --schema is required.');
@@ -189,7 +186,7 @@ class DbDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
+                if (!$this->questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
                 }
             }
@@ -265,7 +262,7 @@ class DbDumpCommand extends CommandBase
 
         $append = '';
         if ($dumpFile) {
-            $append .= ' > ' . escapeshellarg((string) $dumpFile);
+            $append .= ' > ' . escapeshellarg($dumpFile);
         }
 
         set_time_limit(0);
@@ -284,12 +281,12 @@ class DbDumpCommand extends CommandBase
 
         // If a dump file exists, check that it's excluded in the project's
         // .gitignore configuration.
-        if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with((string) $dumpFile, $projectRoot)) {
+        if ($dumpFile && file_exists($dumpFile) && $projectRoot && str_starts_with($dumpFile, $projectRoot)) {
             $git = $this->git;
             if (!$git->checkIgnore($dumpFile, $projectRoot)) {
                 $this->stdErr->writeln('<comment>Warning: the dump file is not excluded by Git</comment>');
-                if ($pos = strrpos((string) $dumpFile, '--dump.sql')) {
-                    $extension = substr((string) $dumpFile, $pos);
+                if ($pos = strrpos($dumpFile, '--dump.sql')) {
+                    $extension = substr($dumpFile, $pos);
                     $this->stdErr->writeln('  You should probably exclude these files using .gitignore:');
                     $this->stdErr->writeln('    *' . $extension);
                 }
@@ -300,26 +297,16 @@ class DbDumpCommand extends CommandBase
     }
 
     /**
-     * Get the default dump filename.
-     *
-     * @param Environment $environment
-     * @param string|null $dbServiceName
-     * @param string|null $schema
-     * @param array       $includedTables
-     * @param array       $excludedTables
-     * @param bool        $schemaOnly
-     * @param bool        $gzip
-     *
-     * @return string
+     * Generates the default dump filename.
      */
     private function getDefaultFilename(
-        Environment $environment = null,
-        $dbServiceName = null,
-        $schema = null,
+        ?Environment $environment = null,
+        ?string $dbServiceName = null,
+        ?string $schema = null,
         array $includedTables = [],
         array $excludedTables = [],
-        $schemaOnly = false,
-        $gzip = false): string
+        bool $schemaOnly = false,
+        bool $gzip = false): string
     {
         $prefix = $this->config->get('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');

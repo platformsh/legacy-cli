@@ -16,7 +16,7 @@ class ArrayArgument
      *
      * @return string[]
      */
-    public static function getArgument(InputInterface $input, string $argName)
+    public static function getArgument(InputInterface $input, string $argName): array
     {
         $value = $input->getArgument($argName);
         if (!\is_array($value)) {
@@ -33,7 +33,7 @@ class ArrayArgument
      *
      * @return string[]
      */
-    public static function getOption(InputInterface $input, string $optionName)
+    public static function getOption(InputInterface $input, string $optionName): array
     {
         $value = $input->getOption($optionName);
         if (!\is_array($value)) {

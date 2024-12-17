@@ -20,7 +20,7 @@ class AuthTokenCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('header', 'H', InputOption::VALUE_NONE, 'Prefix the token with "' . self::RFC6750_PREFIX . '" to make an RFC 6750 header')
@@ -36,7 +36,7 @@ class AuthTokenCommand extends CommandBase
         $apiUrl = $this->config->getApiUrl();
         $examples = [
             'Print the payload for JWT-formatted tokens' => \sprintf('%s auth:token -W | cut -d. -f2 | base64 -d', $executable),
-            'Use the token in a curl command' => \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim((string) $apiUrl, '/')),
+            'Use the token in a curl command' => \sprintf('curl -H"$(%s auth:token -HW)" %s/users/me', $executable, rtrim($apiUrl, '/')),
         ];
         $help .= "\n\n<comment>Examples:</comment>";
         foreach ($examples as $description => $example) {

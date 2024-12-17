@@ -59,7 +59,7 @@ class TeamCommandBase extends CommandBase
      * @param Organization|null $organization
      * @return Team|false
      */
-    public function validateTeamInput(InputInterface $input, Organization $organization = null): false|Team
+    public function validateTeamInput(InputInterface $input, ?Organization $organization = null): false|Team
     {
         if ($organization === null && $input->hasOption('org') && $input->getOption('org') !== null) {
             $organization = $this->selectOrganization($input);

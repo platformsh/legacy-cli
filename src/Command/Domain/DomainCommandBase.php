@@ -26,13 +26,12 @@ abstract class DomainCommandBase extends CommandBase
     private Api $api;
 
     // The final array of SSL options for the client parameters.
-    protected $sslOptions = [];
+    protected array $sslOptions = [];
 
-    protected $domainName;
+    protected ?string $domainName = null;
+    protected ?bool $environmentIsProduction = null;
+    protected ?string $attach = null;
 
-    protected $environmentIsProduction;
-
-    protected $attach;
     #[Required]
     public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
     {
@@ -177,7 +176,7 @@ abstract class DomainCommandBase extends CommandBase
         return true;
     }
 
-    protected function addDomainOptions()
+    protected function addDomainOptions(): void
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The domain name')
              ->addOption('cert', null, InputOption::VALUE_REQUIRED, 'The path to a custom certificate file')
@@ -186,16 +185,11 @@ abstract class DomainCommandBase extends CommandBase
     }
 
     /**
-     * Validate a domain.
-     *
-     * @param string $domain
-     *
-     * @return bool
+     * Validates a domain name.
      */
-    protected function validDomain($domain)
+    private function validDomain(string $domain): bool
     {
-        // @todo: Use symfony/Validator here once it gets the ability to validate just domain.
-        return (bool) preg_match('/^([^\.]{1,63}\.)+[^\.]{2,63}$/', $domain);
+        return (bool) preg_match('/^([^.]{1,63}\.)+[^.]{2,63}$/', $domain);
     }
 
     /**
@@ -206,7 +200,7 @@ abstract class DomainCommandBase extends CommandBase
      *
      * @throws ClientException If it can't be explained.
      */
-    protected function handleApiException(ClientException $e, Project $project)
+    protected function handleApiException(ClientException $e, Project $project): void
     {
         $response = $e->getResponse();
         if ($response->getStatusCode() === 403) {
@@ -232,12 +226,8 @@ abstract class DomainCommandBase extends CommandBase
 
     /**
      * Checks if a project supports non-production domains.
-     *
-     * @param Project $project
-     *
-     * @return bool
      */
-    protected function supportsNonProductionDomains(Project $project)
+    protected function supportsNonProductionDomains(Project $project): bool
     {
         static $cache = [];
         if (!isset($cache[$project->id])) {

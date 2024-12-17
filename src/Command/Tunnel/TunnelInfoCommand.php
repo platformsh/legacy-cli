@@ -18,7 +18,7 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
           ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')

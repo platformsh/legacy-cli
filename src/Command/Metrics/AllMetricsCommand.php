@@ -51,10 +51,7 @@ class AllMetricsCommand extends MetricsCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes');
         $this->addExample('Show metrics for the last ' . (new Duration())->humanize(self::DEFAULT_RANGE));

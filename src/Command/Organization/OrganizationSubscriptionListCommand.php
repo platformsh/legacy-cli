@@ -31,7 +31,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setHiddenAliases(['organization:subscriptions'])
             ->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page number. This enables pagination, despite configuration or --count.')

@@ -15,7 +15,7 @@ class ClearCacheCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setHiddenAliases(['clearcache']);

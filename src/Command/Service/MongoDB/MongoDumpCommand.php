@@ -27,7 +27,7 @@ class MongoDumpCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to dump');
         $this->addOption('gzip', 'z', InputOption::VALUE_NONE, 'Compress the dump using gzip');

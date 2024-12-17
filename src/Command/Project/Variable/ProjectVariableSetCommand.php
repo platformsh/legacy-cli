@@ -25,10 +25,7 @@ class ProjectVariableSetCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
@@ -79,16 +76,11 @@ class ProjectVariableSetCommand extends CommandBase
         return 0;
     }
 
-    /**
-     * @param $string
-     *
-     * @return bool
-     */
-    protected function validateJson($string)
+    protected function validateJson(string $string): bool
     {
         if ($string === 'null') {
             return true;
         }
-        return \json_decode((string) $string) !== null;
+        return \json_decode($string) !== null;
     }
 }

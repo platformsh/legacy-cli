@@ -111,12 +111,9 @@ class Drupal extends BuildFlavorBase
     }
 
     /**
-     * Check that an application file is ignored in .gitignore.
-     *
-     * @param string $filename
-     * @param string $suggestion
+     * Checks that an application file is ignored in .gitignore.
      */
-    protected function checkIgnored($filename, $suggestion = null)
+    protected function checkIgnored(string $filename, ?string $suggestion = null): void
     {
         if (!file_exists($filename)) {
             return;
@@ -179,7 +176,7 @@ class Drupal extends BuildFlavorBase
      * @return string|false
      *   The absolute filename of the make file.
      */
-    protected function findDrushMakeFile($required = false, $core = false): string|false
+    protected function findDrushMakeFile(bool $required = false, bool $core = false): string|false
     {
         $candidates = [
             'project.make.yml',
@@ -219,7 +216,7 @@ class Drupal extends BuildFlavorBase
     /**
      * @return Drush
      */
-    protected function getDrushHelper()
+    protected function getDrushHelper(): Drush
     {
         static $drushHelper;
         if (!isset($drushHelper)) {
@@ -230,11 +227,9 @@ class Drupal extends BuildFlavorBase
     }
 
     /**
-     * Build in 'project' mode, i.e. just using a Drush make file.
-     *
-     * @param string $projectMake
+     * Builds in 'project' mode, i.e. just using a Drush make file.
      */
-    protected function buildInProjectMode($projectMake)
+    protected function buildInProjectMode(string $projectMake): void
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
@@ -288,7 +283,7 @@ class Drupal extends BuildFlavorBase
      *
      * @param string $profileName
      */
-    protected function buildInProfileMode(string $profileName)
+    protected function buildInProfileMode(string $profileName): void
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
@@ -384,7 +379,7 @@ class Drupal extends BuildFlavorBase
      *
      * See https://github.com/platformsh/platformsh-cli/issues/175
      */
-    protected function processSettingsPhp()
+    protected function processSettingsPhp(): void
     {
         if ($this->copy) {
             // This behaviour only relates to symlinking.
@@ -421,7 +416,7 @@ class Drupal extends BuildFlavorBase
 
         // Symlink all files and folders from shared into sites/default.
         $shared = $this->getSharedDir();
-        if ($shared !== false && is_dir($sitesDefault)) {
+        if (is_dir($sitesDefault)) {
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {

@@ -16,13 +16,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:size:list', description: 'List container profile sizes', aliases: ['resources:sizes'])]
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
-    protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
+    protected array $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
     public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')

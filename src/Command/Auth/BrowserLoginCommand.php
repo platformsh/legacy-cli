@@ -33,7 +33,7 @@ class BrowserLoginCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $applicationName = $this->config->get('application.name');
 
@@ -252,7 +252,7 @@ class BrowserLoginCommand extends CommandBase
 
         // Using the authorization code, request an access token.
         $this->stdErr->writeln('Login information received. Verifying...');
-        $token = $this->getAccessToken($code, $codeVerifier, isset($response['redirect_uri']) ? $response['redirect_uri'] : $localUrl);
+        $token = $this->getAccessToken($code, $codeVerifier, $response['redirect_uri'] ?? $localUrl);
 
         // Finalize login: log out and save the new credentials.
         $this->api->logout();
@@ -308,15 +308,9 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
-     * Exchange the authorization code for an access token.
-     *
-     * @param string $authCode
-     * @param string $codeVerifier
-     * @param string $redirectUri
-     *
-     * @return array
+     * Exchanges the authorization code for an access token.
      */
-    private function getAccessToken($authCode, $codeVerifier, $redirectUri)
+    private function getAccessToken(string $authCode, string $codeVerifier, string $redirectUri): array
     {
         $client = new Client(['verify' => !$this->config->getWithDefault('api.skip_ssl', false)]);
         $request = new Request('POST', $this->config->get('api.oauth2_token_url'), body: http_build_query([
@@ -341,11 +335,9 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
-     * Get a PKCE code verifier to use with the OAuth2 code request.
-     *
-     * @return string
+     * Gets a PKCE code verifier to use with the OAuth2 code request.
      */
-    private function generateCodeVerifier()
+    private function generateCodeVerifier(): string
     {
         // This uses paragonie/random_compat as a polyfill for PHP < 7.0.
         return $this->base64UrlEncode(random_bytes(32));
@@ -367,12 +359,8 @@ class BrowserLoginCommand extends CommandBase
 
     /**
      * Generates a PKCE code challenge using the S256 transformation on a verifier.
-     *
-     * @param string $verifier
-     *
-     * @return string
      */
-    private function convertVerifierToChallenge($verifier)
+    private function convertVerifierToChallenge(string $verifier): string
     {
         return $this->base64UrlEncode(hash('sha256', $verifier, true));
     }

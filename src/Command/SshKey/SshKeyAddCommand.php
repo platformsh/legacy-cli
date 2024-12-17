@@ -21,7 +21,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to an existing SSH public key')
@@ -160,7 +160,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
      *
      * @return bool
      */
-    protected function keyExistsByFingerprint($fingerprint): bool
+    protected function keyExistsByFingerprint(string $fingerprint): bool
     {
         foreach ($this->api->getClient()->getSshKeys() as $existingKey) {
             if ($existingKey->fingerprint === $fingerprint) {
@@ -178,7 +178,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
      *
      * @return string
      */
-    private function askNewKeyPath(QuestionHelper $questionHelper)
+    private function askNewKeyPath(QuestionHelper $questionHelper): string
     {
         $basename = 'id_ed25519-' . $this->config->get('application.slug') . '-' . $this->api->getMyAccount()['username'];
         $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';

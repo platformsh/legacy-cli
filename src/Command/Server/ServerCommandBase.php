@@ -214,7 +214,7 @@ abstract class ServerCommandBase extends CommandBase
     {
         if (isset($appConfig['type'])) {
             $type = explode(':', (string) $appConfig['type'], 2);
-            $version = isset($type[1]) ? $type[1] : false;
+            $version = $type[1] ?? false;
             $shell = $this->shell;
             $localPhpVersion = $shell->getPhpVersion();
             if ($type[0] === 'php' && $version && version_compare($localPhpVersion, $version, '<')) {
@@ -354,7 +354,7 @@ abstract class ServerCommandBase extends CommandBase
             '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',
             $envPrefix . 'APPLICATION' => base64_encode(json_encode($appConfig)),
-            $envPrefix . 'APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
+            $envPrefix . 'APPLICATION_NAME' => $appConfig['name'] ?? '',
             $envPrefix . 'DOCUMENT_ROOT' => $realDocRoot,
             $envPrefix . 'ROUTES' => base64_encode(json_encode($this->getRoutesList($projectRoot, $address))),
         ];

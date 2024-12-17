@@ -36,7 +36,7 @@ class VariableGetCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')

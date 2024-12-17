@@ -11,9 +11,9 @@ class SelfUpdater
 {
     protected OutputInterface $stdErr;
 
-    protected $timeout = 30;
-    protected $allowUnstable = false;
-    protected $allowMajor = false;
+    protected int $timeout = 30;
+    protected bool $allowUnstable = false;
+    protected bool $allowMajor = false;
 
     /**
      * Updater constructor.
@@ -40,7 +40,7 @@ class SelfUpdater
      * @param int $timeout
      *   The timeout in seconds.
      */
-    public function setTimeout($timeout): void
+    public function setTimeout(int $timeout): void
     {
         $this->timeout = $timeout;
     }
@@ -50,7 +50,7 @@ class SelfUpdater
      *
      * @param bool $allowUnstable
      */
-    public function setAllowUnstable($allowUnstable = true): void
+    public function setAllowUnstable(bool $allowUnstable = true): void
     {
         $this->allowUnstable = $allowUnstable;
     }
@@ -60,7 +60,7 @@ class SelfUpdater
      *
      * @param bool $allowMajor
      */
-    public function setAllowMajor($allowMajor = true): void
+    public function setAllowMajor(bool $allowMajor = true): void
     {
         $this->allowMajor = $allowMajor;
     }
@@ -74,7 +74,7 @@ class SelfUpdater
      * @return false|string
      *   The new version number, or an empty string if there was no update, or false on error.
      */
-    public function update($manifestUrl = null, $currentVersion = null)
+    public function update(?string $manifestUrl = null, ?string $currentVersion = null): string|false
     {
         $currentVersion = $currentVersion ?: $this->config->getVersion();
         $manifestUrl = $manifestUrl ?: $this->config->get('application.manifest_url');
@@ -118,7 +118,7 @@ class SelfUpdater
         }
 
         $updater = new Updater($localPhar, false);
-        $strategy = new ManifestStrategy(ltrim((string) $currentVersion, 'v'), $manifestUrl, $this->allowMajor, $this->allowUnstable);
+        $strategy = new ManifestStrategy(ltrim($currentVersion, 'v'), $manifestUrl, $this->allowMajor, $this->allowUnstable);
         $strategy->setManifestTimeout($this->timeout);
         $strategy->setStreamContextOptions($this->config->getStreamContextOptions());
         $updater->setStrategyObject($strategy);
@@ -132,7 +132,7 @@ class SelfUpdater
 
         // Some dev versions cannot be compared against other version numbers,
         // so do not check for release notes in that case.
-        $currentIsDev = str_starts_with((string) $currentVersion, 'dev-');
+        $currentIsDev = str_starts_with($currentVersion, 'dev-');
 
         if (!$currentIsDev && ($notes = $strategy->getUpdateNotesByVersion($currentVersion, $newVersionString))) {
             $this->stdErr->writeln('');

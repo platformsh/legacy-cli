@@ -29,7 +29,7 @@ class TeamCreateCommand extends TeamCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('label', null, InputOption::VALUE_REQUIRED, 'The team label')
             ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')
@@ -181,7 +181,7 @@ class TeamCreateCommand extends TeamCommandBase
                         if (isset($currentEnvTypeRoles[$type], $newEnvTypeRoles[$type]) && $currentEnvTypeRoles[$type] === $newEnvTypeRoles[$type]) {
                             continue;
                         }
-                        $changesText[] = sprintf('Role on environment type %s: <fg=red>%s</> -> <fg=green>%s</>', $type, isset($currentEnvTypeRoles[$type]) ? $currentEnvTypeRoles[$type] : '[none]', isset($newEnvTypeRoles[$type]) ? $newEnvTypeRoles[$type] : '[none]');
+                        $changesText[] = sprintf('Role on environment type %s: <fg=red>%s</> -> <fg=green>%s</>', $type, $currentEnvTypeRoles[$type] ?? '[none]', $newEnvTypeRoles[$type] ?? '[none]');
                     }
                 }
             }
@@ -266,12 +266,7 @@ class TeamCreateCommand extends TeamCommandBase
     }
 
 
-    /**
-     * @param string $value
-     *
-     * @return string
-     */
-    private function validateProjectRole($value)
+    private function validateProjectRole(string $value): string
     {
         return $this->matchRole($value, ['admin', 'viewer']);
     }
@@ -284,7 +279,7 @@ class TeamCreateCommand extends TeamCommandBase
      *
      * @return string
      */
-    private function matchRole(string $input, array $roles)
+    private function matchRole(string $input, array $roles): string
     {
         foreach ($roles as $role) {
             if (str_starts_with($role, strtolower($input))) {
@@ -314,7 +309,7 @@ class TeamCreateCommand extends TeamCommandBase
         $initials = $this->describeRoleInput($validRoles);
         $this->stdErr->writeln('');
         foreach (['production', 'staging', 'development'] as $id) {
-            $default = isset($defaultTypeRoles[$id]) ? $defaultTypeRoles[$id] : 'none';
+            $default = $defaultTypeRoles[$id] ?? 'none';
             $question = new Question(
                 sprintf('Role on type <info>%s</info> (default: %s) <question>%s</question>: ', $id, $default, $initials),
                 $default
@@ -339,12 +334,7 @@ class TeamCreateCommand extends TeamCommandBase
         return $desiredTypeRoles;
     }
 
-    /**
-     * @param string $value
-     *
-     * @return string
-     */
-    private function validateEnvironmentTypeRole($value)
+    private function validateEnvironmentTypeRole(string $value): string
     {
         return $this->matchRole($value, array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']));
     }
@@ -357,7 +347,7 @@ class TeamCreateCommand extends TeamCommandBase
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array &$roles)
+    private function getSpecifiedProjectRole(array &$roles): ?string
     {
         foreach ($roles as $key => $role) {
             if (!str_contains((string) $role, ':')) {

@@ -36,16 +36,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ProjectCreateCommand extends CommandBase
 {
     private ?array $plansCache = null;
-    private $regionsCache;
+    private ?array $regionsCache = null;
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition());
 
@@ -181,7 +179,7 @@ EOF
 
         $estimate = $this->api
             ->getClient()
-            ->getSubscriptionEstimate($options['plan'], (int) $options['storage'] * 1024, (int) $options['environments'], 1, null, $organization ? $organization->id : null);
+            ->getSubscriptionEstimate($options['plan'], (int) $options['storage'] * 1024, (int) $options['environments'], 1, null, $organization?->id);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
             $estimate['total']
@@ -199,7 +197,7 @@ EOF
 
         $subscription = $this->api->getClient()
             ->createSubscription(SubscriptionOptions::fromArray([
-                'organization_id' => $organization ? $organization->id : null,
+                'organization_id' => $organization?->id,
                 'project_title' => $options['title'],
                 'project_region' => $options['region'],
                 'default_branch' => $options['default_branch'],
@@ -352,12 +350,8 @@ EOF
      * Checks the organization /can-create API before creating a project.
      *
      * This will show whether billing changes or verification are needed.
-     *
-     * @param Organization $organization
-     * @param InputInterface $input
-     * @return bool
      */
-    private function checkCanCreate(Organization $organization, InputInterface $input)
+    private function checkCanCreate(Organization $organization, InputInterface $input): bool
     {
         $canCreate = $this->api->checkCanCreate($organization);
         if ($canCreate['can_create']) {
@@ -389,13 +383,8 @@ EOF
 
     /**
      * Requires phone or support verification.
-     *
-     * @param string $type
-     * @param string $message
-     * @param InputInterface $input
-     * @return bool True if verification succeeded, false otherwise.
      */
-    private function requireVerification($type, string|iterable $message, InputInterface $input): bool
+    private function requireVerification(string $type, string $message, InputInterface $input): bool
     {
         if ($type === 'phone') {
             $this->stdErr->writeln('Phone number verification is required before creating a project.');
@@ -442,7 +431,7 @@ EOF
      * @return array
      *   A list of plan machine names.
      */
-    protected function getAvailablePlans(SetupOptions $setupOptions = null)
+    protected function getAvailablePlans(?SetupOptions $setupOptions = null): array
     {
         if (isset($setupOptions)) {
             return $setupOptions->plans;
@@ -459,11 +448,8 @@ EOF
 
     /**
      * Picks a default plan from a list.
-     *
-     * @param string[] $availablePlans
-     * @return string|null
      */
-    protected function getDefaultPlan($availablePlans)
+    protected function getDefaultPlan(array $availablePlans): ?string
     {
         if (count($availablePlans) === 1) {
             return reset($availablePlans);
@@ -482,7 +468,7 @@ EOF
      * @return array<string, string>
      *   A list of region names, mapped to option names.
      */
-    protected function getAvailableRegions(SetupOptions $setupOptions = null): array
+    protected function getAvailableRegions(?SetupOptions $setupOptions = null): array
     {
         $regions = $this->regionsCache !== null
             ? $this->regionsCache
@@ -516,12 +502,8 @@ EOF
 
     /**
      * Outputs a short description of a region, including its location and carbon intensity.
-     *
-     * @param Region $region
-     *
-     * @return string
      */
-    private function regionInfo(Region $region)
+    private function regionInfo(Region $region): string
     {
         $green = !empty($region->environmental_impact['green']);
         if (!empty($region->datacenter['location'])) {
@@ -545,7 +527,7 @@ EOF
      *
      * @return Field[]
      */
-    protected function getFields(SetupOptions $setupOptions = null): array
+    protected function getFields(?SetupOptions $setupOptions = null): array
     {
         return [
           'title' => new Field('Project title', [
@@ -624,16 +606,16 @@ EOF
     }
 
     /**
-     * Get a numeric option value while ensuring it's a reasonable number.
+     * Gets a numeric option value while ensuring it's a reasonable number.
      *
      * @param InputInterface $input
-     * @param string                                          $optionName
-     * @param int                                             $min
-     * @param int                                             $max
+     * @param string $optionName
+     * @param int $min
+     * @param int $max
      *
      * @return float|int
      */
-    private function getTimeOption(InputInterface $input, string $optionName, int $min = 0, int $max = 3600)
+    private function getTimeOption(InputInterface $input, string $optionName, int $min = 0, int $max = 3600): float|int
     {
         $value = $input->getOption($optionName);
         if ($value <= $min) {

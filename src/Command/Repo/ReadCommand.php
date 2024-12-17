@@ -18,10 +18,8 @@ class ReadCommand extends RepoCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to the directory or file')

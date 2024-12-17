@@ -171,7 +171,7 @@ class Api
      *
      * @return bool
      */
-    public function hasApiToken($includeStored = true): bool
+    public function hasApiToken(bool $includeStored = true): bool
     {
         return $this->tokenConfig->getAccessToken() || $this->tokenConfig->getApiToken($includeStored);
     }
@@ -206,7 +206,7 @@ class Api
      *
      * @return bool
      */
-    public function anySessionsExist()
+    public function anySessionsExist(): bool
     {
         if ($this->sessionStorage instanceof CredentialHelperStorage && $this->sessionStorage->hasAnySessions()) {
             return true;
@@ -339,7 +339,7 @@ class Api
      *
      * @return string
      */
-    private function caBundlePath()
+    private function caBundlePath(): string
     {
         static $path;
         if ($path === null) {
@@ -349,7 +349,8 @@ class Api
         return $path;
     }
 
-    private function onStepUpAuthResponse(ResponseInterface $response) {
+    private function onStepUpAuthResponse(ResponseInterface $response): ?AccessToken
+    {
         if ($this->inLoginCheck) {
             return null;
         }
@@ -360,8 +361,8 @@ class Api
         $previousAccessToken = $session->get('accessToken');
 
         $body = Utils::jsonDecode((string) $response->getBody(), true);
-        $authMethods = isset($body['amr']) ? $body['amr'] : [];
-        $maxAge = isset($body['max_age']) ? $body['max_age'] : null;
+        $authMethods = $body['amr'] ?? [];
+        $maxAge = $body['max_age'] ?? null;
 
         $this->dispatcher->dispatch(new LoginRequiredEvent($authMethods, $maxAge, $this->hasApiToken()), 'login.required');
 
@@ -621,7 +622,7 @@ class Api
      *
      * @return resource
      */
-    public function getStreamContext($timeout = 15) {
+    public function getStreamContext(int|float $timeout = 15) {
         $opts = $this->config->getStreamContextOptions($timeout);
         $opts['http']['header'] = [
             'Authorization: Bearer ' . $this->getAccessToken(),
@@ -637,15 +638,9 @@ class Api
      * @param BasicProjectInfo $project
      * @return bool
      */
-    private function matchesVendorFilter($filters, BasicProjectInfo $project): bool
+    private function matchesVendorFilter(string|array|null $filters, BasicProjectInfo $project): bool
     {
-        if (empty($filters)) {
-            return true;
-        }
-        if (in_array($project->vendor, (array) $filters)) {
-            return true;
-        }
-        return false;
+        return empty($filters) || in_array($project->vendor, (array) $filters);
     }
 
     /**
@@ -655,7 +650,7 @@ class Api
      *
      * @return BasicProjectInfo[]
      */
-    public function getMyProjects($refresh = null)
+    public function getMyProjects(?bool $refresh = null): array
     {
         $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
@@ -694,13 +689,13 @@ class Api
     /**
      * Return the user's project with the given ID.
      *
-     * @param string      $id      The project ID.
+     * @param string $id The project ID.
      * @param string|null $host The project's hostname. @deprecated no longer used if an api.base_url is configured.
-     * @param bool|null   $refresh Whether to bypass the cache.
+     * @param bool|null $refresh Whether to bypass the cache.
      *
      * @return Project|false
      */
-    public function getProject(string $id, $host = null, $refresh = null)
+    public function getProject(string $id, ?string $host = null, ?bool $refresh = null): Project|false
     {
         // Ignore the $host if an api.base_url is configured.
         $apiUrl = $this->config->getWithDefault('api.base_url', '');
@@ -747,9 +742,9 @@ class Api
      * @param bool|null $refresh Whether to refresh the list.
      * @param bool      $events  Whether to update Drush aliases if the list changes.
      *
-     * @return array<string, Environment> The user's environments, keyed by ID.
+     * @return array<string, Environment> The project's environments, keyed by ID.
      */
-    public function getEnvironments(Project $project, $refresh = null, $events = true)
+    public function getEnvironments(Project $project, ?bool $refresh = null, bool $events = true): array
     {
         $projectId = $project->id;
 
@@ -857,7 +852,7 @@ class Api
      *
      * @return EnvironmentType[]
      */
-    public function getEnvironmentTypes(Project $project, $refresh = null)
+    public function getEnvironmentTypes(Project $project, ?bool $refresh = null): array
     {
         $cacheKey = sprintf('environment-types:%s', $project->id);
 
@@ -898,7 +893,7 @@ class Api
      *     'phone_number_verified': bool,
      * }
      */
-    public function getMyAccount($reset = false)
+    public function getMyAccount(bool $reset = false): array
     {
         $user = $this->getUser(null, $reset);
         return $user->getProperties() + [
@@ -913,7 +908,7 @@ class Api
      *
      * @return array{'id': string, 'username': string, 'mail': string, 'display_name': string, 'ssh_keys': array}
      */
-    private function getLegacyAccountInfo($reset = false)
+    private function getLegacyAccountInfo(bool $reset = false): array
     {
         $cacheKey = sprintf('%s:my-account', $this->config->getSessionId());
         $info = $this->cache->fetch($cacheKey);
@@ -930,7 +925,6 @@ class Api
     /**
      * Shortcut to return the ID of the current user.
      *
-     * @return string|false
      */
     public function getMyUserId(bool $reset = false): string|false
     {
@@ -944,7 +938,7 @@ class Api
      *
      * @return SshKey[]
      */
-    public function getSshKeys($reset = false): array
+    public function getSshKeys(bool $reset = false): array
     {
         $data = $this->getLegacyAccountInfo($reset);
 
@@ -962,7 +956,7 @@ class Api
      *
      * @return User
      */
-    public function getUser($id = null, $reset = false)
+    public function getUser(?string $id = null, bool $reset = false): User
     {
         if ($id) {
             $cacheKey = 'user:' . $id;
@@ -1033,7 +1027,7 @@ class Api
      *
      * @return void
      */
-    public static function sortResources(array &$resources, $propertyPath, $reverse = false): void
+    public static function sortResources(array &$resources, string $propertyPath, bool $reverse = false): void
     {
         uasort($resources, fn(ApiResource $a, ApiResource $b) => Sort::compare(
             static::getNestedProperty($a, $propertyPath, false),
@@ -1053,7 +1047,7 @@ class Api
      *
      * @return mixed
      */
-    public static function getNestedProperty(ApiResource $resource, $propertyPath, bool $lazyLoad = true)
+    public static function getNestedProperty(ApiResource $resource, string $propertyPath, bool $lazyLoad = true): mixed
     {
         if (!strpos($propertyPath, '.')) {
             return $resource->getProperty($propertyPath, true, $lazyLoad);
@@ -1093,7 +1087,9 @@ class Api
      *
      * @return string
      */
-    public function getProjectLabel($project, $tag = 'info'): string
+    public function getProjectLabel(
+        Project|BasicProjectInfo|\Platformsh\Client\Model\Organization\Project|TeamProjectAccess|string $project,
+        string|false $tag = 'info'): string
     {
         static $titleCache = [];
         if ($project instanceof Project || $project instanceof BasicProjectInfo || $project instanceof \Platformsh\Client\Model\Organization\Project) {
@@ -1104,7 +1100,7 @@ class Api
             $title = $project->project_title;
             $id = $project->project_id;
             $titleCache[$id] = $title;
-        } elseif (is_string($project)) {
+        } else {
             if (isset($titleCache[$project])) {
                 $title = $titleCache[$project];
                 $id = $project;
@@ -1117,8 +1113,6 @@ class Api
                 $id = $projectObj->id;
                 $titleCache[$id] = $title;
             }
-        } else {
-            throw new \InvalidArgumentException('Invalid type for $project');
         }
         $pattern = strlen($title) > 0 ? '%2$s (%3$s)' : '%3$s';
         if ($tag !== false) {
@@ -1130,14 +1124,8 @@ class Api
 
     /**
      * Returns an environment label.
-     *
-     * @param Environment  $environment
-     * @param string|false $tag
-     * @param bool $showType
-     *
-     * @return string
      */
-    public function getEnvironmentLabel(Environment $environment, $tag = 'info', $showType = true): string
+    public function getEnvironmentLabel(Environment $environment, string|false $tag = 'info', bool $showType = true): string
     {
         $id = $environment->id;
         $title = $environment->title;
@@ -1157,13 +1145,8 @@ class Api
 
     /**
      * Returns an organization label.
-     *
-     * @param Organization $organization
-     * @param string|false $tag
-     *
-     * @return string
      */
-    public function getOrganizationLabel(Organization $organization, $tag = 'info'): string
+    public function getOrganizationLabel(Organization $organization, string|false $tag = 'info'): string
     {
         $name = $organization->name;
         $label = $organization->label;
@@ -1210,7 +1193,7 @@ class Api
      *
      * @return string
      */
-    public function getAccessToken()
+    public function getAccessToken(): string
     {
         // Check for an externally configured access token.
         if ($accessToken = $this->tokenConfig->getAccessToken()) {
@@ -1271,7 +1254,7 @@ class Api
      * @return EnvironmentDeployment|false
      *   The current deployment, or false if $required is false and there is no current deployment.
      */
-    public function getCurrentDeployment(Environment $environment, $refresh = false, $required = true)
+    public function getCurrentDeployment(Environment $environment, bool $refresh = false, bool $required = true): EnvironmentDeployment|false
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
         if (!$refresh && isset(self::$deploymentsCache[$cacheKey])) {
@@ -1327,7 +1310,7 @@ class Api
      *
      * @return Environment|null
      */
-    public function getDefaultEnvironment(array $envs, Project $project, $onlyDefaultBranch = false)
+    public function getDefaultEnvironment(array $envs, Project $project, bool $onlyDefaultBranch = false): ?Environment
     {
         if ($project->default_branch === '') {
             throw new \RuntimeException('Default branch not set');
@@ -1365,12 +1348,12 @@ class Api
      * Get the preferred site URL for an environment and app.
      *
      * @param Environment $environment
-     * @param string                                                         $appName
+     * @param string $appName
      * @param EnvironmentDeployment|null $deployment
      *
      * @return string|null
      */
-    public function getSiteUrl(Environment $environment, $appName, EnvironmentDeployment $deployment = null)
+    public function getSiteUrl(Environment $environment, string $appName, ?EnvironmentDeployment $deployment = null): ?string
     {
         $deployment = $deployment ?: $this->getCurrentDeployment($environment);
         $routes = Route::fromDeploymentApi($deployment->routes);
@@ -1422,7 +1405,7 @@ class Api
      * @return false|Subscription
      *   The subscription or false if not found.
      */
-    public function loadSubscription(string $id, Project $project = null, $forWrite = true)
+    public function loadSubscription(string $id, ?Project $project = null, bool $forWrite = true): Subscription|false
     {
         $organizations_enabled = $this->config->getWithDefault('api.organizations', false);
         if (!$organizations_enabled) {
@@ -1485,7 +1468,7 @@ class Api
      *
      * @return array{'state': bool, 'type': string}
      */
-    public function checkUserVerification()
+    public function checkUserVerification(): array
     {
         if (!$this->config->getWithDefault('api.user_verification', false)) {
             return ['state' => false, 'type' => ''];
@@ -1502,7 +1485,7 @@ class Api
      *
      * @return array{'can_create': bool, 'message': string, 'required_action': ?array{'action': string, 'type': string}}
      */
-    public function checkCanCreate(Organization $org)
+    public function checkCanCreate(Organization $org): array
     {
         $request = new Request('GET', $org->getUri() . '/subscriptions/can-create');
         $response = $this->getHttpClient()->send($request);
@@ -1511,13 +1494,8 @@ class Api
 
     /**
      * Returns a descriptive label for a referenced user.
-     *
-     * @param UserRef $userRef
-     * @param string|false $tag
-     *
-     * @return string
      */
-    public function getUserRefLabel(UserRef $userRef, $tag = 'info'): string
+    public function getUserRefLabel(UserRef $userRef, string|false $tag = 'info'): string
     {
         $name = trim($userRef->first_name . ' ' . $userRef->last_name);
         $pattern = $name !== '' ? '%2$s \<%3$s>' : '%3$s';
@@ -1529,12 +1507,8 @@ class Api
 
     /**
      * Loads an organization by ID, with caching.
-     *
-     * @param string $id
-     * @param bool $reset
-     * @return Organization|false
      */
-    public function getOrganizationById(string $id, $reset = false)
+    public function getOrganizationById(string $id, bool $reset = false): Organization|false
     {
         $cacheKey = 'organization:' . $id;
         if (!$reset && ($cached = $this->cache->fetch($cacheKey))) {
@@ -1552,12 +1526,8 @@ class Api
 
     /**
      * Loads an organization by name, with caching.
-     *
-     * @param string $name
-     * @param bool $reset
-     * @return Organization|false
      */
-    public function getOrganizationByName(string $name, $reset = false)
+    public function getOrganizationByName(string $name, bool $reset = false): Organization|false
     {
         return $this->getOrganizationById('name=' . $name, $reset);
     }
@@ -1576,13 +1546,8 @@ class Api
 
     /**
      * Returns the Console URL for a project, with caching.
-     *
-     * @param Project $project
-     * @param bool $reset
-     *
-     * @return false|string
      */
-    public function getConsoleURL(Project $project, $reset = false)
+    public function getConsoleURL(Project $project, bool $reset = false): string|false
     {
         if ($this->config->has('service.console_url') && $this->config->get('api.organizations')) {
             // Load the organization name if possible.
@@ -1610,12 +1575,8 @@ class Api
      * Loads an organization member by email, by paging through all the members in the organization.
      *
      * @TODO replace this with a more efficient API when available
-     *
-     * @param Organization $organization
-     * @param string $email
-     * @return Member|null
      */
-    public function loadMemberByEmail(Organization $organization, $email)
+    public function loadMemberByEmail(Organization $organization, string $email): ?Member
     {
         foreach ($this->listMembers($organization) as $member) {
             if ($member->getUserInfo() && strcasecmp($member->getUserInfo()->email, $email) === 0) {
@@ -1628,10 +1589,9 @@ class Api
     /**
      * Loads organization members (with static caching).
      *
-     * @param bool $reset
      * @return Member[]
      */
-    public function listMembers(Organization $organization, $reset = false)
+    public function listMembers(Organization $organization, bool $reset = false): array
     {
         static $cache = [];
         $cacheKey = $organization->id;
@@ -1652,11 +1612,8 @@ class Api
 
     /**
      * Returns a label for an organization or team member.
-     *
-     * @param Member|TeamMember $member
-     * @return string
      */
-    public function getMemberLabel($member)
+    public function getMemberLabel(Member|TeamMember $member): string
     {
         if ($userInfo = $member->getUserInfo()) {
             $label = sprintf('%s (%s)', trim($userInfo->first_name . ' ' . $userInfo->last_name), $userInfo->email);
@@ -1673,7 +1630,7 @@ class Api
      * @param EnvironmentDeployment|null $deployment
      * @return bool
      */
-    public function supportsSizingApi(Project $project, EnvironmentDeployment $deployment = null)
+    public function supportsSizingApi(Project $project, ?EnvironmentDeployment $deployment = null): bool
     {
         if (isset($deployment->project_info['settings'])) {
             return !empty($deployment->project_info['settings']['sizing_api_enabled']);
@@ -1696,7 +1653,7 @@ class Api
      * @param Project $project
      * @return Integration|null
      */
-    public function getCodeSourceIntegration(Project $project)
+    public function getCodeSourceIntegration(Project $project): ?Integration
     {
         $codeSourceIntegrationTypes = ['github', 'gitlab', 'bitbucket', 'bitbucket_server'];
         foreach ($project->getIntegrations() as $integration) {

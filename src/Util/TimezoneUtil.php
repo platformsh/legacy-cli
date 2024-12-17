@@ -19,7 +19,7 @@ class TimezoneUtil
      *
      * @return string
      */
-    public static function getTimezone()
+    public static function getTimezone(): string
     {
         // Suppress the PHP warning, "It is not safe to rely on the system's
         // timezone settings".
@@ -59,7 +59,7 @@ class TimezoneUtil
      * @return string|false
      *   A string or false if the value cannot be read or is invalid.
      */
-    private static function convertTz($tz): string|false
+    private static function convertTz(string $tz): string|false
     {
         if (\strlen($tz) > 1 && $tz[0] === ':') {
             $filename = substr($tz, 1);

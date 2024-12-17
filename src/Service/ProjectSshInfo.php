@@ -7,7 +7,7 @@ use Platformsh\Client\Model\Project;
 
 readonly class ProjectSshInfo
 {
-    public function __construct(private readonly Ssh $ssh)
+    public function __construct(private Ssh $ssh)
     {
     }
 

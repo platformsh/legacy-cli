@@ -22,7 +22,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addOrganizationOptions($this->getDefinition(), true);
         $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
@@ -36,16 +36,13 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $org = $this->selector->selectOrganization($input, 'orders');
         $profile = $org->getProfile();
 
-        $formatter = $this->propertyFormatter;
-
         $property = $input->getArgument('property');
         if ($property === null) {
             $headings = [];
             $values = [];
-            $formatter = $this->propertyFormatter;
             foreach ($profile->getProperties() as $key => $value) {
                 $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-                $values[] = $formatter->format($value, $key);
+                $values[] = $this->propertyFormatter->format($value, $key);
             }
 
             $table = $this->table;
@@ -65,33 +62,25 @@ class OrganizationProfileCommand extends OrganizationCommandBase
 
         $value = $input->getArgument('value');
         if ($value === null) {
-            $formatter->displayData($output, $profile->getProperties(), $property);
+            $this->propertyFormatter->displayData($output, $profile->getProperties(), $property);
             return 0;
         }
 
         return $this->setProperty($property, $value, $profile);
     }
 
-    /**
-     * @param string  $property
-     * @param string  $value
-     * @param Profile $profile
-     *
-     * @return int
-     */
-    protected function setProperty($property, $value, Profile $profile): int
+    protected function setProperty(string $property, string $value, Profile $profile): int
     {
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        $formatter = $this->propertyFormatter;
 
         $currentValue = $profile->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $formatter->format($profile->getProperty($property, false), $property)
+                $this->propertyFormatter->format($profile->getProperty($property, false), $property)
             ));
 
             return 0;
@@ -116,20 +105,16 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $formatter->format($profile->$property, $property)
+            $this->propertyFormatter->format($profile->$property, $property)
         ));
 
         return 0;
     }
 
     /**
-     * Get the type of a writable property.
-     *
-     * @param string $property
-     *
-     * @return string|false
+     * Gets the type of a writable property.
      */
-    private function getType($property): string|false
+    private function getType(string $property): string|false
     {
         $writableProperties = [
             'company_name' => 'string',
@@ -140,16 +125,10 @@ class OrganizationProfileCommand extends OrganizationCommandBase
             'project_options_url' => 'string',
         ];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 
-    /**
-     * @param string $property
-     * @param string &$value
-     *
-     * @return bool
-     */
-    private function validateValue($property, &$value)
+    private function validateValue(string $property, string &$value): bool
     {
         $type = $this->getType($property);
         if (!$type) {

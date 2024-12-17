@@ -33,7 +33,7 @@ class TeamProjectListCommand extends TeamCommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page (max: ' . self::MAX_COUNT . '). Use 0 to disable pagination');
         $this->selector->addOrganizationOptions($this->getDefinition());

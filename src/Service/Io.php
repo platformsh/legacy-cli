@@ -66,6 +66,8 @@ readonly class Io
      * @param resource|int $descriptor
      *
      * @return bool
+     *
+     * @noinspection PhpMissingParamTypeInspection
      */
     public function isTerminal($descriptor): bool
     {

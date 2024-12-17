@@ -21,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:list', description: 'Get a list of all active projects', aliases: ['projects', 'pro'])]
 class ProjectListCommand extends CommandBase
 {
-    private $tableHeader = [
+    private array $tableHeader = [
         'id' => 'ID',
         'title' => 'Title',
         'region' => 'Region',
@@ -43,7 +43,7 @@ class ProjectListCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $organizationsEnabled = $this->config->getWithDefault('api.organizations', false);
         $this->defaultColumns = ['id', 'title', 'region'];
@@ -227,12 +227,12 @@ class ProjectListCommand extends CommandBase
     }
 
     /**
-     * Filter the list of projects.
+     * Filters the list of projects.
      *
-     * @param BasicProjectInfo[]     &$projects
+     * @param BasicProjectInfo[] &$projects
      * @param array<string, mixed> $filters
      */
-    protected function filterProjects(array &$projects, array $filters)
+    protected function filterProjects(array &$projects, array $filters): void
     {
         foreach ($filters as $filter => $value) {
             switch ($filter) {

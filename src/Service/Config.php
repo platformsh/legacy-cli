@@ -19,11 +19,7 @@ class Config
     private ?string $version = null;
     private ?string $homeDir = null;
 
-    /**
-     * @param array|null  $env
-     * @param string|null $file
-     */
-    public function __construct(array $env = null, $file = null)
+    public function __construct(?array $env = null, ?string $file = null)
     {
         $this->env = $env !== null ? $env : getenv();
 
@@ -76,7 +72,7 @@ class Config
      *
      * @return bool
      */
-    public function has($name, $notNull = true): bool
+    public function has(string $name, bool $notNull = true): bool
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
 
@@ -92,7 +88,7 @@ class Config
      *
      * @return null|string|bool|array
      */
-    public function get(string $name)
+    public function get(string $name): bool|array|string|null
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
@@ -113,7 +109,7 @@ class Config
      *
      * @return mixed
      */
-    public function getWithDefault($name, mixed $default, $useDefaultIfNull = true)
+    public function getWithDefault(string $name, mixed $default, bool $useDefaultIfNull = true): mixed
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists || ($useDefaultIfNull && $value === null)) {
@@ -130,12 +126,12 @@ class Config
      *
      * @return string The absolute path to the user's home directory
      */
-    public function getHomeDirectory($reset = false)
+    public function getHomeDirectory(bool $reset = false): string
     {
         if (!$reset && isset($this->homeDir)) {
             return $this->homeDir;
         }
-        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
+        $prefix = $this->config['application']['env_prefix'] ?? '';
         $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
         foreach ($envVars as $envVar) {
             $value = getenv($envVar);
@@ -164,7 +160,7 @@ class Config
      *
      * @return string
      */
-    public function getUserConfigDir($absolute = true)
+    public function getUserConfigDir(bool $absolute = true): string
     {
         $path = $this->get('application.user_config_dir');
 
@@ -188,9 +184,7 @@ class Config
      */
     public function getWritableUserDir(): string
     {
-        $path = isset($this->config['application']['writable_user_dir'])
-            ? $this->config['application']['writable_user_dir']
-            : $this->getUserConfigDir(false);
+        $path = $this->config['application']['writable_user_dir'] ?? $this->getUserConfigDir(false);
         $configDir = $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path;
 
         // If the directory is not writable (e.g. if we are on a Platform.sh
@@ -202,12 +196,7 @@ class Config
         return $configDir;
     }
 
-    /**
-     * @param bool $subDir
-     *
-     * @return string
-     */
-    public function getSessionDir($subDir = false): string
+    public function getSessionDir(bool $subDir = false): string
     {
         $sessionDir = $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
         if ($subDir) {
@@ -220,7 +209,7 @@ class Config
     /**
      * @return string
      */
-    public function getSessionId()
+    public function getSessionId(): string
     {
         return $this->getWithDefault('api.session_id', 'default');
     }
@@ -230,18 +219,15 @@ class Config
      *
      * @return string
      */
-    public function getSessionIdSlug(string $prefix = 'sess-cli-')
+    public function getSessionIdSlug(string $prefix = 'sess-cli-'): string
     {
         return $prefix . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
     }
 
     /**
      * Sets a new session ID.
-     *
-     * @param string $id
-     * @param bool   $persist
      */
-    public function setSessionId($id, $persist = false): void
+    public function setSessionId(string $id, bool $persist = false): void
     {
         $this->config['api']['session_id'] = $id;
         if ($persist) {
@@ -410,10 +396,10 @@ class Config
      * @param bool $addPrefix
      *   Whether to add the configured prefix to the variable name.
      *
-     * @return mixed|false
+     * @return string|false
      *   The value of the environment variable, or false if it is not set.
      */
-    private function getEnv(string|int $name, bool $addPrefix = true)
+    private function getEnv(string $name, bool $addPrefix = true): string|false
     {
         $prefix = $addPrefix && isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
@@ -436,38 +422,26 @@ class Config
     }
 
     /**
-     * Test if an experiment (a feature flag) is enabled.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests if an experiment (a feature flag) is enabled.
      */
-    public function isExperimentEnabled($name): bool
+    public function isExperimentEnabled(string $name): bool
     {
         return !empty($this->config['experimental']['all_experiments']) || !empty($this->config['experimental'][$name]);
     }
 
     /**
-     * Test if a command should be hidden.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests if a command should be hidden.
      */
-    public function isCommandHidden($name): bool
+    public function isCommandHidden(string $name): bool
     {
         return (!empty($this->config['application']['hidden_commands'])
             && in_array($name, $this->config['application']['hidden_commands']));
     }
 
     /**
-     * Test if a command should be enabled.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests if a command should be enabled.
      */
-    public function isCommandEnabled($name)
+    public function isCommandEnabled(string $name): bool
     {
         if (!empty($this->config['application']['disabled_commands'])
             && in_array($name, $this->config['application']['disabled_commands'])) {
@@ -492,10 +466,8 @@ class Config
 
     /**
      * Returns this application version.
-     *
-     * @return string
      */
-    public function getVersion() {
+    public function getVersion(): string {
         if (isset($this->version)) {
             return $this->version;
         }
@@ -517,7 +489,7 @@ class Config
      *
      * @return string
      */
-    public function getUserAgent(): array|string
+    public function getUserAgent(): string
     {
         $template = $this->getWithDefault(
             'api.user_agent',
@@ -555,12 +527,8 @@ class Config
 
     /**
      * Returns an array of context options for HTTP/HTTPS streams.
-     *
-     * @param int|float|null $timeout
-     *
-     * @return array
      */
-    public function getStreamContextOptions($timeout = null): array
+    public function getStreamContextOptions(int|float|null $timeout = null): array
     {
         $opts = [
             // See https://www.php.net/manual/en/context.http.php
@@ -606,10 +574,8 @@ class Config
 
     /**
      * Returns all the current configuration.
-     *
-     * @return array
      */
-    public function getAll()
+    public function getAll(): array
     {
         return $this->config;
     }

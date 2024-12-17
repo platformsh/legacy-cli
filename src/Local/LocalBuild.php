@@ -19,7 +19,7 @@ class LocalBuild
     const BUILD_VERSION = 3;
 
     /** @var array */
-    protected $settings = [];
+    protected array $settings = [];
 
     protected OutputInterface $output;
 
@@ -69,7 +69,7 @@ class LocalBuild
     /**
      * Build a project from any source directory, targeting any destination.
      *
-     * @param array  $settings    An array of build settings.
+     * @param array $settings An array of build settings.
      *     Possible settings:
      *     - clone (bool, default false) Clone the repository to the build
      *       directory before building, where possible.
@@ -93,16 +93,16 @@ class LocalBuild
      *       file via Drush Make, if applicable.
      *     - run-deploy-hooks (bool, default false) Run deploy and/or
      *       post_deploy hooks.
-     * @param string $sourceDir   The absolute path to the source directory.
-     * @param string $destination Where the web root(s) will be linked (absolute
-     *                            path).
-     * @param array  $apps        An array of application names to build.
-     *
-     * @throws \Exception on failure
+     * @param string $sourceDir The absolute path to the source directory.
+     * @param ?string $destination Where the web root(s) will be linked
+     *                             (absolute path).
+     * @param array $apps An array of application names to build.
      *
      * @return bool
+     *@throws \Exception on failure
+     *
      */
-    public function build(array $settings, string $sourceDir, $destination = null, array $apps = [])
+    public function build(array $settings, string $sourceDir, ?string $destination = null, array $apps = []): bool
     {
         $this->settings = $settings;
         $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
@@ -137,17 +137,12 @@ class LocalBuild
     }
 
     /**
-     * Get a hash of the application files.
+     * Calculates a hash of the application files.
      *
      * This should change if any of the application files or build settings
      * change.
-     *
-     * @param string $appRoot
-     * @param array  $settings
-     *
-     * @return string|false
      */
-    public function getTreeId($appRoot, array $settings): false|string
+    public function getTreeId(string $appRoot, array $settings): false|string
     {
         $hashes = [];
 
@@ -203,14 +198,9 @@ class LocalBuild
     }
 
     /**
-     * Build a single application.
-     *
-     * @param LocalApplication $app
-     * @param string|null      $destination
-     *
-     * @return bool
+     * Builds a single application.
      */
-    protected function buildApp($app, $destination = null)
+    protected function buildApp(LocalApplication $app, ?string $destination = null): bool
     {
         $verbose = $this->output->isVerbose();
 
@@ -368,16 +358,13 @@ class LocalBuild
     }
 
     /**
-     * Run post-build hooks.
-     *
-     * @param array  $appConfig
-     * @param string $buildDir
+     * Runs post-build hooks.
      *
      * @return bool|null
      *   False if the build hooks fail, true if they succeed, null if not
      *   applicable.
      */
-    protected function runPostBuildHooks(array $appConfig, $buildDir)
+    protected function runPostBuildHooks(array $appConfig, string $buildDir): bool|null
     {
         if (!isset($appConfig['hooks']['build'])) {
             return null;
@@ -392,16 +379,13 @@ class LocalBuild
     }
 
     /**
-     * Run deploy and post_deploy hooks.
-     *
-     * @param array  $appConfig
-     * @param string $appDir
+     * Runs deploy and post_deploy hooks.
      *
      * @return bool|null
      *   False if the deploy hooks fail, true if they succeed, null if not
      *   applicable.
      */
-    protected function runDeployHooks(array $appConfig, $appDir)
+    protected function runDeployHooks(array $appConfig, string $appDir): bool|null
     {
         if (empty($this->settings['run-deploy-hooks'])) {
             return null;
@@ -424,14 +408,9 @@ class LocalBuild
     }
 
     /**
-     * Run a user-defined hook.
-     *
-     * @param string|array $hook
-     * @param string       $dir
-     *
-     * @return bool
+     * Runs a user-defined hook.
      */
-    protected function runHook($hook, $dir): bool
+    private function runHook(string|array $hook, string $dir): bool
     {
         $code = $this->shellHelper->executeSimple(
             implode("\n", (array) $hook),
@@ -450,16 +429,12 @@ class LocalBuild
      *
      * This preserves the currently active build.
      *
-     * @param string   $projectRoot
-     * @param int|null $maxAge
-     * @param int      $keepMax
-     * @param bool     $includeActive
-     * @param bool     $quiet
-     *
      * @return int[]
      *   The numbers of deleted and kept builds.
+     *
+     * @throws \Exception
      */
-    public function cleanBuilds(string $projectRoot, $maxAge = null, $keepMax = 10, $includeActive = false, $quiet = true)
+    public function cleanBuilds(string $projectRoot, ?int $maxAge = null, int $keepMax = 10, bool $includeActive = false, bool $quiet = true): array
     {
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
@@ -531,17 +506,17 @@ class LocalBuild
     }
 
     /**
-     * Remove old build archives.
+     * Removes old build archives.
      *
-     * @param string   $projectRoot
+     * @param string $projectRoot
      * @param int|null $maxAge
-     * @param int      $keepMax
-     * @param bool     $quiet
+     * @param int $keepMax
+     * @param bool $quiet
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanArchives(string $projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
+    public function cleanArchives(string $projectRoot, ?int $maxAge = null, int $keepMax = 10, bool $quiet = true): array
     {
         return $this->cleanDirectory(
             $projectRoot . '/' . $this->config->get('local.archive_dir'),

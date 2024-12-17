@@ -20,7 +20,7 @@ class WebCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         Url::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());

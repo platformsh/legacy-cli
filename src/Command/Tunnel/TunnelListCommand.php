@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:list', description: 'List SSH tunnels', aliases: ['tunnels'])]
 class TunnelListCommand extends TunnelCommandBase
 {
-    protected $tableHeader = [
+    protected array $tableHeader = [
         'port' => 'Port',
         'project' => 'Project',
         'environment' => 'Environment',
@@ -20,13 +20,13 @@ class TunnelListCommand extends TunnelCommandBase
         'relationship' => 'Relationship',
         'url' => 'URL',
     ];
-    protected $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
+    protected array $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
     public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');

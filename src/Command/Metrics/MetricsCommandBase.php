@@ -114,7 +114,7 @@ abstract class MetricsCommandBase extends CommandBase
         return parent::isEnabled();
     }
 
-    protected function addMetricsOptions()
+    protected function addMetricsOptions(): self
     {
         $duration = new Duration();
         $this->addOption('range', 'r', InputOption::VALUE_REQUIRED,
@@ -145,7 +145,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @return array{'href': string, 'collection': string}|false
      *   The link data or false on failure.
      */
-    protected function getMetricsLink(Environment $environment)
+    protected function getMetricsLink(Environment $environment): false|array
     {
         $environmentData = $environment->getData();
         if (!isset($environmentData['_links']['#metrics'])) {
@@ -168,7 +168,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @param string $dimension
      * @return array<string, string>
      */
-    private function dimensionFields($dimension): array
+    private function dimensionFields(string $dimension): array
     {
         $fields = ['service' => '', 'mountpoint' => '', 'instance' => ''];
         foreach (explode('/', $dimension) as $field) {
@@ -192,7 +192,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @return false|array
      *   False on failure, or an array of sketch values, keyed by: time, service, dimension, and name.
      */
-    protected function fetchMetrics(InputInterface $input, TimeSpec $timeSpec, Environment $environment, $fieldNames)
+    protected function fetchMetrics(InputInterface $input, TimeSpec $timeSpec, Environment $environment, array $fieldNames): array|false
     {
         $link = $this->getMetricsLink($environment);
         if (!$link) {
@@ -295,7 +295,7 @@ abstract class MetricsCommandBase extends CommandBase
         $values = [];
         foreach ($items as $item) {
             $time = $item['point']['timestamp'];
-            $dimension = isset($item['point']['dimension']) ? $item['point']['dimension'] : '';
+            $dimension = $item['point']['dimension'] ?? '';
             $dimensionFields = $this->dimensionFields($dimension);
             $service = $dimensionFields['service'];
             // Skip the router service by default (if no services are selected).
@@ -354,7 +354,7 @@ abstract class MetricsCommandBase extends CommandBase
      *
      * @return TimeSpec|false
      */
-    protected function validateTimeInput(InputInterface $input)
+    protected function validateTimeInput(InputInterface $input): false|TimeSpec
     {
         $interval = null;
         if ($intervalStr = $input->getOption('interval')) {
@@ -442,11 +442,8 @@ abstract class MetricsCommandBase extends CommandBase
 
     /**
      * Returns the deployment type of an environment (needed for differing queries).
-     *
-     * @param Environment $environment
-     * @return string
      */
-    private function getDeploymentType(Environment $environment)
+    private function getDeploymentType(Environment $environment): string
     {
         if (in_array($environment->deployment_target, ['local', 'enterprise', 'dedicated'])) {
             return $environment->deployment_target;
@@ -483,8 +480,8 @@ abstract class MetricsCommandBase extends CommandBase
         sort($serviceNames, SORT_NATURAL);
         $nameOrder = array_flip(array_merge($appAndWorkerNames, $serviceNames, ['router']));
         $sortServices = function ($a, $b) use ($nameOrder): int {
-            $aPos = isset($nameOrder[$a]) ? $nameOrder[$a] : 1000;
-            $bPos = isset($nameOrder[$b]) ? $nameOrder[$b] : 1000;
+            $aPos = $nameOrder[$a] ?? 1000;
+            $bPos = $nameOrder[$b] ?? 1000;
             return $aPos > $bPos ? 1 : ($aPos < $bPos ? -1 : 0);
         };
 
@@ -571,10 +568,8 @@ abstract class MetricsCommandBase extends CommandBase
 
     /**
      * Shows an explanation if services were found that use high memory.
-     *
-     * @return void
      */
-    protected function explainHighMemoryServices()
+    protected function explainHighMemoryServices(): void
     {
         if ($this->foundHighMemoryServices) {
             $this->stdErr->writeln('');

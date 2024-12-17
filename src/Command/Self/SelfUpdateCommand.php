@@ -16,7 +16,7 @@ class SelfUpdateCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setHiddenAliases(['self-update'])
@@ -49,13 +49,5 @@ class SelfUpdateCommand extends CommandBase
         // avoid errors from classes loaded after this (e.g.
         // ConsoleTerminateEvent), we exit directly now.
         exit(0);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function checkUpdates()
-    {
-        // Don't check for updates automatically when running self-update.
     }
 }

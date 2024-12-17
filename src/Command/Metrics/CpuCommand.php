@@ -29,10 +29,7 @@ class CpuCommand extends MetricsCommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this->addMetricsOptions();
         $this->selector->addProjectOption($this->getDefinition());

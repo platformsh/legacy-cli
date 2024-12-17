@@ -5,11 +5,11 @@ namespace Platformsh\Cli\Model\Host;
 use Platformsh\Cli\Service\Shell;
 use Symfony\Component\Console\Input\InputInterface;
 
-class LocalHost implements HostInterface
+readonly class LocalHost implements HostInterface
 {
-    private readonly Shell $shell;
+    private Shell $shell;
 
-    public function __construct(Shell $shell = null)
+    public function __construct(?Shell $shell = null)
     {
         $this->shell = $shell ?: new Shell();
     }
@@ -62,18 +62,12 @@ class LocalHost implements HostInterface
         return '';
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): bool|string
     {
         return $this->shell->execute($command, null, $mustRun, $quiet, [], 3600, $input);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function runCommandDirect($commandLine, $append = '')
+    public function runCommandDirect(string $commandLine, string $append = ''): int
     {
         return $this->shell->executeSimple($commandLine . $append);
     }

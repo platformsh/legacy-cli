@@ -8,13 +8,8 @@ class Activity {
 
     /**
      * Calculates the duration of an activity, whether complete or not.
-     *
-     * @param ApiActivity $activity
-     * @param int|null    $now
-     *
-     * @return int|null
      */
-    public function getDuration(ApiActivity $activity, $now = null): float|int|null
+    public function getDuration(ApiActivity $activity, ?int $now = null): float|int|null
     {
         if ($activity->isComplete()) {
             $end = strtotime($activity->completed_at);

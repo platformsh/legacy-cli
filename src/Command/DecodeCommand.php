@@ -18,7 +18,7 @@ class DecodeCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $envPrefix = $this->config->get('service.env_prefix');
 

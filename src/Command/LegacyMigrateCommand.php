@@ -20,7 +20,7 @@ class LegacyMigrateCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
@@ -84,7 +84,7 @@ EOF
         }
 
         if (!$input->getOption('no-backup')) {
-            $backup = rtrim((string) $legacyRoot, '\\/') . '-backup.tar.gz';
+            $backup = rtrim($legacyRoot, '\\/') . '-backup.tar.gz';
             if (file_exists($backup)) {
                 $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
                 $this->stdErr->writeln(

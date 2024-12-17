@@ -17,7 +17,7 @@ class DocsCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('search', InputArgument::IS_ARRAY, 'Search term(s)');

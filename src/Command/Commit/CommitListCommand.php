@@ -29,10 +29,7 @@ class CommitListCommand extends CommandBase
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('commit', InputOption::VALUE_REQUIRED, 'The starting Git commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP)
@@ -106,11 +103,11 @@ class CommitListCommand extends CommandBase
      *
      * @param Environment $environment
      * @param Commit $startCommit
-     * @param int                                  $limit
+     * @param int $limit
      *
      * @return Commit[]
      */
-    private function loadCommitList(Environment $environment, Commit $startCommit, $limit = 10): array
+    private function loadCommitList(Environment $environment, Commit $startCommit, int $limit = 10): array
     {
         $commits = [$startCommit];
         if (!count($startCommit->parents) || $limit === 1) {
@@ -142,13 +139,9 @@ class CommitListCommand extends CommandBase
     }
 
     /**
-     * Summarize a commit message.
-     *
-     * @param string $message
-     *
-     * @return string
+     * Summarizes a commit message.
      */
-    private function summarize($message): string
+    private function summarize(string $message): string
     {
         $message = ltrim($message, "\n");
         if ($newLinePos = strpos($message, "\n")) {

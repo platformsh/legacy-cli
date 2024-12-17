@@ -22,7 +22,7 @@ class MongoShellCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('eval', null, InputOption::VALUE_REQUIRED, 'Pass a JavaScript fragment to the shell');
         Relationships::configureInput($this->getDefinition());

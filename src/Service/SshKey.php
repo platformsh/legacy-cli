@@ -9,10 +9,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * SSH key utilities.
  */
-class SshKey {
-    private readonly OutputInterface $stdErr;
+readonly class SshKey {
+    private OutputInterface $stdErr;
 
-    public function __construct(private readonly Config $config, private readonly Api $api, OutputInterface $output) {
+    public function __construct(private Config $config, private Api $api, OutputInterface $output) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
@@ -53,7 +53,7 @@ class SshKey {
      *   An absolute filename of an SSH private key, or null if there is no
      *   selected key.
      */
-    public function selectIdentity($reset = false) {
+    public function selectIdentity(bool $reset = false): ?string {
         // Cache, mainly to avoid repetition of the output message.
         static $selectedIdentity = false;
         if (!$reset && $selectedIdentity !== false) {
@@ -90,13 +90,9 @@ class SshKey {
     }
 
     /**
-     * List existing public keys.
-     *
-     * @param bool $reset
-     *
-     * @return array
+     * Lists existing public keys.
      */
-    private function listPublicKeys(bool $reset = false)
+    private function listPublicKeys(bool $reset = false): array
     {
         static $publicKeyList;
         if (!isset($publicKeyList) || $reset) {

@@ -15,7 +15,7 @@ class ServerListCommand extends ServerCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'List all servers');

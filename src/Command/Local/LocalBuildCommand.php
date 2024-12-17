@@ -23,7 +23,7 @@ class LocalBuildCommand extends CommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('app', InputArgument::IS_ARRAY, 'Specify application(s) to build')
@@ -176,7 +176,7 @@ class LocalBuildCommand extends CommandBase
         }
 
         // Ensure no conflicts between source and destination.
-        if (str_starts_with($sourceDir, (string) $destination)) {
+        if (str_starts_with($sourceDir, $destination)) {
             throw new InvalidArgumentException("The destination '$destination' conflicts with the source '$sourceDir'");
         }
 
@@ -196,16 +196,10 @@ class LocalBuildCommand extends CommandBase
             }
         }
 
-        // Map input options to build settings.
-        $settings = [];
-        foreach ($input->getOptions() as $name => $value) {
-            $settings[$name] = $value;
-        }
-
         $apps = $input->getArgument('app');
 
         $builder = $this->localBuild;
-        $success = $builder->build($settings, $sourceDir, $destination, $apps);
+        $success = $builder->build($input->getOptions(), $sourceDir, $destination, $apps);
 
         return $success ? 0 : 1;
     }

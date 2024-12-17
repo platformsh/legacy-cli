@@ -32,7 +32,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument(
@@ -117,7 +117,7 @@ class EnvironmentCheckoutCommand extends CommandBase
      * @return string|false
      *   The branch name, or false on failure.
      */
-    protected function offerBranchChoice(Project $project, $projectRoot): false|string|int|null
+    protected function offerBranchChoice(Project $project, string $projectRoot): string|false
     {
         $environments = $this->api->getEnvironments($project);
         $currentEnvironment = $this->selector->getCurrentEnvironment($project);

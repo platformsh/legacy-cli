@@ -41,10 +41,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addOption('no-inactive', 'I', InputOption::VALUE_NONE, 'Do not show inactive environments')
@@ -69,7 +66,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      *                       Children of all environments are stored in the
      *                       property $this->children.
      */
-    protected function buildEnvironmentTree(array $environments, $parent = null): array
+    protected function buildEnvironmentTree(array $environments, ?string $parent = null): array
     {
         $children = [];
         foreach ($environments as $environment) {
@@ -89,16 +86,9 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
     }
 
     /**
-     * Recursively build rows of the environment table.
-     *
-     * @param Environment[] $tree
-     * @param bool $indent
-     * @param int $indentAmount
-     * @param bool $indicateCurrent
-     *
-     * @return array
+     * Recursively builds rows of the environment table.
      */
-    protected function buildEnvironmentRows(array $tree, $indent = true, $indicateCurrent = true, $indentAmount = 0): array
+    protected function buildEnvironmentRows(array $tree, bool $indent = true, bool $indicateCurrent = true, int $indentAmount = 0): array
     {
         $rows = [];
         foreach ($tree as $environment) {
@@ -277,12 +267,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
         return 0;
     }
 
-    /**
-     * @param string $status
-     *
-     * @return string
-     */
-    protected function formatEnvironmentStatus($status): string
+    protected function formatEnvironmentStatus(string $status): string
     {
         if ($status == 'dirty') {
             $status = 'In progress';
@@ -297,7 +282,7 @@ class EnvironmentListCommand extends CommandBase implements CompletionAwareInter
      * @param Environment[] &$environments
      * @param array<string, mixed> $filters
      */
-    protected function filterEnvironments(array &$environments, array $filters)
+    protected function filterEnvironments(array &$environments, array $filters): void
     {
         if (!empty($filters['no-inactive'])) {
             $environments = array_filter($environments, fn($environment): bool => $environment->status !== 'inactive');

@@ -34,7 +34,7 @@ class EnvironmentDeleteCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setHiddenAliases(['environment:deactivate'])
@@ -484,13 +484,8 @@ class EnvironmentDeleteCommand extends CommandBase
 
     /**
      * Formats a string with a singular or plural count.
-     *
-     * @param int $count
-     * @param string $singular
-     * @param string|null $plural
-     * @return string
      */
-    private function formatPlural(int $count, string $singular, $plural = null): string
+    private function formatPlural(int $count, string $singular, ?string $plural = null): string
     {
         if ($count === 1) {
             $name = $singular;

@@ -26,7 +26,7 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to export');
         $this->addOption('jsonArray', null, InputOption::VALUE_NONE, 'Export data as a single JSON array');

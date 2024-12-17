@@ -26,10 +26,8 @@ class ProgressMessage
 
     /**
      * Shows a progress message, if the output supports decoration (ASCII escape codes).
-     *
-     * @param string $message
      */
-    public function showIfOutputDecorated($message): void
+    public function showIfOutputDecorated(string $message): void
     {
         if ($this->output->isDecorated()) {
             $this->show($message);
@@ -38,10 +36,8 @@ class ProgressMessage
 
     /**
      * Shows a progress message.
-     *
-     * @param string $message
      */
-    public function show($message): void
+    public function show(string $message): void
     {
         if ($message === '' || $message === $this->message) {
             return;

@@ -8,13 +8,8 @@ class Wildcard
 
     /**
      * Selects strings in a list matching a list of wildcards.
-     *
-     * @param string[] $subjects
-     * @param string[] $wildcards
-     *
-     * @return string[]
      */
-    public static function select(array $subjects, $wildcards): array
+    public static function select(array $subjects, array $wildcards): array
     {
         $found = [];
         foreach ($wildcards as $wildcard) {

@@ -25,7 +25,7 @@ EOF;
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());

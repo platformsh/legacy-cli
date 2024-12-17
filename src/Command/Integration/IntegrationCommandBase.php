@@ -85,10 +85,7 @@ abstract class IntegrationCommandBase extends CommandBase
         return $integration;
     }
 
-    /**
-     * @return Form
-     */
-    protected function getForm()
+    protected function getForm(): Form
     {
         if (!isset($this->form)) {
             $this->form = Form::fromArray($this->getFields());
@@ -102,7 +99,7 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @return int
      */
-    protected function handleConditionalFieldException(ConditionalFieldException $e)
+    protected function handleConditionalFieldException(ConditionalFieldException $e): int
     {
         $previousValues = $e->getPreviousValues();
         $field = $e->getField();
@@ -126,12 +123,10 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @return array
      */
-    protected function postProcessValues(array $values, Integration $integration = null)
+    protected function postProcessValues(array $values, ?Integration $integration = null): array
     {
         // Find the integration type.
-        $type = isset($values['type'])
-            ? $values['type']
-            : ($integration !== null ? $integration->type : null);
+        $type = $values['type'] ?? $integration?->type;
 
         // Process Bitbucket Server values.
         if ($type === 'bitbucket_server') {
@@ -177,7 +172,7 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @return array
      */
-    private function selectedProjectIntegrations()
+    private function selectedProjectIntegrations(): array
     {
         static $cache = [];
         $project = $this->selection->getProject();
@@ -648,10 +643,7 @@ abstract class IntegrationCommandBase extends CommandBase
         ];
     }
 
-    /**
-     * @param Integration     $integration
-     */
-    protected function displayIntegration(Integration $integration)
+    protected function displayIntegration(Integration $integration): void
     {
         $table = $this->table;
         $formatter = $this->propertyFormatter;
@@ -668,13 +660,9 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
-     * Obtain an OAuth2 token for Bitbucket from the given app credentials.
-     *
-     * @param array $credentials
-     *
-     * @return string
+     * Obtains an OAuth2 token for Bitbucket from the given app credentials.
      */
-    protected function getBitbucketAccessToken(array $credentials)
+    protected function getBitbucketAccessToken(array $credentials): string
     {
         if (isset($this->bitbucketAccessTokens[$credentials['key']])) {
             return $this->bitbucketAccessTokens[$credentials['key']];
@@ -699,13 +687,9 @@ abstract class IntegrationCommandBase extends CommandBase
     }
 
     /**
-     * Validate Bitbucket credentials.
-     *
-     * @param array $credentials
-     *
-     * @return string|TRUE
+     * Validates Bitbucket credentials.
      */
-    protected function validateBitbucketCredentials(array $credentials)
+    protected function validateBitbucketCredentials(array $credentials): true|string
     {
         try {
             $this->getBitbucketAccessToken($credentials);
@@ -724,11 +708,8 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /**
      * Lists validation errors found in an integration.
-     *
-     * @param array                                             $errors
-     * @param OutputInterface $output
      */
-    protected function listValidationErrors(array $errors, OutputInterface $output)
+    protected function listValidationErrors(array $errors, OutputInterface $output): void
     {
         if (count($errors) === 1) {
             $this->stdErr->writeln('The following error was found:');

@@ -19,17 +19,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'subscription:info', description: 'Read or modify subscription properties')]
 class SubscriptionInfoCommand extends CommandBase
 {
-    /** @var PropertyFormatter|null */
-    protected $formatter;
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('property', InputArgument::OPTIONAL, 'The name of the property')
@@ -60,8 +55,6 @@ class SubscriptionInfoCommand extends CommandBase
             return 1;
         }
 
-        $this->formatter = $this->propertyFormatter;
-
         $property = $input->getArgument('property');
 
         if (!$property) {
@@ -78,7 +71,7 @@ class SubscriptionInfoCommand extends CommandBase
             default => $this->api->getNestedProperty($subscription, $property),
         };
 
-        $output->writeln($this->formatter->format($value, $property));
+        $output->writeln($this->propertyFormatter->format($value, $property));
 
         return 0;
     }
@@ -94,7 +87,7 @@ class SubscriptionInfoCommand extends CommandBase
         $values = [];
         foreach ($subscription->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $this->formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
         $table = $this->table;
         $table->renderSimple($values, $headings);
@@ -102,14 +95,7 @@ class SubscriptionInfoCommand extends CommandBase
         return 0;
     }
 
-    /**
-     * @param string       $property
-     * @param string       $value
-     * @param Subscription $subscription
-     *
-     * @return int
-     */
-    protected function setProperty($property, $value, Subscription $subscription): int
+    protected function setProperty(string $property, string $value, Subscription $subscription): int
     {
         $type = $this->getType($property);
         if (!$type) {
@@ -123,7 +109,7 @@ class SubscriptionInfoCommand extends CommandBase
         $currentValue = $subscription->getProperty($property);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-                "Property <info>$property</info> already set as: " . $this->formatter->format($value, $property)
+                "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property)
             );
 
             return 0;
@@ -133,8 +119,8 @@ class SubscriptionInfoCommand extends CommandBase
         $confirmMessage = sprintf(
             "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",
             $property,
-            $this->formatter->format($currentValue, $property),
-            $this->formatter->format($value, $property)
+            $this->propertyFormatter->format($currentValue, $property),
+            $this->propertyFormatter->format($value, $property)
         );
         if ($this->config->getWithDefault('warnings.project_users_billing', true)) {
             $warning = sprintf(
@@ -151,7 +137,7 @@ class SubscriptionInfoCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->formatter->format($value, $property)
+            $this->propertyFormatter->format($value, $property)
         ));
 
         return 0;
@@ -164,10 +150,10 @@ class SubscriptionInfoCommand extends CommandBase
      *
      * @return string|false
      */
-    protected function getType($property): string|false
+    protected function getType(string $property): string|false
     {
         $writableProperties = ['plan' => 'string', 'environments' => 'int', 'storage' => 'int'];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 }

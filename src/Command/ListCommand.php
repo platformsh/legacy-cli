@@ -25,7 +25,7 @@ class ListCommand extends CommandBase
         parent::setConfig($this->config);
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('list')
             ->setDescription('List commands')

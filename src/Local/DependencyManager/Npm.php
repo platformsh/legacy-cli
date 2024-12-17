@@ -4,8 +4,9 @@ namespace Platformsh\Cli\Local\DependencyManager;
 
 class Npm extends DependencyManagerBase
 {
-    protected $command = 'npm';
-    private $globalList;
+    protected string $command = 'npm';
+
+    private ?string $globalList = null;
 
     /**
      * {@inheritdoc}
@@ -66,7 +67,7 @@ class Npm extends DependencyManagerBase
      *
      * @return bool
      */
-    private function isInstalledGlobally(int|string $package): bool
+    private function isInstalledGlobally(string $package): bool
     {
         if (!isset($this->globalList)) {
             $this->globalList = $this->shell->execute(

@@ -20,10 +20,8 @@ class EnvironmentRelationshipsCommand extends CommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')

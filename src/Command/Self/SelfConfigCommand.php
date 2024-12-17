@@ -18,7 +18,7 @@ class SelfConfigCommand extends CommandBase
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->addArgument('value', InputArgument::OPTIONAL, 'Read a specific config value');

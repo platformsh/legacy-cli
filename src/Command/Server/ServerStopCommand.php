@@ -15,7 +15,7 @@ class ServerStopCommand extends ServerCommandBase
     {
         parent::__construct();
     }
-    protected function configure()
+    protected function configure(): void
     {
         $this
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'Stop all servers');

@@ -18,10 +18,8 @@ class LsCommand extends RepoCommandBase
     {
         parent::__construct();
     }
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+
+    protected function configure(): void
     {
         $this
             ->addArgument('path', InputArgument::OPTIONAL, 'The path to a subdirectory')

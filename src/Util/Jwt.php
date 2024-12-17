@@ -2,12 +2,9 @@
 
 namespace Platformsh\Cli\Util;
 
-class Jwt
+readonly class Jwt
 {
-    /**
-     * @param string $token
-     */
-    public function __construct(private $token)
+    public function __construct(private string $token)
     {
     }
 
@@ -16,7 +13,7 @@ class Jwt
      *
      * @return false|array<string, mixed>
      */
-    public function unsafeGetUnverifiedClaims()
+    public function unsafeGetUnverifiedClaims(): array|false
     {
         $split = \explode('.', $this->token, 3);
         if (!isset($split[1])) {

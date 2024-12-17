@@ -14,22 +14,21 @@ use Symfony\Component\Console\Terminal;
  */
 class AdaptiveTable extends Table
 {
-    /** @var int */
-    protected $maxTableWidth;
+    protected int $maxTableWidth;
 
     // The following 3 properties are copies of the private properties in the
     // parent Table class.
-    protected $rowsCopy = [];
-    protected $headersCopy = [];
+    protected array $rowsCopy = [];
+    protected array $headersCopy = [];
 
     /**
      * AdaptiveTable constructor.
      *
      * @param OutputInterface $outputCopy
-     * @param int|null        $maxTableWidth
-     * @param int|null        $minColumnWidth
+     * @param int|null $maxTableWidth
+     * @param int $minColumnWidth
      */
-    public function __construct(protected OutputInterface $outputCopy, $maxTableWidth = null, protected $minColumnWidth = 10)
+    public function __construct(protected OutputInterface $outputCopy, ?int $maxTableWidth = null, protected int $minColumnWidth = 10)
     {
         $this->maxTableWidth = $maxTableWidth !== null
             ? $maxTableWidth
@@ -87,7 +86,7 @@ class AdaptiveTable extends Table
     /**
      * Adapt rows based on the terminal width.
      */
-    protected function adaptRows()
+    protected function adaptRows(): void
     {
         // Go through all headers and rows, wrapping their cells until each
         // column meets the max column width.
@@ -140,14 +139,9 @@ class AdaptiveTable extends Table
     }
 
     /**
-     * Word-wrap the contents of a cell, so that they fit inside a max width.
-     *
-     * @param string $contents
-     * @param int    $width
-     *
-     * @return string
+     * Word-wraps the contents of a cell, so that they fit inside a max width.
      */
-    protected function wrapCell($contents, $width)
+    private function wrapCell(string $contents, int $width): string
     {
         // Account for left-indented cells.
         if (str_starts_with($contents, ' ')) {
@@ -163,13 +157,8 @@ class AdaptiveTable extends Table
 
     /**
      * Word-wraps the contents of a cell, accounting for decoration.
-     *
-     * @param string $formattedText
-     * @param int    $maxLength
-     *
-     * @return string
      */
-    public function wrapWithDecoration($formattedText, $maxLength): string|array|null
+    public function wrapWithDecoration(string $formattedText, int $maxLength): string
     {
         $plainText = Helper::removeDecoration($this->outputCopy->getFormatter(), $formattedText);
         if ($plainText === $formattedText) {
@@ -330,10 +319,10 @@ class AdaptiveTable extends Table
      * @param int $columnCount
      *   The number of columns in the table.
      *
-     * @return int
+     * @return int|float
      *   The maximum table width, minus the width taken up by decoration.
      */
-    protected function getMaxContentWidth($columnCount): int|float
+    protected function getMaxContentWidth(int $columnCount): int|float
     {
         $style = $this->getStyle();
         $verticalBorderQuantity = $columnCount + 1;
@@ -354,7 +343,7 @@ class AdaptiveTable extends Table
      *
      * @return float|int
      */
-    private function getCellWidth($cell)
+    private function getCellWidth(string|TableCell $cell): int|float
     {
         $lineWidths = [0];
         foreach (explode(PHP_EOL, (string) $cell) as $line) {

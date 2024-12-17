@@ -16,7 +16,7 @@ class Variable
      * @return array
      *   An array containing: [ type, name, value ].
      */
-    public function parse($variable): array
+    public function parse(string $variable): array
     {
         if (!preg_match('#^([^:=]+) ?: ?([^=]+) ?= ?([^=]*)$#', $variable, $matches)) {
             throw new \InvalidArgumentException('Variables must be defined as type:name=value.');
@@ -35,7 +35,7 @@ class Variable
      *
      * @return string
      */
-    public function validateType($type)
+    public function validateType(string $type): string
     {
         if (!preg_match('#^[a-zA-Z0-9._\-]+$#', $type)) {
             throw new \InvalidArgumentException(sprintf('Invalid variable type: %s', $type));
@@ -53,7 +53,7 @@ class Variable
      *
      * @return string
      */
-    public function validateName($name)
+    public function validateName(string $name): string
     {
         if (!preg_match('#^[a-zA-Z0-9._:\-|/]+$#', $name)) {
             throw new \InvalidArgumentException(sprintf('Invalid variable name: %s', $name));

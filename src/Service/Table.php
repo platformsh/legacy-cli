@@ -3,7 +3,6 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
-use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\Csv;
 use Platformsh\Cli\Util\PlainFormat;
@@ -22,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Usage:
  * <code>
  *     // Create a command property $tableHeader;
- *     private $tableHeader = ['Column 1', 'Column 2', 'Column 3'];
+ *     private array $tableHeader = ['Column 1', 'Column 2', 'Column 3'];
  *
  *     // In a command's configure() method, add the --format and --columns options:
  *     Table::configureInput($this->getDefinition(), $this->tableHeader);
@@ -78,13 +77,7 @@ class Table implements InputConfiguringInterface
         $definition->addOption($option);
     }
 
-    /**
-     * @param array $columns
-     * @param string[] $defaultColumns
-     * @param bool $markDefault
-     * @return string
-     */
-    private static function formatAvailableColumns(array $columns, $defaultColumns = [], $markDefault = true): string
+    private static function formatAvailableColumns(array $columns, array $defaultColumns = [], bool $markDefault = true): string
     {
         $columnNames = array_keys(self::availableColumns($columns));
         natcasesort($columnNames);
@@ -132,7 +125,7 @@ class Table implements InputConfiguringInterface
      *
      * @return void
      */
-    public function removeDeprecatedColumns(array $remove, $placeholder, InputInterface $input, OutputInterface $output): void
+    public function removeDeprecatedColumns(array $remove, string $placeholder, InputInterface $input, OutputInterface $output): void
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $columns = $this->specifiedColumns();
@@ -330,7 +323,7 @@ class Table implements InputConfiguringInterface
             }
             $newRow = [];
             foreach ($columnsToDisplay as $columnNameLowered) {
-                $keyFromHeader = isset($availableColumns[$columnNameLowered]) ? $availableColumns[$columnNameLowered] : false;
+                $keyFromHeader = $availableColumns[$columnNameLowered] ?? false;
                 if ($keyFromHeader !== false && array_key_exists($keyFromHeader, $row)) {
                     $newRow[] = $row[$keyFromHeader];
                     continue;
@@ -353,7 +346,7 @@ class Table implements InputConfiguringInterface
      *
      * @return string|null
      */
-    protected function getFormat()
+    protected function getFormat(): ?string
     {
         if ($this->input->hasOption('format') && $this->input->getOption('format')) {
             return strtolower((string) $this->input->getOption('format'));
@@ -363,13 +356,9 @@ class Table implements InputConfiguringInterface
     }
 
     /**
-     * Render CSV output.
-     *
-     * @param array  $rows
-     * @param array  $header
-     * @param string $delimiter
+     * Renders CSV output.
      */
-    protected function renderCsv(array $rows, array $header, $delimiter = ',')
+    protected function renderCsv(array $rows, array $header, string $delimiter = ','): void
     {
         if (!empty($header)) {
             array_unshift($rows, $header);
@@ -385,10 +374,10 @@ class Table implements InputConfiguringInterface
     /**
      * Render plain, line-based output.
      *
-     * @param array  $rows
-     * @param array  $header
+     * @param array $rows
+     * @param array $header
      */
-    protected function renderPlain(array $rows, array $header)
+    protected function renderPlain(array $rows, array $header): void
     {
         if (!empty($header)) {
             array_unshift($rows, $header);
@@ -403,7 +392,7 @@ class Table implements InputConfiguringInterface
      * @param array $rows
      * @param array $header
      */
-    protected function renderTable(array $rows, array $header)
+    protected function renderTable(array $rows, array $header): void
     {
         $table = new AdaptiveTable($this->output);
         $table->setHeaders($header);

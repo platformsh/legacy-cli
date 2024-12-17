@@ -28,7 +28,7 @@ class EnvironmentSynchronizeCommand extends CommandBase implements CompletionAwa
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         if ($this->config->get('api.sizing')) {
             $this->setDescription("Synchronize an environment's code, data and/or resources from its parent");
