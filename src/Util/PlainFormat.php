@@ -14,10 +14,7 @@ class PlainFormat extends Csv
         parent::__construct("\t", "\n");
     }
 
-    /**
-     * @inheritDoc
-     */
-    protected function formatCell($cell): string|array|null {
+    protected function formatCell(string|\Stringable $cell): string {
         // Replace any newline or tab characters with a space.
         return \preg_replace('#[\r\n\t]+#', ' ', (string) $cell);
     }

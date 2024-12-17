@@ -19,7 +19,7 @@ class PortUtil
     /**
      * Get the next available valid port.
      *
-     * @param int         $start    The starting port number.
+     * @param int|string  $start    The starting port number.
      * @param string|null $hostname The hostname, defaults to 127.0.0.1.
      * @param int|null    $end      The maximum port number to try (defaults to
      *                              $start + 30);
@@ -28,10 +28,10 @@ class PortUtil
      *
      * @return int
      */
-    public static function getPort($start = 3000, $hostname = null, $end = null)
+    public static function getPort(int|string $start = 3000, ?string $hostname = null, ?int $end = null)
     {
-        $end = $end ?: $start + 30;
-        for ($port = $start; $port <= $end; $port++) {
+        $end = $end ?: (int) $start + 30;
+        for ($port = (int) $start; $port <= $end; $port++) {
             if (static::validatePort($port) && !static::isPortInUse($port, $hostname)) {
                 return $port;
             }

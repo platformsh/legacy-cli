@@ -1,6 +1,7 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
+use Platformsh\Cli\Model\Activity;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -73,6 +74,7 @@ class ActivityGetCommand extends ActivityCommandBase
             $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
+                /** @var Activity $activity */
                 $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
             }
         } else {

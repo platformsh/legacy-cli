@@ -1,51 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$description\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityGetCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityGetCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$created_at\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$project\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$state\\.$#"
-			count: 2
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$type\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
-			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:isComplete\\(\\)\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
-			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:readLog\\(\\)\\.$#"
-			count: 1
-			path: src/Command/Activity/ActivityLogCommand.php
-
-		-
 			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Connection\\\\ConnectorInterface\\:\\:getOAuth2Provider\\(\\)\\.$#"
 			count: 1
 			path: src/Command/Auth/ApiTokenLoginCommand.php
@@ -101,59 +56,9 @@ parameters:
 			path: src/Command/BotCommand.php
 
 		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
-			count: 3
-			path: src/Command/Certificate/CertificateDeleteCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$is_provisioned\\.$#"
-			count: 1
-			path: src/Command/Certificate/CertificateDeleteCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$description\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityGetCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityGetCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$created_at\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$id\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$project\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$state\\.$#"
-			count: 2
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
-
-		-
-			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:\\$type\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
-
-		-
-			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:isComplete\\(\\)\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
-
-		-
-			message: "#^Call to an undefined method Platformsh\\\\Client\\\\Model\\\\ApiResourceBase\\:\\:readLog\\(\\)\\.$#"
-			count: 1
-			path: src/Command/Integration/Activity/IntegrationActivityLogCommand.php
+			message: "#^Parameter \\#1 \\$commandName of class Stecman\\\\Component\\\\Symfony\\\\Console\\\\BashCompletion\\\\Completion constructor expects string, null given\\.$#"
+			count: 6
+			path: src/Command/CompletionCommand.php
 
 		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
@@ -209,6 +114,21 @@ parameters:
 			message: "#^Negated boolean expression is always true\\.$#"
 			count: 1
 			path: src/Local/LocalProject.php
+
+		-
+			message: "#^Parameter \\#2 \\$callable of method Rector\\\\Rector\\\\AbstractRector\\:\\:traverseNodesWithCallable\\(\\) expects callable\\(PhpParser\\\\Node\\)\\: \\(array\\<PhpParser\\\\Node\\>\\|int\\|PhpParser\\\\Node\\|null\\), Closure\\(PhpParser\\\\NodeAbstract\\)\\: \\(PhpParser\\\\Node\\\\Expr\\\\Assign\\|null\\) given\\.$#"
+			count: 1
+			path: src/Rector/InjectCommandServicesRector.php
+
+		-
+			message: "#^Parameter \\#2 \\$callable of method Rector\\\\Rector\\\\AbstractRector\\:\\:traverseNodesWithCallable\\(\\) expects callable\\(PhpParser\\\\Node\\)\\: \\(array\\<PhpParser\\\\Node\\>\\|int\\|PhpParser\\\\Node\\|null\\), Closure\\(PhpParser\\\\NodeAbstract\\)\\: \\(PhpParser\\\\Node\\\\Expr\\\\MethodCall\\|null\\) given\\.$#"
+			count: 1
+			path: src/Rector/NewServicesRector.php
+
+		-
+			message: "#^Parameter \\#2 \\$callable of method Rector\\\\Rector\\\\AbstractRector\\:\\:traverseNodesWithCallable\\(\\) expects callable\\(PhpParser\\\\Node\\)\\: \\(array\\<PhpParser\\\\Node\\>\\|int\\|PhpParser\\\\Node\\|null\\), Closure\\(PhpParser\\\\NodeAbstract\\)\\: \\(PhpParser\\\\Node\\\\Expr\\\\Assign\\|PhpParser\\\\Node\\\\Expr\\\\MethodCall\\|null\\) given\\.$#"
+			count: 1
+			path: src/Rector/UseSelectorServiceRector.php
 
 		-
 			message: "#^Ternary operator condition is always false\\.$#"
