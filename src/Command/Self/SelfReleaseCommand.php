@@ -211,7 +211,7 @@ class SelfReleaseCommand extends CommandBase
                 $latestItem = &$manifest[$key];
             }
             if ($versionUtil->majorVersion($item['version']) === $versionUtil->majorVersion($newVersion)) {
-                if ($latestSameMajorItem || version_compare($item['version'], $latestSameMajorItem['version'], '>')) {
+                if ($latestSameMajorItem === null || version_compare($item['version'], $latestSameMajorItem['version'], '>')) {
                     $latestSameMajorItem = &$manifest[$key];
                 }
             }

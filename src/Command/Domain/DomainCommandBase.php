@@ -20,10 +20,11 @@ use Symfony\Component\Console\Input\InputOption;
 abstract class DomainCommandBase extends CommandBase
 {
 
-    private readonly Selector $selector;
-    private readonly QuestionHelper $questionHelper;
-    private readonly Config $config;
-    private readonly Api $api;
+    private Selector $selector;
+    private QuestionHelper $questionHelper;
+    private Config $config;
+    private Api $api;
+
     // The final array of SSL options for the client parameters.
     protected $sslOptions = [];
 

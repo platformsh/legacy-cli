@@ -15,11 +15,13 @@ use Symfony\Component\Process\Process;
 
 abstract class ServerCommandBase extends CommandBase
 {
-    private readonly Selector $selector;
-    private readonly Shell $shell;
-    private readonly LocalProject $localProject;
-    private readonly Config $config;
-    protected $serverInfo;
+    private Selector $selector;
+    private Shell $shell;
+    private LocalProject $localProject;
+    private Config $config;
+
+    private ?array $serverInfo = null;
+
     #[Required]
     public function autowire(Config $config, LocalProject $localProject, Selector $selector, Shell $shell) : void
     {
@@ -36,14 +38,9 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Check whether another server is running for an app.
-     *
-     * @param string $appId
-     * @param string $projectRoot
-     *
-     * @return bool|array
+     * Checks whether another server is running for an app.
      */
-    protected function isServerRunningForApp($appId, $projectRoot)
+    protected function isServerRunningForApp(string $appId, string $projectRoot): array|false
     {
         foreach ($this->getServerInfo() as $address => $server) {
             if ($server['appId'] === $appId && $server['projectRoot'] === $projectRoot) {
@@ -65,20 +62,15 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return bool
      */
-    protected function isProcessDead($pid)
+    private function isProcessDead(int $pid): bool
     {
-        /** @noinspection PhpComposerExtensionStubsInspection */
         return function_exists('posix_kill') && !posix_kill($pid, 0);
     }
 
     /**
-     * Check whether another server is running at an address.
-     *
-     * @param string $address
-     *
-     * @return bool|int
+     * Checks whether another server is running at an address.
      */
-    protected function isServerRunningForAddress($address)
+    protected function isServerRunningForAddress(string $address): bool|int
     {
         $pidFile = $this->getPidFile($address);
         $serverInfo = $this->getServerInfo();
@@ -102,13 +94,9 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Get info on currently running servers.
-     *
-     * @param bool $running
-     *
-     * @return array
+     * Gets info on currently running servers.
      */
-    protected function getServerInfo($running = true)
+    protected function getServerInfo(bool $running = true): array
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
@@ -133,7 +121,7 @@ abstract class ServerCommandBase extends CommandBase
         return $this->serverInfo;
     }
 
-    protected function saveServerInfo()
+    private function saveServerInfo(): void
     {
         $filename = $this->config->getWritableUserDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
@@ -146,22 +134,14 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Stop a running server.
-     *
-     * @param string $address
-     * @param int|null $pid
-     *
-     * @return bool
-     *   True on success, false on failure.
+     * Stops a running server.
      */
-    protected function stopServer($address, $pid = null)
+    protected function stopServer(string $address, ?int $pid = null): bool
     {
         $success = true;
         if ($pid && function_exists('posix_kill')) {
-            /** @noinspection PhpComposerExtensionStubsInspection */
             $success = posix_kill($pid, SIGTERM);
             if (!$success) {
-                /** @noinspection PhpComposerExtensionStubsInspection */
                 $this->stdErr->writeln(sprintf(
                     'Failed to kill process <error>%d</error> (POSIX error %s)',
                     $pid,
@@ -179,12 +159,7 @@ abstract class ServerCommandBase extends CommandBase
         return $success;
     }
 
-    /**
-     * @param string $address
-     * @param int $pid
-     * @param array $info
-     */
-    protected function writeServerInfo($address, $pid, array $info = [])
+    protected function writeServerInfo(string $address, int $pid, array $info = []): void
     {
         file_put_contents($this->getPidFile($address), $pid);
         list($ip, $port) = explode(':', $address);
@@ -198,13 +173,9 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Automatically determine the best port for a new server.
-     *
-     * @param int $default
-     *
-     * @return int
+     * Automatically determines the best port for a new server.
      */
-    protected function getPort($default = 3000)
+    protected function getPort(int $default = 3000): int
     {
         $ports = [];
         foreach ($this->getServerInfo() as $server) {
@@ -221,7 +192,7 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return string The filename
      */
-    protected function getPidFile($address)
+    protected function getPidFile(string $address): string
     {
         return $this->config->getWritableUserDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
@@ -235,11 +206,11 @@ abstract class ServerCommandBase extends CommandBase
      * @param array $appConfig
      * @param array $env
      *
-     * @throws \Exception
-     *
      * @return Process
+     *@throws \Exception
+     *
      */
-    protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig, array $env = [])
+    protected function createServerProcess(string $address, string $docRoot, string $projectRoot, array $appConfig, array $env = []): Process
     {
         if (isset($appConfig['type'])) {
             $type = explode(':', (string) $appConfig['type'], 2);
@@ -299,7 +270,7 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return array
      */
-    protected function getServerPhpConfig()
+    private function getServerPhpConfig(): array
     {
         $phpConfig = [];
 
@@ -320,7 +291,7 @@ abstract class ServerCommandBase extends CommandBase
      * @return string
      *   The absolute path to the router file.
      */
-    protected function createRouter(string $projectRoot)
+    private function createRouter(string $projectRoot): string
     {
         static $created = [];
 
@@ -340,12 +311,7 @@ abstract class ServerCommandBase extends CommandBase
         return $router;
     }
 
-    /**
-     * @param string $logFile
-     *
-     * @return OutputInterface|false
-     */
-    protected function openLog($logFile)
+    protected function openLog(string $logFile): false|OutputInterface
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
@@ -355,13 +321,7 @@ abstract class ServerCommandBase extends CommandBase
         return false;
     }
 
-    /**
-     * @param string $projectRoot
-     * @param string $address
-     *
-     * @return array
-     */
-    protected function getRoutesList(string $projectRoot, string $address)
+    private function getRoutesList(string $projectRoot, string $address): array
     {
         $localProject = $this->localProject;
         $routesConfig = (array) $localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
@@ -384,16 +344,9 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Create the virtual environment variables for a local server.
-     *
-     * @param string $projectRoot
-     * @param string $docRoot
-     * @param string $address
-     * @param array $appConfig
-     *
-     * @return array
+     * Creates the virtual environment variables for a local server.
      */
-    protected function createEnv(string $projectRoot, $docRoot, $address, array $appConfig)
+    protected function createEnv(string $projectRoot, string $docRoot, string $address, array $appConfig): array
     {
         $realDocRoot = realpath($docRoot);
         $envPrefix = $this->config->get('service.env_prefix');
@@ -426,7 +379,7 @@ abstract class ServerCommandBase extends CommandBase
         return $env;
     }
 
-    protected function showSecurityWarning()
+    private function showSecurityWarning(): void
     {
         static $shown;
         if ($shown) {

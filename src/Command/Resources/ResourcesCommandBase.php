@@ -8,7 +8,7 @@ use Platformsh\Cli\Command\CommandBase;
 
 class ResourcesCommandBase extends CommandBase
 {
-    private readonly Config $config;
+    private Config $config;
 
     #[Required]
     public function autowire(Config $config) : void

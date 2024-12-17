@@ -15,9 +15,10 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class OrganizationCommandBase extends CommandBase
 {
-    private readonly QuestionHelper $questionHelper;
-    private readonly Config $config;
-    private readonly Api $api;
+    private QuestionHelper $questionHelper;
+    private Config $config;
+    private Api $api;
+
     #[Required]
     public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
     {
@@ -25,6 +26,7 @@ class OrganizationCommandBase extends CommandBase
         $this->config = $config;
         $this->questionHelper = $questionHelper;
     }
+
     public function isEnabled(): bool
     {
         if (!$this->config->getWithDefault('api.organizations', false)) {

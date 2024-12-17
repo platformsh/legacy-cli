@@ -16,14 +16,16 @@ use Symfony\Component\Process\Process;
 
 abstract class TunnelCommandBase extends CommandBase
 {
-    private readonly Io $io;
-    private readonly Selector $selector;
-    private readonly Relationships $relationships;
-    private readonly Config $config;
-    const LOCAL_IP = '127.0.0.1';
+    private Io $io;
+    private Selector $selector;
+    private Relationships $relationships;
+    private Config $config;
 
-    protected $tunnelInfo;
+    protected const LOCAL_IP = '127.0.0.1';
+
+    protected ?array $tunnelInfo = null;
     protected bool $canBeRunMultipleTimes = false;
+
     #[Required]
     public function autowire(Config $config, Io $io, Relationships $relationships, Selector $selector) : void
     {
@@ -34,17 +36,12 @@ abstract class TunnelCommandBase extends CommandBase
     }
 
     /**
-     * Check whether a tunnel is already open.
-     *
-     * @param array $tunnel
-     *
-     * @return false|array
+     * Checks whether a tunnel is already open.
      */
-    protected function isTunnelOpen(array $tunnel)
+    protected function isTunnelOpen(array $tunnel): false|array
     {
         foreach ($this->getTunnelInfo() as $info) {
             if ($this->tunnelsAreEqual($tunnel, $info)) {
-                /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($info['pid']) && function_exists('posix_kill') && !posix_kill($info['pid'], 0)) {
                     $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
@@ -62,13 +59,9 @@ abstract class TunnelCommandBase extends CommandBase
     }
 
     /**
-     * Get info on currently open tunnels.
-     *
-     * @param bool $open
-     *
-     * @return array
+     * Gets info on currently open tunnels.
      */
-    protected function getTunnelInfo($open = true)
+    protected function getTunnelInfo(bool $open = true): array
     {
         if (!isset($this->tunnelInfo)) {
             $this->tunnelInfo = [];
@@ -83,7 +76,6 @@ abstract class TunnelCommandBase extends CommandBase
         if ($open) {
             $needsSave = false;
             foreach ($this->tunnelInfo as $key => $tunnel) {
-                /** @noinspection PhpComposerExtensionStubsInspection */
                 if (isset($tunnel['pid']) && function_exists('posix_kill') && !posix_kill($tunnel['pid'], 0)) {
                     $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
@@ -101,7 +93,7 @@ abstract class TunnelCommandBase extends CommandBase
         return $this->tunnelInfo;
     }
 
-    protected function saveTunnelInfo()
+    protected function saveTunnelInfo(): void
     {
         $filename = $this->config->getWritableUserDir() . '/tunnel-info.json';
         if (!empty($this->tunnelInfo)) {
@@ -122,14 +114,12 @@ abstract class TunnelCommandBase extends CommandBase
      * @return bool
      *   True on success, false on failure.
      */
-    protected function closeTunnel(array $tunnel)
+    protected function closeTunnel(array $tunnel): bool
     {
         $success = true;
         if (isset($tunnel['pid']) && function_exists('posix_kill')) {
-            /** @noinspection PhpComposerExtensionStubsInspection */
             $success = posix_kill($tunnel['pid'], SIGTERM);
             if (!$success) {
-                /** @noinspection PhpComposerExtensionStubsInspection */
                 $this->stdErr->writeln(sprintf(
                     'Failed to kill process <error>%d</error> (POSIX error %s)',
                     $tunnel['pid'],
@@ -148,13 +138,9 @@ abstract class TunnelCommandBase extends CommandBase
     }
 
     /**
-     * Automatically determine the best port for a new tunnel.
-     *
-     * @param int $default
-     *
-     * @return int
+     * Automatically determines the best port for a new tunnel.
      */
-    protected function getPort($default = 30000)
+    protected function getPort(int$default = 30000): int
     {
         $ports = [];
         foreach ($this->getTunnelInfo() as $tunnel) {
@@ -164,12 +150,7 @@ abstract class TunnelCommandBase extends CommandBase
         return PortUtil::getPort($ports ? max($ports) + 1 : $default);
     }
 
-    /**
-     * @param string $logFile
-     *
-     * @return OutputInterface|false
-     */
-    protected function openLog($logFile)
+    protected function openLog(string $logFile): OutputInterface|false
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
@@ -179,12 +160,7 @@ abstract class TunnelCommandBase extends CommandBase
         return false;
     }
 
-    /**
-     * @param array $tunnel
-     *
-     * @return string
-     */
-    protected function getTunnelKey(array $tunnel)
+    private function getTunnelKey(array $tunnel): string
     {
         return implode('--', [
             $tunnel['projectId'],
@@ -195,13 +171,7 @@ abstract class TunnelCommandBase extends CommandBase
         ]);
     }
 
-    /**
-     * @param array $tunnel
-     * @param array $service
-     *
-     * @return string
-     */
-    protected function getTunnelUrl(array $tunnel, array $service)
+    protected function getTunnelUrl(array $tunnel, array $service): string
     {
         $relationshipsService = $this->relationships;
         $localService = array_merge($service, array_intersect_key([
@@ -212,23 +182,12 @@ abstract class TunnelCommandBase extends CommandBase
         return $relationshipsService->buildUrl($localService);
     }
 
-    /**
-     * @param array $tunnel1
-     * @param array $tunnel2
-     *
-     * @return bool
-     */
-    protected function tunnelsAreEqual(array $tunnel1, array $tunnel2)
+    private function tunnelsAreEqual(array $tunnel1, array $tunnel2): bool
     {
         return $this->getTunnelKey($tunnel1) === $this->getTunnelKey($tunnel2);
     }
 
-    /**
-     * @param array $tunnel
-     *
-     * @return string
-     */
-    protected function getPidFile(array $tunnel)
+    protected function getPidFile(array $tunnel): string
     {
         $key = $this->getTunnelKey($tunnel);
         $dir = $this->config->getWritableUserDir() . '/.tunnels';
@@ -236,19 +195,10 @@ abstract class TunnelCommandBase extends CommandBase
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }
 
-        return $dir . '/' . preg_replace('/[^0-9a-z\.]+/', '-', $key) . '.pid';
+        return $dir . '/' . preg_replace('/[^0-9a-z.]+/', '-', $key) . '.pid';
     }
 
-    /**
-     * @param string $url
-     * @param string $remoteHost
-     * @param int $remotePort
-     * @param int $localPort
-     * @param array $extraArgs
-     *
-     * @return Process
-     */
-    protected function createTunnelProcess($url, $remoteHost, $remotePort, $localPort, array $extraArgs = [])
+    protected function createTunnelProcess(string $url, string $remoteHost, int $remotePort, int $localPort, array $extraArgs = []): Process
     {
         $args = ['ssh', '-n', '-N', '-L', implode(':', [$localPort, $remoteHost, $remotePort]), $url];
         $args = array_merge($args, $extraArgs);
@@ -259,14 +209,9 @@ abstract class TunnelCommandBase extends CommandBase
     }
 
     /**
-     * Filter a list of tunnels by the currently selected project/environment.
-     *
-     * @param array          $tunnels
-     * @param InputInterface $input
-     *
-     * @return array
+     * Filters a list of tunnels by the currently selected project/environment.
      */
-    protected function filterTunnels(array $tunnels, InputInterface $input)
+    protected function filterTunnels(array $tunnels, InputInterface $input): array
     {
         if (!$input->getOption('project') && !$this->selector->getProjectRoot()) {
             return $tunnels;
@@ -287,13 +232,13 @@ abstract class TunnelCommandBase extends CommandBase
     }
 
     /**
-     * Format a tunnel's relationship as a string.
+     * Formats a tunnel's relationship as a string.
      *
      * @param array $tunnel
      *
      * @return string
      */
-    protected function formatTunnelRelationship(array $tunnel)
+    protected function formatTunnelRelationship(array $tunnel): string
     {
         return $tunnel['serviceKey'] > 0
             ? sprintf('%s.%d', $tunnel['relationship'], $tunnel['serviceKey'])
