@@ -77,9 +77,7 @@ class AllMetricsCommand extends MetricsCommandBase
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true, chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->selector->ensurePrintedSelection($selection);
         }
 
@@ -87,7 +85,7 @@ class AllMetricsCommand extends MetricsCommandBase
         //
         // The fields are the selected column names (according to the $table
         // service), filtered to only those that contain an underscore.
-        $fieldNames = array_filter($table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn($c): bool => str_contains((string) $c, '_'));
+        $fieldNames = array_filter($this->table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn($c): bool => str_contains((string) $c, '_'));
         $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), $fieldNames);
         if ($values === false) {
             return 1;
@@ -121,7 +119,7 @@ class AllMetricsCommand extends MetricsCommandBase
             'tmp_inodes_percent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
         ], $selection->getEnvironment());
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
@@ -131,9 +129,9 @@ class AllMetricsCommand extends MetricsCommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->explainHighMemoryServices();
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You can run the <info>cpu</info>, <info>disk</info> and <info>mem</info> commands for more detail.');

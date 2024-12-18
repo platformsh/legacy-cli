@@ -105,12 +105,9 @@ class BackupRestoreCommand extends CommandBase
             ? $this->api->getEnvironmentLabel($targetEnvironment)
             : '<info>' . $target . '</info>';
 
-        $questionHelper = $this->questionHelper;
-        $formatter = $this->propertyFormatter;
-
         // Display a summary of the backup.
         $this->stdErr->writeln(\sprintf('Backup ID: <comment>%s</comment>', $backup->id));
-        $this->stdErr->writeln(\sprintf('Created at: <comment>%s</comment>', $formatter->format($backup->created_at, 'created_at')));
+        $this->stdErr->writeln(\sprintf('Created at: <comment>%s</comment>', $this->propertyFormatter->format($backup->created_at, 'created_at')));
         if ($input->getOption('no-code')) {
             $this->stdErr->writeln('Only data, not code, will be restored.');
         }
@@ -121,12 +118,12 @@ class BackupRestoreCommand extends CommandBase
             $originalLabel = $original ? $this->api->getEnvironmentLabel($original, 'comment') : '<comment>' . $backup->environment . '</comment>';
             $this->stdErr->writeln(\sprintf('Original environment: %s', $originalLabel));
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm(\sprintf('Are you sure you want to restore this backup to the environment %s?', $targetLabel))) {
+            if (!$this->questionHelper->confirm(\sprintf('Are you sure you want to restore this backup to the environment %s?', $targetLabel))) {
                 return 1;
             }
         } else {
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure you want to restore this backup?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to restore this backup?')) {
                 return 1;
             }
         }

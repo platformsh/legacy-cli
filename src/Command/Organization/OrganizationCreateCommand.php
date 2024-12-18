@@ -63,15 +63,13 @@ END_HELP;
     {
         // Ensure login before presenting the form.
         $client = $this->api->getClient();
-
-        $questionHelper = $this->questionHelper;
         $form = $this->getForm();
         if (($name = $input->getOption('name')) && $input->getOption('label') === null) {
             $form->getField('label')->set('default', \ucfirst((string) $name));
         }
-        $values = $form->resolveOptions($input, $output, $questionHelper);
+        $values = $form->resolveOptions($input, $output, $this->questionHelper);
 
-        if (!$questionHelper->confirm(\sprintf('Are you sure you want to create a new organization <info>%s</info>?', $values['name']), false)) {
+        if (!$this->questionHelper->confirm(\sprintf('Are you sure you want to create a new organization <info>%s</info>?', $values['name']), false)) {
             return 1;
         }
 

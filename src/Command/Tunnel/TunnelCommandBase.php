@@ -173,13 +173,12 @@ abstract class TunnelCommandBase extends CommandBase
 
     protected function getTunnelUrl(array $tunnel, array $service): string
     {
-        $relationshipsService = $this->relationships;
         $localService = array_merge($service, array_intersect_key([
             'host' => self::LOCAL_IP,
             'port' => $tunnel['localPort'],
         ], $service));
 
-        return $relationshipsService->buildUrl($localService);
+        return $this->relationships->buildUrl($localService);
     }
 
     private function tunnelsAreEqual(array $tunnel1, array $tunnel2): bool

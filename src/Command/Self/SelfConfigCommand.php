@@ -26,8 +26,7 @@ class SelfConfigCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $formatter = $this->propertyFormatter;
-        $formatter->displayData($output, $this->config->getAll(), $input->getArgument('value'));
+        $this->propertyFormatter->displayData($output, $this->config->getAll(), $input->getArgument('value'));
         return 0;
     }
 }

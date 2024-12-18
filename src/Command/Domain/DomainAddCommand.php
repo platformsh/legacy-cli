@@ -60,8 +60,6 @@ class DomainAddCommand extends DomainCommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $project = $selection->getProject();
         $environment = $selection->getEnvironment();
         $this->selector->ensurePrintedSelection($selection);
@@ -71,7 +69,7 @@ class DomainAddCommand extends DomainCommandBase
             $this->stdErr->writeln(sprintf('It will be attached to the production domain: <info>%s</info>', $this->attach));
         }
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 

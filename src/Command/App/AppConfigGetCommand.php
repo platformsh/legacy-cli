@@ -53,9 +53,7 @@ class AppConfigGetCommand extends CommandBase
             $this->io->warnAboutDeprecatedOptions(['identity-file']);
             $appConfig = $selection->getRemoteContainer()->getConfig();
         }
-
-        $formatter = $this->propertyFormatter;
-        $formatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $appConfig->getNormalized(), $input->getOption('property'));
         return 0;
     }
 }

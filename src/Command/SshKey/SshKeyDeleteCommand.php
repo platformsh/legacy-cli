@@ -80,9 +80,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
         } catch (\Exception) {
             // Suppress exceptions; we do not need the result of this call.
         }
-
-        $sshConfig = $this->sshConfig;
-        $sshConfig->configureSessionSsh();
+        $this->sshConfig->configureSessionSsh();
 
         return 0;
     }

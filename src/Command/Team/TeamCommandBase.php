@@ -193,8 +193,7 @@ class TeamCommandBase extends CommandBase
             $choices[$team->id] = $team->label . ' (' . $team->id . ')';
             $byId[$team->id] = $team;
         }
-        $questionHelper = $this->questionHelper;
-        $teamId = $questionHelper->choose($choices, 'Enter a number to choose a team:');
+        $teamId = $this->questionHelper->choose($choices, 'Enter a number to choose a team:');
         return $byId[$teamId];
     }
 

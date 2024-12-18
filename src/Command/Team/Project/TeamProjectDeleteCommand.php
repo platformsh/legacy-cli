@@ -33,7 +33,6 @@ class TeamProjectDeleteCommand extends TeamCommandBase
         if (!$team) {
             return 1;
         }
-        $questionHelper = $this->questionHelper;
 
         $teamProjects = $this->loadTeamProjects($team);
 
@@ -50,7 +49,7 @@ class TeamProjectDeleteCommand extends TeamCommandBase
                 return 1;
             }
             $questionText = 'Enter a number to choose a project to remove from the team:';
-            $projectId = $questionHelper->choose($options, $questionText, null, false);
+            $projectId = $this->questionHelper->choose($options, $questionText, null, false);
         } elseif (!$projectId) {
             $this->stdErr->writeln('A project ID must be specified (in non-interactive mode).');
             return 1;
@@ -61,7 +60,7 @@ class TeamProjectDeleteCommand extends TeamCommandBase
             return 1;
         }
 
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to remove the project <comment>%s</comment> from the team %s?', $projectLabels[$projectId], $this->getTeamLabel($team, 'comment')))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to remove the project <comment>%s</comment> from the team %s?', $projectLabels[$projectId], $this->getTeamLabel($team, 'comment')))) {
             return 1;
         }
 

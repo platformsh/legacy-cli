@@ -105,13 +105,10 @@ class EnvironmentXdebugCommand extends CommandBase
             return 1;
         }
 
-
-        $ssh = $this->ssh;
-
         // The socket is removed to prevent 'file already exists' errors.
-        $commandCleanup = $ssh->getSshCommand($sshUrl, [], 'rm -rf ' . self::SOCKET_PATH);
+        $commandCleanup = $this->ssh->getSshCommand($sshUrl, [], 'rm -rf ' . self::SOCKET_PATH);
         $this->io->debug("Cleanup command: " . $commandCleanup);
-        $process = Process::fromShellCommandline($commandCleanup, null, $ssh->getEnv());
+        $process = Process::fromShellCommandline($commandCleanup, null, $this->ssh->getEnv());
         $process->run();
 
         $this->stdErr->writeln("Opening a local tunnel for Xdebug.");
@@ -122,9 +119,9 @@ class EnvironmentXdebugCommand extends CommandBase
         $sshOptions = ['ExitOnForwardFailure yes', 'SessionType none', 'RequestTTY no'];
 
         $listenAddress = '127.0.0.1:' . $port;
-        $commandTunnel = $ssh->getSshCommand($sshUrl, $sshOptions) . ' -R ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
+        $commandTunnel = $this->ssh->getSshCommand($sshUrl, $sshOptions) . ' -R ' . escapeshellarg(self::SOCKET_PATH . ':' . $listenAddress);
         $this->io->debug("Tunnel command: " . $commandTunnel);
-        $process = Process::fromShellCommandline($commandTunnel, null, $ssh->getEnv());
+        $process = Process::fromShellCommandline($commandTunnel, null, $this->ssh->getEnv());
         $process->setTimeout(null);
         $process->start();
 

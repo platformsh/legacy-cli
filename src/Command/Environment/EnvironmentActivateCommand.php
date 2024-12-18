@@ -87,7 +87,6 @@ class EnvironmentActivateCommand extends CommandBase
         $processed = 0;
         // Confirm which environments the user wishes to be activated.
         $process = [];
-        $questionHelper = $this->questionHelper;
         foreach ($environments as $environment) {
             if (!$environment->operationAvailable('activate', true)) {
                 if ($environment->isActive()) {
@@ -97,7 +96,7 @@ class EnvironmentActivateCommand extends CommandBase
                 }
                 if ($environment->status === 'paused') {
                     $output->writeln("The environment " . $this->api->getEnvironmentLabel($environment, 'comment') . " is paused.");
-                    if (count($environments) === 1 && $input->isInteractive() && $questionHelper->confirm('Do you want to resume it?')) {
+                    if (count($environments) === 1 && $input->isInteractive() && $this->questionHelper->confirm('Do you want to resume it?')) {
                         return $this->subCommandRunner->run('environment:resume', [
                             '--project' => $environment->project,
                             '--environment' => $environment->id,
@@ -127,7 +126,7 @@ class EnvironmentActivateCommand extends CommandBase
                 continue;
             }
             $question = "Are you sure you want to activate the environment " . $this->api->getEnvironmentLabel($environment) . "?";
-            if (!$questionHelper->confirm($question)) {
+            if (!$this->questionHelper->confirm($question)) {
                 continue;
             }
             $process[$environment->id] = $environment;

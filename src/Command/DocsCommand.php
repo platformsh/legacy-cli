@@ -40,9 +40,7 @@ class DocsCommand extends CommandBase
         } else {
             $url = $this->config->getStr('service.docs_url');
         }
-
-        $urlService = $this->url;
-        $urlService->openUrl($url);
+        $this->url->openUrl($url);
         return 0;
     }
 

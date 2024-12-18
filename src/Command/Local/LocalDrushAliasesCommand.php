@@ -71,16 +71,14 @@ class LocalDrushAliasesCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $drush = $this->drush;
-
-        $apps = $drush->getDrupalApps($projectRoot);
+        $apps = $this->drush->getDrupalApps($projectRoot);
         if (empty($apps)) {
             $this->stdErr->writeln('No Drupal applications found.');
 
             return 1;
         }
 
-        $current_group = $drush->getAliasGroup($project, $projectRoot);
+        $current_group = $this->drush->getAliasGroup($project, $projectRoot);
 
         if ($input->getOption('pipe')) {
             $output->writeln($current_group);
@@ -88,16 +86,16 @@ class LocalDrushAliasesCommand extends CommandBase
             return 0;
         }
 
-        if ($drush->getVersion() === false) {
+        if ($this->drush->getVersion() === false) {
             $this->stdErr->writeln('Drush is not installed, or the Drush version could not be determined.');
             return 1;
         }
 
         if ($input->isInteractive()) {
-            $this->migrateAliasFiles($drush);
+            $this->migrateAliasFiles($this->drush);
         }
 
-        $aliases = $drush->getAliases($current_group);
+        $aliases = $this->drush->getAliases($current_group);
         $new_group = ltrim((string) $input->getOption('group'), '@');
         if (empty($aliases) && !$new_group && $current_group === $project->id) {
             $new_group = (new Slugify())->slugify($project->title);
@@ -111,14 +109,14 @@ class LocalDrushAliasesCommand extends CommandBase
             $questionHelper = $this->questionHelper;
 
             if ($new_group !== $current_group) {
-                $existing = $drush->getAliases($new_group);
+                $existing = $this->drush->getAliases($new_group);
                 if (!empty($existing)) {
                     $question = "The Drush alias group <info>@$new_group</info> already exists. Overwrite?";
-                    if (!$questionHelper->confirm($question)) {
+                    if (!$this->questionHelper->confirm($question)) {
                         return 1;
                     }
                 }
-                $drush->setAliasGroup($new_group, $projectRoot);
+                $this->drush->setAliasGroup($new_group, $projectRoot);
             }
 
             $environments = $this->api->getEnvironments($project, true, false);
@@ -170,26 +168,26 @@ class LocalDrushAliasesCommand extends CommandBase
                     }
                     if (!empty($appRoot)) {
                         $this->io->debug(sprintf('App root for %s: %s', $sshUrl, $appRoot));
-                        $drush->setCachedAppRoot($sshUrl, $appRoot);
+                        $this->drush->setCachedAppRoot($sshUrl, $appRoot);
                     }
                 }
             }
 
-            $drush->createAliases($project, $projectRoot, $environments, $current_group);
+            $this->drush->createAliases($project, $projectRoot, $environments, $current_group);
 
-            $this->ensureDrushConfig($drush);
+            $this->ensureDrushConfig($this->drush);
 
             if ($new_group !== $current_group && !empty($aliases)) {
-                if ($questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
-                    $drush->deleteOldAliases($current_group);
+                if ($this->questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
+                    $this->drush->deleteOldAliases($current_group);
                 }
             }
 
             // Clear the Drush cache now that the aliases have been updated.
-            $drush->clearCache();
+            $this->drush->clearCache();
 
             // Read the new aliases.
-            $aliases = $drush->getAliases($new_group, true);
+            $aliases = $this->drush->getAliases($new_group, true);
         }
 
         if (!empty($aliases)) {
@@ -207,16 +205,16 @@ class LocalDrushAliasesCommand extends CommandBase
      */
     protected function ensureDrushConfig(Drush $drush): void
     {
-        if (!is_dir($drush->getSiteAliasDir())) {
+        if (!is_dir($this->drush->getSiteAliasDir())) {
             return;
         }
 
-        $drushYml = $drush->getDrushDir() . '/drush.yml';
+        $drushYml = $this->drush->getDrushDir() . '/drush.yml';
         $drushConfig = [];
         if (file_exists($drushYml)) {
             $drushConfig = (array) Yaml::parse(file_get_contents($drushYml));
         }
-        $aliasPath = $drush->getSiteAliasDir();
+        $aliasPath = $this->drush->getSiteAliasDir();
         if (getenv('HOME')) {
             $aliasPath = str_replace(getenv('HOME') . '/', '${env.home}/', $aliasPath);
         }
@@ -240,16 +238,14 @@ class LocalDrushAliasesCommand extends CommandBase
      */
     protected function migrateAliasFiles(Drush $drush): void
     {
-        $newDrushDir = $drush->getHomeDir() . '/.drush/site-aliases';
-        $oldFilenames = $drush->getLegacyAliasFiles();
+        $newDrushDir = $this->drush->getHomeDir() . '/.drush/site-aliases';
+        $oldFilenames = $this->drush->getLegacyAliasFiles();
         if (empty($oldFilenames)) {
             return;
         }
-
-        $questionHelper = $this->questionHelper;
-        $newDrushDirRelative = str_replace($drush->getHomeDir() . '/', '~/', $newDrushDir);
+        $newDrushDirRelative = str_replace($this->drush->getHomeDir() . '/', '~/', $newDrushDir);
         $confirmText = "Do you want to move your global Drush alias files from <comment>~/.drush</comment> to <comment>$newDrushDirRelative</comment>?";
-        if (!$questionHelper->confirm($confirmText)) {
+        if (!$this->questionHelper->confirm($confirmText)) {
             return;
         }
 

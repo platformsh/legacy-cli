@@ -44,9 +44,7 @@ class EnvironmentRedeployCommand extends CommandBase
 
             return 1;
         }
-
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm('Are you sure you want to redeploy the environment <comment>' . $environment->id . '</comment>?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to redeploy the environment <comment>' . $environment->id . '</comment>?')) {
             return 1;
         }
 

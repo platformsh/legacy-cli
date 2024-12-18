@@ -55,22 +55,17 @@ class SelfReleaseCommand extends CommandBase
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $questionHelper = $this->questionHelper;
-
-        $shell = $this->shell;
-
-        $git = $this->git;
-        $git->setDefaultRepositoryDir(CLI_ROOT);
+        $this->git->setDefaultRepositoryDir(CLI_ROOT);
 
         $releaseBranch = $input->getOption('release-branch');
-        if ($git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
+        if ($this->git->getCurrentBranch(CLI_ROOT, true) !== $releaseBranch) {
             $this->stdErr->writeln('You must be on the ' . $releaseBranch . ' branch to make a release.');
 
             return 1;
         }
 
         if (!$input->getOption('no-check-changes')) {
-            $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
+            $gitStatus = $this->git->execute(['status', '--porcelain'], CLI_ROOT, true);
             if (is_string($gitStatus) && !empty($gitStatus)) {
                 foreach (explode("\n", $gitStatus) as $statusLine) {
                     if (!str_contains($statusLine, ' config.yaml')) {
@@ -83,8 +78,8 @@ class SelfReleaseCommand extends CommandBase
             }
         }
 
-        if ($shell->commandExists('gh')) {
-            $process = $shell->executeCaptureProcess('gh auth status --show-token', null, true);
+        if ($this->shell->commandExists('gh')) {
+            $process = $this->shell->executeCaptureProcess('gh auth status --show-token', null, true);
             if (!preg_match('/Token: (\S+)/', $process->getOutput(), $matches)) {
                 $this->stdErr->writeln('Unable to obtain a GitHub token.');
                 $this->stdErr->writeln('Log in to the GitHub CLI with: <info>gh auth login</info>');
@@ -105,7 +100,7 @@ class SelfReleaseCommand extends CommandBase
 
             $this->stdErr->writeln('Last version number: <info>' . $lastVersion . '</info>');
         } else {
-            $lastTag = $shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
+            $lastTag = $this->shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
             $lastVersion = ltrim((string) $lastTag, 'v');
             $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
         }
@@ -150,7 +145,7 @@ class SelfReleaseCommand extends CommandBase
                 $default = reset($nextVersions);
                 $autoComplete = $nextVersions;
             }
-            $newVersion = $questionHelper->askInput('New version number', $default, $autoComplete, $validateNewVersion);
+            $newVersion = $this->questionHelper->askInput('New version number', $default, $autoComplete, $validateNewVersion);
         }
 
         // Set up GitHub API connection details.
@@ -240,8 +235,7 @@ class SelfReleaseCommand extends CommandBase
         // Confirm the release changelog.
         list($changelogFilename, $changelog) = $this->getReleaseChangelog($lastTag, $tagName);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm($questionText)) {
+        if (!$this->questionHelper->confirm($questionText)) {
             $this->stdErr->writeln('Update or delete the file <comment>' . $changelogFilename . '</comment> and re-run this command.');
 
             return 1;
@@ -264,7 +258,7 @@ class SelfReleaseCommand extends CommandBase
 
         // Validate that the Phar file has the right version number.
         if ($pharFilename) {
-            $versionInPhar = $shell->execute([
+            $versionInPhar = $this->shell->execute([
                 (new PhpExecutableFinder())->find() ?: PHP_BINARY,
                 $pharFilename,
                 '--version'
@@ -309,11 +303,11 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Commit any changes to Git.
-        $gitStatus = $git->execute(['status', '--porcelain'], CLI_ROOT, true);
+        $gitStatus = $this->git->execute(['status', '--porcelain'], CLI_ROOT, true);
         if (is_string($gitStatus) && !empty($gitStatus)) {
             $this->stdErr->writeln('Committing changes to Git');
 
-            $result = $shell->executeSimple('git commit --patch config.yaml dist/manifest.json --message ' . escapeshellarg('Release v' . $newVersion) . ' --edit', CLI_ROOT);
+            $result = $this->shell->executeSimple('git commit --patch config.yaml dist/manifest.json --message ' . escapeshellarg('Release v' . $newVersion) . ' --edit', CLI_ROOT);
             if ($result !== 0) {
                 return $result;
             }
@@ -321,14 +315,14 @@ class SelfReleaseCommand extends CommandBase
 
         // Tag the current commit.
         $this->stdErr->writeln('Creating tag <info>' . $tagName . '</info>');
-        $git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
+        $this->git->execute(['tag', '--force', $tagName], CLI_ROOT, true);
 
         // Push to GitHub.
-        if (!$questionHelper->confirm('Push changes to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
+        if (!$this->questionHelper->confirm('Push changes to <comment>' . $releaseBranch . '</comment> branch on ' . $repoGitUrl . '?')) {
             return 1;
         }
-        $shell->execute(['git', 'push', $repoGitUrl, 'HEAD:' . $releaseBranch], CLI_ROOT, true);
-        $shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
+        $this->shell->execute(['git', 'push', $repoGitUrl, 'HEAD:' . $releaseBranch], CLI_ROOT, true);
+        $this->shell->execute(['git', 'push', '--force', $repoGitUrl, $tagName], CLI_ROOT, true);
 
         // Upload a release to GitHub.
         $lastReleasePublicUrl = 'https://github.com/' . $repoUrl . '/releases/' . $lastTag;
@@ -435,8 +429,7 @@ class SelfReleaseCommand extends CommandBase
      */
     private function getTagDate(string $tagName): int|false
     {
-        $git = $this->git;
-        $date = $git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
+        $date = $this->git->execute(['log', '-1', '--format=%aI', 'refs/tags/' . $tagName]);
 
         return is_string($date) ? strtotime(trim($date)) : false;
     }
@@ -450,8 +443,7 @@ class SelfReleaseCommand extends CommandBase
      */
     private function hasGitDifferences(string $since): bool
     {
-        $git = $this->git;
-        $stat = $git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
+        $stat = $this->git->execute(['diff', '--numstat', $since . '...HEAD'], CLI_ROOT, true);
         if (!is_string($stat)) {
             return false;
         }
@@ -473,8 +465,7 @@ class SelfReleaseCommand extends CommandBase
      */
     private function getGitChangelog(string $since): string
     {
-        $git = $this->git;
-        $changelog = $git->execute([
+        $changelog = $this->git->execute([
             'log',
             '--pretty=tformat:* %s%n%b',
             '--no-merges',

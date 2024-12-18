@@ -133,8 +133,6 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
         $this->stdErr->writeln('');
 
-        $questionHelper = $this->questionHelper;
-
         $containerProfiles = $nextDeployment->container_profiles;
 
         // Ask all questions if nothing was specified on the command line.
@@ -206,7 +204,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $this->stdErr->writeln(sprintf('No profile size can be found for the %s <comment>%s</comment> which satisfies its minimum resources.', $type, $name));
                     $errored = true;
                 } else {
-                    $profileSize = $questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $defaultOption, false, false);
+                    $profileSize = $this->questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $defaultOption, false, false);
                     if (!isset($properties['resources']['profile_size']) || $profileSize != $properties['resources']['profile_size']) {
                         $updates[$group][$name]['resources']['profile_size'] = $profileSize;
                     }
@@ -226,7 +224,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 } elseif ($showCompleteForm) {
                     $ensureHeader();
                     $default = $properties['instance_count'] ?: 1;
-                    $instanceCount = $questionHelper->askInput('Enter the number of instances', $default, [], fn($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit));
+                    $instanceCount = $this->questionHelper->askInput('Enter the number of instances', $default, [], fn($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit));
                     if ($instanceCount !== $properties['instance_count']) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
                     }
@@ -246,7 +244,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     } else {
                         $default = $properties['resources']['default']['disk'] ?? '512';
                     }
-                    $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  fn($v) => $this->validateDiskSize($v, $name, $service));
+                    $diskSize = $this->questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  fn($v) => $this->validateDiskSize($v, $name, $service));
                     if ($diskSize !== $service->disk) {
                         $updates[$group][$name]['disk'] = $diskSize;
                     }
@@ -322,7 +320,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 

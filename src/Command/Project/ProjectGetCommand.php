@@ -54,7 +54,6 @@ class ProjectGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $git = $this->git;
         $localProject = $this->localProject;
 
         // Validate input options and arguments.
@@ -71,7 +70,7 @@ class ProjectGetCommand extends CommandBase
         // or switching the remote project.
         $insideCwd = !$input->getArgument('directory')
             || basename((string) $input->getArgument('directory')) === $input->getArgument('directory');
-        if ($insideCwd && ($gitRoot = $git->getRoot()) !== false && $input->isInteractive()) {
+        if ($insideCwd && ($gitRoot = $this->git->getRoot()) !== false && $input->isInteractive()) {
             $oldProjectRoot = $localProject->getProjectRoot($gitRoot);
             $oldProjectConfig = $oldProjectRoot ? $localProject->getProjectConfig($oldProjectRoot) : false;
             $oldProject = $oldProjectConfig ? $this->api->getProject($oldProjectConfig['id']) : false;
@@ -104,7 +103,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('');
 
             $questionHelper = $this->questionHelper;
-            if ($questionHelper->confirm($questionText)) {
+            if ($this->questionHelper->confirm($questionText)) {
                 return $this->subCommandRunner->run('project:set-remote', ['project' => $project->id], $output);
             }
 
@@ -112,19 +111,17 @@ class ProjectGetCommand extends CommandBase
         }
 
         $projectRoot = $this->chooseDirectory($project, $input);
-
-        $fs = $this->filesystem;
-        $projectRootFormatted = $fs->formatPathForDisplay($projectRoot);
+        $projectRootFormatted = $this->filesystem->formatPathForDisplay($projectRoot);
 
         // Prepare to talk to the remote repository.
         $gitUrl = $project->getGitUrl();
 
-        $git->ensureInstalled();
+        $this->git->ensureInstalled();
 
         // First check if the repo actually exists.
         try {
-            $repoExists = $git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
-                || $git->remoteRefExists($gitUrl);
+            $repoExists = $this->git->remoteRefExists($gitUrl, 'refs/heads/' . $environment->id)
+                || $this->git->remoteRefExists($gitUrl);
         } catch (ProcessFailedException $e) {
             // The ls-remote command failed.
             $this->stdErr->writeln('Failed to connect to the Git repository: <error>' . $gitUrl . '</error>');
@@ -150,14 +147,14 @@ class ProjectGetCommand extends CommandBase
             }
 
             $this->io->debug('Initializing the repository');
-            $git->init($projectRoot, $project->default_branch, true);
+            $this->git->init($projectRoot, $project->default_branch, true);
 
             $this->io->debug('Initializing the project');
             $localProject->mapDirectory($projectRoot, $project);
 
-            if($git->getCurrentBranch($projectRoot) != $project->default_branch) {
+            if($this->git->getCurrentBranch($projectRoot) != $project->default_branch) {
                 $this->io->debug('current branch does not match the default_branch, create it.');
-                $git->checkOutNew($project->default_branch, null, null, $projectRoot);
+                $this->git->checkOutNew($project->default_branch, null, null, $projectRoot);
             }
 
             $this->stdErr->writeln('');
@@ -193,7 +190,7 @@ class ProjectGetCommand extends CommandBase
             $cloneArgs[] = $input->getOption('depth');
             $cloneArgs[] = '--shallow-submodules';
         }
-        $cloned = $git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
+        $cloned = $this->git->cloneRepo($gitUrl, $projectRoot, $cloneArgs);
         if ($cloned === false) {
             // The clone wasn't successful. Clean up the folders we created
             // and then bow out with a message.
@@ -210,7 +207,7 @@ class ProjectGetCommand extends CommandBase
         $localProject->mapDirectory($projectRoot, $project);
 
         $this->io->debug('Downloading submodules (if any)');
-        $git->updateSubmodules(true, $projectRoot);
+        $this->git->updateSubmodules(true, $projectRoot);
 
         $this->stdErr->writeln('');
         $this->stdErr->writeln(sprintf(
@@ -283,13 +280,11 @@ class ProjectGetCommand extends CommandBase
      * @return string
      */
     private function chooseDirectory(Project $project, InputInterface $input): string {
-        $questionHelper = $this->questionHelper;
-
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
             $directory = $project->title ? $slugify->slugify($project->title) : $project->id;
-            $directory = $questionHelper->askInput('Directory', $directory, [$directory, $project->id]);
+            $directory = $this->questionHelper->askInput('Directory', $directory, [$directory, $project->id]);
         }
 
         if (file_exists($directory)) {
@@ -318,8 +313,6 @@ class ProjectGetCommand extends CommandBase
         if (str_contains($gitUrl, ':')) {
             list($gitSshUri,) = explode(':', $gitUrl, 2);
         }
-
-        $sshDiagnostics = $this->sshDiagnostics;
-        $sshDiagnostics->diagnoseFailure($gitSshUri, $process);
+        $this->sshDiagnostics->diagnoseFailure($gitSshUri, $process);
     }
 }

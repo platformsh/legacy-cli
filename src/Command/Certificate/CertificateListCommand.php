@@ -89,27 +89,24 @@ class CertificateListCommand extends CommandBase
             return 0;
         }
 
-        $table = $this->table;
-        $propertyFormatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($certs as $cert) {
             $rows[] = [
                 'id' => $cert->id,
                 'domains' => implode("\n", $cert->domains),
-                'created' => $propertyFormatter->format($cert->created_at, 'created_at'),
-                'expires' => $propertyFormatter->format($cert->expires_at, 'expires_at'),
+                'created' => $this->propertyFormatter->format($cert->created_at, 'created_at'),
+                'expires' => $this->propertyFormatter->format($cert->expires_at, 'expires_at'),
                 'issuer' => $this->getCertificateIssuerByAlias($cert, 'commonName') ?: '',
             ];
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf('Certificates for the project <info>%s</info>:', $this->api->getProjectLabel($project)));
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',

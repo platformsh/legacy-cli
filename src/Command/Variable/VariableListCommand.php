@@ -51,8 +51,6 @@ class VariableListCommand extends CommandBase
 
         $project = $selection->getProject();
 
-        $table = $this->table;
-
         $variables = [];
         if ($level === 'project' || $level === null) {
             $variables = array_merge($variables, $project->getVariables());
@@ -67,7 +65,7 @@ class VariableListCommand extends CommandBase
             return 1;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $projectLabel = $this->api->getProjectLabel($project);
             switch ($level) {
                 case 'project':
@@ -96,7 +94,7 @@ class VariableListCommand extends CommandBase
 
             // Handle sensitive variables' value (it isn't exposed in the API).
             if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
-                $row['value'] = $table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
+                $row['value'] = $this->table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
             } else {
                 $row['value'] = $variable->value;
             }
@@ -110,9 +108,9 @@ class VariableListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln(sprintf(

@@ -175,10 +175,7 @@ class BrowserLoginCommand extends CommandBase
 
             return 1;
         }
-
-        // Open the local server URL in a browser (or print the URL).
-        $urlService = $this->url;
-        if ($urlService->openUrl($localUrl, false)) {
+        if ($this->url->openUrl($localUrl, false)) {
             $this->stdErr->writeln(sprintf('Opened URL: <info>%s</info>', $localUrl));
             $this->stdErr->writeln('Please use the browser to log in.');
         } else {

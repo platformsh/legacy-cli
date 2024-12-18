@@ -38,8 +38,6 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
 
-        $relationshipsService = $this->relationships;
-
         $tunnels = $this->getTunnelInfo();
         $relationships = [];
         foreach ($this->filterTunnels($tunnels, $input) as $tunnel) {
@@ -52,7 +50,7 @@ class TunnelInfoCommand extends TunnelCommandBase
                 'port' => $tunnel['localPort'],
             ], $service));
 
-            $service['url'] = $relationshipsService->buildUrl($service);
+            $service['url'] = $this->relationships->buildUrl($service);
 
             $relationships[$tunnel['relationship']][$tunnel['serviceKey']] = $service;
         }
@@ -78,9 +76,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             $output->writeln(base64_encode(json_encode($relationships)));
             return 0;
         }
-
-        $formatter = $this->propertyFormatter;
-        $formatter->displayData($output, $relationships, $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;
     }

@@ -152,14 +152,10 @@ class ProjectListCommand extends CommandBase
             $this->stdErr->writeln(\sprintf('No projects found on this page (%s)', $page->displayInfo()));
             return 1;
         }
+        $machineReadable = $this->table->formatIsMachineReadable();
 
-        $table = $this->table;
-        $machineReadable = $table->formatIsMachineReadable();
-
-        $table->replaceDeprecatedColumns(['host' => 'region'], $input, $output);
-        $table->removeDeprecatedColumns(['url', 'ui_url', 'endpoint', 'region_label'], '[deprecated]', $input, $output);
-
-        $formatter = $this->propertyFormatter;
+        $this->table->replaceDeprecatedColumns(['host' => 'region'], $input, $output);
+        $this->table->removeDeprecatedColumns(['url', 'ui_url', 'endpoint', 'region_label'], '[deprecated]', $input, $output);
 
         $rows = [];
         foreach ($projects as $projectInfo) {
@@ -183,7 +179,7 @@ class ProjectListCommand extends CommandBase
                 'organization_name' => $orgInfo ? $orgInfo->name : '',
                 'organization_label' => $orgInfo ? $orgInfo->label : '',
                 'status' => $projectInfo->status,
-                'created_at' => $formatter->format($projectInfo->created_at, 'created_at'),
+                'created_at' => $this->propertyFormatter->format($projectInfo->created_at, 'created_at'),
                 '[deprecated]' => '',
             ];
         }
@@ -193,7 +189,7 @@ class ProjectListCommand extends CommandBase
         // Display a simple table (and no messages) if the --format is
         // machine-readable (e.g. csv or tsv).
         if ($machineReadable) {
-            $table->render($rows, $this->tableHeader, $this->defaultColumns);
+            $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
             return 0;
         }
@@ -207,7 +203,7 @@ class ProjectListCommand extends CommandBase
             $this->stdErr->writeln(':');
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         $executable = $this->config->getStr('application.executable');
 

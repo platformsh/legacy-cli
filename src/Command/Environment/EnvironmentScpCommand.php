@@ -51,11 +51,9 @@ class EnvironmentScpCommand extends CommandBase
         $container = $selection->getRemoteContainer();
 
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
-
-        $ssh = $this->ssh;
         $command = 'scp';
 
-        if ($sshArgs = $ssh->getSshArgs($sshUrl)) {
+        if ($sshArgs = $this->ssh->getSshArgs($sshUrl)) {
             $command .= ' ' . implode(' ', array_map(OsUtil::escapePosixShellArg(...), $sshArgs));
         }
 
@@ -83,11 +81,9 @@ class EnvironmentScpCommand extends CommandBase
             throw new InvalidArgumentException('At least one argument needs to contain the "remote:" prefix');
         }
 
-        $shell = $this->shell;
-
         $start = \time();
 
-        $exitCode = $shell->executeSimple($command);
+        $exitCode = $this->shell->executeSimple($command);
         if ($exitCode !== 0) {
             $diagnostics = $this->sshDiagnostics;
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);

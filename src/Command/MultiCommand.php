@@ -190,14 +190,12 @@ class MultiCommand extends CommandBase
     {
         $projectList = $input->getOption('projects');
 
-        $identifier = $this->identifier;
-
         if (!empty($projectList)) {
             $missing = [];
             $selected = [];
             foreach ($this->splitProjectList($projectList) as $projectId) {
                 try {
-                    $result = $identifier->identify($projectId);
+                    $result = $this->identifier->identify($projectId);
                 } catch (InvalidArgumentException) {
                     $missing[] = $projectId;
                     continue;
@@ -221,9 +219,7 @@ class MultiCommand extends CommandBase
             $this->stdErr->writeln('In non-interactive mode, the --projects option must be specified.');
             return false;
         }
-
-        $shell = $this->shell;
-        if (!$shell->commandExists('dialog')) {
+        if (!$this->shell->commandExists('dialog')) {
             $this->stdErr->writeln('The "dialog" utility is required for interactive use.');
             $this->stdErr->writeln('You can specify projects via the --projects option.');
             return false;

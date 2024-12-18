@@ -84,8 +84,7 @@ class EnvironmentMergeCommand extends CommandBase
             $environmentId,
             $parentId
         );
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm($confirmText)) {
+        if (!$this->questionHelper->confirm($confirmText)) {
             return 1;
         }
 

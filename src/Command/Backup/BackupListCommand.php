@@ -56,17 +56,14 @@ class BackupListCommand extends CommandBase
 
         $environment = $selection->getEnvironment();
 
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $backups = $environment->getBackups((int) $input->getOption('limit'));
         if (!$backups) {
             $this->stdErr->writeln('No backups found');
             return 1;
         }
 
-        $table->replaceDeprecatedColumns(['created' => 'created_at', 'name' => 'id'], $input, $output);
-        $table->removeDeprecatedColumns(['progress', 'state', 'result'], '[deprecated]', $input, $output);
+        $this->table->replaceDeprecatedColumns(['created' => 'created_at', 'name' => 'id'], $input, $output);
+        $this->table->removeDeprecatedColumns(['progress', 'state', 'result'], '[deprecated]', $input, $output);
 
         $header = $this->tableHeader;
         $header['safe'] = 'Safe';
@@ -74,23 +71,23 @@ class BackupListCommand extends CommandBase
         $rows = [];
         foreach ($backups as $backup) {
             $rows[] = [
-                'created_at' => $formatter->format($backup->created_at, 'created_at'),
-                'updated_at' => $formatter->format($backup->updated_at, 'updated_at'),
-                'expires_at' => $formatter->format($backup->expires_at, 'expires_at'),
+                'created_at' => $this->propertyFormatter->format($backup->created_at, 'created_at'),
+                'updated_at' => $this->propertyFormatter->format($backup->updated_at, 'updated_at'),
+                'expires_at' => $this->propertyFormatter->format($backup->expires_at, 'expires_at'),
                 'id' => new AdaptiveTableCell($backup->id, ['wrap' => false]),
                 'name' => $backup->id,
                 'commit_id' => $backup->commit_id,
-                'live' => $formatter->format(!$backup->safe),
-                'safe' => $formatter->format($backup->safe),
-                'restorable' => $formatter->format($backup->restorable),
+                'live' => $this->propertyFormatter->format(!$backup->safe),
+                'safe' => $this->propertyFormatter->format($backup->safe),
+                'restorable' => $this->propertyFormatter->format($backup->restorable),
                 'index' => $backup->index,
                 'status' => $backup->status,
-                'automated' =>  $formatter->format($backup->getProperty('automated', false, false), 'automated'),
+                'automated' =>  $this->propertyFormatter->format($backup->getProperty('automated', false, false), 'automated'),
                 '[deprecated]' => '',
             ];
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Backups on the project %s, environment %s:',
                 $this->api->getProjectLabel($selection->getProject()),
@@ -98,7 +95,7 @@ class BackupListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, $header, $this->defaultColumns);
+        $this->table->render($rows, $header, $this->defaultColumns);
 
         return 0;
     }

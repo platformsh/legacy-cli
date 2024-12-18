@@ -39,8 +39,6 @@ class ServerListCommand extends ServerCommandBase
                 return 1;
             }
         }
-
-        $table = $this->table;
         $headers = ['Address', 'PID', 'App', 'Project root', 'Log'];
         $rows = [];
         foreach ($servers as $address => $server) {
@@ -49,7 +47,7 @@ class ServerListCommand extends ServerCommandBase
             $row[] = $logFile;
             $rows[] = $row;
         }
-        $table->render($rows, $headers);
+        $this->table->render($rows, $headers);
 
         return 0;
     }

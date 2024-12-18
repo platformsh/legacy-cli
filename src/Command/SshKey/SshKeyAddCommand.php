@@ -34,10 +34,6 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $questionHelper = $this->questionHelper;
-        $shellHelper = $this->shell;
-        $sshKeyService = $this->sshKey;
-
         $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
 
         $this->stdErr->writeln(sprintf(
@@ -48,7 +44,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
         $this->stdErr->writeln($this->certificateNotice($this->config, false));
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config->getStr('application.executable')));
             return 1;
@@ -62,24 +58,24 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
             // Look for an existing local key.
             if (\file_exists($defaultPublicKeyPath)
-                && $questionHelper->confirm(
+                && $this->questionHelper->confirm(
                     'Use existing local key <info>' . \basename($defaultPublicKeyPath) . '</info>?'
                 )) {
                 $this->stdErr->writeln('');
                 $publicKeyPath = $defaultPublicKeyPath;
-            } elseif ($shellHelper->commandExists('ssh-keygen')
-                && $questionHelper->confirm('Generate a new key?')) {
+            } elseif ($this->shell->commandExists('ssh-keygen')
+                && $this->questionHelper->confirm('Generate a new key?')) {
                 // Offer to generate a key.
-                $newKeyPath = $this->askNewKeyPath($questionHelper);
+                $newKeyPath = $this->askNewKeyPath($this->questionHelper);
                 $this->stdErr->writeln('');
 
                 $args = ['ssh-keygen', '-t', 'ed25519', '-f', $newKeyPath, '-N', ''];
-                $shellHelper->execute($args, null, true);
+                $this->shell->execute($args, null, true);
                 $publicKeyPath = $newKeyPath . '.pub';
                 $this->stdErr->writeln("Generated a new key: $publicKeyPath\n");
 
                 // An SSH agent is required if the key's filename is not an OpenSSH default.
-                if (!in_array(basename($newKeyPath), $sshKeyService->defaultKeyNames())) {
+                if (!in_array(basename($newKeyPath), $this->sshKey->defaultKeyNames())) {
                     $this->stdErr->writeln('Add this key to an SSH agent with:');
                     $this->stdErr->writeln('    eval $(ssh-agent)');
                     $this->stdErr->writeln('    ssh-add ' . \escapeshellarg($newKeyPath));
@@ -101,15 +97,15 @@ class SshKeyAddCommand extends SshKeyCommandBase
         }
 
         // Use ssh-keygen to help validate the key.
-        if ($shellHelper->commandExists('ssh-keygen')) {
+        if ($this->shell->commandExists('ssh-keygen')) {
             $args = ['ssh-keygen', '-l', '-f', $publicKeyPath];
-            if (!$shellHelper->execute($args, null, false)) {
+            if (!$this->shell->execute($args, null, false)) {
                 $this->stdErr->writeln("The file does not contain a valid public key: <error>$publicKeyPath</error>");
                 return 1;
             }
         }
 
-        $fingerprint = $sshKeyService->getPublicKeyFingerprint($publicKeyPath);
+        $fingerprint = $this->sshKey->getPublicKeyFingerprint($publicKeyPath);
 
         // Check whether the public key already exists in the user's account.
         if ($this->keyExistsByFingerprint($fingerprint)) {
@@ -144,10 +140,8 @@ class SshKeyAddCommand extends SshKeyCommandBase
         } catch (\Exception) {
             // Suppress exceptions; we do not need the result of this call.
         }
-
-        $sshConfig = $this->sshConfig;
-        if ($sshConfig->configureSessionSsh()) {
-            $sshConfig->addUserSshConfig($questionHelper);
+        if ($this->sshConfig->configureSessionSsh()) {
+            $this->sshConfig->addUserSshConfig($this->questionHelper);
         }
 
         return 0;
@@ -186,7 +180,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             $basename .= $i;
         }
 
-        return $questionHelper->askInput('Enter a filename for the new key (relative to ~/.ssh)', $basename, [], function ($path) use ($sshDir) {
+        return $this->questionHelper->askInput('Enter a filename for the new key (relative to ~/.ssh)', $basename, [], function ($path) use ($sshDir) {
             if (!str_starts_with($path, '/')) {
                 if (\substr($path, 0, 1) === '~/') {
                     $path = $this->config->getHomeDirectory() . '/' . \substr($path, 2);

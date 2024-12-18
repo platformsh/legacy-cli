@@ -108,10 +108,7 @@ class TeamListCommand extends TeamCommandBase
             return 1;
         }
 
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
-        $machineReadable = $table->formatIsMachineReadable();
+        $machineReadable = $this->table->formatIsMachineReadable();
 
         $rolesUtil = new ProjectRoles();
 
@@ -120,12 +117,12 @@ class TeamListCommand extends TeamCommandBase
             $row = [
                 'id' => $team->id,
                 'label' => $team->label,
-                'member_count' => $formatter->format($team->counts['member_count']),
-                'project_count' => $formatter->format($team->counts['project_count']),
+                'member_count' => $this->propertyFormatter->format($team->counts['member_count']),
+                'project_count' => $this->propertyFormatter->format($team->counts['project_count']),
                 'project_permissions' => $rolesUtil->formatPermissions($team->project_permissions, $machineReadable),
-                'created_at' => $formatter->format($team->created_at, 'created_at'),
-                'updated_at' => $formatter->format($team->created_at, 'updated_at'),
-                'granted_at' => isset($teamsOnProject[$team->id]) ? $formatter->format($teamsOnProject[$team->id], 'granted_at') : '',
+                'created_at' => $this->propertyFormatter->format($team->created_at, 'created_at'),
+                'updated_at' => $this->propertyFormatter->format($team->created_at, 'updated_at'),
+                'granted_at' => isset($teamsOnProject[$team->id]) ? $this->propertyFormatter->format($teamsOnProject[$team->id], 'granted_at') : '',
             ];
             $rows[] = $row;
         }
@@ -138,7 +135,7 @@ class TeamListCommand extends TeamCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$machineReadable) {
             $this->stdErr->writeln('');

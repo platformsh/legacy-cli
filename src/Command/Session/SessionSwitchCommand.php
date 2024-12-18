@@ -35,10 +35,9 @@ class SessionSwitchCommand extends CommandBase {
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $config = $this->config;
-        $previousId = $config->getSessionId();
+        $previousId = $this->config->getSessionId();
 
-        $envVar = $config->getStr('application.env_prefix') . 'SESSION_ID';
+        $envVar = $this->config->getStr('application.env_prefix') . 'SESSION_ID';
         if (getenv($envVar) !== false) {
             $this->stdErr->writeln(sprintf('The session ID is set via the environment variable %s.', $envVar));
             $this->stdErr->writeln('It cannot be changed using this command.');
@@ -78,7 +77,7 @@ class SessionSwitchCommand extends CommandBase {
             return 0;
         }
 
-        $config->setSessionId($newId, true);
+        $this->config->setSessionId($newId, true);
 
         // Reset the API service.
         $this->api->getClient(false, true);
@@ -89,7 +88,7 @@ class SessionSwitchCommand extends CommandBase {
             $sshConfig->configureSessionSsh();
         }
 
-        $this->stdErr->writeln(sprintf('Session ID changed from <info>%s</info> to <info>%s</info>', $previousId, $config->getSessionId()));
+        $this->stdErr->writeln(sprintf('Session ID changed from <info>%s</info> to <info>%s</info>', $previousId, $this->config->getSessionId()));
 
         $this->showAccountInfo();
 

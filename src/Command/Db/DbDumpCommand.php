@@ -54,11 +54,9 @@ class DbDumpCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $relationships = $this->relationships;
-
         $selectorConfig = new SelectorConfig(
             envRequired: false,
-            allowLocalHost: $relationships->hasLocalEnvVar(),
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         );
         // TODO check if this still allows offline use from the container
@@ -72,9 +70,7 @@ class DbDumpCommand extends CommandBase
         $schemaOnly = $input->getOption('schema-only');
         $projectRoot = $this->selector->getProjectRoot();
 
-        $fs = $this->filesystem;
-
-        $database = $relationships->chooseDatabase($host, $input, $output);
+        $database = $this->relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
             return 1;
         }
@@ -90,7 +86,7 @@ class DbDumpCommand extends CommandBase
         $schema = $input->getOption('schema');
         if (empty($schema)) {
             // Get a list of schemas (database names) from the service configuration.
-            $schemas = $service ? $relationships->getServiceSchemas($service) : [];
+            $schemas = $service ? $this->relationships->getServiceSchemas($service) : [];
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
@@ -182,7 +178,7 @@ class DbDumpCommand extends CommandBase
             }
 
             // Make the filename absolute.
-            $dumpFile = $fs->makePathAbsolute($dumpFile);
+            $dumpFile = $this->filesystem->makePathAbsolute($dumpFile);
         }
 
         if ($dumpFile) {
@@ -200,7 +196,7 @@ class DbDumpCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $dumpCommand = 'pg_dump --no-owner --if-exists --clean --blobs ' . $relationships->getDbCommandArgs('pg_dump', $database, $schema);
+                $dumpCommand = 'pg_dump --no-owner --if-exists --clean --blobs ' . $this->relationships->getDbCommandArgs('pg_dump', $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --schema-only';
                 }
@@ -219,10 +215,10 @@ class DbDumpCommand extends CommandBase
                 break;
 
             default:
-                $cmdName = $relationships->isMariaDB($database) ? 'mariadb-dump' : 'mysqldump';
-                $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);
+                $cmdName = $this->relationships->isMariaDB($database) ? 'mariadb-dump' : 'mysqldump';
+                $cmdInvocation = $this->relationships->mariaDbCommandWithFallback($cmdName);
                 $dumpCommand = $cmdInvocation . ' --single-transaction '
-                    . $relationships->getDbCommandArgs($cmdName, $database, $schema);
+                    . $this->relationships->getDbCommandArgs($cmdName, $database, $schema);
                 if ($schemaOnly) {
                     $dumpCommand .= ' --no-data';
                 }

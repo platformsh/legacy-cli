@@ -65,12 +65,10 @@ class DbSizeCommand extends CommandBase
      * {@inheritDoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        $relationships = $this->relationships;
-
-        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $relationships->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $this->relationships->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $database = $relationships->chooseDatabase($host, $input, $output, ['mysql', 'pgsql', 'mongodb']);
+        $database = $this->relationships->chooseDatabase($host, $input, $output, ['mysql', 'pgsql', 'mongodb']);
         if (empty($database)) {
             $this->stdErr->writeln('No database selected.');
             return 1;
@@ -92,9 +90,7 @@ class DbSizeCommand extends CommandBase
         $allocatedDisk = ((int) $service->disk) * self::BYTE_TO_MEGABYTE;
         $estimatedUsage = $this->getEstimatedUsage($host, $database);
         $percentageUsed = round($estimatedUsage * 100 / $allocatedDisk);
-
-        $table = $this->table;
-        $machineReadable = $table->formatIsMachineReadable();
+        $machineReadable = $this->table->formatIsMachineReadable();
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
         $values = [
@@ -104,7 +100,7 @@ class DbSizeCommand extends CommandBase
         ];
 
         $this->stdErr->writeln('');
-        $table->render([$values], $this->tableHeader);
+        $this->table->render([$values], $this->tableHeader);
 
         $this->showWarnings($percentageUsed);
 
@@ -166,9 +162,7 @@ class DbSizeCommand extends CommandBase
         $this->stdErr->writeln('<comment>Warning:</comment> Running these may lock up your database for several minutes.');
         $this->stdErr->writeln("Only run these when you know what you're doing.");
         $this->stdErr->writeln('');
-
-        $questionHelper = $this->questionHelper;
-        if ($input->isInteractive() && $questionHelper->confirm('Do you want to run these queries now?', false)) {
+        if ($input->isInteractive() && $this->questionHelper->confirm('Do you want to run these queries now?', false)) {
             $mysqlCommand = $this->getMysqlCommand($database);
             foreach ($queries as $query) {
                 $this->stdErr->write($query);
@@ -255,8 +249,7 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function getPsqlCommand(array $database): string {
-        $relationships = $this->relationships;
-        $dbUrl = $relationships->getDbCommandArgs('psql', $database, '');
+        $dbUrl = $this->relationships->getDbCommandArgs('psql', $database, '');
 
         return sprintf(
             'psql --echo-hidden -t --no-align %s',
@@ -265,8 +258,7 @@ class DbSizeCommand extends CommandBase
     }
 
     private function getMongoDbCommand(array $database): string {
-        $relationships = $this->relationships;
-        $dbUrl = $relationships->getDbCommandArgs('mongo', $database);
+        $dbUrl = $this->relationships->getDbCommandArgs('mongo', $database);
 
         return sprintf(
             'mongo %s --quiet --eval %s',
@@ -284,10 +276,9 @@ class DbSizeCommand extends CommandBase
      * @return string
      */
     private function getMysqlCommand(array $database): string {
-        $relationships = $this->relationships;
-        $cmdName = $relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
-        $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);
-        $connectionParams = $relationships->getDbCommandArgs($cmdName, $database, '');
+        $cmdName = $this->relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
+        $cmdInvocation = $this->relationships->mariaDbCommandWithFallback($cmdName);
+        $connectionParams = $this->relationships->getDbCommandArgs($cmdName, $database, '');
 
         return sprintf(
             '%s %s --no-auto-rehash --raw --skip-column-names',

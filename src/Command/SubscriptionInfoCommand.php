@@ -90,8 +90,7 @@ class SubscriptionInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->propertyFormatter->format($value, $key);
         }
-        $table = $this->table;
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
         return 0;
     }
@@ -115,8 +114,6 @@ class SubscriptionInfoCommand extends CommandBase
 
             return 0;
         }
-
-        $questionHelper = $this->questionHelper;
         $confirmMessage = sprintf(
             "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",
             $property,
@@ -129,7 +126,7 @@ class SubscriptionInfoCommand extends CommandBase
                 is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
             );
             $confirmMessage = $warning . "\n" . $confirmMessage;
-            if (!$questionHelper->confirm($confirmMessage)) {
+            if (!$this->questionHelper->confirm($confirmMessage)) {
                 return 1;
             }
         }

@@ -198,21 +198,19 @@ class EnvironmentBranchCommand extends CommandBase
             $this->api->clearEnvironmentsCache($selectedProject->id);
         }
 
-        $git = $this->git;
-
         $createdNew = false;
         if ($checkoutLocally) {
-            if ($git->branchExists($branchName, $projectRoot)) {
+            if ($this->git->branchExists($branchName, $projectRoot)) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
-                if (!$git->checkOut($branchName, $projectRoot)) {
+                if (!$this->git->checkOut($branchName, $projectRoot)) {
                     $this->stdErr->writeln('Failed to check out branch locally: <error>' . $branchName . '</error>');
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
-                $parent = $git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
+                $parent = $this->git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
-                if (!$git->checkOutNew($branchName, $parent, null, $projectRoot)) {
+                if (!$this->git->checkOutNew($branchName, $parent, null, $projectRoot)) {
                     $this->stdErr->writeln('Failed to create branch locally: <error>' . $branchName . '</error>');
                 }
                 $createdNew = true;
@@ -234,13 +232,13 @@ class EnvironmentBranchCommand extends CommandBase
         if ($remoteSuccess && $checkoutLocally && $createdNew) {
             $gitUrl = $selectedProject->getGitUrl();
             $remoteName = $this->config->get('detection.git_remote_name');
-            if ($gitUrl && $git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
+            if ($gitUrl && $this->git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
                 $this->stdErr->writeln(sprintf(
                     'Setting the upstream for the local branch to: <info>%s/%s</info>',
                     $remoteName, $branchName
                 ));
-                if ($git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
-                    $git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);
+                if ($this->git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
+                    $this->git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);
                 }
             }
         }

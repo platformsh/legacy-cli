@@ -94,8 +94,6 @@ EOT;
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $rebase = (bool) $input->getOption('rebase');
 
         $integrationManagingCode = null;
@@ -147,7 +145,7 @@ EOT;
                 $parentId,
                 $environmentId
             );
-            if (!$questionHelper->confirm($confirmText)) {
+            if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');
@@ -155,7 +153,7 @@ EOT;
             $toSync = [];
 
             if (!$integrationManagingCode) {
-                $syncCode = $questionHelper->confirm(
+                $syncCode = $this->questionHelper->confirm(
                     "Do you want to synchronize <options=underscore>code</> from <info>$parentId</info> to <info>$environmentId</info>?",
                     false
                 );
@@ -163,7 +161,7 @@ EOT;
                 if ($syncCode) {
                     $toSync[] = 'code';
                     if (!$rebase) {
-                        $rebase = $questionHelper->confirm(
+                        $rebase = $this->questionHelper->confirm(
                             "Do you want to synchronize code by rebasing instead of merging?",
                             false
                         );
@@ -175,7 +173,7 @@ EOT;
                 $this->stdErr->writeln('');
             }
 
-            if ($questionHelper->confirm(
+            if ($this->questionHelper->confirm(
                 "Do you want to synchronize <options=underscore>data</> from <info>$parentId</info> to <info>$environmentId</info>?",
                 false
             )) {
@@ -185,7 +183,7 @@ EOT;
             $this->stdErr->writeln('');
 
             if ($this->config->get('api.sizing') && $this->api->supportsSizingApi($selection->getProject())) {
-                if ($questionHelper->confirm(
+                if ($this->questionHelper->confirm(
                     "Do you want to synchronize <options=underscore>resources</> from <info>$parentId</info> to <info>$environmentId</info>?",
                     false
                 )) {

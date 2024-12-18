@@ -35,8 +35,6 @@ class BackupDeleteCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
         $environment = $selection->getEnvironment();
 
-        $questionHelper = $this->questionHelper;
-
         if ($id = $input->getArgument('backup')) {
             $backup = $environment->getBackup($id);
             if (!$backup) {
@@ -59,11 +57,11 @@ class BackupDeleteCommand extends CommandBase
                 $byId[$id] = $backup;
                 $choices[$id] = $this->labelBackup($backup);
             }
-            $choice = $questionHelper->choose($choices, 'Enter a number to choose a backup to delete:', null, false);
+            $choice = $this->questionHelper->choose($choices, 'Enter a number to choose a backup to delete:', null, false);
             $backup = $byId[$choice];
         }
 
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to delete the backup <comment>%s</comment>?', $this->labelBackup($backup)))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to delete the backup <comment>%s</comment>?', $this->labelBackup($backup)))) {
             return 1;
         }
 
@@ -82,7 +80,6 @@ class BackupDeleteCommand extends CommandBase
 
     private function labelBackup(Backup $backup): string
     {
-        $formatter = $this->propertyFormatter;
-        return sprintf('%s (%s)', $backup->id, $formatter->format($backup->created_at, 'created_at'));
+        return sprintf('%s (%s)', $backup->id, $this->propertyFormatter->format($backup->created_at, 'created_at'));
     }
 }

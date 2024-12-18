@@ -221,15 +221,13 @@ EOT
             $this->stdErr->writeln($this->getRunAdvice($shellConfigFile, $configDir . '/bin'));
             return 0;
         }
-
-        $questionHelper = $this->questionHelper;
         $modify = false;
         $create = false;
         if ($shellConfigFile !== false) {
             $confirmText = file_exists($shellConfigFile)
                 ? 'Do you want to update the file automatically?'
                 : 'Do you want to create the file automatically?';
-            if ($questionHelper->confirm($confirmText)) {
+            if ($this->questionHelper->confirm($confirmText)) {
                 $modify = true;
                 $create = !file_exists($shellConfigFile);
             }

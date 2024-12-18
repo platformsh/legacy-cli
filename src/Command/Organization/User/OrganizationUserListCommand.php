@@ -106,8 +106,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             return 1;
         }
 
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($members as $member) {
             $userInfo = $member->getUserInfo();
@@ -117,34 +115,33 @@ class OrganizationUserListCommand extends OrganizationCommandBase
                 'last_name' => $userInfo ? $userInfo->last_name : '',
                 'email' => $userInfo ? $userInfo->email : '',
                 'username' => $userInfo ? $userInfo->username : '',
-                'owner' => $formatter->format($member->owner, 'owner'),
-                'mfa_enabled' => $userInfo && isset($userInfo->mfa_enabled) ? $formatter->format($userInfo->mfa_enabled, 'mfa_enabled') : '',
-                'sso_enabled' => $userInfo && isset($userInfo->sso_enabled) ? $formatter->format($userInfo->sso_enabled, 'sso_enabled') : '',
-                'permissions' => $formatter->format($member->permissions, 'permissions'),
-                'updated_at' => $formatter->format($member->updated_at, 'updated_at'),
-                'created_at' => $formatter->format($member->created_at, 'created_at'),
+                'owner' => $this->propertyFormatter->format($member->owner, 'owner'),
+                'mfa_enabled' => $userInfo && isset($userInfo->mfa_enabled) ? $this->propertyFormatter->format($userInfo->mfa_enabled, 'mfa_enabled') : '',
+                'sso_enabled' => $userInfo && isset($userInfo->sso_enabled) ? $this->propertyFormatter->format($userInfo->sso_enabled, 'sso_enabled') : '',
+                'permissions' => $this->propertyFormatter->format($member->permissions, 'permissions'),
+                'updated_at' => $this->propertyFormatter->format($member->updated_at, 'updated_at'),
+                'created_at' => $this->propertyFormatter->format($member->created_at, 'created_at'),
             ];
             $rows[] = $row;
         }
-        $table = $this->table;
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('Users in the organization ' . $this->api->getOrganizationLabel($organization) . ':');
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         $total = $result['collection']->getTotalCount();
         $moreAvailable = !$fetchAllPages && $total > count($members);
         if ($moreAvailable) {
-            if (!$table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
+            if (!$this->table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
                 $this->stdErr->writeln('');
             }
             $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
             $this->stdErr->writeln('Show all users with: <info>--count 0</info> (<info>-c0</info>)');
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To get full user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', '[email]')));
             $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:add', '[email]')));

@@ -30,7 +30,6 @@ class SshCertInfoCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $certifier = $this->certifier;
-        $sshConfig = $this->sshConfig;
 
         $cert = $certifier->getExistingCertificate();
         if (!$cert || !$certifier->isValid($cert)) {
@@ -39,25 +38,23 @@ class SshCertInfoCommand extends CommandBase
                 $this->stdErr->writeln('To generate a certificate, run this command again without the <comment>--no-refresh</comment> option.');
                 return 1;
             }
-            if (!$sshConfig->checkRequiredVersion()) {
+            if (!$this->sshConfig->checkRequiredVersion()) {
                 return 1;
             }
             // Generate a new certificate.
             $cert = $certifier->generateCertificate($cert);
         }
-
-        $formatter = $this->propertyFormatter;
         $properties = [
             'filename' => $cert->certificateFilename(),
             'key_filename' => $cert->privateKeyFilename(),
             'key_id' => $cert->metadata()->getKeyId(),
             'key_type' => $cert->metadata()->getKeyType(),
-            'valid_after' => $formatter->formatUnixTimestamp($cert->metadata()->getValidAfter()),
-            'valid_before' => $formatter->formatUnixTimestamp($cert->metadata()->getValidBefore()),
+            'valid_after' => $this->propertyFormatter->formatUnixTimestamp($cert->metadata()->getValidAfter()),
+            'valid_before' => $this->propertyFormatter->formatUnixTimestamp($cert->metadata()->getValidBefore()),
             'extensions' => $cert->metadata()->getExtensions(),
         ];
 
-        $formatter->displayData($output, $properties, $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $properties, $input->getOption('property'));
 
         return 0;
     }

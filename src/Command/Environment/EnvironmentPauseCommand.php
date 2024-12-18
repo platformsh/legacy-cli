@@ -59,10 +59,8 @@ EOF;
 
             return 1;
         }
-
-        $questionHelper = $this->questionHelper;
         $text = self::PAUSE_HELP . "\n\n" . sprintf('Are you sure you want to pause the environment <comment>%s</comment>?', $environment->id);
-        if (!$questionHelper->confirm($text)) {
+        if (!$this->questionHelper->confirm($text)) {
             return 1;
         }
 

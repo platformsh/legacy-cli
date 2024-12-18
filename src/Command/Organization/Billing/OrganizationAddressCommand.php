@@ -45,12 +45,10 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         $org = $this->selector->selectOrganization($input, 'orders');
         $address = $org->getAddress();
 
-        $formatter = $this->propertyFormatter;
-
         $result = 0;
         if ($property !== null) {
             if (empty($updates)) {
-                $formatter->displayData($output, $address->getProperties(), $property);
+                $this->propertyFormatter->displayData($output, $address->getProperties(), $property);
                 return $result;
             }
             $result = $this->setProperties($updates, $address);
@@ -64,23 +62,20 @@ class OrganizationAddressCommand extends OrganizationCommandBase
 
     protected function display(Address $address, Organization $org, InputInterface $input): void
     {
-        $table = $this->table;
-
         $headings = [];
         $values = [];
-        $formatter = $this->propertyFormatter;
         foreach ($address->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api->getOrganizationLabel($org)));
         }
 
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('To view the billing profile, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:profile')));
             $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
         }

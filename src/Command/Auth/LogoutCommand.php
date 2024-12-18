@@ -56,10 +56,7 @@ class LogoutCommand extends CommandBase
 
         $this->api->logout();
         $this->stdErr->writeln('You are now logged out.');
-
-        // Delete session SSH configuration.
-        $sshConfig = $this->sshConfig;
-        $sshConfig->deleteSessionConfiguration();
+        $this->sshConfig->deleteSessionConfiguration();
 
         // Check for other sessions.
         if ($input->getOption('all')) {

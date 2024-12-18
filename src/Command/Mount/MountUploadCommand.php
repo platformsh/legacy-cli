@@ -52,9 +52,7 @@ class MountUploadCommand extends CommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $container = $selection->getRemoteContainer();
-
-        $mountService = $this->mount;
-        $mounts = $mountService->mountsFromConfig($container->getConfig());
+        $mounts = $this->mount->mountsFromConfig($container->getConfig());
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         if (empty($mounts)) {
@@ -63,11 +61,8 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-        $fs = $this->filesystem;
-
         if ($input->getOption('mount')) {
-            $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
+            $mountPath = $this->mount->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
             $options = [];
             foreach ($mounts as $path => $definition) {
@@ -78,7 +73,7 @@ class MountUploadCommand extends CommandBase
                 }
             }
 
-            $mountPath = $questionHelper->choose(
+            $mountPath = $this->questionHelper->choose(
                 $options,
                 'Enter a number to choose a mount to upload to:'
             );
@@ -93,7 +88,7 @@ class MountUploadCommand extends CommandBase
         if ($input->getOption('source')) {
             $source = $input->getOption('source');
         } elseif ($projectRoot = $this->selector->getProjectRoot()) {
-            $sharedMounts = $mountService->getSharedFileMounts($mounts);
+            $sharedMounts = $this->mount->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
                 if (file_exists($projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
                     $defaultSource = $projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
@@ -117,11 +112,11 @@ class MountUploadCommand extends CommandBase
         if (empty($source)) {
             $questionText = 'Source directory';
             if ($defaultSource !== null) {
-                $formattedDefaultSource = $fs->formatPathForDisplay($defaultSource);
+                $formattedDefaultSource = $this->filesystem->formatPathForDisplay($defaultSource);
                 $questionText .= ' <question>[' . $formattedDefaultSource . ']</question>';
             }
             $questionText .= ': ';
-            $source = $questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultSource));
+            $source = $this->questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultSource));
         }
 
         if (empty($source)) {
@@ -130,17 +125,15 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        $fs->validateDirectory($source);
-
-        $rsync = $this->rsync;
+        $this->filesystem->validateDirectory($source);
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
             . "\n\nAre you sure you want to continue?",
-            $fs->formatPathForDisplay($source),
+            $this->filesystem->formatPathForDisplay($source),
             $mountPath
         );
-        if (!$questionHelper->confirm($confirmText)) {
+        if (!$this->questionHelper->confirm($confirmText)) {
             return 1;
         }
 
@@ -153,7 +146,7 @@ class MountUploadCommand extends CommandBase
         ];
 
         if (OsUtil::isOsX()) {
-            if ($rsync->supportsConvertingFilenames() !== false) {
+            if ($this->rsync->supportsConvertingFilenames() !== false) {
                 $this->io->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
                 $rsyncOptions['convert-mac-filenames'] = true;
             } else {
@@ -163,7 +156,7 @@ class MountUploadCommand extends CommandBase
         }
 
         $this->stdErr->writeln('');
-        $rsync->syncUp($sshUrl, $source, $mountPath, $rsyncOptions);
+        $this->rsync->syncUp($sshUrl, $source, $mountPath, $rsyncOptions);
 
         return 0;
     }

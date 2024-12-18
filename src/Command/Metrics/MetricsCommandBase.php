@@ -468,8 +468,6 @@ abstract class MetricsCommandBase extends CommandBase
      */
     protected function buildRows(array $values, array $fields, Environment $environment): array
     {
-        $formatter = $this->propertyFormatter;
-
         $deployment = $this->api->getCurrentDeployment($environment);
 
         // Create a closure which can sort services by name, putting apps and
@@ -493,7 +491,7 @@ abstract class MetricsCommandBase extends CommandBase
                 $rows[] = new TableSeparator();
             }
             $startCount = count($rows);
-            $formattedTimestamp = $formatter->formatDate($timestamp);
+            $formattedTimestamp = $this->propertyFormatter->formatDate($timestamp);
             uksort($byService, $sortServices);
             foreach ($byService as $service => $byDimension) {
                 if (isset($deployment->services[$service])) {
@@ -511,7 +509,7 @@ abstract class MetricsCommandBase extends CommandBase
                     $row = [];
                     $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, ['wrap' => false]);
                     $row['service'] = $service;
-                    $row['type'] = $formatter->format($type, 'service_type');
+                    $row['type'] = $this->propertyFormatter->format($type, 'service_type');
                     foreach ($fields as $columnName => $field) {
                         /** @var Field $field */
                         $fieldName = $field->getName();

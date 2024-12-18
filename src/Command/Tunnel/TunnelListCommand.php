@@ -62,8 +62,6 @@ class TunnelListCommand extends TunnelCommandBase
                 return 1;
             }
         }
-
-        $table = $this->table;
         $rows = [];
         foreach ($tunnels as $tunnel) {
             $rows[] = [
@@ -75,9 +73,9 @@ class TunnelListCommand extends TunnelCommandBase
                 'url' => $this->getTunnelUrl($tunnel, $tunnel['service']),
             ];
         }
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
 
             if (!$input->getOption('all') && count($tunnels) < $allTunnelsCount) {

@@ -268,7 +268,6 @@ class EnvironmentDeleteCommand extends CommandBase
 
         // Confirm which of the environments the user wishes to be deleted.
         ksort($selectedEnvironments, SORT_NATURAL|SORT_FLAG_CASE);
-        $questionHelper = $this->questionHelper;
         $toDeleteBranch = [];
         $toDeactivate = [];
         $shouldWait = $this->activityMonitor->shouldWait($input);
@@ -330,7 +329,7 @@ class EnvironmentDeleteCommand extends CommandBase
                     } else {
                         $this->stdErr->writeln('The environments are currently active. Deleting them <options=bold>will delete all associated data</>.');
                     }
-                    if ($questionHelper->confirm($confirmText)) {
+                    if ($this->questionHelper->confirm($confirmText)) {
                         $toDeactivate += $environments;
                         if ($input->getOption('delete-branch')) {
                             if (!$shouldWait) {
@@ -343,7 +342,7 @@ class EnvironmentDeleteCommand extends CommandBase
                             } else {
                                 $toDeleteBranch += $environments;
                             }
-                        } elseif ($shouldWait && $input->isInteractive() && !$input->getOption('no-delete-branch') && !$integrationPrunesBranches && $questionHelper->confirm($deleteConfirmText)) {
+                        } elseif ($shouldWait && $input->isInteractive() && !$input->getOption('no-delete-branch') && !$integrationPrunesBranches && $this->questionHelper->confirm($deleteConfirmText)) {
                             $toDeleteBranch += $environments;
                         }
                     } else {
@@ -377,7 +376,7 @@ class EnvironmentDeleteCommand extends CommandBase
                     } else {
                         $message = sprintf('Are you sure you want to delete <comment>%d</comment> inactive environment(s)?', count($environments));
                     }
-                    if ($input->getOption('delete-branch') || $questionHelper->confirm($message)) {
+                    if ($input->getOption('delete-branch') || $this->questionHelper->confirm($message)) {
                         $toDeleteBranch += $environments;
                     } else {
                         $error = true;

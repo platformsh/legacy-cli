@@ -39,20 +39,18 @@ class MongoRestoreCommand extends CommandBase
         if (!stream_select($streams, $write, $except, 0)) {
             throw new InvalidArgumentException('This command requires a mongodump archive to be piped into STDIN');
         }
-
-        $relationshipsService = $this->relationships;
         $selection = $this->selector->getSelection($input, new SelectorConfig(
-            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         ));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
 
-        $command = 'mongorestore ' . $relationshipsService->getDbCommandArgs('mongorestore', $service);
+        $command = 'mongorestore ' . $this->relationships->getDbCommandArgs('mongorestore', $service);
 
         if ($input->getOption('collection')) {
             $command .= ' --collection ' . OsUtil::escapePosixShellArg($input->getOption('collection'));

@@ -92,19 +92,15 @@ class AppListCommand extends CommandBase
             $defaultColumns[] = 'path';
         }
 
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($apps as $app) {
-            $row = [$app->name, $formatter->format($app->type, 'service_type'), 'disk' => $app->disk, $app->size];
+            $row = [$app->name, $this->propertyFormatter->format($app->type, 'service_type'), 'disk' => $app->disk, $app->size];
             if ($showLocalPath) {
                 $row['path'] = $getLocalPath($app->name);
             }
             $rows[] = $row;
         }
-
-        $table = $this->table;
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Applications on the project <info>%s</info>, environment <info>%s</info>:',
                 $this->api->getProjectLabel($selection->getProject()),
@@ -112,9 +108,9 @@ class AppListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $this->table->render($rows, $headers, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);
         }
 

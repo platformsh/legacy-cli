@@ -113,10 +113,8 @@ class VariableCreateCommand extends CommandBase
             }
         }
 
-        $questionHelper = $this->questionHelper;
-
         try {
-            $values = $this->form->resolveOptions($input, $output, $questionHelper);
+            $values = $this->form->resolveOptions($input, $output, $this->questionHelper);
         } catch (ConditionalFieldException $e) {
             $previousValues = $e->getPreviousValues();
             $field = $e->getField();

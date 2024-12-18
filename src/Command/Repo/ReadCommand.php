@@ -38,8 +38,7 @@ class ReadCommand extends RepoCommandBase
         $environment = $selection->getEnvironment();
 
         $path = $input->getArgument('path');
-        $gitData = $this->gitDataApi;
-        $object = $gitData->getObject($path, $environment, $input->getOption('commit'));
+        $object = $this->gitDataApi->getObject($path, $environment, $input->getOption('commit'));
         if ($object === false) {
             $this->stdErr->writeln(sprintf('File or directory not found: <error>%s</error>', $path));
 

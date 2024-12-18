@@ -45,10 +45,8 @@ class SelfBuildCommand extends CommandBase
             return 1;
         }
 
-        $fs = $this->filesystem;
-
         $outputFilename = $input->getOption('output');
-        if ($outputFilename && !$fs->canWrite($outputFilename)) {
+        if ($outputFilename && !$this->filesystem->canWrite($outputFilename)) {
             $this->stdErr->writeln("Not writable: <error>$outputFilename</error>");
             return 1;
         }
@@ -61,18 +59,15 @@ class SelfBuildCommand extends CommandBase
 
         $boxConfig = [];
 
-        $shell = $this->shell;
-        $questionHelper = $this->questionHelper;
-
         $version = $this->config->getVersion();
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
         } else {
-            $tag = $shell->execute(['git', 'describe', '--tags'], CLI_ROOT, false);
+            $tag = $this->shell->execute(['git', 'describe', '--tags'], CLI_ROOT, false);
             if ($tag !== false) {
                 $version = $tag;
             }
-            $version = $questionHelper->askInput('Version', $version);
+            $version = $this->questionHelper->askInput('Version', $version);
         }
         $boxConfig['replacements']['version-placeholder'] = $version;
 
@@ -81,7 +76,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         if ($outputFilename) {
-            $boxConfig['output'] = $fs->makePathAbsolute($outputFilename);
+            $boxConfig['output'] = $this->filesystem->makePathAbsolute($outputFilename);
         } else {
             // Default output: cli-VERSION.phar in the current directory.
             $boxConfig['output'] = getcwd() . '/cli-' . $version . '.phar';
@@ -92,7 +87,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         if (file_exists($phar)) {
-            if (!$questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
+            if (!$this->questionHelper->confirm("File exists: <comment>$phar</comment>. Overwrite?")) {
                 return 1;
             }
         }
@@ -102,9 +97,9 @@ class SelfBuildCommand extends CommandBase
             $this->stdErr->writeln('If this fails, you may need to run "composer install" manually.');
 
             // Wipe the vendor directory to be extra sure.
-            $shell->execute(['rm', '-rf', 'vendor'], CLI_ROOT, false);
+            $this->shell->execute(['rm', '-rf', 'vendor'], CLI_ROOT, false);
 
-            $shell->execute([
+            $this->shell->execute([
                 'composer',
                 'install',
                 '--classmap-authoritative',
@@ -114,7 +109,7 @@ class SelfBuildCommand extends CommandBase
             ], CLI_ROOT, true, false);
 
             // Install Box.
-            $shell->execute([
+            $this->shell->execute([
                 'composer',
                 'install',
                 '--no-interaction',
@@ -143,7 +138,7 @@ class SelfBuildCommand extends CommandBase
         $boxArgs[] = '--config=' . $tmpJson;
 
         $this->stdErr->writeln('Building Phar package using Box');
-        $shell->execute($boxArgs, CLI_ROOT, true, false);
+        $this->shell->execute($boxArgs, CLI_ROOT, true, false);
 
         // Clean up the temporary file.
         if (!empty($tmpJson)) {

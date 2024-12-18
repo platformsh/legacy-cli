@@ -46,9 +46,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         }
 
         $projectRoot = $this->selector->getProjectRoot();
-
-        $git = $this->git;
-        $git->setDefaultRepositoryDir($projectRoot);
+        $this->git->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
         if ($specifiedEnvironmentId != '0'
@@ -59,12 +57,12 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
         $specifiedBranch = $input->getArgument('branch');
         if ($specifiedBranch) {
-            if (!$git->branchExists($specifiedBranch)) {
+            if (!$this->git->branchExists($specifiedBranch)) {
                 $this->stdErr->writeln("Branch not found: <error>$specifiedBranch</error>");
                 return 1;
             }
         } else {
-            $specifiedBranch = $git->getCurrentBranch();
+            $specifiedBranch = $this->git->getCurrentBranch();
         }
 
         // Check whether the branch is mapped by default (its name or its Git
@@ -73,14 +71,14 @@ class EnvironmentSetRemoteCommand extends CommandBase
             && $specifiedEnvironment->status != 'inactive'
             && $specifiedEnvironmentId === $specifiedBranch;
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {
-            $upstream = $git->getUpstream($specifiedBranch);
+            $upstream = $this->git->getUpstream($specifiedBranch);
             if (strpos((string) $upstream, '/')) {
                 list(, $upstream) = explode('/', (string) $upstream, 2);
             }
             if ($upstream === $specifiedEnvironmentId) {
                 $mappedByDefault = true;
             }
-            if (!$mappedByDefault && $git->branchExists($specifiedEnvironmentId)) {
+            if (!$mappedByDefault && $this->git->branchExists($specifiedEnvironmentId)) {
                 $this->stdErr->writeln(
                     "A local branch already exists named <comment>$specifiedEnvironmentId</comment>"
                 );

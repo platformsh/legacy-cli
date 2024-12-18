@@ -69,12 +69,10 @@ class UserGetCommand extends CommandBase
 
         $this->io->warnAboutDeprecatedOptions(['role']);
 
-        $questionHelper = $this->questionHelper;
-
         // Load the user.
         $email = $input->getArgument('email');
         if ($email === null && $input->isInteractive()) {
-            $email = $questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user:');
+            $email = $this->questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user:');
         }
 
         $selectedUser = $this->accessApi->loadProjectUser($project, $email);

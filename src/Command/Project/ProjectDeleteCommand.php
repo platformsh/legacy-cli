@@ -49,8 +49,6 @@ class ProjectDeleteCommand extends CommandBase
             $this->stdErr->writeln('Unable to delete the project.');
             return 1;
         }
-        // TODO check for a HAL 'delete' link on the subscription?
-        $questionHelper = $this->questionHelper;
 
         $confirmQuestionLines = [
             'You are about to delete the project:',
@@ -63,13 +61,13 @@ class ProjectDeleteCommand extends CommandBase
             '',
             'Are you sure you want to delete this project?'
         ];
-        if (!$questionHelper->confirm(implode("\n", $confirmQuestionLines), false)) {
+        if (!$this->questionHelper->confirm(implode("\n", $confirmQuestionLines), false)) {
             return 1;
         }
 
         $title = $project->title;
         if ($input->isInteractive() && strlen($title)) {
-            $confirmName = $questionHelper->askInput('Type the project title to confirm');
+            $confirmName = $this->questionHelper->askInput('Type the project title to confirm');
             if ($confirmName !== $title) {
                 $this->stdErr->writeln('Incorrect project title (expected: ' . $title . ')');
                 return 1;

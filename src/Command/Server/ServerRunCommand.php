@@ -59,15 +59,13 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $appId = $input->getOption('app');
         if (!$appId) {
             $appChoices = [];
             foreach ($apps as $appCandidate) {
                 $appChoices[$appCandidate->getId()] = $appCandidate->getId();
             }
-            $appId = $questionHelper->choose($appChoices, 'Enter a number to choose an app:');
+            $appId = $this->questionHelper->choose($appChoices, 'Enter a number to choose an app:');
         }
         foreach ($apps as $appCandidate) {
             if ($appCandidate->getId() === $appId) {

@@ -40,11 +40,9 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $selection = $this->selector->getSelection($input);
         $this->selection = $selection;
         $project = $selection->getProject();
-
-        $questionHelper = $this->questionHelper;
         try {
             $values = $this->getForm()
-                ->resolveOptions($input, $this->stdErr, $questionHelper);
+                ->resolveOptions($input, $this->stdErr, $this->questionHelper);
         } catch (ConditionalFieldException $e) {
             return $this->handleConditionalFieldException($e);
         }
@@ -74,7 +72,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
                 "<comment>Warning:</comment> adding a '" . $values['type'] . "' integration will automatically synchronize code from the external Git repository."
                 . "\nThis means it can overwrite all the code in your project.\n"
             );
-            if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
                 return 1;
             }
         }

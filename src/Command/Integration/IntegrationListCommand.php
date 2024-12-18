@@ -44,8 +44,6 @@ class IntegrationListCommand extends IntegrationCommandBase
         if ($type = $input->getOption('type')) {
             $integrations = array_filter($integrations, fn(Integration $i): bool => $i->type === $type);
         }
-
-        $table = $this->table;
         $rows = [];
 
         foreach ($integrations as $integration) {
@@ -56,9 +54,9 @@ class IntegrationListCommand extends IntegrationCommandBase
             ];
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');

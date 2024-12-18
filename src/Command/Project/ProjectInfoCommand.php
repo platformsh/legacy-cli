@@ -103,8 +103,7 @@ class ProjectInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->propertyFormatter->format($value, $key);
         }
-        $table = $this->table;
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
         return 0;
     }

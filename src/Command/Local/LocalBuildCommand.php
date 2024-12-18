@@ -127,14 +127,12 @@ class LocalBuildCommand extends CommandBase
     {
         $projectRoot = $this->selector->getProjectRoot();
 
-        $questionHelper = $this->questionHelper;
-
         $sourceDirOption = $input->getOption('source');
 
         // If no project root is found, ask the user for a source directory.
         if (!$projectRoot && !$sourceDirOption && $input->isInteractive()) {
             $default = file_exists($this->config->getStr('service.project_config_dir')) || is_dir('.git') ? '.' : null;
-            $sourceDirOption = $questionHelper->askInput('Source directory', $default);
+            $sourceDirOption = $this->questionHelper->askInput('Source directory', $default);
         }
 
         if ($sourceDirOption) {
@@ -161,7 +159,7 @@ class LocalBuildCommand extends CommandBase
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
                 ? $this->config->getWithDefault('local.web_root', '_www')
                 : null;
-            $destination = $questionHelper->askInput('Build destination', $default);
+            $destination = $this->questionHelper->askInput('Build destination', $default);
         }
 
         if ($destination) {
@@ -188,7 +186,7 @@ class LocalBuildCommand extends CommandBase
                 return 1;
             }
             $default = is_link($destination);
-            if (!$questionHelper->confirm(
+            if (!$this->questionHelper->confirm(
                 "The destination exists: <comment>$destination</comment>. Overwrite?",
                 $default
             )) {

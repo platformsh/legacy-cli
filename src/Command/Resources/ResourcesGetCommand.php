@@ -83,16 +83,12 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf('Resource configuration for the project %s, environment %s:', $this->api->getProjectLabel($selection->getProject()), $this->api->getEnvironmentLabel($environment)));
         }
 
-        $formatter = $this->propertyFormatter;
-
-        $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
-        $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
+        $empty = $this->table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
+        $notApplicable = $this->table->formatIsMachineReadable() ? '' : 'N/A';
 
         $containerProfiles = $nextDeployment->container_profiles;
 
@@ -101,7 +97,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
             $properties = $service->getProperties();
             $row = [
                 'service' => $name,
-                'type' => $formatter->format($service->type, 'service_type'),
+                'type' => $this->propertyFormatter->format($service->type, 'service_type'),
                 'profile' => $properties['container_profile'] ?: $empty,
                 'profile_size' => $empty,
                 'base_memory' => $empty,
@@ -133,18 +129,18 @@ class ResourcesGetCommand extends ResourcesCommandBase
                 if (empty($properties['disk'])) {
                     $row['disk'] = empty($properties['resources']) ? $empty : '';
                 } else {
-                    $row['disk'] = $formatter->format($properties['disk'], 'disk');
+                    $row['disk'] = $this->propertyFormatter->format($properties['disk'], 'disk');
                 }
             }
 
-            $row['instance_count'] = isset($properties['instance_count']) ? $formatter->format($properties['instance_count'], 'instance_count') : '1';
+            $row['instance_count'] = isset($properties['instance_count']) ? $this->propertyFormatter->format($properties['instance_count'], 'instance_count') : '1';
 
             $rows[] = $row;
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
             $isOriginalCommand = $input instanceof ArgvInput;
             if ($isOriginalCommand) {

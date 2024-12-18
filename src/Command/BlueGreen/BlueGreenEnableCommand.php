@@ -51,9 +51,7 @@ class BlueGreenEnableCommand extends CommandBase
             $this->stdErr->writeln(sprintf('List versions by running: <info>%s versions</info>', $this->config->getStr('application.executable')));
             return 0;
         }
-
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to enable blue/green deployments for the environment %s?', $this->api->getEnvironmentLabel($environment)))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to enable blue/green deployments for the environment %s?', $this->api->getEnvironmentLabel($environment)))) {
             return 1;
         }
 

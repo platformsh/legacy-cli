@@ -58,26 +58,23 @@ class SelfStatsCommand extends CommandBase
 
             return 1;
         }
-
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($releases as $release) {
             $row = [];
             $row[] = $release['name'];
             $time = !empty($release['published_at']) ? $release['published_at'] : $release['created_at'];
-            $row[] = $formatter->format($time, 'created_at');
+            $row[] = $this->propertyFormatter->format($time, 'created_at');
             if (!empty($release['assets'])) {
                 foreach ($release['assets'] as $asset) {
                     $row[] = $asset['name'];
-                    $row[] = $formatter->format($asset['download_count']);
+                    $row[] = $this->propertyFormatter->format($asset['download_count']);
                     break;
                 }
             }
             $rows[] = $row;
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
         return 0;
     }

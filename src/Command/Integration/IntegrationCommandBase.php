@@ -645,18 +645,15 @@ abstract class IntegrationCommandBase extends CommandBase
 
     protected function displayIntegration(Integration $integration): void
     {
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $info = [];
         foreach ($integration->getProperties() as $property => $value) {
-            $info[$property] = $formatter->format($value, $property);
+            $info[$property] = $this->propertyFormatter->format($value, $property);
         }
         if ($integration->hasLink('#hook')) {
-            $info['hook_url'] = $formatter->format($integration->getLink('#hook'));
+            $info['hook_url'] = $this->propertyFormatter->format($integration->getLink('#hook'));
         }
 
-        $table->renderSimple(array_values($info), array_keys($info));
+        $this->table->renderSimple(array_values($info), array_keys($info));
     }
 
     /**

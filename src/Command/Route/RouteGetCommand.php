@@ -141,9 +141,7 @@ class RouteGetCommand extends CommandBase
         // Add defaults.
         $selectedRoute = $selectedRoute->getProperties();
 
-        $propertyFormatter = $this->propertyFormatter;
-
-        $propertyFormatter->displayData($output, $selectedRoute, $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $selectedRoute, $input->getOption('property'));
 
         return 0;
     }

@@ -87,10 +87,6 @@ EOF
             }
         }
 
-        $git = $this->git;
-
-        $questionHelper = $this->questionHelper;
-
         // Identify an organization that should own the project.
         $organization = null;
         $setupOptions = null;
@@ -99,7 +95,7 @@ EOF
                 $organization = $this->selector->selectOrganization($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
                 $this->stdErr->writeln('You do not yet own nor belong to an organization in which you can create a project.');
-                if ($e->getTotalNumOrgs() === 0 && $input->isInteractive() && $this->config->isCommandEnabled('organization:create') && $questionHelper->confirm('Do you want to create an organization now?')) {
+                if ($e->getTotalNumOrgs() === 0 && $input->isInteractive() && $this->config->isCommandEnabled('organization:create') && $this->questionHelper->confirm('Do you want to create an organization now?')) {
                     if ($this->subCommandRunner->run('organization:create') !== 0) {
                         return 1;
                     }
@@ -122,7 +118,7 @@ EOF
         // Validate the --set-remote option.
         $setRemote = (bool) $input->getOption('set-remote');
         $projectRoot = $this->selector->getProjectRoot();
-        $gitRoot = $projectRoot !== false ? $projectRoot : $git->getRoot();
+        $gitRoot = $projectRoot !== false ? $projectRoot : $this->git->getRoot();
         if ($setRemote && $gitRoot === false) {
             $this->stdErr->writeln('The <error>--set-remote</error> option can only be used inside a Git repository directory.');
             $this->stdErr->writeln('Use <info>git init<info> to create a repository.');
@@ -131,7 +127,7 @@ EOF
         }
 
         $form = Form::fromArray($this->getFields($setupOptions));
-        $options = $form->resolveOptions($input, $output, $questionHelper);
+        $options = $form->resolveOptions($input, $output, $this->questionHelper);
 
         if ($gitRoot !== false && !$input->getOption('no-set-remote')) {
             try {
@@ -155,13 +151,13 @@ EOF
             if ($setRemote) {
                 $this->stdErr->writeln(sprintf('The new project <info>%s</info> will be set as the remote for this repository directory.', $options['title']));
             } elseif ($currentProject) {
-                $setRemote = $questionHelper->confirm(sprintf(
+                $setRemote = $this->questionHelper->confirm(sprintf(
                     'Switch the remote project for this repository directory from <comment>%s</comment> to the new project <comment>%s</comment>?',
                     $this->api->getProjectLabel($currentProject, false),
                     $options['title']
                 ), false);
             } else {
-                $setRemote = $questionHelper->confirm(sprintf(
+                $setRemote = $this->questionHelper->confirm(sprintf(
                     'Set the new project <info>%s</info> as the remote for this repository directory?',
                     $options['title']
                 ));
@@ -191,7 +187,7 @@ EOF
             );
         }
         $costConfirm .= "\n\nAre you sure you want to continue?";
-        if (!$questionHelper->confirm($costConfirm)) {
+        if (!$this->questionHelper->confirm($costConfirm)) {
             return 1;
         }
 
