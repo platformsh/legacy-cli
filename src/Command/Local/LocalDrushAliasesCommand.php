@@ -106,8 +106,6 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->stdErr->writeln("Creating Drush aliases in the group <info>@$new_group</info>");
 
-            $questionHelper = $this->questionHelper;
-
             if ($new_group !== $current_group) {
                 $existing = $this->drush->getAliases($new_group);
                 if (!empty($existing)) {
@@ -175,7 +173,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $this->drush->createAliases($project, $projectRoot, $environments, $current_group);
 
-            $this->ensureDrushConfig($this->drush);
+            $this->ensureDrushConfig();
 
             if ($new_group !== $current_group && !empty($aliases)) {
                 if ($this->questionHelper->confirm("Delete old Drush alias group <info>@$current_group</info>?")) {
@@ -203,7 +201,7 @@ class LocalDrushAliasesCommand extends CommandBase
     /**
      * Ensures that the .drush/drush.yml file has the right config.
      */
-    protected function ensureDrushConfig(Drush $drush): void
+    protected function ensureDrushConfig(): void
     {
         if (!is_dir($this->drush->getSiteAliasDir())) {
             return;
@@ -228,8 +226,7 @@ class LocalDrushAliasesCommand extends CommandBase
 
             $drushConfig['drush']['paths']['alias-path'][] = $aliasPath;
 
-            $fs = $this->filesystem;
-            $fs->writeFile($drushYml, Yaml::dump($drushConfig, 5));
+            $this->filesystem->writeFile($drushYml, Yaml::dump($drushConfig, 5));
         }
     }
 
