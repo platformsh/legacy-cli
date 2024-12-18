@@ -114,7 +114,7 @@ class EnvironmentPushCommand extends CommandBase
                 $this->stdErr->writeln('To link it to the selected project for future actions, use the: <comment>--set-upstream</comment> (<comment>-u</comment>) option');
                 $this->stdErr->writeln(sprintf(
                     'Alternatively, run: <comment>%s set-remote %s</comment>',
-                    $this->config->get('application.executable'),
+                    $this->config->getStr('application.executable'),
                     OsUtil::escapeShellArg($project->id)
                 ));
 
@@ -311,7 +311,7 @@ class EnvironmentPushCommand extends CommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
                         'Configure resources for the environment by running: <comment>%s %s</comment>',
-                        $this->config->get('application.executable'),
+                        $this->config->getStr('application.executable'),
                         $cmd
                     ));
                 }
@@ -341,7 +341,7 @@ class EnvironmentPushCommand extends CommandBase
                     if ($this->projectSshInfo->hasExternalGitHost($project) && ($integration = $this->api->getCodeSourceIntegration($project))) {
                         $this->stdErr->writeln(sprintf("Environments may be created through the project's <info>%s</info> integration.", $integration->type));
                         if ($this->config->isCommandEnabled('integration:get')) {
-                            $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                            $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($integration->id)));
                         }
                     }
                     return 1;
@@ -363,7 +363,7 @@ class EnvironmentPushCommand extends CommandBase
         if (!$currentProject && !$input->getOption('set-upstream')) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('To set the project as the remote for this repository, run:');
-            $this->stdErr->writeln(sprintf('<info>%s set-remote %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($project->id)));
+            $this->stdErr->writeln(sprintf('<info>%s set-remote %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($project->id)));
         }
 
         return 0;

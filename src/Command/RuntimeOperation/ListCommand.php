@@ -87,7 +87,7 @@ class ListCommand extends CommandBase
 
             if ($this->config->has('service.runtime_operations_help_url')) {
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln('For more information see: ' . $this->config->get('service.runtime_operations_help_url'));
+                $this->stdErr->writeln('For more information see: ' . $this->config->getStr('service.runtime_operations_help_url'));
             }
 
             return 0;
@@ -114,7 +114,7 @@ class ListCommand extends CommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(\sprintf('To run an operation, use: <info>%s operation:run [operation]</info>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To run an operation, use: <info>%s operation:run [operation]</info>', $this->config->getStr('application.executable')));
         }
 
         return 0;

@@ -163,7 +163,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Your project has been initialized and connected to <info>%s</info>!',
-                $this->config->get('service.name')
+                $this->config->getStr('service.name')
             ));
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -171,7 +171,7 @@ class ProjectGetCommand extends CommandBase
                 . ', and %s will build your project automatically.',
                 $project->default_branch,
                 $this->config->get('detection.git_remote_name'),
-                $this->config->get('service.name')
+                $this->config->getStr('service.name')
             ));
 
             return 0;
@@ -200,7 +200,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('<error>Failed to clone Git repository</error>');
             $this->stdErr->writeln(sprintf(
                 'Please check your SSH credentials or contact %s support',
-                $this->config->get('service.name')
+                $this->config->getStr('service.name')
             ));
 
             return 1;
@@ -241,7 +241,7 @@ class ProjectGetCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Building the project locally for the first time. Run <info>%s build</info> to repeat this.',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
             $options = ['no-clean' => true];
             $builder = $this->localBuild;

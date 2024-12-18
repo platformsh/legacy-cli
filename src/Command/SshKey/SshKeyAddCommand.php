@@ -42,7 +42,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
         $this->stdErr->writeln(sprintf(
             "Adding an SSH key to your %s account (<info>%s</info>)\n",
-            $this->config->get('service.name'),
+            $this->config->getStr('service.name'),
             $this->api->getMyAccount()['email']
         ));
 
@@ -50,7 +50,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
         $this->stdErr->writeln('');
         if (!$questionHelper->confirm('Are you sure you want to continue adding a key?', false)) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To load or check your SSH certificate, run: <info>%s ssh-cert:load</info>', $this->config->getStr('application.executable')));
             return 1;
         }
         $this->stdErr->writeln('');
@@ -116,7 +116,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             $this->stdErr->writeln('This key already exists in your account.');
             $this->stdErr->writeln(\sprintf(
                 'List your SSH keys with: <info>%s ssh-keys</info>',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
 
             return 0;
@@ -135,7 +135,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
         $this->stdErr->writeln(\sprintf(
             'The SSH key <info>%s</info> has been successfully added to your %s account.',
             \basename((string) $publicKeyPath),
-            $this->config->get('service.name')
+            $this->config->getStr('service.name')
         ));
 
         // Reset and warm the SSH keys cache.
@@ -180,7 +180,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
      */
     private function askNewKeyPath(QuestionHelper $questionHelper): string
     {
-        $basename = 'id_ed25519-' . $this->config->get('application.slug') . '-' . $this->api->getMyAccount()['username'];
+        $basename = 'id_ed25519-' . $this->config->getStr('application.slug') . '-' . $this->api->getMyAccount()['username'];
         $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';
         for ($i = 2; \file_exists($sshDir . DIRECTORY_SEPARATOR . $basename); $i++) {
             $basename .= $i;

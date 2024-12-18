@@ -19,7 +19,7 @@ class WinkyCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $winky = new Winky($output, $this->config->get('service.name'));
+        $winky = new Winky($output, $this->config->getStr('service.name'));
 
         if (!$output->isDecorated()) {
             $winky->render();

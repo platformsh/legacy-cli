@@ -99,6 +99,28 @@ class Config
     }
 
     /**
+     * Get a string configuration value.
+     *
+     * @param string $name The configuration name (e.g. 'application.name').
+     *
+     * @throws \RuntimeException if the configuration is not defined or not a string.
+     *
+     * @return string
+     */
+    public function getStr(string $name): string
+    {
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
+        if (!$exists) {
+            throw new \RuntimeException('Configuration not defined: ' . $name);
+        }
+        if (!is_string($value)) {
+            throw new \RuntimeException(sprintf('Configuration %s was expected to be a string, %s found', $name, gettype($value)));
+        }
+
+        return $value;
+    }
+
+    /**
      * Get a configuration value, specifying a default if it does not exist.
      *
      * @param string $name

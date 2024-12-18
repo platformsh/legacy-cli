@@ -113,7 +113,7 @@ class CertificateListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
         }
 

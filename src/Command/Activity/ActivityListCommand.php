@@ -47,7 +47,7 @@ class ActivityListCommand extends ActivityCommandBase
         // Add the --type option, with a link to help if configured.
         $typeDescription = 'Filter activities by type';
         if ($this->config->has('service.activity_type_list_url')) {
-            $typeDescription .= "\nFor a list of types see: <info>" . $this->config->get('service.activity_type_list_url') . '</info>';
+            $typeDescription .= "\nFor a list of types see: <info>" . $this->config->getStr('service.activity_type_list_url') . '</info>';
         }
         $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             $typeDescription
@@ -156,7 +156,7 @@ class ActivityListCommand extends ActivityCommandBase
         $table->render($rows, $this->tableHeader, $defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;

@@ -60,7 +60,7 @@ class OrganizationCommandBase extends CommandBase
     protected function otherCommandExample(InputInterface $input, string $commandName, string $otherArgs = ''): string
     {
         $args = [
-            (string) $this->config->get('application.executable'),
+            $this->config->getStr('application.executable'),
             $commandName,
         ];
         if ($input->hasOption('org') && $input->getOption('org')) {

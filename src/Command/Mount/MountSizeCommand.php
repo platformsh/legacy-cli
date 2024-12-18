@@ -58,7 +58,7 @@ EOF;
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
-            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config->get('application.executable'));
+            $help .= sprintf("\nThis command is deprecated and will be removed in a future version.\nTo see disk metrics, run: <comment>%s disk</comment>", $this->config->getStr('application.executable'));
         }
         $this->setHelp($help);
     }
@@ -68,7 +68,7 @@ EOF;
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->get('service.env_prefix') . 'APPLICATION')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->getStr('service.env_prefix') . 'APPLICATION')));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
         $mountService = $this->mount;
@@ -105,7 +105,7 @@ EOF;
         //      mounts.
         //   3. Run a 'du' command on each of the mounted paths, to find their
         //      individual sizes.
-        $appDirVar = $this->config->get('service.env_prefix') . 'APP_DIR';
+        $appDirVar = $this->config->getStr('service.env_prefix') . 'APP_DIR';
         $commands = [];
         $commands[] = 'echo "$' . $appDirVar . '"';
         $commands[] = 'echo';
@@ -177,7 +177,7 @@ EOF;
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
                 $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
-                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To see disk metrics, run: <comment>%s disk</comment>', $this->config->getStr('application.executable')));
             }
         }
 

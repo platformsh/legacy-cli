@@ -67,7 +67,7 @@ class TeamGetCommand extends TeamCommandBase
         $table->renderSimple($values, $headings);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add projects to the team, run: <info>%s team:project:add -t %s</info>', $executable, OsUtil::escapeShellArg($team->id)));
             $this->stdErr->writeln(\sprintf('To add a user to the team, run: <info>%s team:user:add -t %s</info>', $executable, OsUtil::escapeShellArg($team->id)));

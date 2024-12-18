@@ -52,7 +52,7 @@ readonly class FileStorage implements StorageInterface {
         }
 
         // Avoid overwriting an already configured token file.
-        if (file_exists($filename) && $this->config->has('api.token_file') && $this->resolveTokenFile($this->config->get('api.token_file')) === $filename) {
+        if (file_exists($filename) && $this->config->has('api.token_file') && $this->resolveTokenFile($this->config->getStr('api.token_file')) === $filename) {
             throw new \RuntimeException('Failed to save API token: it would conflict with the existing api.token_file configuration.');
         }
 

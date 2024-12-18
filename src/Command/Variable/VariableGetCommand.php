@@ -81,7 +81,7 @@ class VariableGetCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 "The variable <comment>%s</comment> is disabled.\nEnable it with: <comment>%s variable:enable %s</comment>",
                 $variable->name,
-                $this->config->get('application.executable'),
+                $this->config->getStr('application.executable'),
                 escapeshellarg($variable->name)
             ));
         }
@@ -120,7 +120,7 @@ class VariableGetCommand extends CommandBase
         $table = $this->table;
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To list other variables, run: <info>%s variables</info>',

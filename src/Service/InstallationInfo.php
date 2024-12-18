@@ -28,7 +28,7 @@ class InstallationInfo
     {
         if (self::$otherPaths === null) {
             $thisPath = $this->cliPath();
-            $paths = $this->osUtil->findExecutables($this->config->get('application.executable'));
+            $paths = $this->osUtil->findExecutables($this->config->getStr('application.executable'));
             self::$otherPaths = array_unique(array_filter($paths, function ($p) use ($thisPath): bool {
                 $realpath = realpath($p);
                 return $realpath && $realpath !== $thisPath;

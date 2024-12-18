@@ -62,13 +62,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
             '',
             'The resources may be the profile size, the instance count, or the disk size (MB).',
             '',
-            sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config->get('application.executable')),
+            sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config->getStr('application.executable')),
             '',
             'If the same service and resource is specified on the command line multiple times, only the final value will be used.'
         ];
         if ($this->config->has('service.resources_help_url')) {
             $helpLines[] = '';
-            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>';
+            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config->getStr('service.resources_help_url') . '</info>';
         }
         $this->setHelp(implode("\n", $helpLines));
 

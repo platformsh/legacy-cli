@@ -59,8 +59,8 @@ EOF
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $helper = new DescriptorHelper();
-        $helper->register('txt', new CustomTextDescriptor($this->config->get('application.executable')));
-        $helper->register('md', new CustomMarkdownDescriptor($this->config->get('application.executable')));
+        $helper->register('txt', new CustomTextDescriptor($this->config->getStr('application.executable')));
+        $helper->register('md', new CustomMarkdownDescriptor($this->config->getStr('application.executable')));
         $helper->register('json', new CustomJsonDescriptor());
         $helper->describe(
             $output,

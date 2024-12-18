@@ -17,7 +17,7 @@ class SshKeyCommandBase extends CommandBase
             . "\n" . 'Certificates offer more security than keys.';
         if ($recommendCommand) {
             $notice .= "\n\n" . 'To load or check your SSH certificate, run: <info>'
-                . $config->get('application.executable') . ' ssh-cert:load</info>';
+                . $config->getStr('application.executable') . ' ssh-cert:load</info>';
         }
         return $notice;
     }

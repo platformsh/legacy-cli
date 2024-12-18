@@ -15,8 +15,8 @@ class RootNotFoundException extends \RuntimeException
         // then suggest the "project:set-remote" command.
         if (is_dir('.git')) {
             $config = new Config();
-            if (is_dir($config->get('service.project_config_dir')) && $config->isCommandEnabled('project:set-remote')) {
-                $executable = $config->get('application.executable');
+            if (is_dir($config->getStr('service.project_config_dir')) && $config->isCommandEnabled('project:set-remote')) {
+                $executable = $config->getStr('application.executable');
                 $message .= "\n\nTo set the project for this Git repository, run:\n  $executable set-remote [id]";
             }
         }

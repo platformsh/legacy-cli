@@ -108,7 +108,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         $table->renderSimple($rows, $header);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for this activity, run: <info>%s integration:activity:log %s %s</info>',

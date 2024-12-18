@@ -54,7 +54,7 @@ class RepoCommandBase extends CommandBase
                 $e->getMessage(),
                 $e->getPath()
             ));
-            $this->stdErr->writeln(sprintf('To list directory contents, run: <comment>%s repo:ls [path]</comment>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To list directory contents, run: <comment>%s repo:ls [path]</comment>', $this->config->getStr('application.executable')));
 
             return 3;
         }
@@ -89,7 +89,7 @@ class RepoCommandBase extends CommandBase
                 $e->getMessage(),
                 $e->getPath()
             ));
-            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config->getStr('application.executable')));
 
             return 3;
         }

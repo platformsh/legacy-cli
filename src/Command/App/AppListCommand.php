@@ -124,7 +124,7 @@ class AppListCommand extends CommandBase
     private function recommendOtherCommands(EnvironmentDeployment $deployment): void
     {
         $lines = [];
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         if ($deployment->services) {
             $lines[] = sprintf(
                 'To list services, run: <info>%s services</info>',

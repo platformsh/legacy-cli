@@ -126,14 +126,14 @@ class TeamCommandBase extends CommandBase
                 $this->stdErr->writeln('No organizations found.');
                 if ($this->getApplication()->has('organization:create')) {
                     $this->stdErr->writeln('');
-                    $this->stdErr->writeln(sprintf('To create an organization, run: <comment>%s org:create</comment>', $this->config->get('application.executable')));
+                    $this->stdErr->writeln(sprintf('To create an organization, run: <comment>%s org:create</comment>', $this->config->getStr('application.executable')));
                 }
                 return false;
             }
             $this->stdErr->writeln('No organizations were found in which you can manage teams.');
             if ($this->getApplication()->has('organization:list')) {
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf('To list organizations, run: <comment>%s organizations</comment>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To list organizations, run: <comment>%s organizations</comment>', $this->config->getStr('application.executable')));
             }
             return false;
         }

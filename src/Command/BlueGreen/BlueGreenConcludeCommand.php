@@ -66,7 +66,7 @@ class BlueGreenConcludeCommand extends CommandBase
         $this->stdErr->writeln('');
         $httpClient->delete($environment->getLink('#versions') . '/' . rawurlencode((string) $lockedVersionData['id']));
         $this->stdErr->writeln(sprintf('Version <info>%s</info> was deleted.', $lockedVersionData['id']));
-        $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config->get('application.executable')));
+        $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config->getStr('application.executable')));
 
         return 0;
     }

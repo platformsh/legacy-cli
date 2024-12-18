@@ -20,7 +20,7 @@ class DecodeCommand extends CommandBase
     }
     protected function configure(): void
     {
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
 
         $this
             ->addArgument('value', InputArgument::REQUIRED, 'The value to decode')

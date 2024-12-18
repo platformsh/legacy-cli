@@ -44,7 +44,7 @@ class RouteGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config->get('service.env_prefix');
+        $prefix = $this->config->getStr('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
             $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);

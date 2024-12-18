@@ -35,7 +35,7 @@ class BrowserLoginCommand extends CommandBase
 
     protected function configure(): void
     {
-        $applicationName = $this->config->get('application.name');
+        $applicationName = $this->config->getStr('application.name');
 
         $this
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in')
@@ -43,7 +43,7 @@ class BrowserLoginCommand extends CommandBase
             ->addOption('max-age', null, InputOption::VALUE_REQUIRED, 'The maximum age (in seconds) of the web authentication session');
         Url::configureInput($this->getDefinition());
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         $help = 'Use this command to log in to the ' . $applicationName . ' using a web browser.'
             . "\n\nIt launches a temporary local website which redirects you to log in if necessary, and then captures the resulting authorization code."
             . "\n\nYour system's default browser will be used. You can override this using the <info>--browser</info> option."
@@ -66,7 +66,7 @@ class BrowserLoginCommand extends CommandBase
         if ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1) {
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId()));
             if (!$this->config->isSessionIdFromEnv()) {
-                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->getStr('application.executable')));
             }
             $this->stdErr->writeln('');
         }
@@ -116,7 +116,7 @@ class BrowserLoginCommand extends CommandBase
             if (stripos($e->getMessage(), 'failed to find') !== false) {
                 $this->stdErr->writeln(sprintf('Failed to find an available port between <error>%d</error> and <error>%d</error>.', $start, $end));
                 $this->stdErr->writeln('Check if you have unnecessary services running on these ports.');
-                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(sprintf('For more options, run: <info>%s help login</info>', $this->config->getStr('application.executable')));
 
                 return 1;
             }
@@ -149,7 +149,7 @@ class BrowserLoginCommand extends CommandBase
         ]);
         $codeVerifier = $this->generateCodeVerifier();
         $process->setEnv([
-            'CLI_OAUTH_APP_NAME' => $this->config->get('application.name'),
+            'CLI_OAUTH_APP_NAME' => $this->config->getStr('application.name'),
             'CLI_OAUTH_STATE' => $this->generateCodeVerifier(), // the state can just be any random string
             'CLI_OAUTH_CODE_CHALLENGE' => $this->convertVerifierToChallenge($codeVerifier),
             'CLI_OAUTH_AUTH_URL' => $this->config->get('api.oauth2_auth_url'),

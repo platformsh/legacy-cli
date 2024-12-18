@@ -160,7 +160,7 @@ class SshDiagnostics
             return;
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         if ($params = $this->stepUpAuthenticationParams($failedProcess)) {
             if ($newline) {

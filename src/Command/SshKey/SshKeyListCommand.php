@@ -40,7 +40,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         if (empty($keys)) {
             $this->stdErr->writeln(sprintf(
                 'You do not yet have any SSH public keys in your %s account.',
-                $this->config->get('service.name')
+                $this->config->getStr('service.name')
             ));
         } else {
             $table = $this->table;
@@ -68,7 +68,7 @@ class SshKeyListCommand extends SshKeyCommandBase
 
         $this->stdErr->writeln('');
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         $this->stdErr->writeln("Add a new SSH key with: <info>$executable ssh-key:add</info>");
         $this->stdErr->writeln("Delete an SSH key with: <info>$executable ssh-key:delete [id]</info>");
 

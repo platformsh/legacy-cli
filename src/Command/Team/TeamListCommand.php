@@ -82,7 +82,7 @@ class TeamListCommand extends TeamCommandBase
             $params['page[size]'] = $count;
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         // Fetch teams for a specific project.
         $projectSpecific = !$input->getOption('all') && $selection->hasProject();

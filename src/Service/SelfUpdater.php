@@ -77,8 +77,8 @@ class SelfUpdater
     public function update(?string $manifestUrl = null, ?string $currentVersion = null): string|false
     {
         $currentVersion = $currentVersion ?: $this->config->getVersion();
-        $manifestUrl = $manifestUrl ?: $this->config->get('application.manifest_url');
-        $applicationName = $this->config->get('application.name');
+        $manifestUrl = $manifestUrl ?: $this->config->getStr('application.manifest_url');
+        $applicationName = $this->config->getStr('application.name');
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln(sprintf(
                 'This instance of the %s was not installed as a Phar archive.',
@@ -90,8 +90,8 @@ class SelfUpdater
                 $this->stdErr->writeln("Update using:\n\n  composer global update");
                 if ($this->config->has('application.package_name')) {
                     $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
-                    $this->stdErr->writeln("  composer global remove " . $this->config->get('application.package_name'));
-                    $this->stdErr->writeln("  curl -sS " . $this->config->get('application.installer_url') . " | php\n");
+                    $this->stdErr->writeln("  composer global remove " . $this->config->getStr('application.package_name'));
+                    $this->stdErr->writeln("  curl -sS " . $this->config->getStr('application.installer_url') . " | php\n");
                 } else {
                     $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>)\n");
                 }

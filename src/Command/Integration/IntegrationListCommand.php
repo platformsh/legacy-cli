@@ -59,7 +59,7 @@ class IntegrationListCommand extends IntegrationCommandBase
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('View integration details with: <info>' . $executable . ' integration:get [id]</info>');
             $this->stdErr->writeln('');

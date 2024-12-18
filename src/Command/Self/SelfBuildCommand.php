@@ -26,7 +26,7 @@ class SelfBuildCommand extends CommandBase
     {
         $this
             ->addOption('key', null, InputOption::VALUE_REQUIRED, 'The path to a private key')
-            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config->get('application.executable') . '.phar')
+            ->addOption('output', null, InputOption::VALUE_REQUIRED, 'The output filename', $this->config->getStr('application.executable') . '.phar')
             ->addOption('replace-version', null, InputOption::VALUE_OPTIONAL, 'Replace the version number in config.yaml')
             ->addOption('no-composer-rebuild', null, InputOption::VALUE_NONE, 'Skip rebuilding Composer dependencies');
     }
@@ -194,13 +194,13 @@ class SelfBuildCommand extends CommandBase
             return false;
         }
         $newConfig = \var_export([
-            'envPrefix' => $this->config->get('application.env_prefix'),
-            'manifestUrl' => $this->config->get('application.manifest_url'),
-            'configDir' => $this->config->get('application.user_config_dir'),
-            'executable' => $this->config->get('application.executable'),
-            'cliName' => $this->config->get('application.name'),
-            'userAgent' => $this->config->get('application.slug'),
-            'serviceEnvPrefix' => $this->config->get('service.env_prefix'),
+            'envPrefix' => $this->config->getStr('application.env_prefix'),
+            'manifestUrl' => $this->config->getStr('application.manifest_url'),
+            'configDir' => $this->config->getStr('application.user_config_dir'),
+            'executable' => $this->config->getStr('application.executable'),
+            'cliName' => $this->config->getStr('application.name'),
+            'userAgent' => $this->config->getStr('application.slug'),
+            'serviceEnvPrefix' => $this->config->getStr('service.env_prefix'),
             'migratePrompt' => $this->config->getWithDefault('migrate.prompt', false),
             'migrateDocsUrl' => $this->config->getWithDefault('migrate.docs_url', ''),
         ], true);

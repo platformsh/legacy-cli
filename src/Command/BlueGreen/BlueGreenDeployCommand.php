@@ -43,7 +43,7 @@ class BlueGreenDeployCommand extends CommandBase
         $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) < 2) {
             $this->stdErr->writeln(sprintf('Blue/green deployments are not enabled for the environment %s.', $this->api->getEnvironmentLabel($environment, 'error')));
-            $this->stdErr->writeln(sprintf('Enable blue/green first by running: <info>%s blue-green:enable</info>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('Enable blue/green first by running: <info>%s blue-green:enable</info>', $this->config->getStr('application.executable')));
             return 1;
         }
 
@@ -85,7 +85,7 @@ class BlueGreenDeployCommand extends CommandBase
         ]);
         if ($targetPercentage === 100) {
             $this->stdErr->writeln(sprintf('Version <info>%s</info> has now been deployed.', $latestVersionData['id']));
-            $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config->getStr('application.executable')));
         } else {
             $this->stdErr->writeln(sprintf('Version <info>%s</info> now has a routing percentage of %d.', $latestVersionData['id'] ,$targetPercentage));
         }

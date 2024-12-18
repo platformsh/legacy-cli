@@ -96,7 +96,7 @@ class DomainGetCommand extends DomainCommandBase
         $table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         $exampleArgs = '';
         if ($forEnvironment) {
             $exampleArgs = '-e ' . OsUtil::escapeShellArg($selection->getEnvironment()->name) . ' ';

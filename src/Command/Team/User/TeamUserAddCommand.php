@@ -74,7 +74,7 @@ class TeamUserAddCommand extends TeamCommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
                         "To invite the user, run:\n  <comment>%s org:user:add -o %s %s</comment>",
-                        $this->config->get('application.executable'),
+                        $this->config->getStr('application.executable'),
                         OsUtil::escapeShellArg($organization->id),
                         OsUtil::escapeShellArg($identifier)
                     ));

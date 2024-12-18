@@ -48,7 +48,7 @@ class BlueGreenEnableCommand extends CommandBase
         $data = Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) > 1) {
             $this->stdErr->writeln(sprintf('Blue/green deployments are already enabled for the environment %s.', $this->api->getEnvironmentLabel($environment)));
-            $this->stdErr->writeln(sprintf('List versions by running: <info>%s versions</info>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('List versions by running: <info>%s versions</info>', $this->config->getStr('application.executable')));
             return 0;
         }
 

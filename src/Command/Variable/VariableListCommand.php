@@ -114,7 +114,7 @@ class VariableListCommand extends CommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln(sprintf(
                 'To view variable details, run: <info>%s variable:get [name]</info>',
                 $executable

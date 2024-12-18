@@ -113,7 +113,7 @@ class UserListCommand extends CommandBase
 
         if (!$table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln("To add a new user to the project, run: <info>$executable user:add</info>");
             $this->stdErr->writeln('');
             $this->stdErr->writeln("To view a user's role(s), run: <info>$executable user:get</info>");

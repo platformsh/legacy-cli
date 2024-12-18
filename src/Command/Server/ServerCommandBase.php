@@ -257,7 +257,7 @@ abstract class ServerCommandBase extends CommandBase
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         if (isset($env[$envPrefix . 'APP_DIR'])) {
             $process->setWorkingDirectory($env[$envPrefix . 'APP_DIR']);
         }
@@ -349,7 +349,7 @@ abstract class ServerCommandBase extends CommandBase
     protected function createEnv(string $projectRoot, string $docRoot, string $address, array $appConfig): array
     {
         $realDocRoot = realpath($docRoot);
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $env = [
             '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',

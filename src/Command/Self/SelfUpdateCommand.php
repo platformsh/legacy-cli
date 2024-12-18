@@ -29,7 +29,7 @@ class SelfUpdateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $manifestUrl = $input->getOption('manifest') ?: $this->config->get('application.manifest_url');
+        $manifestUrl = $input->getOption('manifest') ?: $this->config->getStr('application.manifest_url');
         $currentVersion = $input->getOption('current-version') ?: $this->config->getVersion();
 
         $cliUpdater = $this->selfUpdater;

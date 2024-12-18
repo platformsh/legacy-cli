@@ -59,7 +59,7 @@ class OrganizationListCommand extends OrganizationCommandBase
             $organizations = array_reverse($organizations, true);
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         if (empty($organizations)) {
             $this->stdErr->writeln('No organizations found.');
             if ($this->config->isCommandEnabled('organization:create')) {

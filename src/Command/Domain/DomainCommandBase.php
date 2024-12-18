@@ -106,7 +106,7 @@ abstract class DomainCommandBase extends CommandBase
                 if (!$this->environmentIsProduction && !$supportsNonProduction) {
                     $this->stdErr->writeln(sprintf('The project %s does not support non-production environment domains.', $this->api->getProjectLabel($project, 'error')));
                     if ($this->config->has('warnings.non_production_domains_msg')) {
-                        $this->stdErr->writeln("\n". trim((string) $this->config->get('warnings.non_production_domains_msg')));
+                        $this->stdErr->writeln("\n". trim($this->config->getStr('warnings.non_production_domains_msg')));
                     }
                     return false;
                 }

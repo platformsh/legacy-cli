@@ -69,7 +69,7 @@ class ActivityMonitor
             return true;
         }
         if ($this->detectRunningInHook()) {
-            $serviceName = $this->config->get('service.name');
+            $serviceName = $this->config->getStr('service.name');
             $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
                 . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
                 . "\n";
@@ -88,7 +88,7 @@ class ActivityMonitor
      */
     private function detectRunningInHook(): bool
     {
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
             && basename(getenv('SHELL')) === 'dash'
             && !$this->io->isTerminal(STDIN)) {

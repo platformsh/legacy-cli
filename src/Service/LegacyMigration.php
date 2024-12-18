@@ -77,7 +77,7 @@ class LegacyMigration
 
         $this->stdErr->writeln(sprintf(
             'You are in a project using an old file structure, from previous versions of the %s.',
-            $this->config->get('application.name')
+            $this->config->getStr('application.name')
         ));
         if ($this->input->isInteractive() && $promptMigrate) {
             if ($projectRoot && is_array($projectConfig)) {
@@ -92,7 +92,7 @@ class LegacyMigration
         } else {
             $this->stdErr->writeln(sprintf(
                 'Fix this with: <comment>%s legacy-migrate</comment>',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
         }
         $this->stdErr->writeln('');
@@ -203,7 +203,7 @@ class LegacyMigration
      */
     private function detectRunningInHook(): bool
     {
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
             && basename(getenv('SHELL')) === 'dash'
             && !$this->io->isTerminal(STDIN)) {

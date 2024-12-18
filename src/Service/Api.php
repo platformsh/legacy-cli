@@ -562,7 +562,7 @@ class Api
 
             self::$client = new PlatformClient($connector);
 
-            if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config->get('application.env_prefix') . 'TOKEN') || $this->hasApiToken(false))) {
+            if (!self::$printedApiTokenWarning && $this->onContainer() && (getenv($this->config->getStr('application.env_prefix') . 'TOKEN') || $this->hasApiToken(false))) {
                 $this->stdErr->writeln('<fg=yellow;options=bold>Warning:</>');
                 $this->stdErr->writeln('<fg=yellow>An API token is set. Anyone with SSH access to this environment can read the token.</>');
                 $this->stdErr->writeln('<fg=yellow>Please ensure the token only has strictly necessary access.</>');
@@ -585,7 +585,7 @@ class Api
      */
     private function onContainer(): bool
     {
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         return getenv($envPrefix . 'PROJECT') !== false
             && getenv($envPrefix . 'BRANCH') !== false
             && getenv($envPrefix . 'TREE_ID') !== false;
@@ -605,7 +605,7 @@ class Api
                     $this->io->debug('Installing Docker credential helper for session storage');
                     $manager->install();
                 }
-                $this->sessionStorage = new CredentialHelperStorage($manager, $this->config->get('application.slug'));
+                $this->sessionStorage = new CredentialHelperStorage($manager, $this->config->getStr('application.slug'));
                 return;
             }
 
@@ -1565,7 +1565,7 @@ class Api
                 }
             }
 
-            return ltrim($this->config->get('service.console_url'), '/') . '/' . rawurlencode((string) $firstSegment) . '/' . rawurlencode($project->id);
+            return ltrim($this->config->getStr('service.console_url'), '/') . '/' . rawurlencode((string) $firstSegment) . '/' . rawurlencode($project->id);
         }
         $subscription = $this->loadSubscription($project->getSubscriptionId(), $project);
         return $subscription ? $subscription->project_ui : false;
@@ -1680,7 +1680,7 @@ class Api
             }
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $sessionId));
             if (!$this->config->isSessionIdFromEnv()) {
-                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(sprintf('Change this using: <info>%s session:switch</info>', $this->config->getStr('application.executable')));
             }
         }
         if (!$logout && $this->isLoggedIn()) {
@@ -1731,7 +1731,7 @@ class Api
         $this->stdErr->writeln([
             '',
             '<comment>The remote environment(s) must be redeployed for the change to take effect.</comment>',
-            'To redeploy an environment, run: <info>' . $this->config->get('application.executable') . ' redeploy</info>',
+            'To redeploy an environment, run: <info>' . $this->config->getStr('application.executable') . ' redeploy</info>',
         ]);
     }
 }

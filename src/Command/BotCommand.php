@@ -28,7 +28,7 @@ class BotCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $dir = CLI_ROOT . '/resources/bot';
-        $signature = $this->config->get('service.name');
+        $signature = $this->config->getStr('service.name');
         $party = $input->getOption('party');
         $interval = $party ? 120000 : 500000;
 

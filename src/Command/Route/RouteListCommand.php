@@ -46,7 +46,7 @@ class RouteListCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config->get('service.env_prefix');
+        $prefix = $this->config->getStr('service.env_prefix');
         $selection = null;
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
@@ -99,7 +99,7 @@ class RouteListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single route, run: <info>%s route:get <route></info>',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
         }
 

@@ -32,7 +32,7 @@ class AuthTokenCommand extends CommandBase
             . "\n\n" . 'Using this command is not generally recommended, as it increases the chance of the token being leaked.'
             . ' Take care not to expose the token in a shared program or system, or to send the token to the wrong API domain.'
         );
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         $apiUrl = $this->config->getApiUrl();
         $examples = [
             'Print the payload for JWT-formatted tokens' => \sprintf('%s auth:token -W | cut -d. -f2 | base64 -d', $executable),

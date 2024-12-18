@@ -66,13 +66,13 @@ class HelpCommand extends CommandBase
 
         switch ($format) {
             case 'md':
-                (new CustomMarkdownDescriptor($this->config->get('application.executable')))->describe($output, $command, $options);
+                (new CustomMarkdownDescriptor($this->config->getStr('application.executable')))->describe($output, $command, $options);
                 return 0;
             case 'json':
                 (new CustomJsonDescriptor())->describe($output, $command, $options);
                 return 0;
             case 'txt':
-                (new CustomTextDescriptor($this->config->get('application.executable')))->describe($output, $command, $options);
+                (new CustomTextDescriptor($this->config->getStr('application.executable')))->describe($output, $command, $options);
                 return 0;
         }
 
@@ -81,7 +81,7 @@ class HelpCommand extends CommandBase
             // If the --format is unrecognised, it might be because the
             // command has its own --format option. Fall back to plain text
             // help.
-            (new CustomTextDescriptor($this->config->get('application.executable')))->describe($output, $command, $options);
+            (new CustomTextDescriptor($this->config->getStr('application.executable')))->describe($output, $command, $options);
             return 0;
         }
 
