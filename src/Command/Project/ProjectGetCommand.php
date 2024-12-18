@@ -102,7 +102,6 @@ class ProjectGetCommand extends CommandBase
 
             $this->stdErr->writeln('');
 
-            $questionHelper = $this->questionHelper;
             if ($this->questionHelper->confirm($questionText)) {
                 return $this->subCommandRunner->run('project:set-remote', ['project' => $project->id], $output);
             }
