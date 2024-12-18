@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:all', description: 'Show CPU, disk and memory metrics for an environment', aliases: ['metrics', 'met'])]
 class AllMetricsCommand extends MetricsCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
@@ -45,6 +46,7 @@ class AllMetricsCommand extends MetricsCommandBase
         'tmp_inodes_percent' => '/tmp inodes %',
     ];
 
+    /** @var string[] */
     private array $defaultColumns = ['timestamp', 'service', 'cpu_percent', 'mem_percent', 'disk_percent', 'tmp_disk_percent'];
     public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

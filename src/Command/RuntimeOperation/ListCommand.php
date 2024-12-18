@@ -24,7 +24,9 @@ class ListCommand extends CommandBase
 {
     const COMMAND_MAX_LENGTH = 24;
 
+    /** @var array<string, string> */
     private array $tableHeader = ['service' => 'Service', 'name' => 'Operation name', 'start' => 'Start command', 'stop' => 'Stop command', 'role' => 'Role'];
+    /** @var string[] */
     private array $defaultColumns = ['service', 'name', 'start'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {

@@ -18,12 +18,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'team:user:list', description: 'List users in a team', aliases: ['team:users'])]
 class TeamUserListCommand extends TeamCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'User ID',
         'email' => 'Email address',
         'created_at' => 'Date added',
         'updated_at' => 'Updated at',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'email', 'created_at'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

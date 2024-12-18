@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'activity:list', description: 'Get a list of activities for an environment or project', aliases: ['activities', 'act'])]
 class ActivityListCommand extends ActivityCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'created' => 'Created',
@@ -35,6 +36,7 @@ class ActivityListCommand extends ActivityCommandBase
         'time_deploy' => 'Deploy time (s)',
     ];
 
+    /** @var string[] */
     private array $defaultColumns = ['id', 'created', 'description', 'progress', 'state', 'result'];
 
     public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)

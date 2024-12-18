@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:disk-usage', description: 'Show disk usage of an environment', aliases: ['disk'])]
 class DiskUsageCommand extends MetricsCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
@@ -32,6 +33,7 @@ class DiskUsageCommand extends MetricsCommandBase
         'tmp_ilimit' => '/tmp inodes limit',
         'tmp_ipercent' => '/tmp inodes %',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
     private array $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
     public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)

@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'certificate:list', description: 'List project certificates', aliases: ['certificates', 'certs'])]
 class CertificateListCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'domains' => 'Domain(s)',

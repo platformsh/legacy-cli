@@ -17,7 +17,9 @@ class SelfStatsCommand extends CommandBase
 {
     protected bool $hiddenInList = true;
 
+    /** @var array<string|int, string> */
     private array $tableHeader = ['Release', 'Date', 'Asset', 'Downloads'];
+
     public function __construct(private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Table $table)
     {
         parent::__construct();

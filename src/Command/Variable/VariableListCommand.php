@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:list', description: 'List variables', aliases: ['variables', 'var'])]
 class VariableListCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'name' => 'Name',
         'level' => 'Level',

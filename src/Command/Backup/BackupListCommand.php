@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class BackupListCommand extends CommandBase
 {
 
+    /** @var array<string, string> */
     private array $tableHeader = [
         'created_at' => 'Created',
         'id' => 'Backup ID',
@@ -29,6 +30,7 @@ class BackupListCommand extends CommandBase
         'status' => 'Status',
         'updated_at' => 'Updated',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['created_at', 'id', 'restorable'];
     public function __construct(private readonly Api $api, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

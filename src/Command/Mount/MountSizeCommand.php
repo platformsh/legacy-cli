@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'mount:size', description: 'Check the disk usage of mounts')]
 class MountSizeCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'mounts' => 'Mount(s)',
         'sizes' => 'Size(s)',

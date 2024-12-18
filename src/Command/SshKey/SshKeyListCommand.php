@@ -12,12 +12,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'ssh-key:list', description: 'Get a list of SSH keys in your account', aliases: ['ssh-keys'])]
 class SshKeyListCommand extends SshKeyCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'title' => 'Title',
         'fingerprint' => 'Fingerprint',
         'path' => 'Local path'
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'title', 'path'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly SshKey $sshKey, private readonly Table $table)
     {

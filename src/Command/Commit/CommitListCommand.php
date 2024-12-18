@@ -22,8 +22,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'commit:list', description: 'List commits', aliases: ['commits'])]
 class CommitListCommand extends CommandBase
 {
-
+    /** @var array<string|int, string> */
     private array $tableHeader = ['Date', 'SHA', 'Author', 'Summary'];
+
     public function __construct(private readonly Api $api, private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();

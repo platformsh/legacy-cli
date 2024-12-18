@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:build:get', description: 'View the build resources of a project', aliases: ['build-resources:get', 'build-resources'])]
 class BuildResourcesGetCommand extends CommandBase
 {
+    /** @var array<string, string> */
     protected array $tableHeader = [
         'cpu' => 'CPU',
         'memory' => 'Memory (MB)',

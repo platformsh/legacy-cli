@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'user:list', description: 'List project users', aliases: ['users'])]
 class UserListCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'email' => 'Email address',
         'name' => 'Name',
@@ -24,6 +25,7 @@ class UserListCommand extends CommandBase
         'granted_at' => 'Granted at',
         'updated_at' => 'Updated at',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['email', 'name', 'role', 'id'];
 
     public function __construct(

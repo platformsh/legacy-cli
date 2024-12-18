@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:list', description: 'List organizations', aliases: ['orgs', 'organizations'])]
 class OrganizationListCommand extends OrganizationCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'name' => 'Name',
@@ -23,6 +24,7 @@ class OrganizationListCommand extends OrganizationCommandBase
         'owner_email' => 'Owner email',
         'owner_username' => 'Owner username',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['name', 'label', 'owner_email'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {

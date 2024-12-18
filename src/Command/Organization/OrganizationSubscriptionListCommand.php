@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:subscription:list', description: 'List subscriptions within an organization', aliases: ['org:subs'])]
 class OrganizationSubscriptionListCommand extends OrganizationCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'Subscription ID',
         'project_id' => 'Project ID',
@@ -24,6 +25,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
         'updated_at' => 'Updated at',
     ];
 
+    /** @var string[] */
     private array $defaultColumns = ['id', 'project_id', 'project_title', 'project_region'];
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)

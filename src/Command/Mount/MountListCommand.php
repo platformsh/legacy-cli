@@ -23,6 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'mount:list', description: 'Get a list of mounts', aliases: ['mounts'])]
 class MountListCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = ['path' => 'Mount path', 'definition' => 'Definition'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly Mount $mount, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

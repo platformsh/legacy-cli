@@ -26,6 +26,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DbSizeCommand extends CommandBase
 {
 
+    /** @var array<string, string> */
     private array $tableHeader = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Table $table)
     {

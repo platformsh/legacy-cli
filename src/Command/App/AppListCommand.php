@@ -18,8 +18,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:list', description: 'List apps in the project', aliases: ['apps'])]
 class AppListCommand extends CommandBase
 {
+    /** @var array<string|int, string> */
     private array $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
+    /** @var string[] */
     private array $defaultColumns = ['name', 'type'];
+
     public function __construct(private readonly Api $api, private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();

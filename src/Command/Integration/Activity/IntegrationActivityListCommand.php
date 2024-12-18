@@ -23,6 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:activity:list', description: 'Get a list of activities for an integration', aliases: ['integration:activities'])]
 class IntegrationActivityListCommand extends IntegrationCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'created' => 'Created',
@@ -37,6 +38,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         'time_build' => 'Build time (s)',
         'time_deploy' => 'Deploy time (s)',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'created', 'description', 'type', 'state', 'result'];
     public function __construct(private readonly ActivityLoader $activityLoader, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'team:list', description: 'List teams', aliases: ['teams'])]
 class TeamListCommand extends TeamCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'label' => 'Label',
@@ -32,6 +33,7 @@ class TeamListCommand extends TeamCommandBase
         'updated_at' => 'Updated at',
         'granted_at' => 'Granted at',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'label', 'member_count', 'project_count', 'project_permissions'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

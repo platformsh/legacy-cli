@@ -15,6 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:memory', description: 'Show memory usage of an environment', aliases: ['mem', 'memory'])]
 class MemCommand extends MetricsCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
@@ -24,6 +25,7 @@ class MemCommand extends MetricsCommandBase
         'percent' => 'Used %',
     ];
 
+    /** @var string[] */
     private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
     public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {

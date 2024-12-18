@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'metrics:cpu', description: 'Show CPU usage of an environment', aliases: ['cpu'])]
 class CpuCommand extends MetricsCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
@@ -23,6 +24,7 @@ class CpuCommand extends MetricsCommandBase
         'percent' => 'Used %',
     ];
 
+    /** @var string[] */
     private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent'];
     public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
