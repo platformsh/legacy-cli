@@ -2,6 +2,9 @@
 
 namespace Platformsh\Cli\Command\Commit;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\GitDataApi;
@@ -9,30 +12,32 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Commit;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'commit:list', description: 'List commits', aliases: ['commits'])]
 class CommitListCommand extends CommandBase
 {
+    /** @var array<string|int, string> */
+    private array $tableHeader = ['Date', 'SHA', 'Author', 'Summary'];
 
-    private $tableHeader = ['Date', 'SHA', 'Author', 'Summary'];
+    public function __construct(private readonly Api $api, private readonly GitDataApi $gitDataApi, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
-            ->setName('commit:list')
-            ->setAliases(['commits'])
-            ->setDescription('List commits')
             ->addArgument('commit', InputOption::VALUE_REQUIRED, 'The starting Git commit SHA. ' . GitDataApi::COMMIT_SYNTAX_HELP)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'The number of commits to display.', 10);
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
 
         $definition = $this->getDefinition();
         Table::configureInput($definition, $this->tableHeader);
@@ -45,15 +50,13 @@ class CommitListCommand extends CommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input, false, true);
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
+        $environment = $selection->getEnvironment();
 
         $startSha = $input->getArgument('commit');
-        /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
-        $startCommit = $gitData->getCommit($environment, $startSha);
+        $startCommit = $this->gitDataApi->getCommit($environment, $startSha);
         if (!$startCommit) {
             if ($startSha) {
                 $this->stdErr->writeln('Commit not found: <error>' . $startSha . '</error>');
@@ -64,27 +67,21 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($environment)
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($environment)
             ));
         }
 
         $commits = $this->loadCommitList($environment, $startCommit, $input->getOption('limit'));
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $rows = [];
         foreach ($commits as $commit) {
             $row = [];
             $row[] = new AdaptiveTableCell(
-                $formatter->format($commit->author['date'], 'author.date'),
+                $this->propertyFormatter->format($commit->author['date'], 'author.date'),
                 ['wrap' => false]
             );
             $row[] = $commit->sha;
@@ -93,7 +90,7 @@ class CommitListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
         return 0;
     }
@@ -101,21 +98,18 @@ class CommitListCommand extends CommandBase
     /**
      * Load parent commits, recursively, up to the limit.
      *
-     * @param \Platformsh\Client\Model\Environment $environment
-     * @param \Platformsh\Client\Model\Git\Commit  $startCommit
-     * @param int                                  $limit
+     * @param Environment $environment
+     * @param Commit $startCommit
+     * @param int $limit
      *
-     * @return \Platformsh\Client\Model\Git\Commit[]
+     * @return Commit[]
      */
-    private function loadCommitList(Environment $environment, Commit $startCommit, $limit = 10)
+    private function loadCommitList(Environment $environment, Commit $startCommit, int $limit = 10): array
     {
         $commits = [$startCommit];
         if (!count($startCommit->parents) || $limit === 1) {
             return $commits;
         }
-
-        /** @var \Platformsh\Cli\Service\GitDataApi $gitData */
-        $gitData = $this->getService('git_data_api');
 
         $progress = new ProgressBar($this->stdErr->isDecorated() ? $this->stdErr : new NullOutput());
         $progress->setMessage('Loading...');
@@ -125,7 +119,11 @@ class CommitListCommand extends CommandBase
              count($currentCommit->parents) && count($commits) < $limit;) {
             foreach (array_reverse($currentCommit->parents) as $parentSha) {
                 if (!isset($commits[$parentSha])) {
-                    $commits[$parentSha] = $gitData->getCommit($environment, $parentSha);
+                    $commit = $this->gitDataApi->getCommit($environment, $parentSha);
+                    if (!$commit) {
+                        throw new \RuntimeException(sprintf('Commit not found: %s', $parentSha));
+                    }
+                    $commits[$parentSha] = $commit;
                 }
                 $currentCommit = $commits[$parentSha];
                 $progress->advance();
@@ -140,13 +138,9 @@ class CommitListCommand extends CommandBase
     }
 
     /**
-     * Summarize a commit message.
-     *
-     * @param string $message
-     *
-     * @return string
+     * Summarizes a commit message.
      */
-    private function summarize($message)
+    private function summarize(string $message): string
     {
         $message = ltrim($message, "\n");
         if ($newLinePos = strpos($message, "\n")) {

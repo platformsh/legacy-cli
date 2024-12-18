@@ -2,14 +2,13 @@
   "chmod": "0755",
   "directories": [
     "bin",
-    "resources",
-    "src"
+    "config",
+    "resources"
   ],
   "files": [
     "config.yaml",
     "config-defaults.yaml",
     "constants.php",
-    "services.yaml",
     "shell-config.tmpl.rc",
     "shell-config-bash.tmpl.rc",
     "shell-config-bash-direct.tmpl.rc",
@@ -18,6 +17,10 @@
     "vendor/composer/ca-bundle/res/cacert.pem"
   ],
   "finder": [
+    {
+      "in": "src",
+      "exclude": ["Rector"]
+    },
     {
       "in": "vendor",
       "name": "*.php*",
@@ -33,7 +36,7 @@
   ],
   "main": "bin/platform",
   "output": "platform.phar",
-  "stub": "stub.php",
+  "stub": "resources/phar-stub.php",
   "compactors": [
       "KevinGH\\Box\\Compactor\\Json",
       "KevinGH\\Box\\Compactor\\Php"

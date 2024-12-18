@@ -27,7 +27,7 @@ class Snippeter
      *
      * @return string The new file contents.
      */
-    public function updateSnippet($fileContents, $snippet, $begin, $end, $beginPattern = null)
+    public function updateSnippet(string $fileContents, string $snippet, string $begin, string $end, ?string $beginPattern = null): string
     {
         // Look for the position of the $begin string in the current config.
         $beginPos = strpos($fileContents, $begin);

@@ -13,23 +13,20 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ActivityLoader
+readonly class ActivityLoader
 {
 
-    private $stdErr;
+    private OutputInterface $stdErr;
 
     /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param OutputInterface $output
      */
     public function __construct(OutputInterface $output)
     {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
-    /**
-     * @return \Symfony\Component\Console\Output\OutputInterface
-     */
-    private function getProgressOutput()
+    private function getProgressOutput(): OutputInterface
     {
         return $this->stdErr->isDecorated() ? $this->stdErr : new NullOutput();
     }
@@ -43,9 +40,9 @@ class ActivityLoader
      * @param array $state Define the states to return, regardless of input.
      * @param string $withOperation Filters the resulting activities to those with the specified operation available.
      *
-     * @return \Platformsh\Client\Model\Activity[]
+     * @return Activity[]
      */
-    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, $limit = null, $state = [], $withOperation = '')
+    public function loadFromInput(HasActivitiesInterface $apiResource, InputInterface $input, ?int $limit = null, array $state = [], string $withOperation = ''): array
     {
         if ($state === [] && $input->hasOption('state')) {
             $state = ArrayArgument::getOption($input, 'state');
@@ -88,9 +85,7 @@ class ActivityLoader
             }
         }
         if (empty($typesFilter) && !empty($typesToExclude)) {
-            $typesFilter = \array_filter($availableTypes, function ($type) use ($typesToExclude) {
-                return !\in_array($type, $typesToExclude, true);
-            });
+            $typesFilter = \array_filter($availableTypes, fn($type): bool => !\in_array($type, $typesToExclude, true));
         }
         if (!empty($typesFilter) && $this->stdErr->isDebug()) {
             $this->stdErr->writeln('<options=reverse>DEBUG</> Selected activity type(s): ' . implode(',', $typesFilter));
@@ -102,9 +97,7 @@ class ActivityLoader
         }
         $activities = $this->load($apiResource, $limit, $typesFilter, $startsAt, $state, $result);
         if ($withOperation) {
-            $activities = array_filter($activities, function (Activity $activity) use ($withOperation) {
-               return $activity->operationAvailable($withOperation);
-            });
+            $activities = array_filter($activities, fn(Activity $activity): bool => $activity->operationAvailable($withOperation));
         }
         return $activities;
     }
@@ -121,9 +114,9 @@ class ActivityLoader
      * @param callable|null $stopCondition
      *   A test to perform on each activity. If it returns true, loading is stopped.
      *
-     * @return \Platformsh\Client\Model\Activity[]
+     * @return Activity[]
      */
-    public function load(HasActivitiesInterface $apiResource, $limit = null, array $types = [], $startsAt = null, $state = null, $result = null, callable $stopCondition = null)
+    public function load(HasActivitiesInterface $apiResource, ?int $limit = null, array $types = [], int|DateTime|null $startsAt = null, array|string|null $state = null, array|string|null $result = null, ?callable $stopCondition = null): array
     {
         $progress = new ProgressBar($this->getProgressOutput());
         $progress->setMessage('Loading activities...');
@@ -164,7 +157,7 @@ class ActivityLoader
      *
      * @return string[]
      */
-    public static function getAvailableTypes()
+    public static function getAvailableTypes(): array
     {
         return [
             'environment.access.add',

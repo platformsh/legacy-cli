@@ -12,40 +12,21 @@ use Symfony\Component\Console\Input\InputOption;
 
 class CustomMarkdownDescriptor extends MarkdownDescriptor
 {
-    protected $cliExecutableName;
-
-    /**
-     * @param string|null $cliExecutableName
-     *   The name of the CLI command.
-     */
-    public function __construct($cliExecutableName = null)
+    public function __construct(private readonly string $cliExecutableName)
     {
-        $this->cliExecutableName = $cliExecutableName ?: basename($_SERVER['PHP_SELF']);
     }
 
     /**
      * @inheritDoc
      */
-    protected function describeApplication(Application $application, array $options = array())
+    protected function describeApplication(Application $application, array $options = array()): void
     {
-        $describedNamespace = isset($options['namespace']) ? $options['namespace'] : null;
-        $description = new ApplicationDescription($application, $describedNamespace, !empty($options['all']));
+        $describedNamespace = $options['namespace'] ?? null;
+        $description = (new DescriptorUtils())->describeNamespaces($application, $describedNamespace, !empty($options['all']));
         $title = sprintf('%s %s', $application->getName(), $application->getVersion());
+        $this->write($title."\n".str_repeat('=', Helper::width($title)));
 
-        $this->write($title."\n".str_repeat('=', Helper::strlen($title)));
-
-        $commands = [];
-        foreach ($description->getNamespaces() as $namespace) {
-            foreach ($namespace['commands'] as $key => $name) {
-                $command = $description->getCommand($name);
-
-                // Ensure the command is only shown under its canonical name.
-                if ($name !== $command->getName() || $command->isHidden()) {
-                    unset($namespace['commands'][$key]);
-                    continue;
-                }
-                $commands[$name] = $command;
-            }
+        foreach ($description['namespaces'] as $namespace) {
             if (empty($namespace['commands'])) {
                 continue;
             }
@@ -55,12 +36,12 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             }
 
             $this->write("\n\n");
-            $this->write(implode("\n", array_map(function ($commandName) use ($description) {
-                return sprintf('* [`%s`](#%s)', $commandName, str_replace(':', '', $description->getCommand($commandName)->getName()));
+            $this->write(implode("\n", array_map(function (Command $command): string {
+                return sprintf('* [`%s`](#%s)', $command->getName(), str_replace(':', '', $command->getName()));
             }, $namespace['commands'])));
         }
 
-        foreach ($commands as $command) {
+        foreach ($description['commands'] as $command) {
             $this->write("\n\n");
             $this->describeCommand($command);
         }
@@ -69,13 +50,13 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * @inheritdoc
      */
-    protected function describeCommand(Command $command, array $options = [])
+    protected function describeCommand(Command $command, array $options = []): void
     {
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
 
         $this->write($command->getName() . "\n"
-            . str_repeat('-', strlen($command->getName()))."\n");
+            . str_repeat('-', strlen((string) $command->getName()))."\n");
 
         if ($description = $command->getDescription()) {
             $this->write("$description\n\n");
@@ -95,7 +76,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             $this->write("\n\n");
         }
 
-        $this->describeInputDefinition($command->getNativeDefinition());
+        $this->describeInputDefinition($command->getDefinition());
         $this->write("\n\n");
 
         if ($command instanceof CommandBase && ($examples = $command->getExamples())) {
@@ -118,7 +99,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputArgument(InputArgument $argument, array $options = [])
+    protected function describeInputArgument(InputArgument $argument, array $options = []): void
     {
         $this->write('* `' . $argument->getName() . '`');
         $notes = [
@@ -138,7 +119,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputOption(InputOption $option, array $options = [])
+    protected function describeInputOption(InputOption $option, array $options = []): void
     {
         $this->write('* `--' . $option->getName() . '`');
         if ($shortcut = $option->getShortcut()) {

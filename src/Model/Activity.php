@@ -8,18 +8,13 @@ class Activity {
 
     /**
      * Calculates the duration of an activity, whether complete or not.
-     *
-     * @param ApiActivity $activity
-     * @param int|null    $now
-     *
-     * @return int|null
      */
-    public function getDuration(ApiActivity $activity, $now = null)
+    public function getDuration(ApiActivity $activity, ?int $now = null): float|int|null
     {
         if ($activity->isComplete()) {
             $end = strtotime($activity->completed_at);
         } elseif ($activity->state === ApiActivity::STATE_CANCELLED && $activity->hasProperty('cancelled_at')) {
-            $end = strtotime($activity->getProperty('cancelled_at'));
+            $end = strtotime((string) $activity->getProperty('cancelled_at'));
         } elseif (!empty($activity->started_at)) {
             $now = $now === null ? time() : $now;
             $end = $now;

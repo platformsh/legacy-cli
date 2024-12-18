@@ -2,14 +2,13 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Filesystem;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class VanillaTest extends BuildFlavorTestBase
 {
-    public function testBuildVanilla()
+    public function testBuildVanilla(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla');
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
@@ -19,7 +18,7 @@ class VanillaTest extends BuildFlavorTestBase
     /**
      * Test building without symlinks.
      */
-    public function testBuildNoSymlinks()
+    public function testBuildNoSymlinks(): void
     {
         $sourceDir = 'tests/data/apps/vanilla';
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['copy' => true]);
@@ -31,7 +30,7 @@ class VanillaTest extends BuildFlavorTestBase
     /**
      * Test building with a custom web root.
      */
-    public function testBuildCustomWebRoot()
+    public function testBuildCustomWebRoot(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot');
         $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
@@ -44,7 +43,7 @@ class VanillaTest extends BuildFlavorTestBase
     /**
      * Test with a custom source and destination.
      */
-    public function testBuildCustomSourceDestination()
+    public function testBuildCustomSourceDestination(): void
     {
         // Copy the 'vanilla' app to a temporary directory.
         $sourceDir = $this->createTempSubDir();
@@ -69,7 +68,7 @@ class VanillaTest extends BuildFlavorTestBase
     /**
      * Test with a custom destination.
      */
-    public function testBuildCustomDestination()
+    public function testBuildCustomDestination(): void
     {
         $projectRoot = $this->createDummyProject('tests/data/apps/vanilla');
 

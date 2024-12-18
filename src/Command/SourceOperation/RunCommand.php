@@ -2,39 +2,51 @@
 
 namespace Platformsh\Cli\Command\SourceOperation;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Cli\Model\Variable;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'source-operation:run', description: 'Run a source operation')]
 class RunCommand extends CommandBase
 {
-    protected function configure()
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
-        $this->setName('source-operation:run')
-            ->setDescription('Run a source operation')
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
+        $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name')
             ->addOption('variable', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'A variable to set during the operation, in the format <info>type:name=value</info>');
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Run the "update" operation, setting environment variable FOO=bar', 'update --variable env:FOO=bar');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         $variables = $this->parseVariables($input->getOption('variable'));
-        $this->debug('Parsed variables: ' . json_encode($variables));
+        $this->io->debug('Parsed variables: ' . json_encode($variables));
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
         $sourceOps = $environment->getSourceOperations();
         if (!$sourceOps) {
             $this->stdErr->writeln('No source operations were found on the environment.');
@@ -47,8 +59,7 @@ class RunCommand extends CommandBase
                 $this->stdErr->writeln('The <error>operation</error> argument is required in non-interactive mode.');
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($sourceOps as $sourceOp) {
                 $choices[$sourceOp->operation] = $sourceOp->operation . ' (app: <info>' . $sourceOp->app . '</info>)';
@@ -62,31 +73,30 @@ class RunCommand extends CommandBase
             $operationNames[] = $sourceOp->operation;
         }
         if (!in_array($operation, $operationNames, true)) {
-            $this->stdErr->writeln(sprintf('The source operation <error>%s</error> was not found on the environment %s.', $operation, $this->api()->getEnvironmentLabel($environment, 'comment')));
+            $this->stdErr->writeln(sprintf('The source operation <error>%s</error> was not found on the environment %s.', $operation, $this->api->getEnvironmentLabel($environment, 'comment')));
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config()->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config->getStr('application.executable')));
             return 1;
         }
 
 
         try {
             $this->stdErr->writeln(\sprintf('Running source operation <info>%s</info>', $operation));
-            $result = $this->getSelectedEnvironment()->runSourceOperation(
+            $result = $selection->getEnvironment()->runSourceOperation(
                 $operation,
                 $variables
             );
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support source operations.');
         }
 
         $success = true;
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
-            $monitor = $this->getService('activity_monitor');
-            $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityMonitor->shouldWait($input)) {
+            $monitor = $this->activityMonitor;
+            $success = $monitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
-        if ($success && $this->selectedProjectIsCurrent()) {
+        if ($success && $this->selector->isProjectCurrent($selection->getProject())) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('You may wish to run <info>git pull</info> to update your local repository.');
         }
@@ -99,7 +109,7 @@ class RunCommand extends CommandBase
      *
      * @return array
      */
-    private function parseVariables(array $variables)
+    private function parseVariables(array $variables): array
     {
         $map = [];
         $variable = new Variable();

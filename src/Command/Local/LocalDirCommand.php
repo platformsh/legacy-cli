@@ -1,28 +1,32 @@
 <?php
 namespace Platformsh\Cli\Command\Local;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\RootNotFoundException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'local:dir', description: 'Find the local project root', aliases: ['dir'])]
 class LocalDirCommand extends CommandBase
 {
-    protected $local = true;
 
-    protected function configure()
+    public function __construct(private readonly Config $config, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+    protected function configure(): void
     {
         $this
-            ->setName('local:dir')
-            ->setAliases(['dir'])
-            ->setDescription('Find the local project root')
             ->addArgument('subdir', InputArgument::OPTIONAL, "The subdirectory to find ('local', 'web' or 'shared')");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
@@ -30,11 +34,11 @@ class LocalDirCommand extends CommandBase
         $dir = $projectRoot;
 
         $subDirs = [
-            'builds' => $this->config()->get('local.build_dir'),
-            'local' => $this->config()->get('local.local_dir'),
-            'shared' => $this->config()->get('local.shared_dir'),
-            'web' => $this->config()->getWithDefault('local.web_root', '_www'),
-            'web_root' => $this->config()->getWithDefault('local.web_root', '_www'),
+            'builds' => $this->config->get('local.build_dir'),
+            'local' => $this->config->get('local.local_dir'),
+            'shared' => $this->config->get('local.shared_dir'),
+            'web' => $this->config->getWithDefault('local.web_root', '_www'),
+            'web_root' => $this->config->getWithDefault('local.web_root', '_www'),
         ];
 
         $subDir = $input->getArgument('subdir');

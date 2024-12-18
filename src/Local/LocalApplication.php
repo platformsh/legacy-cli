@@ -1,6 +1,12 @@
 <?php
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\Local\BuildFlavor\Drupal;
+use Platformsh\Cli\Local\BuildFlavor\Symfony;
+use Platformsh\Cli\Local\BuildFlavor\Composer;
+use Platformsh\Cli\Local\BuildFlavor\NodeJs;
+use Platformsh\Cli\Local\BuildFlavor\NoBuildFlavor;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\InvalidConfigException;
@@ -18,21 +24,20 @@ use Platformsh\Cli\Util\YamlParser;
 class LocalApplication
 {
 
-    protected $appRoot;
-    protected $config;
-    protected $sourceDir;
-    protected $cliConfig;
-    protected $mount;
+    protected string $appRoot;
+    protected string $sourceDir;
+    protected Config $cliConfig;
+    protected Mount $mount;
 
-    private $single = false;
+    private bool $single = false;
 
     /**
      * @param string      $appRoot
      * @param Config|null $cliConfig
      * @param string|null $sourceDir
-     * @param AppConfig|null $appConfig
+     * @param AppConfig|null $config
      */
-    public function __construct($appRoot, Config $cliConfig = null, $sourceDir = null, AppConfig $appConfig = null)
+    public function __construct(string $appRoot, ?Config $cliConfig = null, ?string $sourceDir = null, protected ?AppConfig $config = null)
     {
         if (!is_dir($appRoot)) {
             throw new \InvalidArgumentException("Application directory not found: $appRoot");
@@ -41,7 +46,6 @@ class LocalApplication
         $this->appRoot = $appRoot;
         $this->sourceDir = $sourceDir ?: $appRoot;
         $this->mount = new Mount();
-        $this->config = $appConfig;
     }
 
     /**
@@ -49,21 +53,19 @@ class LocalApplication
      *
      * @return string
      */
-    public function getId()
+    public function getId(): string
     {
-        return $this->getName() ?: $this->getPath() ?: 'default';
+        return ($this->getName() ?: $this->getPath()) ?: 'default';
     }
 
     /**
      * Returns the type of the app.
-     *
-     * @return string|null
      */
-    public function getType()
+    public function getType(): ?string
     {
         $config = $this->getConfig();
 
-        return isset($config['type']) ? $config['type'] : null;
+        return $config['type'] ?? null;
     }
 
     /**
@@ -71,67 +73,50 @@ class LocalApplication
      *
      * @return bool
      */
-    public function isSingle()
+    public function isSingle(): bool
     {
        return $this->single;
     }
 
     /**
-     * Set that this is is the only application in the project.
-     *
-     * @param bool $single
+     * Sets that this is is the only application in the project.
      */
-    public function setSingle($single = true)
+    public function setSingle(bool $single = true): void
     {
         $this->single = $single;
     }
 
     /**
-     * Get the source directory where the application was found.
+     * Gets the source directory where the application was found.
      *
      * In a single-app project, this is usually the project root.
-     *
-     * @return string
      */
-    public function getSourceDir()
+    public function getSourceDir(): string
     {
         return $this->sourceDir;
     }
 
-    /**
-     * @return string
-     */
-    protected function getPath()
+    protected function getPath(): string
     {
         return str_replace($this->sourceDir . '/', '', $this->appRoot);
     }
 
-    /**
-     * @return string|null
-     */
-    public function getName()
+    public function getName(): ?string
     {
         $config = $this->getConfig();
 
         return !empty($config['name']) ? $config['name'] : null;
     }
 
-    /**
-     * @return string
-     */
-    public function getRoot()
+    public function getRoot(): string
     {
         return $this->appRoot;
     }
 
     /**
-     * Get the absolute path to the local web root of this app.
-     *
-     * @param string|null $destination
-     *
-     * @return string
+     * Finds the absolute path to the local web root of this app.
      */
-    public function getLocalWebRoot($destination = null)
+    public function getLocalWebRoot(?string $destination = null): string
     {
         $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->getWithDefault('local.web_root', '_www');
         if ($this->isSingle()) {
@@ -147,7 +132,7 @@ class LocalApplication
      * @return array
      * @throws \Exception
      */
-    public function getConfig()
+    public function getConfig(): array
     {
         return $this->getConfigObject()->getNormalized();
     }
@@ -156,16 +141,14 @@ class LocalApplication
      * Get the application's configuration as an object.
      *
      * @throws InvalidConfigException if config is not found or invalid
-     * @throws \Symfony\Component\Yaml\Exception\ParseException if config cannot be parsed
+     * @throws ParseException if config cannot be parsed
      * @throws \Exception if the config file cannot be read
-     *
-     * @return AppConfig
      */
-    private function getConfigObject()
+    private function getConfigObject(): AppConfig
     {
         if (!isset($this->config)) {
             if ($this->cliConfig->has('service.app_config_file')) {
-                $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
+                $file = $this->appRoot . '/' . $this->cliConfig->getStr('service.app_config_file');
                 if (!file_exists($file)) {
                     throw new InvalidConfigException('Configuration file not found: ' . $file);
                 }
@@ -180,11 +163,9 @@ class LocalApplication
     }
 
     /**
-     * Get a list of shared file mounts configured for the app.
-     *
-     * @return array
+     * Gets a list of shared file mounts configured for the app.
      */
-    public function getSharedFileMounts()
+    public function getSharedFileMounts(): array
     {
         $config = $this->getConfig();
 
@@ -196,14 +177,14 @@ class LocalApplication
     /**
      * @return BuildFlavorInterface[]
      */
-    public function getBuildFlavors()
+    public function getBuildFlavors(): array
     {
         return [
-            new BuildFlavor\Drupal(),
-            new BuildFlavor\Symfony(),
-            new BuildFlavor\Composer(),
-            new BuildFlavor\NodeJs(),
-            new BuildFlavor\NoBuildFlavor(),
+            new Drupal(),
+            new Symfony(),
+            new Composer(),
+            new NodeJs(),
+            new NoBuildFlavor(),
         ];
     }
 
@@ -211,18 +192,16 @@ class LocalApplication
      * Get the build flavor for the application.
      *
      * @throws InvalidConfigException If a build flavor is not found.
-     *
-     * @return BuildFlavorInterface
      */
-    public function getBuildFlavor()
+    public function getBuildFlavor(): BuildFlavorInterface
     {
         $appConfig = $this->getConfig();
         if (!isset($appConfig['type'])) {
             throw new InvalidConfigException('Application configuration key not found: `type`');
         }
 
-        $key = isset($appConfig['build']['flavor']) ? $appConfig['build']['flavor'] : 'default';
-        list($stack, ) = explode(':', $appConfig['type'], 2);
+        $key = $appConfig['build']['flavor'] ?? 'default';
+        list($stack, ) = explode(':', (string) $appConfig['type'], 2);
         foreach (self::getBuildFlavors() as $candidate) {
             if (in_array($key, $candidate->getKeys())
                 && ($candidate->getStacks() === [] || in_array($stack, $candidate->getStacks()))) {
@@ -233,25 +212,17 @@ class LocalApplication
     }
 
     /**
-     * Get the configured document root for the application, as a relative path.
-     *
-     * @param string $default
-     *
-     * @todo stop using 'public' as the default
-     *
-     * @return string
+     * Finds the configured document root for the application, as a relative path.
      */
-    public function getDocumentRoot($default = 'public')
+    public function getDocumentRoot(string $default = 'public'): string
     {
         return $this->getConfigObject()->getDocumentRoot() ?: $default;
     }
 
     /**
-     * Check whether the whole app should be moved into the document root.
-     *
-     * @return bool
+     * Checks whether the whole app should be moved into the document root.
      */
-    public function shouldMoveToRoot()
+    public function shouldMoveToRoot(): bool
     {
         $config = $this->getConfig();
 

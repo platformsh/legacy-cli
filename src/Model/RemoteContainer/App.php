@@ -6,47 +6,28 @@ use Platformsh\Cli\Model\AppConfig;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Environment;
 
-class App implements RemoteContainerInterface
+readonly class App implements RemoteContainerInterface
 {
-    private $webApp;
-    private $environment;
-
-    /**
-     * @param \Platformsh\Client\Model\Deployment\WebApp $webApp
-     * @param \Platformsh\Client\Model\Environment       $environment
-     */
-    public function __construct(WebApp $webApp, Environment $environment) {
-        $this->webApp = $webApp;
-        $this->environment = $environment;
+    public function __construct(private WebApp $webApp, private Environment $environment)
+    {
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getSshUrl($instance = '')
+    public function getSshUrl($instance = ''): string
     {
         return $this->environment->getSshUrl($this->webApp->name, $instance);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
+    public function getName(): string
     {
         return $this->webApp->name;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getConfig() {
+    public function getConfig(): AppConfig
+    {
         return AppConfig::fromWebApp($this->webApp);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getRuntimeOperations()
+    public function getRuntimeOperations(): array
     {
         return $this->webApp->getRuntimeOperations();
     }

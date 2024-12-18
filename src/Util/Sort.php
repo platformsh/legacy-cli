@@ -9,16 +9,11 @@ final class Sort
      *
      * If the values are strings, the comparison will be case-insensitive and
      * "natural". Otherwise the default PHP comparison is used.
-     *
-     * @param mixed $a
-     * @param mixed $b
-     * @param bool $reverse
-     * @return int
      */
-    public static function compare($a, $b, $reverse = false)
+    public static function compare(mixed $a, mixed $b, bool $reverse = false): int
     {
         if (\is_string($a)) {
-            $value = \strnatcasecmp($a, $b);
+            $value = \strnatcasecmp($a, (string) $b);
         } else {
             // TODO replace with spaceship operator for PHP 7+
             $value = $a == $b ? 0 : ($a > $b ? 1 : -1);
@@ -28,13 +23,8 @@ final class Sort
 
     /**
      * Compares domains as a sorting function. Used to sort region IDs.
-     *
-     * @param string $regionA
-     * @param string $regionB
-     *
-     * @return int
      */
-    public static function compareDomains($regionA, $regionB)
+    public static function compareDomains(string $regionA, string $regionB): int
     {
         if (strpos($regionA, '.') && strpos($regionB, '.')) {
             $partsA = explode('.', $regionA, 2);
@@ -48,14 +38,8 @@ final class Sort
      * Sorts arrays of objects by a property.
      *
      * Array keys will be preserved.
-     *
-     * @param object[] $objects
-     * @param string $property
-     * @param bool $reverse
-     *
-     * @return void
      */
-    public static function sortObjects(array &$objects, $property, $reverse = false)
+    public static function sortObjects(array &$objects, string $property, bool $reverse = false): void
     {
         uasort($objects, function ($a, $b) use ($property, $reverse) {
             if (!property_exists($a, $property) || !property_exists($b, $property)) {

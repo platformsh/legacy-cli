@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Symfony\Component\Process\Exception\RuntimeException;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -12,19 +13,14 @@ use Symfony\Component\Process\Process;
 
 class Shell
 {
+    protected OutputInterface $output;
+    protected OutputInterface $stdErr;
 
-    /** @var OutputInterface */
-    protected $output;
+    private string $debugPrefix = '<options=reverse>#</> ';
 
-    /** @var OutputInterface */
-    protected $stdErr;
+    private static ?string $phpVersion = null;
 
-    private $debugPrefix = '<options=reverse>#</> ';
-
-    /** @var string|null */
-    private static $phpVersion;
-
-    public function __construct(OutputInterface $output = null)
+    public function __construct(?OutputInterface $output = null)
     {
         $this->setOutput($output ?: new NullOutput());
     }
@@ -34,7 +30,7 @@ class Shell
      *
      * @param OutputInterface $output
      */
-    public function setOutput(OutputInterface $output)
+    public function setOutput(OutputInterface $output): void
     {
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface
@@ -43,16 +39,12 @@ class Shell
     }
 
     /**
-     * Execute a command, using STDIN, STDERR and STDOUT directly.
-     *
-     * @param string      $commandline
-     * @param string|null $dir
-     * @param array       $env
+     * Executes a command, using STDIN, STDERR and STDOUT directly.
      *
      * @return int
      *   The command's exit code (0 on success, a different integer on failure).
      */
-    public function executeSimple($commandline, $dir = null, array $env = [])
+    public function executeSimple(string $commandline, ?string $dir = null, array $env = []): int
     {
         $this->stdErr->writeln(
             sprintf( '%sRunning command: <info>%s</info>', $this->debugPrefix, $commandline),
@@ -61,7 +53,7 @@ class Shell
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
-            $env = $env + $this->getParentEnv();
+            $env = $env + getenv();
         } else {
             $env = null;
         }
@@ -76,22 +68,22 @@ class Shell
     /**
      * Executes a command.
      *
-     * @param string|array $args
-     * @param string|null  $dir
+     * @param array|string $args
+     * @param string|null $dir
      * @param bool         $mustRun
      * @param bool         $quiet
      * @param array        $env
      * @param int|null     $timeout
      * @param string|null  $input
      *
-     * @throws \Symfony\Component\Process\Exception\RuntimeException
-     *   If $mustRun is enabled and the command fails.
-     *
      * @return bool|string
      *   False if the command fails, true if it succeeds with no output, or a
      *   string if it succeeds with output.
+     *@throws RuntimeException
+     *   If $mustRun is enabled and the command fails.
+     *
      */
-    public function execute($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
+    public function execute(array|string $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): bool|string
     {
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
         $result = $this->runProcess($process, $mustRun, $quiet);
@@ -101,18 +93,8 @@ class Shell
 
     /**
      * Executes a command and returns the process object.
-     *
-     * @param string|array $args
-     * @param string|null $dir
-     * @param bool $mustRun
-     * @param bool $quiet
-     * @param array $env
-     * @param int|null $timeout
-     * @param string|null $input
-     *
-     * @return Process
      */
-    public function executeCaptureProcess($args, $dir = null, $mustRun = false, $quiet = true, array $env = [], $timeout = 3600, $input = null)
+    public function executeCaptureProcess(string|array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): Process
     {
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
         $this->runProcess($process, $mustRun, $quiet);
@@ -121,24 +103,14 @@ class Shell
 
     /**
      * Sets up a Process and reports to the user that the command is being run.
-     *
-     * @param $args
-     * @param $dir
-     * @param array $env
-     * @param $timeout
-     * @param $input
-     * @return Process
      */
-    private function setupProcess($args, $dir = null, array $env = [], $timeout = 3600, $input = null)
+    private function setupProcess(string|array $args, ?string $dir = null, array $env = [], int|null $timeout = 3600, mixed $input = null): Process
     {
-        $process = new Process($args, null, null, $input, $timeout);
-
-        // Avoid adding 'exec' to every command. It is not needed in this
-        // context as we do not need to send signals to the process. Also it
-        // causes compatibility issues, at least with the shell built-in command
-        // 'command' on  Travis containers.
-        // See https://github.com/symfony/symfony/issues/23495
-        $process->setCommandLine($process->getCommandLine());
+        if (is_string($args)) {
+            $process = Process::fromShellCommandline($args, null, null, $input, $timeout);
+        } else {
+            $process = new Process($args, null, null, $input, $timeout);
+        }
 
         if ($timeout === null) {
             set_time_limit(0);
@@ -155,7 +127,7 @@ class Shell
 
         if (!empty($env)) {
             $this->showEnvMessage($env);
-            $process->setEnv($env + $this->getParentEnv());
+            $process->setEnv($env + getenv());
         }
 
         if ($dir && is_dir($dir)) {
@@ -166,10 +138,7 @@ class Shell
         return $process;
     }
 
-    /**
-     * @param string|null $dir
-     */
-    private function showWorkingDirMessage($dir)
+    private function showWorkingDirMessage(?string $dir): void
     {
         if ($dir !== null && $this->stdErr->isDebug()) {
             $this->stdErr->writeln($this->debugPrefix . '  Working directory: ' . $dir);
@@ -179,7 +148,7 @@ class Shell
     /**
      * @param array $env
      */
-    private function showEnvMessage(array $env)
+    private function showEnvMessage(array $env): void
     {
         if (!empty($env) && $this->stdErr->isDebug()) {
             $message = [$this->debugPrefix . '  Using additional environment variables:'];
@@ -191,64 +160,23 @@ class Shell
     }
 
     /**
-     * Attempt to read useful environment variables from the parent process.
-     *
-     * @return array
-     */
-    protected function getParentEnv()
-    {
-        if (PHP_VERSION_ID >= 70100) {
-            return getenv();
-        }
-        // In PHP <7.1 there isn't a way to read all of the current environment
-        // variables. If PHP is running with a variables_order that includes
-        // 'e', then $_ENV should be populated.
-        if (!empty($_ENV) && stripos(ini_get('variables_order'), 'e') !== false) {
-            return $_ENV;
-        }
-
-        // If $_ENV is empty, then guess all the variables that we might want to use.
-        $candidates = [
-            'TERM',
-            'TERM_SESSION_ID',
-            'TMPDIR',
-            'SSH_AGENT_PID',
-            'SSH_AUTH_SOCK',
-            'PATH',
-            'LANG',
-            'LC_ALL',
-            'LC_CTYPE',
-            'PAGER',
-            'LESS',
-        ];
-        $variables = [];
-        foreach ($candidates as $name) {
-            $variables[$name] = getenv($name);
-        }
-
-        return array_filter($variables, function ($value) {
-            return $value !== false;
-        });
-    }
-
-    /**
      * Run a process.
      *
      * @param Process $process
      * @param bool    $mustRun
      * @param bool    $quiet
      *
-     * @throws \Symfony\Component\Process\Exception\RuntimeException
+     * @throws RuntimeException
      *   If the process fails or times out, and $mustRun is true.
      *
      * @return int|bool|string
      *   The exit code of the process if it fails, true if it succeeds with no
      *   output, or a string if it succeeds with output.
      */
-    protected function runProcess(Process $process, $mustRun = false, $quiet = true)
+    protected function runProcess(Process $process, bool $mustRun = false, bool $quiet = true): int|bool|string
     {
         try {
-            $process->mustRun(function ($type, $buffer) use ($quiet) {
+            $process->mustRun(function ($type, $buffer) use ($quiet): void {
                 $output = $type === Process::ERR ? $this->stdErr : $this->output;
                 // Show the output if $quiet is false, and always show stderr
                 // output in debug mode.
@@ -257,7 +185,7 @@ class Shell
                     $output->write(preg_replace('/(^|[\n\r]+)(.)/', '$1  $2', $buffer));
                 }
             });
-        } catch (ProcessFailedException $e) {
+        } catch (ProcessFailedException) {
             if (!$mustRun) {
                 return $process->getExitCode();
             }
@@ -279,10 +207,10 @@ class Shell
      * @param string $command
      * @param bool $noticeOnError
      *
-     * @return string|bool
+     * @return string|false
      *   A list of command paths (one per line) or false on failure.
      */
-    protected function findWhere($command, $noticeOnError = true)
+    protected function findWhere(string $command, bool $noticeOnError = true): string|false
     {
         static $result;
         if (!isset($result[$command])) {
@@ -296,7 +224,7 @@ class Shell
                 }
                 foreach ($commands as $args) {
                     try {
-                        $result[$command] = $this->execute($args);
+                        $result[$command] = $this->execute($args, null, true);
                     } catch (ProcessFailedException $e) {
                         $result[$command] = false;
                         if ($this->exceptionMeansCommandDoesNotExist($e)) {
@@ -321,7 +249,7 @@ class Shell
      *
      * @return bool
      */
-    public function exceptionMeansCommandDoesNotExist(ProcessFailedException $e) {
+    public function exceptionMeansCommandDoesNotExist(ProcessFailedException $e): bool {
         $process = $e->getProcess();
         if ($process->getExitCode() === 127) {
             return true;
@@ -344,19 +272,15 @@ class Shell
      *
      * @return bool
      */
-    public function commandExists($command)
+    public function commandExists(string $command): bool
     {
         return (bool) $this->findWhere($command, false);
     }
 
     /**
-     * Find the absolute path to an executable.
-     *
-     * @param string $command
-     *
-     * @return string
+     * Finds the absolute path to an executable.
      */
-    public function resolveCommand($command)
+    public function resolveCommand(string $command): string
     {
         if ($fullPaths = $this->findWhere($command)) {
             $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
@@ -371,10 +295,8 @@ class Shell
      *
      * Falls back to the version of PHP running the CLI (which may or may not
      * be the same).
-     *
-     * @return string
      */
-    public function getPhpVersion()
+    public function getPhpVersion(): string
     {
         if (!isset(self::$phpVersion)) {
             $result = $this->execute([

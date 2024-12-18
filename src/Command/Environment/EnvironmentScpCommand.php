@@ -2,31 +2,37 @@
 
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Service\SshDiagnostics;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:scp', description: 'Copy files to and from an environment using scp', aliases: ['scp'])]
 class EnvironmentScpCommand extends CommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Selector $selector, private readonly Shell $shell, private readonly Ssh $ssh, private readonly SshDiagnostics $sshDiagnostics)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('environment:scp')
-            ->setAliases(['scp'])
             ->addArgument('files', InputArgument::IS_ARRAY, 'Files to copy. Use the remote: prefix to define remote locations.')
-            ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories')
-            ->setDescription('Copy files to and from an environment using scp');
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addRemoteContainerOptions();
+            ->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recursively copy entire directories');
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Copy local files a.txt and b.txt to remote mount var/files', "a.txt b.txt remote:var/files");
         $this->addExample('Copy remote files c.txt to current directory', "remote:c.txt .");
@@ -34,25 +40,21 @@ class EnvironmentScpCommand extends CommandBase
         $this->addExample('Copy files inside subdirectory dump/ to remote mount var/files', "-r dump/* remote:var/logs");
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $files = $input->getArgument('files');
         if (!$files) {
             throw new InvalidArgumentException('No files specified');
         }
 
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $container = $selection->getRemoteContainer();
 
-        $container = $this->selectRemoteContainer($input);
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
-
-        /** @var Ssh $ssh */
-        $ssh = $this->getService('ssh');
         $command = 'scp';
 
-        if ($sshArgs = $ssh->getSshArgs($sshUrl)) {
-            $command .= ' ' . implode(' ', array_map([OsUtil::class, 'escapePosixShellArg'], $sshArgs));
+        if ($sshArgs = $this->ssh->getSshArgs($sshUrl)) {
+            $command .= ' ' . implode(' ', array_map(OsUtil::escapePosixShellArg(...), $sshArgs));
         }
 
         if ($input->getOption('recursive')) {
@@ -67,11 +69,11 @@ class EnvironmentScpCommand extends CommandBase
 
         $remoteUsed = false;
         foreach ($files as $file) {
-            if (strpos($file, 'remote:') === 0) {
-                $command .= ' ' . escapeshellarg($sshUrl . ':' . substr($file, 7));
+            if (str_starts_with((string) $file, 'remote:')) {
+                $command .= ' ' . escapeshellarg($sshUrl . ':' . substr((string) $file, 7));
                 $remoteUsed = true;
             } else {
-                $command .= ' ' . escapeshellarg($file);
+                $command .= ' ' . escapeshellarg((string) $file);
             }
         }
 
@@ -79,15 +81,11 @@ class EnvironmentScpCommand extends CommandBase
             throw new InvalidArgumentException('At least one argument needs to contain the "remote:" prefix');
         }
 
-        /** @var \Platformsh\Cli\Service\Shell $shell */
-        $shell = $this->getService('shell');
-
         $start = \time();
 
-        $exitCode = $shell->executeSimple($command);
+        $exitCode = $this->shell->executeSimple($command);
         if ($exitCode !== 0) {
-            /** @var \Platformsh\Cli\Service\SshDiagnostics $diagnostics */
-            $diagnostics = $this->getService('ssh_diagnostics');
+            $diagnostics = $this->sshDiagnostics;
             $diagnostics->diagnoseFailureWithTest($sshUrl, $start, $exitCode);
         }
 

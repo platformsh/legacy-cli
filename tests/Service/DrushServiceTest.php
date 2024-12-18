@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
@@ -11,21 +12,14 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DrushServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Drush */
-    protected $drush;
-
-    /** @var Project */
-    protected $project;
-
-    /** @var Environment[] */
-    protected $environments = [];
+    protected Drush $drush;
+    protected Project $project;
+    protected array $environments = [];
 
     /**
      * @{inheritdoc}
@@ -52,7 +46,7 @@ class DrushServiceTest extends TestCase
         $this->tempDirSetUp();
     }
 
-    public function testCreateAliases()
+    public function testCreateAliases(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -85,7 +79,7 @@ class DrushServiceTest extends TestCase
         $this->assertArrayHasKey('_local', $aliases);
     }
 
-    public function testCreateAliasesMultiApp()
+    public function testCreateAliasesMultiApp(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -117,7 +111,7 @@ class DrushServiceTest extends TestCase
         $this->assertCount(1, $apps);
     }
 
-    public function testCreateAliasesMultiDrupal()
+    public function testCreateAliasesMultiDrupal(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -157,7 +151,7 @@ class DrushServiceTest extends TestCase
         $this->assertArrayHasKey('_local--drupal2', $aliases);
     }
 
-    public function testGetSiteAliasDir()
+    public function testGetSiteAliasDir(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();

@@ -4,12 +4,11 @@ namespace Platformsh\Cli\Tests\Local;
 
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Local\ApplicationFinder;
-use Platformsh\Cli\Local\LocalApplication;
 use Platformsh\Cli\Service\Config;
 
 class ApplicationFinderTest extends TestCase
 {
-    private $finder;
+    private ApplicationFinder $finder;
 
     public function setUp(): void
     {
@@ -20,7 +19,7 @@ class ApplicationFinderTest extends TestCase
         $this->finder = new ApplicationFinder($config);
     }
 
-    public function testFindNestedApps()
+    public function testFindNestedApps(): void
     {
         $fakeAppRoot = 'tests/data/repositories/multiple/nest';
 
@@ -28,7 +27,7 @@ class ApplicationFinderTest extends TestCase
         $this->assertCount(3, $apps);
     }
 
-    public function testFindAppsUnderGroupedConfig()
+    public function testFindAppsUnderGroupedConfig(): void
     {
         $fakeAppRoot = 'tests/data/repositories/multi-grouped-config';
 
@@ -36,7 +35,7 @@ class ApplicationFinderTest extends TestCase
         $this->assertCount(3, $apps);
     }
 
-    public function testDetectMultiple()
+    public function testDetectMultiple(): void
     {
         $fakeRepositoryRoot = 'tests/data/repositories/multiple';
 

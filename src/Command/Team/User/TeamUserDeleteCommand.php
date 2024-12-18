@@ -1,48 +1,52 @@
 <?php
 namespace Platformsh\Cli\Command\Team\User;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Team\TeamCommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\Team\TeamMember;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:user:delete', description: 'Remove a user from a team')]
 class TeamUserDeleteCommand extends TeamCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
-        $this->setName('team:user:delete')
-            ->setDescription('Remove a user from a team')
-            ->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID')
-            ->addOrganizationOptions()
-            ->addTeamOption();
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
+        $this->addArgument('user', InputArgument::OPTIONAL, 'The user email address or ID');
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addTeamOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $team = $this->validateTeamInput($input);
         if (!$team) {
             return 1;
         }
-        $organization = $this->api()->getOrganizationById($team->organization_id);
+        $organization = $this->api->getOrganizationById($team->organization_id);
         if (!$organization) {
             $this->stdErr->writeln(sprintf('Failed to load team organization: <error>%s</error>.', $team->organization_id));
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         $identifier = $input->getArgument('user');
         if ($identifier) {
-            if (strpos($identifier, '@') !== false) {
-                $orgMember = $this->api()->loadMemberByEmail($organization, $identifier);
+            if (str_contains((string) $identifier, '@')) {
+                $orgMember = $this->api->loadMemberByEmail($organization, $identifier);
                 if (!$orgMember) {
-                    $this->stdErr->writeln(sprintf('The user with email address <error>%s</error> was not found in the organization %s', $identifier, $this->api()->getOrganizationLabel($organization, 'error')));
+                    $this->stdErr->writeln(sprintf('The user with email address <error>%s</error> was not found in the organization %s', $identifier, $this->api->getOrganizationLabel($organization, 'error')));
                     return 1;
                 }
                 $member = $team->getMember($orgMember->user_id);
@@ -66,17 +70,17 @@ class TeamUserDeleteCommand extends TeamCommandBase
             $choices = [];
             $byId = [];
             foreach ($members as $member) {
-                $choices[$member->user_id] = $this->api()->getMemberLabel($member);
+                $choices[$member->user_id] = $this->api->getMemberLabel($member);
                 $byId[$member->user_id] = $member;
             }
-            $id = $questionHelper->choose($choices, 'Enter a number to choose a user to remove:', null, false);
+            $id = $this->questionHelper->choose($choices, 'Enter a number to choose a user to remove:', null, false);
             $member = $byId[$id];
         } else {
             $this->stdErr->writeln('A user must be specified (in non-interactive mode).');
             return 1;
         }
 
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to remove the user <comment>%s</comment> from the team %s?', $this->api()->getMemberLabel($member), $this->getTeamLabel($team, 'comment')))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to remove the user <comment>%s</comment> from the team %s?', $this->api->getMemberLabel($member), $this->getTeamLabel($team, 'comment')))) {
             return 1;
         }
 
@@ -87,7 +91,7 @@ class TeamUserDeleteCommand extends TeamCommandBase
         }
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln(sprintf('The user <info>%s</info> was successfully removed from the team %s.', $this->api()->getMemberLabel($member), $this->getTeamLabel($team)));
+        $this->stdErr->writeln(sprintf('The user <info>%s</info> was successfully removed from the team %s.', $this->api->getMemberLabel($member), $this->getTeamLabel($team)));
 
         return 0;
     }
@@ -98,9 +102,9 @@ class TeamUserDeleteCommand extends TeamCommandBase
      * @param Team $team
      * @return TeamMember[]
      */
-    private function loadMembers(Team $team)
+    private function loadMembers(Team $team): array
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         /** @var TeamMember[] $members */
         $members = [];
         $url = $team->getUri() . '/members';

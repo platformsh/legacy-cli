@@ -2,26 +2,25 @@
 
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Shell;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DependenciesTest extends BuildFlavorTestBase
 {
-    protected $sourceDir = 'tests/data/apps/build-deps';
+    protected string $sourceDir = 'tests/data/apps/build-deps';
 
-    public function testBuildSucceedsIfDepsNotRequired()
+    public function testBuildSucceedsIfDepsNotRequired(): void
     {
         $this->assertBuildSucceeds($this->sourceDir, ['no-deps' => true, 'no-build-hooks' => true]);
     }
 
-    public function testBuildFailsIfDepsNotInstalled()
+    public function testBuildFailsIfDepsNotInstalled(): void
     {
         $this->assertBuildSucceeds($this->sourceDir, ['no-deps' => true], false);
     }
 
-    public function testBuildSucceedsIfNodejsDepsInstalled()
+    public function testBuildSucceedsIfNodejsDepsInstalled(): void
     {
         $shell = new Shell();
         if ($shell->commandExists('npm')) {
@@ -31,7 +30,7 @@ class DependenciesTest extends BuildFlavorTestBase
         }
     }
 
-    public function testBuildSucceedsIfPhpDepsInstalled()
+    public function testBuildSucceedsIfPhpDepsInstalled(): void
     {
         $shell = new Shell();
         if ($shell->commandExists('composer')) {
@@ -41,7 +40,7 @@ class DependenciesTest extends BuildFlavorTestBase
         }
     }
 
-    public function testBuildSucceedsIfPythonDepsInstalled()
+    public function testBuildSucceedsIfPythonDepsInstalled(): void
     {
         $shell = new Shell();
         if ($shell->commandExists('pip') || $shell->commandExists('pip3')) {
@@ -51,9 +50,8 @@ class DependenciesTest extends BuildFlavorTestBase
             try {
                 $this->assertBuildSucceeds($this->sourceDir . '/python');
             } catch (\RuntimeException $e) {
-                if (\getenv('TRAVIS') && strpos($e->getMessage(), 'The command failed') !== false && strpos($e->getMessage(), 'pip install') !== false) {
+                if (\getenv('TRAVIS') && str_contains($e->getMessage(), 'The command failed') && str_contains($e->getMessage(), 'pip install')) {
                     $this->markTestSkipped('Installing python dependencies is known to fail on Travis');
-                    return;
                 }
                 throw $e;
             }
@@ -62,7 +60,7 @@ class DependenciesTest extends BuildFlavorTestBase
         }
     }
 
-    public function testBuildSucceedsIfRubyDepsInstalled()
+    public function testBuildSucceedsIfRubyDepsInstalled(): void
     {
         $shell = new Shell();
         if ($shell->commandExists('bundle')) {

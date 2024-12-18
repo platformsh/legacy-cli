@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Service;
 
+use Composer\CaBundle\CaBundle;
 use Platformsh\Cli\Util\NestedArrayUtil;
 use Symfony\Component\Yaml\Yaml;
 
@@ -10,20 +11,17 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Config
 {
-    private $config;
-    private $configFile;
-    private $env;
-    private $fs;
-    private $version;
-    private $homeDir;
+    private array $config;
+    private string $configFile;
+    private array $env;
 
-    /**
-     * @param array|null  $env
-     * @param string|null $file
-     */
-    public function __construct(array $env = null, $file = null)
+    private ?Filesystem $fs = null;
+    private ?string $version = null;
+    private ?string $homeDir = null;
+
+    public function __construct(?array $env = null, ?string $file = null)
     {
-        $this->env = $env !== null ? $env : $this->getDefaultEnv();
+        $this->env = $env !== null ? $env : getenv();
 
         if ($file === null) {
             $file = $this->getEnv('CLI_CONFIG_FILE', false) ?: CLI_ROOT . '/config.yaml';
@@ -51,7 +49,7 @@ class Config
                 if ($id !== false) {
                     try {
                         $this->validateSessionId(\trim($id));
-                    } catch (\InvalidArgumentException $e) {
+                    } catch (\InvalidArgumentException) {
                         throw new \InvalidArgumentException('Invalid session ID in file: ' . $sessionIdFile);
                     }
                     $this->config['api']['session_id'] = \trim($id);
@@ -66,16 +64,6 @@ class Config
     }
 
     /**
-     * Find all current environment variables.
-     *
-     * @return array
-     */
-    private function getDefaultEnv()
-    {
-        return PHP_VERSION_ID >= 70100 ? getenv() : $_ENV;
-    }
-
-    /**
      * Check if a configuration value is defined.
      *
      * @param string $name    The configuration name (e.g. 'application.name').
@@ -84,7 +72,7 @@ class Config
      *
      * @return bool
      */
-    public function has($name, $notNull = true)
+    public function has(string $name, bool $notNull = true): bool
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
 
@@ -100,11 +88,33 @@ class Config
      *
      * @return null|string|bool|array
      */
-    public function get($name)
+    public function get(string $name): bool|array|string|null
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
             throw new \RuntimeException('Configuration not defined: ' . $name);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Get a string configuration value.
+     *
+     * @param string $name The configuration name (e.g. 'application.name').
+     *
+     * @throws \RuntimeException if the configuration is not defined or not a string.
+     *
+     * @return string
+     */
+    public function getStr(string $name): string
+    {
+        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
+        if (!$exists) {
+            throw new \RuntimeException('Configuration not defined: ' . $name);
+        }
+        if (!is_string($value)) {
+            throw new \RuntimeException(sprintf('Configuration %s was expected to be a string, %s found', $name, gettype($value)));
         }
 
         return $value;
@@ -121,7 +131,7 @@ class Config
      *
      * @return mixed
      */
-    public function getWithDefault($name, $default, $useDefaultIfNull = true)
+    public function getWithDefault(string $name, mixed $default, bool $useDefaultIfNull = true): mixed
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists || ($useDefaultIfNull && $value === null)) {
@@ -138,12 +148,12 @@ class Config
      *
      * @return string The absolute path to the user's home directory
      */
-    public function getHomeDirectory($reset = false)
+    public function getHomeDirectory(bool $reset = false): string
     {
         if (!$reset && isset($this->homeDir)) {
             return $this->homeDir;
         }
-        $prefix = isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
+        $prefix = $this->config['application']['env_prefix'] ?? '';
         $envVars = [$prefix . 'HOME', 'HOME', 'USERPROFILE'];
         foreach ($envVars as $envVar) {
             $value = getenv($envVar);
@@ -172,19 +182,19 @@ class Config
      *
      * @return string
      */
-    public function getUserConfigDir($absolute = true)
+    public function getUserConfigDir(bool $absolute = true): string
     {
         $path = $this->get('application.user_config_dir');
 
         return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
     }
 
-    /**
-     * @return \Platformsh\Cli\Service\Filesystem
-     */
-    private function fs()
+    private function fs(): Filesystem
     {
-        return $this->fs ?: new Filesystem();
+        if (!isset($this->fs)) {
+            $this->fs = new Filesystem();
+        }
+        return $this->fs;
     }
 
     /**
@@ -194,11 +204,9 @@ class Config
      *
      * @return string
      */
-    public function getWritableUserDir()
+    public function getWritableUserDir(): string
     {
-        $path = isset($this->config['application']['writable_user_dir'])
-            ? $this->config['application']['writable_user_dir']
-            : $this->getUserConfigDir(false);
+        $path = $this->config['application']['writable_user_dir'] ?? $this->getUserConfigDir(false);
         $configDir = $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path;
 
         // If the directory is not writable (e.g. if we are on a Platform.sh
@@ -210,12 +218,7 @@ class Config
         return $configDir;
     }
 
-    /**
-     * @param bool $subDir
-     *
-     * @return string
-     */
-    public function getSessionDir($subDir = false)
+    public function getSessionDir(bool $subDir = false): string
     {
         $sessionDir = $this->getWritableUserDir() . DIRECTORY_SEPARATOR . '.session';
         if ($subDir) {
@@ -228,7 +231,7 @@ class Config
     /**
      * @return string
      */
-    public function getSessionId()
+    public function getSessionId(): string
     {
         return $this->getWithDefault('api.session_id', 'default');
     }
@@ -238,18 +241,15 @@ class Config
      *
      * @return string
      */
-    public function getSessionIdSlug($prefix = 'sess-cli-')
+    public function getSessionIdSlug(string $prefix = 'sess-cli-'): string
     {
         return $prefix . preg_replace('/[^\w\-]+/', '-', $this->getSessionId());
     }
 
     /**
      * Sets a new session ID.
-     *
-     * @param string $id
-     * @param bool   $persist
      */
-    public function setSessionId($id, $persist = false)
+    public function setSessionId(string $id, bool $persist = false): void
     {
         $this->config['api']['session_id'] = $id;
         if ($persist) {
@@ -269,7 +269,7 @@ class Config
      *
      * @return bool
      */
-    public function isSessionIdFromEnv()
+    public function isSessionIdFromEnv(): bool
     {
         $sessionId = $this->getSessionId();
         return $sessionId !== 'default' && $sessionId === $this->getEnv('SESSION_ID');
@@ -280,7 +280,7 @@ class Config
      *
      * @return string
      */
-    private function getSessionIdFile()
+    private function getSessionIdFile(): string
     {
         return $this->getWritableUserDir() . DIRECTORY_SEPARATOR . 'session-id';
     }
@@ -290,9 +290,9 @@ class Config
      *
      * @param string $id
      */
-    public function validateSessionId($id)
+    public function validateSessionId(string $id): void
     {
-        if (strpos($id, 'api-token-') === 0 || !\preg_match('@^[a-z0-9_-]+$@i', $id)) {
+        if (str_starts_with($id, 'api-token-') || !\preg_match('@^[a-z0-9_-]+$@i', $id)) {
             throw new \InvalidArgumentException('Invalid session ID: ' . $id);
         }
     }
@@ -304,7 +304,7 @@ class Config
      *
      * @return self
      */
-    public function withOverrides(array $overrides)
+    public function withOverrides(array $overrides): self
     {
         $config = new self($this->env, $this->configFile);
         foreach ($overrides as $key => $value) {
@@ -321,7 +321,7 @@ class Config
      *
      * @return array
      */
-    private function loadConfigFromFile($filename)
+    private function loadConfigFromFile(string $filename): array
     {
         $contents = file_get_contents($filename);
         if ($contents === false) {
@@ -337,7 +337,7 @@ class Config
         return (array) Yaml::parse($contents);
     }
 
-    private function applyEnvironmentOverrides()
+    private function applyEnvironmentOverrides(): void
     {
         $overrideMap = [];
         $types = [];
@@ -418,10 +418,10 @@ class Config
      * @param bool $addPrefix
      *   Whether to add the configured prefix to the variable name.
      *
-     * @return mixed|false
+     * @return string|false
      *   The value of the environment variable, or false if it is not set.
      */
-    private function getEnv($name, $addPrefix = true)
+    private function getEnv(string $name, bool $addPrefix = true): string|false
     {
         $prefix = $addPrefix && isset($this->config['application']['env_prefix']) ? $this->config['application']['env_prefix'] : '';
         if (array_key_exists($prefix . $name, $this->env)) {
@@ -431,7 +431,7 @@ class Config
         return getenv($prefix . $name);
     }
 
-    private function applyUserConfigOverrides()
+    private function applyUserConfigOverrides(): void
     {
         $userConfigFile = $this->getUserConfigDir() . '/config.yaml';
         if (!file_exists($userConfigFile)) {
@@ -444,38 +444,26 @@ class Config
     }
 
     /**
-     * Test if an experiment (a feature flag) is enabled.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests if an experiment (a feature flag) is enabled.
      */
-    public function isExperimentEnabled($name)
+    public function isExperimentEnabled(string $name): bool
     {
         return !empty($this->config['experimental']['all_experiments']) || !empty($this->config['experimental'][$name]);
     }
 
     /**
-     * Test if a command should be hidden.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests if a command should be hidden.
      */
-    public function isCommandHidden($name)
+    public function isCommandHidden(string $name): bool
     {
         return (!empty($this->config['application']['hidden_commands'])
             && in_array($name, $this->config['application']['hidden_commands']));
     }
 
     /**
-     * Test if a command should be enabled.
-     *
-     * @param string $name
-     *
-     * @return bool
+     * Tests if a command should be enabled.
      */
-    public function isCommandEnabled($name)
+    public function isCommandEnabled(string $name): bool
     {
         if (!empty($this->config['application']['disabled_commands'])
             && in_array($name, $this->config['application']['disabled_commands'])) {
@@ -500,18 +488,16 @@ class Config
 
     /**
      * Returns this application version.
-     *
-     * @return string
      */
-    public function getVersion() {
+    public function getVersion(): string {
         if (isset($this->version)) {
             return $this->version;
         }
         $version = $this->getWithDefault('application.version', '@version-placeholder@');
-        if (substr($version, 0, 1) === '@' && substr($version, -1) === '@') {
+        if (str_starts_with((string) $version, '@') && str_ends_with((string) $version, '@')) {
             // Silently try getting the version from Git.
             $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
-            if ($tag !== false && substr($tag, 0, 1) === 'v') {
+            if ($tag !== false && str_starts_with($tag, 'v')) {
                 $version = trim($tag);
             }
         }
@@ -525,7 +511,7 @@ class Config
      *
      * @return string
      */
-    public function getUserAgent()
+    public function getUserAgent(): string
     {
         $template = $this->getWithDefault(
             'api.user_agent',
@@ -549,7 +535,7 @@ class Config
      * @return array
      *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
      */
-    public function getProxies() {
+    public function getProxies(): array {
         $proxies = [];
         if (\getenv('https_proxy') !== false) {
             $proxies['https'] = \getenv('https_proxy');
@@ -563,12 +549,8 @@ class Config
 
     /**
      * Returns an array of context options for HTTP/HTTPS streams.
-     *
-     * @param int|float|null $timeout
-     *
-     * @return array
      */
-    public function getStreamContextOptions($timeout = null)
+    public function getStreamContextOptions(int|float|null $timeout = null): array
     {
         $opts = [
             // See https://www.php.net/manual/en/context.http.php
@@ -591,7 +573,7 @@ class Config
             $opts['ssl']['verify_peer'] = false;
             $opts['ssl']['verify_peer_name'] = false;
         } else {
-            $caBundlePath = \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath();
+            $caBundlePath = CaBundle::getSystemCaRootBundlePath();
             if (\is_dir($caBundlePath)) {
                 $opts['ssl']['capath'] = $caBundlePath;
             } else {
@@ -607,17 +589,15 @@ class Config
      *
      * @return bool
      */
-    public function isWrapped()
+    public function isWrapped(): bool
     {
         return getenv($this->get('application.env_prefix') . 'WRAPPED') === '1';
     }
 
     /**
      * Returns all the current configuration.
-     *
-     * @return array
      */
-    public function getAll()
+    public function getAll(): array
     {
         return $this->config;
     }
@@ -625,7 +605,7 @@ class Config
     /**
      * Applies defaults values based on other config values.
      */
-    private function applyDynamicDefaults()
+    private function applyDynamicDefaults(): void
     {
         $this->applyUrlDefaults();
         $this->applyLocalDirectoryDefaults();
@@ -640,7 +620,7 @@ class Config
             $this->config['api']['oauth2_client_id'] = $this->get('application.slug');
         }
         if (!isset($this->config['detection']['console_domain']) && isset($this->config['service']['console_url'])) {
-            $consoleDomain = parse_url($this->config['service']['console_url'], PHP_URL_HOST);
+            $consoleDomain = parse_url((string) $this->config['service']['console_url'], PHP_URL_HOST);
             if ($consoleDomain !== false) {
                 $this->config['detection']['console_domain'] = $consoleDomain;
             }
@@ -664,7 +644,7 @@ class Config
         }
     }
 
-    private function applyUrlDefaults()
+    private function applyUrlDefaults(): void
     {
         $authUrl = $this->getWithDefault('api.auth_url', '');
         if ($authUrl === '') {
@@ -678,12 +658,12 @@ class Config
         ];
         foreach ($defaultsUnderAuthUrl as $apiSubKey => $path) {
             if (!isset($this->config['api'][$apiSubKey])) {
-                $this->config['api'][$apiSubKey] = rtrim($authUrl, '/') . $path;
+                $this->config['api'][$apiSubKey] = rtrim((string) $authUrl, '/') . $path;
             }
         }
     }
 
-    private function applyLocalDirectoryDefaults()
+    private function applyLocalDirectoryDefaults(): void
     {
         if (isset($this->config['local']['local_dir'])) {
             $localDir = $this->config['local']['local_dir'];
@@ -710,7 +690,7 @@ class Config
      *
      * @return string
      */
-    public function getApiUrl()
+    public function getApiUrl(): string
     {
         return (string) $this->get('api.base_url');
     }

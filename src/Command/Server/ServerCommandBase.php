@@ -1,6 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Shell;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\Config;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\PortUtil;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -10,24 +15,32 @@ use Symfony\Component\Process\Process;
 
 abstract class ServerCommandBase extends CommandBase
 {
-    protected $serverInfo;
-    protected $local = true;
+    private Selector $selector;
+    private Shell $shell;
+    private LocalProject $localProject;
+    private Config $config;
 
-    public function isEnabled()
+    private ?array $serverInfo = null;
+
+    #[Required]
+    public function autowire(Config $config, LocalProject $localProject, Selector $selector, Shell $shell) : void
     {
-        return $this->config()->isExperimentEnabled('enable_local_server')
+        $this->config = $config;
+        $this->localProject = $localProject;
+        $this->shell = $shell;
+        $this->selector = $selector;
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->config->isExperimentEnabled('enable_local_server')
             && parent::isEnabled();
     }
 
     /**
-     * Check whether another server is running for an app.
-     *
-     * @param string $appId
-     * @param string $projectRoot
-     *
-     * @return bool|array
+     * Checks whether another server is running for an app.
      */
-    protected function isServerRunningForApp($appId, $projectRoot)
+    protected function isServerRunningForApp(string $appId, string $projectRoot): array|false
     {
         foreach ($this->getServerInfo() as $address => $server) {
             if ($server['appId'] === $appId && $server['projectRoot'] === $projectRoot) {
@@ -49,20 +62,15 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return bool
      */
-    protected function isProcessDead($pid)
+    private function isProcessDead(int $pid): bool
     {
-        /** @noinspection PhpComposerExtensionStubsInspection */
         return function_exists('posix_kill') && !posix_kill($pid, 0);
     }
 
     /**
-     * Check whether another server is running at an address.
-     *
-     * @param string $address
-     *
-     * @return bool|int
+     * Checks whether another server is running at an address.
      */
-    protected function isServerRunningForAddress($address)
+    protected function isServerRunningForAddress(string $address): bool|int
     {
         $pidFile = $this->getPidFile($address);
         $serverInfo = $this->getServerInfo();
@@ -86,25 +94,21 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Get info on currently running servers.
-     *
-     * @param bool $running
-     *
-     * @return array
+     * Gets info on currently running servers.
      */
-    protected function getServerInfo($running = true)
+    protected function getServerInfo(bool $running = true): array
     {
         if (!isset($this->serverInfo)) {
             $this->serverInfo = [];
             // @todo move this to State service (in a new major version)
-            $filename = $this->config()->getWritableUserDir() . '/local-servers.json';
+            $filename = $this->config->getWritableUserDir() . '/local-servers.json';
             if (file_exists($filename)) {
                 $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
             }
         }
 
         if ($running) {
-            return array_filter($this->serverInfo, function ($server) {
+            return array_filter($this->serverInfo, function (array $server): bool {
                 if ($this->isProcessDead($server['pid'])) {
                     $this->stopServer($server['address']);
                     return false;
@@ -117,9 +121,9 @@ abstract class ServerCommandBase extends CommandBase
         return $this->serverInfo;
     }
 
-    protected function saveServerInfo()
+    private function saveServerInfo(): void
     {
-        $filename = $this->config()->getWritableUserDir() . '/local-servers.json';
+        $filename = $this->config->getWritableUserDir() . '/local-servers.json';
         if (!empty($this->serverInfo)) {
             if (!file_put_contents($filename, json_encode($this->serverInfo))) {
                 throw new \RuntimeException('Failed to write server info to: ' . $filename);
@@ -130,22 +134,14 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Stop a running server.
-     *
-     * @param string $address
-     * @param int|null $pid
-     *
-     * @return bool
-     *   True on success, false on failure.
+     * Stops a running server.
      */
-    protected function stopServer($address, $pid = null)
+    protected function stopServer(string $address, ?int $pid = null): bool
     {
         $success = true;
         if ($pid && function_exists('posix_kill')) {
-            /** @noinspection PhpComposerExtensionStubsInspection */
             $success = posix_kill($pid, SIGTERM);
             if (!$success) {
-                /** @noinspection PhpComposerExtensionStubsInspection */
                 $this->stdErr->writeln(sprintf(
                     'Failed to kill process <error>%d</error> (POSIX error %s)',
                     $pid,
@@ -163,12 +159,7 @@ abstract class ServerCommandBase extends CommandBase
         return $success;
     }
 
-    /**
-     * @param string $address
-     * @param int $pid
-     * @param array $info
-     */
-    protected function writeServerInfo($address, $pid, array $info = [])
+    protected function writeServerInfo(string $address, int $pid, array $info = []): void
     {
         file_put_contents($this->getPidFile($address), $pid);
         list($ip, $port) = explode(':', $address);
@@ -182,13 +173,9 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Automatically determine the best port for a new server.
-     *
-     * @param int $default
-     *
-     * @return int
+     * Automatically determines the best port for a new server.
      */
-    protected function getPort($default = 3000)
+    protected function getPort(int $default = 3000): int
     {
         $ports = [];
         foreach ($this->getServerInfo() as $server) {
@@ -205,9 +192,9 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return string The filename
      */
-    protected function getPidFile($address)
+    protected function getPidFile(string $address): string
     {
-        return $this->config()->getWritableUserDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
+        return $this->config->getWritableUserDir() . '/server-' . preg_replace('/\W+/', '-', $address) . '.pid';
     }
 
     /**
@@ -219,17 +206,16 @@ abstract class ServerCommandBase extends CommandBase
      * @param array $appConfig
      * @param array $env
      *
-     * @throws \Exception
-     *
      * @return Process
+     *@throws \Exception
+     *
      */
-    protected function createServerProcess($address, $docRoot, $projectRoot, array $appConfig, array $env = [])
+    protected function createServerProcess(string $address, string $docRoot, string $projectRoot, array $appConfig, array $env = []): Process
     {
         if (isset($appConfig['type'])) {
-            $type = explode(':', $appConfig['type'], 2);
-            $version = isset($type[1]) ? $type[1] : false;
-            /** @var \Platformsh\Cli\Service\Shell $shell */
-            $shell = $this->getService('shell');
+            $type = explode(':', (string) $appConfig['type'], 2);
+            $version = $type[1] ?? false;
+            $shell = $this->shell;
             $localPhpVersion = $shell->getPhpVersion();
             if ($type[0] === 'php' && $version && version_compare($localPhpVersion, $version, '<')) {
                 $this->stdErr->writeln(sprintf(
@@ -271,7 +257,7 @@ abstract class ServerCommandBase extends CommandBase
         $process->setTimeout(null);
         $env += $this->createEnv($projectRoot, $docRoot, $address, $appConfig);
         $process->setEnv($env);
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         if (isset($env[$envPrefix . 'APP_DIR'])) {
             $process->setWorkingDirectory($env[$envPrefix . 'APP_DIR']);
         }
@@ -284,13 +270,13 @@ abstract class ServerCommandBase extends CommandBase
      *
      * @return array
      */
-    protected function getServerPhpConfig()
+    private function getServerPhpConfig(): array
     {
         $phpConfig = [];
 
         // Ensure $_ENV is populated.
         $variables_order = ini_get('variables_order');
-        if (strpos($variables_order, 'E') === false) {
+        if (!str_contains($variables_order, 'E')) {
             $phpConfig['variables_order'] = 'E' . $variables_order;
         }
 
@@ -305,7 +291,7 @@ abstract class ServerCommandBase extends CommandBase
      * @return string
      *   The absolute path to the router file.
      */
-    protected function createRouter($projectRoot)
+    private function createRouter(string $projectRoot): string
     {
         static $created = [];
 
@@ -314,7 +300,7 @@ abstract class ServerCommandBase extends CommandBase
             throw new \RuntimeException(sprintf('Router not found: <error>%s</error>', $router_src));
         }
 
-        $router = $projectRoot . '/' . $this->config()->get('local.local_dir') . '/' . basename($router_src);
+        $router = $projectRoot . '/' . $this->config->get('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
                 throw new \RuntimeException(sprintf('Could not create router file: <error>%s</error>', $router));
@@ -325,12 +311,7 @@ abstract class ServerCommandBase extends CommandBase
         return $router;
     }
 
-    /**
-     * @param string $logFile
-     *
-     * @return OutputInterface|false
-     */
-    protected function openLog($logFile)
+    protected function openLog(string $logFile): false|OutputInterface
     {
         $logResource = fopen($logFile, 'a');
         if ($logResource) {
@@ -340,16 +321,9 @@ abstract class ServerCommandBase extends CommandBase
         return false;
     }
 
-    /**
-     * @param string $projectRoot
-     * @param string $address
-     *
-     * @return array
-     */
-    protected function getRoutesList($projectRoot, $address)
+    private function getRoutesList(string $projectRoot, string $address): array
     {
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
+        $localProject = $this->localProject;
         $routesConfig = (array) $localProject->readProjectConfigFile($projectRoot, 'routes.yaml');
 
         $routes = [];
@@ -357,10 +331,10 @@ abstract class ServerCommandBase extends CommandBase
             // If the route starts with http://{default}, replace it with the
             // $address. This can't accommodate subdomains or HTTPS routes, so
             // those are ignored.
-            $url = strpos($route, 'http://{default}') === 0
+            $url = str_starts_with($route, 'http://{default}')
                 ? 'http://' . $address . substr($route, 16)
                 : $route;
-            if (strpos($url, '{default}') !== false) {
+            if (str_contains($url, '{default}')) {
                 continue;
             }
             $routes[$url] = $config + ['original_url' => $route];
@@ -370,41 +344,34 @@ abstract class ServerCommandBase extends CommandBase
     }
 
     /**
-     * Create the virtual environment variables for a local server.
-     *
-     * @param string $projectRoot
-     * @param string $docRoot
-     * @param string $address
-     * @param array $appConfig
-     *
-     * @return array
+     * Creates the virtual environment variables for a local server.
      */
-    protected function createEnv($projectRoot, $docRoot, $address, array $appConfig)
+    protected function createEnv(string $projectRoot, string $docRoot, string $address, array $appConfig): array
     {
         $realDocRoot = realpath($docRoot);
-        $envPrefix = $this->config()->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $env = [
             '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',
             $envPrefix . 'APPLICATION' => base64_encode(json_encode($appConfig)),
-            $envPrefix . 'APPLICATION_NAME' => isset($appConfig['name']) ? $appConfig['name'] : '',
+            $envPrefix . 'APPLICATION_NAME' => $appConfig['name'] ?? '',
             $envPrefix . 'DOCUMENT_ROOT' => $realDocRoot,
             $envPrefix . 'ROUTES' => base64_encode(json_encode($this->getRoutesList($projectRoot, $address))),
         ];
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config()->get('local.build_dir')) {
+        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->get('local.build_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 
-        if ($projectRoot === $this->getProjectRoot()) {
+        if ($projectRoot === $this->selector->getProjectRoot()) {
             try {
-                $project = $this->getCurrentProject();
+                $project = $this->selector->getCurrentProject();
                 if ($project) {
                     $env[$envPrefix . 'PROJECT'] = $project->id;
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Ignore errors
             }
         }
@@ -412,7 +379,7 @@ abstract class ServerCommandBase extends CommandBase
         return $env;
     }
 
-    protected function showSecurityWarning()
+    private function showSecurityWarning(): void
     {
         static $shown;
         if ($shown) {

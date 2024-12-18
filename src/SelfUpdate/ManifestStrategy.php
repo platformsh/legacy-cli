@@ -9,72 +9,46 @@ use Humbug\SelfUpdate\VersionParser;
 
 class ManifestStrategy implements StrategyInterface
 {
-    /** @var string */
-    private $manifestUrl;
+    private ?array $manifest = null;
 
-    /** @var array|null */
-    private $manifest;
+    private ?array $availableVersions = null;
 
-    /** @var array|null */
-    private $availableVersions;
+    private static array $requiredKeys = ['sha256', 'version', 'url'];
 
-    /** @var string */
-    private $localVersion;
+    private int $manifestTimeout = 10;
 
-    /** @var bool */
-    private $allowMajor = false;
+    private int $downloadTimeout = 60;
 
-    /** @var bool */
-    private $allowUnstable = false;
+    private bool $ignorePhpReq = false;
 
-    /** @var array */
-    private static $requiredKeys = ['sha256', 'version', 'url'];
-
-    /** @var int */
-    private $manifestTimeout = 10;
-
-    /** @var int */
-    private $downloadTimeout = 60;
-
-    /** @var bool */
-    private $ignorePhpReq = false;
-
-    /** @var array */
-    private $streamContextOptions = [];
+    private array $streamContextOptions = [];
 
     /**
      * ManifestStrategy constructor.
      *
-     * @param string $localVersion  The local version.
-     * @param string $manifestUrl   The URL to a JSON manifest file. The
-     *                              manifest contains an array of objects, each
-     *                              containing a 'version', 'sha256', and 'url'.
-     * @param bool   $allowMajor    Whether to allow updating between major
-     *                              versions.
-     * @param bool   $allowUnstable Whether to allow updating to an unstable
-     *                              version. Ignored if $localVersion is unstable
-     *                              and there are no new stable versions.
+     * @param string $localVersion The local version.
+     * @param string $manifestUrl The URL to a JSON manifest file. The
+     *                            manifest contains an array of objects, each
+     *                            containing a 'version', 'sha256', and 'url'.
+     * @param bool $allowMajor Whether to allow updating between major
+     *                         versions.
+     * @param bool $allowUnstable Whether to allow updating to an unstable
+     *                            version. Ignored if $localVersion is unstable
+     *                            and there are no new stable versions.
      */
-    public function __construct($localVersion, $manifestUrl, $allowMajor = false, $allowUnstable = false)
+    public function __construct(private readonly string $localVersion, private readonly string $manifestUrl, private readonly bool $allowMajor = false, private readonly bool $allowUnstable = false)
     {
-        $this->localVersion = $localVersion;
-        $this->manifestUrl = $manifestUrl;
-        $this->allowMajor = $allowMajor;
-        $this->allowUnstable = $allowUnstable;
     }
 
     /**
      * @param array $opts
      */
-    public function setStreamContextOptions(array $opts)
+    public function setStreamContextOptions(array $opts): void
     {
         $this->streamContextOptions = $opts;
     }
 
-    /**
-     * @param int $manifestTimeout
-     */
-    public function setManifestTimeout($manifestTimeout)
+    public function setManifestTimeout(int $manifestTimeout): void
     {
         $this->manifestTimeout = $manifestTimeout;
     }
@@ -82,7 +56,7 @@ class ManifestStrategy implements StrategyInterface
     /**
      * {@inheritdoc}
      */
-    public function getCurrentLocalVersion(Updater $updater)
+    public function getCurrentLocalVersion(Updater $updater): string
     {
         return $this->localVersion;
     }
@@ -90,7 +64,7 @@ class ManifestStrategy implements StrategyInterface
     /**
      * {@inheritdoc}
      */
-    public function getCurrentRemoteVersion(Updater $updater)
+    public function getCurrentRemoteVersion(Updater $updater): bool|string
     {
         $versions = array_keys($this->getAvailableVersions());
         if (!$this->allowMajor) {
@@ -116,14 +90,9 @@ class ManifestStrategy implements StrategyInterface
     }
 
     /**
-     * Find update/upgrade notes for the new remote version.
-     *
-     * @param string $currentVersion
-     * @param string $targetVersion
-     *
-     * @return array
+     * Finds update/upgrade notes for the new remote version.
      */
-    public function getUpdateNotesByVersion($currentVersion, $targetVersion)
+    public function getUpdateNotesByVersion(string $currentVersion, string $targetVersion): array
     {
         $notes = [];
         foreach ($this->getAvailableVersions() as $version => $item) {
@@ -139,22 +108,22 @@ class ManifestStrategy implements StrategyInterface
                 }
             }
         }
-        uksort($notes, function ($a, $b) { return \version_compare($a, $b); });
+        uksort($notes, fn($a, $b): int => \version_compare($a, $b));
         return $notes;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function download(Updater $updater)
+    public function download(Updater $updater): void
     {
         $versionInfo = $this->getRemoteVersionInfo($updater);
 
         // A relative download URL is treated as relative to the manifest URL.
         $url = $versionInfo['url'];
-        if (strpos($url, '//') === false && strpos($this->manifestUrl, '//') !== false) {
+        if (!str_contains((string) $url, '//') && str_contains($this->manifestUrl, '//')) {
             $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
-            $url = str_replace($removePath, '/' . ltrim($url, '/'), $this->manifestUrl);
+            $url = str_replace($removePath, '/' . ltrim((string) $url, '/'), $this->manifestUrl);
         }
 
         $opts = $this->streamContextOptions;
@@ -185,11 +154,20 @@ class ManifestStrategy implements StrategyInterface
     /**
      * Get available versions to update to.
      *
-     * @return array
+     * @return array<string, array{
+     *     version: string,
+     *     sha256: string,
+     *     url: string,
+     *     php?: array{
+     *       min?: string,
+     *       max?: string
+     *     },
+     *     notes?: string|array<string, string>
+     *   }>
      *   An array keyed by the version name, whose elements are arrays
-     *   containing version information ('version', 'sha256', and 'url').
+     *   containing version information.
      */
-    private function getAvailableVersions()
+    private function getAvailableVersions(): array
     {
         if (!isset($this->availableVersions)) {
             $this->availableVersions = [];
@@ -215,7 +193,7 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return array
      */
-    private function getRemoteVersionInfo(Updater $updater)
+    private function getRemoteVersionInfo(Updater $updater): array
     {
         $version = $this->getCurrentRemoteVersion($updater);
         if ($version === false) {
@@ -230,11 +208,9 @@ class ManifestStrategy implements StrategyInterface
     }
 
     /**
-     * Download and decode the JSON manifest file.
-     *
-     * @return array
+     * Downloads and decodes the JSON manifest file.
      */
-    private function getManifest()
+    private function getManifest(): array
     {
         if (!isset($this->manifest)) {
             $opts = $this->streamContextOptions;
@@ -263,11 +239,11 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return string[]
      */
-    private function filterByLocalMajorVersion(array $versions)
+    private function filterByLocalMajorVersion(array $versions): array
     {
         list($localMajorVersion, ) = explode('.', $this->localVersion, 2);
 
-        return array_filter($versions, function ($version) use ($localMajorVersion) {
+        return array_filter($versions, function ($version) use ($localMajorVersion): bool {
             list($majorVersion, ) = explode('.', $version, 2);
             return $majorVersion === $localMajorVersion;
         });
@@ -280,11 +256,11 @@ class ManifestStrategy implements StrategyInterface
      *
      * @return string[]
      */
-    private function filterByPhpVersion(array $versions)
+    private function filterByPhpVersion(array $versions): array
     {
         $versionInfo = $this->getAvailableVersions();
 
-        return array_filter($versions, function ($version) use ($versionInfo) {
+        return array_filter($versions, function ($version) use ($versionInfo): bool {
             if (isset($versionInfo[$version]['php']['min'])
                 && version_compare(PHP_VERSION, $versionInfo[$version]['php']['min'], '<')) {
                 return false;

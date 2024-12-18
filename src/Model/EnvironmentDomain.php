@@ -2,10 +2,11 @@
 
 namespace Platformsh\Cli\Model;
 
+use Platformsh\Client\Model\Result;
 use GuzzleHttp\ClientInterface;
+use Platformsh\Client\Model\ApiResourceBase;
 use Platformsh\Client\Model\Domain;
 use Platformsh\Client\Model\Environment;
-use Platformsh\Client\Model\Resource;
 
 /**
  * A domain name on a Platform.sh environment.
@@ -16,22 +17,17 @@ use Platformsh\Client\Model\Resource;
  * @property-read string $created_at
  * @property-read string $updated_at
  */
-class EnvironmentDomain extends Resource
+class EnvironmentDomain extends ApiResourceBase
 {
-    public static function getList(Environment $environment, ClientInterface $client)
+    public static function getList(Environment $environment, ClientInterface $client): array
     {
         return static::getCollection($environment->getLink('#domains'), 0, [], $client);
     }
 
     /**
-     * @param ClientInterface $client
-     * @param Environment $environment
-     * @param string $name
-     * @param string $replacementFor
-     * @param array $ssl
-     * @return \Platformsh\Client\Model\Result
+     * Adds a domain to an environment.
      */
-    public static function add(ClientInterface $client, Environment $environment, $name, $replacementFor = '', $ssl = [])
+    public static function add(ClientInterface $client, Environment $environment, string $name, string $replacementFor = '', array $ssl = []): Result
     {
         $body = ['name' => $name];
         if (!empty($replacementFor)) {

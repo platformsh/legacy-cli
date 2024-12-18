@@ -2,33 +2,44 @@
 
 namespace Platformsh\Cli\Command\Resources\Build;
 
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\Resources\ResourcesCommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:build:set', description: 'Set the build resources of a project', aliases: ['build-resources:set'])]
 class BuildResourcesSetCommand extends ResourcesCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
-        $this->setName('resources:build:set')
-            ->setAliases(['build-resources:set'])
-            ->setDescription('Set the build resources of a project')
-            ->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
-            ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)')
-            ->addProjectOption();
+        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function configure(): void
     {
-        $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $this->addOption('cpu', null, InputOption::VALUE_REQUIRED, 'Build CPU')
+            ->addOption('memory', null, InputOption::VALUE_REQUIRED, 'Build memory (in MB)');
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
         $capabilities = $project->getCapabilities();
 
         $capability = $capabilities->getProperty('build_resources', false);
@@ -37,10 +48,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $settings = $project->getSettings();
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
-        $validateCpu = function ($v) use ($maxCpu) {
+        $validateCpu = function ($v) use ($maxCpu): float {
             $f = (float) $v;
             if ($f != $v) {
                 throw new InvalidArgumentException('The CPU value must be a number');
@@ -53,7 +61,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
             }
             return $f;
         };
-        $validateMemory = function ($v) use ($maxMemory) {
+        $validateMemory = function ($v) use ($maxMemory): int {
             $i = (int) $v;
             if ($i != $v) {
                 throw new InvalidArgumentException('The memory value must be an integer');
@@ -67,7 +75,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
             return $i;
         };
 
-        $this->stdErr->writeln('Update the build resources on the project: ' . $this->api()->getProjectLabel($project));
+        $this->stdErr->writeln('Update the build resources on the project: ' . $this->api->getProjectLabel($project));
 
         $cpuOption = $input->getOption('cpu');
         $memoryOption = $input->getOption('memory');
@@ -88,15 +96,15 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('');
 
         if ($cpuOption === null && $memoryOption === null) {
-            $cpuOption = $questionHelper->askInput(
+            $cpuOption = $this->questionHelper->askInput(
                 'CPU size',
-                $this->formatCPU($settings['build_resources']['cpu']),
+                $this->resourcesUtil->formatCPU($settings['build_resources']['cpu']),
                 [],
                 $validateCpu,
                 'current: '
             );
 
-            $memoryOption = $questionHelper->askInput(
+            $memoryOption = $this->questionHelper->askInput(
                 'Memory size in MB',
                 $settings['build_resources']['memory'],
                 [],
@@ -121,10 +129,10 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $this->summarizeChanges($updates['build_resources'], $settings['build_resources']);
 
-        $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
+        $this->io->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 
@@ -133,26 +141,26 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $this->stdErr->writeln('The settings were successfully updated.');
 
-        return $this->runOtherCommand('resources:build:get', ['--project' => $project->id]);
+        return $this->subCommandRunner->run('resources:build:get', ['--project' => $project->id]);
     }
 
     /**
      * Summarizes all the changes that would be made.
      *
-     * @param array{cpu: int, memory: int} $updates
+     * @param array{cpu?: int, memory?: int} $updates
      * @param array{cpu: int, memory: int} $current
      * @return void
      */
-    private function summarizeChanges(array $updates, array $current)
+    private function summarizeChanges(array $updates, array $current): void
     {
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
-        $this->stdErr->writeln('  CPU: ' . $this->formatChange(
-            $this->formatCPU($current['cpu']),
-            $this->formatCPU(isset($updates['cpu']) ? $updates['cpu'] : $current['cpu'])
+        $this->stdErr->writeln('  CPU: ' . $this->resourcesUtil->formatChange(
+            $this->resourcesUtil->formatCPU($current['cpu']),
+            $this->resourcesUtil->formatCPU($updates['cpu'] ?? $current['cpu'])
         ));
-        $this->stdErr->writeln('  Memory: ' . $this->formatChange(
+        $this->stdErr->writeln('  Memory: ' . $this->resourcesUtil->formatChange(
             $current['memory'],
-            isset($updates['memory']) ? $updates['memory'] : $current['memory'],
+                $updates['memory'] ?? $current['memory'],
             ' MB'
         ));
     }

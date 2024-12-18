@@ -1,39 +1,39 @@
 <?php
 
-namespace Platformsh\Cli\Command\User;
+namespace Platformsh\Cli\Service;
 
-use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\Ref\UserRef;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class UserCommandBase extends CommandBase
+class AccessApi
 {
-    /** @var ProjectUserAccess|ProjectAccess|null */
-    private static $userCache;
+    /** @var array<string, ProjectUserAccess|ProjectAccess|null> */
+    private static ?array $userCache = [];
 
-    /**
-     * @return bool
-     */
-    protected function centralizedPermissionsEnabled()
+    private OutputInterface $stdErr;
+
+    public function __construct(private readonly Api $api, private readonly Config $config, OutputInterface $output)
     {
-        return $this->config()->get('api.centralized_permissions')
-            && $this->config()->get('api.organizations');
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+    }
+
+    public function centralizedPermissionsEnabled(): bool
+    {
+        return $this->config->get('api.centralized_permissions')
+            && $this->config->get('api.organizations');
     }
 
     /**
      * Loads a legacy project user ("project access" record) by ID.
-     *
-     * @param Project $project
-     * @param string  $id
-     *
-     * @return ProjectAccess|null
      */
-    private function doLoadLegacyProjectAccessById(Project $project, $id)
+    private function doLoadLegacyProjectAccessById(Project $project, string $id): ?ProjectAccess
     {
-        return ProjectAccess::get($id, $project->getUri() . '/access', $this->api()->getHttpClient()) ?: null;
+        return ProjectAccess::get($id, $project->getUri() . '/access', $this->api->getHttpClient()) ?: null;
     }
 
     /**
@@ -50,9 +50,9 @@ abstract class UserCommandBase extends CommandBase
      *  "Centralized Permissions" are enabled, or a ProjectAccess object
      *  otherwise.
      */
-    protected function loadProjectUser(Project $project, $identifier, $reset = false)
+    public function loadProjectUser(Project $project, string $identifier, bool $reset = false): ProjectUserAccess|ProjectAccess|null
     {
-        $byEmail = strpos($identifier, '@') !== false;
+        $byEmail = str_contains($identifier, '@');
         $cacheKey = $project->id . ':' . $identifier;
         if ($reset || !isset(self::$userCache[$cacheKey])) {
             if ($this->centralizedPermissionsEnabled()) {
@@ -76,7 +76,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return ProjectAccess|null
      */
-    private function doLoadLegacyProjectAccessByEmail(Project $project, $email)
+    private function doLoadLegacyProjectAccessByEmail(Project $project, string $email): ProjectAccess|null
     {
         foreach ($project->getUsers() as $user) {
             $info = $this->legacyUserInfo($user);
@@ -95,7 +95,7 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return array{id: string, email: string, display_name: string, created_at: string, updated_at: ?string}
      */
-    protected function legacyUserInfo(ProjectAccess $access)
+    public function legacyUserInfo(ProjectAccess $access): array
     {
         $data = $access->getData();
         if (isset($data['_embedded']['users'])) {
@@ -115,9 +115,9 @@ abstract class UserCommandBase extends CommandBase
      * @param Project $project
      * @return ProjectUserAccess|null
      */
-    private function doLoadProjectUserById(Project $project, $id)
+    private function doLoadProjectUserById(Project $project, string $id): ?ProjectUserAccess
     {
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
         $endpointUrl = $project->getUri() . '/user-access';
         return ProjectUserAccess::get($id, $endpointUrl, $client) ?: null;
     }
@@ -131,9 +131,9 @@ abstract class UserCommandBase extends CommandBase
      * @param Project $project
      * @return ProjectUserAccess|null
      */
-    private function doLoadProjectUserByEmail(Project $project, $email)
+    private function doLoadProjectUserByEmail(Project $project, string $email): ?ProjectUserAccess
     {
-        $client = $this->api()->getHttpClient();
+        $client = $this->api->getHttpClient();
 
         $progress = new ProgressMessage($this->stdErr);
         $progress->showIfOutputDecorated('Loading user information...');
@@ -180,11 +180,11 @@ abstract class UserCommandBase extends CommandBase
      *
      * @return array<string, string> An array of user labels keyed by user ID.
      */
-    protected function listUsers(Project $project)
+    public function listUsers(Project $project): array
     {
         $choices = [];
         if ($this->centralizedPermissionsEnabled()) {
-            $items = ProjectUserAccess::getCollection($project->getUri() . '/user-access', 0, ['query' => ['page[size]' => 200]], $this->api()->getHttpClient());
+            $items = ProjectUserAccess::getCollection($project->getUri() . '/user-access', 0, ['query' => ['page[size]' => 200]], $this->api->getHttpClient());
             foreach ($items as $item) {
                 $choices[$item->user_id] = $this->getUserLabel($item);
             }
@@ -199,13 +199,8 @@ abstract class UserCommandBase extends CommandBase
 
     /**
      * Returns a label describing a user.
-     *
-     * @param ProjectAccess|ProjectUserAccess $access
-     * @param bool $formatting
-     *
-     * @return string
      */
-    protected function getUserLabel($access, $formatting = false)
+    public function getUserLabel(ProjectUserAccess|ProjectAccess $access, bool $formatting = false): string
     {
         $format = $formatting ? '<info>%s</info> (%s)' : '%s (%s)';
         if ($access instanceof ProjectAccess) {

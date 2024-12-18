@@ -18,6 +18,8 @@ api:
   base_url: 'http://127.0.0.1'
   auth_url: 'http://127.0.0.1'
 
+  disable_credential_helpers: true
+
   organizations: true
   centralized_permissions: true
   teams: true

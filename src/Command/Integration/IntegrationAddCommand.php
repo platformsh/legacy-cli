@@ -1,24 +1,30 @@
 <?php
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Client\Model\Integration;
 use Platformsh\ConsoleForm\Exception\ConditionalFieldException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:add', description: 'Add an integration to the project')]
 class IntegrationAddCommand extends IntegrationCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
-        $this
-            ->setName('integration:add')
-            ->setDescription('Add an integration to the project');
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $this->addProjectOption()->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Add an integration with a GitHub repository',
             '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
@@ -29,16 +35,14 @@ class IntegrationAddCommand extends IntegrationCommandBase
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $selection = $this->selector->getSelection($input);
+        $this->selection = $selection;
+        $project = $selection->getProject();
         try {
             $values = $this->getForm()
-                ->resolveOptions($input, $this->stdErr, $questionHelper);
+                ->resolveOptions($input, $this->stdErr, $this->questionHelper);
         } catch (ConditionalFieldException $e) {
             return $this->handleConditionalFieldException($e);
         }
@@ -68,7 +72,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
                 "<comment>Warning:</comment> adding a '" . $values['type'] . "' integration will automatically synchronize code from the external Git repository."
                 . "\nThis means it can overwrite all the code in your project.\n"
             );
-            if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
                 return 1;
             }
         }
@@ -96,13 +100,12 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->stdErr->writeln("Created integration <info>$integration->id</info> (type: {$values['type']})");
 
         $success = true;
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+        if ($this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
             $success = $activityMonitor->waitMultiple($result->getActivities(), $project);
         }
 
-        $this->updateGitUrl($oldGitUrl);
+        $this->updateGitUrl($oldGitUrl, $project);
 
         $this->displayIntegration($integration);
 

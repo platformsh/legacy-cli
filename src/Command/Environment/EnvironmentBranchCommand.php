@@ -1,21 +1,46 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:branch', description: 'Branch an environment', aliases: ['branch'])]
 class EnvironmentBranchCommand extends CommandBase
 {
-    protected function configure()
+    /** @var string[] */
+    private array $validResourcesInitOptions = ['parent', 'default', 'minimum'];
+
+    public function __construct(private readonly ActivityMonitor  $activityMonitor,
+                                private readonly Api              $api,
+                                private readonly Config           $config,
+                                private readonly Git              $git,
+                                private readonly Io               $io,
+                                private readonly QuestionHelper   $questionHelper,
+                                private readonly ResourcesUtil    $resourcesUtil,
+                                private readonly Selector         $selector,
+                                private readonly SubCommandRunner $subCommandRunner)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('environment:branch')
-            ->setAliases(['branch'])
-            ->setDescription('Branch an environment')
             ->addArgument('id', InputArgument::OPTIONAL, 'The ID (branch name) of the new environment')
             ->addArgument('parent', InputArgument::OPTIONAL, 'The parent of the new environment')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The title of the new environment')
@@ -23,31 +48,35 @@ class EnvironmentBranchCommand extends CommandBase
             ->addOption('no-clone-parent', null, InputOption::VALUE_NONE, "Do not clone the parent environment's data")
             ->addOption('no-checkout', null, InputOption::VALUE_NONE, 'Do not check out the branch locally')
             ->addHiddenOption('dry-run', null, InputOption::VALUE_NONE, 'Dry run: do not create a new environment');
-        $this->addResourcesInitOption(['parent', 'default', 'minimum']);
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addHiddenOption('force', null, InputOption::VALUE_NONE, 'Deprecated option, no longer used');
         $this->addHiddenOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated option, no longer used');
         $this->addExample('Create a new branch "sprint-2", based on "develop"', 'sprint-2 develop');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->warnAboutDeprecatedOptions(['force', 'identity-file']);
+        $this->io->warnAboutDeprecatedOptions(['force', 'identity-file']);
 
-        $this->envArgName = 'parent';
-        $this->chooseEnvText = 'Enter a number to choose a parent environment:';
-        $this->enterEnvText = 'Enter the ID of the parent environment';
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
         $branchName = $input->getArgument('id');
-        $this->validateInput($input, $branchName === null);
-        $selectedProject = $this->getSelectedProject();
+        $selectorConfig = new SelectorConfig(
+            envRequired: $branchName !== null,
+            envArgName: 'parent',
+            chooseEnvText: 'Enter a number to choose a parent environment:',
+            enterEnvText: 'Enter the ID of the parent environment',
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        );
+        $selection = $this->selector->getSelection($input, $selectorConfig);
+        $selectedProject = $selection->getProject();
 
         if ($branchName === null) {
             if ($input->isInteractive()) {
                 // List environments.
-                return $this->runOtherCommand(
+                return $this->subCommandRunner->run(
                     'environments',
                     ['--project' => $selectedProject->id]
                 );
@@ -57,30 +86,29 @@ class EnvironmentBranchCommand extends CommandBase
             return 1;
         }
 
-        $parentEnvironment = $this->getSelectedEnvironment();
+        $parentEnvironment = $selection->getEnvironment();
 
-        if ($branchName === $parentEnvironment->id && ($e = $this->getCurrentEnvironment($selectedProject)) && $e->id === $branchName) {
+        if ($branchName === $parentEnvironment->id && ($e = $this->selector->getCurrentEnvironment($selectedProject)) && $e->id === $branchName) {
             $this->stdErr->writeln('Already on <comment>' . $branchName . '</comment>');
             return 1;
         }
 
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         $dryRun = $input->getOption('dry-run');
         $checkoutLocally = $projectRoot && !$input->getOption('no-checkout');
 
-        if ($environment = $this->api()->getEnvironment($branchName, $selectedProject)) {
+        if ($environment = $this->api->getEnvironment($branchName, $selectedProject)) {
             if (!$checkoutLocally || $dryRun) {
                 $this->stdErr->writeln("The environment <comment>$branchName</comment> already exists.");
 
                 return 1;
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
+            $questionHelper = $this->questionHelper;
             $checkout = $questionHelper->confirm(
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
             if ($checkout) {
-                return $this->runOtherCommand(
+                return $this->subCommandRunner->run(
                     'environment:checkout',
                     ['id' => $environment->id]
                 );
@@ -91,16 +119,16 @@ class EnvironmentBranchCommand extends CommandBase
 
         if (!$parentEnvironment->operationAvailable('branch', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment " . $this->api()->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched."
+                "Operation not available: The environment " . $this->api->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched."
             );
 
             if ($parentEnvironment->getProperty('has_remote', false) === true
-                && ($integration = $this->api()->getCodeSourceIntegration($this->getSelectedProject()))
+                && ($integration = $this->api->getCodeSourceIntegration($selection->getProject()))
                 && $integration->getProperty('prune_branches', false) === true) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf("The project's branches are managed externally through its <info>%s</info> integration.", $integration->type));
-                if ($this->config()->isCommandEnabled('integration:get')) {
-                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                if ($this->config->isCommandEnabled('integration:get')) {
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($integration->id)));
                 }
             } elseif ($parentEnvironment->is_dirty) {
                 $this->stdErr->writeln('');
@@ -114,14 +142,14 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         // Validate the --resources-init option.
-        $resourcesInit = $this->validateResourcesInitInput($input, $selectedProject);
+        $resourcesInit = $this->resourcesUtil->validateInput($input, $selectedProject, $this->validResourcesInitOptions);
         if ($resourcesInit === false) {
             return 1;
         }
 
         $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
-        $newLabel = strlen($title) > 0 && $title !== $branchName
+        $newLabel = strlen((string) $title) > 0 && $title !== $branchName
             ? '<info>' . $title . '</info> (' . $branchName . ')'
             : '<info>' . $branchName . '</info>';
 
@@ -136,7 +164,7 @@ class EnvironmentBranchCommand extends CommandBase
         $parentMessage = $input->getOption('no-clone-parent')
             ? 'Settings will be copied from the parent environment: %s'
             : 'Settings will be copied and data cloned from the parent environment: %s';
-        $this->stdErr->writeln(sprintf($parentMessage, $this->api()->getEnvironmentLabel($parentEnvironment, 'info', false)));
+        $this->stdErr->writeln(sprintf($parentMessage, $this->api->getEnvironmentLabel($parentEnvironment, 'info', false)));
 
         if ($resourcesInit === 'parent') {
             $this->stdErr->writeln('Resource sizes will be inherited from the parent environment.');
@@ -168,25 +196,23 @@ class EnvironmentBranchCommand extends CommandBase
             $activities = $result->getActivities();
 
             // Clear the environments cache, as branching has started.
-            $this->api()->clearEnvironmentsCache($selectedProject->id);
+            $this->api->clearEnvironmentsCache($selectedProject->id);
         }
-
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
 
         $createdNew = false;
         if ($checkoutLocally) {
-            if ($git->branchExists($branchName, $projectRoot)) {
+            /** @var string $projectRoot */
+            if ($this->git->branchExists($branchName, $projectRoot)) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
-                if (!$git->checkOut($branchName, $projectRoot)) {
+                if (!$this->git->checkOut($branchName, $projectRoot)) {
                     $this->stdErr->writeln('Failed to check out branch locally: <error>' . $branchName . '</error>');
                 }
             } else {
                 // Create a new branch, using the parent if it exists locally.
-                $parent = $git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
+                $parent = $this->git->branchExists($parentEnvironment->id, $projectRoot) ? $parentEnvironment->id : null;
                 $this->stdErr->writeln("Creating local branch <info>$branchName</info>");
 
-                if (!$git->checkOutNew($branchName, $parent, null, $projectRoot)) {
+                if (!$this->git->checkOutNew($branchName, $parent, null, $projectRoot)) {
                     $this->stdErr->writeln('Failed to create branch locally: <error>' . $branchName . '</error>');
                 }
                 $createdNew = true;
@@ -194,11 +220,10 @@ class EnvironmentBranchCommand extends CommandBase
         }
 
         $remoteSuccess = true;
-        if ($this->shouldWait($input) && !$dryRun && $activities) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+        if ($this->activityMonitor->shouldWait($input) && !$dryRun && $activities) {
+            $activityMonitor = $this->activityMonitor;
             $remoteSuccess = $activityMonitor->waitMultiple($activities, $selectedProject);
-            $this->api()->clearEnvironmentsCache($selectedProject->id);
+            $this->api->clearEnvironmentsCache($selectedProject->id);
         }
 
         // If a new local branch has been created, set its upstream.
@@ -208,14 +233,15 @@ class EnvironmentBranchCommand extends CommandBase
         // project's Git URL.
         if ($remoteSuccess && $checkoutLocally && $createdNew) {
             $gitUrl = $selectedProject->getGitUrl();
-            $remoteName = $this->config()->get('detection.git_remote_name');
-            if ($gitUrl && $git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
+            $remoteName = $this->config->getStr('detection.git_remote_name');
+            /** @var string $projectRoot */
+            if ($gitUrl && $this->git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
                 $this->stdErr->writeln(sprintf(
                     'Setting the upstream for the local branch to: <info>%s/%s</info>',
                     $remoteName, $branchName
                 ));
-                if ($git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
-                    $git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);
+                if ($this->git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
+                    $this->git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);
                 }
             }
         }

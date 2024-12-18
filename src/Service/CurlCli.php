@@ -10,15 +10,13 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
-class CurlCli implements InputConfiguringInterface {
+readonly class CurlCli implements InputConfiguringInterface {
 
-    private $api;
-
-    public function __construct(Api $api) {
-        $this->api = $api;
+    public function __construct(private Api $api)
+    {
     }
 
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition): void
     {
         $definition->addArgument(new InputArgument('path', InputArgument::OPTIONAL, 'The API path'));
         $definition->addOption(new InputOption('request', 'X', InputOption::VALUE_REQUIRED, 'The request method to use'));
@@ -34,24 +32,18 @@ class CurlCli implements InputConfiguringInterface {
 
     /**
      * Runs the curl command.
-     *
-     * @param string $baseUrl
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     *
-     * @return int
      */
-    public function run($baseUrl, InputInterface $input, OutputInterface $output) {
+    public function run(string $baseUrl, InputInterface $input, OutputInterface $output): int {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $url = rtrim($baseUrl, '/');
 
         if ($path = $input->getArgument('path')) {
-            if (parse_url($path, PHP_URL_HOST)) {
+            if (parse_url((string) $path, PHP_URL_HOST)) {
                 $stdErr->writeln(sprintf('Invalid path: <error>%s</error>', $path));
 
                 return 1;
             }
-            $url .= '/' . ltrim($path, '/');
+            $url .= '/' . ltrim((string) $path, '/');
         }
 
         $token = $this->api->getAccessToken();
@@ -69,21 +61,21 @@ class CurlCli implements InputConfiguringInterface {
         }
 
         if ($requestMethod = $input->getOption('request')) {
-            $commandline .= ' --request ' . escapeshellarg($requestMethod);
+            $commandline .= ' --request ' . escapeshellarg((string) $requestMethod);
         }
 
         if ($data = $input->getOption('json')) {
-            if (\json_decode($data) === null && \json_last_error() !== JSON_ERROR_NONE) {
+            if (\json_decode((string) $data) === null && \json_last_error() !== JSON_ERROR_NONE) {
                 $stdErr->writeln('The value of --json contains invalid JSON.');
                 return 1;
             }
-            $commandline .= ' --data ' . escapeshellarg($data);
+            $commandline .= ' --data ' . escapeshellarg((string) $data);
             $commandline .= ' --header ' . escapeshellarg('Content-Type: application/json');
             $commandline .= ' --header ' . escapeshellarg('Accept: application/json');
         }
 
         if ($data = $input->getOption('data')) {
-            $commandline .= ' --data ' . escapeshellarg($data);
+            $commandline .= ' --data ' . escapeshellarg((string) $data);
         }
 
         if (!$input->getOption('disable-compression')) {
@@ -95,7 +87,7 @@ class CurlCli implements InputConfiguringInterface {
         }
 
         foreach ($input->getOption('header') as $header) {
-            $commandline .= ' --header ' . escapeshellarg($header);
+            $commandline .= ' --header ' . escapeshellarg((string) $header);
         }
 
         if ($output->isVeryVerbose()) {
@@ -105,14 +97,12 @@ class CurlCli implements InputConfiguringInterface {
         }
 
         // Censor the access token: this can be applied to verbose output.
-        $censor = function ($str) use ($token) {
-            return str_replace($token, '[token]', $str);
-        };
+        $censor = fn($str): array|string => str_replace($token, '[token]', $str);
 
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
 
-        $process = new Process($commandline);
-        $process->run(function ($type, $buffer) use ($censor, $output, $stdErr) {
+        $process = Process::fromShellCommandline($commandline);
+        $process->run(function ($type, $buffer) use ($censor, $output, $stdErr): void {
             if ($type === Process::ERR) {
                 $stdErr->write($censor($buffer));
             } else {

@@ -1,17 +1,22 @@
 <?php
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Model\Metrics\Field;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'metrics:disk-usage', description: 'Show disk usage of an environment', aliases: ['disk'])]
 class DiskUsageCommand extends MetricsCommandBase
 {
-    private $tableHeader = [
+    /** @var array<string, string> */
+    private array $tableHeader = [
         'timestamp' => 'Timestamp',
         'service' => 'Service',
         'type' => 'Type',
@@ -28,22 +33,22 @@ class DiskUsageCommand extends MetricsCommandBase
         'tmp_ilimit' => '/tmp inodes limit',
         'tmp_ipercent' => '/tmp inodes %',
     ];
-    private $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
-    private $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    /** @var string[] */
+    private array $defaultColumns = ['timestamp', 'service', 'used', 'limit', 'percent', 'ipercent', 'tmp_percent'];
+    private array $tmpReportColumns = ['timestamp', 'service', 'tmp_used', 'tmp_limit', 'tmp_percent', 'tmp_ipercent'];
+    public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('metrics:disk-usage')
-            ->setAliases(['disk'])
-            ->setDescription('Show disk usage of an environment')
-            ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
-            ->addMetricsOptions()
-            ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')')
-            ->addProjectOption()
-            ->addEnvironmentOption();
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes')
+            ->addOption('tmp', null, InputOption::VALUE_NONE, 'Report temporary disk usage (shows columns: ' . implode(', ', $this->tmpReportColumns) . ')');
+        $this->addMetricsOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
@@ -51,7 +56,7 @@ class DiskUsageCommand extends MetricsCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $timeSpec = $this->validateTimeInput($input);
         if ($timeSpec === false) {
@@ -61,18 +66,15 @@ class DiskUsageCommand extends MetricsCommandBase
         if ($input->getOption('tmp')) {
             $input->setOption('columns', $this->tmpReportColumns);
         }
+        $this->table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        $table->removeDeprecatedColumns(['interval'], '', $input, $output);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        $this->validateInput($input, false, true);
-
-        if (!$table->formatIsMachineReadable()) {
-            $this->displayEnvironmentHeader();
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->selector->ensurePrintedSelection($selection);
         }
 
-        $values = $this->fetchMetrics($input, $timeSpec, $this->getSelectedEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
+        $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), ['disk_used', 'disk_percent', 'disk_limit', 'inodes_used', 'inodes_percent', 'inodes_limit']);
         if ($values === false) {
             return 1;
         }
@@ -95,11 +97,10 @@ class DiskUsageCommand extends MetricsCommandBase
             'tmp_iused' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_ilimit' => new Field('tmp_inodes_used', Field::FORMAT_ROUNDED),
             'tmp_ipercent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
-        ]);
+        ], $selection->getEnvironment());
 
-        if (!$table->formatIsMachineReadable()) {
-            /** @var PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+        if (!$this->table->formatIsMachineReadable()) {
+            $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',
@@ -109,7 +110,7 @@ class DiskUsageCommand extends MetricsCommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         return 0;
     }

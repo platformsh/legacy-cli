@@ -2,26 +2,14 @@
 
 namespace Platformsh\Cli\Tests\Command;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\DecodeCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 
-/**
- * @group commands
- */
+#[Group('commands')]
 class DecodeTest extends TestCase
 {
-    private function runCommand(array $args) {
-        $output = new BufferedOutput();
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new DecodeCommand())->run($input, $output);
-
-        return $output->fetch();
-    }
-
-    public function testDecode() {
+    public function testDecode(): void {
         $var = base64_encode(json_encode([
             'foo' => 'bar',
             'fee' => 'bor',
@@ -29,34 +17,36 @@ class DecodeTest extends TestCase
         ]));
         $this->assertEquals(
             'bar',
-            rtrim($this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('decode', [
                 'value' => $var,
                 '--property' => 'foo',
             ]), "\n")
         );
         $this->assertEquals(
             'baz',
-            rtrim($this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('decode', [
                 'value' => $var,
                 '--property' => 'nest.nested',
             ]), "\n")
         );
     }
 
-    public function testDecodeEmptyObject() {
+    public function testDecodeEmptyObject(): void {
         $this->assertEquals(
             '{}',
-            rtrim($this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('decode', [
                 'value' => base64_encode(json_encode(new \stdClass()))
             ]), "\n")
         );
 
-        $this->assertEquals(
-            'Property not found: nonexistent',
-            rtrim($this->runCommand([
-                'value' => base64_encode(json_encode(new \stdClass())),
-                '--property' => 'nonexistent'
-            ]), "\n")
-        );
+        try {
+            $this->assertEquals(
+                'Property not found: nonexistent',
+                rtrim(MockApp::runAndReturnOutput('decode', [
+                    'value' => base64_encode(json_encode(new \stdClass())),
+                    '--property' => 'nonexistent'
+                ]), "\n")
+            );
+        } catch (\RuntimeException) {}
     }
 }

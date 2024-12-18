@@ -2,15 +2,14 @@
 
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Symfony\Component\Console\Command\Command;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 use Symfony\Component\Console\Input\InputOption;
 
-class OrganizationUserCommandBase extends OrganizationCommandBase implements CompletionAwareInterface
+class OrganizationUserCommandBase extends OrganizationCommandBase
 {
     // @todo add 'admin'
-    protected static $allPermissions = ['billing', 'members', 'plans', 'projects:create', 'projects:list'];
+    protected static array $allPermissions = ['billing', 'members', 'plans', 'projects:create', 'projects:list'];
 
     /**
      * Returns a list of permissions formatted for display.
@@ -20,7 +19,7 @@ class OrganizationUserCommandBase extends OrganizationCommandBase implements Com
      *
      * @return string
      */
-    protected function listPermissions($permissions = null)
+    protected function listPermissions(?array $permissions = null): string
     {
         if ($permissions === []) {
             return '<info>[none]</info>';
@@ -33,27 +32,16 @@ class OrganizationUserCommandBase extends OrganizationCommandBase implements Com
      *
      * @return $this
      */
-    protected function addPermissionOption()
+    protected function addPermissionOption(): Command
     {
         return $this->addOption(
             'permission',
             null,
             InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
             'Permission(s) for the user on the organization. '
-            . "\n" . 'Valid permissions are: <info>' . implode('</info>, <info>', self::$allPermissions) . '</info>'
+            . "\n" . 'Valid permissions are: <info>' . implode('</info>, <info>', self::$allPermissions) . '</info>',
+            null,
+            self::$allPermissions,
         );
-    }
-
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        if ($optionName === 'permission') {
-            return self::$allPermissions;
-        }
-        return [];
-    }
-
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        return [];
     }
 }

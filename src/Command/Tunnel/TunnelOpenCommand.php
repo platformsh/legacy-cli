@@ -1,28 +1,37 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:open', description: "Open SSH tunnels to an app's relationships")]
 class TunnelOpenCommand extends TunnelCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh)
     {
-        $this
-            ->setName('tunnel:open')
-            ->setDescription("Open SSH tunnels to an app's relationships");
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
         $this->setHelp(<<<EOF
 This command opens SSH tunnels to all of the relationships of an application.
@@ -39,7 +48,7 @@ EOF
         );
     }
 
-    public function isHidden()
+    public function isHidden(): bool
     {
         return parent::isHidden() || OsUtil::isWindows();
     }
@@ -47,7 +56,7 @@ EOF
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (OsUtil::isWindows()) {
             $this->stdErr->writeln('This command does not work on Windows, as the required PHP extensions are unavailable.');
@@ -63,35 +72,30 @@ EOF
             return 1;
         }
 
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $project = $selection->getProject();
+        $environment = $selection->getEnvironment();
 
-        $container = $this->selectRemoteContainer($input, false);
+        $container = $selection->getRemoteContainer();
         $appName = $container->getName();
         $sshUrl = $container->getSshUrl();
-        $host = $this->selectHost($input, false, $container);
-
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $relationships = $relationshipsService->getRelationships($host);
+        $host = $this->selector->getHostFromSelection($input, $selection);
+        $relationships = $this->relationships->getRelationships($host);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
         }
 
         if ($environment->is_main) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api()->getEnvironmentLabel($environment, 'comment'));
+            $questionHelper = $this->questionHelper;
+            $confirmText = \sprintf('Are you sure you want to open SSH tunnel(s) to the environment %s?', $this->api->getEnvironmentLabel($environment, 'comment'));
             if (!$questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');
         }
 
-        $logFile = $this->config()->getWritableUserDir() . '/tunnels.log';
+        $logFile = $this->config->getWritableUserDir() . '/tunnels.log';
         if (!$log = $this->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
@@ -101,10 +105,7 @@ EOF
         if ($input->getOption('gateway-ports')) {
             $sshOptions[] = 'GatewayPorts yes';
         }
-
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
+        $sshArgs = $this->ssh->getSshArgs($sshUrl, $sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
 
@@ -112,7 +113,7 @@ EOF
         // forking in some circumstances. Preload classes that are needed here
         // to avoid class not found errors later.
         // TODO find out exactly why this is required
-        $this->debug('Preloading class before forking: ' . ConsoleTerminateEvent::class);
+        $this->io->debug('Preloading class before forking: ' . ConsoleTerminateEvent::class);
 
         $processManager = new ProcessManager();
         $processManager->fork();
@@ -199,8 +200,8 @@ EOF
         }
 
         if (!$error) {
-            $executable = $this->config()->get('application.executable');
-            $variable = $this->config()->get('service.env_prefix') . 'RELATIONSHIPS';
+            $executable = $this->config->getStr('application.executable');
+            $variable = $this->config->getStr('service.env_prefix') . 'RELATIONSHIPS';
             $this->stdErr->writeln('');
             $this->stdErr->writeln("List tunnels with: <info>$executable tunnels</info>");
             $this->stdErr->writeln("View tunnel details with: <info>$executable tunnel:info</info>");
@@ -224,7 +225,7 @@ EOF
      *
      * @return string[]
      */
-    private function missingExtensions()
+    private function missingExtensions(): array
     {
         $missing = [];
         foreach (['pcntl', 'posix'] as $ext) {

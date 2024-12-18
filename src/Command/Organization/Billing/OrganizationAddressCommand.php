@@ -1,6 +1,8 @@
 <?php
 namespace Platformsh\Cli\Command\Organization\Billing;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -8,42 +10,45 @@ use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Address;
 use Platformsh\Client\Model\Organization\Organization;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:billing:address', description: "View or change an organization's billing address")]
 class OrganizationAddressCommand extends OrganizationCommandBase
 {
 
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('organization:billing:address')
-            ->setDescription("View or change an organization's billing address")
-            ->addOrganizationOptions(true)
-            ->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
+        $this->addArgument('property', InputArgument::OPTIONAL, 'The name of a property to view or change')
             ->addArgument('value', InputArgument::OPTIONAL, 'A new value for the property')
             ->addArgument('properties', InputArgument::IS_ARRAY|InputArgument::OPTIONAL, 'Additional property/value pairs');
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $property = $input->getArgument('property');
         $updates = $this->parseUpdates($input);
 
         // The 'orders' link depends on the billing permission.
-        $org = $this->validateOrganizationInput($input, 'orders');
+        $org = $this->selector->selectOrganization($input, 'orders');
         $address = $org->getAddress();
-
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
 
         $result = 0;
         if ($property !== null) {
             if (empty($updates)) {
-                $formatter->displayData($output, $address->getProperties(), $property);
+                $this->propertyFormatter->displayData($output, $address->getProperties(), $property);
                 return $result;
             }
             $result = $this->setProperties($updates, $address);
@@ -55,33 +60,28 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         return $result;
     }
 
-    protected function display(Address $address, Organization $org, InputInterface $input)
+    protected function display(Address $address, Organization $org, InputInterface $input): void
     {
-        /** @var Table $table */
-        $table = $this->getService('table');
-
         $headings = [];
         $values = [];
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
         foreach ($address->getProperties() as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
 
-        if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api()->getOrganizationLabel($org)));
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln(\sprintf('Billing address for the organization %s:', $this->api->getOrganizationLabel($org)));
         }
 
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('To view the billing profile, run: <info>%s</info>', $this->otherCommandExample($input, 'org:billing:profile')));
             $this->stdErr->writeln(\sprintf('To view organization details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:info')));
         }
     }
 
-    protected function parseUpdates(InputInterface $input)
+    protected function parseUpdates(InputInterface $input): array
     {
         $property = $input->getArgument('property');
         $value = $input->getArgument('value');
@@ -122,7 +122,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
      *
      * @return int
      */
-    protected function setProperties(array $updates, Address $address)
+    protected function setProperties(array $updates, Address $address): int
     {
         $currentValues = \array_intersect_key($address->getProperties(), $updates);
         if ($currentValues == $updates) {
@@ -137,7 +137,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             return 0;
         } catch (BadResponseException $e) {
             // Translate validation error messages.
-            if (($response = $e->getResponse()) && $response->getStatusCode() === 400 && ($body = $response->getBody())) {
+            if ($e->getResponse()->getStatusCode() === 400 && ($body = $e->getResponse()->getBody())) {
                 $detail = \json_decode((string) $body, true);
                 if (\is_array($detail) && isset($detail['title']) && \is_string($detail['title'])) {
                     $this->stdErr->writeln($detail['title']);
@@ -163,7 +163,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
      *
      * @return string|false
      */
-    private function getType($property)
+    private function getType(string $property): string|false
     {
         $writableProperties = [
             'country' => 'string',
@@ -178,16 +178,10 @@ class OrganizationAddressCommand extends OrganizationCommandBase
             'postal_code' => 'string',
         ];
 
-        return isset($writableProperties[$property]) ? $writableProperties[$property] : false;
+        return $writableProperties[$property] ?? false;
     }
 
-    /**
-     * @param string $property
-     * @param string &$value
-     *
-     * @return bool
-     */
-    private function validateValue($property, &$value)
+    private function validateValue(string $property, string &$value): bool
     {
         $type = $this->getType($property);
         if (!$type) {
