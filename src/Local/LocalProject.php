@@ -54,7 +54,7 @@ class LocalProject
      */
     public function parseGitUrl(string $gitUrl): false|array
     {
-        $gitDomain = $this->config->get('detection.git_domain');
+        $gitDomain = $this->config->getStr('detection.git_domain');
         $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote((string) $gitDomain) . '):\1\.git$/';
         if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
@@ -77,7 +77,7 @@ class LocalProject
     protected function getGitRemoteUrl(string $dir): string|false
     {
         $this->git->ensureInstalled();
-        foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
+        foreach ([$this->config->getStr('detection.git_remote_name'), 'origin'] as $remote) {
             if ($url = $this->git->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
@@ -101,12 +101,12 @@ class LocalProject
         }
         $this->git->ensureInstalled();
         $currentUrl = $this->git->getConfig(
-            sprintf('remote.%s.url', $this->config->get('detection.git_remote_name')),
+            sprintf('remote.%s.url', $this->config->getStr('detection.git_remote_name')),
             $dir
         );
         if (!$currentUrl) {
             $this->git->execute(
-                ['remote', 'add', $this->config->get('detection.git_remote_name'), $url],
+                ['remote', 'add', $this->config->getStr('detection.git_remote_name'), $url],
                 $dir,
                 true
             );
@@ -114,7 +114,7 @@ class LocalProject
             $this->git->execute([
                 'remote',
                 'set-url',
-                $this->config->get('detection.git_remote_name'),
+                $this->config->getStr('detection.git_remote_name'),
                 $url
             ], $dir, true);
         }

@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:restore', description: 'Restore an environment backup')]
 class BackupRestoreCommand extends CommandBase
 {
+    /** @var string[] */
     private array $validResourcesInitOptions = ['backup', 'parent', 'default', 'minimum'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)

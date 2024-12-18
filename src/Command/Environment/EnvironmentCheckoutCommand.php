@@ -87,14 +87,14 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
-        $upstreamRemote = $this->config->get('detection.git_remote_name');
+        $upstreamRemote = $this->config->getStr('detection.git_remote_name');
         $originRemoteUrl = $this->git->getConfig('remote.origin.url');
         if ($originRemoteUrl !== $project->getGitUrl() && $this->git->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
         }
 
         // Fetch the branch from the upstream remote.
-        $this->git->fetch($upstreamRemote, $branch, $originRemoteUrl);
+        $this->git->fetch($upstreamRemote, $branch, $originRemoteUrl ?: '');
 
         $upstream = $upstreamRemote . '/' . $branch;
 

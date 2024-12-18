@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:branch', description: 'Branch an environment', aliases: ['branch'])]
 class EnvironmentBranchCommand extends CommandBase
 {
+    /** @var string[] */
     private array $validResourcesInitOptions = ['parent', 'default', 'minimum'];
 
     public function __construct(private readonly ActivityMonitor  $activityMonitor,
@@ -200,6 +201,7 @@ class EnvironmentBranchCommand extends CommandBase
 
         $createdNew = false;
         if ($checkoutLocally) {
+            /** @var string $projectRoot */
             if ($this->git->branchExists($branchName, $projectRoot)) {
                 $this->stdErr->writeln("Checking out <info>$branchName</info> locally");
                 if (!$this->git->checkOut($branchName, $projectRoot)) {
@@ -231,7 +233,8 @@ class EnvironmentBranchCommand extends CommandBase
         // project's Git URL.
         if ($remoteSuccess && $checkoutLocally && $createdNew) {
             $gitUrl = $selectedProject->getGitUrl();
-            $remoteName = $this->config->get('detection.git_remote_name');
+            $remoteName = $this->config->getStr('detection.git_remote_name');
+            /** @var string $projectRoot */
             if ($gitUrl && $this->git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
                 $this->stdErr->writeln(sprintf(
                     'Setting the upstream for the local branch to: <info>%s/%s</info>',

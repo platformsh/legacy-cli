@@ -16,9 +16,8 @@ class SslUtil
      *
      * @throws \InvalidArgumentException
      *
-     * @return array
-     *   An array containing the contents of the certificate files, keyed as
-     *   'certificate' (string), 'key' (string), and 'chain' (array).
+     * @return array{certificate: string, key: string, chain: string[]}
+     *   An array containing the contents of the certificate files.
      */
     public function validate(string $certPath, string $keyPath, array $chainPaths): array
     {

@@ -109,7 +109,7 @@ readonly class Identifier
         }
 
         if ($this->config->has('detection.console_domain')
-            && $host === $this->config->get('detection.console_domain')
+            && $host === $this->config->getStr('detection.console_domain')
             && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)
             // Console uses /-/ to distinguish sub-paths and identifiers.
             && $matches[1] !== '-') {
@@ -175,7 +175,7 @@ readonly class Identifier
                     return false;
                 }
             }
-            $cluster = $response->getHeader($this->config->get('detection.cluster_header'));
+            $cluster = $response->getHeader($this->config->getStr('detection.cluster_header'));
             $canCache = !empty($cluster)
                 || ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
             if ($canCache) {
