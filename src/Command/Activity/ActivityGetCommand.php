@@ -1,7 +1,6 @@
 <?php
 namespace Platformsh\Cli\Command\Activity;
 
-use Platformsh\Cli\Model\Activity;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
@@ -11,6 +10,7 @@ use Platformsh\Cli\Service\ActivityLoader;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -74,12 +74,10 @@ class ActivityGetCommand extends ActivityCommandBase
             $activity = $selection->getProject()
                 ->getActivity($id);
             if (!$activity) {
-                /** @var Activity $activity */
                 $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
             }
         } else {
             $activities = $this->activityLoader->loadFromInput($apiResource, $input, 1);
-            /** @var Activity|false $activity */
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No activities found');
@@ -88,6 +86,7 @@ class ActivityGetCommand extends ActivityCommandBase
             }
         }
 
+        /** @var Activity $activity */
         $properties = $activity->getProperties();
 
         if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
@@ -98,7 +97,7 @@ class ActivityGetCommand extends ActivityCommandBase
 
         // Add the fake "duration" property.
         if (!isset($properties['duration'])) {
-            $properties['duration'] = (new Activity())->getDuration($activity);
+            $properties['duration'] = (new \Platformsh\Cli\Model\Activity())->getDuration($activity);
         }
 
         if ($property = $input->getOption('property')) {

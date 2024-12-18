@@ -6,11 +6,11 @@ use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
-use Platformsh\Cli\Model\Activity;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -54,7 +54,6 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         if ($id) {
             $activity = $project->getActivity($id);
             if (!$activity) {
-                /** @var Activity $activity */
                 $activity = $this->api->matchPartialId($id, $integration->getActivities(), 'Activity');
             }
         } else {
@@ -67,6 +66,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             }
         }
 
+        /** @var \Platformsh\Client\Model\Activity $activity */
         $properties = $activity->getProperties();
 
         if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
@@ -77,7 +77,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
 
         // Add the fake "duration" property.
         if (!isset($properties['duration'])) {
-            $properties['duration'] = (new Activity())->getDuration($activity);
+            $properties['duration'] = (new \Platformsh\Cli\Model\Activity())->getDuration($activity);
         }
 
         if ($property = $input->getOption('property')) {
