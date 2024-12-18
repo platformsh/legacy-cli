@@ -39,7 +39,7 @@ class LocalProject
     public function readProjectConfigFile(string $dir, string $configFile): ?array
     {
         $result = null;
-        $filename = $dir . '/' . $this->config->get('service.project_config_dir') . '/' . $configFile;
+        $filename = $dir . '/' . $this->config->getStr('service.project_config_dir') . '/' . $configFile;
         if (file_exists($filename)) {
             $parser = new Parser();
             $result = $parser->parse(file_get_contents($filename));
@@ -327,7 +327,7 @@ class LocalProject
             file_put_contents($dir . '/.gitignore', '/' . PHP_EOL);
         }
         if (!file_exists($dir . '/README.txt')) {
-            $cliName = $this->config->get('application.name');
+            $cliName = $this->config->getStr('application.name');
             file_put_contents($dir . '/README.txt', <<<EOF
 {$localDirRelative}
 ===============
@@ -358,9 +358,9 @@ EOF
         // application.name.
         if (file_exists($excludeFilename)) {
             $existing = file_get_contents($excludeFilename);
-            if (str_contains($existing, (string) $this->config->get('application.name'))) {
+            if (str_contains($existing, $this->config->getStr('application.name'))) {
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
-                $newRoot = "\n" . '/' . $this->config->get('application.name') . "\n";
+                $newRoot = "\n" . '/' . $this->config->getStr('application.name') . "\n";
                 $oldRoot = "\n" . '/.www' . "\n";
                 if (str_contains($existing, $oldRoot) && !str_contains($existing, $newRoot)) {
                     $this->fs->dumpFile($excludeFilename, str_replace($oldRoot, $newRoot, $existing));
@@ -374,7 +374,7 @@ EOF
             }
         }
 
-        $content = "# Automatically added by the " . $this->config->get('application.name') . "\n"
+        $content = "# Automatically added by the " . $this->config->getStr('application.name') . "\n"
             . implode("\n", $filesToExclude)
             . "\n";
         if (!empty($existing)) {

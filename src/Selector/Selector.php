@@ -100,7 +100,7 @@ class Selector implements CompleterInterface
         $config = $config ?: new SelectorConfig();
 
         // Determine whether the localhost can be used.
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $allowLocalHost = $config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $envPrefix);
 
         // If the user is not logged in, then return an empty selection.
@@ -223,7 +223,7 @@ class Selector implements CompleterInterface
 
     public function getHostFromSelection(InputInterface $input, Selection $selection): HostInterface
     {
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $allowLocalHost = $selection->config->allowLocalHost && !LocalHost::conflictsWithCommandLineOptions($input, $envPrefix);
         if ($allowLocalHost) {
             $this->debug('Selected host: localhost');
@@ -319,7 +319,7 @@ class Selector implements CompleterInterface
             }
             if (count($projectInfos) > $limit) {
                 $message .= "\n    ...";
-                $message .= "\n\n    List projects with: " . $this->config->get('application.executable') . ' projects';
+                $message .= "\n\n    List projects with: " . $this->config->getStr('application.executable') . ' projects';
             }
         }
 
@@ -342,7 +342,7 @@ class Selector implements CompleterInterface
      */
     private function selectEnvironment(InputInterface $input, Project $project, SelectorConfig $config, ?string $environmentId = null): ?Environment
     {
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         if ($environmentId === null && getenv($envPrefix . 'BRANCH')) {
             $environmentId = getenv($envPrefix . 'BRANCH');
             $this->stdErr->writeln(sprintf(

@@ -148,7 +148,7 @@ class LocalApplication
     {
         if (!isset($this->config)) {
             if ($this->cliConfig->has('service.app_config_file')) {
-                $file = $this->appRoot . '/' . $this->cliConfig->get('service.app_config_file');
+                $file = $this->appRoot . '/' . $this->cliConfig->getStr('service.app_config_file');
                 if (!file_exists($file)) {
                     throw new InvalidConfigException('Configuration file not found: ' . $file);
                 }

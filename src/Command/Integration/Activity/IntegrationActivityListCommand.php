@@ -125,7 +125,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
             $maybeMoreAvailable = count($activities) === $max;

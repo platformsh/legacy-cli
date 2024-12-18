@@ -29,7 +29,7 @@ class SelfReleaseCommand extends CommandBase
 
     protected function configure(): void
     {
-        $defaultRepo = $this->config->get('application.github_repo');
+        $defaultRepo = $this->config->getStr('application.github_repo');
         $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'main');
 
         $this
@@ -155,7 +155,7 @@ class SelfReleaseCommand extends CommandBase
 
         // Set up GitHub API connection details.
         $http = new Client();
-        $repo = $input->getOption('repo') ?: $this->config->get('application.github_repo');
+        $repo = $input->getOption('repo') ?: $this->config->getStr('application.github_repo');
         $repoUrl = implode('/', array_map('rawurlencode', explode('/', (string) $repo)));
         $repoApiUrl = 'https://api.github.com/repos/' . $repoUrl;
         $repoGitUrl = 'git@github.com:' . $repo . '.git';
@@ -249,7 +249,7 @@ class SelfReleaseCommand extends CommandBase
 
         // Build a Phar file, if one doesn't already exist.
         if (!$pharFilename) {
-            $pharFilename = sys_get_temp_dir() . '/' . $this->config->get('application.executable') . '.phar';
+            $pharFilename = sys_get_temp_dir() . '/' . $this->config->getStr('application.executable') . '.phar';
             $result = $this->subCommandRunner->run('self:build', [
                 '--output' => $pharFilename,
                 '--yes' => true,
@@ -277,7 +277,7 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Construct the download URL (the public location of the Phar file).
-        $pharPublicFilename = $this->config->get('application.executable') . '.phar';
+        $pharPublicFilename = $this->config->getStr('application.executable') . '.phar';
         $download_url = str_replace('{tag}', $tagName, $this->config->getWithDefault(
             'application.download_url',
             'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename

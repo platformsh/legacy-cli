@@ -70,7 +70,7 @@ readonly class Login
      */
     public function getNonInteractiveAuthHelp(string $tag = 'info'): string
     {
-        $prefix = $this->config->get('application.env_prefix');
+        $prefix = $this->config->getStr('application.env_prefix');
 
         return "To authenticate non-interactively, configure an API token using the <$tag>{$prefix}TOKEN</$tag> environment variable.";
     }

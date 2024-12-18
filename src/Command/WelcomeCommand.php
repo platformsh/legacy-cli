@@ -30,9 +30,9 @@ class WelcomeCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->stdErr->writeln("Welcome to " . $this->config->get('service.name') . "!\n");
+        $this->stdErr->writeln("Welcome to " . $this->config->getStr('service.name') . "!\n");
 
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $onContainer = getenv($envPrefix . 'PROJECT') && getenv($envPrefix . 'BRANCH');
 
         if ($project = $this->selector->getCurrentProject()) {
@@ -43,7 +43,7 @@ class WelcomeCommand extends CommandBase
             $this->defaultWelcome();
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         $this->api->showSessionInfo();
 
@@ -94,7 +94,7 @@ class WelcomeCommand extends CommandBase
             ]);
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         $this->stdErr->writeln("\nYou can list other projects by running <info>$executable projects</info>");
     }
 
@@ -103,8 +103,8 @@ class WelcomeCommand extends CommandBase
      */
     private function welcomeOnContainer(): void
     {
-        $envPrefix = $this->config->get('service.env_prefix');
-        $executable = $this->config->get('application.executable');
+        $envPrefix = $this->config->getStr('service.env_prefix');
+        $executable = $this->config->getStr('application.executable');
 
         $projectId = getenv($envPrefix . 'PROJECT');
         $environmentId = getenv($envPrefix . 'BRANCH');

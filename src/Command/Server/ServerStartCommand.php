@@ -30,7 +30,7 @@ class ServerStartCommand extends ServerCommandBase
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
           ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config->get('local.local_dir') . '/server.log')
-          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . $this->config->get('service.name') . ' environments as relationships');
+          ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . $this->config->getStr('service.name') . ' environments as relationships');
         Url::configureInput($this->getDefinition());
     }
 
@@ -65,7 +65,7 @@ class ServerStartCommand extends ServerCommandBase
             return 1;
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         $items = [];
         foreach ($apps as $app) {
@@ -114,7 +114,7 @@ class ServerStartCommand extends ServerCommandBase
                     continue;
                 }
                 $relationships = $bufferedOutput->fetch();
-                $items[$appId]['env'][$this->config->get('service.env_prefix') . 'RELATIONSHIPS'] = $relationships;
+                $items[$appId]['env'][$this->config->getStr('service.env_prefix') . 'RELATIONSHIPS'] = $relationships;
             }
         }
 

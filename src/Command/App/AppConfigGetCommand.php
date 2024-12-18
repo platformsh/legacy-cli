@@ -40,7 +40,7 @@ class AppConfigGetCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_APPLICATION.
-        $prefix = $this->config->get('service.env_prefix');
+        $prefix = $this->config->getStr('service.env_prefix');
         if (getenv($prefix . 'APPLICATION') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading application config from environment variable ' . $prefix . 'APPLICATION');
             $decoded = json_decode(base64_decode(getenv($prefix . 'APPLICATION'), true), true);

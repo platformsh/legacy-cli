@@ -38,7 +38,7 @@ class SessionSwitchCommand extends CommandBase {
         $config = $this->config;
         $previousId = $config->getSessionId();
 
-        $envVar = $config->get('application.env_prefix') . 'SESSION_ID';
+        $envVar = $config->getStr('application.env_prefix') . 'SESSION_ID';
         if (getenv($envVar) !== false) {
             $this->stdErr->writeln(sprintf('The session ID is set via the environment variable %s.', $envVar));
             $this->stdErr->writeln('It cannot be changed using this command.');
@@ -107,6 +107,6 @@ class SessionSwitchCommand extends CommandBase {
             ));
             return;
         }
-        $this->stdErr->writeln(sprintf("\nTo log in, run: <info>%s login</info>", $this->config->get('application.executable')));
+        $this->stdErr->writeln(sprintf("\nTo log in, run: <info>%s login</info>", $this->config->getStr('application.executable')));
     }
 }

@@ -255,7 +255,7 @@ class VariableCommandUtil
     private function getPrefixOptions(string $name): array
     {
         return [
-            'none' => 'No prefix: The variable will be part of <comment>$' . $this->config->get('service.env_prefix') . 'VARIABLES</comment>.',
+            'none' => 'No prefix: The variable will be part of <comment>$' . $this->config->getStr('service.env_prefix') . 'VARIABLES</comment>.',
             'env:' => 'env: The variable will be exposed directly, e.g. as <comment>$' . strtoupper($name) . '</comment>.',
         ];
     }

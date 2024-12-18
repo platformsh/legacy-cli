@@ -153,7 +153,7 @@ class LocalBuild
             return false;
         }
         $tree = preg_replace(
-            '#^|\n[^\n]+?' . preg_quote($this->config->get('service.project_config_dir')) . '\n|$#',
+            '#^|\n[^\n]+?' . preg_quote($this->config->getStr('service.project_config_dir')) . '\n|$#',
             "\n",
             $tree
         );
@@ -166,7 +166,7 @@ class LocalBuild
                 '--modified',
                 '--others',
                 '--exclude-standard',
-                '-x ' . $this->config->get('service.project_config_dir'),
+                '-x ' . $this->config->getStr('service.project_config_dir'),
                 '.',
             ],
             $appRoot

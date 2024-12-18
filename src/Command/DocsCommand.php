@@ -36,9 +36,9 @@ class DocsCommand extends CommandBase
     {
         if ($searchArguments = $input->getArgument('search')) {
             $query = $this->getSearchQuery($searchArguments);
-            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config->get('service.docs_search_url'));
+            $url = str_replace('{{ terms }}', rawurlencode($query), $this->config->getStr('service.docs_search_url'));
         } else {
-            $url = $this->config->get('service.docs_url');
+            $url = $this->config->getStr('service.docs_url');
         }
 
         $urlService = $this->url;

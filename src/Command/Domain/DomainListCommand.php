@@ -78,7 +78,7 @@ class DomainListCommand extends DomainCommandBase
         $forEnvironment = $input->getOption('environment') !== null;
 
         $project = $selection->getProject();
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         $defaultColumns = $this->defaultColumns;
 
         if ($forEnvironment) {

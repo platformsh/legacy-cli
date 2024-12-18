@@ -67,7 +67,7 @@ class SelfInstallChecker
         if ($answer) {
             $this->subCommandRunner->run('self:install');
         } else {
-            $this->stdErr->writeln('To install at another time, run: <info>' . $this->config->get('application.executable') . ' self:install</info>');
+            $this->stdErr->writeln('To install at another time, run: <info>' . $this->config->getStr('application.executable') . ' self:install</info>');
         }
 
         $this->stdErr->writeln('');

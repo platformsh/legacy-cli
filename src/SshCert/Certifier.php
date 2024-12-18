@@ -256,7 +256,7 @@ class Certifier
             '-t', self::KEY_ALGORITHM,
             '-f', $filename,
             '-N', '', // No passphrase
-            '-C', $this->config->get('application.slug') . '-temporary-cert', // Key comment
+            '-C', $this->config->getStr('application.slug') . '-temporary-cert', // Key comment
         ];
 
         // The "y\n" input is passed to avoid an error or prompt if ssh-keygen

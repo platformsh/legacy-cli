@@ -31,7 +31,7 @@ class SelfInstallCommand extends CommandBase
         $this
              ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
         $this->setHiddenAliases(['local:install']);
-        $cliName = $this->config->get('application.name');
+        $cliName = $this->config->getStr('application.name');
         $this->setHelp(<<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
@@ -48,7 +48,7 @@ EOT
             'shell-config.rc' => 'shell-config.tmpl.rc',
             'shell-config-bash.rc' => 'shell-config-bash.tmpl.rc',
         ];
-        if ($this->config->get('application.executable') === 'platform') {
+        if ($this->config->getStr('application.executable') === 'platform') {
             $requiredFiles['shell-config-bash.rc'] = 'shell-config-bash-direct.tmpl.rc';
         }
         $fs = new \Symfony\Component\Filesystem\Filesystem();
@@ -77,8 +77,8 @@ EOT
         if (OsUtil::isWindows()) {
             $this->stdErr->write('Creating .bat executable...');
             $binDir = $configDir . DIRECTORY_SEPARATOR . 'bin';
-            $binTarget = $this->config->get('application.executable');
-            $batDestination = $binDir . DIRECTORY_SEPARATOR . $this->config->get('application.executable') . '.bat';
+            $binTarget = $this->config->getStr('application.executable');
+            $batDestination = $binDir . DIRECTORY_SEPARATOR . $this->config->getStr('application.executable') . '.bat';
             $fs->dumpFile($batDestination, $this->generateBatContents($binTarget));
             $this->stdErr->writeln(' <info>done</info>');
             $this->stdErr->writeln('');
@@ -138,7 +138,7 @@ EOT
         }
         $this->stdErr->writeln('');
 
-        $shellConfigOverrideVar = $this->config->get('application.env_prefix') . 'SHELL_CONFIG_FILE';
+        $shellConfigOverrideVar = $this->config->getStr('application.env_prefix') . 'SHELL_CONFIG_FILE';
         $shellConfigOverride = getenv($shellConfigOverrideVar);
         if ($shellConfigOverride === '') {
             $this->io->debug(sprintf('Shell config detection disabled via %s', $shellConfigOverrideVar));
@@ -236,7 +236,7 @@ EOT
             $this->stdErr->writeln('');
         }
 
-        $appName = (string) $this->config->get('application.name');
+        $appName = $this->config->getStr('application.name');
         $begin = '# BEGIN SNIPPET: ' . $appName . ' configuration' . PHP_EOL;
         $end = ' # END SNIPPET';
         $beginPattern = '/^' . preg_quote('# BEGIN SNIPPET:') . '[^\n]*' . preg_quote($appName) . '[^\n]*$/m';
@@ -299,7 +299,7 @@ EOT
     private function getRunAdvice(string $shellConfigFile, string $binDir, ?bool $inPath = null, bool $newTerminal = false): array
     {
         $advice = [
-            sprintf('To use the %s,%s run:', $this->config->get('application.name'), $newTerminal ? ' open a new terminal, and' : '')
+            sprintf('To use the %s,%s run:', $this->config->getStr('application.name'), $newTerminal ? ' open a new terminal, and' : '')
         ];
         if ($inPath === null) {
             $inPath = $this->inPath($binDir);
@@ -309,7 +309,7 @@ EOT
             $sourceAdvice .= ' # (make sure your shell does this by default)';
             $advice[] = $sourceAdvice;
         }
-        $advice[] = sprintf('    <info>%s</info>', $this->config->get('application.executable'));
+        $advice[] = sprintf('    <info>%s</info>', $this->config->getStr('application.executable'));
 
         return $advice;
     }
@@ -386,7 +386,7 @@ EOT
     protected function findShellConfigFile(string|null $shellType): string|false
     {
         // Special handling for the .environment file on Platform.sh environments.
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT') !== false
             && getenv($envPrefix . 'APP_DIR') !== false
             && getenv($envPrefix . 'APP_DIR') === $this->config->getHomeDirectory()) {

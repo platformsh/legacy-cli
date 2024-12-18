@@ -31,7 +31,7 @@ class BuildResourcesGetCommand extends CommandBase
         $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader);
         if ($this->config->has('service.resources_help_url')) {
-            $this->setHelp('For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>');
+            $this->setHelp('For more information on managing resources, see: <info>' . $this->config->getStr('service.resources_help_url') . '</info>');
         }
     }
 
@@ -64,7 +64,7 @@ class BuildResourcesGetCommand extends CommandBase
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable() && $isOriginalCommand) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('Configure resources by running: <info>%s resources:build:set</info>', $executable));
         }

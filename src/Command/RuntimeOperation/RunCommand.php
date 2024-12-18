@@ -108,7 +108,7 @@ class RunCommand extends CommandBase
                     $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s.', $operationName, $this->api->getEnvironmentLabel($environment, 'comment')));
                 }
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf('To list operations, run: <comment>%s ops</comment>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To list operations, run: <comment>%s ops</comment>', $this->config->getStr('application.executable')));
                 return 1;
             }
         }

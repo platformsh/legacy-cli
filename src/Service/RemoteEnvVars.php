@@ -39,7 +39,7 @@ class RemoteEnvVars
      */
     public function getEnvVar(string $variable, HostInterface $host, bool $refresh = false, int $ttl = 3600): string
     {
-        $varName = $this->config->get('service.env_prefix') . $variable;
+        $varName = $this->config->getStr('service.env_prefix') . $variable;
         if ($host instanceof LocalHost) {
             return getenv($varName) !== false ? getenv($varName) : '';
         }

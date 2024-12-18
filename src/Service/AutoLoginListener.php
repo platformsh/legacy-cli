@@ -37,7 +37,7 @@ readonly class AutoLoginListener
             if ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1) {
                 $sessionAdvice[] = sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId());
                 if (!$this->config->isSessionIdFromEnv()) {
-                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config->get('application.executable'));
+                    $sessionAdvice[] = sprintf('To switch sessions, run: <info>%s session:switch</info>', $this->config->getStr('application.executable'));
                 }
             }
 

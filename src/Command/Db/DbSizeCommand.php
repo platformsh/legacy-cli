@@ -49,7 +49,7 @@ class DbSizeCommand extends CommandBase
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
             $help .= "\nThis command is deprecated and will be removed in a future version.\n";
-            $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable'));
+            $help .= \sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->getStr('application.executable'));
         }
         $this->setHelp($help);
         $this->selector->addProjectOption($this->getDefinition());
@@ -217,7 +217,7 @@ class DbSizeCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=red>Warning:</>');
             $this->stdErr->writeln('Databases tend to need extra space for starting up and temporary storage when running large queries.');
-            $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config->get('service.project_config_dir') . '/services.yaml'));
+            $this->stdErr->writeln(sprintf('Please increase the allocated space in %s', $this->config->getStr('service.project_config_dir') . '/services.yaml'));
         }
 
         $this->stdErr->writeln('');
@@ -225,7 +225,7 @@ class DbSizeCommand extends CommandBase
         if ($this->config->getWithDefault('api.metrics', false) && $this->config->isCommandEnabled('metrics:disk')) {
             $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
             $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
-            $this->stdErr->writeln(\sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->getStr('application.executable')));
         } else {
             $this->stdErr->writeln('<options=bold;fg=yellow>Warning:</>');
             $this->stdErr->writeln(self::ESTIMATE_WARNING);

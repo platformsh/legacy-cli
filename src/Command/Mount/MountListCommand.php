@@ -45,8 +45,8 @@ class MountListCommand extends CommandBase
     {
         $mountService = $this->mount;
         $environment = null;
-        if (($applicationEnv = getenv($this->config->get('service.env_prefix') . 'APPLICATION'))
-            && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->get('service.env_prefix'))) {
+        if (($applicationEnv = getenv($this->config->getStr('service.env_prefix') . 'APPLICATION'))
+            && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->getStr('service.env_prefix'))) {
             $this->io->debug('Selected host: localhost');
             $config = json_decode(base64_decode($applicationEnv), true) ?: [];
             $mounts = $mountService->mountsFromConfig(new AppConfig($config));
@@ -55,7 +55,7 @@ class MountListCommand extends CommandBase
             if (empty($mounts)) {
                 $this->stdErr->writeln(sprintf(
                     'No mounts found in config variable: <info>%s</info>',
-                    $this->config->get('service.env_prefix') . 'APPLICATION'
+                    $this->config->getStr('service.env_prefix') . 'APPLICATION'
                 ));
 
                 return 0;

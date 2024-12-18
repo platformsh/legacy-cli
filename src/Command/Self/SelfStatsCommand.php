@@ -39,8 +39,8 @@ class SelfStatsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $repo = $this->config->get('application.github_repo');
-        $repoUrl = implode('/', array_map('rawurlencode', explode('/', (string) $repo)));
+        $repo = $this->config->getStr('application.github_repo');
+        $repoUrl = implode('/', array_map('rawurlencode', explode('/', $repo)));
         $response = (new Client())
             ->get('https://api.github.com/repos/' . $repoUrl . '/releases', [
                 'headers' => [

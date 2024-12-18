@@ -271,7 +271,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      */
     private function getAutoRemoveKey(): string
     {
-        return $this->config->get('application.slug') . '-auto-remove';
+        return $this->config->getStr('application.slug') . '-auto-remove';
     }
 
     /**

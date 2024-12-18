@@ -76,7 +76,7 @@ class ListCommand extends CommandBase
         $table->render($rows, $this->tableHeader);
 
         if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln(\sprintf('To run a source operation, use: <info>%s source-operation:run [operation]</info>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(\sprintf('To run a source operation, use: <info>%s source-operation:run [operation]</info>', $this->config->getStr('application.executable')));
         }
 
         return 0;

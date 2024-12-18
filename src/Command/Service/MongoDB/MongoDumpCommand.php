@@ -46,7 +46,7 @@ class MongoDumpCommand extends CommandBase
 
         $gzip = $input->getOption('gzip');
 
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $selection = $this->selector->getSelection($input, new SelectorConfig(
             allowLocalHost: getenv($envPrefix . 'RELATIONSHIPS') !== false,
         ));
@@ -156,7 +156,7 @@ class MongoDumpCommand extends CommandBase
         ?string $collection = '',
         bool $gzip = false): string
     {
-        $prefix = $this->config->get('service.env_prefix');
+        $prefix = $this->config->getStr('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentId = $environment ? $environment->id : getenv($prefix . 'BRANCH');
         $defaultFilename = $projectId ?: 'db';

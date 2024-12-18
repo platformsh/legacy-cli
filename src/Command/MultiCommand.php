@@ -64,7 +64,7 @@ class MultiCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'The command <error>%s</error> cannot be run via "%s multi".',
                 $commandName,
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
             return 1;
         } elseif (!$command->getDefinition()->hasOption('project')) {
