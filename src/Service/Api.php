@@ -1246,15 +1246,8 @@ class Api
 
     /**
      * Get the current deployment for an environment.
-     *
-     * @param Environment $environment
-     * @param bool        $refresh
-     * @param bool        $required
-     *
-     * @return EnvironmentDeployment|false
-     *   The current deployment, or false if $required is false and there is no current deployment.
      */
-    public function getCurrentDeployment(Environment $environment, bool $refresh = false, bool $required = true): EnvironmentDeployment|false
+    public function getCurrentDeployment(Environment $environment, bool $refresh = false): EnvironmentDeployment
     {
         $cacheKey = implode(':', ['current-deployment', $environment->project, $environment->id, $environment->head_commit]);
         if (!$refresh && isset(self::$deploymentsCache[$cacheKey])) {
@@ -1263,15 +1256,13 @@ class Api
         $data = $this->cache->fetch($cacheKey);
         if ($data === false || $refresh) {
             try {
-                $deployment = $environment->getCurrentDeployment($required);
+                /** @var EnvironmentDeployment $deployment */
+                $deployment = $environment->getCurrentDeployment();
             } catch (EnvironmentStateException $e) {
                 if ($e->getEnvironment()->status === 'inactive') {
                     throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
                 }
                 throw $e;
-            }
-            if (!$required && $deployment === false) {
-                return self::$deploymentsCache[$cacheKey] = false;
             }
             $data = $deployment->getData();
             $data['_uri'] = $deployment->getUri();
