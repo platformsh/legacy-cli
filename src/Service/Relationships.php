@@ -52,7 +52,16 @@ class Relationships implements InputConfiguringInterface
      * @param OutputInterface $output
      * @param string[]        $schemes Filter by scheme.
      *
-     * @return array|false
+     * @return false|array{
+     *     scheme: string,
+     *     username: string,
+     *     password: string,
+     *     host: string,
+     *     port:int,
+     *     path: string,
+     *     _relationship_name: string,
+     *     _relationship_key: string,
+     *  }
      */
     public function chooseService(HostInterface $host, InputInterface $input, OutputInterface $output, array $schemes = []): array|false
     {
@@ -247,16 +256,14 @@ class Relationships implements InputConfiguringInterface
     /**
      * Returns command-line arguments to connect to a database.
      *
-     * @param string      $command        The command that will need arguments
-     *                                    (one of 'psql', 'pg_dump', 'mysql',
-     *                                    'mysqldump', 'mariadb' or
-     *                                    'mariadb-dump').
-     * @param array       $database       The database definition from the
-     *                                    relationship.
-     * @param string|null $schema         The name of a database schema, or
-     *                                    null to use the default schema, or
-     *                                    an empty string to not select a
-     *                                    schema.
+     * @param string      $command
+     *   The command that will need arguments (one of 'psql', 'pg_dump',
+     *  'mysql', mysqldump', 'mariadb' or 'mariadb-dump').
+     * @param array{username: string, password: string, host: string, port:int, path: string} $database
+     *   The database definition from the relationship.
+     * @param string|null $schema
+     *   The name of a database schema, null to use the default schema, or an
+     *    empty string to not select a schema.
      *
      * @return string
      *   The command line arguments (excluding the $command).

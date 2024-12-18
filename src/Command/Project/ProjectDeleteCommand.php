@@ -42,7 +42,7 @@ class ProjectDeleteCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
 
         $project = $selection->getProject();
-        $subscriptionId = $project->getSubscriptionId();
+        $subscriptionId = (string) $project->getSubscriptionId();
         $subscription = $this->api->loadSubscription($subscriptionId, $project);
         if (!$subscription) {
             $this->stdErr->writeln('Subscription not found: <error>' . $subscriptionId . '</error>');

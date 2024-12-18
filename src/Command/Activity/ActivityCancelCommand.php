@@ -81,20 +81,18 @@ class ActivityCancelCommand extends ActivityCommandBase
                 return 1;
             }
             $choices = [];
-            $questionHelper = $this->questionHelper;
-            $formatter = $this->propertyFormatter;
             $byId = [];
             $this->api->sortResources($activities, 'created_at');
             foreach ($activities as $activity) {
                 $byId[$activity->id] = $activity;
                 $choices[$activity->id] = \sprintf(
                     '%s: %s (%s)',
-                    $formatter->formatDate($activity->created_at),
+                    $this->propertyFormatter->formatDate($activity->created_at),
                     ActivityMonitor::getFormattedDescription($activity),
                     ActivityMonitor::formatState($activity->state)
                 );
             }
-            $id = $questionHelper->choose($choices, 'Enter a number to choose an activity to cancel:', key($choices), true);
+            $id = $this->questionHelper->choose($choices, 'Enter a number to choose an activity to cancel:', (string) key($choices));
             $activity = $byId[$id];
         }
 

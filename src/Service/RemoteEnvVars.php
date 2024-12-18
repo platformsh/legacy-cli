@@ -79,6 +79,6 @@ class RemoteEnvVars
     {
         $value = $this->getEnvVar($variable, $host, $refresh);
 
-        return json_decode(base64_decode($value), true) ?: [];
+        return json_decode((string) base64_decode($value), true) ?: [];
     }
 }

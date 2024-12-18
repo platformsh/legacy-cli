@@ -68,8 +68,6 @@ EOF
             throw new RootNotFoundException();
         }
 
-        $cwd = getcwd();
-
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
@@ -158,7 +156,8 @@ EOF
 
         $this->stdErr->writeln("\n<info>Migration complete</info>\n");
 
-        if (str_starts_with($cwd, $repositoryDir)) {
+        $cwd = getcwd();
+        if ($cwd !== false && str_starts_with($cwd, $repositoryDir)) {
             $this->stdErr->writeln('Type this to refresh your shell:');
             $this->stdErr->writeln('    <comment>cd ' . $legacyRoot . '</comment>');
         }

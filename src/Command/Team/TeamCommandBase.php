@@ -153,7 +153,7 @@ class TeamCommandBase extends CommandBase
      *
      * @param Organization $organization The organization.
      * @param bool $fetchAllPages If false, only one page will be fetched.
-     * @param array $params Extra query parameters.
+     * @param array<string, string> $params Extra query parameters.
      *
      * @return Team[]
      */

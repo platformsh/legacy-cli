@@ -77,18 +77,22 @@ class Shell
      * @param string|null  $input
      *
      * @return bool|string
-     *   False if the command fails, true if it succeeds with no output, or a
-     *   string if it succeeds with output.
-     *@throws RuntimeException
-     *   If $mustRun is enabled and the command fails.
+     *   False if the command fails and $mustRun is false, true if it succeeds
+     *   with no output, or a string if it succeeds with output.
      *
+     * @throws RuntimeException
+     *   If $mustRun is enabled and the command fails.
      */
     public function execute(array|string $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): bool|string
     {
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
-        $result = $this->runProcess($process, $mustRun, $quiet);
+        $exitCode = $this->runProcess($process, $mustRun, $quiet);
+        if ($exitCode > 0) {
+            return false;
+        }
+        $output = $process->getOutput();
 
-        return is_int($result) ? $result === 0 : $result;
+        return $output ? rtrim($output) : true;
     }
 
     /**
@@ -99,6 +103,16 @@ class Shell
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
         $this->runProcess($process, $mustRun, $quiet);
         return $process;
+    }
+
+    /**
+     * Executes a command and returns its raw output, throwing an exception on failure.
+     */
+    public function mustExecute(string|array $args, ?string $dir = null, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): string
+    {
+        $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
+        $this->runProcess($process, true, $quiet);
+        return $process->getOutput();
     }
 
     /**
@@ -169,11 +183,10 @@ class Shell
      * @throws RuntimeException
      *   If the process fails or times out, and $mustRun is true.
      *
-     * @return int|bool|string
-     *   The exit code of the process if it fails, true if it succeeds with no
-     *   output, or a string if it succeeds with output.
+     * @return int
+     *   The exit code of the process.
      */
-    protected function runProcess(Process $process, bool $mustRun = false, bool $quiet = true): int|bool|string
+    private function runProcess(Process $process, bool $mustRun = false, bool $quiet = true): int
     {
         try {
             $process->mustRun(function ($type, $buffer) use ($quiet): void {
@@ -196,9 +209,7 @@ class Shell
             // will generate a much shorter message.
             throw new \Platformsh\Cli\Exception\ProcessFailedException($process, $quiet);
         }
-        $output = $process->getOutput();
-
-        return $output ? rtrim($output) : true;
+        return 0;
     }
 
     /**

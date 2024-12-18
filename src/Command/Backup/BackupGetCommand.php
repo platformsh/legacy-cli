@@ -58,8 +58,7 @@ class BackupGetCommand extends CommandBase
                 }
                 $choices[$id] = sprintf('%s (%s)', $backup->id, $this->propertyFormatter->format($backup->created_at, 'created_at'));
             }
-            $questionHelper = $this->questionHelper;
-            $choice = $questionHelper->choose($choices, 'Enter a number to choose a backup:', $default);
+            $choice = $this->questionHelper->choose($choices, 'Enter a number to choose a backup:', $default);
             $backup = $byId[$choice];
         }
 

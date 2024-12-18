@@ -151,7 +151,7 @@ abstract class DomainCommandBase extends CommandBase
                             . "\nA non-production domain must be attached to an existing production domain."
                             . "\nIt will inherit the same routing behavior."
                             . "\nChoose a production domain:";
-                        $this->attach = (string) $this->questionHelper->choose($choices, $questionText, $default);
+                        $this->attach = $this->questionHelper->choose($choices, $questionText, $default);
                     }
                 } elseif ($this->attach !== null) {
                     try {

@@ -16,6 +16,7 @@ use Platformsh\Client\Model\Environment;
  * @property-read string $replacement_for
  * @property-read string $created_at
  * @property-read string $updated_at
+ * @property-read array<string, string> $ssl
  */
 class EnvironmentDomain extends ApiResourceBase
 {

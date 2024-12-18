@@ -215,13 +215,13 @@ class Manager {
                     }
                 } elseif ($this->shell->commandExists('unzip')) {
                     $command = 'unzip ' . escapeshellarg($tmpFile) . ' -d ' . escapeshellarg($tmpDir);
-                    $this->shell->execute($command, null, true);
+                    $this->shell->mustExecute($command);
                 } else {
                     throw new \RuntimeException('Failed to extract zip: unzip is not installed');
                 }
             } else {
                 $command = 'tar -xzp -f ' . escapeshellarg($tmpFile) . ' -C ' . escapeshellarg($tmpDir);
-                $this->shell->execute($command, null, true);
+                $this->shell->mustExecute($command);
             }
             if (!file_exists($tmpDir . DIRECTORY_SEPARATOR . $internalFilename)) {
                 throw new \RuntimeException('File not found: ' . $tmpDir . DIRECTORY_SEPARATOR . $internalFilename);

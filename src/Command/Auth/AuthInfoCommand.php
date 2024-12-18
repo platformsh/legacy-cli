@@ -57,10 +57,6 @@ class AuthInfoCommand extends CommandBase
         // Exit early if it's the user ID.
         if ($property === 'id') {
             $userId = $this->api->getMyUserId($input->getOption('refresh'));
-            if ($userId === false) {
-                $this->stdErr->writeln('The current session is not associated with a user ID');
-                return 1;
-            }
             $output->writeln($userId);
             return 0;
         }

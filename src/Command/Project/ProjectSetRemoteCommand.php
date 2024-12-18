@@ -47,7 +47,11 @@ class ProjectSetRemoteCommand extends CommandBase
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
         }
-        $root = $this->git->getRoot(getcwd());
+        $cwd = getcwd();
+        if (!$cwd) {
+            throw new \RuntimeException('Failed to find current working directory');
+        }
+        $root = $this->git->getRoot($cwd);
         if ($root === false) {
             $this->stdErr->writeln(
                 'No Git repository found. Use <info>git init</info> to create a repository.'

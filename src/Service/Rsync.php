@@ -120,6 +120,6 @@ readonly class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, $this->env($sshUrl), null);
+        $this->shell->mustExecute($params, quiet: false, env: $this->env($sshUrl), timeout: null);
     }
 }

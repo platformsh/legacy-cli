@@ -139,7 +139,7 @@ readonly class SessionStorage implements SessionStorageInterface
      */
     private function deserialize(string $data): array
     {
-        $result = json_decode(base64_decode($data, true), true);
+        $result = json_decode((string) base64_decode($data, true), true);
 
         return is_array($result) ? $result : [];
     }

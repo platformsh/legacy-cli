@@ -20,8 +20,10 @@ use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\Organization\Organization;
+use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
+use Platformsh\Client\Model\Subscription;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -35,7 +37,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:create', description: 'Create a new project', aliases: ['create'])]
 class ProjectCreateCommand extends CommandBase
 {
+    /** @var string[]|null */
     private ?array $plansCache = null;
+    /** @var Region[]|null */
     private ?array $regionsCache = null;
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
@@ -271,44 +275,10 @@ EOF
             return 1;
         }
 
-        $progressMessage = new ProgressMessage($this->stdErr);
-        $checkInterval = 1;
-        $lastCheck = time();
-        $progressMessage->show('Loading project information...');
-        $project = false;
-        while (true) {
-            if (time() - $lastCheck >= $checkInterval) {
-                $lastCheck = time();
-                try {
-                    $project = $this->api->getProject($subscription->project_id);
-                    if ($project !== false) {
-                        break;
-                    } else {
-                        $this->io->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
-                    }
-                } catch (ConnectException $e) {
-                    if (str_contains($e->getMessage(), 'timed out')) {
-                        $this->io->debug($e->getMessage());
-                    } else {
-                        throw $e;
-                    }
-                } catch (BadResponseException $e) {
-                    if (in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
-                        $this->io->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
-                    } else {
-                        throw $e;
-                    }
-                }
-                usleep(200000);
-            }
-            if ($totalTimeout && time() - $start > $totalTimeout) {
-                $progressMessage->done();
-                $this->stdErr->writeln(sprintf('The subscription is active but the project <error>%s</error> could not be fetched.', $subscription->project_id));
-                $this->stdErr->writeln('The project may be accessible momentarily. Otherwise, please contact support.');
-                return 1;
-            }
+        $project = $this->waitForProject($subscription, $totalTimeout, $start);
+        if (!$project) {
+            return 1;
         }
-        $progressMessage->done();
 
         $this->stdErr->writeln("The project is now ready!");
         $output->writeln($subscription->project_id);
@@ -340,6 +310,47 @@ EOF
         }
 
         return 0;
+    }
+
+    private function waitForProject(Subscription $subscription, int|float $totalTimeout, float $start): Project|false
+    {
+        $progressMessage = new ProgressMessage($this->stdErr);
+        $checkInterval = 1;
+        $lastCheck = time();
+        $progressMessage->show('Loading project information...');
+        while (true) {
+            if (time() - $lastCheck >= $checkInterval) {
+                $lastCheck = time();
+                try {
+                    $project = $this->api->getProject($subscription->project_id);
+                    if ($project !== false) {
+                        $progressMessage->done();
+                        return $project;
+                    } else {
+                        $this->io->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
+                    }
+                } catch (ConnectException $e) {
+                    if (str_contains($e->getMessage(), 'timed out')) {
+                        $this->io->debug($e->getMessage());
+                    } else {
+                        throw $e;
+                    }
+                } catch (BadResponseException $e) {
+                    if (in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
+                        $this->io->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
+                    } else {
+                        throw $e;
+                    }
+                }
+                usleep(200000);
+            }
+            if ($totalTimeout && time() - $start > $totalTimeout) {
+                $progressMessage->done();
+                $this->stdErr->writeln(sprintf('The subscription is active but the project <error>%s</error> could not be fetched.', $subscription->project_id));
+                $this->stdErr->writeln('The project may be accessible momentarily. Otherwise, please contact support.');
+                return false;
+            }
+        }
     }
 
     /**
@@ -424,7 +435,7 @@ EOF
      *
      * @param SetupOptions|null $setupOptions
      *
-     * @return array
+     * @return string[]
      *   A list of plan machine names.
      */
     protected function getAvailablePlans(?SetupOptions $setupOptions = null): array
@@ -444,6 +455,8 @@ EOF
 
     /**
      * Picks a default plan from a list.
+     *
+     * @param string[] $availablePlans
      */
     protected function getDefaultPlan(array $availablePlans): ?string
     {

@@ -46,7 +46,7 @@ class SubscriptionInfoCommand extends CommandBase
         if (empty($id)) {
             $selection = $this->selector->getSelection($input);
             $project = $selection->getProject();
-            $id = $project->getSubscriptionId();
+            $id = (string) $project->getSubscriptionId();
         }
 
         $subscription = $this->api->loadSubscription($id, $project, $input->getArgument('value') !== null);

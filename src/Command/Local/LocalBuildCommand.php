@@ -137,7 +137,7 @@ class LocalBuildCommand extends CommandBase
 
         if ($sourceDirOption) {
             $sourceDir = realpath($sourceDirOption);
-            if (!is_dir($sourceDir)) {
+            if ($sourceDir === false || !is_dir($sourceDir)) {
                 throw new InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
             }
 

@@ -66,11 +66,11 @@ class SshKeyAddCommand extends SshKeyCommandBase
             } elseif ($this->shell->commandExists('ssh-keygen')
                 && $this->questionHelper->confirm('Generate a new key?')) {
                 // Offer to generate a key.
-                $newKeyPath = $this->askNewKeyPath($this->questionHelper);
+                $newKeyPath = $this->askNewKeyPath();
                 $this->stdErr->writeln('');
 
                 $args = ['ssh-keygen', '-t', 'ed25519', '-f', $newKeyPath, '-N', ''];
-                $this->shell->execute($args, null, true);
+                $this->shell->mustExecute($args);
                 $publicKeyPath = $newKeyPath . '.pub';
                 $this->stdErr->writeln("Generated a new key: $publicKeyPath\n");
 
@@ -166,13 +166,9 @@ class SshKeyAddCommand extends SshKeyCommandBase
     }
 
     /**
-     * Find the default path for a new SSH key.
-     *
-     * @param QuestionHelper $questionHelper
-     *
-     * @return string
+     * Finds the default path for a new SSH key.
      */
-    private function askNewKeyPath(QuestionHelper $questionHelper): string
+    private function askNewKeyPath(): string
     {
         $basename = 'id_ed25519-' . $this->config->getStr('application.slug') . '-' . $this->api->getMyAccount()['username'];
         $sshDir = $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh';

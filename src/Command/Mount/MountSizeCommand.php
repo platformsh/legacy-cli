@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Mount;
 
@@ -69,7 +70,9 @@ EOF;
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->getStr('service.env_prefix') . 'APPLICATION')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: getenv($this->config->getStr('service.env_prefix') . 'APPLICATION') !== false,
+        ));
         $host = $this->selector->getHostFromSelection($input, $selection);
         if ($host instanceof LocalHost) {
             $envVars = $this->remoteEnvVars;
@@ -216,9 +219,9 @@ EOF;
      *
      * @param string $dfOutput
      * @param string $appDir
-     * @param array  $mountPaths
+     * @param string[] $mountPaths
      *
-     * @return array
+     * @return array<string, array{total: int, used: int, available: int, mounts: string[], percent_used: float}>
      */
     private function parseDf(string $dfOutput, string $appDir, array $mountPaths): array
     {
@@ -261,9 +264,9 @@ EOF;
      * Parse the 'du' output.
      *
      * @param string $duOutput
-     * @param array  $mountPaths
+     * @param string[] $mountPaths
      *
-     * @return array A list of mount sizes (in bytes) keyed by mount path.
+     * @return array<string, int> A list of mount sizes (in bytes) keyed by mount path.
      */
     private function parseDu(string $duOutput, array $mountPaths): array
     {
@@ -273,7 +276,8 @@ EOF;
             if (!isset($duOutputSplit[$i])) {
                 throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
             }
-            list($mountSizes[$mountPath],) = explode("\t", $duOutputSplit[$i], 2);
+            $parts = explode("\t", $duOutputSplit[$i], 2);
+            $mountSizes[$mountPath] = (int) $parts[0];
         }
 
         return $mountSizes;

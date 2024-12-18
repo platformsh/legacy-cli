@@ -103,8 +103,7 @@ class EnvironmentBranchCommand extends CommandBase
 
                 return 1;
             }
-            $questionHelper = $this->questionHelper;
-            $checkout = $questionHelper->confirm(
+            $checkout = $this->questionHelper->confirm(
                 "The environment <comment>$branchName</comment> already exists. Check out?"
             );
             if ($checkout) {

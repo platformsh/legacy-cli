@@ -91,7 +91,7 @@ class ProjectInfoCommand extends CommandBase
     }
 
     /**
-     * @param array $properties
+     * @param array<string, mixed> $properties
      *
      * @return int
      */

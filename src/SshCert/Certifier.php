@@ -263,7 +263,7 @@ class Certifier
         // encounters existing keys. This seems to be necessary during race
         // conditions despite deleting keys in advance with $this->fs->remove().
         $this->fs->remove([$filename, $filename . '.pub']);
-        $this->shell->execute($args, null, true, true, [], 60, "y\n");
+        $this->shell->mustExecute($args, timeout: 60, input: "y\n");
     }
 
     /**

@@ -8,6 +8,10 @@ readonly class Sketch
     {
     }
 
+    /**
+     * @param array{value: array<string, mixed>, info: array<string, mixed>} $value
+     * @return self
+     */
     public static function fromApiValue(array $value): self
     {
         return new Sketch(
@@ -31,6 +35,12 @@ readonly class Sketch
     {
         if ($this->isInfinite()) {
             throw new \RuntimeException('Cannot find the average of an infinite value');
+        }
+        if ($this->sum === null) {
+            return 0;
+        }
+        if (is_string($this->sum)) {
+            throw new \RuntimeException('Cannot find the average of a string "sum": ' . $this->sum);
         }
         return $this->sum / (float) $this->count;
     }

@@ -197,6 +197,8 @@ class TeamProjectAddCommand extends TeamCommandBase
 
     /**
      * Displays a list of projects.
+     *
+     * @param string[] $projectIds
      */
     private function displayProjectsAsList(array $projectIds, OutputInterface $output): void
     {

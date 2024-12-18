@@ -88,8 +88,7 @@ class BrowserLoginCommand extends CommandBase
                     $account['email']
                 ));
 
-                $questionHelper = $this->questionHelper;
-                if (!$questionHelper->confirm('Log in anyway?', false)) {
+                if (!$this->questionHelper->confirm('Log in anyway?', false)) {
                     return 1;
                 }
                 $force = true;

@@ -24,6 +24,7 @@ use Symfony\Component\Console\Question\Question;
 #[AsCommand(name: 'mount:download', description: 'Download files from a mount, using rsync')]
 class MountDownloadCommand extends CommandBase
 {
+    /** @var LocalApplication[]|null */
     private ?array $localApps = null;
 
     public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)

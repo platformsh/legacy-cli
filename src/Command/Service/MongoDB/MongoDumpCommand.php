@@ -48,13 +48,14 @@ class MongoDumpCommand extends CommandBase
 
         $envPrefix = $this->config->getStr('service.env_prefix');
         $selection = $this->selector->getSelection($input, new SelectorConfig(
-            allowLocalHost: getenv($envPrefix . 'RELATIONSHIPS') !== false,
+            allowLocalHost: getenv($envPrefix . 'RELATIONSHIPS') !== false
+                && getenv($envPrefix . 'APPLICATION_NAME') !== false,
         ));
         $host = $this->selector->getHostFromSelection($input, $selection);
         if ($host instanceof RemoteHost) {
             $appName = $selection->getAppName();
         } else {
-            $appName = getenv($envPrefix . 'APPLICATION_NAME');
+            $appName = (string) getenv($envPrefix . 'APPLICATION_NAME');
         }
 
         $dumpFile = false;
@@ -66,8 +67,7 @@ class MongoDumpCommand extends CommandBase
 
         if ($dumpFile) {
             if (file_exists($dumpFile)) {
-                $questionHelper = $this->questionHelper;
-                if (!$questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
+                if (!$this->questionHelper->confirm("File exists: <comment>$dumpFile</comment>. Overwrite?")) {
                     return 1;
                 }
             }

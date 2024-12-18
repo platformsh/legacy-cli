@@ -214,7 +214,7 @@ EOT
             '"$HOME/"' . escapeshellarg($rcDestination)
         );
 
-        if (str_contains($currentShellConfig, $suggestedShellConfig)) {
+        if ($shellConfigFile !== false && str_contains($currentShellConfig, $suggestedShellConfig)) {
             $this->stdErr->writeln('Already configured: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
             $this->stdErr->writeln('');
             $this->markSelfInstalled($configDir);
@@ -290,10 +290,13 @@ EOT
         $filename = $configDir . DIRECTORY_SEPARATOR . self::INSTALLED_FILENAME;
         if (!file_exists($filename)) {
             $fs = new \Symfony\Component\Filesystem\Filesystem();
-            $fs->dumpFile($filename, json_encode(['installed_at' => date('c')]));
+            $fs->dumpFile($filename, (string) json_encode(['installed_at' => date('c')]));
         }
     }
 
+    /**
+     * @return string[]
+     */
     private function getRunAdvice(string $shellConfigFile, string $binDir, ?bool $inPath = null, bool $newTerminal = false): array
     {
         $advice = [

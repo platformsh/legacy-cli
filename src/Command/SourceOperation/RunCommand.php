@@ -59,13 +59,12 @@ class RunCommand extends CommandBase
                 $this->stdErr->writeln('The <error>operation</error> argument is required in non-interactive mode.');
                 return 1;
             }
-            $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($sourceOps as $sourceOp) {
                 $choices[$sourceOp->operation] = $sourceOp->operation . ' (app: <info>' . $sourceOp->app . '</info>)';
             }
             ksort($choices, SORT_NATURAL);
-            $operation = $questionHelper->choose($choices, 'Enter a number to choose an operation to run:', null, false);
+            $operation = $this->questionHelper->choose($choices, 'Enter a number to choose an operation to run:', null, false);
         }
 
         $operationNames = [];
@@ -105,9 +104,9 @@ class RunCommand extends CommandBase
     }
 
     /**
-     * @param array $variables
+     * @param string[] $variables
      *
-     * @return array
+     * @return array<string, array<string, string>>
      */
     private function parseVariables(array $variables): array
     {

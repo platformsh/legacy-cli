@@ -96,6 +96,8 @@ class Api
     /**
      * A cache of not-found environment IDs.
      *
+     * @var array<string, true>
+     *
      * @see Api::getEnvironment()
      */
     private static array $notFound = [];
@@ -191,9 +193,11 @@ class Api
         }
         $dir = $this->config->getSessionDir();
         $files = glob($dir . '/sess-cli-*', GLOB_NOSORT);
-        foreach ($files as $file) {
-            if (\preg_match('@/sess-cli-([a-z0-9_-]+)@i', $file, $matches)) {
-                $ids[] = $matches[1];
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (\preg_match('@/sess-cli-([a-z0-9_-]+)@i', $file, $matches)) {
+                    $ids[] = $matches[1];
+                }
             }
         }
         $ids = \array_filter($ids, fn($id): bool => !str_starts_with((string) $id, 'api-token-'));
@@ -261,7 +265,7 @@ class Api
      *
      * @see Connector::__construct()
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function getConnectorOptions(): array {
         $connectorOptions = [];
@@ -360,7 +364,7 @@ class Api
         $session = $this->getClient(false)->getConnector()->getSession();
         $previousAccessToken = $session->get('accessToken');
 
-        $body = Utils::jsonDecode((string) $response->getBody(), true);
+        $body = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $authMethods = $body['amr'] ?? [];
         $maxAge = $body['max_age'] ?? null;
 
@@ -415,6 +419,8 @@ class Api
 
     /**
      * Tests if an HTTP response from refreshing a token indicates that the user's SSO session has expired.
+     *
+     * @param array<string, mixed> $data
      */
     private function isSsoSessionExpired(array $data): bool
     {
@@ -427,6 +433,8 @@ class Api
 
     /**
      * Tests if an error from refreshing a token indicates that the user's API token is invalid.
+     *
+     * @param array<string, mixed> $body
      */
     private function isApiTokenInvalid(mixed $body): bool
     {
@@ -470,7 +478,7 @@ class Api
      *
      * @see Client::__construct()
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getGuzzleOptions(): array {
         $options = [
@@ -906,7 +914,7 @@ class Api
      *
      * @param bool $reset
      *
-     * @return array{'id': string, 'username': string, 'mail': string, 'display_name': string, 'ssh_keys': array}
+     * @return array{'id': string, 'username': string, 'mail': string, 'display_name': string, 'ssh_keys': array<string, mixed>}
      */
     private function getLegacyAccountInfo(bool $reset = false): array
     {
@@ -924,11 +932,14 @@ class Api
 
     /**
      * Shortcut to return the ID of the current user.
-     *
      */
-    public function getMyUserId(bool $reset = false): string|false
+    public function getMyUserId(bool $reset = false): string
     {
-        return $this->getClient()->getMyUserId($reset);
+        $id = $this->getClient()->getMyUserId($reset);
+        if (!$id) {
+            throw new \RuntimeException('No user ID found for the current session.');
+        }
+        return $id;
     }
 
     /**
@@ -1468,7 +1479,7 @@ class Api
         // Check the API to see if verification is required.
         $request = new Request('POST', '/me/verification');
         $response = $this->getHttpClient()->send($request);
-        return Utils::jsonDecode((string) $response->getBody(), true);
+        return (array) Utils::jsonDecode((string) $response->getBody(), true);
     }
 
     /**
@@ -1480,7 +1491,7 @@ class Api
     {
         $request = new Request('GET', $org->getUri() . '/subscriptions/can-create');
         $response = $this->getHttpClient()->send($request);
-        return Utils::jsonDecode((string) $response->getBody(), true);
+        return (array) Utils::jsonDecode((string) $response->getBody(), true);
     }
 
     /**
@@ -1558,7 +1569,7 @@ class Api
 
             return ltrim($this->config->getStr('service.console_url'), '/') . '/' . rawurlencode((string) $firstSegment) . '/' . rawurlencode($project->id);
         }
-        $subscription = $this->loadSubscription($project->getSubscriptionId(), $project);
+        $subscription = $this->loadSubscription((string) $project->getSubscriptionId(), $project);
         return $subscription ? $subscription->project_ui : false;
     }
 
@@ -1633,7 +1644,7 @@ class Api
         }
         $request = new Request('GET', $project->getUri() . '/settings');
         $response = $this->getHttpClient()->send($request);
-        $settings = Utils::jsonDecode((string) $response->getBody(), true);
+        $settings = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $this->cache->save($cacheKey, $settings, (int) $this->config->get('api.projects_ttl'));
         return !empty($settings['sizing_api_enabled']);
     }

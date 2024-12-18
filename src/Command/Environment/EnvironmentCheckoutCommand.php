@@ -159,7 +159,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             // The environment ID will be an integer if it was numeric
             // (because PHP does that with array keys), so it's cast back to
             // a string here.
-            return (string) $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
+            return $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
         }
 
         // If there's only one choice, QuestionHelper::choose() does not

@@ -92,7 +92,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         if ($input->isInteractive()) {
-            $this->migrateAliasFiles($this->drush);
+            $this->migrateAliasFiles();
         }
 
         $aliases = $this->drush->getAliases($current_group);
@@ -210,7 +210,7 @@ class LocalDrushAliasesCommand extends CommandBase
         $drushYml = $this->drush->getDrushDir() . '/drush.yml';
         $drushConfig = [];
         if (file_exists($drushYml)) {
-            $drushConfig = (array) Yaml::parse(file_get_contents($drushYml));
+            $drushConfig = (array) Yaml::parse((string) file_get_contents($drushYml));
         }
         $aliasPath = $this->drush->getSiteAliasDir();
         if (getenv('HOME')) {
@@ -233,7 +233,7 @@ class LocalDrushAliasesCommand extends CommandBase
     /**
      * Migrates old alias file(s) from ~/.drush to ~/.drush/site-aliases.
      */
-    protected function migrateAliasFiles(Drush $drush): void
+    protected function migrateAliasFiles(): void
     {
         $newDrushDir = $this->drush->getHomeDir() . '/.drush/site-aliases';
         $oldFilenames = $this->drush->getLegacyAliasFiles();
