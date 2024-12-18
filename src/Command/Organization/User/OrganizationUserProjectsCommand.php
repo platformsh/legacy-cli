@@ -23,6 +23,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:projects', description: 'List the projects a user can access', aliases: ['oups'])]
 class OrganizationUserProjectsCommand extends OrganizationCommandBase
 {
+    /** @var array<string, string> */
     protected array $tableHeader = [
         'organization_id' => 'Organization ID',
         'organization_name' => 'Organization',
@@ -35,6 +36,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         'region' => 'Region',
     ];
 
+    /** @var string[] */
     protected array $defaultColumns = ['project_id', 'project_title', 'roles', 'updated_at'];
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)

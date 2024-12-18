@@ -49,7 +49,7 @@ class Table implements InputConfiguringInterface
      * Add the --format and --columns options to a command's input definition.
      *
      * @param InputDefinition $definition
-     * @param array $columns
+     * @param array<string|int, string> $columns
      *   The table header or a list of available columns.
      * @param string[] $defaultColumns
      *   A list of default columns.
@@ -77,6 +77,12 @@ class Table implements InputConfiguringInterface
         $definition->addOption($option);
     }
 
+    /**
+     * @param array<string|int, string> $columns
+     * @param string[] $defaultColumns
+     * @param bool $markDefault
+     * @return string
+     */
     private static function formatAvailableColumns(array $columns, array $defaultColumns = [], bool $markDefault = true): string
     {
         $columnNames = array_keys(self::availableColumns($columns));

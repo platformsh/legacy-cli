@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'integration:list', description: 'View a list of project integration(s)', aliases: ['integrations'])]
 class IntegrationListCommand extends IntegrationCommandBase
 {
+    /** @var array<string|int, string> */
     private array $tableHeader = ['ID', 'Type', 'Summary'];
     public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {

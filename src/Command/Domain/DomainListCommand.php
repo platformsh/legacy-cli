@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'domain:list', description: 'Get a list of all domains', aliases: ['domains'])]
 class DomainListCommand extends DomainCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'name' => 'Name',
         'ssl' => 'SSL enabled',
@@ -27,6 +28,7 @@ class DomainListCommand extends DomainCommandBase
         'replacement_for' => 'Attached domain',
         'type' => 'Type',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['name', 'ssl', 'created_at'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
