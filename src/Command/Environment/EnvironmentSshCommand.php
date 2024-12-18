@@ -48,24 +48,22 @@ class EnvironmentSshCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
-        $environment = $selection->getEnvironment();
-
-        if ($input->getOption('all')) {
-            $output->writeln(array_values($environment->getSshUrls()));
-
-            return 0;
-        }
-
-        $container = $selection->getRemoteContainer();
-
         try {
+            $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+            $environment = $selection->getEnvironment();
+
+            if ($input->getOption('all')) {
+                $output->writeln(array_values($environment->getSshUrls()));
+
+                return 0;
+            }
+
+            $container = $selection->getRemoteContainer();
+
             $sshUrl = $container->getSshUrl($input->getOption('instance'));
         } catch (EnvironmentStateException $e) {
-            if ($e->getEnvironment()->id !== $environment->id) {
-                throw $e;
-            }
-            switch ($e->getEnvironment()->status) {
+            $environment = $e->getEnvironment();
+            switch ($environment->status) {
                 case 'inactive':
                     $this->stdErr->writeln(sprintf('The environment %s is inactive, so an SSH connection is not possible.', $this->api->getEnvironmentLabel($e->getEnvironment(), 'error')));
                     if (!$e->getEnvironment()->has_code) {
