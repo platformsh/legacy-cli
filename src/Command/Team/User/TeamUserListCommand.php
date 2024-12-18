@@ -86,7 +86,7 @@ class TeamUserListCommand extends TeamCommandBase
 
         if (empty($members)) {
             $this->stdErr->writeln(\sprintf('No users were found in the team %s.', $this->getTeamLabel($team)));
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s team:user:add [email]</info>', $executable));
             return 0;
@@ -118,7 +118,7 @@ class TeamUserListCommand extends TeamCommandBase
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
             }
 
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s team:user:add [email]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To delete a user, run: <info>%s team:user:delete [email]</info>', $executable));

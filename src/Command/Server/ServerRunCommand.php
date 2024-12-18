@@ -85,7 +85,7 @@ class ServerRunCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
             $this->stdErr->writeln(sprintf(
                 'Build the application with: <comment>%s build</comment>',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
             return 1;
         }

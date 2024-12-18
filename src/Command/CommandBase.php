@@ -151,7 +151,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $name = $this->getName();
 
         $placeholders = ['%command.name%', '%command.full_name%'];
-        $replacements = [$name, $this->config->get('application.executable') . ' ' . $name];
+        $replacements = [$name, $this->config->getStr('application.executable') . ' ' . $name];
 
         return str_replace($placeholders, $replacements, $help);
     }
@@ -182,7 +182,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
-                $this->config->get('application.executable'),
+                $this->config->getStr('application.executable'),
                 $this->getPreferredName(),
                 $definition->getSynopsis($short)
             ));

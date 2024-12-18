@@ -58,7 +58,7 @@ class EnvironmentMergeCommand extends CommandBase
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf("The project's code is managed externally through its <info>%s</info> integration.", $integration->type));
                 if ($this->config->isCommandEnabled('integration:get')) {
-                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integration->id)));
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($integration->id)));
                 }
             } elseif ($selectedEnvironment->parent === null) {
                 $this->stdErr->writeln('');

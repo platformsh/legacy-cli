@@ -226,7 +226,7 @@ class EnvironmentListCommand extends CommandBase
         $this->stdErr->writeln("<info>*</info> - Indicates the current environment\n");
 
         $currentEnvironment = $this->currentEnvironment;
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         $this->stdErr->writeln(
             'Check out a different environment by running <info>' . $executable . ' checkout [id]</info>'

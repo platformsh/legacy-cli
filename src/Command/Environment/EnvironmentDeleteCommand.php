@@ -59,7 +59,7 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addExample('Delete the environments "test" and "example-1"', 'test example-1');
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with their parent', '--merged');
-        $service = $this->config->get('service.name');
+        $service = $this->config->getStr('service.name');
         $this->setHelp(<<<EOF
             When a {$service} environment is deleted, it will become "inactive": it will
             exist only as a Git branch, containing code but no services, databases nor
@@ -399,7 +399,7 @@ class EnvironmentDeleteCommand extends CommandBase
         if (empty($toDeleteBranch) && empty($toDeactivate)) {
             $this->stdErr->writeln('No environments to delete.');
             if (!$anythingSpecified) {
-                $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config->get('application.executable')));
+                $this->stdErr->writeln(\sprintf('For help, run: <info>%s help environment:delete</info>', $this->config->getStr('application.executable')));
             }
 
             return $error ? 1 : 0;

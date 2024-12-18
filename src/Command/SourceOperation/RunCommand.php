@@ -75,7 +75,7 @@ class RunCommand extends CommandBase
         if (!in_array($operation, $operationNames, true)) {
             $this->stdErr->writeln(sprintf('The source operation <error>%s</error> was not found on the environment %s.', $operation, $this->api->getEnvironmentLabel($environment, 'comment')));
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('To list source operations, run: <comment>%s source-ops</comment>', $this->config->getStr('application.executable')));
             return 1;
         }
 

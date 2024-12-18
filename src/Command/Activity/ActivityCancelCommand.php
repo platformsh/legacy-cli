@@ -56,7 +56,7 @@ class ActivityCancelCommand extends ActivityCommandBase
 
         $loader = $this->activityLoader;
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         if ($selection->hasEnvironment() && !$input->getOption('all')) {
             $apiResource = $selection->getEnvironment();

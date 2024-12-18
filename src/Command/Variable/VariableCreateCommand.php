@@ -81,7 +81,7 @@ class VariableCreateCommand extends CommandBase
                 if (!$input->getOption('update')) {
                     $this->stdErr->writeln('The variable already exists: <error>' . $name . '</error>');
 
-                    $executable = $this->config->get('application.executable');
+                    $executable = $this->config->getStr('application.executable');
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
                         'To view the variable, use: <comment>%s variable:get %s</comment>',

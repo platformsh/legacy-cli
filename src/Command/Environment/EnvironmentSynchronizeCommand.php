@@ -126,7 +126,7 @@ EOT;
                 $this->stdErr->writeln(sprintf("Code cannot be synchronized as it is managed by the project's <error>%s</error> integration.", $integrationManagingCode->type));
                 if ($this->config->isCommandEnabled('integration:get')) {
                     $this->stdErr->writeln('');
-                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($integrationManagingCode->id)));
+                    $this->stdErr->writeln(sprintf('To view the integration, run: <info>%s integration:get %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($integrationManagingCode->id)));
                 }
                 return 1;
             }

@@ -42,7 +42,7 @@ class EnvironmentSshCommand extends CommandBase
         $this->addExample('Pass an extra option to SSH', "-o 'RequestTTY force'");
         $this->addExample('List files', 'ls');
         $this->addExample("Monitor the app log (use '--' before flags)", 'tail /var/log/app.log -- -n50 -f');
-        $envPrefix = $this->config->get('service.env_prefix');
+        $envPrefix = $this->config->getStr('service.env_prefix');
         $this->addExample('Display relationships (use quotes for complex syntax)', "'echo \${$envPrefix}RELATIONSHIPS | base64 --decode'");
     }
 
@@ -78,7 +78,7 @@ class EnvironmentSshCommand extends CommandBase
                     $this->stdErr->writeln(sprintf('The environment %s is paused, so an SSH connection is not possible.', $this->api->getEnvironmentLabel($e->getEnvironment(), 'error')));
                     if ($this->config->isCommandEnabled('environment:resume')) {
                         $this->stdErr->writeln('');
-                        $this->stdErr->writeln(sprintf('Resume the environment by running: <info>%s environment:resume -e %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($environment->id)));
+                        $this->stdErr->writeln(sprintf('Resume the environment by running: <info>%s environment:resume -e %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($environment->id)));
                     }
                     return 1;
             }

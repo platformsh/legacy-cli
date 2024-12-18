@@ -117,13 +117,13 @@ class ProjectListCommand extends CommandBase
                 return 0;
             }
             $this->stdErr->writeln(
-                'You do not have any ' . $this->config->get('service.name') . ' projects yet.'
+                'You do not have any ' . $this->config->getStr('service.name') . ' projects yet.'
             );
             if ($this->config->isCommandEnabled('project:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf(
                     'To create a new project, run: <info>%s create</info>',
-                    $this->config->get('application.executable')
+                    $this->config->getStr('application.executable')
                 ));
             }
 
@@ -209,7 +209,7 @@ class ProjectListCommand extends CommandBase
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         if ($page->pageCount > 1 && $itemsPerPage !== 0) {
             // State the command name explicitly here, as it may be displaying

@@ -187,7 +187,7 @@ EOF
         if ($this->config->has('service.pricing_url')) {
             $costConfirm .= sprintf(
                 "\nPricing information: <comment>%s</comment>",
-                $this->config->get('service.pricing_url')
+                $this->config->getStr('service.pricing_url')
             );
         }
         $costConfirm .= "\n\nAre you sure you want to continue?";
@@ -212,13 +212,13 @@ EOF
 
         $this->stdErr->writeln(sprintf(
             'Your %s project has been requested (subscription ID: <comment>%s</comment>)',
-            $this->config->get('service.name'),
+            $this->config->getStr('service.name'),
             $subscription->id
         ));
 
         $this->stdErr->writeln(sprintf(
             "\nThe %s Bot is activating your project\n",
-            $this->config->get('service.name')
+            $this->config->getStr('service.name')
         ));
 
         $bot = new Bot($this->stdErr);
@@ -270,7 +270,7 @@ EOF
                 $output->writeln($subscription->project_id);
             }
 
-            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config->get('application.executable')));
+            $this->stdErr->writeln(sprintf('View your active projects with: <info>%s project:list</info>', $this->config->getStr('application.executable')));
 
             return 1;
         }
@@ -340,7 +340,7 @@ EOF
 
         if ($gitRoot === false) {
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To clone the project locally, run: <info>%s get %s</info>', $this->config->get('application.executable'), OsUtil::escapeShellArg($project->id)));
+            $this->stdErr->writeln(sprintf('To clone the project locally, run: <info>%s get %s</info>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($project->id)));
         }
 
         return 0;
@@ -396,7 +396,7 @@ EOF
                     return true;
                 }
             } elseif ($this->config->has('service.console_url')) {
-                $url = $this->config->get('service.console_url') . '/-/phone-verify';
+                $url = $this->config->getStr('service.console_url') . '/-/phone-verify';
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to verify your phone number:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));
@@ -407,12 +407,12 @@ EOF
             if ($this->config->has('service.console_url')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please use Console to create your first project:');
-                $this->stdErr->writeln(sprintf('<info>%s</info>', $this->config->get('service.console_url')));
+                $this->stdErr->writeln(sprintf('<info>%s</info>', $this->config->getStr('service.console_url')));
             }
         } elseif ($type === 'support' || $type === 'ticket') {
             $this->stdErr->writeln('Verification via a support ticket is required before creating a project.');
             if ($this->config->has('service.console_url')) {
-                $url = $this->config->get('service.console_url') . '/support';
+                $url = $this->config->getStr('service.console_url') . '/support';
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to create a ticket:');
                 $this->stdErr->writeln(sprintf('<info>%s</info>', $url));

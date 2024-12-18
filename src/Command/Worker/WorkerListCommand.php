@@ -90,7 +90,7 @@ class WorkerListCommand extends CommandBase
     private function recommendOtherCommands(EnvironmentDeployment $deployment): void
     {
         $lines = [];
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         if ($deployment->webapps) {
             $lines[] = sprintf(
                 'To list applications, run: <info>%s apps</info>',

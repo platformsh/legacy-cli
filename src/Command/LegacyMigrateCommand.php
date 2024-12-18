@@ -24,7 +24,7 @@ class LegacyMigrateCommand extends CommandBase
     {
         $this
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
-        $cliName = $this->config->get('application.name');
+        $cliName = $this->config->getStr('application.name');
         $localDir = $this->config->get('local.local_dir');
         $this->setHelp(<<<EOF
 Before version 3.x, the {$cliName} required a project to have a "repository"
@@ -60,7 +60,7 @@ EOF
             if ($this->selector->getProjectRoot()) {
                 $this->stdErr->writeln(sprintf(
                     'This project is already compatible with the %s version 3.x.',
-                    $this->config->get('application.name')
+                    $this->config->getStr('application.name')
                 ));
 
                 return 0;
@@ -89,7 +89,7 @@ EOF
                 $this->stdErr->writeln('Backup destination already exists: <error>' . $backup . '</error>');
                 $this->stdErr->writeln(
                     'Move (or delete) the backup, then run <comment>'
-                    . $this->config->get('application.executable')
+                    . $this->config->getStr('application.executable')
                     . ' legacy-migrate</comment> to continue.'
                 );
 
@@ -136,7 +136,7 @@ EOF
             $this->stdErr->writeln('Removing old "www" symlink.');
             $fs->remove($legacyRoot . '/www');
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('After running <comment>' . $this->config->get('application.executable') . ' build</comment>, your web root will be at: <comment>' . $this->config->getWithDefault('local.web_root', '_www') . '</comment>');
+            $this->stdErr->writeln('After running <comment>' . $this->config->getStr('application.executable') . ' build</comment>, your web root will be at: <comment>' . $this->config->getWithDefault('local.web_root', '_www') . '</comment>');
             $this->stdErr->writeln('You may need to update your local web server configuration.');
             $this->stdErr->writeln('');
         }

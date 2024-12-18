@@ -48,7 +48,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         if ($this->config->has('service.resources_help_url')) {
-            $this->setHelp('For more information on managing resources, see: <info>' . $this->config->get('service.resources_help_url') . '</info>');
+            $this->setHelp('For more information on managing resources, see: <info>' . $this->config->getStr('service.resources_help_url') . '</info>');
         }
     }
 
@@ -145,7 +145,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$table->formatIsMachineReadable()) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $isOriginalCommand = $input instanceof ArgvInput;
             if ($isOriginalCommand) {
                 $this->stdErr->writeln('');

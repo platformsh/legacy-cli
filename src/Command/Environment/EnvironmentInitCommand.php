@@ -27,7 +27,7 @@ class EnvironmentInitCommand extends CommandBase
             ->addArgument('url', InputArgument::REQUIRED, 'A URL to a Git repository')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'The name of the profile');
 
-        if ($this->config->get('service.name') === 'Platform.sh') {
+        if ($this->config->getStr('service.name') === 'Platform.sh') {
             $this->addExample('Initialize using the Platform.sh Go template', 'https://github.com/platformsh-templates/golang');
         }
 

@@ -26,7 +26,7 @@ class OrganizationCreateCommand extends OrganizationCommandBase
     protected function configure(): void
     {
         $this->getForm()->configureInputDefinition($this->getDefinition());
-        $serviceName = $this->config->get('service.name');
+        $serviceName = $this->config->getStr('service.name');
         $help = <<<END_HELP
 Organizations allow you to manage your $serviceName projects, users and billing. Projects are owned by organizations.
 

@@ -67,7 +67,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
         if (!$update && $this->api->loadMemberByEmail($organization, $email)) {
             $this->stdErr->writeln(\sprintf('The user <comment>%s</comment> already exists on the organization %s', $email, $this->api->getOrganizationLabel($organization, 'comment')));
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To update the user, run: <comment>%s org:user:update %s</comment>', $this->config->get('application.executable'), OsUtil::escapeShellArg($email)));
+            $this->stdErr->writeln(sprintf('To update the user, run: <comment>%s org:user:update %s</comment>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($email)));
             return 1;
         }
 

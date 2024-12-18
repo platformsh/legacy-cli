@@ -91,7 +91,7 @@ class TeamProjectListCommand extends TeamCommandBase
         if (empty($projects)) {
             $this->stdErr->writeln(\sprintf('No projects were found in the team %s.', $this->getTeamLabel($team)));
             $this->stdErr->writeln('');
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln(\sprintf('To add project(s), run: <info>%s team:project:add</info>', $executable));
             return 0;
         }
@@ -122,7 +122,7 @@ class TeamProjectListCommand extends TeamCommandBase
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
             }
 
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add project(s) to the team, run: <info>%s team:project:add [ids...]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To delete a project from the team, run: <info>%s team:project:delete [id]</info>', $executable));

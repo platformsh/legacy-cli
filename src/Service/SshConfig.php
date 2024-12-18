@@ -87,7 +87,7 @@ class SshConfig {
 
         $certificate = $this->certifier->getExistingCertificate();
         if ($certificate) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
 
             // On shells where it might work (POSIX compliant), skip refreshing
@@ -420,7 +420,7 @@ class SshConfig {
      */
     private function getUserSshConfigChanges(string $currentConfig, string $newConfig): string
     {
-        $serviceName = (string)$this->config->get('service.name');
+        $serviceName = $this->config->getStr('service.name');
         $begin = '# BEGIN: ' . $serviceName . ' certificate configuration' . PHP_EOL;
         $end = PHP_EOL . '# END: ' . $serviceName . ' certificate configuration';
 

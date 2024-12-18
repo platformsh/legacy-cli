@@ -309,7 +309,7 @@ class DbDumpCommand extends CommandBase
         bool $schemaOnly = false,
         bool $gzip = false): string
     {
-        $prefix = $this->config->get('service.env_prefix');
+        $prefix = $this->config->getStr('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentMachineName = $environment ? $environment->machine_name : getenv($prefix . 'ENVIRONMENT');
         $defaultFilename = $projectId ?: 'db';

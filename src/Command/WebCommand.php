@@ -61,9 +61,9 @@ class WebCommand extends CommandBase
                 }
             }
         } elseif ($this->config->has('service.console_url')) {
-            $url = $this->config->get('service.console_url');
+            $url = $this->config->getStr('service.console_url');
         } elseif ($this->config->has('service.accounts_url')) {
-            $url = $this->config->get('service.accounts_url');
+            $url = $this->config->getStr('service.accounts_url');
         } else {
             $this->stdErr->writeln('No URLs are configured');
             return 1;

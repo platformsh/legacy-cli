@@ -39,7 +39,7 @@ class LoginRequiredEvent extends Event
             }
             return $message;
         }
-        $executable = $config->get('application.executable');
+        $executable = $config->getStr('application.executable');
         $cmd = 'login';
         if ($options = $this->getLoginOptionsCmdLine()) {
             $cmd .= ' ' . $options;

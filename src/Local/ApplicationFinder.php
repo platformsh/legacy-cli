@@ -80,7 +80,7 @@ readonly class ApplicationFinder
      */
     private function findGroupedApplications(string $directory): array
     {
-        $configFile = $directory . DIRECTORY_SEPARATOR . $this->config->get('service.applications_config_file');
+        $configFile = $directory . DIRECTORY_SEPARATOR . $this->config->getStr('service.applications_config_file');
         if (!\file_exists($configFile)) {
             return [];
         }
@@ -145,7 +145,7 @@ readonly class ApplicationFinder
             return [];
         }
         return $finder->in($directory)
-            ->name($this->config->get('service.app_config_file'))
+            ->name($this->config->getStr('service.app_config_file'))
             ->ignoreDotFiles(false)
             ->ignoreUnreadableDirs()
             ->ignoreVCS(true)

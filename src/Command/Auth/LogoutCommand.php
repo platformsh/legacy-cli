@@ -76,7 +76,7 @@ class LogoutCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
-                $this->config->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
         }
 

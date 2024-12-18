@@ -204,8 +204,8 @@ EOF
         }
 
         if (!$error) {
-            $executable = $this->config->get('application.executable');
-            $variable = $this->config->get('service.env_prefix') . 'RELATIONSHIPS';
+            $executable = $this->config->getStr('application.executable');
+            $variable = $this->config->getStr('service.env_prefix') . 'RELATIONSHIPS';
             $this->stdErr->writeln('');
             $this->stdErr->writeln("List tunnels with: <info>$executable tunnels</info>");
             $this->stdErr->writeln("View tunnel details with: <info>$executable tunnel:info</info>");

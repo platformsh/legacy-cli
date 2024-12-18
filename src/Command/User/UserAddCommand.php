@@ -331,7 +331,7 @@ class UserAddCommand extends CommandBase
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf(
                     'To delete the user, run: <info>%s user:delete %s</info>',
-                    $this->config->get('application.executable'),
+                    $this->config->getStr('application.executable'),
                     OsUtil::escapeShellArg($email)
                 ));
             }
