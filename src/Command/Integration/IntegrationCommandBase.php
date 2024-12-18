@@ -673,7 +673,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
             ]);
 
-        $data = Utils::jsonDecode((string) $response->getBody(), true);
+        $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
         if (!isset($data['access_token'])) {
             throw new \RuntimeException('Access token not found in Bitbucket response');
         }

@@ -191,7 +191,7 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.
-        /** @var array|null $response */
+        /** @var null|array{code: string, redirect_uri: string}|array{error: string, error_description: string, error_hint: string} $response */
         $response = null;
         $start = time();
         while ($process->isRunning()) {
@@ -262,7 +262,7 @@ class BrowserLoginCommand extends CommandBase
 
         if (empty($token['refresh_token'])) {
             $this->stdErr->writeln('');
-            $clientId = $this->config->get('api.oauth2_client_id');
+            $clientId = $this->config->getStr('api.oauth2_client_id');
             $this->stdErr->writeln([
                 '<options=bold;fg=yellow>Warning:</fg>',
                 'No refresh token is available. This will cause frequent login errors.',
@@ -275,7 +275,7 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
-     * @param array            $tokenData
+     * @param array<string, mixed> $tokenData
      * @param SessionInterface $session
      */
     private function saveAccessToken(array $tokenData, SessionInterface $session): void
@@ -306,11 +306,13 @@ class BrowserLoginCommand extends CommandBase
 
     /**
      * Exchanges the authorization code for an access token.
+     *
+     * @return array<string, mixed>
      */
     private function getAccessToken(string $authCode, string $codeVerifier, string $redirectUri): array
     {
         $client = new Client(['verify' => !$this->config->getWithDefault('api.skip_ssl', false)]);
-        $request = new Request('POST', $this->config->get('api.oauth2_token_url'), body: http_build_query([
+        $request = new Request('POST', $this->config->getStr('api.oauth2_token_url'), body: http_build_query([
             'grant_type' => 'authorization_code',
             'code' => $authCode,
             'redirect_uri' => $redirectUri,
@@ -325,7 +327,7 @@ class BrowserLoginCommand extends CommandBase
                 'auth' => [$this->config->get('api.oauth2_client_id'), ''],
             ]);
 
-            return Utils::jsonDecode((string) $response->getBody(), true);
+            return (array) Utils::jsonDecode((string) $response->getBody(), true);
         } catch (BadResponseException $e) {
             throw ApiResponseException::create($request, $e->getResponse(), $e);
         }

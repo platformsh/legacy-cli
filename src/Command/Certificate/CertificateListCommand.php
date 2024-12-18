@@ -118,6 +118,11 @@ class CertificateListCommand extends CommandBase
         return 0;
     }
 
+    /**
+     * @param Certificate[] $certs
+     * @param array<string, mixed> $filters
+     * @return void
+     */
     protected function filterCerts(array &$certs, array $filters): void
     {
         foreach ($filters as $filter => $value) {

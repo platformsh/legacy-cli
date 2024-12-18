@@ -110,7 +110,7 @@ class EnvironmentInfoCommand extends CommandBase
         if ($property === 'parent' && $value === '-') {
             $value = null;
         } else {
-            settype($value, $type);
+            settype($value, (string) $type);
         }
 
         $currentValue = $environment->getProperty($property, false);
