@@ -78,13 +78,11 @@ class ApiTokenLoginCommand extends CommandBase
 
             return $apiToken;
         };
-
-        $questionHelper = $this->questionHelper;
         $question = new Question("Please enter an API token:\n> ");
         $question->setValidator($validator);
         $question->setMaxAttempts(5);
         $question->setHidden(true);
-        $questionHelper->ask($input, $output, $question);
+        $this->questionHelper->ask($input, $output, $question);
 
         $this->login->finalize();
 
@@ -99,9 +97,7 @@ class ApiTokenLoginCommand extends CommandBase
      */
     private function saveTokens(string $apiToken, AccessToken $accessToken): void {
         $this->api->logout();
-
-        $tokenConfig = $this->tokenConfig;
-        $tokenConfig->storage()->storeToken($apiToken);
+        $this->tokenConfig->storage()->storeToken($apiToken);
 
         $this->api
             ->getClient(false, true)

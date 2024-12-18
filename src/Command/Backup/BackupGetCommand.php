@@ -35,8 +35,6 @@ class BackupGetCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
         $environment = $selection->getEnvironment();
 
-        $formatter = $this->propertyFormatter;
-
         if ($id = $input->getArgument('backup')) {
             $backup = $environment->getBackup($id);
             if (!$backup) {
@@ -58,14 +56,14 @@ class BackupGetCommand extends CommandBase
                 if (!isset($default)) {
                     $default = $backup->id;
                 }
-                $choices[$id] = sprintf('%s (%s)', $backup->id, $formatter->format($backup->created_at, 'created_at'));
+                $choices[$id] = sprintf('%s (%s)', $backup->id, $this->propertyFormatter->format($backup->created_at, 'created_at'));
             }
             $questionHelper = $this->questionHelper;
             $choice = $questionHelper->choose($choices, 'Enter a number to choose a backup:', $default);
             $backup = $byId[$choice];
         }
 
-        $formatter->displayData($output, $backup->getProperties(), $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $backup->getProperties(), $input->getOption('property'));
 
         return 0;
     }

@@ -39,23 +39,19 @@ class EnvironmentRelationshipsCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $relationshipsService = $this->relationships;
-
-        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $relationshipsService->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $this->relationships->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $relationships = $relationshipsService->getRelationships($host, $input->getOption('refresh'));
+        $relationships = $this->relationships->getRelationships($host, $input->getOption('refresh'));
 
         foreach ($relationships as $name => $relationship) {
             foreach ($relationship as $index => $instance) {
                 if (!isset($instance['url'])) {
-                    $relationships[$name][$index]['url'] = $relationshipsService->buildUrl($instance);
+                    $relationships[$name][$index]['url'] = $this->relationships->buildUrl($instance);
                 }
             }
         }
-
-        $formatter = $this->propertyFormatter;
-        $formatter->displayData($output, $relationships, $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $relationships, $input->getOption('property'));
 
         return 0;
     }

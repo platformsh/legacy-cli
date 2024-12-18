@@ -97,15 +97,11 @@ class EnvironmentSshCommand extends CommandBase
         if (empty($remoteCommand) && $this->runningViaMulti) {
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
-
-        $ssh = $this->ssh;
-        $command = $ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
-
-        $shell = $this->shell;
+        $command = $this->ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
 
         $start = \time();
 
-        $exitCode = $shell->executeSimple($command, null, $ssh->getEnv());
+        $exitCode = $this->shell->executeSimple($command, null, $this->ssh->getEnv());
         if ($exitCode !== 0) {
             if ($selection->getProject()->isSuspended()) {
                 $this->stdErr->writeln('');

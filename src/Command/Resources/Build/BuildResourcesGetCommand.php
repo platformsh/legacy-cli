@@ -46,11 +46,9 @@ class BuildResourcesGetCommand extends CommandBase
         $project = $selection->getProject();
         $settings = $project->getSettings();
 
-        $table = $this->table;
-
         $isOriginalCommand = $input instanceof ArgvInput;
 
-        if (!$table->formatIsMachineReadable() && $isOriginalCommand) {
+        if (!$this->table->formatIsMachineReadable() && $isOriginalCommand) {
             $this->stdErr->writeln(sprintf('Build resources for the project %s:', $this->api->getProjectLabel($selection->getProject())));
         }
 
@@ -61,9 +59,9 @@ class BuildResourcesGetCommand extends CommandBase
             ],
         ];
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable() && $isOriginalCommand) {
+        if (!$this->table->formatIsMachineReadable() && $isOriginalCommand) {
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('Configure resources by running: <info>%s resources:build:set</info>', $executable));

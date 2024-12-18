@@ -83,14 +83,12 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             throw new InvalidArgumentException('The --service or --profile is required.');
         }
 
-        $table = $this->table;
-
         $rows = [];
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
             $rows[] = ['size' => $sizeName, 'cpu' => $this->resourcesUtil->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if (!empty($servicesByProfile[$profile])) {
                 $this->stdErr->writeln(sprintf(
                     'Available sizes in the container profile <info>%s</info> (for %s: <info>%s</info>):',
@@ -103,7 +101,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
         return 0;
     }

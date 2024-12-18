@@ -43,13 +43,12 @@ class MountListCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $mountService = $this->mount;
         $environment = null;
         if (($applicationEnv = getenv($this->config->getStr('service.env_prefix') . 'APPLICATION'))
             && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->getStr('service.env_prefix'))) {
             $this->io->debug('Selected host: localhost');
             $config = json_decode(base64_decode($applicationEnv), true) ?: [];
-            $mounts = $mountService->mountsFromConfig(new AppConfig($config));
+            $mounts = $this->mount->mountsFromConfig(new AppConfig($config));
             $appName = $config['name'];
             $appType = str_contains((string) $appName, '--') ? 'worker' : 'app';
             if (empty($mounts)) {
@@ -71,7 +70,7 @@ class MountListCommand extends CommandBase
                 ));
                 return 1;
             }
-            $mounts = $mountService->mountsFromConfig($container->getConfig());
+            $mounts = $this->mount->mountsFromConfig($container->getConfig());
             $appName = $container->getName();
             $appType = $container instanceof Worker ? 'worker' : 'app';
             if (empty($mounts)) {
@@ -93,12 +92,9 @@ class MountListCommand extends CommandBase
         }
 
         $rows = [];
-        $formatter = $this->propertyFormatter;
         foreach ($mounts as $path => $definition) {
-            $rows[] = ['path' => $path, 'definition' => $formatter->format($definition)];
+            $rows[] = ['path' => $path, 'definition' => $this->propertyFormatter->format($definition)];
         }
-
-        $table = $this->table;
         if ($environment !== null) {
             $this->stdErr->writeln(sprintf('Mounts on environment %s, %s <info>%s</info>:',
                 $this->api->getEnvironmentLabel($environment),
@@ -108,7 +104,7 @@ class MountListCommand extends CommandBase
         } else {
             $this->stdErr->writeln(sprintf('Mounts on %s <info>%s</info>:', $appType, $appName));
         }
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
         return 0;
     }

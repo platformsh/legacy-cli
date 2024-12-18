@@ -93,9 +93,7 @@ class ListCommand extends CommandBase
             return 0;
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($selectedApp !== null) {
                 $this->stdErr->writeln(sprintf(
                     'Runtime operations on the environment %s, app <info>%s</info>:',
@@ -110,9 +108,9 @@ class ListCommand extends CommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To run an operation, use: <info>%s operation:run [operation]</info>', $this->config->getStr('application.executable')));
         }

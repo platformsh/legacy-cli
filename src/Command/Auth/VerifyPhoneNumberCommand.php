@@ -39,8 +39,6 @@ class VerifyPhoneNumberCommand extends CommandBase
         }
         $myUser = $this->api->getUser(null, true);
 
-        $questionHelper = $this->questionHelper;
-
         if ($myUser->phone_number_verified) {
             $this->stdErr->writeln('Your user account already has a verified phone number.');
             return 0;
@@ -49,10 +47,10 @@ class VerifyPhoneNumberCommand extends CommandBase
         $defaultRegion = $myUser->country ?: null;
 
         $methods = ['sms' => 'SMS (default)', 'whatsapp' => 'WhatsApp message', 'call' => 'Call'];
-        $channel = $questionHelper->choose($methods, 'Enter a number to choose a phone number verification method:', 'sms');
+        $channel = $this->questionHelper->choose($methods, 'Enter a number to choose a phone number verification method:', 'sms');
 
         $phoneUtil = PhoneNumberUtil::getInstance();
-        $number = $questionHelper->askInput('Please enter your phone number', null, [], function ($number) use ($phoneUtil, $defaultRegion) {
+        $number = $this->questionHelper->askInput('Please enter your phone number', null, [], function ($number) use ($phoneUtil, $defaultRegion) {
             try {
                 $parsed = $phoneUtil->parse($number, $defaultRegion);
             } catch (NumberParseException $e) {
@@ -88,7 +86,7 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $questionHelper->askInput('Please enter the verification code', null, [], function ($code) use ($httpClient, $sid , $myUser): void {
+        $this->questionHelper->askInput('Please enter the verification code', null, [], function ($code) use ($httpClient, $sid , $myUser): void {
             if (!is_numeric($code)) {
                 throw new InvalidArgumentException('Invalid verification code');
             }

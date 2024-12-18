@@ -106,12 +106,11 @@ class EnvironmentUrlCommand extends CommandBase
             // non-interactive input.
             $toDisplay = $urls[0];
         }
-        $urlService = $this->url;
-        if (!$urlService->hasDisplay()) {
+        if (!$this->url->hasDisplay()) {
             $this->io->debug('Not opening URLs (no display found)');
             $output->writeln($toDisplay);
             return;
-        } elseif (!$urlService->canOpenUrls()) {
+        } elseif (!$this->url->canOpenUrls()) {
             $this->io->debug('Not opening URLs (no browser found)');
             $output->writeln($toDisplay);
             return;
@@ -125,7 +124,7 @@ class EnvironmentUrlCommand extends CommandBase
             $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to open a URL', $urls[0]);
         }
 
-        $urlService->openUrl($url);
+        $this->url->openUrl($url);
     }
 
     /**

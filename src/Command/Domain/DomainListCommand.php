@@ -52,14 +52,12 @@ class DomainListCommand extends DomainCommandBase
     {
         $rows = [];
 
-        $formatter = $this->propertyFormatter;
-
         foreach ($tree as $domain) {
             $rows[] = [
                 'name' => $domain->id,
-                'ssl' => $formatter->format((bool) $domain['ssl']['has_certificate']),
-                'created_at' => $formatter->format($domain['created_at'], 'created_at'),
-                'updated_at' => $formatter->format($domain['updated_at'], 'updated_at'),
+                'ssl' => $this->propertyFormatter->format((bool) $domain['ssl']['has_certificate']),
+                'created_at' => $this->propertyFormatter->format($domain['created_at'], 'created_at'),
+                'updated_at' => $this->propertyFormatter->format($domain['updated_at'], 'updated_at'),
                 'registered_name' => $domain->getProperty('registered_name', false, false) ?: '',
                 'replacement_for' => $domain->getProperty('replacement_for', false, false) ?: '',
                 'type' => $domain->getProperty('type', false, false) ?: '',
@@ -132,11 +130,9 @@ class DomainListCommand extends DomainCommandBase
 
             return 1;
         }
-
-        $table = $this->table;
         $rows = $this->buildDomainRows($domains);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($forEnvironment) {
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s, environment %s:',
@@ -151,9 +147,9 @@ class DomainListCommand extends DomainCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             if ($forEnvironment) {
                 $exampleAddArgs = $exampleArgs = '-e ' . OsUtil::escapeShellArg($selection->getEnvironment()->name) . ' [domain-name]';

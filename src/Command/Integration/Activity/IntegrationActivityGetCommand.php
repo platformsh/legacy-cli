@@ -67,12 +67,9 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
             }
         }
 
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $properties = $activity->getProperties();
 
-        if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
+        if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
             $properties['description'] = ActivityMonitor::getFormattedDescription($activity, true);
         } else {
             $properties['description'] = $activity->description;
@@ -84,7 +81,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         }
 
         if ($property = $input->getOption('property')) {
-            $formatter->displayData($output, $properties, $property);
+            $this->propertyFormatter->displayData($output, $properties, $property);
             return 0;
         }
 
@@ -102,12 +99,12 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         $rows = [];
         foreach ($properties as $property => $value) {
             $header[] = $property;
-            $rows[] = $formatter->format($value, $property);
+            $rows[] = $this->propertyFormatter->format($value, $property);
         }
 
-        $table->renderSimple($rows, $header);
+        $this->table->renderSimple($rows, $header);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(

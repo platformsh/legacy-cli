@@ -63,8 +63,6 @@ class ActivityGetCommand extends ActivityCommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
-        $loader = $this->activityLoader;
-
         if ($selection->hasEnvironment() && !$input->getOption('all')) {
             $apiResource = $selection->getEnvironment();
         } else {
@@ -77,10 +75,10 @@ class ActivityGetCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 /** @var Activity $activity */
-                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
             }
         } else {
-            $activities = $loader->loadFromInput($apiResource, $input, 1);
+            $activities = $this->activityLoader->loadFromInput($apiResource, $input, 1);
             /** @var Activity|false $activity */
             $activity = reset($activities);
             if (!$activity) {
@@ -90,12 +88,9 @@ class ActivityGetCommand extends ActivityCommandBase
             }
         }
 
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $properties = $activity->getProperties();
 
-        if (!$input->getOption('property') && !$table->formatIsMachineReadable()) {
+        if (!$input->getOption('property') && !$this->table->formatIsMachineReadable()) {
             $properties['description'] = ActivityMonitor::getFormattedDescription($activity);
         } else {
             $properties['description'] = $activity->description;
@@ -107,7 +102,7 @@ class ActivityGetCommand extends ActivityCommandBase
         }
 
         if ($property = $input->getOption('property')) {
-            $formatter->displayData($output, $properties, $property);
+            $this->propertyFormatter->displayData($output, $properties, $property);
             return 0;
         }
 
@@ -124,12 +119,12 @@ class ActivityGetCommand extends ActivityCommandBase
         $rows = [];
         foreach ($properties as $property => $value) {
             $header[] = $property;
-            $rows[] = $formatter->format($value, $property);
+            $rows[] = $this->propertyFormatter->format($value, $property);
         }
 
-        $table->renderSimple($rows, $header);
+        $this->table->renderSimple($rows, $header);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(

@@ -41,8 +41,6 @@ class TeamUserDeleteCommand extends TeamCommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $identifier = $input->getArgument('user');
         if ($identifier) {
             if (str_contains((string) $identifier, '@')) {
@@ -75,14 +73,14 @@ class TeamUserDeleteCommand extends TeamCommandBase
                 $choices[$member->user_id] = $this->api->getMemberLabel($member);
                 $byId[$member->user_id] = $member;
             }
-            $id = $questionHelper->choose($choices, 'Enter a number to choose a user to remove:', null, false);
+            $id = $this->questionHelper->choose($choices, 'Enter a number to choose a user to remove:', null, false);
             $member = $byId[$id];
         } else {
             $this->stdErr->writeln('A user must be specified (in non-interactive mode).');
             return 1;
         }
 
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to remove the user <comment>%s</comment> from the team %s?', $this->api->getMemberLabel($member), $this->getTeamLabel($team, 'comment')))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to remove the user <comment>%s</comment> from the team %s?', $this->api->getMemberLabel($member), $this->getTeamLabel($team, 'comment')))) {
             return 1;
         }
 

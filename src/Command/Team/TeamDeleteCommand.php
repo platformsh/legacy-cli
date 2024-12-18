@@ -28,9 +28,7 @@ class TeamDeleteCommand extends TeamCommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
-        if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the team %s?', $this->getTeamLabel($team, 'comment')), false)) {
+        if (!$this->questionHelper->confirm(\sprintf('Are you sure you want to delete the team %s?', $this->getTeamLabel($team, 'comment')), false)) {
             return 1;
         }
 

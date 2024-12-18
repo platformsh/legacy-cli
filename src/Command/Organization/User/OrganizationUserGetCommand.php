@@ -56,8 +56,6 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
             $member = $this->chooseMember($organization);
         }
 
-        $formatter = $this->propertyFormatter;
-
         $data = $member->getProperties();
         $memberInfo = $member->getUserInfo();
 
@@ -68,13 +66,11 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         }
 
         if ($input->getOption('property')) {
-            $formatter->displayData($output, $data, $input->getOption('property'));
+            $this->propertyFormatter->displayData($output, $data, $input->getOption('property'));
             return 0;
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('Viewing the user <info>%s</info> on the organization %s', $this->memberLabel($member), $this->api->getOrganizationLabel($organization)));
         }
 
@@ -82,12 +78,12 @@ class OrganizationUserGetCommand extends OrganizationCommandBase
         $values = [];
         foreach ($data as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
 
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf("To view the user's project access, run: <info>%s</info>", $this->otherCommandExample($input, 'org:user:projects', $memberInfo ? OsUtil::escapeShellArg($memberInfo->email) : '')));
         }
 

@@ -41,8 +41,6 @@ class TeamUserAddCommand extends TeamCommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $identifier = $input->getArgument('user');
         if (!$identifier) {
             if (!$input->isInteractive()) {
@@ -55,7 +53,7 @@ class TeamUserAddCommand extends TeamCommandBase
                     $emails[] = $info->email;
                 }
             }
-            $identifier = $questionHelper->askInput('Enter an email address to add a user', null, $emails, function (string $value): string {
+            $identifier = $this->questionHelper->askInput('Enter an email address to add a user', null, $emails, function (string $value): string {
                 if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
                     throw new InvalidArgumentException('Invalid email address:' . $value);
                 }
@@ -94,7 +92,7 @@ class TeamUserAddCommand extends TeamCommandBase
             return 0;
         }
 
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to add the user <info>%s</info> to the team %s?', $this->api->getMemberLabel($orgMember), $this->getTeamLabel($team)))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to add the user <info>%s</info> to the team %s?', $this->api->getMemberLabel($orgMember), $this->getTeamLabel($team)))) {
             return 1;
         }
 

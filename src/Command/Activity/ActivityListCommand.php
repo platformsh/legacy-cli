@@ -98,17 +98,12 @@ class ActivityListCommand extends ActivityCommandBase
             $environmentSpecific = false;
             $apiResource = $project;
         }
-
-        $loader = $this->activityLoader;
-        $activities = $loader->loadFromInput($apiResource, $input);
+        $activities = $this->activityLoader->loadFromInput($apiResource, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
         }
-
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
 
         $defaultColumns = $this->defaultColumns;
 
@@ -122,13 +117,13 @@ class ActivityListCommand extends ActivityCommandBase
         foreach ($activities as $activity) {
             $row = [
                 'id' => new AdaptiveTableCell($activity->id, ['wrap' => false]),
-                'created' => $formatter->format($activity['created_at'], 'created_at'),
-                'completed' => $formatter->format($activity['completed_at'], 'completed_at'),
-                'description' => ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
+                'created' => $this->propertyFormatter->format($activity['created_at'], 'created_at'),
+                'completed' => $this->propertyFormatter->format($activity['completed_at'], 'completed_at'),
+                'description' => ActivityMonitor::getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
                 'type' => new AdaptiveTableCell($activity->type, ['wrap' => false]),
                 'progress' => $activity->getCompletionPercent() . '%',
                 'state' => ActivityMonitor::formatState($activity->state),
-                'result' => ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
+                'result' => ActivityMonitor::formatResult($activity->result, !$this->table->formatIsMachineReadable()),
                 'environments' => implode(', ', $activity->environments),
             ];
             $timings = $activity->getProperty('timings', false, false) ?: [];
@@ -138,7 +133,7 @@ class ActivityListCommand extends ActivityCommandBase
             $rows[] = $row;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($environmentSpecific) {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s, environment %s:',
@@ -153,9 +148,9 @@ class ActivityListCommand extends ActivityCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;

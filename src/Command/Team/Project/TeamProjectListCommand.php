@@ -96,27 +96,23 @@ class TeamProjectListCommand extends TeamCommandBase
             return 0;
         }
 
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($projects as $project) {
             $rows[] = [
                 'id' => new AdaptiveTableCell($project->project_id, ['wrap' => false]),
                 'title' => $project->project_title,
-                'granted_at' => $formatter->format($project->granted_at, 'granted_at'),
-                'updated_at' => $formatter->format($project->updated_at, 'updated_at'),
+                'granted_at' => $this->propertyFormatter->format($project->granted_at, 'granted_at'),
+                'updated_at' => $this->propertyFormatter->format($project->updated_at, 'updated_at'),
             ];
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('Projects in the team %s:', $this->getTeamLabel($team)));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($result['collection']->hasNextPage()) {
                 $this->stdErr->writeln('More projects are available');
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');

@@ -56,10 +56,8 @@ class BlueGreenConcludeCommand extends CommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $questionText = sprintf('Are you sure you want to delete version <comment>%s</comment>?', $lockedVersionData['id']);
-        if (!$questionHelper->confirm($questionText)) {
+        if (!$this->questionHelper->confirm($questionText)) {
             return 1;
         }
 

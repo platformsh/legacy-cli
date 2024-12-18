@@ -37,9 +37,7 @@ class OrganizationUserDeleteCommand extends OrganizationCommandBase
             $this->stdErr->writeln(\sprintf('User not found: <error>%s</error>', $email));
             return 1;
         }
-
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm(\sprintf('Are you sure you want to delete the user <comment>%s</comment> from the organization %s?', $email, $this->api->getOrganizationLabel($organization, 'comment')))) {
+        if (!$this->questionHelper->confirm(\sprintf('Are you sure you want to delete the user <comment>%s</comment> from the organization %s?', $email, $this->api->getOrganizationLabel($organization, 'comment')))) {
             return 1;
         }
 

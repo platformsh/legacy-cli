@@ -33,8 +33,6 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
     {
         $organization = $this->selector->selectOrganization($input, 'create-member');
 
-        $questionHelper = $this->questionHelper;
-
         $update = get_called_class() === OrganizationUserUpdateCommand::class;
         if ($update) {
             $email = $input->getArgument('email');
@@ -59,7 +57,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
                 $this->stdErr->writeln('A user email address is required.');
                 return 1;
             } else {
-                $email = $questionHelper->askInput('Enter the email address of a user to add', null, [], fn($answer) => $this->validateEmail($answer));
+                $email = $this->questionHelper->askInput('Enter the email address of a user to add', null, [], fn($answer) => $this->validateEmail($answer));
                 $this->stdErr->writeln('');
             }
         }
@@ -81,7 +79,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
             } else {
                 $questionText = 'Optionally, enter a list of permissions to add (separated by commas)';
             }
-            $response = $questionHelper->askInput($questionText, null, [], function ($value) {
+            $response = $this->questionHelper->askInput($questionText, null, [], function ($value) {
                 foreach (ArrayArgument::split([$value]) as $permission) {
                     if (!\in_array($permission, self::$allPermissions)) {
                         throw new InvalidArgumentException('Unrecognized permission: ' . $permission);
@@ -125,7 +123,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
 
             $this->stdErr->writeln('');
 
-            if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to make these changes?')) {
                 return 1;
             }
 
@@ -133,7 +131,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
             $new = $result->getProperty('permissions', false) ?: [];
 
             $this->stdErr->writeln(\sprintf("The user's permissions are now: %s", $this->listPermissions($new)));
-        } elseif (!$questionHelper->confirm(\sprintf('Are you sure you want to invite <info>%s</info> to the organization %s?', $email, $this->api->getOrganizationLabel($organization)))) {
+        } elseif (!$this->questionHelper->confirm(\sprintf('Are you sure you want to invite <info>%s</info> to the organization %s?', $email, $this->api->getOrganizationLabel($organization)))) {
             return 1;
         } else {
             $invitation = $organization->inviteMemberByEmail($email, $permissions);

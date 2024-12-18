@@ -54,8 +54,6 @@ class ActivityCancelCommand extends ActivityCommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
-        $loader = $this->activityLoader;
-
         $executable = $this->config->getStr('application.executable');
 
         if ($selection->hasEnvironment() && !$input->getOption('all')) {
@@ -70,10 +68,10 @@ class ActivityCancelCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 /** @var Activity $activity */
-                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
             }
         } else {
-            $activities = $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
+            $activities = $this->activityLoader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
             if (\count($activities) === 0) {
                 $this->stdErr->writeln('No cancellable activities found');
 

@@ -70,15 +70,13 @@ EOF;
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->getStr('service.env_prefix') . 'APPLICATION')));
         $host = $this->selector->getHostFromSelection($input, $selection);
-
-        $mountService = $this->mount;
         if ($host instanceof LocalHost) {
             $envVars = $this->remoteEnvVars;
             $config = (new AppConfig($envVars->getArrayEnvVar('APPLICATION', $host)));
-            $mounts = $mountService->mountsFromConfig($config);
+            $mounts = $this->mount->mountsFromConfig($config);
         } else {
             $container = $selection->getRemoteContainer();
-            $mounts = $mountService->mountsFromConfig($container->getConfig());
+            $mounts = $this->mount->mountsFromConfig($container->getConfig());
         }
 
         if (empty($mounts)) {
@@ -159,11 +157,9 @@ EOF;
             $row['percent_used'] = round($info['percent_used'], 1) . '%';
             $rows[] = $row;
         }
+        $this->table->render($rows, $this->tableHeader);
 
-        $table = $this->table;
-        $table->render($rows, $this->tableHeader);
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if (count($volumeInfo) === 1 && count($mountPaths) > 1) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('All the mounts share the same disk.');

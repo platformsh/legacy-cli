@@ -196,8 +196,6 @@ class EnvironmentHttpAccessCommand extends CommandBase
         $selectedEnvironment = $selection->getEnvironment();
         $environmentId = $selectedEnvironment->id;
 
-        $formatter = $this->propertyFormatter;
-
         // Patch the environment with the changes.
         if ($change) {
             $result = $selectedEnvironment->update(['http_access' => $accessOpts]);
@@ -205,7 +203,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
 
             $this->stdErr->writeln("Updated HTTP access settings for the environment <info>$environmentId</info>:");
 
-            $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
+            $output->writeln($this->propertyFormatter->format($selectedEnvironment->http_access, 'http_access'));
 
             $success = true;
             if (!$result->countActivities()) {
@@ -219,7 +217,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         }
 
         $this->stdErr->writeln("HTTP access settings for the environment <info>$environmentId</info>:");
-        $output->writeln($formatter->format($selectedEnvironment->http_access, 'http_access'));
+        $output->writeln($this->propertyFormatter->format($selectedEnvironment->http_access, 'http_access'));
 
         return 0;
     }

@@ -43,8 +43,6 @@ class TeamProjectAddCommand extends TeamCommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $teamProjects = $this->loadTeamProjects($team);
         $teamProjectIds = array_map(fn(TeamProjectAccess $a) => $a->project_id, $teamProjects);
 
@@ -91,7 +89,7 @@ class TeamProjectAddCommand extends TeamCommandBase
                 $choiceQuestionText = 'Enter a number to select a project to add to the team:';
                 $default = null;
                 do {
-                    $choice = $questionHelper->choose($options, $choiceQuestionText, $default, false);
+                    $choice = $this->questionHelper->choose($options, $choiceQuestionText, $default, false);
                     unset($options[$choice]);
                     if ($choice === 'finish') {
                         break;
@@ -120,7 +118,7 @@ class TeamProjectAddCommand extends TeamCommandBase
                 $questionText = 'Enter an ID to select a project to add to the team';
                 $first = true;
                 do {
-                    $choice = $questionHelper->askInput($questionText, null, array_values($autocomplete), function ($value) use ($autocomplete, $first, $teamProjectIds): ?string {
+                    $choice = $this->questionHelper->askInput($questionText, null, array_values($autocomplete), function ($value) use ($autocomplete, $first, $teamProjectIds): ?string {
                         list($id, ) = explode(' - ', $value);
                         if (empty(trim($id))) {
                             if (!$first) {
@@ -168,14 +166,14 @@ class TeamProjectAddCommand extends TeamCommandBase
 
         if (count($projectIds) === 1) {
             $projectId = reset($projectIds);
-            if (!$questionHelper->confirm(sprintf('Are you sure you want to add the project %s to the team %s?', $this->api->getProjectLabel($projectId), $this->getTeamLabel($team)))) {
+            if (!$this->questionHelper->confirm(sprintf('Are you sure you want to add the project %s to the team %s?', $this->api->getProjectLabel($projectId), $this->getTeamLabel($team)))) {
                 return 1;
             }
         } else {
             $this->stdErr->writeln('Selected projects:');
             $this->displayProjectsAsList($projectIds, $this->stdErr);
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm(sprintf('Are you sure you want to add these %d projects to the team %s?', count($projectIds), $this->getTeamLabel($team)))) {
+            if (!$this->questionHelper->confirm(sprintf('Are you sure you want to add these %d projects to the team %s?', count($projectIds), $this->getTeamLabel($team)))) {
                 return 1;
             }
         }

@@ -40,9 +40,6 @@ class VersionListCommand extends CommandBase
         $response = $httpClient->get($environment->getLink('#versions'));
         $data = Utils::jsonDecode((string) $response->getBody(), true);
 
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $header = ['id' => 'ID', 'commit' => 'Commit', 'locked' => 'Locked', 'routing_percentage' => 'Routing %'];
 
         $rows = [];
@@ -50,12 +47,12 @@ class VersionListCommand extends CommandBase
             $rows[] = [
                 'id' => new AdaptiveTableCell($versionData['id'], ['wrap' => false]),
                 'commit' => $versionData['commit'],
-                'locked' => $formatter->format($versionData['locked'], 'locked'),
+                'locked' => $this->propertyFormatter->format($versionData['locked'], 'locked'),
                 'routing_percentage' => $versionData['routing']['percentage'],
             ];
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Versions for the project %s, environment %s:',
                 $this->api->getProjectLabel($selection->getProject()),
@@ -63,7 +60,7 @@ class VersionListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, $header);
+        $this->table->render($rows, $header);
 
         return 0;
     }

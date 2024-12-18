@@ -84,8 +84,6 @@ class UserAddCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
         $project = $selection->getProject();
 
-        $questionHelper = $this->questionHelper;
-
         $hasOutput = false;
 
         $environmentTypes = $this->api->getEnvironmentTypes($project);
@@ -158,7 +156,7 @@ class UserAddCommand extends CommandBase
         } else if (!$input->isInteractive()) {
             throw new InvalidArgumentException('An email address is required (in non-interactive mode).');
         } elseif ($update) {
-            $userId = $questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user to update:');
+            $userId = $this->questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user to update:');
             $hasOutput = true;
             $selection = $this->accessApi->loadProjectUser($project, $userId);
             if (!$selection) {
@@ -177,7 +175,7 @@ class UserAddCommand extends CommandBase
                 return $filtered;
             });
             $question->setMaxAttempts(5);
-            $email = $questionHelper->ask($input, $this->stdErr, $question);
+            $email = $this->questionHelper->ask($input, $this->stdErr, $question);
             $hasOutput = true;
             // A user may or may not already exist with this email address.
             $selection = $this->accessApi->loadProjectUser($project, $email);
@@ -358,7 +356,7 @@ class UserAddCommand extends CommandBase
 
         // Ask for confirmation.
         if ($existingUserId !== null) {
-            if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to make these change(s)?')) {
                 return 1;
             }
         } else {
@@ -366,7 +364,7 @@ class UserAddCommand extends CommandBase
                 $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
                 $this->stdErr->writeln('');
             }
-            if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to add this user?')) {
                 return 1;
             }
         }
@@ -386,7 +384,7 @@ class UserAddCommand extends CommandBase
             } catch (AlreadyInvitedException $e) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
-                if ($questionHelper->confirm('Do you want to send this invitation anyway?')) {
+                if ($this->questionHelper->confirm('Do you want to send this invitation anyway?')) {
                     $project->inviteUserByEmail($email, $desiredProjectRole, [], true, $permissions);
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf('A new invitation has been sent to <info>%s</info>', $email));
@@ -539,8 +537,6 @@ class UserAddCommand extends CommandBase
      */
     private function showProjectRoleForm(string $defaultRole, InputInterface $input): mixed
     {
-        $questionHelper = $this->questionHelper;
-
         $this->stdErr->writeln("The user's project role can be " . $this->describeRoles(ProjectUserAccess::$projectRoles) . '.');
         $this->stdErr->writeln('');
         $question = new Question(
@@ -551,7 +547,7 @@ class UserAddCommand extends CommandBase
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
-        return $questionHelper->ask($input, $this->stdErr, $question);
+        return $this->questionHelper->ask($input, $this->stdErr, $question);
     }
 
     /**
@@ -602,7 +598,6 @@ class UserAddCommand extends CommandBase
      */
     private function showTypeRolesForm(array $defaultTypeRoles, array $environmentTypes, InputInterface $input): array
     {
-        $questionHelper = $this->questionHelper;
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);
         $this->stdErr->writeln("The user's environment type role(s) can be " . $this->describeRoles($validRoles) . '.');
@@ -624,7 +619,7 @@ class UserAddCommand extends CommandBase
             });
             $question->setAutocompleterValues(array_merge($validRoles, ['quit']));
             $question->setMaxAttempts(5);
-            $answer = $questionHelper->ask($input, $this->stdErr, $question);
+            $answer = $this->questionHelper->ask($input, $this->stdErr, $question);
             if ($answer === 'q' || $answer === 'quit') {
                 break;
             } else {

@@ -55,8 +55,7 @@ class CommitListCommand extends CommandBase
         $environment = $selection->getEnvironment();
 
         $startSha = $input->getArgument('commit');
-        $gitData = $this->gitDataApi;
-        $startCommit = $gitData->getCommit($environment, $startSha);
+        $startCommit = $this->gitDataApi->getCommit($environment, $startSha);
         if (!$startCommit) {
             if ($startSha) {
                 $this->stdErr->writeln('Commit not found: <error>' . $startSha . '</error>');
@@ -67,9 +66,7 @@ class CommitListCommand extends CommandBase
             return 1;
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
                 $this->api->getProjectLabel($selection->getProject()),
@@ -79,13 +76,11 @@ class CommitListCommand extends CommandBase
 
         $commits = $this->loadCommitList($environment, $startCommit, $input->getOption('limit'));
 
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($commits as $commit) {
             $row = [];
             $row[] = new AdaptiveTableCell(
-                $formatter->format($commit->author['date'], 'author.date'),
+                $this->propertyFormatter->format($commit->author['date'], 'author.date'),
                 ['wrap' => false]
             );
             $row[] = $commit->sha;
@@ -94,7 +89,7 @@ class CommitListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
         return 0;
     }
@@ -115,8 +110,6 @@ class CommitListCommand extends CommandBase
             return $commits;
         }
 
-        $gitData = $this->gitDataApi;
-
         $progress = new ProgressBar($this->stdErr->isDecorated() ? $this->stdErr : new NullOutput());
         $progress->setMessage('Loading...');
         $progress->setFormat('%message% %current% (limit: %max%)');
@@ -125,7 +118,7 @@ class CommitListCommand extends CommandBase
              count($currentCommit->parents) && count($commits) < $limit;) {
             foreach (array_reverse($currentCommit->parents) as $parentSha) {
                 if (!isset($commits[$parentSha])) {
-                    $commits[$parentSha] = $gitData->getCommit($environment, $parentSha);
+                    $commits[$parentSha] = $this->gitDataApi->getCommit($environment, $parentSha);
                 }
                 $currentCommit = $commits[$parentSha];
                 $progress->advance();

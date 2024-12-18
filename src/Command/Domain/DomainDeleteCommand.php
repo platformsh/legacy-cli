@@ -78,9 +78,7 @@ class DomainDeleteCommand extends DomainCommandBase
                 ]);
             }
         }
-
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
+        if (!$this->questionHelper->confirm("Are you sure you want to delete the domain <info>$name</info>?")) {
             return 1;
         }
         $this->stdErr->writeln('');

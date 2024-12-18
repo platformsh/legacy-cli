@@ -31,13 +31,11 @@ class SelfUpdateCommand extends CommandBase
     {
         $manifestUrl = $input->getOption('manifest') ?: $this->config->getStr('application.manifest_url');
         $currentVersion = $input->getOption('current-version') ?: $this->config->getVersion();
+        $this->selfUpdater->setAllowMajor(!$input->getOption('no-major'));
+        $this->selfUpdater->setAllowUnstable((bool) $input->getOption('unstable'));
+        $this->selfUpdater->setTimeout($input->getOption('timeout'));
 
-        $cliUpdater = $this->selfUpdater;
-        $cliUpdater->setAllowMajor(!$input->getOption('no-major'));
-        $cliUpdater->setAllowUnstable((bool) $input->getOption('unstable'));
-        $cliUpdater->setTimeout($input->getOption('timeout'));
-
-        $result = $cliUpdater->update($manifestUrl, $currentVersion);
+        $result = $this->selfUpdater->update($manifestUrl, $currentVersion);
         if ($result === '') {
             return 0;
         }

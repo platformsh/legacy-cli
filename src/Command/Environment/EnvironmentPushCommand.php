@@ -84,15 +84,13 @@ class EnvironmentPushCommand extends CommandBase
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io->warnAboutDeprecatedOptions(['branch'], 'The option --%s is deprecated and will be removed in future. Use --activate, which has the same effect.');
-
-        $git = $this->git;
-        $gitRoot = $git->getRoot();
+        $gitRoot = $this->git->getRoot();
 
         if ($gitRoot === false) {
             $this->stdErr->writeln('This command can only be run from inside a Git repository.');
             return 1;
         }
-        $git->setDefaultRepositoryDir($gitRoot);
+        $this->git->setDefaultRepositoryDir($gitRoot);
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: false));
         $project = $selection->getProject();
@@ -130,14 +128,12 @@ class EnvironmentPushCommand extends CommandBase
             $this->stdErr->writeln('The <error><source></error> argument cannot be specified as an empty string.');
             return 1;
         } elseif (str_contains((string) $source, ':')
-            || !($sourceRevision = $git->execute(['rev-parse', '--verify', $source]))) {
+            || !($sourceRevision = $this->git->execute(['rev-parse', '--verify', $source]))) {
             $this->stdErr->writeln(sprintf('Invalid source ref: <error>%s</error>', $source));
             return 1;
         }
 
         $this->io->debug(sprintf('Source revision: %s', $sourceRevision));
-
-        $questionHelper = $this->questionHelper;
 
         // Find the target branch name (--target, the name of the current
         // environment, or the Git branch name).
@@ -147,12 +143,12 @@ class EnvironmentPushCommand extends CommandBase
             $target = $selection->getEnvironment()->id;
         } else {
             $allEnvironments = $this->api->getEnvironments($project);
-            $currentBranch = $git->getCurrentBranch();
+            $currentBranch = $this->git->getCurrentBranch();
             if ($currentBranch !== false && isset($allEnvironments[$currentBranch])) {
                 $target = $currentBranch;
             } else {
                 $default = $currentBranch !== false ? $currentBranch : null;
-                $target = $questionHelper->askInput('Enter the target branch name', $default, array_keys($allEnvironments));
+                $target = $this->questionHelper->askInput('Enter the target branch name', $default, array_keys($allEnvironments));
                 if ($target === '') {
                     $this->stdErr->writeln('A target branch name (<error>--target</error>) is required.');
                     return 1;
@@ -208,7 +204,7 @@ class EnvironmentPushCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
         $this->stdErr->writeln('');
@@ -230,7 +226,7 @@ class EnvironmentPushCommand extends CommandBase
             // Ensure the current project's Git remote conforms.
             $localProject->ensureGitRemote($gitRoot, $gitUrl);
             $remoteRepoSpec = $remoteName;
-        } elseif ($git->getConfig("remote.$remoteName.url") === $gitUrl) {
+        } elseif ($this->git->getConfig("remote.$remoteName.url") === $gitUrl) {
             $remoteRepoSpec = $remoteName;
         } else {
             // If pushing to a project that isn't set as the current one, then
@@ -276,12 +272,12 @@ class EnvironmentPushCommand extends CommandBase
                 $extraSshOptions[] = 'SendEnv PLATFORMSH_PUSH_NO_WAIT';
                 $env['PLATFORMSH_PUSH_NO_WAIT'] = '1';
             }
-            $git->setExtraSshOptions($extraSshOptions);
+            $this->git->setExtraSshOptions($extraSshOptions);
 
             // Perform the push, capturing the Process object so that the STDERR
             // output can be read.
             $shell = $this->shell;
-            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $git->setupSshEnv($gitUrl), (int) $this->config->get('api.git_push_timeout'));
+            $process = $shell->executeCaptureProcess(\array_merge(['git'], $gitArgs), $gitRoot, false, false, $env + $this->git->setupSshEnv($gitUrl), (int) $this->config->get('api.git_push_timeout'));
             if ($process->getExitCode() !== 0) {
                 $diagnostics = $this->sshDiagnostics;
                 $diagnostics->diagnoseFailure($project->getGitUrl(), $process);
@@ -443,7 +439,6 @@ class EnvironmentPushCommand extends CommandBase
         if ($targetEnvironment && $targetEnvironment->is_dirty) {
             $targetEnvironment->refresh();
         }
-        $questionHelper = $this->questionHelper;
         if (!$targetEnvironment) {
             $questionText = sprintf('Create <info>%s</info> as an active environment?', $target);
         } elseif ($targetEnvironment->status === 'inactive') {
@@ -453,7 +448,7 @@ class EnvironmentPushCommand extends CommandBase
         } else {
             return false;
         }
-        $activateRequested = $questionHelper->confirm($questionText);
+        $activateRequested = $this->questionHelper->confirm($questionText);
         $this->stdErr->writeln('');
         return $activateRequested;
     }

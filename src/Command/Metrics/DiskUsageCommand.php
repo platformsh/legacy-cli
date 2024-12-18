@@ -64,13 +64,11 @@ class DiskUsageCommand extends MetricsCommandBase
         if ($input->getOption('tmp')) {
             $input->setOption('columns', $this->tmpReportColumns);
         }
-
-        $table = $this->table;
-        $table->removeDeprecatedColumns(['interval'], '', $input, $output);
+        $this->table->removeDeprecatedColumns(['interval'], '', $input, $output);
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->selector->ensurePrintedSelection($selection);
         }
 
@@ -99,7 +97,7 @@ class DiskUsageCommand extends MetricsCommandBase
             'tmp_ipercent' => new Field('tmp_inodes_percent', Field::FORMAT_PERCENT),
         ], $selection->getEnvironment());
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average %s at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
@@ -110,7 +108,7 @@ class DiskUsageCommand extends MetricsCommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         return 0;
     }

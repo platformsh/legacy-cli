@@ -80,17 +80,12 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         if (!$integration) {
             return 1;
         }
-
-        $loader = $this->activityLoader;
-        $activities = $loader->loadFromInput($integration, $input);
+        $activities = $this->activityLoader->loadFromInput($integration, $input);
         if ($activities === []) {
             $this->stdErr->writeln('No activities found');
 
             return 1;
         }
-
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
 
         $timingTypes = ['execute', 'wait', 'build', 'deploy'];
 
@@ -98,13 +93,13 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         foreach ($activities as $activity) {
             $row = [
                 'id' => new AdaptiveTableCell($activity->id, ['wrap' => false]),
-                'created' => $formatter->format($activity['created_at'], 'created_at'),
-                'completed' => $formatter->format($activity['completed_at'], 'completed_at'),
-                'description' => ActivityMonitor::getFormattedDescription($activity, !$table->formatIsMachineReadable()),
+                'created' => $this->propertyFormatter->format($activity['created_at'], 'created_at'),
+                'completed' => $this->propertyFormatter->format($activity['completed_at'], 'completed_at'),
+                'description' => ActivityMonitor::getFormattedDescription($activity, !$this->table->formatIsMachineReadable()),
                 'type' => new AdaptiveTableCell($activity->type, ['wrap' => false]),
                 'progress' => $activity->getCompletionPercent() . '%',
                 'state' => ActivityMonitor::formatState($activity->state),
-                'result' => ActivityMonitor::formatResult($activity->result, !$table->formatIsMachineReadable()),
+                'result' => ActivityMonitor::formatResult($activity->result, !$this->table->formatIsMachineReadable()),
             ];
             $timings = $activity->getProperty('timings', false, false) ?: [];
             foreach ($timingTypes as $timingType) {
@@ -113,7 +108,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             $rows[] = $row;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Activities on the project %s, integration <info>%s</info> (%s):',
                 $this->api->getProjectLabel($project),
@@ -122,9 +117,9 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
 
             $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;

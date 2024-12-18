@@ -64,12 +64,10 @@ class VariableDeleteCommand extends CommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
         switch ($this->variableCommandUtil->getVariableLevel($variable)) {
             case 'environment':
                 $environmentId = $selection->getEnvironment()->id;
-                $confirm = $questionHelper->confirm(
+                $confirm = $this->questionHelper->confirm(
                     "Are you sure you want to delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
                     false
                 );
@@ -79,7 +77,7 @@ class VariableDeleteCommand extends CommandBase
                 break;
 
             case 'project':
-                $confirm = $questionHelper->confirm(
+                $confirm = $this->questionHelper->confirm(
                     "Are you sure you want to delete the variable <info>$variableName</info> from the project " . $this->api->getProjectLabel($selection->getProject()) . "?",
                     false
                 );

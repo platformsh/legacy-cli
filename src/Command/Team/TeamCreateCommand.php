@@ -60,11 +60,9 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        $questionHelper = $this->questionHelper;
-
         $label = $input->getOption('label');
         if ($label === null) {
-            $label = $questionHelper->askInput("Enter the team's label", $existingTeam ? $existingTeam->label : null, [], function ($value) {
+            $label = $this->questionHelper->askInput("Enter the team's label", $existingTeam ? $existingTeam->label : null, [], function ($value) {
                 if (empty($value)) {
                     throw new InvalidArgumentException('The label cannot be empty');
                 }
@@ -144,7 +142,7 @@ class TeamCreateCommand extends TeamCommandBase
         }
 
         if (!$update) {
-            if (!$questionHelper->confirm(\sprintf('Are you sure you want to create a new team <info>%s</info>?', $label))) {
+            if (!$this->questionHelper->confirm(\sprintf('Are you sure you want to create a new team <info>%s</info>?', $label))) {
                 return 1;
             }
             $this->stdErr->writeln('');
@@ -192,7 +190,7 @@ class TeamCreateCommand extends TeamCommandBase
             $this->stdErr->writeln('<options=bold>Summary of changes:</>');
             $this->stdErr->writeln($changesText);
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to make these changes?')) {
                 return 1;
             }
             $this->stdErr->writeln('');
@@ -221,8 +219,6 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function showProjectRoleForm(string $defaultRole, InputInterface $input): mixed
     {
-        $questionHelper = $this->questionHelper;
-
         $validProjectRoles = ['admin', 'viewer'];
 
         $this->stdErr->writeln("The team's project role can be " . $this->describeRoles($validProjectRoles) . '.');
@@ -235,7 +231,7 @@ class TeamCreateCommand extends TeamCommandBase
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
-        return $questionHelper->ask($input, $this->stdErr, $question);
+        return $this->questionHelper->ask($input, $this->stdErr, $question);
     }
 
     /**
@@ -302,7 +298,6 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function showTypeRolesForm(array $defaultTypeRoles, InputInterface $input): array
     {
-        $questionHelper = $this->questionHelper;
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);
         $this->stdErr->writeln("The user's environment type role(s) can be " . $this->describeRoles($validRoles) . '.');
@@ -323,7 +318,7 @@ class TeamCreateCommand extends TeamCommandBase
             });
             $question->setAutocompleterValues(array_merge($validRoles, ['quit']));
             $question->setMaxAttempts(5);
-            $answer = $questionHelper->ask($input, $this->stdErr, $question);
+            $answer = $this->questionHelper->ask($input, $this->stdErr, $question);
             if ($answer === 'q' || $answer === 'quit') {
                 break;
             } else {

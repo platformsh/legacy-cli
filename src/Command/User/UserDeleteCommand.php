@@ -60,9 +60,7 @@ class UserDeleteCommand extends CommandBase
             return 1;
         }
 
-        $questionHelper = $this->questionHelper;
-
-        if (!$questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?")) {
+        if (!$this->questionHelper->confirm("Are you sure you want to delete the user <info>$email</info>?")) {
             return 1;
         }
 

@@ -50,9 +50,7 @@ class CertificateDeleteCommand extends CommandBase
                 return 1;
             }
         }
-
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
+        if (!$this->questionHelper->confirm(sprintf('Are you sure you want to delete the certificate <info>%s</info>?', $certificate->id))) {
             return 1;
         }
 

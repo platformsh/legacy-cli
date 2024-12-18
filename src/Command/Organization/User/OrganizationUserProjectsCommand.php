@@ -135,9 +135,6 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             return 0;
         }
 
-        $formatter = $this->propertyFormatter;
-        $table = $this->table;
-
         $rolesUtil = new ProjectRoles();
 
         $rows = [];
@@ -145,9 +142,9 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $row = [];
             $row['organization_id'] = $item->organization_id;
             $row['project_id'] = $item->resource_id;
-            $row['roles'] = $rolesUtil->formatPermissions($item->permissions, $table->formatIsMachineReadable());
-            $row['granted_at'] = $formatter->format($item->granted_at, 'granted_at');
-            $row['updated_at'] = $formatter->format($item->updated_at, 'updated_at');
+            $row['roles'] = $rolesUtil->formatPermissions($item->permissions, $this->table->formatIsMachineReadable());
+            $row['granted_at'] = $this->propertyFormatter->format($item->granted_at, 'granted_at');
+            $row['updated_at'] = $this->propertyFormatter->format($item->updated_at, 'updated_at');
             $projectInfo = $item->getProjectInfo();
             $row['project_title'] = $projectInfo ? $projectInfo->title : '';
             $row['region'] = $projectInfo ? $projectInfo->region : '';
@@ -157,7 +154,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($organization) {
                 $this->stdErr->writeln(\sprintf(
                     'Project access for the user %s in the organization %s:',
@@ -177,9 +174,9 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $defaultColumns[] = 'organization_name';
         }
 
-        $table->render($rows, $this->tableHeader, $defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('To view the user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', OsUtil::escapeShellArg($userRef->email))));
         }
 

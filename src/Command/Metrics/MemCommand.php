@@ -53,9 +53,7 @@ class MemCommand extends MetricsCommandBase
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->selector->ensurePrintedSelection($selection);
         }
 
@@ -72,7 +70,7 @@ class MemCommand extends MetricsCommandBase
             'percent' => new Field('mem_percent', Field::FORMAT_PERCENT),
         ], $selection->getEnvironment());
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $formatter = $this->propertyFormatter;
             $this->stdErr->writeln(\sprintf(
                 'Average memory usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
@@ -82,9 +80,9 @@ class MemCommand extends MetricsCommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->explainHighMemoryServices();
         }
 

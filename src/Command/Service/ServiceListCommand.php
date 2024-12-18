@@ -60,21 +60,17 @@ class ServiceListCommand extends CommandBase
             return 0;
         }
 
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($services as $name => $service) {
             $row = [
                 $name,
-                $formatter->format($service->type, 'service_type'),
+                $this->propertyFormatter->format($service->type, 'service_type'),
                 'disk' => $service->disk !== null ? $service->disk : '',
                 $service->size,
             ];
             $rows[] = $row;
         }
-
-        $table = $this->table;
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Services on the project <info>%s</info>, environment <info>%s</info>:',
                 $this->api->getProjectLabel($selection->getProject()),
@@ -82,9 +78,9 @@ class ServiceListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);
         }
 

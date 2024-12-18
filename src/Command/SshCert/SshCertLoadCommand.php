@@ -71,10 +71,8 @@ class SshCertLoadCommand extends CommandBase
             $refresh = false;
         }
 
-        $sshConfig = $this->sshConfig;
-
         if ($refresh) {
-            if (!$sshConfig->checkRequiredVersion()) {
+            if (!$this->sshConfig->checkRequiredVersion()) {
                 return 1;
             }
             if ($refreshOnly && $this->stdErr->isQuiet()) {
@@ -90,11 +88,9 @@ class SshCertLoadCommand extends CommandBase
             return 0;
         }
 
-        $sshConfig->configureHostKeys();
-        $hasSessionConfig = $sshConfig->configureSessionSsh();
-
-        $questionHelper = $this->questionHelper;
-        $success = !$hasSessionConfig || $sshConfig->addUserSshConfig($questionHelper);
+        $this->sshConfig->configureHostKeys();
+        $hasSessionConfig = $this->sshConfig->configureSessionSsh();
+        $success = !$hasSessionConfig || $this->sshConfig->addUserSshConfig($this->questionHelper);
 
         return $success ? 0 : 1;
     }
@@ -102,8 +98,7 @@ class SshCertLoadCommand extends CommandBase
     private function displayCertificate(Certificate $cert): void
     {
         $validBefore = $cert->metadata()->getValidBefore();
-        $formatter = $this->propertyFormatter;
-        $expires = $formatter->formatUnixTimestamp($validBefore);
+        $expires = $this->propertyFormatter->formatUnixTimestamp($validBefore);
         $expiresWithColor = $validBefore > time() ? '<fg=green>' . $expires . '</>' : $expires;
         $mfaWithColor = $cert->hasMfa() ? '<fg=green>verified</>' : 'not verified';
         $interactivityMode = '<fg=green>' . ($cert->isApp() ? 'app' : 'interactive') . '</>';

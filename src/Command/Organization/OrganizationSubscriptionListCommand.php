@@ -109,9 +109,7 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $title = \sprintf('Subscriptions belonging to the organization <info>%s</info>', $this->api->getOrganizationLabel($organization));
             if (($pageNumber > 1 || isset($collection['next'])) && !$fetchAllPages) {
                 $title .= \sprintf(' (page %d)', $pageNumber);
@@ -119,9 +117,9 @@ class OrganizationSubscriptionListCommand extends OrganizationCommandBase
             $this->stdErr->writeln($title);
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable() && isset($collection['next'])) {
+        if (!$this->table->formatIsMachineReadable() && isset($collection['next'])) {
             $this->stdErr->writeln(\sprintf('More subscriptions are available on the next page (<info>--page %d</info>)', $pageNumber + 1));
             $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');
         }

@@ -45,8 +45,6 @@ class TunnelCloseCommand extends TunnelCommandBase
             }
         }
 
-        $questionHelper = $this->questionHelper;
-
         $error = false;
         foreach ($tunnels as $tunnel) {
             $relationshipString = $this->formatTunnelRelationship($tunnel);
@@ -59,7 +57,7 @@ class TunnelCloseCommand extends TunnelCommandBase
                 $relationshipString,
                 $appString
             );
-            if ($questionHelper->confirm($questionText)) {
+            if ($this->questionHelper->confirm($questionText)) {
                 if ($this->closeTunnel($tunnel)) {
                     $this->stdErr->writeln(sprintf(
                         'Closed tunnel to <info>%s</info> on %s',
