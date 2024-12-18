@@ -47,15 +47,13 @@ class MongoExportCommand extends CommandBase
                 . "\n" . 'Use --fields (-f) to specify field(s) to export.'
             );
         }
-
-        $relationshipsService = $this->relationships;
         $selection = $this->selector->getSelection($input, new SelectorConfig(
-            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         ));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -73,7 +71,7 @@ class MongoExportCommand extends CommandBase
             $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
         }
 
-        $command = 'mongoexport ' . $relationshipsService->getDbCommandArgs('mongoexport', $service);
+        $command = 'mongoexport ' . $this->relationships->getDbCommandArgs('mongoexport', $service);
         $command .= ' --collection ' . OsUtil::escapePosixShellArg($collection);
 
         if ($input->getOption('type')) {
@@ -108,12 +106,10 @@ class MongoExportCommand extends CommandBase
      */
     private function getCollections(array $service, HostInterface $host): array
     {
-        $relationshipsService = $this->relationships;
-
         $js = 'printjson(db.getCollectionNames())';
 
         $command = 'mongo '
-            . $relationshipsService->getDbCommandArgs('mongo', $service)
+            . $this->relationships->getDbCommandArgs('mongo', $service)
             . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js)
             . ' 2>/dev/null';
 

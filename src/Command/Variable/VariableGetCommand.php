@@ -117,9 +117,7 @@ class VariableGetCommand extends CommandBase
 
         $this->variableCommandUtil->displayVariable($variable);
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
@@ -158,9 +156,8 @@ class VariableGetCommand extends CommandBase
             $options[$projectPrefix . $name] = $name
                 . (isset($options[$name]) ? ' (project-level)' : '');
         }
-        $questionHelper = $this->questionHelper;
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
-        $key = $questionHelper->choose($options, 'Enter a number to choose a variable:');
+        $key = $this->questionHelper->choose($options, 'Enter a number to choose a variable:');
         if (str_starts_with((string) $key, $projectPrefix)) {
             return $projectVariables[substr((string) $key, strlen($projectPrefix))];
         }

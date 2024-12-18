@@ -66,14 +66,12 @@ class BlueGreenDeployCommand extends CommandBase
         }
         $targetPercentage = (int) $targetPercentage;
 
-        $questionHelper = $this->questionHelper;
-
         if ($targetPercentage === 100) {
             $questionText = sprintf('Are you sure you want to deploy version <info>%s</info>?', $latestVersionData['id']);
         } else {
             $questionText = sprintf('Are you sure you want to change the routing percentage for version <info>%s</info> from %d to %d?', $latestVersionData['id'], $latestVersionData['routing']['percentage'], $targetPercentage);
         }
-        if (!$questionHelper->confirm($questionText)) {
+        if (!$this->questionHelper->confirm($questionText)) {
             return 1;
         }
 

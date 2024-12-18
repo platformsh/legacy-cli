@@ -75,10 +75,8 @@ class OrganizationListCommand extends OrganizationCommandBase
             $currentProjectOrg = $currentProject->getProperty('organization');
         }
 
-        $table = $this->table;
-
         $rows = [];
-        $machineReadable = $table->formatIsMachineReadable();
+        $machineReadable = $this->table->formatIsMachineReadable();
         $markedCurrent = false;
         foreach ($organizations as $org) {
             $row = $org->getProperties();
@@ -100,13 +98,13 @@ class OrganizationListCommand extends OrganizationCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if ($markedCurrent) {
             $this->stdErr->writeln("<info>*</info> - Indicates the current project's organization");
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To view or modify organization details, run: <info>%s org:info [-o organization]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To see all organization commands run: <info>%s list organization</info>', $executable));

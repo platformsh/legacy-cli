@@ -39,16 +39,12 @@ class TeamGetCommand extends TeamCommandBase
         }
         $data = array_merge(array_flip(['id', 'label', 'organization_id', 'counts', 'project_permissions']), $team->getProperties());
 
-        $formatter = $this->propertyFormatter;
-
         if ($input->getOption('property')) {
-            $formatter->displayData($output, $data, $input->getOption('property'));
+            $this->propertyFormatter->displayData($output, $data, $input->getOption('property'));
             return 0;
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $organization = $this->api->getOrganizationById($team->organization_id);
             if ($organization) {
                 $this->stdErr->writeln(\sprintf('Viewing the team %s in the organization %s', $this->getTeamLabel($team), $this->api->getOrganizationLabel($organization)));
@@ -61,12 +57,12 @@ class TeamGetCommand extends TeamCommandBase
         $values = [];
         foreach ($data as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
 
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To add projects to the team, run: <info>%s team:project:add -t %s</info>', $executable, OsUtil::escapeShellArg($team->id)));

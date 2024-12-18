@@ -73,11 +73,9 @@ class DomainGetCommand extends DomainCommandBase
             $domain = $byName[$domainName];
         }
 
-        $propertyFormatter = $this->propertyFormatter;
-
         if ($property = $input->getOption('property')) {
             $value = $this->api->getNestedProperty($domain, $property);
-            $output->writeln($propertyFormatter->format($value, $property));
+            $output->writeln($this->propertyFormatter->format($value, $property));
 
             return 0;
         }
@@ -90,10 +88,9 @@ class DomainGetCommand extends DomainCommandBase
                 continue;
             }
             $properties[] = $name;
-            $values[] = $propertyFormatter->format($value, $name);
+            $values[] = $this->propertyFormatter->format($value, $name);
         }
-        $table = $this->table;
-        $table->renderSimple($values, $properties);
+        $this->table->renderSimple($values, $properties);
 
         $this->stdErr->writeln('');
         $executable = $this->config->getStr('application.executable');

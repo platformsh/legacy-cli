@@ -37,8 +37,7 @@ class IntegrationDeleteCommand extends IntegrationCommandBase
         }
 
         $confirmText = sprintf('Delete the integration <info>%s</info> (type: %s)?', $integration->id, $integration->type);
-        $questionHelper = $this->questionHelper;
-        if (!$questionHelper->confirm($confirmText)) {
+        if (!$this->questionHelper->confirm($confirmText)) {
             return 1;
         }
 

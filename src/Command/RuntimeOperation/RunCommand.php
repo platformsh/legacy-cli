@@ -68,8 +68,6 @@ class RunCommand extends CommandBase
             return 0;
         }
 
-        $questionHelper = $this->questionHelper;
-
         $operationName = $input->getArgument('operation');
         if (!$operationName) {
             if (!$input->isInteractive()) {
@@ -89,7 +87,7 @@ class RunCommand extends CommandBase
                 }
             }
             ksort($choices, SORT_NATURAL);
-            $operationName = $questionHelper->choose($choices, 'Enter a number to choose an operation to run:', null, false);
+            $operationName = $this->questionHelper->choose($choices, 'Enter a number to choose an operation to run:', null, false);
             $appName = $appNamesByOperationName[$operationName];
         } else {
             $found = false;
@@ -118,7 +116,7 @@ class RunCommand extends CommandBase
         } else {
             $this->stdErr->writeln(\sprintf('Running operation <info>%s</info> on the environment <info>%s</info>', $operationName, $appName));
         }
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 

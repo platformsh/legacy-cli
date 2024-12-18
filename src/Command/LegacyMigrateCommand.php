@@ -70,8 +70,6 @@ EOF
 
         $cwd = getcwd();
 
-        $fs = $this->filesystem;
-
         $repositoryDir = $legacyRoot . '/repository';
         if (!is_dir($repositoryDir)) {
             $this->stdErr->writeln('Directory not found: <error>' . $repositoryDir . '</error>');
@@ -97,7 +95,7 @@ EOF
             }
 
             $this->stdErr->writeln('Backing up entire project to: ' . $backup);
-            $fs->archiveDir($legacyRoot, $backup);
+            $this->filesystem->archiveDir($legacyRoot, $backup);
         }
 
         $this->stdErr->writeln('Creating directory: ' . $this->config->get('local.local_dir'));
@@ -106,8 +104,8 @@ EOF
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory.');
             if (is_dir($repositoryDir . '/' . $this->config->get('local.shared_dir'))) {
-                $fs->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->get('local.shared_dir'));
-                $fs->remove($legacyRoot . '/shared');
+                $this->filesystem->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->get('local.shared_dir'));
+                $this->filesystem->remove($legacyRoot . '/shared');
             } else {
                 rename($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->get('local.shared_dir'));
             }
@@ -115,26 +113,26 @@ EOF
 
         if (file_exists($legacyRoot . '/' . $this->config->get('local.project_config_legacy'))) {
             $this->stdErr->writeln('Moving project config file.');
-            $fs->copy(
+            $this->filesystem->copy(
                 $legacyRoot . '/' . $this->config->get('local.project_config_legacy'),
                 $legacyRoot . '/' . $this->config->get('local.project_config')
             );
-            $fs->remove($legacyRoot . '/' . $this->config->get('local.project_config_legacy'));
+            $this->filesystem->remove($legacyRoot . '/' . $this->config->get('local.project_config_legacy'));
         }
 
         if (file_exists($legacyRoot . '/.build-archives')) {
             $this->stdErr->writeln('Removing old build archives.');
-            $fs->remove($legacyRoot . '/.build-archives');
+            $this->filesystem->remove($legacyRoot . '/.build-archives');
         }
 
         if (file_exists($legacyRoot . '/builds')) {
             $this->stdErr->writeln('Removing old builds.');
-            $fs->remove($legacyRoot . '/builds');
+            $this->filesystem->remove($legacyRoot . '/builds');
         }
 
         if (is_link($legacyRoot . '/www')) {
             $this->stdErr->writeln('Removing old "www" symlink.');
-            $fs->remove($legacyRoot . '/www');
+            $this->filesystem->remove($legacyRoot . '/www');
             $this->stdErr->writeln('');
             $this->stdErr->writeln('After running <comment>' . $this->config->getStr('application.executable') . ' build</comment>, your web root will be at: <comment>' . $this->config->getWithDefault('local.web_root', '_www') . '</comment>');
             $this->stdErr->writeln('You may need to update your local web server configuration.');
@@ -142,8 +140,8 @@ EOF
         }
 
         $this->stdErr->writeln('Moving repository to be the new project root (this could take some time)...');
-        $fs->copyAll($repositoryDir, $legacyRoot, [], true);
-        $fs->remove($repositoryDir);
+        $this->filesystem->copyAll($repositoryDir, $legacyRoot, [], true);
+        $this->filesystem->remove($repositoryDir);
 
         if (!is_dir($legacyRoot . '/.git')) {
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');

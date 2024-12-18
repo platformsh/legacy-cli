@@ -92,17 +92,13 @@ class EnvironmentDrushCommand extends CommandBase
         $selectedEnvironment = $selection->getEnvironment();
 
         $deployment = $this->api->getCurrentDeployment($selectedEnvironment);
-
-        // Use the PLATFORM_DOCUMENT_ROOT environment variable, if set, to
-        // determine the path to Drupal.
-        $envVarsService = $this->remoteEnvVars;
-        $documentRoot = $envVarsService->getEnvVar('DOCUMENT_ROOT', $host);
+        $documentRoot = $this->remoteEnvVars->getEnvVar('DOCUMENT_ROOT', $host);
         if ($documentRoot !== '') {
             $drupalRoot = $documentRoot;
         } else {
             // Fall back to a combination of the document root (from the
             // deployment configuration) and the PLATFORM_APP_DIR variable.
-            $appDir = $envVarsService->getEnvVar('APP_DIR', $host) ?: '/app';
+            $appDir = $this->remoteEnvVars->getEnvVar('APP_DIR', $host) ?: '/app';
 
             $remoteApp = $deployment->getWebApp($appName);
             $relativeDocRoot = AppConfig::fromWebApp($remoteApp)->getDocumentRoot();

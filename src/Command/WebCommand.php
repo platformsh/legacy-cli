@@ -68,9 +68,7 @@ class WebCommand extends CommandBase
             $this->stdErr->writeln('No URLs are configured');
             return 1;
         }
-
-        $urlService = $this->url;
-        $urlService->openUrl($url);
+        $this->url->openUrl($url);
 
         return 0;
     }

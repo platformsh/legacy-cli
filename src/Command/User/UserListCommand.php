@@ -54,9 +54,6 @@ class UserListCommand extends CommandBase
 
         $project = $selection->getProject();
 
-        $table = $this->table;
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
 
         if ($this->accessApi->centralizedPermissionsEnabled()) {
@@ -69,9 +66,9 @@ class UserListCommand extends CommandBase
                     'name' => trim(sprintf('%s %s', $info->first_name, $info->last_name)),
                     'role' => $item->getProjectRole(),
                     'id' => $item->user_id,
-                    'permissions' => $formatter->format($item->permissions, 'permissions'),
-                    'granted_at' => $formatter->format($item->granted_at, 'granted_at'),
-                    'updated_at' => $formatter->format($item->updated_at, 'updated_at'),
+                    'permissions' => $this->propertyFormatter->format($item->permissions, 'permissions'),
+                    'granted_at' => $this->propertyFormatter->format($item->granted_at, 'granted_at'),
+                    'updated_at' => $this->propertyFormatter->format($item->updated_at, 'updated_at'),
                 ];
             }
         } else {
@@ -82,8 +79,8 @@ class UserListCommand extends CommandBase
                     'name' => $info['display_name'],
                     'role' => $projectAccess->role,
                     'id' => $projectAccess->id,
-                    'granted_at' => $formatter->format($info['created_at'], 'granted_at'),
-                    'updated_at' => $formatter->format($info['updated_at'] ?: $info['created_at'], 'updated_at'),
+                    'granted_at' => $this->propertyFormatter->format($info['created_at'], 'granted_at'),
+                    'updated_at' => $this->propertyFormatter->format($info['updated_at'] ?: $info['created_at'], 'updated_at'),
                 ];
             }
         }
@@ -102,16 +99,16 @@ class UserListCommand extends CommandBase
             array_unshift($rows, $ownerRow);
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Users on the project %s:',
                 $this->api->getProjectLabel($project)
             ));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln("To add a new user to the project, run: <info>$executable user:add</info>");

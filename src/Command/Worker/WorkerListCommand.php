@@ -60,17 +60,13 @@ class WorkerListCommand extends CommandBase
 
             return 0;
         }
-
-        $formatter = $this->propertyFormatter;
         $rows = [];
         foreach ($workers as $worker) {
             $commands = isset($worker->worker['commands']) ? $worker->worker['commands'] : [];
-            $rows[] = [$worker->name, $formatter->format($worker->type, 'service_type'), $formatter->format($commands)];
+            $rows[] = [$worker->name, $this->propertyFormatter->format($worker->type, 'service_type'), $this->propertyFormatter->format($commands)];
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Workers on the project <info>%s</info>, environment <info>%s</info>:',
                 $this->api->getProjectLabel($selection->getProject()),
@@ -78,9 +74,9 @@ class WorkerListCommand extends CommandBase
             ));
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);
         }
 

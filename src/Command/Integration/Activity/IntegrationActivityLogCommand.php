@@ -65,14 +65,12 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             }
         }
 
-        $formatter = $this->propertyFormatter;
-
         $this->stdErr->writeln([
             sprintf('<info>Integration ID: </info>%s', $integration->id),
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Type: </info>%s', $activity->type),
             sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
-            sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
+            sprintf('<info>Created: </info>%s', $this->propertyFormatter->format($activity->created_at, 'created_at')),
             sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),
             '<info>Log: </info>',
         ]);
@@ -83,10 +81,8 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
         } elseif ($timestamps) {
             $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
-
-        $monitor = $this->activityMonitor;
         if (!$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
-            $monitor->waitAndLog($activity, 3, $timestamps, false, $output);
+            $this->activityMonitor->waitAndLog($activity, 3, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
@@ -94,7 +90,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
             $this->api->clearEnvironmentsCache($activity->project);
         } else {
             $items = $activity->readLog();
-            $output->write($monitor->formatLog($items, $timestamps));
+            $output->write($this->activityMonitor->formatLog($items, $timestamps));
         }
 
         return 0;

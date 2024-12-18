@@ -92,27 +92,23 @@ class TeamUserListCommand extends TeamCommandBase
             return 0;
         }
 
-        $formatter = $this->propertyFormatter;
-
         $rows = [];
         foreach ($members as $member) {
             $rows[] = [
                 'id' => new AdaptiveTableCell($member->user_id, ['wrap' => false]),
-                'email' => $formatter->format($member->getUserInfo()->email, 'email'),
-                'created_at' => $formatter->format($member->created_at, 'created_at'),
-                'updated_at' => $formatter->format($member->updated_at, 'updated_at'),
+                'email' => $this->propertyFormatter->format($member->getUserInfo()->email, 'email'),
+                'created_at' => $this->propertyFormatter->format($member->created_at, 'created_at'),
+                'updated_at' => $this->propertyFormatter->format($member->updated_at, 'updated_at'),
             ];
         }
 
-        $table = $this->table;
-
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('Users in the team %s:', $this->getTeamLabel($team)));
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($result['collection']->hasNextPage()) {
                 $this->stdErr->writeln('More users are available');
                 $this->stdErr->writeln('List all items with: <info>--count 0</info> (<info>-c0</info>)');

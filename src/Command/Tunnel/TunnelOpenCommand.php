@@ -80,9 +80,7 @@ EOF
         $appName = $container->getName();
         $sshUrl = $container->getSshUrl();
         $host = $this->selector->getHostFromSelection($input, $selection);
-
-        $relationshipsService = $this->relationships;
-        $relationships = $relationshipsService->getRelationships($host);
+        $relationships = $this->relationships->getRelationships($host);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
@@ -107,9 +105,7 @@ EOF
         if ($input->getOption('gateway-ports')) {
             $sshOptions[] = 'GatewayPorts yes';
         }
-
-        $ssh = $this->ssh;
-        $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
+        $sshArgs = $this->ssh->getSshArgs($sshUrl, $sshOptions);
 
         $log->setVerbosity($output->getVerbosity());
 

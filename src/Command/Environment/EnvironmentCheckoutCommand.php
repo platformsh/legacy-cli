@@ -65,11 +65,9 @@ class EnvironmentCheckoutCommand extends CommandBase
                 return 1;
             }
         }
+        $this->git->setDefaultRepositoryDir($projectRoot);
 
-        $git = $this->git;
-        $git->setDefaultRepositoryDir($projectRoot);
-
-        $existsLocally = $git->branchExists($branch);
+        $existsLocally = $this->git->branchExists($branch);
         if (!$existsLocally && !$this->api->getEnvironment($branch, $project)) {
             $this->stdErr->writeln('Branch not found: <error>' . $branch . '</error>');
 
@@ -80,7 +78,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         if ($existsLocally) {
             $this->stdErr->writeln('Checking out <info>' . $branch . '</info>');
 
-            return $git->checkOut($branch) ? 0 : 1;
+            return $this->git->checkOut($branch) ? 0 : 1;
         }
 
         // Make sure that remotes are set up correctly.
@@ -90,20 +88,20 @@ class EnvironmentCheckoutCommand extends CommandBase
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
         $upstreamRemote = $this->config->get('detection.git_remote_name');
-        $originRemoteUrl = $git->getConfig('remote.origin.url');
-        if ($originRemoteUrl !== $project->getGitUrl() && $git->remoteBranchExists('origin', $branch)) {
+        $originRemoteUrl = $this->git->getConfig('remote.origin.url');
+        if ($originRemoteUrl !== $project->getGitUrl() && $this->git->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
         }
 
         // Fetch the branch from the upstream remote.
-        $git->fetch($upstreamRemote, $branch, $originRemoteUrl);
+        $this->git->fetch($upstreamRemote, $branch, $originRemoteUrl);
 
         $upstream = $upstreamRemote . '/' . $branch;
 
         $this->stdErr->writeln(sprintf('Creating local branch %s based on upstream %s', $branch, $upstream));
 
         // Create the new branch, and set the correct upstream.
-        $success = $git->checkOutNew($branch, null, $upstream);
+        $success = $this->git->checkOutNew($branch, null, $upstream);
 
         return $success ? 0 : 1;
     }
@@ -154,8 +152,6 @@ class EnvironmentCheckoutCommand extends CommandBase
             return false;
         }
 
-        $helper = $this->questionHelper;
-
         // If there's more than one choice, present the user with a list.
         if (count($environmentList) > 1) {
             $chooseEnvironmentText = "Enter a number to check out another environment:";
@@ -163,7 +159,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             // The environment ID will be an integer if it was numeric
             // (because PHP does that with array keys), so it's cast back to
             // a string here.
-            return (string) $helper->choose($environmentList, $chooseEnvironmentText);
+            return (string) $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
         }
 
         // If there's only one choice, QuestionHelper::choose() does not
@@ -171,7 +167,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         $environmentId = key($environmentList);
         if ($environmentId !== false) {
             $label = $this->api->getEnvironmentLabel($environments[$environmentId]);
-            if ($helper->confirm(sprintf('Check out environment %s?', $label))) {
+            if ($this->questionHelper->confirm(sprintf('Check out environment %s?', $label))) {
                 return $environmentId;
             }
         }

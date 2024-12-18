@@ -44,15 +44,13 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $skipCache = $value !== null || $input->getOption('refresh');
         $organization = $this->selector->selectOrganization($input, '', '', $skipCache);
 
-        $formatter = $this->propertyFormatter;
-
         if ($property === null) {
             $this->listProperties($organization);
             return 0;
         }
 
         if ($value === null) {
-            $formatter->displayData($output, $this->getProperties($organization), $property);
+            $this->propertyFormatter->displayData($output, $this->getProperties($organization), $property);
             return 0;
         }
 
@@ -76,13 +74,11 @@ class OrganizationInfoCommand extends OrganizationCommandBase
     {
         $headings = [];
         $values = [];
-        $formatter = $this->propertyFormatter;
         foreach ($this->getProperties($organization) as $key => $value) {
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
-            $values[] = $formatter->format($value, $key);
+            $values[] = $this->propertyFormatter->format($value, $key);
         }
-        $table = $this->table;
-        $table->renderSimple($values, $headings);
+        $this->table->renderSimple($values, $headings);
     }
 
     protected function setProperty(string $property, string $value, Organization $organization): int
@@ -90,14 +86,13 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         if (!$this->validateValue($property, $value)) {
             return 1;
         }
-        $formatter = $this->propertyFormatter;
 
         $currentValue = $organization->getProperty($property, false);
         if ($currentValue === $value) {
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $formatter->format($organization->getProperty($property, false), $property)
+                $this->propertyFormatter->format($organization->getProperty($property, false), $property)
             ));
 
             return 0;
@@ -123,7 +118,7 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $formatter->format($organization->$property, $property)
+            $this->propertyFormatter->format($organization->$property, $property)
         ));
 
         return 0;

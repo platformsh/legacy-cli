@@ -107,16 +107,15 @@ class OrganizationCommandBase extends CommandBase
             $choices[$member->user_id] = $this->api->getMemberLabel($member);
             $byId[$member->user_id] = $member;
         }
-        $questionHelper = $this->questionHelper;
         if (count($choices) < 25) {
             $default = null;
             if (isset($choices[$organization->owner_id])) {
                 $choices[$organization->owner_id] .= ' (<info>owner - default</info>)';
                 $default = $organization->owner_id;
             }
-            $userId = $questionHelper->choose($choices, 'Enter a number to choose a user:', $default);
+            $userId = $this->questionHelper->choose($choices, 'Enter a number to choose a user:', $default);
         } else {
-            $userId = $questionHelper->askInput('Enter an email address to choose a user', null, array_values($emailAddresses), function (string $email) use ($emailAddresses): string {
+            $userId = $this->questionHelper->askInput('Enter an email address to choose a user', null, array_values($emailAddresses), function (string $email) use ($emailAddresses): string {
                 if (($key = array_search($email, $emailAddresses)) === false) {
                     throw new InvalidArgumentException('User not found: ' . $email);
                 }

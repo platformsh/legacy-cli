@@ -35,8 +35,6 @@ class AuthInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $formatter = $this->propertyFormatter;
-
         if ($input->getOption('no-auto-login') && !$this->api->isLoggedIn()) {
             $this->stdErr->writeln('Not logged in', OutputInterface::VERBOSITY_VERBOSE);
             return 0;
@@ -88,7 +86,7 @@ class AuthInfoCommand extends CommandBase
                     throw new InvalidArgumentException('Property not found: ' . $property);
                 }
             }
-            $output->writeln($formatter->format($info[$property], $property));
+            $output->writeln($this->propertyFormatter->format($info[$property], $property));
 
             return 0;
         }
@@ -96,13 +94,12 @@ class AuthInfoCommand extends CommandBase
         $values = [];
         $header = [];
         foreach ($propertiesToDisplay as $property) {
-            $values[] = $formatter->format($info[$property], $property);
+            $values[] = $this->propertyFormatter->format($info[$property], $property);
             $header[] = $property;
         }
-        $table = $this->table;
-        $table->renderSimple($values, $header);
+        $this->table->renderSimple($values, $header);
 
-        if (!$table->formatIsMachineReadable() && ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1)) {
+        if (!$this->table->formatIsMachineReadable() && ($this->config->getSessionId() !== 'default' || count($this->api->listSessionIds()) > 1)) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $this->config->getSessionId()));
             if (!$this->config->isSessionIdFromEnv()) {

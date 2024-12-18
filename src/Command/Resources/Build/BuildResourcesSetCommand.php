@@ -48,8 +48,6 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
 
         $settings = $project->getSettings();
 
-        $questionHelper = $this->questionHelper;
-
         $validateCpu = function ($v) use ($maxCpu): float {
             $f = (float) $v;
             if ($f != $v) {
@@ -98,7 +96,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('');
 
         if ($cpuOption === null && $memoryOption === null) {
-            $cpuOption = $questionHelper->askInput(
+            $cpuOption = $this->questionHelper->askInput(
                 'CPU size',
                 $this->resourcesUtil->formatCPU($settings['build_resources']['cpu']),
                 [],
@@ -106,7 +104,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
                 'current: '
             );
 
-            $memoryOption = $questionHelper->askInput(
+            $memoryOption = $this->questionHelper->askInput(
                 'Memory size in MB',
                 $settings['build_resources']['memory'],
                 [],
@@ -134,7 +132,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         $this->io->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 

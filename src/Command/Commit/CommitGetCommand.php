@@ -55,8 +55,7 @@ class CommitGetCommand extends CommandBase
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
         $commitSha = $input->getArgument('commit');
-        $gitData = $this->gitDataApi;
-        $commit = $gitData->getCommit($selection->getEnvironment(), $commitSha);
+        $commit = $this->gitDataApi->getCommit($selection->getEnvironment(), $commitSha);
         if (!$commit) {
             if ($commitSha) {
                 $this->stdErr->writeln('Commit not found: <error>' . $commitSha . '</error>');
@@ -66,9 +65,7 @@ class CommitGetCommand extends CommandBase
 
             return 1;
         }
-
-        $formatter = $this->propertyFormatter;
-        $formatter->displayData($output, $commit->getProperties(), $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $commit->getProperties(), $input->getOption('property'));
 
         return 0;
     }

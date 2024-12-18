@@ -69,8 +69,6 @@ class RouteListCommand extends CommandBase
             return 0;
         }
 
-        $table = $this->table;
-
         $rows = [];
         foreach ($routes as $route) {
             $row = [];
@@ -81,7 +79,7 @@ class RouteListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($fromEnv) {
                 $this->stdErr->writeln('Routes in the <info>' . $prefix . 'ROUTES</info> environment variable:');
             } else {
@@ -93,9 +91,9 @@ class RouteListCommand extends CommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single route, run: <info>%s route:get <route></info>',

@@ -77,14 +77,12 @@ class MongoDumpCommand extends CommandBase
                 $dumpFile
             ));
         }
-
-        $relationshipsService = $this->relationships;
-        $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
 
-        $command = 'mongodump ' . $relationshipsService->getDbCommandArgs('mongodump', $service);
+        $command = 'mongodump ' . $this->relationships->getDbCommandArgs('mongodump', $service);
 
         if ($input->getOption('collection')) {
             $command .= ' --collection ' . OsUtil::escapePosixShellArg($input->getOption('collection'));

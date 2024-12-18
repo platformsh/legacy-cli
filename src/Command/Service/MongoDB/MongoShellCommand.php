@@ -39,20 +39,18 @@ class MongoShellCommand extends CommandBase
         if ($this->runningViaMulti) {
             throw new \RuntimeException('The mongo-shell command cannot run via multi');
         }
-
-        $relationshipsService = $this->relationships;
         $selection = $this->selector->getSelection($input, new SelectorConfig(
-            allowLocalHost: $relationshipsService->hasLocalEnvVar(),
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         ));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
 
-        $command = 'mongo ' . $relationshipsService->getDbCommandArgs('mongo', $service);
+        $command = 'mongo ' . $this->relationships->getDbCommandArgs('mongo', $service);
 
         if ($input->getOption('eval')) {
             $command .= ' --eval ' . OsUtil::escapePosixShellArg($input->getOption('eval'));

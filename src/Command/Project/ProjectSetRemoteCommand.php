@@ -47,9 +47,7 @@ class ProjectSetRemoteCommand extends CommandBase
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
         }
-
-        $git = $this->git;
-        $root = $git->getRoot(getcwd());
+        $root = $this->git->getRoot(getcwd());
         if ($root === false) {
             $this->stdErr->writeln(
                 'No Git repository found. Use <info>git init</info> to create a repository.'
@@ -59,20 +57,17 @@ class ProjectSetRemoteCommand extends CommandBase
         }
 
         $this->io->debug('Git repository found: ' . $root);
-
-        $questionHelper = $this->questionHelper;
         $localProject = $this->localProject;
-        $fs = $this->filesystem;
 
         if ($unset) {
             $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->get('local.project_config');
             if (!\file_exists($configFilename)) {
                 $configFilename = null;
             }
-            $git->ensureInstalled();
+            $this->git->ensureInstalled();
             $gitRemotes = [];
             foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
-                $url = $git->getConfig(sprintf('remote.%s.url', $remote));
+                $url = $this->git->getConfig(sprintf('remote.%s.url', $remote));
                 if (\is_string($url) && $localProject->parseGitUrl($url) !== false) {
                     $gitRemotes[$remote] = $url;
                 }
@@ -84,17 +79,17 @@ class ProjectSetRemoteCommand extends CommandBase
             $this->stdErr->writeln('Unsetting the remote project for this repository');
             $this->stdErr->writeln('');
             if ($configFilename) {
-                $this->stdErr->writeln(sprintf('This config file will be deleted: <comment>%s</comment>', $fs->formatPathForDisplay($configFilename)));
+                $this->stdErr->writeln(sprintf('This config file will be deleted: <comment>%s</comment>', $this->filesystem->formatPathForDisplay($configFilename)));
             }
             if ($gitRemotes) {
                 $this->stdErr->writeln(sprintf('These Git remote(s) will be deleted: <comment>%s</comment>', \implode(', ', \array_keys($gitRemotes))));
             }
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure?')) {
+            if (!$this->questionHelper->confirm('Are you sure?')) {
                 return 1;
             }
             foreach (array_keys($gitRemotes) as $gitRemote) {
-                $git->execute(
+                $this->git->execute(
                     ['remote', 'rm', $gitRemote],
                     $root,
                     true
@@ -113,7 +108,7 @@ class ProjectSetRemoteCommand extends CommandBase
                 'This repository is already linked to the remote project: %s',
                 $this->api->getProjectLabel($currentProject, 'comment')
             ));
-            if (!$questionHelper->confirm('Are you sure you want to change it?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to change it?')) {
                 return 1;
             }
             $this->stdErr->writeln('');
@@ -159,14 +154,14 @@ class ProjectSetRemoteCommand extends CommandBase
         ));
 
         if ($input->isInteractive()) {
-            $currentBranch = $git->getCurrentBranch($root);
+            $currentBranch = $this->git->getCurrentBranch($root);
             $currentEnvironment = $currentBranch ? $this->api->getEnvironment($currentBranch, $project) : false;
             if ($currentBranch !== false && $currentEnvironment && $currentEnvironment->has_code) {
-                $headSha = $git->execute(['rev-parse', '--verify', 'HEAD'], $root);
+                $headSha = $this->git->execute(['rev-parse', '--verify', 'HEAD'], $root);
                 if ($currentEnvironment->head_commit === $headSha) {
                     $this->stdErr->writeln(sprintf("\nThe local branch <info>%s</info> is up to date.", $currentBranch));
-                } elseif ($questionHelper->confirm("\nDo you want to pull code from the project?")) {
-                    $success = $git->pull($project->getGitUrl(), $currentEnvironment->id, $root, false);
+                } elseif ($this->questionHelper->confirm("\nDo you want to pull code from the project?")) {
+                    $success = $this->git->pull($project->getGitUrl(), $currentEnvironment->id, $root, false);
 
                     return $success ? 0 : 1;
                 }

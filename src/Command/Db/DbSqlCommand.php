@@ -50,18 +50,16 @@ class DbSqlCommand extends CommandBase
             throw new InvalidArgumentException('The query argument is required when running via "multi"');
         }
 
-        $relationships = $this->relationships;
-
         $selectorConfig = new SelectorConfig(
             envRequired: false,
-            allowLocalHost: $relationships->hasLocalEnvVar(),
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
             chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
         );
         // TODO check if this still allows offline use from the container
         $selection = $this->selector->getSelection($input, $selectorConfig);
         $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $database = $relationships->chooseDatabase($host, $input, $output);
+        $database = $this->relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
             return 1;
         }
@@ -78,7 +76,7 @@ class DbSqlCommand extends CommandBase
             }
 
             // Get a list of schemas (database names) from the service configuration.
-            $schemas = $service ? $relationships->getServiceSchemas($service) : [];
+            $schemas = $service ? $this->relationships->getServiceSchemas($service) : [];
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
@@ -117,7 +115,7 @@ class DbSqlCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = 'psql ' . $relationships->getDbCommandArgs('psql', $database, $schema);
+                $sqlCommand = 'psql ' . $this->relationships->getDbCommandArgs('psql', $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
@@ -127,9 +125,9 @@ class DbSqlCommand extends CommandBase
                 break;
 
             default:
-                $cmdName = $relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
-                $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);
-                $sqlCommand = $cmdInvocation . ' --no-auto-rehash ' . $relationships->getDbCommandArgs($cmdName, $database, $schema);
+                $cmdName = $this->relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
+                $cmdInvocation = $this->relationships->mariaDbCommandWithFallback($cmdName);
+                $sqlCommand = $cmdInvocation . ' --no-auto-rehash ' . $this->relationships->getDbCommandArgs($cmdName, $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';

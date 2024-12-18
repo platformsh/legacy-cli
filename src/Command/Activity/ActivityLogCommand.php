@@ -69,8 +69,6 @@ class ActivityLogCommand extends ActivityCommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(envRequired: !($input->getOption('all') || $input->getArgument('id'))));
 
-        $loader = $this->activityLoader;
-
         if ($selection->hasEnvironment() && !$input->getOption('all')) {
             $apiResource = $selection->getEnvironment();
         } else {
@@ -83,10 +81,10 @@ class ActivityLogCommand extends ActivityCommandBase
                 ->getActivity($id);
             if (!$activity) {
                 /** @var Activity $activity */
-                $activity = $this->api->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api->matchPartialId($id, $this->activityLoader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
             }
         } else {
-            $activities = $loader->loadFromInput($apiResource, $input, 1);
+            $activities = $this->activityLoader->loadFromInput($apiResource, $input, 1);
             $activity = reset($activities);
             if (!$activity) {
                 $this->stdErr->writeln('No activities found');
@@ -95,13 +93,11 @@ class ActivityLogCommand extends ActivityCommandBase
             }
         }
 
-        $formatter = $this->propertyFormatter;
-
         $this->stdErr->writeln([
             sprintf('<info>Activity ID: </info>%s', $activity->id),
             sprintf('<info>Type: </info>%s', $activity->type),
             sprintf('<info>Description: </info>%s', ActivityMonitor::getFormattedDescription($activity)),
-            sprintf('<info>Created: </info>%s', $formatter->format($activity->created_at, 'created_at')),
+            sprintf('<info>Created: </info>%s', $this->propertyFormatter->format($activity->created_at, 'created_at')),
             sprintf('<info>State: </info>%s', ActivityMonitor::formatState($activity->state)),
             '<info>Log: </info>',
         ]);
@@ -113,10 +109,8 @@ class ActivityLogCommand extends ActivityCommandBase
         } elseif ($timestamps) {
             $timestamps = $this->config->getWithDefault('application.date_format', 'c');
         }
-
-        $monitor = $this->activityMonitor;
         if ($refresh > 0 && !$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
-            $monitor->waitAndLog($activity, $refresh, $timestamps, false, $output);
+            $this->activityMonitor->waitAndLog($activity, $refresh, $timestamps, false, $output);
 
             // Once the activity is complete, something has probably changed in
             // the project's environments, so this is a good opportunity to
@@ -124,7 +118,7 @@ class ActivityLogCommand extends ActivityCommandBase
             $this->api->clearEnvironmentsCache($activity->project);
         } else {
             $items = $activity->readLog();
-            $output->write($monitor->formatLog($items, $timestamps));
+            $output->write($this->activityMonitor->formatLog($items, $timestamps));
         }
 
         return 0;
