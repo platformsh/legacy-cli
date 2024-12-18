@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:get', description: 'View the resources of apps and services on an environment', aliases: ['resources', 'res'])]
 class ResourcesGetCommand extends ResourcesCommandBase
 {
+    /** @var array<string, string> */
     protected array $tableHeader = [
         'service' => 'App or service',
         'type' => 'Type',
@@ -30,6 +31,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         'base_memory' => 'Base memory',
         'memory_ratio' => 'Memory ratio',
     ];
+    /** @var string[] */
     protected array $defaultColumns = ['service', 'profile_size', 'cpu', 'memory', 'disk', 'instance_count'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {

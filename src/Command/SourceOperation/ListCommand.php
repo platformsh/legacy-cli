@@ -20,7 +20,9 @@ class ListCommand extends CommandBase
 {
     const COMMAND_MAX_LENGTH = 24;
 
+    /** @var array<string|int, string> */
     private array $tableHeader = ['Operation', 'App', 'Command'];
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();

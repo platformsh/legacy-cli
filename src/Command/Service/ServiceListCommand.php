@@ -16,7 +16,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'service:list', description: 'List services in the project', aliases: ['services'])]
 class ServiceListCommand extends CommandBase
 {
+    /** @var array<string|int, string> */
     private array $tableHeader = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
+
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();
