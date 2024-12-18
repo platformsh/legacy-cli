@@ -32,9 +32,14 @@ readonly class ApplicationFinder
     {
         $applications = [];
 
+        $finder = $this->findAppConfigFiles($directory);
+        if (!$finder) {
+            return [];
+        }
+
         // Find applications defined in individual files, e.g.
         // .platform.app.yaml.
-        foreach ($this->findAppConfigFiles($directory) as $file) {
+        foreach ($finder as $file) {
             $configFile = $file->getRealPath();
             $appConfig = (array) (new YamlParser())->parseFile($configFile);
             $configuredRoot = $this->getExplicitRoot($appConfig, $directory);
@@ -76,7 +81,7 @@ readonly class ApplicationFinder
      *
      * @param string $directory
      *
-     * @return array
+     * @return array<string, LocalApplication>
      */
     private function findGroupedApplications(string $directory): array
     {
@@ -115,7 +120,7 @@ readonly class ApplicationFinder
      *
      * @see https://docs.platform.sh/configuration/app/multi-app.html#explicit-sourceroot
      *
-     * @param array $appConfig
+     * @param array<string, mixed> $appConfig
      * @param string $sourceDir
      *
      * @return string|null
@@ -131,18 +136,14 @@ readonly class ApplicationFinder
 
     /**
      * Finds application config files using Symfony Finder.
-     *
-     * @param string $directory
-     *
-     * @return Finder|array
      */
-    private function findAppConfigFiles(string $directory): array|Finder
+    private function findAppConfigFiles(string $directory): ?Finder
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.
         $finder = new Finder();
         if (!$this->config->has('service.app_config_file')) {
-            return [];
+            return null;
         }
         return $finder->in($directory)
             ->name($this->config->getStr('service.app_config_file'))
@@ -151,7 +152,7 @@ readonly class ApplicationFinder
             ->ignoreVCS(true)
             ->exclude([
                 '.idea',
-                $this->config->get('local.local_dir'),
+                $this->config->getStr('local.local_dir'),
                 'builds',
                 'node_modules',
                 'vendor',

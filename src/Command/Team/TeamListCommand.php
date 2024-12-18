@@ -176,7 +176,7 @@ class TeamListCommand extends TeamCommandBase
             } catch (BadResponseException $e) {
                 throw ApiResponseException::create($e->getRequest(), $e->getResponse(), $e);
             }
-            $data = Utils::jsonDecode((string) $response->getBody(), true);
+            $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
             foreach ($data['items'] as $item) {
                 $info[$item['team_id']] = $item['granted_at'];
             }

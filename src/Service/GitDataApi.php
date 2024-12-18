@@ -169,11 +169,14 @@ class GitDataApi
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
             $object = $this->getObject($filename, $environment, $commitSha);
-            $raw = $object ? $object->getRawContent() : false;
-            $data = ['raw' => $raw];
-            // Skip caching if the file is bigger than 100 KiB.
-            if ($raw === false || strlen($raw) <= 102400) {
-                $this->cache->save($cacheKey, $data);
+            if (!$object instanceof Blob) {
+                $data['raw'] = false;
+            } else {
+                $data['raw'] = $object->getRawContent();
+                // Cache the file if it is smaller than 100 KiB.
+                if (strlen($data['raw']) < 102400) {
+                    $this->cache->save($cacheKey, $data);
+                }
             }
         }
 

@@ -49,7 +49,7 @@ class SshKeyListCommand extends SshKeyCommandBase
             $sshKeyService = $this->sshKey;
             $rows = [];
             foreach ($keys as $key) {
-                $row = ['id' => $key->key_id, 'title' => $key->title, 'fingerprint' => $key->fingerprint];
+                $row = ['id' => (string) $key->key_id, 'title' => $key->title, 'fingerprint' => $key->fingerprint];
                 $identity = $sshKeyService->findIdentityMatchingPublicKeys([$key->fingerprint]);
                 $path = $identity ? $identity . '.pub' : '';
                 if (!$identity && !$table->formatIsMachineReadable()) {

@@ -166,7 +166,7 @@ class ProjectGetCommand extends CommandBase
                 'Commit and push to the <info>%s</info> branch of the <info>%s</info> Git remote'
                 . ', and %s will build your project automatically.',
                 $project->default_branch,
-                $this->config->get('detection.git_remote_name'),
+                $this->config->getStr('detection.git_remote_name'),
                 $this->config->getStr('service.name')
             ));
 
@@ -179,7 +179,7 @@ class ProjectGetCommand extends CommandBase
             '--branch',
             $environment->id,
             '--origin',
-            $this->config->get('detection.git_remote_name'),
+            $this->config->getStr('detection.git_remote_name'),
         ];
         if ($this->stdErr->isDecorated() && $this->io->isTerminal(STDERR)) {
             $cloneArgs[] = '--progress';

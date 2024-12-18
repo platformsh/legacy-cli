@@ -64,7 +64,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         $options = [];
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
+        $itemsPerPage = $this->config->getInt('pagination.count');
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 100) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 100, or 0 to disable pagination.');
@@ -81,7 +81,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         }
 
         $options['query']['page[size]'] = $itemsPerPage;
-        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getBool('pagination.enabled');
         if ($count === '0') {
             $fetchAllPages = true;
             $options['query']['page[size]'] = 100;

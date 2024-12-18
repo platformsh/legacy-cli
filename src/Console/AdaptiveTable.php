@@ -18,7 +18,9 @@ class AdaptiveTable extends Table
 
     // The following 3 properties are copies of the private properties in the
     // parent Table class.
+    /** @var array<array<int|string, string|int|float|TableCell>|TableSeparator> */
     protected array $rowsCopy = [];
+    /** @var array<array<int|string, string|TableCell>> */
     protected array $headersCopy = [];
 
     /**
@@ -41,6 +43,8 @@ class AdaptiveTable extends Table
      * {@inheritdoc}
      *
      * Overrides Table->addRow() so the row content can be accessed.
+     *
+     * @param TableSeparator|array<int|string, string|TableCell> $row
      */
     public function addRow(TableSeparator|array $row): static
     {
@@ -59,11 +63,13 @@ class AdaptiveTable extends Table
      * {@inheritdoc}
      *
      * Overrides Table->setHeaders() so the header content can be accessed.
+     *
+     * @param array<mixed> $headers
      */
     public function setHeaders(array $headers): static
     {
         $headers = array_values($headers);
-        if (!empty($headers) && !is_array($headers[0])) {
+        if ($headers && !is_array($headers[0])) {
             $headers = array($headers);
         }
 
@@ -97,10 +103,10 @@ class AdaptiveTable extends Table
     /**
      * Modify table rows, wrapping their cells' content to the max column width.
      *
-     * @param array $rows
-     * @param array $maxColumnWidths
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, int> $maxColumnWidths
      *
-     * @return array
+     * @return array<array<int|string, string|int|float|TableCell>|TableSeparator>
      */
     protected function adaptCells(array $rows, array $maxColumnWidths): array
     {
@@ -109,9 +115,9 @@ class AdaptiveTable extends Table
                 continue;
             }
             foreach ($row as $column => &$cell) {
-                $contents = $cell instanceof TableCell ? $cell->__toString() : $cell;
+                $contents = (string) $cell;
                 // Replace Windows line endings, because Symfony's buildTableRows() does not respect them.
-                if (str_contains((string) $contents, "\r\n")) {
+                if (str_contains($contents, "\r\n")) {
                     $contents = \str_replace("\r\n", "\n", $contents);
                     if ($cell instanceof AdaptiveTableCell) {
                         $cell = $cell->withValue($contents);
@@ -240,9 +246,9 @@ class AdaptiveTable extends Table
     }
 
     /**
-     * @return array
+     * @return array<int|string, int>
      *   An array of the maximum column widths that fit into the table width,
-     *   keyed by the column number.
+     *   indexed by the column's key in the table's rows (a name or number).
      */
     protected function getMaxColumnWidths(): array
     {
@@ -258,7 +264,7 @@ class AdaptiveTable extends Table
             }
             $columnCount = 0;
             foreach ($row as $column => $cell) {
-                $columnCount += $column instanceof TableCell ? $column->getColspan() - 1 : 1;
+                $columnCount += $cell instanceof TableCell ? $cell->getColspan() - 1 : 1;
 
                 // The column width is the width of the widest cell.
                 $cellWidth = $this->getCellWidth($cell);
@@ -305,7 +311,7 @@ class AdaptiveTable extends Table
                 $maxColumnWidth = $minColumnWidths[$column];
             }
 
-            $maxColumnWidths[$column] = $maxColumnWidth;
+            $maxColumnWidths[$column] = (int) $maxColumnWidth;
             $totalWidth -= $columnWidth;
             $maxContentWidth -= $maxColumnWidth;
         }
@@ -339,11 +345,11 @@ class AdaptiveTable extends Table
      * This is inspired by Table->getCellWidth(), but this also accounts for
      * multi-line cells.
      *
-     * @param string|TableCell $cell
+     * @param string|int|float|TableCell $cell
      *
      * @return float|int
      */
-    private function getCellWidth(string|TableCell $cell): int|float
+    private function getCellWidth(string|int|float|TableCell $cell): int|float
     {
         $lineWidths = [0];
         foreach (explode(PHP_EOL, (string) $cell) as $line) {

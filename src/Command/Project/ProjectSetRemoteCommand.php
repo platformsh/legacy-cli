@@ -47,7 +47,11 @@ class ProjectSetRemoteCommand extends CommandBase
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
         }
-        $root = $this->git->getRoot(getcwd());
+        $cwd = getcwd();
+        if (!$cwd) {
+            throw new \RuntimeException('Failed to find current working directory');
+        }
+        $root = $this->git->getRoot($cwd);
         if ($root === false) {
             $this->stdErr->writeln(
                 'No Git repository found. Use <info>git init</info> to create a repository.'
@@ -60,13 +64,13 @@ class ProjectSetRemoteCommand extends CommandBase
         $localProject = $this->localProject;
 
         if ($unset) {
-            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->get('local.project_config');
+            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->getStr('local.project_config');
             if (!\file_exists($configFilename)) {
                 $configFilename = null;
             }
             $this->git->ensureInstalled();
             $gitRemotes = [];
-            foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
+            foreach ([$this->config->getStr('detection.git_remote_name'), 'origin'] as $remote) {
                 $url = $this->git->getConfig(sprintf('remote.%s.url', $remote));
                 if (\is_string($url) && $localProject->parseGitUrl($url) !== false) {
                     $gitRemotes[$remote] = $url;

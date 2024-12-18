@@ -36,6 +36,7 @@ abstract class IntegrationCommandBase extends CommandBase
 
     private ?Form $form = null;
 
+    /** @var array<string, string> */
     private array $bitbucketAccessTokens = [];
 
     protected ?Selection $selection = null;
@@ -63,12 +64,11 @@ abstract class IntegrationCommandBase extends CommandBase
 
                 return false;
             }
-            $questionHelper = $this->questionHelper;
             $choices = [];
             foreach ($integrations as $integration) {
                 $choices[$integration->id] = sprintf('%s (%s)', $integration->id, $integration->type);
             }
-            $id = $questionHelper->choose($choices, 'Enter a number to choose an integration:');
+            $id = $this->questionHelper->choose($choices, 'Enter a number to choose an integration:');
         }
 
         $integration = $project->getIntegration($id);
@@ -118,10 +118,10 @@ abstract class IntegrationCommandBase extends CommandBase
     /**
      * Performs extra logic on values after the form is complete.
      *
-     * @param array            $values
+     * @param array<string, mixed> $values
      * @param Integration|null $integration
      *
-     * @return array
+     * @return array<string, mixed>
      */
     protected function postProcessValues(array $values, ?Integration $integration = null): array
     {
@@ -170,7 +170,7 @@ abstract class IntegrationCommandBase extends CommandBase
     /**
      * Returns a list of integration capability information on the selected project, if any.
      *
-     * @return array
+     * @return array{enabled: bool, config?: array<string, array{enabled: bool}>}
      */
     private function selectedProjectIntegrations(): array
     {
@@ -658,6 +658,8 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /**
      * Obtains an OAuth2 token for Bitbucket from the given app credentials.
+     *
+     * @param array{key: string, secret: string} $credentials
      */
     protected function getBitbucketAccessToken(array $credentials): string
     {
@@ -673,7 +675,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
             ]);
 
-        $data = Utils::jsonDecode((string) $response->getBody(), true);
+        $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
         if (!isset($data['access_token'])) {
             throw new \RuntimeException('Access token not found in Bitbucket response');
         }
@@ -685,6 +687,8 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /**
      * Validates Bitbucket credentials.
+     *
+     * @param array{key: string, secret: string} $credentials
      */
     protected function validateBitbucketCredentials(array $credentials): true|string
     {
@@ -705,6 +709,8 @@ abstract class IntegrationCommandBase extends CommandBase
 
     /**
      * Lists validation errors found in an integration.
+     *
+     * @param array<int|string, string> $errors
      */
     protected function listValidationErrors(array $errors, OutputInterface $output): void
     {

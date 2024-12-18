@@ -2,12 +2,17 @@
 
 namespace Platformsh\Cli\SiteAlias;
 
+use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
 interface SiteAliasTypeInterface
 {
     /**
      * Creates an alias file.
+     *
+     * @param LocalApplication[] $apps
+     * @param Environment[] $environments
      *
      * @return bool Whether any aliases have been created.
      *

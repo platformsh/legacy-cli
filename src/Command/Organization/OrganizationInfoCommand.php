@@ -57,6 +57,9 @@ class OrganizationInfoCommand extends OrganizationCommandBase
         return $this->setProperty($property, $value, $organization);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function getProperties(Organization $organization): array
     {
         $data = $organization->getProperties();

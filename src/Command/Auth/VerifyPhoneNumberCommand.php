@@ -25,7 +25,7 @@ class VerifyPhoneNumberCommand extends CommandBase
     }
     public function isEnabled(): bool
     {
-        if (!$this->config->getWithDefault('api.user_verification', false)) {
+        if (!$this->config->getBool('api.user_verification')) {
             return false;
         }
         return parent::isEnabled();
@@ -74,7 +74,9 @@ class VerifyPhoneNumberCommand extends CommandBase
                 'phone_number' => $number,
             ],
         ]);
-        $sid = Utils::jsonDecode((string) $response->getBody(), true)['sid'];
+        /** @var array{sid: string} $data */
+        $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
+        $sid = $data['sid'];
 
         if ($channel === 'call') {
             $this->stdErr->writeln('Calling the number <info>' . $number . '</info> with a verification code.');
@@ -86,17 +88,17 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->questionHelper->askInput('Please enter the verification code', null, [], function ($code) use ($httpClient, $sid , $myUser): void {
+        $this->questionHelper->askInput('Please enter the verification code', null, [], function ($code) use ($httpClient, $sid, $myUser): void {
             if (!is_numeric($code)) {
                 throw new InvalidArgumentException('Invalid verification code');
             }
             try {
-                $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber/' . rawurlencode((string) $sid), [
+                $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber/' . rawurlencode($sid), [
                     'json' => ['code' => $code],
                 ]);
             } catch (BadResponseException $e) {
                 if (($response = $e->getResponse()) && $response->getStatusCode() === 400) {
-                    $detail = Utils::jsonDecode((string) $response->getBody(), true);
+                    $detail = (array) Utils::jsonDecode((string) $response->getBody(), true);
                     throw new InvalidArgumentException(isset($detail['error']) ? ucfirst((string) $detail['error']) : 'Invalid verification code');
                 }
                 throw $e;
@@ -105,7 +107,7 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->io->debug('Refreshing phone verification status');
         $response = $httpClient->post( '/me/verification?force_refresh=1');
-        $needsVerify = Utils::jsonDecode((string) $response->getBody(), true);
+        $needsVerify = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $this->stdErr->writeln('');
 
         if ($needsVerify['type'] === 'phone') {

@@ -48,7 +48,7 @@ class MountListCommand extends CommandBase
         if (($applicationEnv = getenv($this->config->getStr('service.env_prefix') . 'APPLICATION'))
             && !LocalHost::conflictsWithCommandLineOptions($input, $this->config->getStr('service.env_prefix'))) {
             $this->io->debug('Selected host: localhost');
-            $config = json_decode(base64_decode($applicationEnv), true) ?: [];
+            $config = json_decode((string) base64_decode($applicationEnv), true) ?: [];
             $mounts = $this->mount->mountsFromConfig(new AppConfig($config));
             $appName = $config['name'];
             $appType = str_contains((string) $appName, '--') ? 'worker' : 'app';

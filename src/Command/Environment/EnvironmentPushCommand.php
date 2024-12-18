@@ -31,6 +31,7 @@ class EnvironmentPushCommand extends CommandBase
 {
     const PUSH_FAILURE_EXIT_CODE = 87;
 
+    /** @var string[] */
     private array $validResourcesInitOptions = ['parent', 'default', 'minimum', 'manual'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor,
@@ -213,7 +214,7 @@ class EnvironmentPushCommand extends CommandBase
 
         $localProject = $this->localProject;
 
-        $remoteName = $this->config->get('detection.git_remote_name');
+        $remoteName = $this->config->getStr('detection.git_remote_name');
 
         // Map the current directory to the project.
         if ($input->getOption('set-upstream') && (!$currentProject || $currentProject->id !== $project->id)) {
@@ -315,7 +316,7 @@ class EnvironmentPushCommand extends CommandBase
             }
 
             // Check the push log for other possible deployment error messages.
-            $messages = $this->config->getWithDefault('detection.push_deploy_error_messages', []);
+            $messages = (array) $this->config->get('detection.push_deploy_error_messages');
             foreach ($messages as $message) {
                 if (str_contains($log, (string) $message)) {
                     $this->stdErr->writeln('');

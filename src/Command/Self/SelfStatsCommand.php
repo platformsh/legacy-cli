@@ -53,7 +53,7 @@ class SelfStatsCommand extends CommandBase
                     'per_page' => (int) $input->getOption('count'),
                 ],
             ]);
-        $releases = Utils::jsonDecode((string) $response->getBody(), true);
+        $releases = (array) Utils::jsonDecode((string) $response->getBody(), true);
 
         if (empty($releases)) {
             $this->stdErr->writeln('No releases found.');

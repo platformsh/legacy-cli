@@ -18,7 +18,7 @@ class LocalBuild
     // archives. Increment this number as breaking changes are released.
     const BUILD_VERSION = 3;
 
-    /** @var array */
+    /** @var array<string, mixed> */
     protected array $settings = [];
 
     protected OutputInterface $output;
@@ -69,7 +69,7 @@ class LocalBuild
     /**
      * Build a project from any source directory, targeting any destination.
      *
-     * @param array $settings An array of build settings.
+     * @param array<string, mixed> $settings An array of build settings.
      *     Possible settings:
      *     - clone (bool, default false) Clone the repository to the build
      *       directory before building, where possible.
@@ -96,11 +96,10 @@ class LocalBuild
      * @param string $sourceDir The absolute path to the source directory.
      * @param ?string $destination Where the web root(s) will be linked
      *                             (absolute path).
-     * @param array $apps An array of application names to build.
+     * @param string[] $apps An array of application names to build.
      *
      * @return bool
-     *@throws \Exception on failure
-     *
+     * @throws \Exception on failure
      */
     public function build(array $settings, string $sourceDir, ?string $destination = null, array $apps = []): bool
     {
@@ -141,6 +140,8 @@ class LocalBuild
      *
      * This should change if any of the application files or build settings
      * change.
+     *
+     * @param array<string, mixed> $settings
      */
     public function getTreeId(string $appRoot, array $settings): false|string
     {
@@ -205,7 +206,7 @@ class LocalBuild
         $verbose = $this->output->isVerbose();
 
         $sourceDir = $app->getSourceDir();
-        $destination = $destination ?: $sourceDir . '/' . $this->config->getWithDefault('local.web_root', '_www');
+        $destination = $destination ?: $sourceDir . '/' . $this->config->getStr('local.web_root');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
         $appId = $app->getId();
@@ -215,7 +216,7 @@ class LocalBuild
         // Find the right build directory.
         $buildName = $app->isSingle() ? 'default' : str_replace('/', '-', $appId);
 
-        $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
+        $tmpBuildDir = $sourceDir . '/' . $this->config->getStr('local.build_dir') . '/' . $buildName . '-tmp';
 
         if (file_exists($tmpBuildDir)) {
             if (!$this->fsHelper->remove($tmpBuildDir)) {
@@ -258,7 +259,7 @@ class LocalBuild
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $sourceDir . '/' . $this->config->get('local.archive_dir') . '/' . $treeId . '.tar.gz';
+                $archive = $sourceDir . '/' . $this->config->getStr('local.archive_dir') . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -277,7 +278,7 @@ class LocalBuild
 
             // Install dependencies.
             if (isset($appConfig['dependencies'])) {
-                $depsDir = $sourceDir . '/' . $this->config->get('local.dependencies_dir');
+                $depsDir = $sourceDir . '/' . $this->config->getStr('local.dependencies_dir');
                 if (!empty($this->settings['no-deps'])) {
                     $this->output->writeln('Skipping build dependencies');
                 } else {
@@ -360,6 +361,8 @@ class LocalBuild
     /**
      * Runs post-build hooks.
      *
+     * @param array<string, mixed> $appConfig
+     *
      * @return bool|null
      *   False if the build hooks fail, true if they succeed, null if not
      *   applicable.
@@ -380,6 +383,8 @@ class LocalBuild
 
     /**
      * Runs deploy and post_deploy hooks.
+     *
+     * @param array<string, mixed> $appConfig
      *
      * @return bool|null
      *   False if the deploy hooks fail, true if they succeed, null if not
@@ -409,6 +414,8 @@ class LocalBuild
 
     /**
      * Runs a user-defined hook.
+     *
+     * @param string|string[] $hook
      */
     private function runHook(string|array $hook, string $dir): bool
     {
@@ -445,7 +452,7 @@ class LocalBuild
         }
 
         return $this->cleanDirectory(
-            $projectRoot . '/' . $this->config->get('local.build_dir'),
+            $projectRoot . '/' . $this->config->getStr('local.build_dir'),
             $maxAge,
             $keepMax,
             $exclude,
@@ -459,11 +466,11 @@ class LocalBuild
      * @throws \Exception If it cannot be determined whether or not a symlink
      *                    points to a genuine active build.
      *
-     * @return array The absolute paths to any active builds in the project.
+     * @return string[] The absolute paths to any active builds in the project.
      */
     protected function getActiveBuilds(string $projectRoot): array
     {
-        $www = $projectRoot . '/' . $this->config->getWithDefault('local.web_root', '_www');
+        $www = $projectRoot . '/' . $this->config->getStr('local.web_root');
         if (!file_exists($www)) {
             return [];
         }
@@ -478,7 +485,7 @@ class LocalBuild
             }
         }
         $activeBuilds = [];
-        $buildsDir = $projectRoot . '/' . $this->config->get('local.build_dir');
+        $buildsDir = $projectRoot . '/' . $this->config->getStr('local.build_dir');
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
@@ -519,7 +526,7 @@ class LocalBuild
     public function cleanArchives(string $projectRoot, ?int $maxAge = null, int $keepMax = 10, bool $quiet = true): array
     {
         return $this->cleanDirectory(
-            $projectRoot . '/' . $this->config->get('local.archive_dir'),
+            $projectRoot . '/' . $this->config->getStr('local.archive_dir'),
             $maxAge,
             $keepMax,
             [],
@@ -533,7 +540,7 @@ class LocalBuild
      * @param string   $directory
      * @param int|null $maxAge
      * @param int      $keepMax
-     * @param array    $exclude
+     * @param string[] $exclude
      * @param bool     $quiet
      *
      * @return int[]

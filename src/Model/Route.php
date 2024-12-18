@@ -17,6 +17,9 @@ final class Route
 {
     use ReadOnlyStructureTrait;
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public static function fromData(array $data): self {
         return new self($data + ['id' => null, 'primary' => false]);
     }
@@ -57,7 +60,7 @@ final class Route
     /**
      * Translates routes found in PLATFORM_ROUTES to Route objects.
      *
-     * @param array $routes
+     * @param array<string, mixed> $routes
      *
      * @return Route[]
      */

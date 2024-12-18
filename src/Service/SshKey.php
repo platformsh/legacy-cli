@@ -90,7 +90,9 @@ readonly class SshKey {
     }
 
     /**
-     * Lists existing public keys.
+     * Lists existing public key files.
+     *
+     * @return string[]
      */
     private function listPublicKeys(bool $reset = false): array
     {
@@ -133,7 +135,7 @@ readonly class SshKey {
     public function findIdentityMatchingPublicKeys(array $fingerprints): ?string
     {
         foreach ($this->listPublicKeys() as $publicKey) {
-            $privateKey = \substr((string) $publicKey, 0, \strlen((string) $publicKey) - 4);
+            $privateKey = \substr($publicKey, 0, \strlen($publicKey) - 4);
             if (!\file_exists($privateKey)) {
                 continue;
             }

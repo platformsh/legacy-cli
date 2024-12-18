@@ -45,7 +45,7 @@ class DbSizeCommand extends CommandBase
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
         $help = self::ESTIMATE_WARNING;
-        if ($this->config->getWithDefault('api.metrics', false)) {
+        if ($this->config->getBool('api.metrics')) {
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
@@ -95,8 +95,8 @@ class DbSizeCommand extends CommandBase
         $showInBytes = $input->getOption('bytes') || $machineReadable;
 
         $values = [
-            'max' => $showInBytes ? $allocatedDisk : Helper::formatMemory($allocatedDisk),
-            'used' => $showInBytes ? $estimatedUsage : Helper::formatMemory((int) $estimatedUsage),
+            'max' => $showInBytes ? (string) $allocatedDisk : Helper::formatMemory($allocatedDisk),
+            'used' => $showInBytes ? (string) $estimatedUsage : Helper::formatMemory((int) $estimatedUsage),
             'percent_used' => $this->formatPercentage($percentageUsed, $machineReadable),
         ];
 
@@ -117,11 +117,11 @@ class DbSizeCommand extends CommandBase
     /**
      * Returns a list of cleanup queries for a list of tables.
      *
-     * @param array $rows
+     * @param string[] $rows
      *
      * @see DbSizeCommand::checkInnoDbTablesInNeedOfOptimizing()
      *
-     * @return array
+     * @return string[]
      */
     private function getCleanupQueries(array $rows): array {
         return array_filter(
@@ -138,6 +138,8 @@ class DbSizeCommand extends CommandBase
 
     /**
      * Displays a list of InnoDB tables that can be usefully cleaned up.
+     *
+     * @param array<string, mixed> $database
      */
     private function checkInnoDbTablesInNeedOfOptimizing(HostInterface $host, array $database, InputInterface $input): void {
         $tablesNeedingCleanup = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlTablesInNeedOfOptimizing());
@@ -177,7 +179,7 @@ class DbSizeCommand extends CommandBase
      * Shows a warning about schemas not accessible through this relationship.
      *
      * @param Service $service
-     * @param array                                       $database
+     * @param array<string, mixed> $database
      *
      * @return void
      */
@@ -217,7 +219,7 @@ class DbSizeCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        if ($this->config->getWithDefault('api.metrics', false) && $this->config->isCommandEnabled('metrics:disk')) {
+        if ($this->config->getBool('api.metrics') && $this->config->isCommandEnabled('metrics:disk')) {
             $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
             $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
             $this->stdErr->writeln(\sprintf('To see more accurate disk usage, run: <comment>%s disk</comment>', $this->config->getStr('application.executable')));
@@ -245,7 +247,7 @@ class DbSizeCommand extends CommandBase
     /**
      * Returns the psql CLI client command.
      *
-     * @param array $database
+     * @param array<string, mixed> $database
      *
      * @return string
      */
@@ -258,6 +260,10 @@ class DbSizeCommand extends CommandBase
         );
     }
 
+    /**
+     * @param array<string, mixed> $database
+     * @return string
+     */
     private function getMongoDbCommand(array $database): string {
         $dbUrl = $this->relationships->getDbCommandArgs('mongo', $database);
 
@@ -272,7 +278,7 @@ class DbSizeCommand extends CommandBase
     /**
      * Returns the mysql CLI client command.
      *
-     * @param array  $database
+     * @param array<string, mixed> $database
      *
      * @return string
      */
@@ -341,7 +347,7 @@ class DbSizeCommand extends CommandBase
      * Estimates usage of a database.
      *
      * @param HostInterface $host
-     * @param array         $database
+     * @param array<string, mixed> $database
      *
      * @return float Estimated usage in bytes.
      */
@@ -357,7 +363,7 @@ class DbSizeCommand extends CommandBase
      * Estimates usage of a PostgreSQL database.
      *
      * @param HostInterface $host
-     * @param array         $database
+     * @param array<string, mixed> $database
      *
      * @return float Estimated usage in bytes
      */
@@ -365,6 +371,11 @@ class DbSizeCommand extends CommandBase
         return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
     }
 
+    /**
+     * @param HostInterface $host
+     * @param array<string, mixed> $database
+     * @return float
+     */
     private function getMongoDbUsage(HostInterface $host, array $database): float {
         return (float) $host->runCommand($this->getMongoDbCommand($database));
     }
@@ -373,7 +384,7 @@ class DbSizeCommand extends CommandBase
      * Estimates usage of a MySQL database.
      *
      * @param HostInterface $host
-     * @param array         $database
+     * @param array<string, mixed> $database
      *
      * @return float Estimated usage in bytes
      */

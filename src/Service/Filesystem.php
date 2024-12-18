@@ -122,6 +122,8 @@ class Filesystem
 
     /**
      * Copies all files and folders between directories.
+     *
+     * @param string[] $skip Paths to skip.
      */
     public function copyAll(string $source, string $destination, array $skip = ['.git', '.DS_Store'], bool $override = false): void
     {
@@ -141,6 +143,9 @@ class Filesystem
             }
 
             $sourceDirectory = opendir($source);
+            if (!$sourceDirectory) {
+                throw new \RuntimeException("Failed to open directory: " . $source);
+            }
             while ($file = readdir($sourceDirectory)) {
                 // Skip symlinks, '.' and '..', and files in $skip.
                 if ($file === '.'
@@ -211,7 +216,7 @@ class Filesystem
      */
     public function formatPathForDisplay(string $path): string
     {
-        $relative = $this->makePathRelative($path, getcwd());
+        $relative = $this->makePathRelative($path, (string) getcwd());
         if (!str_contains($relative, '../..') && strlen($relative) < strlen($path)) {
             return $relative;
         }
@@ -263,19 +268,25 @@ class Filesystem
         }
 
         // The symlink won't work if $source is a relative path.
-        $source = realpath($source);
+        $absPath = realpath($source);
+        if (!$absPath) {
+            throw new \RuntimeException('Failed to resolve path: ' . $source);
+        }
 
         // Files to always skip.
         $skip = ['.git', '.DS_Store'];
         $skip = array_merge($skip, $exclude);
 
-        $sourceDirectory = opendir($source);
+        $sourceDirectory = opendir($absPath);
+        if (!$sourceDirectory) {
+            throw new \RuntimeException('Failed to open directory: ' . $absPath);
+        }
         while ($file = readdir($sourceDirectory)) {
             // Skip symlinks, '.' and '..', and files in $skip.
-            if ($file === '.' || $file === '..' || $this->fileInList($file, $skip) || is_link($source . '/' . $file)) {
+            if ($file === '.' || $file === '..' || $this->fileInList($file, $skip) || is_link($absPath . '/' . $file)) {
                 continue;
             }
-            $sourceFile = $source . '/' . $file;
+            $sourceFile = $absPath . '/' . $file;
             $linkFile = $destination . '/' . $file;
 
             if ($recursive && !is_link($linkFile) && is_dir($linkFile) && is_dir($sourceFile)) {

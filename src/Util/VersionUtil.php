@@ -6,6 +6,8 @@ class VersionUtil
 {
     /**
      * Finds the next patch, minor and major versions after a given version.
+     *
+     * @return string[]
      */
     public function nextVersions(string $version): array
     {

@@ -28,17 +28,34 @@ class WelcomeCommand extends CommandBase
         parent::__construct();
     }
 
+    /**
+     * @return null|array{projectId: string, environmentId: string, appName: string}
+     */
+    private function containerEnvironment(): ?array
+    {
+        $envPrefix = $this->config->getStr('service.env_prefix');
+        $projectId = getenv($envPrefix . 'PROJECT');
+        $environmentId = getenv($envPrefix . 'BRANCH');
+        if ($projectId && $environmentId) {
+            return [
+                'projectId' => $projectId,
+                'environmentId' => $environmentId,
+                'appName' => getenv($envPrefix . 'APPLICATION_NAME') ?: '',
+            ];
+        }
+        return null;
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->stdErr->writeln("Welcome to " . $this->config->getStr('service.name') . "!\n");
 
-        $envPrefix = $this->config->getStr('service.env_prefix');
-        $onContainer = getenv($envPrefix . 'PROJECT') && getenv($envPrefix . 'BRANCH');
+        $containerEnv = $this->containerEnvironment();
 
         if ($project = $this->selector->getCurrentProject()) {
             $this->welcomeForLocalProjectDir($project);
-        } elseif ($onContainer) {
-            $this->welcomeOnContainer();
+        } elseif ($containerEnv) {
+            $this->welcomeOnContainer($containerEnv);
         } else {
             $this->defaultWelcome();
         }
@@ -47,7 +64,7 @@ class WelcomeCommand extends CommandBase
 
         $this->api->showSessionInfo();
 
-        if ($this->api->isLoggedIn() && !$this->config->getWithDefault('ssh.auto_load_cert', false)) {
+        if ($this->api->isLoggedIn() && !$this->config->getBool('ssh.auto_load_cert')) {
             $sshKey = $this->sshKey;
             if (!$sshKey->hasLocalKey()) {
                 $this->stdErr->writeln('');
@@ -77,7 +94,7 @@ class WelcomeCommand extends CommandBase
     private function welcomeForLocalProjectDir(Project $project): void
     {
         $this->stdErr->writeln("Project: " . $this->api->getProjectLabel($project));
-        if ($this->config->get('api.organizations')) {
+        if ($this->config->getBool('api.organizations')) {
             $org = $this->api->getOrganizationById($project->getProperty('organization'));
             if ($org) {
                 $this->stdErr->writeln("Organization: " . $this->api->getOrganizationLabel($org));
@@ -100,22 +117,20 @@ class WelcomeCommand extends CommandBase
 
     /**
      * Display welcome when the user is in a cloud container environment.
+     *
+     * @param array{projectId: string, environmentId: string, appName: string} $containerEnvironment
      */
-    private function welcomeOnContainer(): void
+    private function welcomeOnContainer(array $containerEnvironment): void
     {
         $envPrefix = $this->config->getStr('service.env_prefix');
         $executable = $this->config->getStr('application.executable');
 
-        $projectId = getenv($envPrefix . 'PROJECT');
-        $environmentId = getenv($envPrefix . 'BRANCH');
-        $appName = getenv($envPrefix . 'APPLICATION_NAME');
-
         $project = false;
         $environment = false;
         if ($this->api->isLoggedIn()) {
-            $project = $this->api->getProject($projectId);
-            if ($project && $environmentId) {
-                $environment = $this->api->getEnvironment($environmentId, $project);
+            $project = $this->api->getProject($containerEnvironment['projectId']);
+            if ($project) {
+                $environment = $this->api->getEnvironment($containerEnvironment['environmentId'], $project);
             }
         }
 
@@ -124,8 +139,8 @@ class WelcomeCommand extends CommandBase
             if ($environment) {
                 $this->stdErr->writeln('Environment: ' . $this->api->getEnvironmentLabel($environment));
             }
-            if ($appName) {
-                $this->stdErr->writeln('Application name: <info>' . $appName . '</info>');
+            if ($containerEnvironment['appName']) {
+                $this->stdErr->writeln('Application name: <info>' . $containerEnvironment['appName'] . '</info>');
             }
 
             if ($project->isSuspended()) {
@@ -133,12 +148,12 @@ class WelcomeCommand extends CommandBase
                 return;
             }
         } else {
-            $this->stdErr->writeln('Project ID: <info>' . $projectId . '</info>');
-            if ($environmentId) {
-                $this->stdErr->writeln('Environment ID: <info>' . $environmentId . '</info>');
+            $this->stdErr->writeln('Project ID: <info>' . $containerEnvironment['projectId'] . '</info>');
+            if ($containerEnvironment['environmentId']) {
+                $this->stdErr->writeln('Environment ID: <info>' . $containerEnvironment['environmentId'] . '</info>');
             }
-            if ($appName) {
-                $this->stdErr->writeln('Application name: <info>' . $appName . '</info>');
+            if ($containerEnvironment['appName']) {
+                $this->stdErr->writeln('Application name: <info>' . $containerEnvironment['appName'] . '</info>');
             }
         }
 

@@ -13,7 +13,7 @@ class Variable
      * @param string $variable
      *   The variable definition in the form type:name=value.
      *
-     * @return array
+     * @return string[]
      *   An array containing: [ type, name, value ].
      */
     public function parse(string $variable): array

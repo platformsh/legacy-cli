@@ -79,7 +79,7 @@ class IntegrationActivityLogCommand extends IntegrationCommandBase
         if ($timestamps && $input->hasOption('date-fmt') && $input->getOption('date-fmt') !== null) {
             $timestamps = $input->getOption('date-fmt');
         } elseif ($timestamps) {
-            $timestamps = $this->config->getWithDefault('application.date_format', 'c');
+            $timestamps = $this->config->getStr('application.date_format');
         }
         if (!$this->runningViaMulti && !$activity->isComplete() && $activity->state !== Activity::STATE_CANCELLED) {
             $this->activityMonitor->waitAndLog($activity, 3, $timestamps, false, $output);

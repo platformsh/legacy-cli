@@ -71,7 +71,7 @@ class Drupal extends BuildFlavorBase
                ->depth($depth)
                ->name('composer.json');
         foreach ($finder as $file) {
-            $composerJson = json_decode(file_get_contents($file), true);
+            $composerJson = json_decode($file->getContents(), true);
             if (isset($composerJson['require']['drupal/core'])
                 || isset($composerJson['require']['drupal/core-recommended'])
                 || isset($composerJson['require']['drupal/drupal'])
@@ -86,12 +86,12 @@ class Drupal extends BuildFlavorBase
 
     public function build(): void
     {
-        $profiles = glob($this->appRoot . '/*.profile');
+        $profiles = glob($this->appRoot . '/*.profile') ?: [];
         $projectMake = $this->findDrushMakeFile();
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         } elseif (count($profiles) == 1) {
-            $profileName = strtok(basename($profiles[0]), '.');
+            [$profileName,] = explode('.', basename($profiles[0]), 2);
             $this->buildInProfileMode($profileName);
         } elseif ($projectMake) {
             $this->buildInProjectMode($projectMake);
@@ -131,7 +131,7 @@ class Drupal extends BuildFlavorBase
     /**
      * Set up options to pass to the drush commands.
      *
-     * @return array
+     * @return string[]
      */
     protected function getDrushFlags(): array
     {
@@ -420,7 +420,7 @@ class Drupal extends BuildFlavorBase
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {
-                list($skip[],) = explode('/', (string) $mount, 2);
+                list($skip[],) = explode('/', $mount, 2);
             }
 
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);

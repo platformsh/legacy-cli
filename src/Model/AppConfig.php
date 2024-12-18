@@ -10,12 +10,13 @@ use Platformsh\Client\Model\Deployment\WebApp;
  */
 final class AppConfig
 {
+    /** @var array<string, mixed> */
     private array $normalizedConfig;
 
     /**
      * AppConfig constructor.
      *
-     * @param array $config
+     * @param array<string, mixed> $config
      */
     public function __construct(private readonly array $config)
     {
@@ -35,7 +36,7 @@ final class AppConfig
     /**
      * Get normalized configuration.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getNormalized(): array
     {
@@ -73,9 +74,9 @@ final class AppConfig
     /**
      * Normalize the application config.
      *
-     * @param array $config
+     * @param array<string, mixed> $config
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function normalizeConfig(array $config): array
     {
@@ -113,7 +114,7 @@ final class AppConfig
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
     private function getOldWebDefaults(): array
     {

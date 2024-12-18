@@ -82,12 +82,12 @@ class ListCommand extends CommandBase
         return 0;
     }
 
-    private function truncateCommand($cmd): string
+    private function truncateCommand(string $cmd): string
     {
-        $lines = \preg_split('/\r?\n/', (string) $cmd);
+        $lines = (array) \preg_split('/\r?\n/', $cmd);
         if (count($lines) > self::COMMAND_MAX_LENGTH) {
             return trim(implode("\n", array_slice($lines, 0, self::COMMAND_MAX_LENGTH))) . "\n# ...";
         }
-        return trim((string) $cmd);
+        return trim($cmd);
     }
 }

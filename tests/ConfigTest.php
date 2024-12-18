@@ -22,7 +22,7 @@ class ConfigTest extends TestCase
         $config = new Config([], $this->configFile);
         $this->assertTrue($config->has('application.name'));
         $this->assertFalse($config->has('nonexistent'));
-        $this->assertEquals('Mock CLI', $config->get('application.name'));
+        $this->assertEquals('Mock CLI', $config->getStr('application.name'));
         $this->assertEquals(123, $config->getWithDefault('nonexistent', 123));
     }
 
@@ -48,7 +48,7 @@ class ConfigTest extends TestCase
         putenv('MOCK_CLI_DISABLE_CACHE=0');
         $config = new Config([
             'MOCK_CLI_APPLICATION_NAME' => 'Overridden application name',
-            'MOCK_CLI_DEBUG' => 1,
+            'MOCK_CLI_DEBUG' => '1',
         ], $this->configFile);
         $this->assertFalse((bool) $config->get('api.disable_cache'));
         $this->assertTrue((bool) $config->get('api.debug'));

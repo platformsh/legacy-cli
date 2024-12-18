@@ -30,7 +30,7 @@ class SshCertLoadCommand extends CommandBase
             ->addOption('new', null, InputOption::VALUE_NONE, 'Force the certificate to be refreshed')
             ->addOption('new-key', null, InputOption::VALUE_NONE, 'Force a new key pair to be generated');
         $help = 'This command checks if a valid SSH certificate is present, and generates a new one if necessary.';
-        if ($this->config->getWithDefault('ssh.auto_load_cert', false)) {
+        if ($this->config->getBool('ssh.auto_load_cert')) {
             $envPrefix = $this->config->getStr('application.env_prefix');
             $help .= "\n\nCertificates allow you to make SSH connections without having previously uploaded a public key. They are more secure than keys and they allow for other features."
                 . "\n\nNormally the certificate is loaded automatically during login, or when making an SSH connection. So this command is seldom needed."

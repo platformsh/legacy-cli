@@ -21,9 +21,9 @@ class DrupalTest extends BuildFlavorTestBase
         $sourceDir = 'tests/data/apps/drupal/project';
         $projectRoot = $this->createDummyProject($sourceDir);
 
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
-        $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
-        $buildDir = $projectRoot . '/' . self::$config->get('local.build_dir') . '/default';
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
+        $shared = $projectRoot . '/' . self::$config->getStr('local.shared_dir');
+        $buildDir = $projectRoot . '/' . self::$config->getStr('local.build_dir') . '/default';
 
         // Insert a dummy file into 'shared'.
         if (!file_exists($shared)) {
@@ -73,7 +73,7 @@ class DrupalTest extends BuildFlavorTestBase
     public function testBuildDrupalInProfileMode(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/profile');
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/index.php');
         $this->assertFileExists($webRoot . '/sites/default/settings.php');
         $this->assertFileExists($webRoot . '/profiles/test/test.profile');
@@ -107,7 +107,7 @@ class DrupalTest extends BuildFlavorTestBase
 
         // Build. This should create an archive.
         $this->builder->build($this->buildSettings, $projectRoot);
-        $archive = $projectRoot . '/' . self::$config->get('local.archive_dir')  .'/' . $treeId . '.tar.gz';
+        $archive = $projectRoot . '/' . self::$config->getStr('local.archive_dir')  .'/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.

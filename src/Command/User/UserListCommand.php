@@ -117,9 +117,9 @@ class UserListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln("To view a user's role(s), run: <info>$executable user:get</info>");
             $this->stdErr->writeln("To change a user's role(s), run: <info>$executable user:update</info>");
-            if ($this->accessApi->centralizedPermissionsEnabled() && $this->config->get('api.teams')) {
+            if ($this->accessApi->centralizedPermissionsEnabled() && $this->config->getBool('api.teams')) {
                 $organization = $this->api->getOrganizationById($project->getProperty('organization'));
-                if (in_array('teams', $organization->capabilities) && $organization->hasLink('members')) {
+                if ($organization && in_array('teams', $organization->capabilities) && $organization->hasLink('members')) {
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf("To list teams with access to the project, run: <info>$executable teams -p %s</info>", $project->id));
                 }

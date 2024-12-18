@@ -71,12 +71,11 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-            $questionHelper = $this->questionHelper;
             $options = [];
             foreach ($servicesByProfile as $profile => $serviceNames) {
                 $options[$profile] = sprintf('%s (for %s: %s)', $profile, count($serviceNames) === 1 ? 'service' : 'services', implode(', ', $serviceNames));
             }
-            $profile = $questionHelper->choose($options, 'Enter a number to choose a container profile:');
+            $profile = $this->questionHelper->choose($options, 'Enter a number to choose a container profile:');
         } elseif (count($services) === 1) {
             $service = reset($services);
             $profile = $service->container_profile;

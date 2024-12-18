@@ -88,8 +88,7 @@ class BrowserLoginCommand extends CommandBase
                     $account['email']
                 ));
 
-                $questionHelper = $this->questionHelper;
-                if (!$questionHelper->confirm('Log in anyway?', false)) {
+                if (!$this->questionHelper->confirm('Log in anyway?', false)) {
                     return 1;
                 }
                 $force = true;
@@ -191,7 +190,7 @@ class BrowserLoginCommand extends CommandBase
         $this->stdErr->writeln('');
 
         // Wait for the file to be filled with an OAuth2 authorization code.
-        /** @var array|null $response */
+        /** @var null|array{code: string, redirect_uri: string}|array{error: string, error_description: string, error_hint: string} $response */
         $response = null;
         $start = time();
         while ($process->isRunning()) {
@@ -262,7 +261,7 @@ class BrowserLoginCommand extends CommandBase
 
         if (empty($token['refresh_token'])) {
             $this->stdErr->writeln('');
-            $clientId = $this->config->get('api.oauth2_client_id');
+            $clientId = $this->config->getStr('api.oauth2_client_id');
             $this->stdErr->writeln([
                 '<options=bold;fg=yellow>Warning:</fg>',
                 'No refresh token is available. This will cause frequent login errors.',
@@ -275,7 +274,7 @@ class BrowserLoginCommand extends CommandBase
     }
 
     /**
-     * @param array            $tokenData
+     * @param array<string, mixed> $tokenData
      * @param SessionInterface $session
      */
     private function saveAccessToken(array $tokenData, SessionInterface $session): void
@@ -296,21 +295,23 @@ class BrowserLoginCommand extends CommandBase
         if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
             throw new \RuntimeException('Failed to create temporary directory: ' . $dir);
         }
-        if (!file_put_contents($dir . '/index.php', file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {
+        if (!file_put_contents($dir . '/index.php', (string) file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {
             throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/index.php');
         }
-        if (!file_put_contents($dir . '/config.json', json_encode($this->config->getWithDefault('browser_login', []), JSON_UNESCAPED_SLASHES))) {
+        if (!file_put_contents($dir . '/config.json', (string) json_encode((array) $this->config->get('browser_login'), JSON_UNESCAPED_SLASHES))) {
             throw new \RuntimeException('Failed to write temporary file: ' . $dir . '/config.json');
         }
     }
 
     /**
      * Exchanges the authorization code for an access token.
+     *
+     * @return array<string, mixed>
      */
     private function getAccessToken(string $authCode, string $codeVerifier, string $redirectUri): array
     {
-        $client = new Client(['verify' => !$this->config->getWithDefault('api.skip_ssl', false)]);
-        $request = new Request('POST', $this->config->get('api.oauth2_token_url'), body: http_build_query([
+        $client = new Client(['verify' => !$this->config->getBool('api.skip_ssl')]);
+        $request = new Request('POST', $this->config->getStr('api.oauth2_token_url'), body: http_build_query([
             'grant_type' => 'authorization_code',
             'code' => $authCode,
             'redirect_uri' => $redirectUri,
@@ -325,7 +326,7 @@ class BrowserLoginCommand extends CommandBase
                 'auth' => [$this->config->get('api.oauth2_client_id'), ''],
             ]);
 
-            return Utils::jsonDecode((string) $response->getBody(), true);
+            return (array) Utils::jsonDecode((string) $response->getBody(), true);
         } catch (BadResponseException $e) {
             throw ApiResponseException::create($request, $e->getResponse(), $e);
         }

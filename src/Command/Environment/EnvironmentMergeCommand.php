@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:merge', description: 'Merge an environment', aliases: ['merge'])]
 class EnvironmentMergeCommand extends CommandBase
 {
+    /** @var string[] */
     private array $validResourcesInitOptions = ['child', 'default', 'minimum', 'manual'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)

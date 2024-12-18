@@ -15,9 +15,9 @@ class Winky extends Animation
         $dir = CLI_ROOT . '/resources/winky';
 
         $sources = [];
-        $sources['normal'] = file_get_contents($dir . '/normal');
-        $sources['wink'] = file_get_contents($dir . '/wink');
-        $sources['twitch'] = file_get_contents($dir . '/twitch');
+        $sources['normal'] = (string) file_get_contents($dir . '/normal');
+        $sources['wink'] = (string) file_get_contents($dir . '/wink');
+        $sources['twitch'] = (string) file_get_contents($dir . '/twitch');
 
         list($firstLine,) = explode("\n", trim($sources['normal']), 2);
         $width = mb_strlen($firstLine);

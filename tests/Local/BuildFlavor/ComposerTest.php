@@ -11,7 +11,7 @@ class ComposerTest extends BuildFlavorTestBase
     public function testBuildComposer(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer');
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/vendor/psr/log/README.md');
     }
 
@@ -31,9 +31,9 @@ class ComposerTest extends BuildFlavorTestBase
             'copy' => true,
             'abslinks' => true,
         ]);
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
-        $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
-        $buildDir = $projectRoot . '/' . self::$config->get('local.build_dir') . '/default';
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
+        $shared = $projectRoot . '/' . self::$config->getStr('local.shared_dir');
+        $buildDir = $projectRoot . '/' . self::$config->getStr('local.build_dir') . '/default';
 
         $this->assertFileExists($webRoot . '/js');
         $this->assertFileExists($webRoot . '/css');

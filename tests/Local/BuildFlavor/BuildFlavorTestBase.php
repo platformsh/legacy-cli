@@ -28,6 +28,7 @@ abstract class BuildFlavorTestBase extends TestCase
 
     protected LocalBuild $builder;
 
+    /** @var array<string, mixed> */
     protected array $buildSettings = ['no-clean' => true];
 
     /**
@@ -66,7 +67,7 @@ abstract class BuildFlavorTestBase extends TestCase
      * @param string $sourceDir
      *   A directory containing source code for the project or app. Files will
      *   be copied into a dummy project.
-     * @param array  $buildSettings
+     * @param array<string, mixed> $buildSettings
      *   An array of custom build settings.
      * @param bool $expectedResult
      *   The expected build result.
@@ -106,7 +107,9 @@ abstract class BuildFlavorTestBase extends TestCase
         $cwd = getcwd();
         chdir($projectRoot);
         exec('git init');
-        chdir($cwd);
+        if ($cwd) {
+            chdir($cwd);
+        }
         $local->ensureGitRemote($projectRoot, 'testProjectId');
         $local->writeCurrentProjectConfig(['id' => 'testProjectId'], $projectRoot);
 

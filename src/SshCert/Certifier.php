@@ -31,7 +31,7 @@ class Certifier
      */
     public function isAutoLoadEnabled(): bool
     {
-        return !self::$disableAutoLoad && $this->config->getWithDefault('ssh.auto_load_cert', false);
+        return !self::$disableAutoLoad && $this->config->getBool('ssh.auto_load_cert');
     }
 
     /**
@@ -89,7 +89,7 @@ class Certifier
         $tempPublicKeyFilename = $tempPrivateKeyFilename . '.pub';
 
         // Remove the old certificate and key from the SSH agent.
-        if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
+        if ($this->config->getBool('ssh.add_to_agent')) {
             $this->shell->execute(['ssh-add', '-d', $privateKeyFilename], null, false, !$this->stdErr->isVeryVerbose());
         }
 
@@ -138,9 +138,9 @@ class Certifier
         // Add the key to the SSH agent, if possible, silently.
         // In verbose mode the full command will be printed, so the user can
         // re-run it to check error details.
-        if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
+        if ($this->config->getBool('ssh.add_to_agent')) {
             $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
-            $this->shell->execute(['ssh-add', '-t', $lifetime, $privateKeyFilename], null, false, !$this->stdErr->isVerbose());
+            $this->shell->execute(['ssh-add', '-t', (string) $lifetime, $privateKeyFilename], null, false, !$this->stdErr->isVerbose());
         }
 
         return $certificate;
@@ -263,7 +263,7 @@ class Certifier
         // encounters existing keys. This seems to be necessary during race
         // conditions despite deleting keys in advance with $this->fs->remove().
         $this->fs->remove([$filename, $filename . '.pub']);
-        $this->shell->execute($args, null, true, true, [], 60, "y\n");
+        $this->shell->mustExecute($args, timeout: 60, input: "y\n");
     }
 
     /**

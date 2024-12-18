@@ -106,7 +106,7 @@ class ServiceListCommand extends CommandBase
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
-            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->get('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->getBool('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
                     $executable

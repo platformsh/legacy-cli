@@ -47,7 +47,7 @@ class ProjectListCommand extends CommandBase
 
     protected function configure(): void
     {
-        $organizationsEnabled = $this->config->getWithDefault('api.organizations', false);
+        $organizationsEnabled = $this->config->getBool('api.organizations');
         $this->defaultColumns = ['id', 'title', 'region'];
         if ($organizationsEnabled) {
             $this->defaultColumns[] = 'organization_name';
@@ -140,12 +140,12 @@ class ProjectListCommand extends CommandBase
         }
 
         // Paginate the list.
-        if (!$this->config->getWithDefault('pagination.enabled', true) && $input->getOption('page') === null) {
+        if (!$this->config->getBool('pagination.enabled') && $input->getOption('page') === null) {
             $itemsPerPage = 0;
         } elseif ($input->getOption('count') !== null) {
             $itemsPerPage = (int)$input->getOption('count');
         } else {
-            $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
+            $itemsPerPage = $this->config->getInt('pagination.count');
         }
         $page = (new Pager())->page($projects, (int) $input->getOption('page') ?: 1, $itemsPerPage);
         /** @var BasicProjectInfo[] $projects */
@@ -244,7 +244,7 @@ class ProjectListCommand extends CommandBase
 
                 case 'my':
                     $ownerId = $this->api->getMyUserId();
-                    $organizationsEnabled = $this->config->getWithDefault('api.organizations', false);
+                    $organizationsEnabled = $this->config->getBool('api.organizations');
                     $projects = array_filter($projects, function (BasicProjectInfo $project) use ($ownerId, $organizationsEnabled): bool {
                         if ($organizationsEnabled && $project->organization_ref !== null) {
                             return $project->organization_ref->owner_id === $ownerId;

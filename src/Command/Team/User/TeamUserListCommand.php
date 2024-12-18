@@ -49,7 +49,7 @@ class TeamUserListCommand extends TeamCommandBase
         $options = [];
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
+        $itemsPerPage = $this->config->getInt('pagination.count');
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 50) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 50, or 0 to disable pagination.');
@@ -59,7 +59,7 @@ class TeamUserListCommand extends TeamCommandBase
         }
         $options['query']['page[size]'] = $itemsPerPage;
 
-        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getBool('pagination.enabled');
         if ($count === '0') {
             $fetchAllPages = true;
         }

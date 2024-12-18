@@ -48,7 +48,7 @@ class DomainListCommand extends DomainCommandBase
      *
      * @param Domain[]|EnvironmentDomain[] $tree
      *
-     * @return array
+     * @return array<array<string, string>>
      */
     protected function buildDomainRows(array $tree): array
     {

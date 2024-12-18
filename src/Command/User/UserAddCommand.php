@@ -360,7 +360,7 @@ class UserAddCommand extends CommandBase
                 return 1;
             }
         } else {
-            if ($this->config->getWithDefault('warnings.project_users_billing', true)) {
+            if ($this->config->getBool('warnings.project_users_billing')) {
                 $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
                 $this->stdErr->writeln('');
             }
@@ -556,7 +556,7 @@ class UserAddCommand extends CommandBase
      * @param ProjectAccess $projectAccess
      * @param EnvironmentType[] $environmentTypes
      *
-     * @return array
+     * @return array<string, string>
      */
     private function getTypeRoles(ProjectAccess $projectAccess, array $environmentTypes): array
     {
@@ -588,11 +588,11 @@ class UserAddCommand extends CommandBase
     /**
      * Show the form for entering environment type roles.
      *
-     * @param array $defaultTypeRoles
+     * @param array<string, string> $defaultTypeRoles
      * @param EnvironmentType[] $environmentTypes
      * @param InputInterface $input
      *
-     * @return array
+     * @return array<string, string>
      *   The environment type roles (keyed by type ID) including the user's
      *   answers.
      */
@@ -633,16 +633,15 @@ class UserAddCommand extends CommandBase
     /**
      * Extract the specified project role from the list (given in --role).
      *
-     * @param array &$roles
+     * @param string[] $roles
      *
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array &$roles): ?string
+    private function getSpecifiedProjectRole(array $roles): ?string
     {
-        foreach ($roles as $key => $role) {
-            if (!str_contains((string) $role, ':')) {
-                unset($roles[$key]);
+        foreach ($roles as $role) {
+            if (!str_contains($role, ':')) {
                 return $this->validateProjectRole($role);
             }
         }

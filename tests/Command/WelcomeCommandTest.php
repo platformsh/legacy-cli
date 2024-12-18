@@ -13,7 +13,7 @@ class WelcomeCommandTest extends TestCase
         chdir('/');
         putenv('PLATFORM_PROJECT=test-project');
         putenv('PLATFORM_BRANCH=test-environment');
-        putenv('PLATFORM_ROUTES=' . base64_encode(json_encode([])));
+        putenv('PLATFORM_ROUTES=' . base64_encode((string) json_encode([])));
         putenv('PLATFORMSH_CLI_SESSION_ID=test' . rand(100, 999));
         $result = MockApp::runAndReturnOutput('welcome');
         $this->assertStringContainsString(

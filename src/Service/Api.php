@@ -96,6 +96,8 @@ class Api
     /**
      * A cache of not-found environment IDs.
      *
+     * @var array<string, true>
+     *
      * @see Api::getEnvironment()
      */
     private static array $notFound = [];
@@ -191,9 +193,11 @@ class Api
         }
         $dir = $this->config->getSessionDir();
         $files = glob($dir . '/sess-cli-*', GLOB_NOSORT);
-        foreach ($files as $file) {
-            if (\preg_match('@/sess-cli-([a-z0-9_-]+)@i', $file, $matches)) {
-                $ids[] = $matches[1];
+        if ($files !== false) {
+            foreach ($files as $file) {
+                if (\preg_match('@/sess-cli-([a-z0-9_-]+)@i', $file, $matches)) {
+                    $ids[] = $matches[1];
+                }
             }
         }
         $ids = \array_filter($ids, fn($id): bool => !str_starts_with((string) $id, 'api-token-'));
@@ -261,7 +265,7 @@ class Api
      *
      * @see Connector::__construct()
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function getConnectorOptions(): array {
         $connectorOptions = [];
@@ -270,12 +274,12 @@ class Api
             $connectorOptions['accounts'] = $this->config->get('api.accounts_api_url');
         }
         $connectorOptions['certifier_url'] = $this->config->get('api.certifier_url');
-        $connectorOptions['verify'] = $this->config->getWithDefault('api.skip_ssl', false) ? false : $this->caBundlePath();
+        $connectorOptions['verify'] = $this->config->getBool('api.skip_ssl') ? false : $this->caBundlePath();
 
         $connectorOptions['debug'] = false;
         $connectorOptions['client_id'] = $this->config->get('api.oauth2_client_id');
         $connectorOptions['user_agent'] = $this->config->getUserAgent();
-        $connectorOptions['timeout'] = $this->config->getWithDefault('api.default_timeout', 30);
+        $connectorOptions['timeout'] = $this->config->getInt('api.default_timeout');
 
         if ($apiToken = $this->tokenConfig->getApiToken()) {
             $connectorOptions['api_token'] = $apiToken;
@@ -313,12 +317,12 @@ class Api
 
         $connectorOptions['on_step_up_auth_response'] = fn(ResponseInterface $response) => $this->onStepUpAuthResponse($response);
 
-        $connectorOptions['centralized_permissions_enabled'] = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
+        $connectorOptions['centralized_permissions_enabled'] = $this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations');
 
         // Add middlewares.
         $connectorOptions['middlewares'] = [];
         // Debug responses.
-        $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getWithDefault('api.debug', false));
+        $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getBool('api.debug'));
         // Handle 403 errors.
         $connectorOptions['middlewares'][] = fn(callable $handler): \Closure => fn(RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
             if ($response->getStatusCode() === 403) {
@@ -360,7 +364,7 @@ class Api
         $session = $this->getClient(false)->getConnector()->getSession();
         $previousAccessToken = $session->get('accessToken');
 
-        $body = Utils::jsonDecode((string) $response->getBody(), true);
+        $body = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $authMethods = $body['amr'] ?? [];
         $maxAge = $body['max_age'] ?? null;
 
@@ -415,6 +419,8 @@ class Api
 
     /**
      * Tests if an HTTP response from refreshing a token indicates that the user's SSO session has expired.
+     *
+     * @param array<string, mixed> $data
      */
     private function isSsoSessionExpired(array $data): bool
     {
@@ -427,6 +433,8 @@ class Api
 
     /**
      * Tests if an error from refreshing a token indicates that the user's API token is invalid.
+     *
+     * @param array<string, mixed> $body
      */
     private function isApiTokenInvalid(mixed $body): bool
     {
@@ -470,20 +478,20 @@ class Api
      *
      * @see Client::__construct()
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getGuzzleOptions(): array {
         $options = [
             'headers' => ['User-Agent' => $this->config->getUserAgent()],
             'debug' => false,
-            'verify' => $this->config->getWithDefault('api.skip_ssl', false) ? false : $this->caBundlePath(),
+            'verify' => $this->config->getBool('api.skip_ssl') ? false : $this->caBundlePath(),
             'proxy' => $this->guzzleProxyConfig(),
-            'timeout' => $this->config->getWithDefault('api.default_timeout', 30),
+            'timeout' => $this->config->getInt('api.default_timeout'),
         ];
 
         // TODO provide this as a middleware
         //        if ($this->output->isVeryVerbose()) {
-        //            $options['defaults']['subscribers'][] = new GuzzleDebugMiddleware($this->output, $this->config->getWithDefault('api.debug', false));
+        //            $options['defaults']['subscribers'][] = new GuzzleDebugMiddleware($this->output, $this->config->getBool('api.debug'));
         //        }
 
         if (extension_loaded('zlib')) {
@@ -652,7 +660,8 @@ class Api
      */
     public function getMyProjects(?bool $refresh = null): array
     {
-        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
+        $new = $this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations');
+        /** @var string[]|string|null $vendorFilter */
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
         $cacheKey = $this->myProjectsCacheKey();
         $cached = $this->cache->fetch($cacheKey);
@@ -677,7 +686,7 @@ class Api
                     }
                 }
             }
-            $this->cache->save($cacheKey, $projects, (int) $this->config->getWithDefault('api.projects_ttl', 600));
+            $this->cache->save($cacheKey, $projects, $this->config->getInt('api.projects_ttl'));
         } else {
             $projects = $cached;
             $this->io->debug('Loaded user project data from cache');
@@ -717,7 +726,7 @@ class Api
             if ($project) {
                 $toCache = $project->getData();
                 $toCache['_endpoint'] = $project->getUri(true);
-                $this->cache->save($cacheKey, $toCache, (int) $this->config->getWithDefault('api.projects_ttl', 600));
+                $this->cache->save($cacheKey, $toCache, $this->config->getInt('api.projects_ttl'));
             } else {
                 return false;
             }
@@ -760,7 +769,7 @@ class Api
         } elseif ($refresh || !$cached) {
             // Fetch environments with double the default timeout.
             $list = Environment::getCollection($project->getLink('environments'), 0, [
-                'timeout' => 2 * $this->config->getWithDefault('api.default_timeout', 30),
+                'timeout' => 2 * $this->config->getInt('api.default_timeout'),
             ], $this->getHttpClient());
             $environments = [];
             $toCache = [];
@@ -778,7 +787,7 @@ class Api
                 );
             }
 
-            $this->cache->save($cacheKey, $toCache, (int) $this->config->getWithDefault('api.environments_ttl', 120));
+            $this->cache->save($cacheKey, $toCache, $this->config->getInt('api.environments_ttl'));
         } else {
             $environments = [];
             $endpoint = $project->getUri();
@@ -866,7 +875,7 @@ class Api
         } elseif ($refresh || !$cached) {
             $types = $project->getEnvironmentTypes();
             $cachedTypes = \array_map(fn(EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
-            $this->cache->save($cacheKey, $cachedTypes, (int) $this->config->getWithDefault('api.environments_ttl', 120));
+            $this->cache->save($cacheKey, $cachedTypes, $this->config->getInt('api.environments_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
             foreach ((array) $cached as $data) {
@@ -884,13 +893,13 @@ class Api
      * @param bool $reset
      *
      * @return array{
-     *     'id': string,
-     *     'username': string,
-     *     'email': string,
-     *     'first_name': string,
-     *     'last_name': string,
-     *     'display_name': string,
-     *     'phone_number_verified': bool,
+     *     id: string,
+     *     username: string,
+     *     email: string,
+     *     first_name: string,
+     *     last_name: string,
+     *     display_name: string,
+     *     phone_number_verified: bool,
      * }
      */
     public function getMyAccount(bool $reset = false): array
@@ -906,7 +915,7 @@ class Api
      *
      * @param bool $reset
      *
-     * @return array{'id': string, 'username': string, 'mail': string, 'display_name': string, 'ssh_keys': array}
+     * @return array{'id': string, 'username': string, 'mail': string, 'display_name': string, 'ssh_keys': array<string, mixed>}
      */
     private function getLegacyAccountInfo(bool $reset = false): array
     {
@@ -916,7 +925,7 @@ class Api
             $this->io->debug('Loaded account information from cache');
         } else {
             $info = $this->getClient()->getAccountInfo($reset);
-            $this->cache->save($cacheKey, $info, (int) $this->config->getWithDefault('api.users_ttl', 600));
+            $this->cache->save($cacheKey, $info, $this->config->getInt('api.users_ttl'));
         }
 
         return $info;
@@ -924,11 +933,14 @@ class Api
 
     /**
      * Shortcut to return the ID of the current user.
-     *
      */
-    public function getMyUserId(bool $reset = false): string|false
+    public function getMyUserId(bool $reset = false): string
     {
-        return $this->getClient()->getMyUserId($reset);
+        $id = $this->getClient()->getMyUserId($reset);
+        if (!$id) {
+            throw new \RuntimeException('No user ID found for the current session.');
+        }
+        return $id;
     }
 
     /**
@@ -969,7 +981,7 @@ class Api
             if (!$user) {
                 throw new \InvalidArgumentException('User not found: ' . $id);
             }
-            $this->cache->save($cacheKey, $user->getData(), (int) $this->config->getWithDefault('api.users_ttl', 600));
+            $this->cache->save($cacheKey, $user->getData(), $this->config->getInt('api.users_ttl'));
         } else {
             $this->io->debug('Loaded user info from cache: ' . $id);
             $connector = $this->getClient()->getConnector();
@@ -1003,7 +1015,8 @@ class Api
      */
     private function myProjectsCacheKey(): string
     {
-        $new = $this->config->get('api.centralized_permissions') && $this->config->get('api.organizations');
+        $new = $this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations');
+        /** @var string[]|string|null $vendorFilter */
         $vendorFilter = $this->config->getWithDefault('api.vendor_filter', null);
         return sprintf('%s:my-projects%s:%s', $this->config->getSessionId(), $new ? ':new' : '', is_array($vendorFilter) ? implode(',', $vendorFilter) : (string) $vendorFilter);
     }
@@ -1398,7 +1411,7 @@ class Api
      */
     public function loadSubscription(string $id, ?Project $project = null, bool $forWrite = true): Subscription|false
     {
-        $organizations_enabled = $this->config->getWithDefault('api.organizations', false);
+        $organizations_enabled = $this->config->getBool('api.organizations');
         if (!$organizations_enabled) {
             // Always load the subscription directly if the Organizations API
             // is not enabled.
@@ -1457,30 +1470,30 @@ class Api
     /**
      * Returns whether the user is required to verify their phone number before certain actions.
      *
-     * @return array{'state': bool, 'type': string}
+     * @return array{state: bool, type: string}
      */
     public function checkUserVerification(): array
     {
-        if (!$this->config->getWithDefault('api.user_verification', false)) {
+        if (!$this->config->getBool('api.user_verification')) {
             return ['state' => false, 'type' => ''];
         }
 
         // Check the API to see if verification is required.
         $request = new Request('POST', '/me/verification');
         $response = $this->getHttpClient()->send($request);
-        return Utils::jsonDecode((string) $response->getBody(), true);
+        return (array) Utils::jsonDecode((string) $response->getBody(), true);
     }
 
     /**
      * Returns whether the user is allowed to create a project under an organization.
      *
-     * @return array{'can_create': bool, 'message': string, 'required_action': ?array{'action': string, 'type': string}}
+     * @return array{can_create: bool, message: string, required_action: ?array{action: string, type: string}}
      */
     public function checkCanCreate(Organization $org): array
     {
         $request = new Request('GET', $org->getUri() . '/subscriptions/can-create');
         $response = $this->getHttpClient()->send($request);
-        return Utils::jsonDecode((string) $response->getBody(), true);
+        return (array) Utils::jsonDecode((string) $response->getBody(), true);
     }
 
     /**
@@ -1510,7 +1523,7 @@ class Api
         if ($organization) {
             $data = $organization->getData();
             $data['_url'] = $organization->getUri();
-            $this->cache->save($cacheKey, $data, $this->config->getWithDefault('api.orgs_ttl', 600));
+            $this->cache->save($cacheKey, $data, $this->config->getInt('api.orgs_ttl'));
         }
         return $organization;
     }
@@ -1538,9 +1551,9 @@ class Api
     /**
      * Returns the Console URL for a project, with caching.
      */
-    public function getConsoleURL(Project $project, bool $reset = false): string|false
+    public function getConsoleURL(Project $project, bool $reset = false): string
     {
-        if ($this->config->has('service.console_url') && $this->config->get('api.organizations')) {
+        if ($this->config->has('service.console_url') && $this->config->getBool('api.organizations')) {
             // Load the organization name if possible.
             $firstSegment = $organizationId = $project->getProperty('organization');
             try {
@@ -1557,9 +1570,10 @@ class Api
             }
 
             return ltrim($this->config->getStr('service.console_url'), '/') . '/' . rawurlencode((string) $firstSegment) . '/' . rawurlencode($project->id);
+        } elseif ($subscription = $this->loadSubscription((string) $project->getSubscriptionId(), $project)) {
+            return $subscription->project_ui;
         }
-        $subscription = $this->loadSubscription($project->getSubscriptionId(), $project);
-        return $subscription ? $subscription->project_ui : false;
+        throw new \RuntimeException('Failed to load Console URL for project: ' . $project->id);
     }
 
     /**
@@ -1633,8 +1647,8 @@ class Api
         }
         $request = new Request('GET', $project->getUri() . '/settings');
         $response = $this->getHttpClient()->send($request);
-        $settings = Utils::jsonDecode((string) $response->getBody(), true);
-        $this->cache->save($cacheKey, $settings, (int) $this->config->get('api.projects_ttl'));
+        $settings = (array) Utils::jsonDecode((string) $response->getBody(), true);
+        $this->cache->save($cacheKey, $settings, $this->config->getInt('api.projects_ttl'));
         return !empty($settings['sizing_api_enabled']);
     }
 
@@ -1696,7 +1710,7 @@ class Api
     {
         if ($project->isSuspended()) {
             $this->stdErr->writeln('This project is <error>suspended</error>.');
-            if ($this->config->getWithDefault('warnings.project_suspended_payment', true)) {
+            if ($this->config->getBool('warnings.project_suspended_payment')) {
                 $orgId = $project->getProperty('organization', false);
                 if ($orgId) {
                     try {

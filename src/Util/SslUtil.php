@@ -12,13 +12,12 @@ class SslUtil
      *
      * @param string $certPath
      * @param string $keyPath
-     * @param array $chainPaths
+     * @param string[] $chainPaths
      *
      * @throws \InvalidArgumentException
      *
-     * @return array
-     *   An array containing the contents of the certificate files, keyed as
-     *   'certificate' (string), 'key' (string), and 'chain' (array).
+     * @return array{certificate: string, key: string, chain: string[]}
+     *   An array containing the contents of the certificate files.
      */
     public function validate(string $certPath, string $keyPath, array $chainPaths): array
     {
@@ -29,8 +28,8 @@ class SslUtil
         if (!is_readable($keyPath)) {
             throw new \InvalidArgumentException('The private key file could not be read: ' . $keyPath);
         }
-        $sslCert = trim(file_get_contents($certPath));
-        $sslPrivateKey = trim(file_get_contents($keyPath));
+        $sslCert = trim((string) file_get_contents($certPath));
+        $sslPrivateKey = trim((string) file_get_contents($keyPath));
 
         // Validate the certificate and the key together, if openssl is enabled.
         if (\extension_loaded('openssl')) {
@@ -72,7 +71,7 @@ class SslUtil
             if (!is_readable($chainPath)) {
                 throw new \InvalidArgumentException("The chain file could not be read: $chainPath");
             }
-            $data = trim(file_get_contents($chainPath));
+            $data = trim((string) file_get_contents($chainPath));
             if (\preg_match_all('/--+BEGIN CERTIFICATE--+.+?--+END CERTIFICATE--+/is', $data, $matches) === false) {
                 throw new \InvalidArgumentException("The chain file is not a valid list of X509 certificates: $chainPath");
             }

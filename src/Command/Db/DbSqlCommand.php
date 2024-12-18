@@ -105,8 +105,7 @@ class DbSqlCommand extends CommandBase
                         $choices[$schema] .= ' (default)';
                     }
                 }
-                $questionHelper = $this->questionHelper;
-                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
+                $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
                 $schema = $schema === '(none)' ? '' : $schema;
             }
         }

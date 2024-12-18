@@ -20,8 +20,10 @@ use Platformsh\Cli\Exception\ProjectNotFoundException;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Model\Organization\Organization;
+use Platformsh\Client\Model\Project;
 use Platformsh\Client\Model\Region;
 use Platformsh\Client\Model\SetupOptions;
+use Platformsh\Client\Model\Subscription;
 use Platformsh\Client\Model\Subscription\SubscriptionOptions;
 use Platformsh\ConsoleForm\Field\Field;
 use Platformsh\ConsoleForm\Field\OptionsField;
@@ -35,7 +37,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:create', description: 'Create a new project', aliases: ['create'])]
 class ProjectCreateCommand extends CommandBase
 {
+    /** @var string[]|null */
     private ?array $plansCache = null;
+    /** @var Region[]|null */
     private ?array $regionsCache = null;
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Git $git, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
@@ -77,7 +81,7 @@ EOF
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organizationsEnabled = $this->config->getWithDefault('api.organizations', false);
+        $organizationsEnabled = $this->config->getBool('api.organizations');
 
         // Check if the user needs phone verification before creating a project.
         if (!$organizationsEnabled) {
@@ -90,7 +94,7 @@ EOF
         // Identify an organization that should own the project.
         $organization = null;
         $setupOptions = null;
-        if ($this->config->getWithDefault('api.organizations', false)) {
+        if ($this->config->getBool('api.organizations')) {
             try {
                 $organization = $this->selector->selectOrganization($input, 'create-subscription');
             } catch (NoOrganizationsException $e) {
@@ -271,44 +275,10 @@ EOF
             return 1;
         }
 
-        $progressMessage = new ProgressMessage($this->stdErr);
-        $checkInterval = 1;
-        $lastCheck = time();
-        $progressMessage->show('Loading project information...');
-        $project = false;
-        while (true) {
-            if (time() - $lastCheck >= $checkInterval) {
-                $lastCheck = time();
-                try {
-                    $project = $this->api->getProject($subscription->project_id);
-                    if ($project !== false) {
-                        break;
-                    } else {
-                        $this->io->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
-                    }
-                } catch (ConnectException $e) {
-                    if (str_contains($e->getMessage(), 'timed out')) {
-                        $this->io->debug($e->getMessage());
-                    } else {
-                        throw $e;
-                    }
-                } catch (BadResponseException $e) {
-                    if (in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
-                        $this->io->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
-                    } else {
-                        throw $e;
-                    }
-                }
-                usleep(200000);
-            }
-            if ($totalTimeout && time() - $start > $totalTimeout) {
-                $progressMessage->done();
-                $this->stdErr->writeln(sprintf('The subscription is active but the project <error>%s</error> could not be fetched.', $subscription->project_id));
-                $this->stdErr->writeln('The project may be accessible momentarily. Otherwise, please contact support.');
-                return 1;
-            }
+        $project = $this->waitForProject($subscription, $totalTimeout, $start);
+        if (!$project) {
+            return 1;
         }
-        $progressMessage->done();
 
         $this->stdErr->writeln("The project is now ready!");
         $output->writeln($subscription->project_id);
@@ -342,6 +312,47 @@ EOF
         return 0;
     }
 
+    private function waitForProject(Subscription $subscription, int|float $totalTimeout, float $start): Project|false
+    {
+        $progressMessage = new ProgressMessage($this->stdErr);
+        $checkInterval = 1;
+        $lastCheck = time();
+        $progressMessage->show('Loading project information...');
+        while (true) {
+            if (time() - $lastCheck >= $checkInterval) {
+                $lastCheck = time();
+                try {
+                    $project = $this->api->getProject($subscription->project_id);
+                    if ($project !== false) {
+                        $progressMessage->done();
+                        return $project;
+                    } else {
+                        $this->io->debug(sprintf('Project not found: %s (retrying)', $subscription->project_id));
+                    }
+                } catch (ConnectException $e) {
+                    if (str_contains($e->getMessage(), 'timed out')) {
+                        $this->io->debug($e->getMessage());
+                    } else {
+                        throw $e;
+                    }
+                } catch (BadResponseException $e) {
+                    if (in_array($e->getResponse()->getStatusCode(), [403, 502, 524])) {
+                        $this->io->debug(sprintf('Received status code %d from project: %s (retrying)', $e->getResponse()->getStatusCode(), $subscription->project_id));
+                    } else {
+                        throw $e;
+                    }
+                }
+                usleep(200000);
+            }
+            if ($totalTimeout && time() - $start > $totalTimeout) {
+                $progressMessage->done();
+                $this->stdErr->writeln(sprintf('The subscription is active but the project <error>%s</error> could not be fetched.', $subscription->project_id));
+                $this->stdErr->writeln('The project may be accessible momentarily. Otherwise, please contact support.');
+                return false;
+            }
+        }
+    }
+
     /**
      * Checks the organization /can-create API before creating a project.
      *
@@ -354,19 +365,19 @@ EOF
             return true;
         }
         if ($canCreate['required_action']) {
-            $consoleUrl = $this->config->getWithDefault('service.console_url', '');
+            $consoleUrl = $this->config->getStr('service.console_url');
             if ($consoleUrl && $canCreate['required_action']['action'] === 'billing_details') {
                 $this->stdErr->writeln($canCreate['message']);
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('View or update billing details at:');
-                $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim((string) $consoleUrl, '/'), $organization->name));
+                $this->stdErr->writeln(sprintf('<info>%s/%s/-/billing</info>', rtrim($consoleUrl, '/'), $organization->name));
                 return false;
             }
             if ($consoleUrl && $canCreate['required_action']['action'] === 'ticket') {
                 $this->stdErr->writeln($canCreate['message']);
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('Please open the following URL in a browser to create a ticket:');
-                $this->stdErr->writeln(sprintf('<info>%s/support</info>', rtrim((string) $consoleUrl, '/')));
+                $this->stdErr->writeln(sprintf('<info>%s/support</info>', rtrim($consoleUrl, '/')));
                 return false;
             }
             if ($canCreate['required_action']['action'] === 'verification') {
@@ -424,7 +435,7 @@ EOF
      *
      * @param SetupOptions|null $setupOptions
      *
-     * @return array
+     * @return string[]
      *   A list of plan machine names.
      */
     protected function getAvailablePlans(?SetupOptions $setupOptions = null): array
@@ -444,6 +455,8 @@ EOF
 
     /**
      * Picks a default plan from a list.
+     *
+     * @param string[] $availablePlans
      */
     protected function getDefaultPlan(array $availablePlans): ?string
     {
@@ -534,7 +547,7 @@ EOF
           ]),
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
-            'description' => trim("The region where the project will be hosted.\n" . $this->config->getWithDefault('messages.region_discount', '')),
+            'description' => trim("The region where the project will be hosted.\n" . $this->config->getStr('messages.region_discount')),
             'optionsCallback' => fn() => $this->getAvailableRegions($setupOptions),
             'allowOther' => true,
           ]),

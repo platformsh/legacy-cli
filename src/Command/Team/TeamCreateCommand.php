@@ -109,11 +109,13 @@ class TeamCreateCommand extends TeamCommandBase
             return $roles;
         };
 
+        /** @var string[] $projectPermissions */
+        $projectPermissions = [];
         if ($roleInput = ArrayArgument::getOption($input, 'role')) {
-            $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
-            $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput);
-            $projectPermissions = [$specifiedProjectRole];
-            foreach ($specifiedTypeRoles as $type => $role) {
+            if ($specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput)) {
+                $projectPermissions[] = $specifiedProjectRole;
+            }
+            foreach ($this->getSpecifiedTypeRoles($roleInput) as $type => $role) {
                 if ($role !== 'none') {
                     $projectPermissions[] = $type . ':' . $role;
                 }
@@ -121,15 +123,16 @@ class TeamCreateCommand extends TeamCommandBase
         } elseif ($input->isInteractive()) {
             $projectRole = $this->showProjectRoleForm($update ? $getProjectRole($existingTeam->project_permissions) : 'viewer', $input);
             $this->stdErr->writeln('');
-            $environmentTypeRoles = [];
+
+            $projectPermissions[] = $projectRole;
+
             if ($projectRole !== 'admin') {
                 $environmentTypeRoles = $this->showTypeRolesForm($update ? $getEnvTypeRoles($existingTeam->project_permissions) : [], $input);
                 $this->stdErr->writeln('');
-            }
-            $projectPermissions = [$projectRole];
-            foreach ($environmentTypeRoles as $type => $role) {
-                if ($role !== 'none') {
-                    $projectPermissions[] = $type . ':' . $role;
+                foreach ($environmentTypeRoles as $type => $role) {
+                    if ($role !== 'none') {
+                        $projectPermissions[] = $type . ':' . $role;
+                    }
                 }
             }
         } else {
@@ -289,10 +292,10 @@ class TeamCreateCommand extends TeamCommandBase
     /**
      * Show the form for entering environment type roles.
      *
-     * @param array $defaultTypeRoles
+     * @param array<string, string> $defaultTypeRoles
      * @param InputInterface $input
      *
-     * @return array
+     * @return array<string, string>
      *   The environment type roles (keyed by type ID) including the user's
      *   answers.
      */
@@ -337,16 +340,15 @@ class TeamCreateCommand extends TeamCommandBase
     /**
      * Extract the specified project role from the list (given in --role).
      *
-     * @param array &$roles
+     * @param string[] $roles
      *
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array &$roles): ?string
+    private function getSpecifiedProjectRole(array $roles): ?string
     {
-        foreach ($roles as $key => $role) {
-            if (!str_contains((string) $role, ':')) {
-                unset($roles[$key]);
+        foreach ($roles as $role) {
+            if (!str_contains($role, ':')) {
                 return $this->validateProjectRole($role);
             }
         }

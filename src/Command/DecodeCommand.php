@@ -13,11 +13,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'decode', description: 'Decode a string that was encoded with JSON and Base64')]
 class DecodeCommand extends CommandBase
 {
-
     public function __construct(private readonly Config $config)
     {
         parent::__construct();
     }
+
     protected function configure(): void
     {
         $envPrefix = $this->config->getStr('service.env_prefix');
@@ -90,7 +90,7 @@ class DecodeCommand extends CommandBase
         if (is_string($value)) {
             $output->writeln($value);
         } else {
-            $output->writeln(json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $output->writeln((string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
 
         return 0;

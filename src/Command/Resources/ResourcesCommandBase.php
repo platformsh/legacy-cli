@@ -18,6 +18,6 @@ class ResourcesCommandBase extends CommandBase
 
     public function isHidden(): bool
     {
-        return !$this->config->get('api.sizing') || parent::isHidden();
+        return !$this->config->getBool('api.sizing') || parent::isHidden();
     }
 }

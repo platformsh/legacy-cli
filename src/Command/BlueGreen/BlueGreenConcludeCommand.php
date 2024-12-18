@@ -38,7 +38,7 @@ class BlueGreenConcludeCommand extends CommandBase
 
         $httpClient = $this->api->getHttpClient();
         $response = $httpClient->get($environment->getLink('#versions'));
-        $data = Utils::jsonDecode((string) $response->getBody(), true);
+        $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
         if (count($data) < 2) {
             $this->stdErr->writeln(sprintf('Blue/green deployments are not enabled for the environment %s.', $this->api->getEnvironmentLabel($environment, 'error')));
             return 1;

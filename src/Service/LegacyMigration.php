@@ -38,7 +38,7 @@ class LegacyMigration
     public function checkMigrateToGoWrapper(): void
     {
         // Run migration steps if configured.
-        if ($this->config->getWithDefault('migrate.prompt', false)) {
+        if ($this->config->getBool('migrate.prompt')) {
             $this->promptDeleteOldCli();
             $this->checkMigrateToNewCLI();
         }
@@ -172,7 +172,7 @@ class LegacyMigration
             . "\nRunning the CLI directly under PHP is now referred to as the \"Legacy CLI\", and is no longer recommended.";
         if ($this->config->has('migrate.docs_url')) {
             $message .= "\nInstall the latest release for your operating system by following these instructions: "
-                . "\n" . $this->config->get('migrate.docs_url');
+                . "\n" . $this->config->getStr('migrate.docs_url');
         }
         $message .= "\n";
         $this->stdErr->writeln($message);
@@ -205,7 +205,7 @@ class LegacyMigration
     {
         $envPrefix = $this->config->getStr('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
-            && basename(getenv('SHELL')) === 'dash'
+            && basename((string) getenv('SHELL')) === 'dash'
             && !$this->io->isTerminal(STDIN)) {
             return true;
         }

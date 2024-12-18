@@ -43,7 +43,7 @@ class LocalBuildCommand extends CommandBase
                 'destination',
                 'd',
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config->getWithDefault('local.web_root', '_www')
+                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config->getStr('local.web_root')
             )
             ->addOption(
                 'copy',
@@ -137,13 +137,13 @@ class LocalBuildCommand extends CommandBase
 
         if ($sourceDirOption) {
             $sourceDir = realpath($sourceDirOption);
-            if (!is_dir($sourceDir)) {
+            if ($sourceDir === false || !is_dir($sourceDir)) {
                 throw new InvalidArgumentException('Source directory not found: ' . $sourceDirOption);
             }
 
             // Sensible handling if the user provides a project root as the
             // source directory.
-            if (file_exists($sourceDir . $this->config->get('local.project_config'))) {
+            if (file_exists($sourceDir . $this->config->getStr('local.project_config'))) {
                 $projectRoot = $sourceDir;
             }
         } elseif (!$projectRoot) {
@@ -157,7 +157,7 @@ class LocalBuildCommand extends CommandBase
         // If no project root is found, ask the user for a destination path.
         if (!$projectRoot && !$destination && $input->isInteractive()) {
             $default = is_dir($sourceDir . '/.git') && $sourceDir === getcwd()
-                ? $this->config->getWithDefault('local.web_root', '_www')
+                ? $this->config->getStr('local.web_root')
                 : null;
             $destination = $this->questionHelper->askInput('Build destination', $default);
         }
@@ -170,7 +170,7 @@ class LocalBuildCommand extends CommandBase
                 'Project root not found. Specify --destination or go to a project directory.'
             );
         } else {
-            $destination = $projectRoot . '/' . $this->config->getWithDefault('local.web_root', '_www');
+            $destination = $projectRoot . '/' . $this->config->getStr('local.web_root');
         }
 
         // Ensure no conflicts between source and destination.

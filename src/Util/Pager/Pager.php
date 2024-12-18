@@ -6,6 +6,8 @@ class Pager
 {
     /**
      * Creates a Page.
+     *
+     * @param object[] $items
      */
     public function page(array $items, int $pageNumber, int $itemsPerPage): Page
     {

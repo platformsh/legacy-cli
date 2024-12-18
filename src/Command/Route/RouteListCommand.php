@@ -52,7 +52,7 @@ class RouteListCommand extends CommandBase
         $selection = null;
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
-            $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
+            $decoded = json_decode((string) base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (!is_array($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }

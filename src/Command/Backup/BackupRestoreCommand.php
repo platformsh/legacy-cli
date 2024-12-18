@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:restore', description: 'Restore an environment backup')]
 class BackupRestoreCommand extends CommandBase
 {
+    /** @var string[] */
     private array $validResourcesInitOptions = ['backup', 'parent', 'default', 'minimum'];
 
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector)
@@ -35,7 +36,7 @@ class BackupRestoreCommand extends CommandBase
             ->addOption('branch-from', null, InputOption::VALUE_REQUIRED, 'If the --target does not yet exist, this specifies the parent of the new environment')
             ->addOption('no-code', null, InputOption::VALUE_NONE, 'Do not restore code, only data.')
             ->addHiddenOption('restore-code', null, InputOption::VALUE_NONE, '[DEPRECATED] This option no longer has an effect.');
-        if ($this->config->get('api.sizing')) {
+        if ($this->config->getBool('api.sizing')) {
             $this->addOption('no-resources', null, InputOption::VALUE_NONE, "Do not override the target's existing resource settings.");
             $this->resourcesUtil->addOption($this->getDefinition(), $this->validResourcesInitOptions);
         }

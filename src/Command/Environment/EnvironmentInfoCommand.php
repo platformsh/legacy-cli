@@ -104,6 +104,9 @@ class EnvironmentInfoCommand extends CommandBase
 
         // @todo refactor normalizing the value according to the property (this is a mess)
         $type = $this->getType($property);
+        if (!$type) {
+            return 1;
+        }
         if ($type === 'boolean' && $value === 'false') {
             $value = false;
         }

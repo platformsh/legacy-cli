@@ -25,7 +25,7 @@ readonly class SubCommandRunner
      * Runs another CLI command.
      *
      * @param string $commandName
-     * @param array $arguments
+     * @param array<string, mixed> $arguments
      * @param OutputInterface|null $output
      *
      * @return int
@@ -58,7 +58,7 @@ readonly class SubCommandRunner
     /**
      * Forwards standard (unambiguous) arguments that a source and target command have in common.
      *
-     * @param array &$args
+     * @param array<string, mixed> &$args
      * @param InputInterface $input
      * @param InputDefinition $targetDef
      */

@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 class OrganizationUserCommandBase extends OrganizationCommandBase
 {
     // @todo add 'admin'
+    /** @var string[] */
     protected static array $allPermissions = ['billing', 'members', 'plans', 'projects:create', 'projects:list'];
 
     /**

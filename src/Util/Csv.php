@@ -23,7 +23,7 @@ class Csv
     /**
      * Format an array of rows as a CSV spreadsheet.
      *
-     * @param array $data
+     * @param array<array<string|int|float|\Stringable>> $data
      *   An array of rows. Each row is an array of cells (hopefully the same
      *   number in each row). Each cell must be a string, or a type that can
      *   be cast to a string.
@@ -41,7 +41,7 @@ class Csv
     /**
      * Format an array as a CSV row.
      *
-     * @param array $data
+     * @param array<string|\Stringable> $data
      *
      * @return string
      */

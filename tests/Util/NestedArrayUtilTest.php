@@ -7,7 +7,8 @@ use Platformsh\Cli\Util\NestedArrayUtil;
 
 class NestedArrayUtilTest extends TestCase
 {
-    protected array $testArray = [];
+    /** @var array<string, mixed> */
+    private array $testArray = [];
 
     public function setUp(): void
     {
@@ -37,7 +38,7 @@ class NestedArrayUtilTest extends TestCase
     {
         NestedArrayUtil::setNestedArrayValue($this->testArray, ['a', 'foo'], 'bar');
         $this->assertEquals('bar', $this->testArray['a']['foo']);
-        NestedArrayUtil::setNestedArrayValue($this->testArray, ['c', 2, 3], 'test');
+        NestedArrayUtil::setNestedArrayValue($this->testArray, ['c', '2', '3'], 'test');
         $this->assertEquals('test', $this->testArray['c'][2][3]);
     }
 

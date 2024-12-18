@@ -44,7 +44,7 @@ class EnvironmentUrlCommand extends CommandBase
         $prefix = $this->config->getStr('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading URLs from environment variable ' . $prefix . 'ROUTES');
-            $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
+            $decoded = json_decode((string) base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }
@@ -87,7 +87,7 @@ class EnvironmentUrlCommand extends CommandBase
     /**
      * Displays or opens URLs.
      *
-     * @param string[]                                          $urls
+     * @param string[] $urls
      * @param InputInterface $input
      * @param OutputInterface $output
      */
@@ -120,8 +120,7 @@ class EnvironmentUrlCommand extends CommandBase
         if (count($urls) === 1) {
             $url = $urls[0];
         } else {
-            $questionHelper = $this->questionHelper;
-            $url = $questionHelper->choose(array_combine($urls, $urls), 'Enter a number to open a URL', $urls[0]);
+            $url = $this->questionHelper->choose(array_combine($urls, $urls), 'Enter a number to open a URL', $urls[0]);
         }
 
         $this->url->openUrl($url);

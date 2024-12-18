@@ -44,7 +44,7 @@ class Ssh implements InputConfiguringInterface
      * @param string[]|string|null $remoteCommand
      *   A command to run on the remote host.
      *
-     * @return array
+     * @return string[]
      */
     public function getSshArgs(string $uri, array $extraOptions = [], array|string|null $remoteCommand = null): array
     {
@@ -89,7 +89,7 @@ class Ssh implements InputConfiguringInterface
         $options[] = 'SendEnv TERM';
 
         if ($this->output->isDebug()) {
-            if ($this->config->get('api.debug')) {
+            if ($this->config->getBool('api.debug')) {
                 $options[] = 'LogLevel DEBUG3';
             } else {
                 $options[] = 'LogLevel DEBUG';

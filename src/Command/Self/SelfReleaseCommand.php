@@ -30,7 +30,7 @@ class SelfReleaseCommand extends CommandBase
     protected function configure(): void
     {
         $defaultRepo = $this->config->getStr('application.github_repo');
-        $defaultReleaseBranch = $this->config->getWithDefault('application.release_branch', 'main');
+        $defaultReleaseBranch = $this->config->getStr('application.release_branch');
 
         $this
             ->addArgument('version', InputArgument::OPTIONAL, 'The new version number')
@@ -100,8 +100,8 @@ class SelfReleaseCommand extends CommandBase
 
             $this->stdErr->writeln('Last version number: <info>' . $lastVersion . '</info>');
         } else {
-            $lastTag = $this->shell->execute(['git', 'describe', '--tags', '--abbrev=0'], CLI_ROOT, true);
-            $lastVersion = ltrim((string) $lastTag, 'v');
+            $lastTag = $this->shell->mustExecute(['git', 'describe', '--tags', '--abbrev=0'], dir: CLI_ROOT);
+            $lastVersion = ltrim($lastTag, 'v');
             $this->stdErr->writeln('Last version number (from latest Git tag): <info>' . $lastVersion . '</info>');
         }
 
@@ -258,11 +258,11 @@ class SelfReleaseCommand extends CommandBase
 
         // Validate that the Phar file has the right version number.
         if ($pharFilename) {
-            $versionInPhar = $this->shell->execute([
+            $versionInPhar = $this->shell->mustExecute([
                 (new PhpExecutableFinder())->find() ?: PHP_BINARY,
                 $pharFilename,
                 '--version'
-            ], null, true);
+            ]);
             if (!str_contains($versionInPhar, (string) $newVersion)) {
                 $this->stdErr->writeln('The file ' . $pharFilename . ' reports a different version: "' . $versionInPhar . '"');
 
@@ -354,9 +354,9 @@ class SelfReleaseCommand extends CommandBase
             ],
             'debug' => $output->isDebug(),
         ]);
-        $release = Utils::jsonDecode((string) $response->getBody(), true);
+        $release = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $releaseUrl = $repoApiUrl . '/releases/' . $release['id'];
-        $uploadUrl = preg_replace('/\{.+?\}/', '', (string) $release['upload_url']);
+        $uploadUrl = preg_replace('/\{.+?}/', '', (string) $release['upload_url']);
 
         // Upload the Phar to the GitHub release.
         $this->stdErr->writeln('Uploading the Phar file to the release');
@@ -479,7 +479,7 @@ class SelfReleaseCommand extends CommandBase
             return '';
         }
 
-        $changelog = preg_replace('/^[^\*\n]/m', '    $0', $changelog);
+        $changelog = preg_replace('/^[^*\n]/m', '    $0', $changelog);
         $changelog = preg_replace('/\n+\*/', "\n*", (string) $changelog);
         $changelog = trim((string) $changelog);
 

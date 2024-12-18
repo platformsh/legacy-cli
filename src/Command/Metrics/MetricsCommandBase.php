@@ -44,6 +44,7 @@ abstract class MetricsCommandBase extends CommandBase
      */
     private bool $foundHighMemoryServices = false;
 
+    /** @var array<string, array<string, string>> */
     private array $fields = [
         // Grid.
         'local' => [
@@ -108,7 +109,7 @@ abstract class MetricsCommandBase extends CommandBase
 
     public function isEnabled(): bool
     {
-        if (!$this->config->getWithDefault('api.metrics', false)) {
+        if (!$this->config->getBool('api.metrics')) {
             return false;
         }
         return parent::isEnabled();
@@ -189,7 +190,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @param string[] $fieldNames
      *   An array of field names, which map to queries in $this->fields.
      *
-     * @return false|array
+     * @return false|array<string, array<string, array<string, array<string, mixed>>>>
      *   False on failure, or an array of sketch values, keyed by: time, service, dimension, and name.
      */
     protected function fetchMetrics(InputInterface $input, TimeSpec $timeSpec, Environment $environment, array $fieldNames): array|false
@@ -275,7 +276,7 @@ abstract class MetricsCommandBase extends CommandBase
         $client = $this->api->getHttpClient();
         $request = new Request('POST', $metricsQueryUrl, [
             'Content-Type' => 'application/json',
-        ], json_encode($query->asArray()));
+        ], json_encode($query->asArray(), JSON_THROW_ON_ERROR));
         try {
             $result = $client->send($request);
         } catch (BadResponseException $e) {
@@ -458,12 +459,12 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * Builds metrics table rows.
      *
-     * @param array $values
+     * @param array<string, array<string, array<string, array<string, mixed>>>> $values
      *   An array of values from fetchMetrics().
      * @param array<string, Field> $fields
      *   An array of fields keyed by column name.
      *
-     * @return array
+     * @return array<array<string, string|\Stringable>|TableSeparator>
      *   Table rows.
      */
     protected function buildRows(array $values, array $fields, Environment $environment): array
@@ -542,8 +543,8 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * Merges table rows per service to reduce unnecessary empty cells.
      *
-     * @param array $rows
-     * @return array
+     * @param array<array<string, string|\Stringable>|TableSeparator> $rows
+     * @return array<array<string, string|\Stringable>|TableSeparator>
      */
     private function mergeRows(array $rows): array
     {

@@ -78,7 +78,6 @@ class EnvironmentLogCommand extends CommandBase
             $this->stdErr->writeln('No log type specified.');
             return 1;
         } else {
-            $questionHelper = $this->questionHelper;
 
             // Read the list of files from the environment.
             $cacheKey = sprintf('log-files:%s', $host->getCacheKey());
@@ -102,7 +101,7 @@ class EnvironmentLogCommand extends CommandBase
 
             // Ask the user to choose a file.
             $files = array_combine($files, array_map(fn($file): string => str_replace('.log', '', basename(trim((string) $file))), $files));
-            $logFilename = $questionHelper->choose($files, 'Enter a number to choose a log: ');
+            $logFilename = $this->questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 
         $command = sprintf('tail -n %1$d %2$s', $input->getOption('lines'), $logFilename);

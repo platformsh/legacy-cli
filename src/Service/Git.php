@@ -15,6 +15,7 @@ class Git
 
     private ?string $repositoryDir = null;
     private ?string $sshCommandFile = null;
+    /** @var string[] */
     private array $extraSshOptions = [];
 
     /**
@@ -38,7 +39,7 @@ class Git
         if (!$version) {
             $version = false;
             $string = $this->execute(['--version'], false);
-            if ($string && preg_match('/(^| )([0-9]+[^ ]*)/', $string, $matches)) {
+            if (is_string($string) && preg_match('/(^| )([0-9]+[^ ]*)/', $string, $matches)) {
                 $version = $matches[2];
             }
         }
@@ -104,23 +105,20 @@ class Git
      *   Enable exceptions if the Git command fails.
      * @param bool $quiet
      *   Suppress command output.
-     * @param array $env
+     * @param array<string, string> $env
      * @param bool $online
      * @param string $uri
      *
-     * @return string|bool
-     *   The command output, true if there is no output, or false if the command
-     *   fails.
+     * @return string|false
+     *   The command output or false if the command fails.
      *@throws RuntimeException
      *   If the command fails and $mustRun is enabled.
      *
      */
-    public function execute(array $args, string|false|null $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], bool $online = false, string $uri = ''): string|bool
+    public function execute(array $args, string|false|null $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], bool $online = false, string $uri = ''): string|false
     {
         // If enabled, set the working directory to the repository.
-        if ($dir !== false) {
-            $dir = $dir ?: $this->repositoryDir;
-        }
+        $dir = $dir !== false ? ($dir ?: $this->repositoryDir) : null;
         // Set up SSH, if the Git command might connect to a remote.
         if ($online) {
             $env += $this->setupSshEnv($uri);
@@ -129,6 +127,20 @@ class Git
         array_unshift($args, 'git');
 
         return $this->shell->execute($args, $dir, $mustRun, $quiet, $env);
+    }
+
+    /**
+     * Executes a Git command and returns its output, throwing an exception on failure.
+     *
+     * @param string[] $args Command arguments (everything after 'git').
+     * @param array<string, string> $env
+     *
+     * @return string The command output.
+     * @throws RuntimeException If the command fails.
+     */
+    public function mustExecute(array $args, string|false|null $dir = null, bool $quiet = true, array $env = [], bool $online = false, string $uri = ''): string
+    {
+        return (string) $this->execute($args, $dir, true, $quiet, $env, $online, $uri);
     }
 
     /**
@@ -171,9 +183,9 @@ class Git
         if ($ref !== null) {
             $args[] = $ref;
         }
-        $result = $this->execute($args, false, true, true, [], true, $url);
+        $result = $this->mustExecute($args, dir: false, online: true, uri: $url);
 
-        return !is_bool($result) && strlen($result) > 0;
+        return strlen($result) > 0;
     }
 
     /**
@@ -194,7 +206,11 @@ class Git
         // encoding than (otherwise simpler) plumbing commands such as
         // 'git show-ref'.
         $result = $this->execute(['branch', '--list', '--no-color', '--no-column'], $dir, $mustRun);
-        $branches = array_map(fn($line): string => trim(ltrim((string) $line, '* ')), explode("\n", $result));
+        if ($result === false) {
+            return false;
+        }
+
+        $branches = array_map(fn($line) => trim(ltrim($line, '* ')), explode("\n", $result));
 
         return in_array($branchName, $branches, true);
     }
@@ -348,7 +364,7 @@ class Git
      */
     public function supportsGitSshCommand(): bool
     {
-        return version_compare($this->getVersion(), '2.3', '>=');
+        return version_compare($this->getVersion() ?: '', '2.3', '>=');
     }
 
     /**
@@ -356,7 +372,7 @@ class Git
      */
     public function supportsGitInitialBranchFlag(): bool
     {
-        return version_compare($this->getVersion(), '2.28', '>=');
+        return version_compare($this->getVersion() ?: '', '2.28', '>=');
     }
 
     /**
@@ -368,7 +384,7 @@ class Git
      *   The Git repository URL or file path.
      * @param ?string $destination
      *   A directory name to clone into.
-     * @param array $args
+     * @param string[] $args
      *   Extra arguments for the Git command.
      * @param bool $mustRun
      *   Enable exceptions if the Git command fails.
@@ -491,7 +507,7 @@ class Git
      *
      * @param string $gitUri
      *
-     * @return array
+     * @return array<string, string>
      */
     public function setupSshEnv(string $gitUri): array
     {

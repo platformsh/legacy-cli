@@ -9,6 +9,7 @@ use Platformsh\Cli\Util\PlainFormat;
 use Platformsh\Cli\Util\Wildcard;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -102,7 +103,7 @@ class Table implements InputConfiguringInterface
     /**
      * Modifies the input to replace deprecated column names, and outputs a warning for each.
      *
-     * @param array $replacements
+     * @param array<string, string> $replacements
      * @param InputInterface $input
      * @param OutputInterface $output
      *
@@ -124,7 +125,7 @@ class Table implements InputConfiguringInterface
     /**
      * Modifies the input to remove deprecated columns, and outputs a warning for each.
      *
-     * @param array $remove A list of column names to remove.
+     * @param string[] $remove A list of column names to remove.
      * @param string $placeholder The name of a placeholder column to display in place of the removed one.
      * @param InputInterface $input
      * @param OutputInterface $output
@@ -147,8 +148,8 @@ class Table implements InputConfiguringInterface
     /**
      * Render an single-dimensional array of values, with their property names.
      *
-     * @param array<string|TableCell> $values
-     * @param array<string|TableCell> $propertyNames
+     * @param array<int|string, string|TableCell> $values
+     * @param array<int|string, string|TableCell> $propertyNames
      */
     public function renderSimple(array $values, array $propertyNames): void
     {
@@ -187,7 +188,7 @@ class Table implements InputConfiguringInterface
             if ($specifiedColumn === '+') {
                 $requestedCols = \array_merge($requestedCols, $defaultColumns);
             } else {
-                $requestedCols[] = \strtolower((string) $specifiedColumn);
+                $requestedCols[] = \strtolower($specifiedColumn);
             }
         }
 
@@ -208,9 +209,9 @@ class Table implements InputConfiguringInterface
     /**
      * Render a table of data to output.
      *
-     * @param array $rows
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
      *   The table rows.
-     * @param string[] $header
+     * @param array<int|string, string|TableCell> $header
      *   The table header (optional).
      * @param string[] $defaultColumns
      *   Default columns to display (optional). Columns are identified by
@@ -222,10 +223,12 @@ class Table implements InputConfiguringInterface
 
         $columnsToDisplay = $this->columnsToDisplay($header, $defaultColumns);
         $rows = $this->filterColumns($rows, $header, $columnsToDisplay);
-        $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
 
         if ($this->input->hasOption('no-header') && $this->input->getOption('no-header')) {
             $header = [];
+        } else {
+            /** @var array<int|string, string|TableCell> $header */
+            $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
         }
 
         switch ($format) {
@@ -266,7 +269,7 @@ class Table implements InputConfiguringInterface
     /**
      * Get the columns specified by the user.
      *
-     * @return array
+     * @return string[]
      */
     protected function specifiedColumns(): array
     {
@@ -288,8 +291,8 @@ class Table implements InputConfiguringInterface
     /**
      * Returns the available columns, which are all the (lower-cased) values and string keys in the header.
      *
-     * @param array $header
-     * @return array
+     * @param array<int|string, string|TableCell> $header
+     * @return array<string, string|int>
      */
     private static function availableColumns(array $header): array
     {
@@ -304,11 +307,11 @@ class Table implements InputConfiguringInterface
     /**
      * Filter rows by column names.
      *
-     * @param array    $rows
-     * @param array    $header
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      * @param string[] $columnsToDisplay
      *
-     * @return array
+     * @return array<array<int|string, string|int|float|TableCell>|TableSeparator>
      */
     private function filterColumns(array $rows, array $header, array $columnsToDisplay): array
     {
@@ -363,12 +366,16 @@ class Table implements InputConfiguringInterface
 
     /**
      * Renders CSV output.
+     *
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      */
     protected function renderCsv(array $rows, array $header, string $delimiter = ','): void
     {
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
+        // Remove TableSeparator objects.
         $rows = array_filter($rows, '\\is_array');
         // RFC 4180 (the closest thing to a CSV standard) asks for CRLF line
         // breaks, but these do not play nicely with POSIX shells whose
@@ -380,14 +387,15 @@ class Table implements InputConfiguringInterface
     /**
      * Render plain, line-based output.
      *
-     * @param array $rows
-     * @param array $header
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      */
     protected function renderPlain(array $rows, array $header): void
     {
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
+        // Remove TableSeparator objects.
         $rows = array_filter($rows, '\\is_array');
         $this->output->write((new PlainFormat())->format($rows));
     }
@@ -395,8 +403,8 @@ class Table implements InputConfiguringInterface
     /**
      * Render a Symfony Console table.
      *
-     * @param array $rows
-     * @param array $header
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      */
     protected function renderTable(array $rows, array $header): void
     {

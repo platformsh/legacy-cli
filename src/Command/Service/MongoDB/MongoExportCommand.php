@@ -67,8 +67,7 @@ class MongoExportCommand extends CommandBase
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
-            $questionHelper = $this->questionHelper;
-            $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
+            $collection = $this->questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
         }
 
         $command = 'mongoexport ' . $this->relationships->getDbCommandArgs('mongoexport', $service);
@@ -99,10 +98,10 @@ class MongoExportCommand extends CommandBase
     /**
      * Get collections in the MongoDB database.
      *
-     * @param array         $service
+     * @param array{username: string, password: string, host: string, port:int, path: string} $service
      * @param HostInterface $host
      *
-     * @return array
+     * @return string[]
      */
     private function getCollections(array $service, HostInterface $host): array
     {
@@ -127,6 +126,6 @@ class MongoExportCommand extends CommandBase
 
         $collections = json_decode($result, true) ?: [];
 
-        return array_filter($collections, fn($collection): bool => !str_starts_with((string) $collection, 'system.'));
+        return array_filter($collections, fn(string $collection): bool => !str_starts_with((string) $collection, 'system.'));
     }
 }

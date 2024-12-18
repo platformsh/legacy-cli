@@ -68,8 +68,7 @@ class DomainGetCommand extends DomainCommandBase
                 $options[$domain->name] = $domain->name;
                 $byName[$domain->name] = $domain;
             }
-            $questionHelper = $this->questionHelper;
-            $domainName = $questionHelper->choose($options, 'Enter a number to choose a domain:');
+            $domainName = $this->questionHelper->choose($options, 'Enter a number to choose a domain:');
             $domain = $byName[$domainName];
         }
 

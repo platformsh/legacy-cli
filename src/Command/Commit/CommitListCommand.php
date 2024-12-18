@@ -119,7 +119,11 @@ class CommitListCommand extends CommandBase
              count($currentCommit->parents) && count($commits) < $limit;) {
             foreach (array_reverse($currentCommit->parents) as $parentSha) {
                 if (!isset($commits[$parentSha])) {
-                    $commits[$parentSha] = $this->gitDataApi->getCommit($environment, $parentSha);
+                    $commit = $this->gitDataApi->getCommit($environment, $parentSha);
+                    if (!$commit) {
+                        throw new \RuntimeException(sprintf('Commit not found: %s', $parentSha));
+                    }
+                    $commits[$parentSha] = $commit;
                 }
                 $currentCommit = $commits[$parentSha];
                 $progress->advance();

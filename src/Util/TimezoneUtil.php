@@ -86,8 +86,7 @@ class TimezoneUtil
     {
         // Mac OS X (and older Linuxes): /etc/localtime is a symlink to the
         // timezone in /usr/share/zoneinfo or /var/db/timezone/zoneinfo.
-        if (is_link('/etc/localtime')) {
-            $filename = readlink('/etc/localtime');
+        if (is_link('/etc/localtime') && ($filename = readlink('/etc/localtime'))) {
             $prefixes = [
                 '/usr/share/zoneinfo/',
                 '/var/db/timezone/zoneinfo/',

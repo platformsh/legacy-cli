@@ -17,12 +17,12 @@ class ActivityMonitor
 {
     const STREAM_WAIT = 200000; // microseconds
 
-    protected static array $resultNames = [
+    private const RESULT_NAMES = [
         Activity::RESULT_FAILURE => 'failure',
         Activity::RESULT_SUCCESS => 'success',
     ];
 
-    protected static array $stateNames = [
+    private const STATE_NAMES = [
         Activity::STATE_PENDING => 'pending',
         Activity::STATE_COMPLETE => 'complete',
         Activity::STATE_IN_PROGRESS => 'in progress',
@@ -90,7 +90,7 @@ class ActivityMonitor
     {
         $envPrefix = $this->config->getStr('service.env_prefix');
         if (getenv($envPrefix . 'PROJECT')
-            && basename(getenv('SHELL')) === 'dash'
+            && basename((string) getenv('SHELL')) === 'dash'
             && !$this->io->isTerminal(STDIN)) {
             return true;
         }
@@ -316,7 +316,7 @@ class ActivityMonitor
     public function formatLog(array $items, bool|string $timestamps = false): string {
         $timestampFormat = false;
         if ($timestamps !== false) {
-            $timestampFormat = $timestamps ?: $this->config->getWithDefault('application.date_format', 'Y-m-d H:i:s');
+            $timestampFormat = $timestamps === true ? $this->config->getStr('application.date_format') : $timestamps;
         }
         $formatItem = function (LogItem $item) use ($timestampFormat): string {
             if ($timestampFormat !== false) {
@@ -576,7 +576,7 @@ class ActivityMonitor
      */
     public static function formatState(string $state): string
     {
-        return self::$stateNames[$state] ?? $state;
+        return self::STATE_NAMES[$state] ?? $state;
     }
 
     /**
@@ -584,7 +584,7 @@ class ActivityMonitor
      */
     public static function formatResult(string $result, bool $decorate = true): string
     {
-        $name = self::$resultNames[$result] ?? $result;
+        $name = self::RESULT_NAMES[$result] ?? $result;
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
@@ -675,7 +675,7 @@ class ActivityMonitor
         $readTimeout = 10;
         $interval = .5;
 
-        if ($this->config->getWithDefault('api.debug', false)) {
+        if ($this->config->getBool('api.debug')) {
             $bar->clear();
             $stdErr = $this->stdErr;
             $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");

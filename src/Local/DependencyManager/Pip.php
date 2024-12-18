@@ -84,7 +84,7 @@ class Pip extends DependencyManagerBase
     }
 
     /**
-     * @param array $dependencies
+     * @param array<string, mixed> $dependencies
      *
      * @return string
      */

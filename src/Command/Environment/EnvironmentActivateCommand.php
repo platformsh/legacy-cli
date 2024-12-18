@@ -21,6 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:activate', description: 'Activate an environment')]
 class EnvironmentActivateCommand extends CommandBase
 {
+    /** @var string[] */
     private array $validResourcesInitOptions = ['parent', 'default', 'minimum'];
 
     public function __construct(
@@ -69,6 +70,9 @@ class EnvironmentActivateCommand extends CommandBase
         return $success ? 0 : 1;
     }
 
+    /**
+     * @param Environment[] $environments
+     */
     protected function activateMultiple(array $environments, Project $project, InputInterface $input, OutputInterface $output): bool
     {
         $parentId = $input->getOption('parent');

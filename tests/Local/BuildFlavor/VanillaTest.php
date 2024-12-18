@@ -11,7 +11,7 @@ class VanillaTest extends BuildFlavorTestBase
     public function testBuildVanilla(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla');
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
     }
 
@@ -22,7 +22,7 @@ class VanillaTest extends BuildFlavorTestBase
     {
         $sourceDir = 'tests/data/apps/vanilla';
         $projectRoot = $this->assertBuildSucceeds($sourceDir, ['copy' => true]);
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
         $this->assertTrue(is_dir($webRoot), 'Web root is an actual directory');
     }
@@ -33,10 +33,10 @@ class VanillaTest extends BuildFlavorTestBase
     public function testBuildCustomWebRoot(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot');
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/vanilla-webroot', ['copy' => true]);
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/index.html');
     }
 

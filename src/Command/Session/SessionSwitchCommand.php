@@ -50,13 +50,12 @@ class SessionSwitchCommand extends CommandBase {
                 $this->stdErr->writeln('The new session ID is required');
                 return 1;
             }
-            $questionHelper = $this->questionHelper;
             $autocomplete = \array_merge(['default' => ''], \array_flip($this->api->listSessionIds()));
             unset($autocomplete[$previousId]);
             $default = count($autocomplete) === 1 ? key($autocomplete) : false;
             $this->stdErr->writeln('The current session ID is: <info>' . $previousId . '</info>');
             $this->stdErr->writeln('');
-            $newId = $questionHelper->askInput('Enter a new session ID', $default ?: null, \array_keys($autocomplete), function ($sessionId) {
+            $newId = $this->questionHelper->askInput('Enter a new session ID', $default ?: null, \array_keys($autocomplete), function ($sessionId) {
                 if (empty($sessionId)) {
                     throw new \RuntimeException('The session ID cannot be empty');
                 }

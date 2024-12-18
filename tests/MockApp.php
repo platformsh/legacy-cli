@@ -25,6 +25,9 @@ class MockApp
         return self::$application;
     }
 
+    /**
+     * @param array<string, mixed> $otherArgs
+     */
     public static function runAndReturnOutput(string $command, array $otherArgs = [], ?int $verbosity = null): string
     {
         $app = MockApp::instance();

@@ -34,7 +34,7 @@ class SelfInstallChecker
         self::$checkedSelfInstall = true;
 
         // Avoid if disabled, or if in non-interactive mode.
-        if (!$this->config->getWithDefault('application.prompt_self_install', true)
+        if (!$this->config->getBool('application.prompt_self_install')
             || !$this->config->isCommandEnabled('self:install')
             || !$this->input->isInteractive()) {
             return;

@@ -46,8 +46,8 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
 
     public function isEnabled(): bool
     {
-        return $this->config->get('api.centralized_permissions')
-            && $this->config->get('api.organizations')
+        return $this->config->getBool('api.centralized_permissions')
+            && $this->config->getBool('api.organizations')
             && parent::isEnabled();
     }
 

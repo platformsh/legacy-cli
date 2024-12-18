@@ -170,21 +170,21 @@ class Selector implements CompleterInterface
         $remoteContainer = null;
         if ($input->hasOption('app')) {
             if ($input->getOption('app')) {
-                $appName = $input->getOption('app');
+                $appName = (string) $input->getOption('app');
             } elseif (isset($result['appId'])) {
                 // An app ID might be provided from the parsed project URL.
                 $appName = $result['appId'];
                 $this->debug(sprintf(
                     'App name identified as: %s',
-                    $input->getOption('app')
+                    $appName,
                 ));
             } elseif (getenv($envPrefix . 'APPLICATION_NAME')) {
                 // Or from an environment variable.
-                $appName = getenv($envPrefix . 'APPLICATION_NAME');
+                $appName = (string) getenv($envPrefix . 'APPLICATION_NAME');
                 $this->stdErr->writeln(sprintf(
                     'App name read from environment variable %s: %s',
                     $envPrefix . 'APPLICATION_NAME',
-                    $input->getOption('app')
+                    $appName,
                 ), OutputInterface::VERBOSITY_VERBOSE);
             }
 
@@ -539,7 +539,7 @@ class Selector implements CompleterInterface
                 }
                 if ($this->config->has('api.base_url')
                     && $e->getResponse()->getStatusCode() === 401
-                    && parse_url($this->config->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
+                    && parse_url($this->config->getStr('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
                     $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getUri()->getHost());
                     return $this->currentProject = false;
                 }
@@ -578,7 +578,7 @@ class Selector implements CompleterInterface
             return false;
         }
 
-        $this->git->setDefaultRepositoryDir($this->getProjectRoot());
+        $this->git->setDefaultRepositoryDir($projectRoot);
         $config = $this->localProject->getProjectConfig($projectRoot);
 
         // Check if there is a manual mapping set for the current branch.
@@ -776,7 +776,7 @@ class Selector implements CompleterInterface
                 ));
             }
             $workerName = $this->questionHelper->choose(
-                $workerNames,
+                array_combine($workerNames, $workerNames),
                 'Enter a number to choose a worker:'
             );
             $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
@@ -854,7 +854,7 @@ class Selector implements CompleterInterface
      */
     public function addOrganizationOptions(InputDefinition $definition, bool $includeProjectOption = false): void
     {
-        if ($this->config->getWithDefault('api.organizations', false)) {
+        if ($this->config->getBool('api.organizations')) {
             $definition->addOption(new InputOption('org', 'o', InputOption::VALUE_REQUIRED, 'The organization name (or ID)'));
             if ($includeProjectOption && !$definition->hasOption('project')) {
                 $definition->addOption(new InputOption('project', 'p', InputOption::VALUE_REQUIRED, 'The project ID or URL, which auto-selects the organization if --org is not used'));
@@ -884,7 +884,7 @@ class Selector implements CompleterInterface
      */
     public function selectOrganization(InputInterface $input, string $filterByLink = '', string $filterByCapability = '', bool $skipCache = false): Organization
     {
-        if (!$this->config->getWithDefault('api.organizations', false)) {
+        if (!$this->config->getBool('api.organizations')) {
             throw new \BadMethodCallException('Organizations are not enabled');
         }
 
@@ -996,7 +996,7 @@ class Selector implements CompleterInterface
         }
         $default = null;
         if (count($owned) === 1) {
-            $default = key($owned);
+            $default = (string) key($owned);
 
             // Move the default to the top of the list and label it.
             $options = [$default => $options[$default] . ' <info>(default)</info>'] + $options;

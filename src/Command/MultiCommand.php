@@ -34,7 +34,7 @@ class MultiCommand extends CommandBase
     {
         $this
             ->addArgument('cmd', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'The command to execute')
-            ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs, separated by commas and/or whitespace')
+            ->addOption('projects', 'p', InputOption::VALUE_REQUIRED, 'A list of project IDs. ' . ArrayArgument::SPLIT_HELP)
             ->addOption('continue', null, InputOption::VALUE_NONE, 'Continue running commands even if an exception is encountered')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property by which to sort the list of project options', 'title')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
@@ -111,6 +111,10 @@ class MultiCommand extends CommandBase
 
     /**
      * Shows a checklist using the dialog utility.
+     *
+     * @param array<string, string> $options An array of project labels keyed by ID.
+     *
+     * @return string[] A list of project IDs.
      */
     protected function showDialogChecklist(array $options, string $text = 'Choose item(s)'): array
     {
@@ -125,7 +129,7 @@ class MultiCommand extends CommandBase
             $listHeight
         );
         foreach ($options as $tag => $option) {
-            $command .= sprintf(' %s %s off', escapeshellarg($tag), escapeshellarg((string) $option));
+            $command .= sprintf(' %s %s off', escapeshellarg($tag), escapeshellarg($option));
         }
 
         $dialogRc = file_get_contents(CLI_ROOT . '/resources/console/dialogrc');
@@ -138,9 +142,12 @@ class MultiCommand extends CommandBase
         $process = proc_open($command, [
             2 => array('pipe', 'w'),
         ], $pipes);
+        if (!$process) {
+            throw new \RuntimeException('Failed to start dialog command: ' . $process);
+        }
 
         // Wait for and read result.
-        $result = array_filter(explode("\n", trim(stream_get_contents($pipes[2]))));
+        $result = array_filter(explode("\n", trim((string) stream_get_contents($pipes[2]))));
 
         // Close handles.
         if (is_resource($pipes[2])) {
@@ -188,12 +195,12 @@ class MultiCommand extends CommandBase
      */
     protected function getSelectedProjects(InputInterface $input): false|array
     {
-        $projectList = $input->getOption('projects');
+        $projectList = ArrayArgument::getOption($input, 'projects');
 
         if (!empty($projectList)) {
             $missing = [];
             $selected = [];
-            foreach ($this->splitProjectList($projectList) as $projectId) {
+            foreach ($projectList as $projectId) {
                 try {
                     $result = $this->identifier->identify($projectId);
                 } catch (InvalidArgumentException) {
@@ -239,14 +246,12 @@ class MultiCommand extends CommandBase
         $this->stdErr->writeln('Selected project(s): ' . implode(',', $selected));
         $this->stdErr->writeln('');
 
-        return array_map(fn($id) => $this->api->getProject($id), $selected);
-    }
-
-    /**
-     * Splits a list of project IDs.
-     */
-    private function splitProjectList(string $list): array
-    {
-        return array_filter(array_unique(preg_split('/[,\s]+/', $list) ?: []));
+        return array_map(function ($id) {
+            $project = $this->api->getProject($id);
+            if (!$project) {
+                throw new \RuntimeException('Failed to fetch project: ' . $id);
+            }
+            return $project;
+        }, $selected);
     }
 }

@@ -8,7 +8,9 @@ class Certificate {
     private readonly Metadata $metadata;
     private readonly string|bool $contents;
 
+    /** @var array<string, mixed>|null */
     private ?array $tokenClaims = null;
+    /** @var array<string, mixed>|null */
     private ?array $inlineAccess = null;
 
     public function __construct(private readonly string $certFile, private readonly string $privateKeyFile)
@@ -138,7 +140,7 @@ class Certificate {
     /**
      * Returns access info embedded in the certificate.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function inlineAccess(): array
     {

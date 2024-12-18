@@ -42,7 +42,7 @@ class ServerListCommand extends ServerCommandBase
         $headers = ['Address', 'PID', 'App', 'Project root', 'Log'];
         $rows = [];
         foreach ($servers as $address => $server) {
-            $row = [$address, $server['pid'], $server['appId'], $server['projectRoot']];
+            $row = [$address, (string) $server['pid'], $server['appId'], $server['projectRoot']];
             $logFile = ltrim(str_replace($server['projectRoot'], '', $server['logFile']), '/');
             $row[] = $logFile;
             $rows[] = $row;

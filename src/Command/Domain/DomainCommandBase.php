@@ -26,6 +26,7 @@ abstract class DomainCommandBase extends CommandBase
     private Api $api;
 
     // The final array of SSL options for the client parameters.
+    /** @var array{certificate?: string, key?: string, chain?: string[]} */
     protected array $sslOptions = [];
 
     protected ?string $domainName = null;
@@ -146,12 +147,11 @@ abstract class DomainCommandBase extends CommandBase
                                 $choices[$productionDomain->name] = $productionDomain->name;
                             }
                         }
-                        $questionHelper = $this->questionHelper;
                         $questionText = '<options=bold>Attachment</> (<info>--attach</info>)'
                             . "\nA non-production domain must be attached to an existing production domain."
                             . "\nIt will inherit the same routing behavior."
                             . "\nChoose a production domain:";
-                        $this->attach = $questionHelper->choose($choices, $questionText, $default);
+                        $this->attach = $this->questionHelper->choose($choices, $questionText, $default);
                     }
                 } elseif ($this->attach !== null) {
                     try {
@@ -215,7 +215,7 @@ abstract class DomainCommandBase extends CommandBase
         }
         // @todo standardize API error parsing if the format is ever formalized
         if ($response->getStatusCode() === 400) {
-            $data = Utils::jsonDecode((string) $response->getBody(), true);
+            $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
             if (isset($data['detail']['error'])) {
                 $this->stdErr->writeln($data['detail']['error']);
                 return;

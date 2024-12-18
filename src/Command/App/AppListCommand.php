@@ -97,7 +97,7 @@ class AppListCommand extends CommandBase
 
         $rows = [];
         foreach ($apps as $app) {
-            $row = [$app->name, $this->propertyFormatter->format($app->type, 'service_type'), 'disk' => $app->disk, $app->size];
+            $row = [$app->name, $this->propertyFormatter->format($app->type, 'service_type'), 'disk' => (string) $app->disk, $app->size];
             if ($showLocalPath) {
                 $row['path'] = $getLocalPath($app->name);
             }
@@ -137,7 +137,7 @@ class AppListCommand extends CommandBase
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
-            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->get('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->getBool('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
                     $executable

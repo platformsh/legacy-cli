@@ -61,6 +61,11 @@ parameters:
 			path: src/Command/Integration/IntegrationCommandBase.php
 
 		-
+			message: "#^Cannot call method set\\(\\) on Platformsh\\\\ConsoleForm\\\\Field\\\\Field\\|false\\.$#"
+			count: 1
+			path: src/Command/Organization/OrganizationCreateCommand.php
+
+		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:get\\(\\)\\.$#"
 			count: 1
 			path: src/Command/Project/ProjectCreateCommand.php
@@ -69,6 +74,11 @@ parameters:
 			message: "#^Access to an undefined property Platformsh\\\\Client\\\\Model\\\\Deployment\\\\Service\\|Platformsh\\\\Client\\\\Model\\\\Deployment\\\\WebApp\\|Platformsh\\\\Client\\\\Model\\\\Deployment\\\\Worker\\:\\:\\$container_profile\\.$#"
 			count: 3
 			path: src/Command/Resources/ResourcesSizeListCommand.php
+
+		-
+			message: "#^Parameter \\#1 \\$items of method Platformsh\\\\Cli\\\\Service\\\\QuestionHelper\\:\\:choose\\(\\) expects array\\<string, string\\>, array\\<int, string\\> given\\.$#"
+			count: 1
+			path: src/Command/SshKey/SshKeyDeleteCommand.php
 
 		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:post\\(\\)\\.$#"
@@ -106,9 +116,204 @@ parameters:
 			path: src/Command/WinkyCommand.php
 
 		-
-			message: "#^Negated boolean expression is always true\\.$#"
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:describeApplication\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
 			count: 1
-			path: src/Local/LocalProject.php
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:describeCommand\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:describeInputArgument\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:describeInputDefinition\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:describeInputOption\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:getCommandData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:getInputArgumentData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:getInputDefinitionData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:getInputOptionData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:writeData\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomJsonDescriptor\\:\\:writeData\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Parameter \\#1 \\$content of method Symfony\\\\Component\\\\Console\\\\Descriptor\\\\Descriptor\\:\\:write\\(\\) expects string, string\\|false given\\.$#"
+			count: 1
+			path: src/Console/CustomJsonDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomMarkdownDescriptor\\:\\:describeApplication\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomMarkdownDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomMarkdownDescriptor\\:\\:describeCommand\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomMarkdownDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomMarkdownDescriptor\\:\\:describeInputArgument\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomMarkdownDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomMarkdownDescriptor\\:\\:describeInputOption\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomMarkdownDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:describeApplication\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:describeCommand\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:describeInputOption\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:formatAliases\\(\\) has parameter \\$aliases with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:getColumnWidth\\(\\) has parameter \\$commands with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:getColumnWidth\\(\\) should return int but returns float\\|int\\<35, max\\>\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:writeText\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Console/CustomTextDescriptor.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\CredentialHelper\\\\SessionStorage\\:\\:load\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/CredentialHelper/SessionStorage.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\CredentialHelper\\\\SessionStorage\\:\\:save\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/CredentialHelper/SessionStorage.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\ConnectionFailedException\\:\\:\\$code has no type specified\\.$#"
+			count: 1
+			path: src/Exception/ConnectionFailedException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\ConnectionFailedException\\:\\:\\$message has no type specified\\.$#"
+			count: 1
+			path: src/Exception/ConnectionFailedException.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Exception\\\\DependencyMissingException\\:\\:__construct\\(\\) has parameter \\$message with no type specified\\.$#"
+			count: 1
+			path: src/Exception/DependencyMissingException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\InvalidConfigException\\:\\:\\$code has no type specified\\.$#"
+			count: 1
+			path: src/Exception/InvalidConfigException.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Exception\\\\LoginRequiredException\\:\\:__construct\\(\\) has parameter \\$message with no type specified\\.$#"
+			count: 1
+			path: src/Exception/LoginRequiredException.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Exception\\\\LoginRequiredException\\:\\:__construct\\(\\) has parameter \\$previous with no type specified\\.$#"
+			count: 1
+			path: src/Exception/LoginRequiredException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\LoginRequiredException\\:\\:\\$code has no type specified\\.$#"
+			count: 1
+			path: src/Exception/LoginRequiredException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\LoginRequiredException\\:\\:\\$message has no type specified\\.$#"
+			count: 1
+			path: src/Exception/LoginRequiredException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\PermissionDeniedException\\:\\:\\$code has no type specified\\.$#"
+			count: 1
+			path: src/Exception/PermissionDeniedException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\PermissionDeniedException\\:\\:\\$message has no type specified\\.$#"
+			count: 1
+			path: src/Exception/PermissionDeniedException.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Exception\\\\ProjectNotFoundException\\:\\:\\$code has no type specified\\.$#"
+			count: 1
+			path: src/Exception/ProjectNotFoundException.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Exception\\\\RootNotFoundException\\:\\:__construct\\(\\) has parameter \\$code with no type specified\\.$#"
+			count: 1
+			path: src/Exception/RootNotFoundException.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Exception\\\\RootNotFoundException\\:\\:__construct\\(\\) has parameter \\$message with no type specified\\.$#"
+			count: 1
+			path: src/Exception/RootNotFoundException.php
+
+		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\\\Expr\\\\Error\\|PhpParser\\\\Node\\\\Expr\\\\Variable\\:\\:\\$name\\.$#"
+			count: 3
+			path: src/Rector/DependencyInjection.php
+
+		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\\\Expr\\|PhpParser\\\\Node\\\\Identifier\\:\\:\\$name\\.$#"
+			count: 2
+			path: src/Rector/InjectCommandServicesRector.php
 
 		-
 			message: "#^Parameter \\#2 \\$callable of method Rector\\\\Rector\\\\AbstractRector\\:\\:traverseNodesWithCallable\\(\\) expects callable\\(PhpParser\\\\Node\\)\\: \\(array\\<PhpParser\\\\Node\\>\\|int\\|PhpParser\\\\Node\\|null\\), Closure\\(PhpParser\\\\NodeAbstract\\)\\: \\(PhpParser\\\\Node\\\\Expr\\\\Assign\\|null\\) given\\.$#"
@@ -116,9 +321,34 @@ parameters:
 			path: src/Rector/InjectCommandServicesRector.php
 
 		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\\\Expr\\|PhpParser\\\\Node\\\\Identifier\\:\\:\\$name\\.$#"
+			count: 1
+			path: src/Rector/NewServicesRector.php
+
+		-
 			message: "#^Parameter \\#2 \\$callable of method Rector\\\\Rector\\\\AbstractRector\\:\\:traverseNodesWithCallable\\(\\) expects callable\\(PhpParser\\\\Node\\)\\: \\(array\\<PhpParser\\\\Node\\>\\|int\\|PhpParser\\\\Node\\|null\\), Closure\\(PhpParser\\\\NodeAbstract\\)\\: \\(PhpParser\\\\Node\\\\Expr\\\\MethodCall\\|null\\) given\\.$#"
 			count: 1
 			path: src/Rector/NewServicesRector.php
+
+		-
+			message: "#^Property PhpParser\\\\Node\\\\Expr\\\\MethodCall\\:\\:\\$args \\(array\\<PhpParser\\\\Node\\\\Arg\\|PhpParser\\\\Node\\\\VariadicPlaceholder\\>\\) does not accept array\\<PhpParser\\\\Node\\\\Arg\\>\\|string\\.$#"
+			count: 1
+			path: src/Rector/NewServicesRector.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Rector\\\\NewServicesRector\\:\\:\\$transforms type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Rector/NewServicesRector.php
+
+		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\\\Arg\\|PhpParser\\\\Node\\\\VariadicPlaceholder\\:\\:\\$value\\.$#"
+			count: 3
+			path: src/Rector/UseSelectorServiceRector.php
+
+		-
+			message: "#^Access to an undefined property PhpParser\\\\Node\\\\Expr\\|PhpParser\\\\Node\\\\Identifier\\:\\:\\$name\\.$#"
+			count: 6
+			path: src/Rector/UseSelectorServiceRector.php
 
 		-
 			message: "#^Parameter \\#2 \\$callable of method Rector\\\\Rector\\\\AbstractRector\\:\\:traverseNodesWithCallable\\(\\) expects callable\\(PhpParser\\\\Node\\)\\: \\(array\\<PhpParser\\\\Node\\>\\|int\\|PhpParser\\\\Node\\|null\\), Closure\\(PhpParser\\\\NodeAbstract\\)\\: \\(PhpParser\\\\Node\\\\Expr\\\\Assign\\|PhpParser\\\\Node\\\\Expr\\\\MethodCall\\|null\\) given\\.$#"
@@ -131,6 +361,31 @@ parameters:
 			path: src/Service/ActivityMonitor.php
 
 		-
+			message: "#^Method Platformsh\\\\Cli\\\\Service\\\\Api\\:\\:checkCanCreate\\(\\) should return array\\{can_create\\: bool, message\\: string, required_action\\: array\\{action\\: string, type\\: string\\}\\|null\\} but returns array\\.$#"
+			count: 1
+			path: src/Service/Api.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Service\\\\Api\\:\\:checkUserVerification\\(\\) should return array\\{state\\: bool, type\\: string\\} but returns array\\.$#"
+			count: 1
+			path: src/Service/Api.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Service\\\\Api\\:\\:getMyAccount\\(\\) should return array\\{id\\: string, username\\: string, email\\: string, first_name\\: string, last_name\\: string, display_name\\: string, phone_number_verified\\: bool\\} but returns non\\-empty\\-array\\.$#"
+			count: 1
+			path: src/Service/Api.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Service\\\\Filesystem\\:\\:remove\\(\\) has parameter \\$files with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Service/Filesystem.php
+
+		-
+			message: "#^Method Platformsh\\\\Cli\\\\Service\\\\Filesystem\\:\\:unprotect\\(\\) has parameter \\$files with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Service/Filesystem.php
+
+		-
 			message: "#^Call to an undefined method GuzzleHttp\\\\ClientInterface\\:\\:head\\(\\)\\.$#"
 			count: 1
 			path: src/Service/Identifier.php
@@ -141,6 +396,11 @@ parameters:
 			path: tests/Command/User/UserAddCommandTest.php
 
 		-
-			message: "#^Property Platformsh\\\\Cli\\\\Tests\\\\Command\\\\User\\\\UserAddCommandTest\\:\\:\\$mockTypes is never read, only written\\.$#"
+			message: "#^Property Platformsh\\\\Cli\\\\Tests\\\\Local\\\\LocalBuildTest\\:\\:\\$localBuild \\(Platformsh\\\\Cli\\\\Local\\\\LocalBuild\\|null\\) does not accept object\\.$#"
 			count: 1
-			path: tests/Command/User/UserAddCommandTest.php
+			path: tests/Local/LocalBuildTest.php
+
+		-
+			message: "#^Property Platformsh\\\\Cli\\\\Tests\\\\Service\\\\SshTest\\:\\:\\$ssh \\(Platformsh\\\\Cli\\\\Service\\\\Ssh\\|null\\) does not accept object\\.$#"
+			count: 1
+			path: tests/Service/SshTest.php
