@@ -17,6 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'worker:list', description: 'Get a list of all deployed workers', aliases: ['workers'])]
 class WorkerListCommand extends CommandBase
 {
+    /** @var array<string|int, string> */
     private array $tableHeader = ['Name', 'Type', 'Commands'];
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)

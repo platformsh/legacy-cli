@@ -19,12 +19,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'route:list', description: 'List all routes for an environment', aliases: ['routes'])]
 class RouteListCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'route' => 'Route',
         'type' => 'Type',
         'to' => 'To',
         'url' => 'URL',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['route', 'type', 'to'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly Selector $selector, private readonly Table $table)
     {

@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'resources:size:list', description: 'List container profile sizes', aliases: ['resources:sizes'])]
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
+    /** @var array<string, string> */
     protected array $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
     public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {

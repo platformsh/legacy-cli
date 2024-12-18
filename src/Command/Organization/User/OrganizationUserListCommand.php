@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:user:list', description: 'List organization users', aliases: ['org:users'])]
 class OrganizationUserListCommand extends OrganizationCommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'first_name' => 'First name',
@@ -31,6 +32,7 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         'created_at' => 'Created at',
         'updated_at' => 'Updated at',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'email', 'owner', 'permissions'];
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)

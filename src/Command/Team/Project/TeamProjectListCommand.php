@@ -20,12 +20,14 @@ class TeamProjectListCommand extends TeamCommandBase
 {
     const MAX_COUNT = 200;
 
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'Project ID',
         'title' => 'Project title',
         'granted_at' => 'Date added',
         'updated_at' => 'Updated at',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'title', 'granted_at'];
 
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)

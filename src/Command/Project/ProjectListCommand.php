@@ -21,6 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'project:list', description: 'Get a list of all active projects', aliases: ['projects', 'pro'])]
 class ProjectListCommand extends CommandBase
 {
+    /** @var array<string, string> */
     private array $tableHeader = [
         'id' => 'ID',
         'title' => 'Title',
@@ -31,6 +32,7 @@ class ProjectListCommand extends CommandBase
         'status' => 'Status',
         'created_at' => 'Created',
     ];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'title', 'region'];
 
     public function __construct(

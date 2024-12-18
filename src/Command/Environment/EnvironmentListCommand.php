@@ -20,7 +20,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:list', description: 'Get a list of environments', aliases: ['environments', 'env'])]
 class EnvironmentListCommand extends CommandBase
 {
+    /** @var array<string|int, string> */
     private array $tableHeader = ['ID', 'machine_name' => 'Machine name', 'Title', 'Status', 'Type', 'Created', 'Updated'];
+    /** @var string[] */
     private array $defaultColumns = ['id', 'title', 'status', 'type'];
 
     private Environment|false $currentEnvironment = false;
