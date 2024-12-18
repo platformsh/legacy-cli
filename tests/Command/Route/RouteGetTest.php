@@ -11,7 +11,7 @@ class RouteGetTest extends TestCase
 {
     public function setUp(): void
     {
-        $mockRoutes = base64_encode(json_encode([
+        $mockRoutes = base64_encode((string) json_encode([
             'https://example.com' => [
                 'primary' => true,
                 'type' => 'upstream',

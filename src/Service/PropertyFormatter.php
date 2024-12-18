@@ -3,6 +3,7 @@
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Util\NestedArrayUtil;
+use Platformsh\Cli\Util\TimezoneUtil;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -66,17 +67,18 @@ class PropertyFormatter implements InputConfiguringInterface
                 break;
 
             case 'service_type':
-                if (substr_count((string) $value, ':') === 2) {
-                    $value = substr((string) $value, 0, strrpos((string) $value, ':'));
+                if (is_string($value) && substr_count($value, ':') === 2) {
+                    [$stack, $version,] = explode(':', $value);
+                    $value = $stack . ':' . $version;
                 }
                 break;
         }
 
         if (!is_string($value) && !is_float($value)) {
-            $value = rtrim(Yaml::dump($value, 2));
+            $value = rtrim(Yaml::dump($value));
         }
 
-        return $value;
+        return (string) $value;
     }
 
     /**
@@ -93,7 +95,7 @@ class PropertyFormatter implements InputConfiguringInterface
             null,
             InputOption::VALUE_REQUIRED,
             'The date format (as a PHP date format string)',
-            $config->getWithDefault('application.date_format', 'c')
+            $config->getStr('application.date_format')
         ));
     }
 
@@ -105,7 +107,7 @@ class PropertyFormatter implements InputConfiguringInterface
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {
             return $this->input->getOption('date-fmt');
         }
-        return $this->config->getWithDefault('application.date_format', 'c');
+        return $this->config->getStr('application.date_format');
     }
 
     /**
@@ -113,19 +115,23 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @param int|string $value
      *
-     * @return string|null
+     * @return string
+     * @throws \Exception if the date is malformed.
      */
-    public function formatDate(int|string $value): ?string
+    public function formatDate(int|string $value): string
     {
-        // Workaround for the ssl.expires_on date, which is currently a
-        // timestamp in milliseconds.
-        if (str_ends_with($value, '000') && strlen($value) === 13) {
-            $value = substr($value, 0, 10);
+        if (is_numeric($value)) {
+            $dateTime = new \DateTime();
+            $dateTime->setTimestamp((int) $value);
+        } else {
+            $dateTime = new \DateTime($value);
         }
+        $dateTime->setTimezone(new \DateTimeZone(
+            $this->config->getWithDefault('application.timezone', null)
+            ?: TimezoneUtil::getTimezone()
+        ));
 
-        $timestamp = is_numeric($value) ? $value : strtotime($value);
-
-        return $timestamp === false ? null : date($this->dateFormat(), $timestamp);
+        return $dateTime->format($this->dateFormat());
     }
 
     /**
@@ -136,6 +142,10 @@ class PropertyFormatter implements InputConfiguringInterface
         return date($this->dateFormat(), $value);
     }
 
+    /**
+     * @param array<string, mixed>|string|null $httpAccess
+     * @return string
+     */
     protected function formatHttpAccess(array|string|null $httpAccess): string
     {
         $info = (array) $httpAccess;
@@ -154,7 +164,7 @@ class PropertyFormatter implements InputConfiguringInterface
      * Displays a complex data structure.
      *
      * @param OutputInterface $output An output object.
-     * @param array $data The data to display.
+     * @param array<string, mixed> $data The data to display.
      * @param string|null $property The property of the data to display
      *                              (a dot-separated string).
      */

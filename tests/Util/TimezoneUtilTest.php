@@ -9,7 +9,7 @@ class TimezoneUtilTest extends TestCase
 {
     private string $originalSetting;
     private string|bool $originalIni;
-    private string|array|bool $originalEnv;
+    private string|bool $originalEnv;
 
     public function setUp(): void
     {

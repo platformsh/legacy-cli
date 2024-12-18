@@ -29,7 +29,7 @@ class OrganizationCommandBase extends CommandBase
 
     public function isEnabled(): bool
     {
-        if (!$this->config->getWithDefault('api.organizations', false)) {
+        if (!$this->config->getBool('api.organizations')) {
             return false;
         }
         return parent::isEnabled();

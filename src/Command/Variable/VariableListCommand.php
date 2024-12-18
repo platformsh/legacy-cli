@@ -100,11 +100,7 @@ class VariableListCommand extends CommandBase
                 $row['value'] = $variable->value;
             }
 
-            if ($variable->hasProperty('is_enabled')) {
-                $row['is_enabled'] = $variable->is_enabled ? 'true' : 'false';
-            } else {
-                $row['is_enabled'] = '';
-            }
+            $row['is_enabled'] = $variable->getProperty('is_enabled', false) ?? '';
 
             $rows[] = $row;
         }

@@ -81,6 +81,9 @@ class OrganizationAddressCommand extends OrganizationCommandBase
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function parseUpdates(InputInterface $input): array
     {
         $property = $input->getArgument('property');
@@ -117,7 +120,7 @@ class OrganizationAddressCommand extends OrganizationCommandBase
     }
 
     /**
-     * @param array $updates
+     * @param array<string, mixed> $updates
      * @param Address $address
      *
      * @return int

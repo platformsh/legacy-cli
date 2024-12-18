@@ -32,7 +32,7 @@ class CredentialHelperTest extends TestCase
         $this->manager->install();
 
         // Set up the session.
-        $testData = ['foo' => 'bar', '1' => ['2' => '3']];
+        $testData = ['foo' => 'bar'];
         $session = new Session();
         $session->setStorage($this->storage);
 

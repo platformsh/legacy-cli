@@ -65,7 +65,7 @@ readonly class SessionStorage implements SessionStorageInterface
     }
 
     /**
-     * @return array
+     * @return string[]
      */
     public function listSessionIds(): array
     {
@@ -121,13 +121,13 @@ readonly class SessionStorage implements SessionStorageInterface
     /**
      * Serialize session data.
      *
-     * @param array $data
+     * @param array<string, mixed> $data
      *
      * @return string
      */
     private function serialize(array $data): string
     {
-        return base64_encode(json_encode($data, JSON_UNESCAPED_SLASHES));
+        return base64_encode((string) json_encode($data, JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -135,11 +135,11 @@ readonly class SessionStorage implements SessionStorageInterface
      *
      * @param string $data
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function deserialize(string $data): array
     {
-        $result = json_decode(base64_decode($data, true), true);
+        $result = json_decode((string) base64_decode($data, true), true);
 
         return is_array($result) ? $result : [];
     }

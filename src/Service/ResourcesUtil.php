@@ -21,8 +21,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ResourcesUtil
 {
-    private static array $cachedNextDeployment = [];
     private readonly OutputInterface $stdErr;
+
+    /** @var array<string, EnvironmentDeployment> */
+    private static array $cachedNextDeployment = [];
 
     public function __construct(private readonly Api $api, private readonly Config $config, OutputInterface $output)
     {
@@ -31,7 +33,7 @@ class ResourcesUtil
 
     public function featureEnabled(): bool
     {
-        return $this->config->get('api.sizing');
+        return $this->config->getBool('api.sizing');
     }
 
     /**
@@ -155,9 +157,9 @@ class ResourcesUtil
     /**
      * Returns container profile size info, given service properties.
      *
-     * @param array $properties
+     * @param array<string, mixed> $properties
      *   The service properties (e.g. from $service->getProperties()).
-     * @param array $containerProfiles
+     * @param array<string, mixed> $containerProfiles
      *   The list of container profiles (e.g. from
      *   $deployment->container_profiles).
      *
@@ -245,7 +247,7 @@ class ResourcesUtil
      *
      * @param InputInterface $input
      * @param Project $project
-     * @param array $allowedValues
+     * @param string[] $allowedValues
      * @return string|false|null
      *   The input value, or false if there was a validation error, or null if
      *   nothing was specified or the input option didn't exist.

@@ -13,8 +13,11 @@ class StringUtil
     public static function between(string $str, string $begin, string $end): ?string
     {
         $first = \strpos($str, $begin);
+        if ($first === false) {
+            return null;
+        }
         $last = \strrpos($str, $end, $first);
-        if ($first === false || $last === false) {
+        if ($last === false) {
             return null;
         }
         $offset = $first + \strlen($begin);
@@ -24,6 +27,8 @@ class StringUtil
 
     /**
      * Formats a list of items.
+     *
+     * @param string[] $items
      */
     public static function formatItemList(array $items, string $before = '', string $after = '', string $andOr = ' or ', string $separator = ', '): string
     {

@@ -43,10 +43,9 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
             }
             $options = [];
             foreach ($keys as $key) {
-                $options[$key->key_id] = sprintf('%s (%s)', $key->key_id, $key->title ?: $key->fingerprint);
+                $options[(string) $key->key_id] = sprintf('%s (%s)', $key->key_id, $key->title ?: $key->fingerprint);
             }
-            $questionHelper = $this->questionHelper;
-            $id = $questionHelper->choose($options, 'Enter a number to choose a key to delete:', null, false);
+            $id = $this->questionHelper->choose($options, 'Enter a number to choose a key to delete:', null, false);
         }
         if (empty($id) || !is_numeric($id)) {
             $this->stdErr->writeln('<error>You must specify the ID of the SSH key to delete.</error>');
@@ -59,7 +58,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
         }
 
         $key = $this->api->getClient()
-                    ->getSshKey($id);
+                    ->getSshKey((string) $id);
         if (!$key) {
             $this->stdErr->writeln("SSH key not found: <error>$id</error>");
 

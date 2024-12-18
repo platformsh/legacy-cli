@@ -46,7 +46,7 @@ class SubscriptionInfoCommand extends CommandBase
         if (empty($id)) {
             $selection = $this->selector->getSelection($input);
             $project = $selection->getProject();
-            $id = $project->getSubscriptionId();
+            $id = (string) $project->getSubscriptionId();
         }
 
         $subscription = $this->api->loadSubscription($id, $project, $input->getArgument('value') !== null);
@@ -120,7 +120,7 @@ class SubscriptionInfoCommand extends CommandBase
             $this->propertyFormatter->format($currentValue, $property),
             $this->propertyFormatter->format($value, $property)
         );
-        if ($this->config->getWithDefault('warnings.project_users_billing', true)) {
+        if ($this->config->getBool('warnings.project_users_billing')) {
             $warning = sprintf(
                 '<comment>This action may %s the cost of your subscription.</comment>',
                 is_numeric($value) && $value > $currentValue ? 'increase' : 'change'

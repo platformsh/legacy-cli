@@ -25,13 +25,13 @@ class Manager {
      * @return bool
      */
     public function isSupported(): bool {
-        if ($this->config->getWithDefault('api.disable_credential_helpers', false)) {
+        if ($this->config->getBool('api.disable_credential_helpers')) {
             return false;
         }
         try {
             $this->getHelper();
             return true;
-        } catch (\RuntimeException) {
+        } catch (\RuntimeException $e) {
             return false;
         }
     }
@@ -109,22 +109,18 @@ class Manager {
             throw $e;
         }
 
-        if (is_string($data)) {
-            $json = json_decode($data, true);
-            if ($json === null || !isset($json['Secret'])) {
-                throw new \RuntimeException('Failed to decode JSON from credential helper');
-            }
-
-            return $json['Secret'];
+        $json = json_decode($data, true);
+        if ($json === null || !isset($json['Secret'])) {
+            throw new \RuntimeException('Failed to decode JSON from credential helper');
         }
 
-        return false;
+        return $json['Secret'];
     }
 
     /**
      * Lists all secrets.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function listAll(): array {
         $data = $this->exec('list');
@@ -134,6 +130,8 @@ class Manager {
 
     /**
      * Verifies that a helper exists and is executable at a path.
+     *
+     * @param array{url: string, filename: string, sha256: string} $helper
      */
     private function helperExists(array $helper, string $path): bool {
         if (!file_exists($path) || !is_executable($path)) {
@@ -146,7 +144,7 @@ class Manager {
     /**
      * Downloads, extracts, and moves the credential helper to a destination.
      *
-     * @param array $helper
+     * @param array{url: string, filename: string, sha256: string} $helper
      * @param string $destination
      */
     private function download(array $helper, string $destination): void {
@@ -215,13 +213,13 @@ class Manager {
                     }
                 } elseif ($this->shell->commandExists('unzip')) {
                     $command = 'unzip ' . escapeshellarg($tmpFile) . ' -d ' . escapeshellarg($tmpDir);
-                    $this->shell->execute($command, null, true);
+                    $this->shell->mustExecute($command);
                 } else {
                     throw new \RuntimeException('Failed to extract zip: unzip is not installed');
                 }
             } else {
                 $command = 'tar -xzp -f ' . escapeshellarg($tmpFile) . ' -C ' . escapeshellarg($tmpDir);
-                $this->shell->execute($command, null, true);
+                $this->shell->mustExecute($command);
             }
             if (!file_exists($tmpDir . DIRECTORY_SEPARATOR . $internalFilename)) {
                 throw new \RuntimeException('File not found: ' . $tmpDir . DIRECTORY_SEPARATOR . $internalFilename);
@@ -233,7 +231,7 @@ class Manager {
     }
 
     /**
-     * @return array
+     * @return array<string, array<string, array{url: string, filename: string, sha256: string}>>
      */
     private function getHelpers(): array {
         return [
@@ -279,7 +277,7 @@ class Manager {
     /**
      * Finds a helper package for this system.
      *
-     * @return array
+     * @return array{url: string, filename: string, sha256: string}
      */
     private function getHelper(): array
     {
@@ -340,10 +338,10 @@ class Manager {
     /**
      * Executes a command on the credential helper.
      */
-    private function exec(string $command, mixed $input = null): string|bool {
+    private function exec(string $command, mixed $input = null): string {
         $this->install();
 
-        return $this->shell->execute([$this->getExecutablePath(), $command], null, true, true, [], 10, $input);
+        return $this->shell->mustExecute([$this->getExecutablePath(), $command], timeout: 10, input: $input);
     }
 
     /**

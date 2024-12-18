@@ -6,6 +6,9 @@ class ProjectRoles
 {
     /**
      * Formats project-related permissions.
+     *
+     * @param string[] $permissions
+     * @throws \JsonException
      */
     public function formatPermissions(array $permissions, bool $machineReadable): string
     {
@@ -13,7 +16,7 @@ class ProjectRoles
             return '';
         }
         if ($machineReadable) {
-            return json_encode($permissions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return json_encode($permissions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
         if (in_array('admin', $permissions, true)) {
             return 'Project: admin';

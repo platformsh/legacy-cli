@@ -129,7 +129,7 @@ class IntegrationListCommand extends IntegrationCommandBase
                 break;
 
             default:
-                $summary = json_encode($details);
+                $summary = json_encode($details, JSON_THROW_ON_ERROR);
         }
 
         if (strlen($summary) > 240) {

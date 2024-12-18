@@ -3,13 +3,14 @@
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
+use Platformsh\Cli\Exception\ProcessFailedException;
 use Platformsh\Cli\Service\Shell;
 
 class ShellServiceTest extends TestCase
 {
 
     /**
-     * Test ShellHelper::execute().
+     * Test Shell::execute().
      */
     public function testExecute(): void
     {
@@ -30,5 +31,19 @@ class ShellServiceTest extends TestCase
         $this->assertNotEmpty($shell->execute([$workingCommand], null, true));
         $this->expectException(\Exception::class);
         $shell->execute(['which', 'nonexistent'], null, true);
+    }
+
+    /**
+     * Test Shell::mustExecute().
+     */
+    public function testMustExecute(): void
+    {
+        $shell = new Shell();
+
+        $workingCommand = str_contains(PHP_OS, 'WIN') ? 'help' : 'pwd';
+
+        $this->assertNotEmpty($shell->mustExecute($workingCommand));
+        $this->expectException(ProcessFailedException::class);
+        $shell->mustExecute(['which', 'nonexistent']);
     }
 }

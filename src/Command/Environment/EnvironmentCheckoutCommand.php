@@ -87,14 +87,14 @@ class EnvironmentCheckoutCommand extends CommandBase
 
         // Determine the correct upstream for the new branch. If there is an
         // 'origin' remote, then it has priority.
-        $upstreamRemote = $this->config->get('detection.git_remote_name');
+        $upstreamRemote = $this->config->getStr('detection.git_remote_name');
         $originRemoteUrl = $this->git->getConfig('remote.origin.url');
         if ($originRemoteUrl !== $project->getGitUrl() && $this->git->remoteBranchExists('origin', $branch)) {
             $upstreamRemote = 'origin';
         }
 
         // Fetch the branch from the upstream remote.
-        $this->git->fetch($upstreamRemote, $branch, $originRemoteUrl);
+        $this->git->fetch($upstreamRemote, $branch, $originRemoteUrl ?: '');
 
         $upstream = $upstreamRemote . '/' . $branch;
 
@@ -159,7 +159,7 @@ class EnvironmentCheckoutCommand extends CommandBase
             // The environment ID will be an integer if it was numeric
             // (because PHP does that with array keys), so it's cast back to
             // a string here.
-            return (string) $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
+            return $this->questionHelper->choose($environmentList, $chooseEnvironmentText);
         }
 
         // If there's only one choice, QuestionHelper::choose() does not

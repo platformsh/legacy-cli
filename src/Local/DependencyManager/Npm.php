@@ -50,7 +50,7 @@ class Npm extends DependencyManagerBase
     /**
      * Install dependencies globally.
      *
-     * @param array $dependencies
+     * @param array<string, mixed> $dependencies
      */
     private function installGlobal(array $dependencies): void
     {
@@ -70,7 +70,7 @@ class Npm extends DependencyManagerBase
     private function isInstalledGlobally(string $package): bool
     {
         if (!isset($this->globalList)) {
-            $this->globalList = $this->shell->execute(
+            $this->globalList = $this->shell->mustExecute(
                 ['npm', 'ls', '--global', '--no-progress', '--depth=0']
             );
         }

@@ -158,8 +158,8 @@ class VariableGetCommand extends CommandBase
         }
         asort($options, SORT_NATURAL | SORT_FLAG_CASE);
         $key = $this->questionHelper->choose($options, 'Enter a number to choose a variable:');
-        if (str_starts_with((string) $key, $projectPrefix)) {
-            return $projectVariables[substr((string) $key, strlen($projectPrefix))];
+        if (str_starts_with($key, $projectPrefix)) {
+            return $projectVariables[substr($key, strlen($projectPrefix))];
         }
 
         return $environmentVariables[$key];

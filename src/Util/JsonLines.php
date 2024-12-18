@@ -9,7 +9,7 @@ class JsonLines
      *
      * @param string $str
      *
-     * @return array
+     * @return array<array<mixed>>
      */
     public static function decode(string $str): array
     {

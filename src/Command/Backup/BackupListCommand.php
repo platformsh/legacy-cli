@@ -82,7 +82,7 @@ class BackupListCommand extends CommandBase
                 'live' => $this->propertyFormatter->format(!$backup->safe),
                 'safe' => $this->propertyFormatter->format($backup->safe),
                 'restorable' => $this->propertyFormatter->format($backup->restorable),
-                'index' => $backup->index,
+                'index' => (string) $backup->index,
                 'status' => $backup->status,
                 'automated' =>  $this->propertyFormatter->format($backup->getProperty('automated', false, false), 'automated'),
                 '[deprecated]' => '',

@@ -10,6 +10,7 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
  */
 class State
 {
+    /** @var array<string, mixed> */
     protected array $state = [];
 
     protected bool $loaded = false;
@@ -55,7 +56,7 @@ class State
     {
         (new SymfonyFilesystem())->dumpFile(
             $this->getFilename(),
-            json_encode($this->state)
+            (string) json_encode($this->state)
         );
     }
 
@@ -67,7 +68,7 @@ class State
         if (!$this->loaded) {
             $filename = $this->getFilename();
             if (file_exists($filename)) {
-                $content = file_get_contents($filename);
+                $content = (string) file_get_contents($filename);
                 $this->state = json_decode($content, true) ?: [];
             }
             $this->loaded = true;

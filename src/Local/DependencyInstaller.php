@@ -20,7 +20,7 @@ class DependencyInstaller
      * Modify the environment to make the installed dependencies available.
      *
      * @param string $destination
-     * @param array  $dependencies
+     * @param array<string, mixed> $dependencies
      */
     public function putEnv(string $destination, array $dependencies): void
     {
@@ -49,7 +49,7 @@ class DependencyInstaller
      * Installs dependencies into a directory.
      *
      * @param string $destination
-     * @param array  $dependencies
+     * @param array<string, mixed> $dependencies
      * @param bool $global
      *
      * @return bool

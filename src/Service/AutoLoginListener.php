@@ -41,20 +41,18 @@ readonly class AutoLoginListener
                 }
             }
 
-            if ($this->config->getWithDefault('application.login_method', 'browser') === 'browser') {
-                if ($this->urlService->canOpenUrls()) {
-                    $this->stdErr->writeln($event->getMessage());
+            if ($this->urlService->canOpenUrls()) {
+                $this->stdErr->writeln($event->getMessage());
+                $this->stdErr->writeln('');
+                if ($sessionAdvice) {
+                    $this->stdErr->writeln($sessionAdvice);
                     $this->stdErr->writeln('');
-                    if ($sessionAdvice) {
-                        $this->stdErr->writeln($sessionAdvice);
-                        $this->stdErr->writeln('');
-                    }
-                    if ($this->questionHelper->confirm('Log in via a browser?')) {
-                        $this->stdErr->writeln('');
-                        $exitCode = $this->commandDispatcher->run('auth:browser-login', $event->getLoginOptions());
-                        $this->stdErr->writeln('');
-                        $success = $exitCode === 0;
-                    }
+                }
+                if ($this->questionHelper->confirm('Log in via a browser?')) {
+                    $this->stdErr->writeln('');
+                    $exitCode = $this->commandDispatcher->run('auth:browser-login', $event->getLoginOptions());
+                    $this->stdErr->writeln('');
+                    $success = $exitCode === 0;
                 }
             }
         }

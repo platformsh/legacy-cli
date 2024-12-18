@@ -58,7 +58,7 @@ class Composer extends DependencyManagerBase
     /**
      * Install dependencies globally.
      *
-     * @param array $dependencies
+     * @param array<string, mixed> $dependencies
      */
     private function installGlobal(array $dependencies): void
     {

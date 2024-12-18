@@ -23,6 +23,7 @@ class Drush
     protected ApplicationFinder $applicationFinder;
 
     protected ?string $homeDir = null;
+    /** @var array<string, array<string, mixed>> */
     protected array $aliases = [];
     protected string|false|null $version;
     protected ?string $executable = null;
@@ -101,7 +102,7 @@ class Drush
      */
     public function getLegacyAliasFiles(): array
     {
-        return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT);
+        return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT) ?: [];
     }
 
     /**
@@ -141,7 +142,7 @@ class Drush
      */
     public function supportsMakeLock(): bool
     {
-        return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
+        return version_compare((string) $this->getVersion(), '7.0.0-rc1', '>=');
     }
 
     /**
@@ -179,7 +180,7 @@ class Drush
         }
 
         if ($this->config->has('local.drush_executable')) {
-            return $this->executable = $this->config->get('local.drush_executable');
+            return $this->executable = $this->config->getStr('local.drush_executable');
         }
 
         // Find a locally installed Drush instance: first check the Composer
@@ -193,7 +194,7 @@ class Drush
 
         // Check the local dependencies directory (created via 'platform
         // build').
-        $drushDep = $localDir . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
+        $drushDep = $localDir . '/' . $this->config->getStr('local.dependencies_dir') . '/php/vendor/bin/drush';
         if (is_executable($drushDep)) {
             return $this->executable = $drushDep;
         }
@@ -224,6 +225,8 @@ class Drush
      * Gets existing Drush aliases for a group.
      *
      * @throws \Exception If the "drush sa" command fails.
+     *
+     * @return array<string, array<string, mixed>>
      */
     public function getAliases(string $groupName, bool $reset = false): array
     {
@@ -240,10 +243,8 @@ class Drush
         // Run the command with a timeout. An exception will be thrown if it fails.
         // A user experienced timeouts when this was set to 5 seconds, so it was increased to 30.
         try {
-            $result = $this->shellHelper->execute($args, null, true, true, [], 30);
-            if (is_string($result)) {
-                $aliases = (array) json_decode($result, true);
-            }
+            $result = $this->shellHelper->mustExecute($args, timeout: 30);
+            $aliases = (array) json_decode($result, true);
         } catch (ProcessFailedException $e) {
             // The command will fail if the alias is not found. Throw an
             // exception for any other failures.
@@ -303,6 +304,8 @@ class Drush
 
     /**
      * Finds Drupal applications in a project.
+     *
+     * @return LocalApplication[]
      */
     public function getDrupalApps(string $projectRoot): array
     {

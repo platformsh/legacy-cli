@@ -19,6 +19,7 @@ class DrushServiceTest extends TestCase
 
     protected Drush $drush;
     protected Project $project;
+    /** @var Environment[] */
     protected array $environments = [];
 
     /**
@@ -74,7 +75,7 @@ class DrushServiceTest extends TestCase
 
         // Check that YAML aliases exist.
         $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
-        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
+        $aliases = Yaml::parse((string) file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
         $this->assertArrayHasKey('main', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
     }
@@ -144,7 +145,7 @@ class DrushServiceTest extends TestCase
 
         // Check that YAML aliases exist.
         $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
-        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
+        $aliases = Yaml::parse((string) file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
         $this->assertArrayHasKey('main--drupal1', $aliases);
         $this->assertArrayHasKey('_local--drupal1', $aliases);
         $this->assertArrayHasKey('main--drupal2', $aliases);

@@ -26,7 +26,11 @@ class EnvironmentListCommand extends CommandBase
     private array $defaultColumns = ['id', 'title', 'status', 'type'];
 
     private Environment|false $currentEnvironment = false;
+
+    /** @var array<string, Environment[]> */
     private array $children = [];
+
+    /** @var array<string, string> */
     private array $mapping = [];
 
     public function __construct(
@@ -88,6 +92,9 @@ class EnvironmentListCommand extends CommandBase
 
     /**
      * Recursively builds rows of the environment table.
+     *
+     * @param Environment[] $tree
+     * @return array<array<int|string, string>>
      */
     protected function buildEnvironmentRows(array $tree, bool $indent = true, bool $indicateCurrent = true, int $indentAmount = 0): array
     {
@@ -204,7 +211,7 @@ class EnvironmentListCommand extends CommandBase
         $this->currentEnvironment = $this->selector->getCurrentEnvironment($project);
 
         if (($currentProject = $this->selector->getCurrentProject()) && $currentProject->id === $project->id) {
-            $projectConfig = $this->localProject->getProjectConfig($this->selector->getProjectRoot());
+            $projectConfig = $this->localProject->getProjectConfig((string) $this->selector->getProjectRoot());
             if (isset($projectConfig['mapping'])) {
                 $this->mapping = $projectConfig['mapping'];
             }

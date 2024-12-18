@@ -39,10 +39,15 @@ class BotCommand extends CommandBase
             $signature = '';
         }
 
+        $files = scandir($dir);
+        if (!$files) {
+            throw new \RuntimeException('Failed to read directory: ' . $dir);
+        }
+
         $frames = [];
-        foreach (scandir($dir) as $filename) {
+        foreach ($files as $filename) {
             if ($filename[0] !== '.') {
-                $frames[] = file_get_contents($dir . '/' . $filename);
+                $frames[] = (string) file_get_contents($dir . '/' . $filename);
             }
         }
 
@@ -75,6 +80,11 @@ class BotCommand extends CommandBase
         }
     }
 
+    /**
+     * @param array<string|\Stringable> $frames
+     * @param string $signature
+     * @return string[]
+     */
     private function addSignature(array $frames, string $signature): array
     {
         $indent = '    ';
@@ -87,7 +97,8 @@ class BotCommand extends CommandBase
     }
 
     /**
-     * @return non-falsy-string[]
+     * @param string[] $frames
+     * @return string[]
      */
     private function addColor(array $frames): array
     {

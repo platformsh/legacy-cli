@@ -64,7 +64,7 @@ readonly class LocalHost implements HostInterface
 
     public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): bool|string
     {
-        return $this->shell->execute($command, null, $mustRun, $quiet, [], 3600, $input);
+        return $this->shell->execute($command, mustRun: $mustRun, quiet: $quiet, input: $input);
     }
 
     public function runCommandDirect(string $commandLine, string $append = ''): int

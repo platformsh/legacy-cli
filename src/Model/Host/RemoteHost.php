@@ -10,6 +10,7 @@ use Platformsh\Client\Model\Environment;
 
 class RemoteHost implements HostInterface
 {
+    /** @var string[] */
     private array $extraSshOptions = [];
 
     public function __construct(private readonly string $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
@@ -35,7 +36,7 @@ class RemoteHost implements HostInterface
     public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): bool|string
     {
         try {
-            return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, $this->sshService->getEnv(), 3600, $input);
+            return $this->shell->execute($this->wrapCommandLine($command), mustRun: $mustRun, quiet: $quiet, env: $this->sshService->getEnv(), input: $input);
         } catch (ProcessFailedException $e) {
             $this->sshDiagnostics->diagnoseFailure($this->sshUrl, $e->getProcess(), !$quiet);
             throw new ProcessFailedException($e->getProcess(), false);

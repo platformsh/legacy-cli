@@ -59,7 +59,6 @@ class TunnelSingleCommand extends TunnelCommandBase
         }
 
         if ($environment->is_main) {
-            $questionHelper = $this->questionHelper;
             $confirmText = sprintf(
                 'Are you sure you want to open an SSH tunnel to'
                 . ' the relationship <comment>%s</comment> on the'
@@ -67,7 +66,7 @@ class TunnelSingleCommand extends TunnelCommandBase
                 $service['_relationship_name'],
                 $this->api->getEnvironmentLabel($environment, false)
             );
-            if (!$questionHelper->confirm($confirmText)) {
+            if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');

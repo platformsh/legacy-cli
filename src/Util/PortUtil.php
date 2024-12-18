@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Util;
 
 class PortUtil
 {
-    protected static array $unsafePorts = [
+    private const UNSAFE_PORTS = [
         2049, // nfs
         3659, // apple-sasl / PasswordServer
         4045, // lockd
@@ -48,7 +48,7 @@ class PortUtil
             return false;
         }
 
-        return !in_array($port, self::$unsafePorts);
+        return !in_array($port, self::UNSAFE_PORTS);
     }
 
     /**

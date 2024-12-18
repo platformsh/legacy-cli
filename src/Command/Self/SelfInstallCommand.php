@@ -61,7 +61,7 @@ EOT
                 $contents = \preg_replace('/^##[^\n]*\n/m', '', $contents);
                 // Replace configuration keys inside double curly brackets with
                 // their values.
-                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn($matches) => $this->config->get($matches[1]), (string) $contents);
+                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn($matches) => $this->config->getStr($matches[1]), (string) $contents);
                 $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $destFile, $contents);
             }
         } catch (\Exception $e) {
@@ -174,7 +174,7 @@ EOT
                 $newPath = implode(';', $pathParts) . ';' . $binDir;
                 $shell = $this->shell;
                 $setPathCommand = 'setx PATH ' . OsUtil::escapeShellArg($newPath);
-                if ($shell->execute($setPathCommand, null, false, true, [], 10) !== false) {
+                if ($shell->execute($setPathCommand, timeout: 10) !== false) {
                     $this->markSelfInstalled($configDir);
                     $this->stdErr->writeln($this->getRunAdvice('', $binDir, true, true));
                     return 0;
@@ -214,7 +214,7 @@ EOT
             '"$HOME/"' . escapeshellarg($rcDestination)
         );
 
-        if (str_contains($currentShellConfig, $suggestedShellConfig)) {
+        if ($shellConfigFile !== false && str_contains($currentShellConfig, $suggestedShellConfig)) {
             $this->stdErr->writeln('Already configured: <info>' . $this->getShortPath($shellConfigFile) . '</info>');
             $this->stdErr->writeln('');
             $this->markSelfInstalled($configDir);
@@ -290,10 +290,13 @@ EOT
         $filename = $configDir . DIRECTORY_SEPARATOR . self::INSTALLED_FILENAME;
         if (!file_exists($filename)) {
             $fs = new \Symfony\Component\Filesystem\Filesystem();
-            $fs->dumpFile($filename, json_encode(['installed_at' => date('c')]));
+            $fs->dumpFile($filename, (string) json_encode(['installed_at' => date('c')]));
         }
     }
 
+    /**
+     * @return string[]
+     */
     private function getRunAdvice(string $shellConfigFile, string $binDir, ?bool $inPath = null, bool $newTerminal = false): array
     {
         $advice = [

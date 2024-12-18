@@ -72,13 +72,13 @@ class RemoteEnvVars
      * @param HostInterface $host
      * @param bool $refresh
      *
-     * @return array
+     * @return array<mixed>
      * @see RemoteEnvVars::getEnvVar
      */
     public function getArrayEnvVar(string $variable, HostInterface $host, bool $refresh = false): array
     {
         $value = $this->getEnvVar($variable, $host, $refresh);
 
-        return json_decode(base64_decode($value), true) ?: [];
+        return json_decode((string) base64_decode($value), true) ?: [];
     }
 }

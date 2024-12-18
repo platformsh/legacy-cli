@@ -8,6 +8,7 @@ use Platformsh\Cli\Util\OsUtil;
 
 class InstallationInfo
 {
+    /** @var string[]|null */
     private static ?array $otherPaths = null;
 
     private OsUtil $osUtil;

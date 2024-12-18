@@ -11,7 +11,7 @@ use Symfony\Component\Yaml\Parser;
 class AppConfigGetTest extends TestCase
 {
     public function testGetConfig(): void {
-        $app = base64_encode(json_encode([
+        $app = base64_encode((string) json_encode([
             'type' => 'php:7.3',
             'name' => 'app',
             'disk' => 512,

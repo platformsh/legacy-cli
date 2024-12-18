@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Selector\Selector;
@@ -20,6 +22,7 @@ abstract class ServerCommandBase extends CommandBase
     private LocalProject $localProject;
     private Config $config;
 
+    /** @var array<string, array<string, mixed>>|null */
     private ?array $serverInfo = null;
 
     #[Required]
@@ -39,6 +42,8 @@ abstract class ServerCommandBase extends CommandBase
 
     /**
      * Checks whether another server is running for an app.
+     *
+     * @return array<string, mixed>|false
      */
     protected function isServerRunningForApp(string $appId, string $projectRoot): array|false
     {
@@ -75,7 +80,7 @@ abstract class ServerCommandBase extends CommandBase
         $pidFile = $this->getPidFile($address);
         $serverInfo = $this->getServerInfo();
         if (file_exists($pidFile)) {
-            $pid = file_get_contents($pidFile);
+            $pid = (int) file_get_contents($pidFile);
         } elseif (isset($serverInfo[$address])) {
             $pid = $serverInfo[$address]['pid'];
         }
@@ -95,6 +100,17 @@ abstract class ServerCommandBase extends CommandBase
 
     /**
      * Gets info on currently running servers.
+     *
+     * @return array<string, array{
+     *     pid: int,
+     *     appId: string,
+     *     projectRoot: string,
+     *     logFile: string,
+     *     docRoot: string,
+     *     address: string,
+     *     port: int,
+     *     ip: string,
+     * }>
      */
     protected function getServerInfo(bool $running = true): array
     {
@@ -103,7 +119,7 @@ abstract class ServerCommandBase extends CommandBase
             // @todo move this to State service (in a new major version)
             $filename = $this->config->getWritableUserDir() . '/local-servers.json';
             if (file_exists($filename)) {
-                $this->serverInfo = (array) json_decode(file_get_contents($filename), true);
+                $this->serverInfo = (array) json_decode((string) file_get_contents($filename), true);
             }
         }
 
@@ -159,14 +175,17 @@ abstract class ServerCommandBase extends CommandBase
         return $success;
     }
 
-    protected function writeServerInfo(string $address, int $pid, array $info = []): void
+    /**
+     * @param array{appId: string, projectRoot: string, logFile: string, docRoot: string} $info
+     */
+    protected function writeServerInfo(string $address, int $pid, array $info): void
     {
         file_put_contents($this->getPidFile($address), $pid);
         list($ip, $port) = explode(':', $address);
         $this->serverInfo[$address] = $info + [
             'address' => $address,
             'pid' => $pid,
-            'port' => $port,
+            'port' => (int) $port,
             'ip' => $ip,
         ];
         $this->saveServerInfo();
@@ -203,8 +222,8 @@ abstract class ServerCommandBase extends CommandBase
      * @param string $address
      * @param string $docRoot
      * @param string $projectRoot
-     * @param array $appConfig
-     * @param array $env
+     * @param array<string, mixed> $appConfig
+     * @param array<string, string> $env
      *
      * @return Process
      *@throws \Exception
@@ -268,7 +287,7 @@ abstract class ServerCommandBase extends CommandBase
     /**
      * Get custom PHP configuration for the built-in web server.
      *
-     * @return array
+     * @return array<string, string>
      */
     private function getServerPhpConfig(): array
     {
@@ -276,7 +295,7 @@ abstract class ServerCommandBase extends CommandBase
 
         // Ensure $_ENV is populated.
         $variables_order = ini_get('variables_order');
-        if (!str_contains($variables_order, 'E')) {
+        if (!str_contains((string) $variables_order, 'E')) {
             $phpConfig['variables_order'] = 'E' . $variables_order;
         }
 
@@ -300,7 +319,7 @@ abstract class ServerCommandBase extends CommandBase
             throw new \RuntimeException(sprintf('Router not found: <error>%s</error>', $router_src));
         }
 
-        $router = $projectRoot . '/' . $this->config->get('local.local_dir') . '/' . basename($router_src);
+        $router = $projectRoot . '/' . $this->config->getStr('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
                 throw new \RuntimeException(sprintf('Could not create router file: <error>%s</error>', $router));
@@ -321,6 +340,9 @@ abstract class ServerCommandBase extends CommandBase
         return false;
     }
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
     private function getRoutesList(string $projectRoot, string $address): array
     {
         $localProject = $this->localProject;
@@ -345,23 +367,30 @@ abstract class ServerCommandBase extends CommandBase
 
     /**
      * Creates the virtual environment variables for a local server.
+     *
+     * @param array<string, mixed> $appConfig
+     *
+     * @return array<string, string>
      */
     protected function createEnv(string $projectRoot, string $docRoot, string $address, array $appConfig): array
     {
         $realDocRoot = realpath($docRoot);
+        if (!$realDocRoot) {
+            throw new \RuntimeException('Failed to resolve directory: ' . $docRoot);
+        }
         $envPrefix = $this->config->getStr('service.env_prefix');
         $env = [
             '_PLATFORM_VARIABLES_PREFIX' => $envPrefix,
             $envPrefix . 'ENVIRONMENT' => '_local',
-            $envPrefix . 'APPLICATION' => base64_encode(json_encode($appConfig)),
+            $envPrefix . 'APPLICATION' => base64_encode((string) json_encode($appConfig)),
             $envPrefix . 'APPLICATION_NAME' => $appConfig['name'] ?? '',
             $envPrefix . 'DOCUMENT_ROOT' => $realDocRoot,
-            $envPrefix . 'ROUTES' => base64_encode(json_encode($this->getRoutesList($projectRoot, $address))),
+            $envPrefix . 'ROUTES' => base64_encode((string) json_encode($this->getRoutesList($projectRoot, $address))),
         ];
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->get('local.build_dir')) {
+        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->getStr('local.build_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 

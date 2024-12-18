@@ -11,6 +11,7 @@ use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Service\ActivityMonitor;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -183,6 +184,9 @@ class ActivityListCommand extends ActivityCommandBase
         return 0;
     }
 
+    /**
+     * @param Activity[] $activities
+     */
     private function suggestExclusions(array $activities): void
     {
         $counts = [];

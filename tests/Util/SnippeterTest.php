@@ -22,7 +22,7 @@ class SnippeterTest extends TestCase
 
     public function testUpdate(): void
     {
-        $contents = file_get_contents($this->dataDir . '/with-existing');
+        $contents = (string) file_get_contents($this->dataDir . '/with-existing');
         $result = (new Snippeter())->updateSnippet($contents, $this->snippet, $this->begin, $this->end);
         $expected = file_get_contents($this->dataDir . '/after-update-existing');
         $this->assertEquals($expected, $result);
@@ -30,7 +30,7 @@ class SnippeterTest extends TestCase
 
     public function testInsert(): void
     {
-        $contents = file_get_contents($this->dataDir . '/without');
+        $contents = (string) file_get_contents($this->dataDir . '/without');
         $result = (new Snippeter())->updateSnippet($contents, $this->snippet, $this->begin, $this->end);
         $expected = file_get_contents($this->dataDir . '/after-insert');
         $this->assertEquals($expected, $result);

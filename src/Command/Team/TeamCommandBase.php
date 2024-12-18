@@ -35,9 +35,9 @@ class TeamCommandBase extends CommandBase
 
     public function isEnabled(): bool
     {
-        return $this->config->get('api.teams')
-            && $this->config->get('api.centralized_permissions')
-            && $this->config->get('api.organizations')
+        return $this->config->getBool('api.teams')
+            && $this->config->getBool('api.centralized_permissions')
+            && $this->config->getBool('api.organizations')
             && parent::isEnabled();
     }
 
@@ -153,7 +153,7 @@ class TeamCommandBase extends CommandBase
      *
      * @param Organization $organization The organization.
      * @param bool $fetchAllPages If false, only one page will be fetched.
-     * @param array $params Extra query parameters.
+     * @param array<string, string> $params Extra query parameters.
      *
      * @return Team[]
      */

@@ -21,7 +21,7 @@ class LocalProjectTest extends TestCase
         $expectedRoot = "$testDir/1";
         $config = new Config();
         $this->assertTrue($config->has('local.project_config_legacy'));
-        touch("$expectedRoot/" . $config->get('local.project_config_legacy'));
+        touch("$expectedRoot/" . $config->getStr('local.project_config_legacy'));
 
         chdir($testDir);
         $localProject = new LocalProject();

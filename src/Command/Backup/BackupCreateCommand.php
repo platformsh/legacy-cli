@@ -121,7 +121,7 @@ class BackupCreateCommand extends CommandBase
 
     private function isUserAdmin(Project $project, Environment $environment, string $userId): bool
     {
-        if ($this->config->get('api.centralized_permissions') && $this->config->get('api.organizations')) {
+        if ($this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations')) {
             $client = $this->api->getHttpClient();
             $endpointUrl = $project->getUri() . '/user-access';
             $userAccess = ProjectUserAccess::get($userId, $endpointUrl, $client);

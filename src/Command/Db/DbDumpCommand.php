@@ -295,6 +295,9 @@ class DbDumpCommand extends CommandBase
 
     /**
      * Generates the default dump filename.
+     *
+     * @param string[] $includedTables
+     * @param string[] $excludedTables
      */
     private function getDefaultFilename(
         ?Environment $environment = null,

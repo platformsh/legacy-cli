@@ -10,7 +10,7 @@ use Platformsh\Cli\Tests\MockApp;
 class DecodeTest extends TestCase
 {
     public function testDecode(): void {
-        $var = base64_encode(json_encode([
+        $var = base64_encode((string) json_encode([
             'foo' => 'bar',
             'fee' => 'bor',
             'nest' => ['nested' => 'baz'],
@@ -35,7 +35,7 @@ class DecodeTest extends TestCase
         $this->assertEquals(
             '{}',
             rtrim(MockApp::runAndReturnOutput('decode', [
-                'value' => base64_encode(json_encode(new \stdClass()))
+                'value' => base64_encode((string) json_encode(new \stdClass()))
             ]), "\n")
         );
 
@@ -43,7 +43,7 @@ class DecodeTest extends TestCase
             $this->assertEquals(
                 'Property not found: nonexistent',
                 rtrim(MockApp::runAndReturnOutput('decode', [
-                    'value' => base64_encode(json_encode(new \stdClass())),
+                    'value' => base64_encode((string) json_encode(new \stdClass())),
                     '--property' => 'nonexistent'
                 ]), "\n")
             );

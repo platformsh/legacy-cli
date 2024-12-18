@@ -41,6 +41,8 @@ class Shell
     /**
      * Executes a command, using STDIN, STDERR and STDOUT directly.
      *
+     * @param array<string, string> $env Extra environment variables.
+     *
      * @return int
      *   The command's exit code (0 on success, a different integer on failure).
      */
@@ -61,6 +63,9 @@ class Shell
         $this->showWorkingDirMessage($dir);
 
         $process = proc_open($commandline, [STDIN, STDOUT, STDERR], $pipes, $dir, $env);
+        if (!$process) {
+            throw new \RuntimeException('Failed to start process for command: ' . $commandline);
+        }
 
         return proc_close($process);
     }
@@ -68,31 +73,37 @@ class Shell
     /**
      * Executes a command.
      *
-     * @param array|string $args
+     * @param string[]|string $args
      * @param string|null $dir
-     * @param bool         $mustRun
-     * @param bool         $quiet
-     * @param array        $env
-     * @param int|null     $timeout
-     * @param string|null  $input
+     * @param bool $mustRun
+     * @param bool $quiet
+     * @param array<string, string> $env
+     * @param int|null $timeout
+     * @param string|null $input
      *
-     * @return bool|string
-     *   False if the command fails, true if it succeeds with no output, or a
-     *   string if it succeeds with output.
-     *@throws RuntimeException
+     * @return false|string
+     *   False if the command fails and $mustRun is false, or the command
+     *   output if it succeeds, with trailing whitespace removed.
+     *
+     * @throws RuntimeException
      *   If $mustRun is enabled and the command fails.
-     *
      */
-    public function execute(array|string $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): bool|string
+    public function execute(array|string $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): false|string
     {
         $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
-        $result = $this->runProcess($process, $mustRun, $quiet);
+        $exitCode = $this->runProcess($process, $mustRun, $quiet);
+        if ($exitCode > 0) {
+            return false;
+        }
 
-        return is_int($result) ? $result === 0 : $result;
+        return rtrim($process->getOutput());
     }
 
     /**
      * Executes a command and returns the process object.
+     *
+     * @param string|string[] $args
+     * @param array<string, string> $env
      */
     public function executeCaptureProcess(string|array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): Process
     {
@@ -102,7 +113,25 @@ class Shell
     }
 
     /**
+     * Executes a command and returns its output, throwing an exception on failure.
+     *
+     * @param string|string[] $args
+     * @param array<string, string> $env
+     *
+     * @return string The command output, with trailing whitespace trimmed.
+     */
+    public function mustExecute(string|array $args, ?string $dir = null, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): string
+    {
+        $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
+        $this->runProcess($process, true, $quiet);
+        return rtrim($process->getOutput());
+    }
+
+    /**
      * Sets up a Process and reports to the user that the command is being run.
+     *
+     * @param string[]|string $args
+     * @param array<string, string> $env
      */
     private function setupProcess(string|array $args, ?string $dir = null, array $env = [], int|null $timeout = 3600, mixed $input = null): Process
     {
@@ -146,7 +175,7 @@ class Shell
     }
 
     /**
-     * @param array $env
+     * @param array<string, string> $env
      */
     private function showEnvMessage(array $env): void
     {
@@ -169,11 +198,10 @@ class Shell
      * @throws RuntimeException
      *   If the process fails or times out, and $mustRun is true.
      *
-     * @return int|bool|string
-     *   The exit code of the process if it fails, true if it succeeds with no
-     *   output, or a string if it succeeds with output.
+     * @return int
+     *   The exit code of the process.
      */
-    protected function runProcess(Process $process, bool $mustRun = false, bool $quiet = true): int|bool|string
+    private function runProcess(Process $process, bool $mustRun = false, bool $quiet = true): int
     {
         try {
             $process->mustRun(function ($type, $buffer) use ($quiet): void {
@@ -196,9 +224,7 @@ class Shell
             // will generate a much shorter message.
             throw new \Platformsh\Cli\Exception\ProcessFailedException($process, $quiet);
         }
-        $output = $process->getOutput();
-
-        return $output ? rtrim($output) : true;
+        return 0;
     }
 
     /**
@@ -224,7 +250,7 @@ class Shell
                 }
                 foreach ($commands as $args) {
                     try {
-                        $result[$command] = $this->execute($args, null, true);
+                        $result[$command] = $this->mustExecute($args);
                     } catch (ProcessFailedException $e) {
                         $result[$command] = false;
                         if ($this->exceptionMeansCommandDoesNotExist($e)) {
@@ -283,8 +309,8 @@ class Shell
     public function resolveCommand(string $command): string
     {
         if ($fullPaths = $this->findWhere($command)) {
-            $fullPaths = preg_split('/[\r\n]/', trim($fullPaths));
-            $command = end($fullPaths);
+            $fullPaths = (array) preg_split('/[\r\n]/', trim($fullPaths));
+            $command = (string) end($fullPaths);
         }
 
         return $command;

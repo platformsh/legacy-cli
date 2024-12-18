@@ -11,14 +11,21 @@ use Symfony\Component\Yaml\Yaml;
  */
 class Config
 {
+    /** @var array<string, mixed> */
     private array $config;
     private string $configFile;
+
+    /** @var array<string, string> */
     private array $env;
 
     private ?Filesystem $fs = null;
     private ?string $version = null;
     private ?string $homeDir = null;
 
+    /**
+     * @param array<string, string>|null $env
+     * @param string|null $file
+     */
     public function __construct(?array $env = null, ?string $file = null)
     {
         $this->env = $env !== null ? $env : getenv();
@@ -86,9 +93,9 @@ class Config
      *
      * @throws \RuntimeException if the configuration is not defined.
      *
-     * @return null|string|bool|array
+     * @return null|string|bool|array<mixed>|int|float
      */
-    public function get(string $name): bool|array|string|null
+    public function get(string $name): bool|array|string|null|int|float
     {
         $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
         if (!$exists) {
@@ -109,15 +116,53 @@ class Config
      */
     public function getStr(string $name): string
     {
-        $value = NestedArrayUtil::getNestedArrayValue($this->config, explode('.', $name), $exists);
-        if (!$exists) {
-            throw new \RuntimeException('Configuration not defined: ' . $name);
-        }
+        $value = $this->get($name);
         if (!is_string($value)) {
+            if ($value === null) {
+                return '';
+            }
             throw new \RuntimeException(sprintf('Configuration %s was expected to be a string, %s found', $name, gettype($value)));
         }
 
         return $value;
+    }
+
+    /**
+     * Get an integer configuration value.
+     *
+     * @param string $name The configuration name (e.g. 'api.default_timeout').
+     *
+     * @throws \RuntimeException if the configuration is not defined or not an integer.
+     *
+     * @return int
+     */
+    public function getInt(string $name): int
+    {
+        $value = $this->get($name);
+        if (!is_int($value) && (!is_string($value) || (int) $value != $value)) {
+            throw new \RuntimeException(sprintf('Configuration %s was expected to be an integer, %s found', $name, gettype($value)));
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * Get a Boolean configuration value.
+     *
+     * @param string $name The configuration name (e.g. 'api.sizing').
+     *
+     * @throws \RuntimeException if the configuration is not defined or not a Boolean, 1 or 0.
+     *
+     * @return bool
+     */
+    public function getBool(string $name): bool
+    {
+        $value = $this->get($name);
+        if ((bool) $value != $value) {
+            throw new \RuntimeException(sprintf('Configuration %s of type %s could not be cast to true or false.', $name, gettype($value)));
+        }
+
+        return (bool) $value;
     }
 
     /**
@@ -184,7 +229,7 @@ class Config
      */
     public function getUserConfigDir(bool $absolute = true): string
     {
-        $path = $this->get('application.user_config_dir');
+        $path = $this->getStr('application.user_config_dir');
 
         return $absolute ? $this->getHomeDirectory() . DIRECTORY_SEPARATOR . $path : $path;
     }
@@ -212,7 +257,7 @@ class Config
         // If the directory is not writable (e.g. if we are on a Platform.sh
         // environment), use a temporary directory instead.
         if (!$this->fs()->canWrite($configDir) || (file_exists($configDir) && !is_dir($configDir))) {
-            return sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->get('application.tmp_sub_dir');
+            return sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->getStr('application.tmp_sub_dir');
         }
 
         return $configDir;
@@ -300,7 +345,7 @@ class Config
     /**
      * Returns a new Config instance with overridden values.
      *
-     * @param array $overrides
+     * @param array<string, mixed> $overrides
      *
      * @return self
      */
@@ -319,7 +364,7 @@ class Config
      *
      * @param string $filename
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function loadConfigFromFile(string $filename): array
     {
@@ -497,7 +542,7 @@ class Config
         if (str_starts_with((string) $version, '@') && str_ends_with((string) $version, '@')) {
             // Silently try getting the version from Git.
             $tag = (new Shell())->execute(['git', 'describe', '--tags'], CLI_ROOT);
-            if ($tag !== false && str_starts_with($tag, 'v')) {
+            if (is_string($tag) && str_starts_with($tag, 'v')) {
                 $version = trim($tag);
             }
         }
@@ -517,10 +562,11 @@ class Config
             'api.user_agent',
             '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})'
         );
+        /** @var array<string, string> $replacements */
         $replacements = [
-            '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->get('application.name')),
-            '{APP_NAME}' => $this->get('application.name'),
-            '{APP_SLUG}' => $this->get('application.slug'),
+            '{APP_NAME_DASH}' => \str_replace(' ', '-', $this->getStr('application.name')),
+            '{APP_NAME}' => $this->getStr('application.name'),
+            '{APP_SLUG}' => $this->getStr('application.slug'),
             '{VERSION}' => $this->getVersion(),
             '{UNAME_S}' => \php_uname('s'),
             '{UNAME_R}' => \php_uname('r'),
@@ -532,8 +578,7 @@ class Config
     /**
      * Finds proxy addresses based on the http_proxy and https_proxy environment variables.
      *
-     * @return array
-     *   An ordered array of proxy URLs keyed by scheme: 'https' and/or 'http'.
+     * @return array{https?: string, http?: string}
      */
     public function getProxies(): array {
         $proxies = [];
@@ -549,6 +594,8 @@ class Config
 
     /**
      * Returns an array of context options for HTTP/HTTPS streams.
+     *
+     * @return array{http: array<string, mixed>, ssl?: array<string, mixed>}
      */
     public function getStreamContextOptions(int|float|null $timeout = null): array
     {
@@ -556,7 +603,7 @@ class Config
             // See https://www.php.net/manual/en/context.http.php
             'http' => [
                 'method' => 'GET',
-                'timeout' => $timeout !== null ? $timeout : $this->getWithDefault('api.default_timeout', 30),
+                'timeout' => $timeout !== null ? $timeout : $this->getInt('api.default_timeout'),
                 'user_agent' => $this->getUserAgent(),
             ],
         ];
@@ -569,7 +616,7 @@ class Config
         }
 
         // Set up SSL options.
-        if ($this->getWithDefault('api.skip_ssl', false)) {
+        if ($this->getBool('api.skip_ssl')) {
             $opts['ssl']['verify_peer'] = false;
             $opts['ssl']['verify_peer_name'] = false;
         } else {
@@ -591,11 +638,13 @@ class Config
      */
     public function isWrapped(): bool
     {
-        return getenv($this->get('application.env_prefix') . 'WRAPPED') === '1';
+        return getenv($this->getStr('application.env_prefix') . 'WRAPPED') === '1';
     }
 
     /**
      * Returns all the current configuration.
+     *
+     * @return array<string, mixed>
      */
     public function getAll(): array
     {
@@ -611,13 +660,13 @@ class Config
         $this->applyLocalDirectoryDefaults();
 
         if (!isset($this->config['application']['slug'])) {
-            $this->config['application']['slug'] = preg_replace('/[^a-z0-9-]+/', '-', str_replace(['.', ' '], ['', '-'], strtolower($this->get('application.name'))));
+            $this->config['application']['slug'] = preg_replace('/[^a-z0-9-]+/', '-', str_replace(['.', ' '], ['', '-'], strtolower($this->getStr('application.name'))));
         }
         if (!isset($this->config['application']['tmp_sub_dir'])) {
-            $this->config['application']['tmp_sub_dir'] = $this->get('application.slug') . '-tmp';
+            $this->config['application']['tmp_sub_dir'] = $this->getStr('application.slug') . '-tmp';
         }
         if (!isset($this->config['api']['oauth2_client_id'])) {
-            $this->config['api']['oauth2_client_id'] = $this->get('application.slug');
+            $this->config['api']['oauth2_client_id'] = $this->getStr('application.slug');
         }
         if (!isset($this->config['detection']['console_domain']) && isset($this->config['service']['console_url'])) {
             $consoleDomain = parse_url((string) $this->config['service']['console_url'], PHP_URL_HOST);
@@ -626,7 +675,7 @@ class Config
             }
         }
         if (!isset($this->config['service']['applications_config_file'])) {
-            $this->config['service']['applications_config_file'] = $this->get('service.project_config_dir') . '/applications.yaml';
+            $this->config['service']['applications_config_file'] = $this->getStr('service.project_config_dir') . '/applications.yaml';
         }
 
         // Migrate renamed config keys.
@@ -668,7 +717,7 @@ class Config
         if (isset($this->config['local']['local_dir'])) {
             $localDir = $this->config['local']['local_dir'];
         } else {
-            $localDir = $this->get('service.project_config_dir') . DIRECTORY_SEPARATOR . 'local';
+            $localDir = $this->getStr('service.project_config_dir') . DIRECTORY_SEPARATOR . 'local';
             $this->config['local']['local_dir'] = $localDir;
         }
         $defaultsUnderLocalDir = [
@@ -692,6 +741,6 @@ class Config
      */
     public function getApiUrl(): string
     {
-        return (string) $this->get('api.base_url');
+        return $this->getStr('api.base_url');
     }
 }

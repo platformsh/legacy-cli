@@ -18,6 +18,8 @@ class YamlParser
      * @throws ParseException if the config could not be parsed
      * @throws \RuntimeException if the file cannot be read
      * @throws InvalidConfigException if the config is invalid
+     *
+     * @return TaggedValue|string|array<mixed>
      */
     public function parseFile(string $filename): TaggedValue|string|array
     {
@@ -30,6 +32,8 @@ class YamlParser
      * @param string $content  The YAML content.
      * @param string $filename The filename where the content originated. This
      *                         is required for formatting useful error messages.
+     *
+     * @return TaggedValue|string|array<mixed>
      *
      * @throws ParseException if the config could not be parsed
      * @throws InvalidConfigException if the config is invalid
@@ -52,15 +56,19 @@ class YamlParser
     private function cleanUp(string $content): string
     {
         // If an entire file or snippet is indented, remove the indent.
-        if (str_starts_with(ltrim($content, "\r\n"), ' ')) {
+        $trimmed = ltrim($content, "\r\n");
+        if (strlen($trimmed) > 0 && ($trimmed[0] === "\t" || $trimmed[0] === ' ')) {
             $lines = preg_split('/\n|\r|\r\n/', $content);
+            if (!$lines) {
+                throw new \RuntimeException('Failed to split content by lines');
+            }
             $indents = [];
             foreach ($lines as $line) {
                 // Ignore blank lines.
                 if (trim($line) === '') {
                     continue;
                 }
-                $indents[] = strlen($line) - strlen(ltrim($line, ' '));
+                $indents[] = strlen($line) - strlen(ltrim($line, "\t "));
             }
             if (!empty($indents[0]) && $indents[0] === min($indents)) {
                 foreach ($lines as &$line) {
@@ -91,11 +99,15 @@ class YamlParser
     }
 
     /**
-     * Processes custom tags in the parsed config.
+     * Recursively processes custom tags in the parsed config.
+     *
+     * @param TaggedValue|string|array<mixed> $config
      *
      * @throws InvalidConfigException
+     *
+     * @return TaggedValue|string|array<mixed>
      */
-    private function processTags(mixed $config, string $filename): array
+    private function processTags(TaggedValue|string|array $config, string $filename): TaggedValue|string|array
     {
         if (!is_array($config)) {
             return $this->processSingleTag($config, $filename);
@@ -104,7 +116,7 @@ class YamlParser
             if (is_array($item)) {
                 $config[$key] = $this->processTags($item, $filename);
             } else {
-                $config[$key] = $this->processSingleTag($item, $filename, $key);
+                $config[$key] = $this->processSingleTag($item, $filename, (string) $key);
             }
         }
 
@@ -113,33 +125,36 @@ class YamlParser
 
     /**
      * Processes a single config item, which may be a custom tag.
+     *
+     * @param TaggedValue|string $item
+     * @param string $filename
+     * @param string $configKey
+     *
+     * @return TaggedValue|string|array<string,mixed>|array<mixed>
      */
-    private function processSingleTag(mixed $item, string $filename, int|string $configKey = ''): mixed
+    private function processSingleTag(TaggedValue|string $item, string $filename, string $configKey = ''): TaggedValue|string|array
     {
         if ($item instanceof TaggedValue) {
             $tag = $item->getTag();
             $value = $item->getValue();
-        } elseif (is_string($item) && strlen($item) && $item[0] === '!' && preg_match('/\!([a-z]+)[ \t]+(.+)$/i', $item, $matches)) {
-            $tag = $matches[1];
-            $value = Yaml::parse($matches[2]);
-            if (!is_string($value)) {
-                return $item;
-            }
-        } else {
-            return $item;
+
+            // Process the '!include' tag. The '!archive' and '!file' tags are
+            // ignored as they are not relevant to the CLI (yet).
+            return match ($tag) {
+                'include' => $this->resolveInclude($value, $filename, $configKey),
+                default => $item,
+            };
         }
-        // Process the '!include' tag. The '!archive' and '!file' tags are
-        // ignored as they are not relevant to the CLI (yet).
-        return match ($tag) {
-            'include' => $this->resolveInclude($value, $filename, $configKey),
-            default => $item,
-        };
+
+        return $item;
     }
 
     /**
      * Resolves an !include config tag value.
      *
      * @throws InvalidConfigException
+     *
+     * @return TaggedValue|string|array<mixed>
      */
     private function resolveInclude(mixed $value, string $filename, string $configKey = ''): TaggedValue|string|array
     {

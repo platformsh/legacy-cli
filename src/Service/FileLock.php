@@ -8,13 +8,14 @@ class FileLock
     private readonly int $timeLimit;
     private readonly bool $disabled;
 
+    /** @var array<string, string> */
     private array $locks = [];
 
     public function __construct(private readonly Config $config)
     {
         $this->checkIntervalMs = 500;
         $this->timeLimit = 30;
-        $this->disabled = (bool) $this->config->getWithDefault('api.disable_locks', false);
+        $this->disabled = $this->config->getBool('api.disable_locks');
     }
 
     /**
@@ -127,7 +128,7 @@ class FileLock
                 \trigger_error('Failed to close file: ' . $filename, E_USER_WARNING);
             }
         }
-        return $content;
+        return (string) $content;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Platformsh\Cli\Service;
 class CountryService
 {
 
+    /** @var array<string, string> */
     private array $cache;
 
     /**

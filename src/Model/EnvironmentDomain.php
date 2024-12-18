@@ -16,9 +16,11 @@ use Platformsh\Client\Model\Environment;
  * @property-read string $replacement_for
  * @property-read string $created_at
  * @property-read string $updated_at
+ * @property-read array<string, string> $ssl
  */
 class EnvironmentDomain extends ApiResourceBase
 {
+    /** @return EnvironmentDomain[] */
     public static function getList(Environment $environment, ClientInterface $client): array
     {
         return static::getCollection($environment->getLink('#domains'), 0, [], $client);
@@ -26,6 +28,8 @@ class EnvironmentDomain extends ApiResourceBase
 
     /**
      * Adds a domain to an environment.
+     *
+     * @param array<string, mixed> $ssl
      */
     public static function add(ClientInterface $client, Environment $environment, string $name, string $replacementFor = '', array $ssl = []): Result
     {

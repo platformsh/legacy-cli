@@ -11,7 +11,7 @@ class EnvironmentRelationshipsTest extends TestCase
 {
     public function setUp(): void
     {
-        $mockRelationships = base64_encode(json_encode([
+        $mockRelationships = base64_encode((string) json_encode([
             'database' => [
                 0 => [
                     'host' => 'database.internal',

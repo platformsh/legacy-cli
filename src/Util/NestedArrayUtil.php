@@ -7,8 +7,8 @@ class NestedArrayUtil
     /**
      * Get a nested value in an array.
      *
-     * @param array $array
-     * @param array $parents
+     * @param array<string, mixed> $array
+     * @param string[] $parents
      * @param bool $keyExists
      *
      * @return mixed
@@ -36,6 +36,9 @@ class NestedArrayUtil
      * Sets a nested value in an array.
      *
      * @see Copied from \Drupal\Component\Utility\NestedArray::setValue()
+     *
+     * @param array<string, mixed> &$array
+     * @param string[] $parents
      */
     public static function setNestedArrayValue(array &$array, array $parents, mixed $value, bool $force = false): void
     {

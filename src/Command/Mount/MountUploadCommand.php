@@ -90,8 +90,8 @@ class MountUploadCommand extends CommandBase
         } elseif ($projectRoot = $this->selector->getProjectRoot()) {
             $sharedMounts = $this->mount->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
-                if (file_exists($projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
-                    $defaultSource = $projectRoot . '/' . $this->config->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
+                if (file_exists($projectRoot . '/' . $this->config->getStr('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
+                    $defaultSource = $projectRoot . '/' . $this->config->getStr('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 

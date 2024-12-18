@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Util\Pager;
 
 final class Page
 {
+    /** @var object[] */
     public array $items = [];
     public int $total = 0;
     public int $pageNumber = 1;

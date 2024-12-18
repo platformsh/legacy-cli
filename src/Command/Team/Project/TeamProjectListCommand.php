@@ -53,7 +53,7 @@ class TeamProjectListCommand extends TeamCommandBase
         $options['query']['sort'] = 'project_title';
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config->getWithDefault('pagination.count', 20);
+        $itemsPerPage = $this->config->getInt('pagination.count');
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > self::MAX_COUNT) {
                 $this->stdErr->writeln('The --count must be a number between 1 and ' . self::MAX_COUNT . ', or 0 to disable pagination.');
@@ -63,7 +63,7 @@ class TeamProjectListCommand extends TeamCommandBase
         }
         $options['query']['range'] = $itemsPerPage;
 
-        $fetchAllPages = !$this->config->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getBool('pagination.enabled');
         if ($count === '0') {
             $fetchAllPages = true;
         }

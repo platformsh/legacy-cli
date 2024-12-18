@@ -422,12 +422,15 @@ class EnvironmentDeleteCommand extends CommandBase
         return "<$tag>" . implode("</$tag>, <$tag>", $uniqueIds) . "</$tag>";
     }
 
+    /**
+     * @param Environment[] $toDeactivate
+     * @param Environment[] $toDeleteBranch
+     */
     protected function deleteMultiple(array $toDeactivate, array $toDeleteBranch, Project $project, InputInterface $input): bool
     {
         $error = false;
         $deactivateActivities = [];
         $deactivated = 0;
-        /** @var Environment $environment */
         foreach ($toDeactivate as $environmentId => $environment) {
             try {
                 $this->stdErr->writeln("Deleting environment <info>$environmentId</info>");

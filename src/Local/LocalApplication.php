@@ -118,7 +118,7 @@ class LocalApplication
      */
     public function getLocalWebRoot(?string $destination = null): string
     {
-        $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->getWithDefault('local.web_root', '_www');
+        $destination = $destination ?: $this->getSourceDir() . '/' . $this->cliConfig->getStr('local.web_root');
         if ($this->isSingle()) {
             return $destination;
         }
@@ -129,7 +129,7 @@ class LocalApplication
     /**
      * Get the application's configuration, parsed from its YAML definition.
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws \Exception
      */
     public function getConfig(): array
@@ -164,6 +164,8 @@ class LocalApplication
 
     /**
      * Gets a list of shared file mounts configured for the app.
+     *
+     * @return array<string, string>
      */
     public function getSharedFileMounts(): array
     {

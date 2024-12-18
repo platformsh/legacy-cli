@@ -24,6 +24,7 @@ use Symfony\Component\Console\Question\Question;
 #[AsCommand(name: 'mount:download', description: 'Download files from a mount, using rsync')]
 class MountDownloadCommand extends CommandBase
 {
+    /** @var LocalApplication[]|null */
     private ?array $localApps = null;
 
     public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)
@@ -254,7 +255,7 @@ class MountDownloadCommand extends CommandBase
         }
 
         $localApps = $this->getLocalApps();
-        $dirname =  $projectRoot . '/' . $this->config->get('local.shared_dir');
+        $dirname =  $projectRoot . '/' . $this->config->getStr('local.shared_dir');
         if (count($localApps) > 1 && is_dir($dirname)) {
             $dirname .= $app->getName();
         }

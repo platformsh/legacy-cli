@@ -12,11 +12,10 @@ final class Sort
      */
     public static function compare(mixed $a, mixed $b, bool $reverse = false): int
     {
-        if (\is_string($a)) {
-            $value = \strnatcasecmp($a, (string) $b);
+        if (\is_string($a) && \is_string($b)) {
+            $value = \strnatcasecmp($a, $b);
         } else {
-            // TODO replace with spaceship operator for PHP 7+
-            $value = $a == $b ? 0 : ($a > $b ? 1 : -1);
+            $value = $a <=> $b;
         }
         return $reverse ? -$value : $value;
     }
@@ -38,6 +37,8 @@ final class Sort
      * Sorts arrays of objects by a property.
      *
      * Array keys will be preserved.
+     *
+     * @param object[] &$objects
      */
     public static function sortObjects(array &$objects, string $property, bool $reverse = false): void
     {

@@ -77,8 +77,13 @@ abstract class DrushAlias implements SiteAliasTypeInterface
 
     /**
      * Merges new aliases with existing ones.
+     *
+     * @param array<string, array<mixed>> $new
+     * @param array<string, array<mixed>> $existing
+     *
+     * @return array<string, array<mixed>>
      */
-    protected function mergeExisting(array $new, array $existing): array
+    private function mergeExisting(array $new, array $existing): array
     {
         foreach ($new as $aliasName => &$newAlias) {
             // If the alias already exists, recursively replace existing
@@ -94,9 +99,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Normalize the aliases.
      *
-     * @param array $aliases
+     * @param array<string, array<mixed>> $aliases
      *
-     * @return array
+     * @return array<string, array<mixed>>
      */
     protected function normalize(array $aliases): array
     {
@@ -127,7 +132,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * @param string $currentGroup
      * @param string|null $previousGroup
      *
-     * @return array
+     * @return array<string, array<mixed>>
      *   The aliases, with their group prefixes removed.
      */
     protected function getExistingAliases(string $currentGroup, ?string $previousGroup = null): array
@@ -152,9 +157,9 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * Generate new aliases.
      *
      * @param LocalApplication[] $apps
-     * @param array $environments
+     * @param Environment[] $environments
      *
-     * @return array
+     * @return array<string, array<mixed>>
      */
     protected function generateNewAliases(array $apps, array $environments): array
     {
@@ -194,7 +199,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Format a list of aliases as a string.
      *
-     * @param array $aliases
+     * @param array<string, array<mixed>> $aliases
      *   A list of aliases.
      *
      * @return string
@@ -206,7 +211,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      *
      * @param LocalApplication $app
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function generateLocalAlias(LocalApplication $app): array
     {
@@ -224,7 +229,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
      * @param Environment $environment
      * @param LocalApplication $app
      *
-     * @return array|false
+     * @return array<mixed>|false
      */
     protected function generateRemoteAlias(Environment $environment, LocalApplication $app): array|false
     {
@@ -288,10 +293,10 @@ abstract class DrushAlias implements SiteAliasTypeInterface
     /**
      * Swap the key names in an array of aliases.
      *
-     * @param array $aliases
-     * @param array $map
+     * @param array<string, array<mixed>> $aliases
+     * @param array<string, string> $map
      *
-     * @return array
+     * @return array<string, array<mixed>>
      */
     protected function swapKeys(array $aliases, array $map): array
     {

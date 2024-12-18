@@ -24,7 +24,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * Special destinations for installation.
      *
-     * @var array
+     * @var array<string, string>
      *   An array of filenames in the app root, mapped to destinations. The
      *   destinations are filenames supporting the replacements:
      *     "{webroot}" - see getWebRoot() (usually /app/public on Platform.sh)
@@ -33,6 +33,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     protected array $specialDestinations;
 
     protected ?LocalApplication $app = null;
+    /** @var array<string, mixed> $settings */
     protected array $settings = [];
     protected string $buildDir = '.';
     protected bool $copy = false;
@@ -103,10 +104,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
         $this->settings = $settings;
         $this->config = $config;
 
-        if ($this->config->getWithDefault('local.copy_on_windows', false)) {
-            $this->fsHelper->setCopyOnWindows(true);
-        }
-        $this->ignoredFiles[] = $this->config->getWithDefault('local.web_root', '_www');
+        $this->fsHelper->setCopyOnWindows($this->config->getBool('local.copy_on_windows'));
+        $this->ignoredFiles[] = $this->config->getStr('local.web_root');
 
         $this->setBuildDir($buildDir);
 
@@ -196,7 +195,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      */
     protected function getSharedDir(): string
     {
-        $shared = $this->app->getSourceDir() . '/' . $this->config->get('local.shared_dir');
+        $shared = $this->app->getSourceDir() . '/' . $this->config->getStr('local.shared_dir');
         if (!$this->app->isSingle()) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', (string) $this->app->getName());
         }
@@ -252,8 +251,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      */
     private function cloneToBuildDir(string $buildDir): void
     {
-        $gitRoot = $this->gitHelper->getRoot($this->appRoot, true);
-        $ref = $this->gitHelper->execute(['rev-parse', 'HEAD'], $gitRoot, true);
+        $gitRoot = (string) $this->gitHelper->getRoot($this->appRoot, true);
+        $ref = (string) $this->gitHelper->execute(['rev-parse', 'HEAD'], $gitRoot, true);
 
         $cloneArgs = ['--recursive', '--shared'];
         $tmpRepo = $buildDir . '-repo';
@@ -301,7 +300,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             return;
         }
 
-        $sharedDirRelative = $this->config->get('local.shared_dir');
+        $sharedDirRelative = $this->config->getStr('local.shared_dir');
         $this->stdErr->writeln('Creating symbolic links to mimic shared file mounts');
         foreach ($sharedFileMounts as $appPath => $sharedPath) {
             $target = $sharedDir . '/' . $sharedPath;
@@ -334,7 +333,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
 
         if (is_dir($sitesDefault) && !file_exists($settingsLocal)) {
             $sharedSettingsLocal = $shared . '/settings.local.php';
-            $relative = $this->config->get('local.shared_dir') . '/settings.local.php';
+            $relative = $this->config->getStr('local.shared_dir') . '/settings.local.php';
             if (!file_exists($sharedSettingsLocal)) {
                 $this->stdErr->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);

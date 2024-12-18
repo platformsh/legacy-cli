@@ -13,7 +13,9 @@ use Symfony\Component\Console\Output\NullOutput;
 
 class UserAddCommandTest extends TestCase
 {
+    /** @var Environment[] */
     private array $mockEnvironments = [];
+    /** @var array<string, EnvironmentType> */
     private array $mockTypes = [];
 
     protected function setUp(): void
@@ -86,6 +88,9 @@ class UserAddCommandTest extends TestCase
             $errorMessage = $case[2] ?? '';
             try {
                 $result = $m->invoke($command, $args, $this->mockEnvironments);
+                if ($errorMessage !== '') {
+                    $this->fail('No exception thrown');
+                }
                 $this->assertEquals($expectedRoles, $result, "case $i roles");
                 $this->assertEquals('', $errorMessage, "case $i error message");
             } catch (\InvalidArgumentException $e) {
@@ -94,44 +99,38 @@ class UserAddCommandTest extends TestCase
         }
     }
 
-//    public function testGetSpecifiedTypeRoles()
-//    {
-//        // Set up a mock command to make the private method accessible.
-//        $command = new UserAddCommand();
-//        // Fake running the command to set I/O properties.
-//        $cwd = getcwd();
-//        chdir('/tmp');
-//        try { $command->run(new ArrayInput([]), new NullOutput()); } catch (\RuntimeException $e) {}
-//        chdir($cwd);
-//        $m = new \ReflectionMethod($command, 'getSpecifiedTypeRoles');
-//        $m->setAccessible(true);
-//
-//        // Test cases: quintuples of role arguments, the output, whether to ignore errors, the error message if any, the remaining roles if any.
-//        // TODO convert to anonymous class in PHP 7
-//        $cases = [
-//            [
-//                ['staging:viewer', 'stg:admin', 'viewer'],
-//                ['staging' => 'viewer'],
-//                ['stg:admin', 'viewer'],
-//            ],
-//            [
-//                ['development:viewer', 'nonexistent:viewer', 'stg:admin'],
-//                ['development' => 'viewer'],
-//                ['nonexistent:viewer', 'stg:admin'],
-//            ],
-//            [
-//                ['dev%:v', 'prod:admin'],
-//                ['development' => 'viewer'],
-//                ['prod:admin'],
-//            ],
-//        ];
-//        foreach ($cases as $i => $case) {
-//            list($roles, $expectedRoles, $expectedRemainingRoles) = $case;
-//            $result = $m->invokeArgs($command, [&$roles, $this->mockTypes]);
-//            $this->assertEquals($expectedRoles, $result, "case $i roles");
-//            $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
-//        }
-//    }
+    public function testGetSpecifiedTypeRoles(): void
+    {
+        $command = $this->getCommandInstance();
+        $m = new \ReflectionMethod($command, 'getSpecifiedTypeRoles');
+        $m->setAccessible(true);
+
+        // Test cases: quintuples of role arguments, the output, whether to ignore errors, the error message if any, the remaining roles if any.
+        // TODO convert to anonymous class in PHP 7
+        $cases = [
+            [
+                ['staging:viewer', 'stg:admin', 'viewer'],
+                ['staging' => 'viewer'],
+                ['stg:admin', 'viewer'],
+            ],
+            [
+                ['development:viewer', 'nonexistent:viewer', 'stg:admin'],
+                ['development' => 'viewer'],
+                ['nonexistent:viewer', 'stg:admin'],
+            ],
+            [
+                ['dev%:v', 'prod:admin'],
+                ['development' => 'viewer'],
+                ['prod:admin'],
+            ],
+        ];
+        foreach ($cases as $i => $case) {
+            list($roles, $expectedRoles, $expectedRemainingRoles) = $case;
+            $result = $m->invokeArgs($command, [&$roles, $this->mockTypes]);
+            $this->assertEquals($expectedRoles, $result, "case $i roles");
+            $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
+        }
+    }
 
     public function testConvertEnvironmentRolesToTypeRoles(): void
     {

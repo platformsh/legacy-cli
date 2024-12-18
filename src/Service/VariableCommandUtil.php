@@ -140,7 +140,7 @@ class VariableCommandUtil
 
     /**
      * @param callable(): Selection $getSelection
-     * @return array
+     * @return array<string, Field>
      */
     public function getFields(callable $getSelection): array
     {
@@ -250,7 +250,7 @@ class VariableCommandUtil
     /**
      * @param string $name
      *
-     * @return array
+     * @return array<string, string>
      */
     private function getPrefixOptions(string $name): array
     {

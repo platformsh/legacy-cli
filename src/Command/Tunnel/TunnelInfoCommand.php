@@ -75,7 +75,7 @@ class TunnelInfoCommand extends TunnelCommandBase
                 return 1;
             }
 
-            $output->writeln(base64_encode(json_encode($relationships)));
+            $output->writeln(base64_encode((string) json_encode($relationships)));
             return 0;
         }
         $this->propertyFormatter->displayData($output, $relationships, $input->getOption('property'));

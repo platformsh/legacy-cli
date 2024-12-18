@@ -12,7 +12,7 @@ use Symfony\Component\Process\Process;
 
 class SshConfig {
     private readonly OutputInterface $stdErr;
-    private bool|string|null $openSshVersion = null;
+    private false|string|null $openSshVersion = null;
 
     public function __construct(private readonly Config $config, private readonly Filesystem $fs, OutputInterface $output, private readonly SshKey $sshKey, private readonly Certifier $certifier)
     {
@@ -28,7 +28,7 @@ class SshConfig {
     public function configureHostKeys(): ?string
     {
         $hostKeys = '';
-        if ($hostKeysFile = $this->config->getWithDefault('ssh.host_keys_file', '')) {
+        if ($hostKeysFile = $this->config->getStr('ssh.host_keys_file')) {
             $hostKeysFile = CLI_ROOT . DIRECTORY_SEPARATOR . $hostKeysFile;
             $hostKeys = file_get_contents($hostKeysFile);
             if ($hostKeys === false) {
@@ -95,7 +95,7 @@ class SshConfig {
             // This skips unnecessary CLI bootstrapping while running SSH from
             // the CLI itself.
             /** @see Ssh::getEnv() */
-            if (in_array(basename(getenv('SHELL')), ['bash', 'csh', 'dash', 'ksh', 'tcsh', 'zsh'], true)) {
+            if (in_array(basename((string) getenv('SHELL')), ['bash', 'csh', 'dash', 'ksh', 'tcsh', 'zsh'], true)) {
                 // Literal double-quotes do not appear to be possible in SSH config.
                 // See: https://bugzilla.mindrot.org/show_bug.cgi?id=3474
                 // So the condition here uses single quotes after the variable
@@ -144,6 +144,7 @@ class SshConfig {
 
         // Add other configured options.
         if ($configuredOptions = $this->config->get('ssh.options')) {
+            /** @var string[]|string $configuredOptions */
             $lines[] = '';
             $lines[] = "# Other options from the CLI's configuration.";
             $lines = array_merge($lines, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
@@ -231,6 +232,8 @@ class SshConfig {
 
     /**
      * Creates or updates an SSH config include file.
+     *
+     * @param string[]|string $lines
      */
     private function writeSshIncludeFile(string $filename, array|string $lines, bool $allowDelete = true): void
     {

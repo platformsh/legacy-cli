@@ -37,7 +37,7 @@ readonly class ActivityLoader
      * The --state, --incomplete, --result, --start, --limit, and --type options will be processed.
      *
      * @param int|null $limit Limit the number of activities to return, regardless of input.
-     * @param array $state Define the states to return, regardless of input.
+     * @param string[] $state Define the states to return, regardless of input.
      * @param string $withOperation Filters the resulting activities to those with the specified operation available.
      *
      * @return Activity[]

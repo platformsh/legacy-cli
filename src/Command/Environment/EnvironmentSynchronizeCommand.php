@@ -28,7 +28,7 @@ class EnvironmentSynchronizeCommand extends CommandBase
 
     protected function configure(): void
     {
-        if ($this->config->get('api.sizing')) {
+        if ($this->config->getBool('api.sizing')) {
             $this->setDescription("Synchronize an environment's code, data and/or resources from its parent");
             $this->addArgument('synchronize', InputArgument::IS_ARRAY, 'List what to synchronize: "code", "data", and/or "resources".', null, ['code', 'data', 'resources']);
         } else {
@@ -54,7 +54,7 @@ Synchronizing "data" means that all files in all services (including
 static files, databases, logs, search indices, etc.) will be copied from the
 parent to the child.
 EOT;
-        if ($this->config->get('api.sizing')) {
+        if ($this->config->getBool('api.sizing')) {
             $help .= "\n\n" . <<<EOT
 Synchronizing "resources" means that the parent environment's resource sizes
 will be used for all corresponding apps and services in the child environment.
@@ -105,7 +105,7 @@ EOT;
         }
 
         if ($synchronize = $input->getArgument('synchronize')) {
-            $validOptions = $this->config->get('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
+            $validOptions = $this->config->getBool('api.sizing') ? ['code', 'data', 'resources'] : ['code', 'data', 'both'];
             $toSync = [];
             foreach ($synchronize as $item) {
                 if (!in_array($item, $validOptions)) {
@@ -182,7 +182,7 @@ EOT;
 
             $this->stdErr->writeln('');
 
-            if ($this->config->get('api.sizing') && $this->api->supportsSizingApi($selection->getProject())) {
+            if ($this->config->getBool('api.sizing') && $this->api->supportsSizingApi($selection->getProject())) {
                 if ($this->questionHelper->confirm(
                     "Do you want to synchronize <options=underscore>resources</> from <info>$parentId</info> to <info>$environmentId</info>?",
                     false

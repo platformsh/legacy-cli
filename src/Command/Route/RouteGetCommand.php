@@ -47,7 +47,7 @@ class RouteGetCommand extends CommandBase
         $prefix = $this->config->getStr('service.env_prefix');
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
             $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
-            $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
+            $decoded = json_decode((string) base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (empty($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }
@@ -100,7 +100,6 @@ class RouteGetCommand extends CommandBase
 
                 return 1;
             }
-            $questionHelper = $this->questionHelper;
             $items = [];
             $default = null;
             foreach ($routes as $route) {
@@ -114,7 +113,7 @@ class RouteGetCommand extends CommandBase
                     $items[$originalUrl] .= ' - <info>primary</info>';
                 }
             }
-            $originalUrl = $questionHelper->choose($items, 'Enter a number to choose a route:', $default);
+            $originalUrl = $this->questionHelper->choose($items, 'Enter a number to choose a route:', $default);
         }
 
         if (!$selectedRoute && $originalUrl !== null && $originalUrl !== '') {

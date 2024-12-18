@@ -15,7 +15,9 @@ final class Query
     private int $endTime = 0;
     /** @var string */
     private string $collection = '';
+    /** @var array<string, string> */
     private array $fields = [];
+    /** @var array<string, string> */
     private array $filters = [];
 
     public function setInterval(int $interval): self
@@ -56,7 +58,7 @@ final class Query
 
     /**
      * Returns the query as an array.
-     * @return array
+     * @return array<string, mixed>
      */
     public function asArray(): array
     {

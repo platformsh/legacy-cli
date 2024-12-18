@@ -47,13 +47,17 @@ class ArrayArgument
      *
      * @param string[] $args
      *
-     * @return array
+     * @return string[]
      */
     public static function split(array $args): array
     {
         $split = [];
         foreach ($args as $arg) {
-            $split = \array_merge($split, \preg_split('/[,\s]+/', $arg));
+            $splitArg = \preg_split('/[,\s]+/', $arg);
+            if (!$splitArg) {
+                throw new \RuntimeException('Failed to split argument by commas/whitespace');
+            }
+            $split = \array_merge($split, $splitArg);
         }
         return \array_filter($split, fn(string $a): bool => \strlen($a) > 0);
     }

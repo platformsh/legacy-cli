@@ -43,12 +43,14 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     protected bool $runningViaMulti = false;
 
     /**
+     * @var string[]
      * @see self::setHiddenAliases()
      */
     private array $hiddenAliases = [];
 
     /**
      * The command synopsis.
+     * @var array<string, string>
      */
     private array $synopsis = [];
 
@@ -101,8 +103,10 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /**
      * Adds a hidden command option.
+     *
+     * @param int-mask-of<InputOption::*>|null $mode
      */
-    protected function addHiddenOption(string $name, string|array|null $shortcut = null, ?int $mode = null, string $description = '', mixed $default = null): static
+    protected function addHiddenOption(string $name, string|null $shortcut = null, ?int $mode = null, string $description = '', mixed $default = null): static
     {
         $this->getDefinition()->addOption(new HiddenInputOption($name, $shortcut, $mode, $description, $default));
 
@@ -114,7 +118,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      *
      * @see parent::setAliases()
      *
-     * @param array $hiddenAliases
+     * @param string[] $hiddenAliases
      *
      * @return static
      */
@@ -129,7 +133,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * Get aliases that should be visible in help.
      *
-     * @return array
+     * @return string[]
      */
     public function getVisibleAliases(): array
     {

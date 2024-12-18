@@ -205,7 +205,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $errored = true;
                 } else {
                     $profileSize = $this->questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $defaultOption, false, false);
-                    if (!isset($properties['resources']['profile_size']) || $profileSize != $properties['resources']['profile_size']) {
+                    if (!isset($properties['resources']['profile_size']) || $profileSize !== $properties['resources']['profile_size']) {
                         $updates[$group][$name]['resources']['profile_size'] = $profileSize;
                     }
                 }
@@ -274,6 +274,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $project = $selection->getProject();
         $organization = $this->api->getClient()->getOrganizationById($project->getProperty('organization'));
+        if (!$organization) {
+            throw new \RuntimeException('Failed to load project organization: ' . $project->getProperty('organization'));
+        }
         $profile = $organization->getProfile();
         if ($input->getOption('force') === false && isset($profile->resources_limit) && $profile->resources_limit) {
             $diff = $this->computeMemoryCPUStorageDiff($updates, $current);
@@ -342,9 +345,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Summarizes all the changes that would be made.
      *
-     * @param array $updates
+     * @param array<array<string, array<string, mixed>>> $updates
      * @param array<string, WebApp|Worker|Service> $services
-     * @param array $containerProfiles
+     * @param array<string, mixed> $containerProfiles
      * @return void
      */
     private function summarizeChanges(array $updates, array $services, array $containerProfiles): void
@@ -359,6 +362,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     /**
      * Summarizes changes per service.
+     *
+     * @param array<string, mixed> $updates
+     * @param array<string, mixed> $containerProfiles
      */
     private function summarizeChangesPerService(string $name, WebApp|Worker|Service $service, array $updates, array $containerProfiles): void
     {
@@ -583,7 +589,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Print errors found after parsing a setting.
      *
-     * @param array $errors
+     * @param string[] $errors
      * @param string $optionName
      *
      * @return string[]
@@ -610,10 +616,10 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * Compute the total memory/CPU/storage diff that will occur when the given update
      * is applied.
      *
-     * @param array $updates
-     * @param array $current
+     * @param array<string, array<string, array<string, mixed>>> $updates
+     * @param array<string, array<string, array<string, mixed>>> $current
      *
-     * @return array
+     * @return array{memory: int|float, cpu: int|float, disk: int|float}
      */
     private function computeMemoryCPUStorageDiff(array $updates, array $current): array
     {

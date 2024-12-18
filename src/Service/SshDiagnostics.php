@@ -215,7 +215,7 @@ class SshDiagnostics
 
             $this->stdErr->writeln('MFA is not yet enabled on your account.');
             if ($this->config->has('api.mfa_setup_url')) {
-                $this->stdErr->writeln(\sprintf('Set up MFA at: <comment>%s</comment>', $this->config->get('api.mfa_setup_url')));
+                $this->stdErr->writeln(\sprintf('Set up MFA at: <comment>%s</comment>', $this->config->getStr('api.mfa_setup_url')));
                 $this->stdErr->writeln(\sprintf('Then log in again with: <comment>%s login -f</comment>', $executable));
                 return;
             }

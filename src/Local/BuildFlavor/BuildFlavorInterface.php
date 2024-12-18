@@ -12,14 +12,14 @@ interface BuildFlavorInterface
     /**
      * Get the compatible stack(s) for the build flavor.
      *
-     * @return array
+     * @return string[]
      */
     public function getStacks(): array;
 
     /**
      * Get the possible configuration keys for the build flavor.
      *
-     * @return array
+     * @return string[]
      */
     public function getKeys(): array;
 
@@ -39,7 +39,7 @@ interface BuildFlavorInterface
      *                              built.
      * @param LocalApplication $app The app to build.
      * @param Config $config     CLI configuration.
-     * @param array  $settings      Additional settings for the build.
+     * @param array<string, mixed>  $settings      Additional settings for the build.
      *     Possible settings include:
      *     - clone (bool, default false) Clone the repository to the build
      *       directory before building, where possible.

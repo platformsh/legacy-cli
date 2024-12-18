@@ -40,9 +40,9 @@ class TableServiceTest extends TestCase
         $this->assertEquals($expected, $tableService->columnsToDisplay($header));
 
         $rows = [
-            ['foo', 1, 2, 3],
+            ['foo', '1', '2', '3'],
             new TableSeparator(),
-            ['bar', 4, 5, 6],
+            ['bar', '4', '5', '6'],
         ];
         $expected = (new Csv(',', "\n"))->format([
             ['Value 2', 'Name'],

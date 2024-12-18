@@ -18,6 +18,7 @@ class LocalProject
     protected Git $git;
     protected Io $io;
 
+    /** @var array<string, array<string, mixed>> */
     protected static array $projectConfigs = [];
 
     public function __construct(?Config $config = null, ?Git $git = null, ?Io $io = null)
@@ -34,7 +35,7 @@ class LocalProject
      * @param string $dir        The project root.
      * @param string $configFile A config file such as 'services.yaml'.
      *
-     * @return array|null
+     * @return array<string, mixed>|null
      */
     public function readProjectConfigFile(string $dir, string $configFile): ?array
     {
@@ -42,20 +43,20 @@ class LocalProject
         $filename = $dir . '/' . $this->config->getStr('service.project_config_dir') . '/' . $configFile;
         if (file_exists($filename)) {
             $parser = new Parser();
-            $result = $parser->parse(file_get_contents($filename));
+            $result = $parser->parse((string) file_get_contents($filename));
         }
 
         return $result;
     }
 
     /**
-     * @return array|false
-     *   An array containing 'id' and 'host', or false on failure.
+     * @return array{id: string, host: string}|false
+     *   The project ID and hostname, or false on failure.
      */
     public function parseGitUrl(string $gitUrl): false|array
     {
-        $gitDomain = $this->config->get('detection.git_domain');
-        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote((string) $gitDomain) . '):\1\.git$/';
+        $gitDomain = $this->config->getStr('detection.git_domain');
+        $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
         if (!preg_match($pattern, $gitUrl, $matches)) {
             return false;
         }
@@ -77,7 +78,7 @@ class LocalProject
     protected function getGitRemoteUrl(string $dir): string|false
     {
         $this->git->ensureInstalled();
-        foreach ([$this->config->get('detection.git_remote_name'), 'origin'] as $remote) {
+        foreach ([$this->config->getStr('detection.git_remote_name'), 'origin'] as $remote) {
             if ($url = $this->git->getConfig("remote.$remote.url", $dir)) {
                 return $url;
             }
@@ -101,12 +102,12 @@ class LocalProject
         }
         $this->git->ensureInstalled();
         $currentUrl = $this->git->getConfig(
-            sprintf('remote.%s.url', $this->config->get('detection.git_remote_name')),
+            sprintf('remote.%s.url', $this->config->getStr('detection.git_remote_name')),
             $dir
         );
         if (!$currentUrl) {
             $this->git->execute(
-                ['remote', 'add', $this->config->get('detection.git_remote_name'), $url],
+                ['remote', 'add', $this->config->getStr('detection.git_remote_name'), $url],
                 $dir,
                 true
             );
@@ -114,7 +115,7 @@ class LocalProject
             $this->git->execute([
                 'remote',
                 'set-url',
-                $this->config->get('detection.git_remote_name'),
+                $this->config->getStr('detection.git_remote_name'),
                 $url
             ], $dir, true);
         }
@@ -152,7 +153,7 @@ class LocalProject
         $root = &$roots[$startDir][$file];
 
         $currentDir = $startDir;
-        while (!$root) {
+        while (true) {
             if (file_exists($currentDir . '/' . $file)) {
                 if ($callback === null || $callback($currentDir)) {
                     $root = $currentDir;
@@ -206,7 +207,7 @@ class LocalProject
         if (!$this->config->has('local.project_config_legacy')) {
             return false;
         }
-        return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'), $startDir);
+        return $this->findTopDirectoryContaining($this->config->getStr('local.project_config_legacy'), $startDir);
     }
 
     /**
@@ -215,6 +216,9 @@ class LocalProject
     public function getProjectRoot(?string $startDir = null): string|false
     {
         $startDir = $startDir ?: getcwd();
+        if ($startDir === false) {
+            throw new \RuntimeException('Failed to determine current working directory');
+        }
 
         static $cache = [];
         if (isset($cache[$startDir])) {
@@ -225,7 +229,7 @@ class LocalProject
 
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        if (is_dir($startDir . '/repository') && $this->config->has('local.project_config_legacy') && file_exists($startDir . '/' . $this->config->get('local.project_config_legacy'))) {
+        if (is_dir($startDir . '/repository') && $this->config->has('local.project_config_legacy') && file_exists($startDir . '/' . $this->config->getStr('local.project_config_legacy'))) {
             $startDir = $startDir . '/repository';
         }
 
@@ -247,7 +251,7 @@ class LocalProject
     /**
      * Gets the configuration for the current project.
      *
-     * @return array|null
+     * @return array<string, mixed>|null
      *   The current project's configuration.
      *
      * @throws \Exception
@@ -259,10 +263,10 @@ class LocalProject
             return self::$projectConfigs[$projectRoot];
         }
         $projectConfig = null;
-        $configFilename = $this->config->get('local.project_config');
+        $configFilename = $this->config->getStr('local.project_config');
         if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
             $yaml = new Parser();
-            $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
+            $projectConfig = $yaml->parse((string) file_get_contents($projectRoot . '/' . $configFilename));
             self::$projectConfigs[$projectRoot] = $projectConfig;
         } elseif ($projectRoot && is_dir($projectRoot . '/.git')) {
             $gitUrl = $this->getGitRemoteUrl($projectRoot);
@@ -280,7 +284,7 @@ class LocalProject
      * Configuration is stored as YAML, in the location configured by
      * 'local.project_config'.
      *
-     * @param array $config
+     * @param array<string, mixed> $config
      *   The configuration.
      * @param ?string $projectRoot
      *   The project root.
@@ -289,7 +293,7 @@ class LocalProject
      *
      * @throws \Exception On failure
      *
-     * @return array
+     * @return array<string, mixed>
      *   The updated project configuration.
      */
     public function writeCurrentProjectConfig(array $config, ?string $projectRoot = null, bool $merge = false): array
@@ -299,7 +303,7 @@ class LocalProject
             throw new \Exception('Project root not found');
         }
         $this->ensureLocalDir($projectRoot);
-        $file = $projectRoot . '/' . $this->config->get('local.project_config');
+        $file = $projectRoot . '/' . $this->config->getStr('local.project_config');
         if ($merge) {
             $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
             $config = array_merge($projectConfig, $config);
@@ -317,7 +321,7 @@ class LocalProject
      */
     public function ensureLocalDir(string $projectRoot): void
     {
-        $localDirRelative = $this->config->get('local.local_dir');
+        $localDirRelative = $this->config->getStr('local.local_dir');
         $dir = $projectRoot . '/' . $localDirRelative;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -350,14 +354,14 @@ EOF
      */
     public function writeGitExclude(string $dir): void
     {
-        $filesToExclude = ['/' . $this->config->get('local.local_dir'), '/' . $this->config->getWithDefault('local.web_root', '_www')];
+        $filesToExclude = ['/' . $this->config->getStr('local.local_dir'), '/' . $this->config->getStr('local.web_root')];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
 
         // Skip writing anything if the contents already include the
         // application.name.
         if (file_exists($excludeFilename)) {
-            $existing = file_get_contents($excludeFilename);
+            $existing = (string) file_get_contents($excludeFilename);
             if (str_contains($existing, $this->config->getStr('application.name'))) {
                 // Backwards compatibility between versions 3.0.0 and 3.0.2.
                 $newRoot = "\n" . '/' . $this->config->getStr('application.name') . "\n";

@@ -22,7 +22,7 @@ class TunnelManager
     }
 
     /**
-     * @param array{projectId: string, environmentId: string, appName: string, relationship: string, serviceKey: string|int} $metadata
+     * @param array{projectId: string, environmentId: string, appName: ?string, relationship: string, serviceKey: string|int, service: array<string, mixed>} $metadata
      * @return string
      */
     private function getId(array $metadata): string
@@ -30,7 +30,7 @@ class TunnelManager
         return implode('--', [
             $metadata['projectId'],
             $metadata['environmentId'],
-            $metadata['appName'],
+            $metadata['appName'] ?? '',
             $metadata['relationship'],
             $metadata['serviceKey'],
         ]);
@@ -229,6 +229,9 @@ class TunnelManager
         return $dir . '/' . preg_replace('/[^0-9a-z.]+/', '-', $tunnel->id) . '.pid';
     }
 
+    /**
+     * @param string[] $extraArgs
+     */
     public function createProcess(string $url, Tunnel $tunnel, array $extraArgs = []): Process
     {
         $args = ['ssh', '-n', '-N', '-L', implode(':', [$tunnel->localPort, $tunnel->remoteHost, $tunnel->remotePort]), $url];

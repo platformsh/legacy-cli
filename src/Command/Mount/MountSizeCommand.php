@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Mount;
 
@@ -55,7 +56,7 @@ filesystem. They are configured in the <info>mounts</info> key in the applicatio
 
 The filesystem's total size is determined by the <info>disk</info> key in the same file.
 EOF;
-        if ($this->config->getWithDefault('api.metrics', false)) {
+        if ($this->config->getBool('api.metrics')) {
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
             $help .= '<options=bold;fg=yellow>Deprecated:</>';
@@ -69,7 +70,9 @@ EOF;
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: getenv($this->config->getStr('service.env_prefix') . 'APPLICATION')));
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: getenv($this->config->getStr('service.env_prefix') . 'APPLICATION') !== false,
+        ));
         $host = $this->selector->getHostFromSelection($input, $selection);
         if ($host instanceof LocalHost) {
             $envVars = $this->remoteEnvVars;
@@ -146,9 +149,9 @@ EOF;
             }
             if ($showInBytes) {
                 $row['sizes'] = implode("\n", $mountUsage);
-                $row['max'] = $info['total'];
-                $row['used'] = $info['used'];
-                $row['available'] = $info['available'];
+                $row['max'] = (string) $info['total'];
+                $row['used'] = (string) $info['used'];
+                $row['available'] = (string) $info['available'];
             } else {
                 $row['sizes'] = implode("\n", array_map(Helper::formatMemory(...), $mountUsage));
                 $row['max'] = Helper::formatMemory($info['total']);
@@ -170,7 +173,7 @@ EOF;
                 'To increase the available space, edit the <info>disk</info> key in the application configuration.'
             );
 
-            if ($this->config->getWithDefault('api.metrics', false) && $this->config->isCommandEnabled('metrics:disk')) {
+            if ($this->config->getBool('api.metrics') && $this->config->isCommandEnabled('metrics:disk')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln('<options=bold;fg=yellow>Deprecated:</>');
                 $this->stdErr->writeln('This command is deprecated and will be removed in a future version.');
@@ -216,9 +219,9 @@ EOF;
      *
      * @param string $dfOutput
      * @param string $appDir
-     * @param array  $mountPaths
+     * @param string[] $mountPaths
      *
-     * @return array
+     * @return array<string, array{total: int, used: int, available: int, mounts: string[], percent_used: float}>
      */
     private function parseDf(string $dfOutput, string $appDir, array $mountPaths): array
     {
@@ -261,9 +264,9 @@ EOF;
      * Parse the 'du' output.
      *
      * @param string $duOutput
-     * @param array  $mountPaths
+     * @param string[] $mountPaths
      *
-     * @return array A list of mount sizes (in bytes) keyed by mount path.
+     * @return array<string, int> A list of mount sizes (in bytes) keyed by mount path.
      */
     private function parseDu(string $duOutput, array $mountPaths): array
     {
@@ -273,7 +276,8 @@ EOF;
             if (!isset($duOutputSplit[$i])) {
                 throw new \RuntimeException("Failed to find row $i of 'du' command output: \n" . $duOutput);
             }
-            list($mountSizes[$mountPath],) = explode("\t", $duOutputSplit[$i], 2);
+            $parts = explode("\t", $duOutputSplit[$i], 2);
+            $mountSizes[$mountPath] = (int) $parts[0];
         }
 
         return $mountSizes;

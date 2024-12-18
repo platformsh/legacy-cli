@@ -23,10 +23,12 @@ readonly class Rsync
 
     /**
      * Returns environment variables for configuring rsync.
+     *
+     * @return array<string, string>
      */
     private function env(string $sshUrl): array {
         return [
-            'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, [], null, true),
+            'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, omitUrl: true),
         ] + $this->ssh->getEnv();
     }
 
@@ -50,6 +52,8 @@ readonly class Rsync
 
     /**
      * Syncs files from a local to a remote location.
+     *
+     * @param array{verbose?: bool, quiet?: bool, convert-mac-filenames?: bool, delete?: bool, include?: string[], exclude?: string[]} $options
      */
     public function syncUp(string $sshUrl, string $localDir, string $remoteDir, array $options = []): void
     {
@@ -66,7 +70,9 @@ readonly class Rsync
     }
 
     /**
-     * Syncs files from a remote to a local location.
+     * Syncs files from a remote to a local location
+     *
+     * @param array{verbose?: bool, quiet?: bool, convert-mac-filenames?: bool, delete?: bool, include?: string[], exclude?: string[]} $options
      */
     public function syncDown(string $sshUrl, string $remoteDir, string $localDir, array $options = []): void
     {
@@ -82,6 +88,8 @@ readonly class Rsync
 
     /**
      * Runs rsync.
+     *
+     * @param array{verbose?: bool, quiet?: bool, convert-mac-filenames?: bool, delete?: bool, include?: string[], exclude?: string[]} $options
      */
     private function doSync(string $from, string $to, string $sshUrl, array $options = []): void
     {
@@ -120,6 +128,6 @@ readonly class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, $this->env($sshUrl), null);
+        $this->shell->mustExecute($params, quiet: false, env: $this->env($sshUrl), timeout: null);
     }
 }

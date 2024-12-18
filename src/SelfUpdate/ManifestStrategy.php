@@ -9,11 +9,13 @@ use Humbug\SelfUpdate\VersionParser;
 
 class ManifestStrategy implements StrategyInterface
 {
+    /** @var array<mixed>|null */
     private ?array $manifest = null;
 
+    /** @var array<string, array<mixed>>|null */
     private ?array $availableVersions = null;
 
-    private static array $requiredKeys = ['sha256', 'version', 'url'];
+    private const REQUIRED_KEYS = ['sha256', 'version', 'url'];
 
     private int $manifestTimeout = 10;
 
@@ -21,6 +23,7 @@ class ManifestStrategy implements StrategyInterface
 
     private bool $ignorePhpReq = false;
 
+    /** @var array<string, mixed> */
     private array $streamContextOptions = [];
 
     /**
@@ -41,7 +44,7 @@ class ManifestStrategy implements StrategyInterface
     }
 
     /**
-     * @param array $opts
+     * @param array<string, mixed> $opts
      */
     public function setStreamContextOptions(array $opts): void
     {
@@ -91,6 +94,8 @@ class ManifestStrategy implements StrategyInterface
 
     /**
      * Finds update/upgrade notes for the new remote version.
+     *
+     * @return array<string, string>
      */
     public function getUpdateNotesByVersion(string $currentVersion, string $targetVersion): array
     {
@@ -122,7 +127,7 @@ class ManifestStrategy implements StrategyInterface
         // A relative download URL is treated as relative to the manifest URL.
         $url = $versionInfo['url'];
         if (!str_contains((string) $url, '//') && str_contains($this->manifestUrl, '//')) {
-            $removePath = parse_url($this->manifestUrl, PHP_URL_PATH);
+            $removePath = (string) parse_url($this->manifestUrl, PHP_URL_PATH);
             $url = str_replace($removePath, '/' . ltrim((string) $url, '/'), $this->manifestUrl);
         }
 
@@ -172,7 +177,7 @@ class ManifestStrategy implements StrategyInterface
         if (!isset($this->availableVersions)) {
             $this->availableVersions = [];
             foreach ($this->getManifest() as $key => $item) {
-                if ($missing = array_diff(self::$requiredKeys, array_keys($item))) {
+                if ($missing = array_diff(self::REQUIRED_KEYS, array_keys($item))) {
                     throw new \RuntimeException(sprintf(
                         'Manifest item %s missing required key(s): %s',
                         $key,
@@ -191,7 +196,7 @@ class ManifestStrategy implements StrategyInterface
      *
      * @param Updater $updater
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function getRemoteVersionInfo(Updater $updater): array
     {
@@ -209,6 +214,8 @@ class ManifestStrategy implements StrategyInterface
 
     /**
      * Downloads and decodes the JSON manifest file.
+     *
+     * @return array<mixed>
      */
     private function getManifest(): array
     {

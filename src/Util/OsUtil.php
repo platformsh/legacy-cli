@@ -76,11 +76,11 @@ class OsUtil
      *
      * @param string $name
      *
-     * @return array
+     * @return string[]
      */
     public static function findExecutables(string $name): array
     {
-        $dirs = explode(\PATH_SEPARATOR, getenv('PATH') ?: getenv('Path'));
+        $dirs = explode(\PATH_SEPARATOR, (string) (getenv('PATH') ?: getenv('Path')));
         $suffixes = [''];
 
         $found = [];

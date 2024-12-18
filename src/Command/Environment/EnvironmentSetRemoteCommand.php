@@ -45,14 +45,17 @@ class EnvironmentSetRemoteCommand extends CommandBase
             throw new RootNotFoundException();
         }
 
-        $projectRoot = $this->selector->getProjectRoot();
+        $projectRoot = (string) $this->selector->getProjectRoot();
         $this->git->setDefaultRepositoryDir($projectRoot);
 
         $specifiedEnvironmentId = $input->getArgument('environment');
-        if ($specifiedEnvironmentId != '0'
-            && !($specifiedEnvironment = $this->api->getEnvironment($specifiedEnvironmentId, $project))) {
-            $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
-            return 1;
+        $specifiedEnvironment = null;
+        if ($specifiedEnvironmentId != '0') {
+            $specifiedEnvironment = $this->api->getEnvironment($specifiedEnvironmentId, $project);
+            if (!$specifiedEnvironment) {
+                $this->stdErr->writeln("Environment not found: <error>$specifiedEnvironmentId</error>");
+                return 1;
+            }
         }
 
         $specifiedBranch = $input->getArgument('branch');
@@ -67,7 +70,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
 
         // Check whether the branch is mapped by default (its name or its Git
         // upstream is the same as the remote environment ID).
-        $mappedByDefault = isset($specifiedEnvironment)
+        $mappedByDefault = $specifiedEnvironment
             && $specifiedEnvironment->status != 'inactive'
             && $specifiedEnvironmentId === $specifiedBranch;
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {

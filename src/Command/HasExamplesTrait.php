@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Command;
 
 trait HasExamplesTrait
 {
-    /** @var array{'commandline': string, 'description': string}[] */
+    /** @var array<array{'commandline': string, 'description': string}> */
     private array $examples = [];
 
     protected function addExample(string $description, string $commandline = ''): self
@@ -14,6 +14,9 @@ trait HasExamplesTrait
         return $this;
     }
 
+    /**
+     * @return array<array{'commandline': string, 'description': string}>
+     */
     public function getExamples(): array
     {
         return $this->examples;

@@ -63,7 +63,7 @@ class SelfBuildCommand extends CommandBase
         if ($input->getOption('replace-version')) {
             $version = $input->getOption('replace-version');
         } else {
-            $tag = $this->shell->execute(['git', 'describe', '--tags'], CLI_ROOT, false);
+            $tag = $this->shell->execute(['git', 'describe', '--tags'], CLI_ROOT);
             if ($tag !== false) {
                 $version = $tag;
             }
@@ -97,7 +97,7 @@ class SelfBuildCommand extends CommandBase
             $this->stdErr->writeln('If this fails, you may need to run "composer install" manually.');
 
             // Wipe the vendor directory to be extra sure.
-            $this->shell->execute(['rm', '-rf', 'vendor'], CLI_ROOT, false);
+            $this->shell->execute(['rm', '-rf', 'vendor'], CLI_ROOT);
 
             $this->shell->execute([
                 'composer',
@@ -130,7 +130,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         // Create a temporary box.json file for this build.
-        $originalConfig = json_decode(file_get_contents(CLI_ROOT . '/box.json'), true);
+        $originalConfig = json_decode((string) file_get_contents(CLI_ROOT . '/box.json'), true);
         $boxConfig = array_merge($originalConfig, $boxConfig);
         $boxConfig['base-path'] = CLI_ROOT;
         $tmpJson = tempnam(sys_get_temp_dir(), 'cli-box-');
@@ -138,7 +138,7 @@ class SelfBuildCommand extends CommandBase
         $boxArgs[] = '--config=' . $tmpJson;
 
         $this->stdErr->writeln('Building Phar package using Box');
-        $this->shell->execute($boxArgs, CLI_ROOT, true, false);
+        $this->shell->mustExecute($boxArgs, dir: CLI_ROOT, quiet: false);
 
         // Clean up the temporary file.
         if (!empty($tmpJson)) {
@@ -157,7 +157,7 @@ class SelfBuildCommand extends CommandBase
         $this->stdErr->writeln('The package was built successfully');
         $output->writeln($phar);
         $this->stdErr->writeln([
-            sprintf('Size: %s', FormatterHelper::formatMemory($size)),
+            sprintf('Size: %s', FormatterHelper::formatMemory((int) $size)),
             sprintf('SHA-1: %s', $sha1),
             sprintf('SHA-256: %s', $sha256),
             sprintf('Version: %s', $version),
@@ -196,8 +196,8 @@ class SelfBuildCommand extends CommandBase
             'cliName' => $this->config->getStr('application.name'),
             'userAgent' => $this->config->getStr('application.slug'),
             'serviceEnvPrefix' => $this->config->getStr('service.env_prefix'),
-            'migratePrompt' => $this->config->getWithDefault('migrate.prompt', false),
-            'migrateDocsUrl' => $this->config->getWithDefault('migrate.docs_url', ''),
+            'migratePrompt' => $this->config->getBool('migrate.prompt'),
+            'migrateDocsUrl' => $this->config->getStr('migrate.docs_url'),
         ], true);
         $newContents = \substr($installerContents, 0, $startPos) . $newConfig . \substr($installerContents, $endPos);
         if ($newContents !== $installerContents) {

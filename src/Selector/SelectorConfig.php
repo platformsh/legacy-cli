@@ -46,6 +46,8 @@ class SelectorConfig
 
     /**
      * Returns an environment filter to select environments by status.
+     *
+     * @param string[] $statuses
      */
     public static function filterEnvsByStatus(array $statuses): callable
     {

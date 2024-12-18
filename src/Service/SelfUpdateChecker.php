@@ -58,7 +58,7 @@ class SelfUpdateChecker
 
         // Determine an embargo time, after which updates can be checked.
         $timestamp = time();
-        $embargoTime = $timestamp - $this->config->get('updates.check_interval');
+        $embargoTime = $timestamp - $this->config->getInt('updates.check_interval');
 
         // Stop if updates were last checked after the embargo time.
         if ($this->state->get('updates.last_checked') > $embargoTime) {
