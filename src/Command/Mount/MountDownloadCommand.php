@@ -254,7 +254,7 @@ class MountDownloadCommand extends CommandBase
         }
 
         $localApps = $this->getLocalApps();
-        $dirname =  $projectRoot . '/' . $this->config->get('local.shared_dir');
+        $dirname =  $projectRoot . '/' . $this->config->getStr('local.shared_dir');
         if (count($localApps) > 1 && is_dir($dirname)) {
             $dirname .= $app->getName();
         }

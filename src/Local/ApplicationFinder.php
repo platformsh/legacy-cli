@@ -151,7 +151,7 @@ readonly class ApplicationFinder
             ->ignoreVCS(true)
             ->exclude([
                 '.idea',
-                $this->config->get('local.local_dir'),
+                $this->config->getStr('local.local_dir'),
                 'builds',
                 'node_modules',
                 'vendor',

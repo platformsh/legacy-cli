@@ -539,7 +539,7 @@ class Selector implements CompleterInterface
                 }
                 if ($this->config->has('api.base_url')
                     && $e->getResponse()->getStatusCode() === 401
-                    && parse_url($this->config->get('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
+                    && parse_url($this->config->getStr('api.base_url'), PHP_URL_HOST) !== $e->getRequest()->getUri()->getHost()) {
                     $this->debug('Ignoring 401 error for unrecognized local project hostname: ' . $e->getRequest()->getUri()->getHost());
                     return $this->currentProject = false;
                 }

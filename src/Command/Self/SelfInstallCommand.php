@@ -61,7 +61,7 @@ EOT
                 $contents = \preg_replace('/^##[^\n]*\n/m', '', $contents);
                 // Replace configuration keys inside double curly brackets with
                 // their values.
-                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn($matches) => $this->config->get($matches[1]), (string) $contents);
+                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn($matches) => $this->config->getStr($matches[1]), (string) $contents);
                 $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $destFile, $contents);
             }
         } catch (\Exception $e) {

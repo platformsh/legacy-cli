@@ -300,7 +300,7 @@ abstract class ServerCommandBase extends CommandBase
             throw new \RuntimeException(sprintf('Router not found: <error>%s</error>', $router_src));
         }
 
-        $router = $projectRoot . '/' . $this->config->get('local.local_dir') . '/' . basename($router_src);
+        $router = $projectRoot . '/' . $this->config->getStr('local.local_dir') . '/' . basename($router_src);
         if (!isset($created[$router])) {
             if (!file_put_contents($router, file_get_contents($router_src))) {
                 throw new \RuntimeException(sprintf('Could not create router file: <error>%s</error>', $router));
@@ -361,7 +361,7 @@ abstract class ServerCommandBase extends CommandBase
 
         list($env['IP'], $env['PORT']) = explode(':', $address);
 
-        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->get('local.build_dir')) {
+        if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->getStr('local.build_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);
         }
 

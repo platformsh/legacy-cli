@@ -215,7 +215,7 @@ class LocalBuild
         // Find the right build directory.
         $buildName = $app->isSingle() ? 'default' : str_replace('/', '-', $appId);
 
-        $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
+        $tmpBuildDir = $sourceDir . '/' . $this->config->getStr('local.build_dir') . '/' . $buildName . '-tmp';
 
         if (file_exists($tmpBuildDir)) {
             if (!$this->fsHelper->remove($tmpBuildDir)) {
@@ -258,7 +258,7 @@ class LocalBuild
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $sourceDir . '/' . $this->config->get('local.archive_dir') . '/' . $treeId . '.tar.gz';
+                $archive = $sourceDir . '/' . $this->config->getStr('local.archive_dir') . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -277,7 +277,7 @@ class LocalBuild
 
             // Install dependencies.
             if (isset($appConfig['dependencies'])) {
-                $depsDir = $sourceDir . '/' . $this->config->get('local.dependencies_dir');
+                $depsDir = $sourceDir . '/' . $this->config->getStr('local.dependencies_dir');
                 if (!empty($this->settings['no-deps'])) {
                     $this->output->writeln('Skipping build dependencies');
                 } else {
@@ -445,7 +445,7 @@ class LocalBuild
         }
 
         return $this->cleanDirectory(
-            $projectRoot . '/' . $this->config->get('local.build_dir'),
+            $projectRoot . '/' . $this->config->getStr('local.build_dir'),
             $maxAge,
             $keepMax,
             $exclude,
@@ -478,7 +478,7 @@ class LocalBuild
             }
         }
         $activeBuilds = [];
-        $buildsDir = $projectRoot . '/' . $this->config->get('local.build_dir');
+        $buildsDir = $projectRoot . '/' . $this->config->getStr('local.build_dir');
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
@@ -519,7 +519,7 @@ class LocalBuild
     public function cleanArchives(string $projectRoot, ?int $maxAge = null, int $keepMax = 10, bool $quiet = true): array
     {
         return $this->cleanDirectory(
-            $projectRoot . '/' . $this->config->get('local.archive_dir'),
+            $projectRoot . '/' . $this->config->getStr('local.archive_dir'),
             $maxAge,
             $keepMax,
             [],

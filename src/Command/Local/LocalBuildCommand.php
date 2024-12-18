@@ -143,7 +143,7 @@ class LocalBuildCommand extends CommandBase
 
             // Sensible handling if the user provides a project root as the
             // source directory.
-            if (file_exists($sourceDir . $this->config->get('local.project_config'))) {
+            if (file_exists($sourceDir . $this->config->getStr('local.project_config'))) {
                 $projectRoot = $sourceDir;
             }
         } elseif (!$projectRoot) {

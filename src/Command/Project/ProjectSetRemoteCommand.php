@@ -60,7 +60,7 @@ class ProjectSetRemoteCommand extends CommandBase
         $localProject = $this->localProject;
 
         if ($unset) {
-            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->get('local.project_config');
+            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->getStr('local.project_config');
             if (!\file_exists($configFilename)) {
                 $configFilename = null;
             }

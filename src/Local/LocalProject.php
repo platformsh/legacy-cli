@@ -206,7 +206,7 @@ class LocalProject
         if (!$this->config->has('local.project_config_legacy')) {
             return false;
         }
-        return $this->findTopDirectoryContaining($this->config->get('local.project_config_legacy'), $startDir);
+        return $this->findTopDirectoryContaining($this->config->getStr('local.project_config_legacy'), $startDir);
     }
 
     /**
@@ -225,7 +225,7 @@ class LocalProject
 
         // Backwards compatibility - if in an old-style project root, change
         // directory to the repository.
-        if (is_dir($startDir . '/repository') && $this->config->has('local.project_config_legacy') && file_exists($startDir . '/' . $this->config->get('local.project_config_legacy'))) {
+        if (is_dir($startDir . '/repository') && $this->config->has('local.project_config_legacy') && file_exists($startDir . '/' . $this->config->getStr('local.project_config_legacy'))) {
             $startDir = $startDir . '/repository';
         }
 
@@ -259,7 +259,7 @@ class LocalProject
             return self::$projectConfigs[$projectRoot];
         }
         $projectConfig = null;
-        $configFilename = $this->config->get('local.project_config');
+        $configFilename = $this->config->getStr('local.project_config');
         if ($projectRoot && file_exists($projectRoot . '/' . $configFilename)) {
             $yaml = new Parser();
             $projectConfig = $yaml->parse(file_get_contents($projectRoot . '/' . $configFilename));
@@ -299,7 +299,7 @@ class LocalProject
             throw new \Exception('Project root not found');
         }
         $this->ensureLocalDir($projectRoot);
-        $file = $projectRoot . '/' . $this->config->get('local.project_config');
+        $file = $projectRoot . '/' . $this->config->getStr('local.project_config');
         if ($merge) {
             $projectConfig = $this->getProjectConfig($projectRoot) ?: [];
             $config = array_merge($projectConfig, $config);
@@ -317,7 +317,7 @@ class LocalProject
      */
     public function ensureLocalDir(string $projectRoot): void
     {
-        $localDirRelative = $this->config->get('local.local_dir');
+        $localDirRelative = $this->config->getStr('local.local_dir');
         $dir = $projectRoot . '/' . $localDirRelative;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -350,7 +350,7 @@ EOF
      */
     public function writeGitExclude(string $dir): void
     {
-        $filesToExclude = ['/' . $this->config->get('local.local_dir'), '/' . $this->config->getWithDefault('local.web_root', '_www')];
+        $filesToExclude = ['/' . $this->config->getStr('local.local_dir'), '/' . $this->config->getWithDefault('local.web_root', '_www')];
         $excludeFilename = $dir . '/.git/info/exclude';
         $existing = '';
 

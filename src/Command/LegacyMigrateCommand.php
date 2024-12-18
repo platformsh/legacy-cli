@@ -25,7 +25,7 @@ class LegacyMigrateCommand extends CommandBase
         $this
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
         $cliName = $this->config->getStr('application.name');
-        $localDir = $this->config->get('local.local_dir');
+        $localDir = $this->config->getStr('local.local_dir');
         $this->setHelp(<<<EOF
 Before version 3.x, the {$cliName} required a project to have a "repository"
 directory containing the Git repository, "builds", "shared" and others. From
@@ -98,26 +98,26 @@ EOF
             $this->filesystem->archiveDir($legacyRoot, $backup);
         }
 
-        $this->stdErr->writeln('Creating directory: ' . $this->config->get('local.local_dir'));
+        $this->stdErr->writeln('Creating directory: ' . $this->config->getStr('local.local_dir'));
         $localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory.');
-            if (is_dir($repositoryDir . '/' . $this->config->get('local.shared_dir'))) {
-                $this->filesystem->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->get('local.shared_dir'));
+            if (is_dir($repositoryDir . '/' . $this->config->getStr('local.shared_dir'))) {
+                $this->filesystem->copyAll($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->getStr('local.shared_dir'));
                 $this->filesystem->remove($legacyRoot . '/shared');
             } else {
-                rename($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->get('local.shared_dir'));
+                rename($legacyRoot . '/shared', $repositoryDir . '/' . $this->config->getStr('local.shared_dir'));
             }
         }
 
-        if (file_exists($legacyRoot . '/' . $this->config->get('local.project_config_legacy'))) {
+        if (file_exists($legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'))) {
             $this->stdErr->writeln('Moving project config file.');
             $this->filesystem->copy(
-                $legacyRoot . '/' . $this->config->get('local.project_config_legacy'),
-                $legacyRoot . '/' . $this->config->get('local.project_config')
+                $legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'),
+                $legacyRoot . '/' . $this->config->getStr('local.project_config')
             );
-            $this->filesystem->remove($legacyRoot . '/' . $this->config->get('local.project_config_legacy'));
+            $this->filesystem->remove($legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'));
         }
 
         if (file_exists($legacyRoot . '/.build-archives')) {
@@ -147,10 +147,10 @@ EOF
             $this->stdErr->writeln('Error: not found: <error>' . $legacyRoot . '/.git</error>');
 
             return 1;
-        } elseif (file_exists($legacyRoot . '/' . $this->config->get('local.project_config_legacy'))) {
+        } elseif (file_exists($legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'))) {
             $this->stdErr->writeln(sprintf(
                 'Error: file still exists: <error>%s</error>',
-                $legacyRoot . '/' . $this->config->get('local.project_config_legacy')
+                $legacyRoot . '/' . $this->config->getStr('local.project_config_legacy')
             ));
 
             return 1;

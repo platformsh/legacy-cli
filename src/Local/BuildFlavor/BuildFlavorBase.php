@@ -196,7 +196,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      */
     protected function getSharedDir(): string
     {
-        $shared = $this->app->getSourceDir() . '/' . $this->config->get('local.shared_dir');
+        $shared = $this->app->getSourceDir() . '/' . $this->config->getStr('local.shared_dir');
         if (!$this->app->isSingle()) {
             $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', (string) $this->app->getName());
         }
@@ -301,7 +301,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             return;
         }
 
-        $sharedDirRelative = $this->config->get('local.shared_dir');
+        $sharedDirRelative = $this->config->getStr('local.shared_dir');
         $this->stdErr->writeln('Creating symbolic links to mimic shared file mounts');
         foreach ($sharedFileMounts as $appPath => $sharedPath) {
             $target = $sharedDir . '/' . $sharedPath;
@@ -334,7 +334,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
 
         if (is_dir($sitesDefault) && !file_exists($settingsLocal)) {
             $sharedSettingsLocal = $shared . '/settings.local.php';
-            $relative = $this->config->get('local.shared_dir') . '/settings.local.php';
+            $relative = $this->config->getStr('local.shared_dir') . '/settings.local.php';
             if (!file_exists($sharedSettingsLocal)) {
                 $this->stdErr->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);

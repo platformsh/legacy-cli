@@ -29,7 +29,7 @@ class ServerStartCommand extends ServerCommandBase
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting servers')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
           ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The port of the first server')
-          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config->get('local.local_dir') . '/server.log')
+          ->addOption('log', null, InputOption::VALUE_REQUIRED, 'The name of a log file. Defaults to ' . $this->config->getStr('local.local_dir') . '/server.log')
           ->addOption('tunnel', null, InputOption::VALUE_NONE, 'Incorporate SSH tunnels to remote ' . $this->config->getStr('service.name') . ' environments as relationships');
         Url::configureInput($this->getDefinition());
     }
@@ -123,7 +123,7 @@ class ServerStartCommand extends ServerCommandBase
         }
 
         $logFile = $input->getOption('log')
-            ?: $projectRoot . '/' . $this->config->get('local.local_dir') . '/server.log';
+            ?: $projectRoot . '/' . $this->config->getStr('local.local_dir') . '/server.log';
         $log = $this->openLog($logFile);
         if (!$log) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: <error>%s</error>', $logFile));
