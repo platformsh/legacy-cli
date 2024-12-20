@@ -2,39 +2,44 @@
 
 namespace Platformsh\Cli\Command\Service\MongoDB;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Model\Host\HostInterface;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
-use Stecman\Component\Symfony\Console\BashCompletion\Completion\CompletionAwareInterface;
-use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class MongoExportCommand extends CommandBase implements CompletionAwareInterface
+#[AsCommand(name: 'service:mongo:export', description: 'Export data from MongoDB', aliases: ['mongoexport'])]
+class MongoExportCommand extends CommandBase
 {
-    protected function configure()
+    public function __construct(private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
-        $this->setName('service:mongo:export');
-        $this->setAliases(['mongoexport']);
-        $this->setDescription('Export data from MongoDB');
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
         $this->addOption('collection', 'c', InputOption::VALUE_REQUIRED, 'The collection to export');
         $this->addOption('jsonArray', null, InputOption::VALUE_NONE, 'Export data as a single JSON array');
         $this->addOption('type', null, InputOption::VALUE_REQUIRED, 'The export type, e.g. "csv"');
         $this->addOption('fields', 'f', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The fields to export');
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
-        $this->addProjectOption()
-            ->addEnvironmentOption()
-            ->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addExample('Export a CSV from the "users" collection', '-c users --type csv -f name,email');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('type') === 'csv' && !$input->getOption('fields')) {
             throw new InvalidArgumentException(
@@ -42,12 +47,13 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
                 . "\n" . 'Use --fields (-f) to specify field(s) to export.'
             );
         }
+        $selection = $this->selector->getSelection($input, new SelectorConfig(
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        ));
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $host = $this->selectHost($input, $relationshipsService->hasLocalEnvVar());
-
-        $service = $relationshipsService->chooseService($host, $input, $output, ['mongodb']);
+        $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
         if (!$service) {
             return 1;
         }
@@ -61,12 +67,10 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
             if (empty($collections)) {
                 throw new InvalidArgumentException('No collections found. You can specify one with the --collection (-c) option.');
             }
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
-            $collection = $questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
+            $collection = $this->questionHelper->choose(array_combine($collections, $collections), 'Enter a number to choose a collection:', null, false);
         }
 
-        $command = 'mongoexport ' . $relationshipsService->getDbCommandArgs('mongoexport', $service);
+        $command = 'mongoexport ' . $this->relationships->getDbCommandArgs('mongoexport', $service);
         $command .= ' --collection ' . OsUtil::escapePosixShellArg($collection);
 
         if ($input->getOption('type')) {
@@ -94,20 +98,17 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
     /**
      * Get collections in the MongoDB database.
      *
-     * @param array         $service
+     * @param array{username: string, password: string, host: string, port:int, path: string} $service
      * @param HostInterface $host
      *
-     * @return array
+     * @return string[]
      */
-    private function getCollections(array $service, HostInterface $host)
+    private function getCollections(array $service, HostInterface $host): array
     {
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-
         $js = 'printjson(db.getCollectionNames())';
 
         $command = 'mongo '
-            . $relationshipsService->getDbCommandArgs('mongo', $service)
+            . $this->relationships->getDbCommandArgs('mongo', $service)
             . ' --quiet --eval ' . OsUtil::escapePosixShellArg($js)
             . ' 2>/dev/null';
 
@@ -119,34 +120,12 @@ class MongoExportCommand extends CommandBase implements CompletionAwareInterface
         // Handle log messages that mongo prints to stdout.
         // https://jira.mongodb.org/browse/SERVER-23810
         // Hopefully the end of the output is a JavaScript array.
-        if (substr($result, -1) === ']' && substr(trim($result), 0, 1) !== '[' && ($openPos = strrpos($result, "\n[")) !== false) {
+        if (str_ends_with($result, ']') && !str_starts_with(trim($result), '[') && ($openPos = strrpos($result, "\n[")) !== false) {
             $result = substr($result, $openPos);
         }
 
         $collections = json_decode($result, true) ?: [];
 
-        return array_filter($collections, function ($collection) {
-            return substr($collection, 0, 7) !== 'system.';
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeOptionValues($optionName, CompletionContext $context)
-    {
-        if ($optionName === 'type') {
-            return ['csv'];
-        }
-
-        return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function completeArgumentValues($argumentName, CompletionContext $context)
-    {
-        return [];
+        return array_filter($collections, fn(string $collection): bool => !str_starts_with((string) $collection, 'system.'));
     }
 }

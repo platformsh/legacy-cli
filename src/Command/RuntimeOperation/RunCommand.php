@@ -2,9 +2,16 @@
 
 namespace Platformsh\Cli\Command\RuntimeOperation;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Exception\ApiFeatureMissingException;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,32 +20,36 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @see \Platformsh\Cli\Command\SourceOperation\RunCommand
  */
+#[AsCommand(name: 'operation:run', description: 'Run an operation on the environment')]
 class RunCommand extends CommandBase
 {
-    protected function configure()
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
-        $this->setName('operation:run')
-            ->setDescription('Run an operation on the environment')
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
+        $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name');
 
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('worker', null, InputOption::VALUE_REQUIRED, 'A worker name');
-        $this->addWaitOptions();
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
-        $environment = $this->getSelectedEnvironment();
-        $deployment = $this->api()->getCurrentDeployment($environment);
+        $environment = $selection->getEnvironment();
+        $deployment = $this->api->getCurrentDeployment($environment);
 
         try {
             if ($input->getOption('app') || $input->getOption('worker')) {
-                $selectedApp = $this->selectRemoteContainer($input);
+                $selectedApp = $selection->getRemoteContainer();
                 $appName = $selectedApp->getName();
                 $operations = [
                     $selectedApp->getName() => $selectedApp->getRuntimeOperations(),
@@ -47,7 +58,7 @@ class RunCommand extends CommandBase
                 $appName = null;
                 $operations = $deployment->getRuntimeOperations();
             }
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support runtime operations.');
         }
 
@@ -56,9 +67,6 @@ class RunCommand extends CommandBase
 
             return 0;
         }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
 
         $operationName = $input->getArgument('operation');
         if (!$operationName) {
@@ -79,7 +87,7 @@ class RunCommand extends CommandBase
                 }
             }
             ksort($choices, SORT_NATURAL);
-            $operationName = $questionHelper->choose($choices, 'Enter a number to choose an operation to run:', null, false);
+            $operationName = $this->questionHelper->choose($choices, 'Enter a number to choose an operation to run:', null, false);
             $appName = $appNamesByOperationName[$operationName];
         } else {
             $found = false;
@@ -93,12 +101,12 @@ class RunCommand extends CommandBase
             }
             if (!$found) {
                 if ($appName !== null) {
-                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s, app <comment>%s</comment>.', $operationName, $this->api()->getEnvironmentLabel($environment, 'comment'), $appName));
+                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s, app <comment>%s</comment>.', $operationName, $this->api->getEnvironmentLabel($environment, 'comment'), $appName));
                 } else {
-                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s.', $operationName, $this->api()->getEnvironmentLabel($environment, 'comment')));
+                    $this->stdErr->writeln(sprintf('The runtime operation <error>%s</error> was not found on the environment %s.', $operationName, $this->api->getEnvironmentLabel($environment, 'comment')));
                 }
                 $this->stdErr->writeln('');
-                $this->stdErr->writeln(sprintf('To list operations, run: <comment>%s ops</comment>', $this->config()->get('application.executable')));
+                $this->stdErr->writeln(sprintf('To list operations, run: <comment>%s ops</comment>', $this->config->getStr('application.executable')));
                 return 1;
             }
         }
@@ -108,21 +116,20 @@ class RunCommand extends CommandBase
         } else {
             $this->stdErr->writeln(\sprintf('Running operation <info>%s</info> on the environment <info>%s</info>', $operationName, $appName));
         }
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 
         try {
             $result = $deployment->execRuntimeOperation($operationName, $appName);
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support runtime operations.');
         }
 
         $success = true;
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $monitor */
-            $monitor = $this->getService('activity_monitor');
-            $success = $monitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityMonitor->shouldWait($input)) {
+            $monitor = $this->activityMonitor;
+            $success = $monitor->waitMultiple($result->getActivities(), $selection->getProject());
         }
 
         return $success ? 0 : 1;

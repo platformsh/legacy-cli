@@ -1,49 +1,51 @@
 <?php
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\SshConfig;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Api;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:logout', description: 'Log out', aliases: ['logout'])]
 class LogoutCommand extends CommandBase
 {
-    protected $local = true;
 
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly SshConfig $sshConfig)
+    {
+        parent::__construct();
+    }
+    protected function configure(): void
     {
         $this
-            ->setName('auth:logout')
-            ->setAliases(['logout'])
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Log out from all local sessions')
-            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions')
-            ->setDescription('Log out of ' . $this->config()->get('service.name'));
+            ->addOption('other', null, InputOption::VALUE_NONE, 'Log out from other local sessions');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // API tokens set via the environment or the config file cannot be
         // removed using this command.
         // API tokens set via the auth:api-token-login command will be safely
         // deleted.
-        if ($this->api()->hasApiToken(false)) {
+        if ($this->api->hasApiToken(false)) {
             $this->stdErr->writeln('<comment>Warning: an API token is set via config</comment>');
         }
 
         if ($input->getOption('other') && !$input->getOption('all')) {
-            $currentSessionId = $this->config()->getSessionId();
+            $currentSessionId = $this->config->getSessionId();
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $currentSessionId));
-            $other = \array_filter($this->api()->listSessionIds(), function ($sessionId) use ($currentSessionId) {
-                return $sessionId !== $currentSessionId;
-            });
+            $other = \array_filter($this->api->listSessionIds(), fn($sessionId): bool => $sessionId !== $currentSessionId);
             if (empty($other)) {
                 $this->stdErr->writeln('No other sessions exist.');
                 return 0;
             }
             $this->stdErr->writeln('');
             foreach ($other as $sessionId) {
-                $api = new Api($this->config()->withOverrides(['api.session_id' => $sessionId]), null, $output);
+                $api = new Api($this->config->withOverrides(['api.session_id' => $sessionId]), null, $output);
                 $api->logout();
                 $this->stdErr->writeln(sprintf('Logged out from session: <info>%s</info>', $sessionId));
             }
@@ -52,30 +54,26 @@ class LogoutCommand extends CommandBase
             return 0;
         }
 
-        $this->api()->logout();
+        $this->api->logout();
         $this->stdErr->writeln('You are now logged out.');
-
-        // Delete session SSH configuration.
-        /** @var \Platformsh\Cli\Service\SshConfig $sshConfig */
-        $sshConfig = $this->getService('ssh_config');
-        $sshConfig->deleteSessionConfiguration();
+        $this->sshConfig->deleteSessionConfiguration();
 
         // Check for other sessions.
         if ($input->getOption('all')) {
-            $this->api()->deleteAllSessions();
+            $this->api->deleteAllSessions();
             $this->stdErr->writeln('');
             $this->stdErr->writeln('All sessions have been deleted.');
-            $this->showSessionInfo(true);
+            $this->api->showSessionInfo(true);
             return 0;
         }
 
-        $this->showSessionInfo(true);
+        $this->api->showSessionInfo(true);
 
-        if ($this->api()->anySessionsExist()) {
+        if ($this->api->anySessionsExist()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
-                $this->config()->get('application.executable')
+                $this->config->getStr('application.executable')
             ));
         }
 

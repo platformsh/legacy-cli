@@ -1,47 +1,53 @@
 <?php
 namespace Platformsh\Cli\Command\Certificate;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Client\Model\Certificate;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'certificate:get', description: 'View a certificate')]
 class CertificateGetCommand extends CommandBase
 {
 
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+    protected function configure(): void
     {
         $this
-            ->setName('certificate:get')
-            ->setDescription('View a certificate')
             ->addArgument('id', InputArgument::REQUIRED, 'The certificate ID (or the start of it)')
             ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The certificate property to view');
         PropertyFormatter::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $id = $input->getArgument('id');
         $cert = $project->getCertificate($id);
         if (!$cert) {
             try {
-                $cert = $this->api()->matchPartialId($id, $project->getCertificates(), 'Certificate');
+                /** @var Certificate $cert */
+                $cert = $this->api->matchPartialId($id, $project->getCertificates(), 'Certificate');
             } catch (\InvalidArgumentException $e) {
                 $this->stdErr->writeln($e->getMessage());
                 return 1;
             }
         }
 
-        /** @var PropertyFormatter $propertyFormatter */
-        $propertyFormatter = $this->getService('property_formatter');
-
-        $propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
+        $this->propertyFormatter->displayData($output, $cert->getProperties(), $input->getOption('property'));
 
         return 0;
     }

@@ -1,30 +1,41 @@
 <?php
 namespace Platformsh\Cli\Command\Db;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Host\RemoteHost;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'db:sql', description: 'Run SQL on the remote database', aliases: ['sql'])]
 class DbSqlCommand extends CommandBase
 {
 
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
-        $this->setName('db:sql')
-            ->setAliases(['sql'])
-            ->setDescription('Run SQL on the remote database')
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
+        $this
             ->addArgument('query', InputArgument::OPTIONAL, 'An SQL statement to execute')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Produce raw, non-tabular output');
         $this->addOption('schema', null, InputOption::VALUE_REQUIRED, 'The schema to use. Omit to use the default schema (usually "main"). Pass an empty string to not use any schema.');
-        $this->addProjectOption()->addEnvironmentOption()->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
         $this->addExample('Open an SQL console on the remote database');
@@ -33,38 +44,39 @@ class DbSqlCommand extends CommandBase
         $this->setHiddenAliases(['environment:sql']);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!$input->getArgument('query') && $this->runningViaMulti) {
             throw new InvalidArgumentException('The query argument is required when running via "multi"');
         }
 
-        /** @var \Platformsh\Cli\Service\Relationships $relationships */
-        $relationships = $this->getService('relationships');
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $host = $this->selectHost($input, $relationships->hasLocalEnvVar());
-        if ($host instanceof LocalHost && $this->api()->isLoggedIn()) {
-            $this->validateInput($input);
-        }
+        $selectorConfig = new SelectorConfig(
+            envRequired: false,
+            allowLocalHost: $this->relationships->hasLocalEnvVar(),
+            chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive(),
+        );
+        // TODO check if this still allows offline use from the container
+        $selection = $this->selector->getSelection($input, $selectorConfig);
+        $host = $this->selector->getHostFromSelection($input, $selection);
 
-        $database = $relationships->chooseDatabase($host, $input, $output);
+        $database = $this->relationships->chooseDatabase($host, $input, $output);
         if (empty($database)) {
             return 1;
         }
 
         $schema = $input->getOption('schema');
         if ($schema === null) {
-            if ($this->hasSelectedEnvironment()) {
+            if ($selection->hasEnvironment()) {
                 // Get information about the deployed service associated with the
                 // selected relationship.
-                $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+                $deployment = $this->api->getCurrentDeployment($selection->getEnvironment());
                 $service = isset($database['service']) ? $deployment->getService($database['service']) : false;
             } else {
                 $service = false;
             }
 
             // Get a list of schemas (database names) from the service configuration.
-            $schemas = $service ? $relationships->getServiceSchemas($service) : [];
+            $schemas = $service ? $this->relationships->getServiceSchemas($service) : [];
 
             // Filter the list by the schemas accessible from the endpoint.
             if (isset($database['rel'])
@@ -93,9 +105,7 @@ class DbSqlCommand extends CommandBase
                         $choices[$schema] .= ' (default)';
                     }
                 }
-                /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-                $questionHelper = $this->getService('question_helper');
-                $schema = $questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
+                $schema = $this->questionHelper->choose($choices, 'Enter a number to choose a schema:', $default, true);
                 $schema = $schema === '(none)' ? '' : $schema;
             }
         }
@@ -104,7 +114,7 @@ class DbSqlCommand extends CommandBase
 
         switch ($database['scheme']) {
             case 'pgsql':
-                $sqlCommand = 'psql ' . $relationships->getDbCommandArgs('psql', $database, $schema);
+                $sqlCommand = 'psql ' . $this->relationships->getDbCommandArgs('psql', $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' -t';
@@ -114,9 +124,9 @@ class DbSqlCommand extends CommandBase
                 break;
 
             default:
-                $cmdName = $relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
-                $cmdInvocation = $relationships->mariaDbCommandWithFallback($cmdName);
-                $sqlCommand = $cmdInvocation . ' --no-auto-rehash ' . $relationships->getDbCommandArgs($cmdName, $database, $schema);
+                $cmdName = $this->relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
+                $cmdInvocation = $this->relationships->mariaDbCommandWithFallback($cmdName);
+                $sqlCommand = $cmdInvocation . ' --no-auto-rehash ' . $this->relationships->getDbCommandArgs($cmdName, $database, $schema);
                 if ($query) {
                     if ($input->getOption('raw')) {
                         $sqlCommand .= ' --batch --raw';
@@ -127,7 +137,7 @@ class DbSqlCommand extends CommandBase
         }
 
         // Enable tabular output when the input is a terminal.
-        if (!$input->getOption('raw') && $host instanceof RemoteHost && $this->isTerminal(STDIN)) {
+        if (!$input->getOption('raw') && $host instanceof RemoteHost && $this->io->isTerminal(STDIN)) {
             $host->setExtraSshOptions(['RequestTTY yes']);
         }
 

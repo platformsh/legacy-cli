@@ -1,14 +1,20 @@
 <?php
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:list', description: 'List organizations', aliases: ['orgs', 'organizations'])]
 class OrganizationListCommand extends OrganizationCommandBase
 {
-    private $tableHeader = [
+    /** @var array<string, string> */
+    private array $tableHeader = [
         'id' => 'ID',
         'name' => 'Name',
         'label' => 'Label',
@@ -18,16 +24,16 @@ class OrganizationListCommand extends OrganizationCommandBase
         'owner_email' => 'Owner email',
         'owner_username' => 'Owner username',
     ];
-    private $defaultColumns = ['name', 'label', 'owner_email'];
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    /** @var string[] */
+    private array $defaultColumns = ['name', 'label', 'owner_email'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('organization:list')
-            ->setAliases(['orgs', 'organizations'])
-            ->setDescription('List organizations')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
             ->addOption('my', null, InputOption::VALUE_NONE, 'List only the organizations you own')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'An organization property to sort by')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order');
@@ -37,10 +43,10 @@ class OrganizationListCommand extends OrganizationCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $client = $this->api()->getClient();
-        $userId = $this->api()->getMyUserId();
+        $client = $this->api->getClient();
+        $userId = $this->api->getMyUserId();
 
         if ($input->getOption('my')) {
             $organizations = $client->listOrganizationsByOwner($userId);
@@ -49,16 +55,16 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         if ($sortBy = $input->getOption('sort')) {
-            $this->api()->sortResources($organizations, $sortBy);
+            $this->api->sortResources($organizations, $sortBy);
         }
         if ($input->getOption('reverse')) {
             $organizations = array_reverse($organizations, true);
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         if (empty($organizations)) {
             $this->stdErr->writeln('No organizations found.');
-            if ($this->config()->isCommandEnabled('organization:create')) {
+            if ($this->config->isCommandEnabled('organization:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To create a new organization, run: <info>%s org:create</info>', $executable));
             }
@@ -66,16 +72,13 @@ class OrganizationListCommand extends OrganizationCommandBase
         }
 
         $currentProjectOrg = null;
-        $currentProject = $this->getCurrentProject(true);
+        $currentProject = $this->selector->getCurrentProject(true);
         if ($currentProject && $currentProject->hasProperty('organization')) {
             $currentProjectOrg = $currentProject->getProperty('organization');
         }
 
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-
         $rows = [];
-        $machineReadable = $table->formatIsMachineReadable();
+        $machineReadable = $this->table->formatIsMachineReadable();
         $markedCurrent = false;
         foreach ($organizations as $org) {
             $row = $org->getProperties();
@@ -97,13 +100,13 @@ class OrganizationListCommand extends OrganizationCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if ($markedCurrent) {
             $this->stdErr->writeln("<info>*</info> - Indicates the current project's organization");
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To view or modify organization details, run: <info>%s org:info [-o organization]</info>', $executable));
             $this->stdErr->writeln(\sprintf('To see all organization commands run: <info>%s list organization</info>', $executable));

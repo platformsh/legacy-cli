@@ -1,14 +1,19 @@
 <?php
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:list', description: 'List SSH tunnels', aliases: ['tunnels'])]
 class TunnelListCommand extends TunnelCommandBase
 {
-    protected $tableHeader = [
+    /** @var array<string, string> */
+    protected array $tableHeader = [
         'port' => 'Port',
         'project' => 'Project',
         'environment' => 'Environment',
@@ -16,22 +21,25 @@ class TunnelListCommand extends TunnelCommandBase
         'relationship' => 'Relationship',
         'url' => 'URL',
     ];
-    protected $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
+    /** @var string[] */
+    protected array $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
+    public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
-          ->setName('tunnel:list')
-          ->setAliases(['tunnels'])
-          ->setDescription('List SSH tunnels')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'View all tunnels');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $tunnels = $this->getTunnelInfo();
         $allTunnelsCount = count($tunnels);
@@ -40,7 +48,7 @@ class TunnelListCommand extends TunnelCommandBase
             return 1;
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         // Filter tunnels according to the current project and environment, if
         // available.
@@ -56,9 +64,6 @@ class TunnelListCommand extends TunnelCommandBase
                 return 1;
             }
         }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
         $rows = [];
         foreach ($tunnels as $tunnel) {
             $rows[] = [
@@ -70,9 +75,9 @@ class TunnelListCommand extends TunnelCommandBase
                 'url' => $this->getTunnelUrl($tunnel, $tunnel['service']),
             ];
         }
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
 
             if (!$input->getOption('all') && count($tunnels) < $allTunnelsCount) {

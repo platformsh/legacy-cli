@@ -11,11 +11,11 @@ use Symfony\Component\Finder\Finder;
 /**
  * Finds all applications inside a source directory.
  */
-class ApplicationFinder
+readonly class ApplicationFinder
 {
-    private $config;
+    private Config $config;
 
-    public function __construct(Config $config = null)
+    public function __construct(?Config $config = null)
     {
         $this->config = $config ?: new Config();
     }
@@ -28,7 +28,7 @@ class ApplicationFinder
      *
      * @return LocalApplication[]
      */
-    public function findApplications($directory)
+    public function findApplications(string $directory): array
     {
         $applications = [];
 
@@ -41,8 +41,8 @@ class ApplicationFinder
             if ($configuredRoot !== null && !\is_dir($configuredRoot)) {
                 throw new InvalidConfigException('Directory not found: ' . $configuredRoot, $configFile, 'source.root');
             }
-            $appRoot = $configuredRoot !== null ? $configuredRoot : \dirname($configFile);
-            $appName = isset($appConfig['name']) ? $appConfig['name'] : null;
+            $appRoot = $configuredRoot !== null ? $configuredRoot : \dirname((string) $configFile);
+            $appName = $appConfig['name'] ?? null;
             if ($appName && isset($applications[$appConfig['name']])) {
                 throw new InvalidConfigException(sprintf('An application named %s is already defined', $appConfig['name']), $configFile, 'name');
             }
@@ -74,13 +74,13 @@ class ApplicationFinder
     /**
      * Finds applications via the grouped config file, e.g. .platform/applications.yaml.
      *
-     * @param $directory
+     * @param string $directory
      *
      * @return array
      */
-    private function findGroupedApplications($directory)
+    private function findGroupedApplications(string $directory): array
     {
-        $configFile = $directory . DIRECTORY_SEPARATOR . $this->config->get('service.applications_config_file');
+        $configFile = $directory . DIRECTORY_SEPARATOR . $this->config->getStr('service.applications_config_file');
         if (!\file_exists($configFile)) {
             return [];
         }
@@ -100,7 +100,7 @@ class ApplicationFinder
                 throw new InvalidConfigException('Directory not found: ' . $appRoot, $configFile, $key . '.source.root');
             }
             $appRoot = \realpath($appRoot) ?: $appRoot;
-            $appName = isset($appConfig['name']) ? $appConfig['name'] : null;
+            $appName = $appConfig['name'] ?? null;
             if ($appName && isset($applications[$appName])) {
                 throw new InvalidConfigException(sprintf('An application named %s is already defined', $appConfig['name']), $configFile, $key . '.name');
             }
@@ -120,13 +120,13 @@ class ApplicationFinder
      *
      * @return string|null
      */
-    private function getExplicitRoot(array $appConfig, $sourceDir)
+    private function getExplicitRoot(array $appConfig, string $sourceDir): ?string
     {
         if (!isset($appConfig['source']['root'])) {
             return null;
         }
 
-        return \rtrim($sourceDir . DIRECTORY_SEPARATOR . \ltrim($appConfig['source']['root'], '\\/'), DIRECTORY_SEPARATOR);
+        return \rtrim($sourceDir . DIRECTORY_SEPARATOR . \ltrim((string) $appConfig['source']['root'], '\\/'), DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -136,7 +136,7 @@ class ApplicationFinder
      *
      * @return Finder|array
      */
-    private function findAppConfigFiles($directory)
+    private function findAppConfigFiles(string $directory): array|Finder
     {
         // Finder can be extremely slow with a deep directory structure. The
         // search depth is limited to safeguard against this.
@@ -145,13 +145,13 @@ class ApplicationFinder
             return [];
         }
         return $finder->in($directory)
-            ->name($this->config->get('service.app_config_file'))
+            ->name($this->config->getStr('service.app_config_file'))
             ->ignoreDotFiles(false)
             ->ignoreUnreadableDirs()
             ->ignoreVCS(true)
             ->exclude([
                 '.idea',
-                $this->config->get('local.local_dir'),
+                $this->config->getStr('local.local_dir'),
                 'builds',
                 'node_modules',
                 'vendor',

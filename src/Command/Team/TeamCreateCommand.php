@@ -1,6 +1,11 @@
 <?php
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\ProgressMessage;
@@ -8,36 +13,41 @@ use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Team\Team;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
+#[AsCommand(name: 'team:create', description: 'Create a new team')]
 class TeamCreateCommand extends TeamCommandBase
 {
 
-    protected function configure()
+    public function __construct(protected ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, protected readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
-        $this->setName('team:create')
-            ->setDescription('Create a new team')
-            ->addOption('label', null, InputOption::VALUE_REQUIRED, 'The team label')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addOption('label', null, InputOption::VALUE_REQUIRED, 'The team label')
             ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')
             ->addOption('role', 'r', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, "Set the team's project and environment type roles\n"
                 . ArrayArgument::SPLIT_HELP . "\n" . Wildcard::HELP)
-            ->addOption('output-id', null, InputOption::VALUE_NONE, "Output the new team's ID to stdout (instead of displaying the team info)")
-            ->addOrganizationOptions();
+            ->addOption('output-id', null, InputOption::VALUE_NONE, "Output the new team's ID to stdout (instead of displaying the team info)");
+        $this->selector->addOrganizationOptions($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $update = stripos($input->getFirstArgument(), ':u') !== false;
+        $update = stripos((string) $input->getFirstArgument(), ':u') !== false;
         if ($update) {
             $existingTeam = $this->validateTeamInput($input);
             if (!$existingTeam) {
                 return 1;
             }
-            $organization = $this->api()->getOrganizationById($existingTeam->organization_id);
+            $organization = $this->api->getOrganizationById($existingTeam->organization_id);
             if (!$organization) {
                 $this->stdErr->writeln(sprintf('Failed to load team organization: <error>%s</error>.', $existingTeam->organization_id));
                 return 1;
@@ -50,12 +60,9 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         $label = $input->getOption('label');
         if ($label === null) {
-            $label = $questionHelper->askInput("Enter the team's label", $existingTeam ? $existingTeam->label : null, [], function ($value) {
+            $label = $this->questionHelper->askInput("Enter the team's label", $existingTeam ? $existingTeam->label : null, [], function ($value) {
                 if (empty($value)) {
                     throw new InvalidArgumentException('The label cannot be empty');
                 }
@@ -68,7 +75,7 @@ class TeamCreateCommand extends TeamCommandBase
         if (!$input->getOption('no-check-unique') && (!$existingTeam || $label !== $existingTeam->label)) {
             $options = [];
             $options['query']['filter[organization_id]'] = $organization->id;
-            $client = $this->api()->getHttpClient();
+            $client = $this->api->getHttpClient();
             $url = '/teams';
             $pageNumber = 1;
             $progress = new ProgressMessage($this->stdErr);
@@ -80,7 +87,7 @@ class TeamCreateCommand extends TeamCommandBase
                 $progress->done();
                 /** @var Team $team */
                 foreach ($result['items'] as $team) {
-                    if ((!$existingTeam || $team->id !== $existingTeam->id) && strcasecmp($team->label, $label) === 0) {
+                    if ((!$existingTeam || $team->id !== $existingTeam->id) && strcasecmp($team->label, (string) $label) === 0) {
                         $this->stdErr->writeln(sprintf('Another team <error>%s</error> exists in the organization with the same label: <error>%s</error>', $team->id, $label));
                         return 1;
                     }
@@ -90,11 +97,11 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        $getProjectRole = function (array $perms) { return in_array('admin', $perms) ? 'admin' : 'viewer'; };
-        $getEnvTypeRoles = function (array $perms) {
+        $getProjectRole = fn(array $perms): string => in_array('admin', $perms) ? 'admin' : 'viewer';
+        $getEnvTypeRoles = function (array $perms): array {
             $roles = [];
             foreach ($perms as $perm) {
-                if (strpos($perm, ':') !== false) {
+                if (str_contains($perm, ':')) {
                     list($type, $role) = explode(':', $perm, 2);
                     $roles[$type] = $role;
                 }
@@ -102,11 +109,13 @@ class TeamCreateCommand extends TeamCommandBase
             return $roles;
         };
 
+        /** @var string[] $projectPermissions */
+        $projectPermissions = [];
         if ($roleInput = ArrayArgument::getOption($input, 'role')) {
-            $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
-            $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput);
-            $projectPermissions = [$specifiedProjectRole];
-            foreach ($specifiedTypeRoles as $type => $role) {
+            if ($specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput)) {
+                $projectPermissions[] = [$specifiedProjectRole];
+            }
+            foreach ($this->getSpecifiedTypeRoles($roleInput) as $type => $role) {
                 if ($role !== 'none') {
                     $projectPermissions[] = $type . ':' . $role;
                 }
@@ -114,15 +123,16 @@ class TeamCreateCommand extends TeamCommandBase
         } elseif ($input->isInteractive()) {
             $projectRole = $this->showProjectRoleForm($update ? $getProjectRole($existingTeam->project_permissions) : 'viewer', $input);
             $this->stdErr->writeln('');
-            $environmentTypeRoles = [];
+
+            $projectPermissions[] = $projectRole;
+
             if ($projectRole !== 'admin') {
                 $environmentTypeRoles = $this->showTypeRolesForm($update ? $getEnvTypeRoles($existingTeam->project_permissions) : [], $input);
                 $this->stdErr->writeln('');
-            }
-            $projectPermissions = [$projectRole];
-            foreach ($environmentTypeRoles as $type => $role) {
-                if ($role !== 'none') {
-                    $projectPermissions[] = $type . ':' . $role;
+                foreach ($environmentTypeRoles as $type => $role) {
+                    if ($role !== 'none') {
+                        $projectPermissions[] = $type . ':' . $role;
+                    }
                 }
             }
         } else {
@@ -135,20 +145,20 @@ class TeamCreateCommand extends TeamCommandBase
         }
 
         if (!$update) {
-            if (!$questionHelper->confirm(\sprintf('Are you sure you want to create a new team <info>%s</info>?', $label))) {
+            if (!$this->questionHelper->confirm(\sprintf('Are you sure you want to create a new team <info>%s</info>?', $label))) {
                 return 1;
             }
             $this->stdErr->writeln('');
             try {
                 $team = $organization->createTeam($label, $projectPermissions);
             } catch (BadResponseException $e) {
-                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 409) {
+                if ($e->getResponse()->getStatusCode() === 409) {
                     $this->stdErr->writeln(\sprintf('A team already exists with the same label: <error>%s</error>', $label));
                     return 1;
                 }
                 throw $e;
             }
-            $this->stdErr->writeln(sprintf('Created team %s in the organization %s', $this->getTeamLabel($team), $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln(sprintf('Created team %s in the organization %s', $this->getTeamLabel($team), $this->api->getOrganizationLabel($organization)));
             $this->stdErr->writeln('');
         } else {
             $team = $existingTeam;
@@ -172,7 +182,7 @@ class TeamCreateCommand extends TeamCommandBase
                         if (isset($currentEnvTypeRoles[$type], $newEnvTypeRoles[$type]) && $currentEnvTypeRoles[$type] === $newEnvTypeRoles[$type]) {
                             continue;
                         }
-                        $changesText[] = sprintf('Role on environment type %s: <fg=red>%s</> -> <fg=green>%s</>', $type, isset($currentEnvTypeRoles[$type]) ? $currentEnvTypeRoles[$type] : '[none]', isset($newEnvTypeRoles[$type]) ? $newEnvTypeRoles[$type] : '[none]');
+                        $changesText[] = sprintf('Role on environment type %s: <fg=red>%s</> -> <fg=green>%s</>', $type, $currentEnvTypeRoles[$type] ?? '[none]', $newEnvTypeRoles[$type] ?? '[none]');
                     }
                 }
             }
@@ -183,7 +193,7 @@ class TeamCreateCommand extends TeamCommandBase
             $this->stdErr->writeln('<options=bold>Summary of changes:</>');
             $this->stdErr->writeln($changesText);
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to make these changes?')) {
                 return 1;
             }
             $this->stdErr->writeln('');
@@ -199,7 +209,7 @@ class TeamCreateCommand extends TeamCommandBase
             return 0;
         }
 
-        return $this->runOtherCommand('team:get', ['--team' => $team->id], $this->stdErr);
+        return $this->subCommandRunner->run('team:get', ['--team' => $team->id], $this->stdErr);
     }
 
     /**
@@ -210,11 +220,8 @@ class TeamCreateCommand extends TeamCommandBase
      *
      * @return string
      */
-    private function showProjectRoleForm($defaultRole, InputInterface $input)
+    private function showProjectRoleForm(string $defaultRole, InputInterface $input): mixed
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         $validProjectRoles = ['admin', 'viewer'];
 
         $this->stdErr->writeln("The team's project role can be " . $this->describeRoles($validProjectRoles) . '.');
@@ -223,13 +230,11 @@ class TeamCreateCommand extends TeamCommandBase
             sprintf('Project role (default: %s) <question>%s</question>: ', $defaultRole, $this->describeRoleInput($validProjectRoles)),
             $defaultRole
         );
-        $question->setValidator(function ($answer) {
-            return $this->validateProjectRole($answer);
-        });
+        $question->setValidator(fn($answer) => $this->validateProjectRole($answer));
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
-        return $questionHelper->ask($input, $this->stdErr, $question);
+        return $this->questionHelper->ask($input, $this->stdErr, $question);
     }
 
     /**
@@ -239,11 +244,9 @@ class TeamCreateCommand extends TeamCommandBase
      *
      * @return string
      */
-    private function describeRoles(array $roles)
+    private function describeRoles(array $roles): string
     {
-        $withInitials = array_map(function ($role) {
-            return sprintf('%s (%s)', $role, substr($role, 0, 1));
-        }, $roles);
+        $withInitials = array_map(fn($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
         $last = array_pop($withInitials);
 
         return implode(' or ', [implode(', ', $withInitials), $last]);
@@ -256,20 +259,13 @@ class TeamCreateCommand extends TeamCommandBase
      *
      * @return string
      */
-    private function describeRoleInput(array $roles)
+    private function describeRoleInput(array $roles): string
     {
-        return '[' . implode('/', array_map(function ($role) {
-                return substr($role, 0, 1);
-            }, $roles)) . ']';
+        return '[' . implode('/', array_map(fn($role): string => substr((string) $role, 0, 1), $roles)) . ']';
     }
 
 
-    /**
-     * @param string $value
-     *
-     * @return string
-     */
-    private function validateProjectRole($value)
+    private function validateProjectRole(string $value): string
     {
         return $this->matchRole($value, ['admin', 'viewer']);
     }
@@ -282,10 +278,10 @@ class TeamCreateCommand extends TeamCommandBase
      *
      * @return string
      */
-    private function matchRole($input, array $roles)
+    private function matchRole(string $input, array $roles): string
     {
         foreach ($roles as $role) {
-            if (strpos($role, strtolower($input)) === 0) {
+            if (str_starts_with($role, strtolower($input))) {
                 return $role;
             }
         }
@@ -296,24 +292,22 @@ class TeamCreateCommand extends TeamCommandBase
     /**
      * Show the form for entering environment type roles.
      *
-     * @param array $defaultTypeRoles
+     * @param array<string, string> $defaultTypeRoles
      * @param InputInterface $input
      *
-     * @return array
+     * @return array<string, string>
      *   The environment type roles (keyed by type ID) including the user's
      *   answers.
      */
-    private function showTypeRolesForm(array $defaultTypeRoles, InputInterface $input)
+    private function showTypeRolesForm(array $defaultTypeRoles, InputInterface $input): array
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);
         $this->stdErr->writeln("The user's environment type role(s) can be " . $this->describeRoles($validRoles) . '.');
         $initials = $this->describeRoleInput($validRoles);
         $this->stdErr->writeln('');
         foreach (['production', 'staging', 'development'] as $id) {
-            $default = isset($defaultTypeRoles[$id]) ? $defaultTypeRoles[$id] : 'none';
+            $default = $defaultTypeRoles[$id] ?? 'none';
             $question = new Question(
                 sprintf('Role on type <info>%s</info> (default: %s) <question>%s</question>: ', $id, $default, $initials),
                 $default
@@ -327,7 +321,7 @@ class TeamCreateCommand extends TeamCommandBase
             });
             $question->setAutocompleterValues(array_merge($validRoles, ['quit']));
             $question->setMaxAttempts(5);
-            $answer = $questionHelper->ask($input, $this->stdErr, $question);
+            $answer = $this->questionHelper->ask($input, $this->stdErr, $question);
             if ($answer === 'q' || $answer === 'quit') {
                 break;
             } else {
@@ -338,12 +332,7 @@ class TeamCreateCommand extends TeamCommandBase
         return $desiredTypeRoles;
     }
 
-    /**
-     * @param string $value
-     *
-     * @return string
-     */
-    private function validateEnvironmentTypeRole($value)
+    private function validateEnvironmentTypeRole(string $value): string
     {
         return $this->matchRole($value, array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']));
     }
@@ -351,16 +340,15 @@ class TeamCreateCommand extends TeamCommandBase
     /**
      * Extract the specified project role from the list (given in --role).
      *
-     * @param array &$roles
+     * @param string[] $roles
      *
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array &$roles)
+    private function getSpecifiedProjectRole(array $roles): ?string
     {
-        foreach ($roles as $key => $role) {
-            if (strpos($role, ':') === false) {
-                unset($roles[$key]);
+        foreach ($roles as $role) {
+            if (!str_contains($role, ':')) {
                 return $this->validateProjectRole($role);
             }
         }
@@ -378,12 +366,12 @@ class TeamCreateCommand extends TeamCommandBase
      * @return array<string, string>
      *   An array of environment type roles, keyed by environment type ID.
      */
-    private function getSpecifiedTypeRoles(array &$roles)
+    private function getSpecifiedTypeRoles(array &$roles): array
     {
         $typeRoles = [];
         $typeIds = ['production', 'development', 'staging'];
         foreach ($roles as $key => $role) {
-            if (strpos($role, ':') === false) {
+            if (!str_contains($role, ':')) {
                 continue;
             }
             list($id, $role) = explode(':', $role, 2);

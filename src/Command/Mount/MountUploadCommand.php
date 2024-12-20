@@ -2,48 +2,57 @@
 
 namespace Platformsh\Cli\Command\Mount;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Filesystem;
+use Platformsh\Cli\Service\Mount;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Rsync;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
+#[AsCommand(name: 'mount:upload', description: 'Upload files to a mount, using rsync')]
 class MountUploadCommand extends CommandBase
 {
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Io $io, private readonly Mount $mount, private readonly QuestionHelper $questionHelper, private readonly Rsync $rsync, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('mount:upload')
-            ->setDescription('Upload files to a mount, using rsync')
             ->addOption('source', null, InputOption::VALUE_REQUIRED, 'A directory containing files to upload')
             ->addOption('mount', 'm', InputOption::VALUE_REQUIRED, 'The mount (as an app-relative path)')
             ->addOption('delete', null, InputOption::VALUE_NONE, 'Whether to delete extraneous files in the mount')
             ->addOption('exclude', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) to exclude from the upload (pattern)')
             ->addOption('include', null, InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED, 'File(s) not to exclude (pattern)')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addRemoteContainerOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addRemoteContainerOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-
-        $container = $this->selectRemoteContainer($input);
-        /** @var \Platformsh\Cli\Service\Mount $mountService */
-        $mountService = $this->getService('mount');
-        $mounts = $mountService->mountsFromConfig($container->getConfig());
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $container = $selection->getRemoteContainer();
+        $mounts = $this->mount->mountsFromConfig($container->getConfig());
         $sshUrl = $container->getSshUrl($input->getOption('instance'));
 
         if (empty($mounts)) {
@@ -52,13 +61,8 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
-
         if ($input->getOption('mount')) {
-            $mountPath = $mountService->matchMountPath($input->getOption('mount'), $mounts);
+            $mountPath = $this->mount->matchMountPath($input->getOption('mount'), $mounts);
         } elseif ($input->isInteractive()) {
             $options = [];
             foreach ($mounts as $path => $definition) {
@@ -69,7 +73,7 @@ class MountUploadCommand extends CommandBase
                 }
             }
 
-            $mountPath = $questionHelper->choose(
+            $mountPath = $this->questionHelper->choose(
                 $options,
                 'Enter a number to choose a mount to upload to:'
             );
@@ -83,16 +87,15 @@ class MountUploadCommand extends CommandBase
         $defaultSource = null;
         if ($input->getOption('source')) {
             $source = $input->getOption('source');
-        } elseif ($projectRoot = $this->getProjectRoot()) {
-            $sharedMounts = $mountService->getSharedFileMounts($mounts);
+        } elseif ($projectRoot = $this->selector->getProjectRoot()) {
+            $sharedMounts = $this->mount->getSharedFileMounts($mounts);
             if (isset($sharedMounts[$mountPath])) {
-                if (file_exists($projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
-                    $defaultSource = $projectRoot . '/' . $this->config()->get('local.shared_dir') . '/' . $sharedMounts[$mountPath];
+                if (file_exists($projectRoot . '/' . $this->config->getStr('local.shared_dir') . '/' . $sharedMounts[$mountPath])) {
+                    $defaultSource = $projectRoot . '/' . $this->config->getStr('local.shared_dir') . '/' . $sharedMounts[$mountPath];
                 }
             }
 
-            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-            $finder = $this->getService('app_finder');
+            $finder = $this->applicationFinder;
             $applications = $finder->findApplications($projectRoot);
             $appPath = $projectRoot;
             foreach ($applications as $path => $candidateApp) {
@@ -109,11 +112,11 @@ class MountUploadCommand extends CommandBase
         if (empty($source)) {
             $questionText = 'Source directory';
             if ($defaultSource !== null) {
-                $formattedDefaultSource = $fs->formatPathForDisplay($defaultSource);
+                $formattedDefaultSource = $this->filesystem->formatPathForDisplay($defaultSource);
                 $questionText .= ' <question>[' . $formattedDefaultSource . ']</question>';
             }
             $questionText .= ': ';
-            $source = $questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultSource));
+            $source = $this->questionHelper->ask($input, $this->stdErr, new Question($questionText, $defaultSource));
         }
 
         if (empty($source)) {
@@ -122,18 +125,15 @@ class MountUploadCommand extends CommandBase
             return 1;
         }
 
-        $fs->validateDirectory($source);
-
-        /** @var \Platformsh\Cli\Service\Rsync $rsync */
-        $rsync = $this->getService('rsync');
+        $this->filesystem->validateDirectory($source);
 
         $confirmText = sprintf(
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
             . "\n\nAre you sure you want to continue?",
-            $fs->formatPathForDisplay($source),
+            $this->filesystem->formatPathForDisplay($source),
             $mountPath
         );
-        if (!$questionHelper->confirm($confirmText)) {
+        if (!$this->questionHelper->confirm($confirmText)) {
             return 1;
         }
 
@@ -146,8 +146,8 @@ class MountUploadCommand extends CommandBase
         ];
 
         if (OsUtil::isOsX()) {
-            if ($rsync->supportsConvertingFilenames() !== false) {
-                $this->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
+            if ($this->rsync->supportsConvertingFilenames() !== false) {
+                $this->io->debug('Converting filenames with special characters (utf-8-mac to utf-8)');
                 $rsyncOptions['convert-mac-filenames'] = true;
             } else {
                 $this->stdErr->writeln('');
@@ -156,7 +156,7 @@ class MountUploadCommand extends CommandBase
         }
 
         $this->stdErr->writeln('');
-        $rsync->syncUp($sshUrl, $source, $mountPath, $rsyncOptions);
+        $this->rsync->syncUp($sshUrl, $source, $mountPath, $rsyncOptions);
 
         return 0;
     }

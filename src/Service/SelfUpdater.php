@@ -9,37 +9,29 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SelfUpdater
 {
-    protected $input;
-    protected $output;
-    protected $stdErr;
-    protected $config;
-    protected $questionHelper;
+    protected OutputInterface $stdErr;
 
-    protected $timeout = 30;
-    protected $allowUnstable = false;
-    protected $allowMajor = false;
+    protected int $timeout = 30;
+    protected bool $allowUnstable = false;
+    protected bool $allowMajor = false;
 
     /**
      * Updater constructor.
      *
      * @param InputInterface  $input
      * @param OutputInterface $output
-     * @param Config          $cliConfig
+     * @param Config $config
      * @param QuestionHelper  $questionHelper
      */
     public function __construct(
-        InputInterface $input,
-        OutputInterface $output,
-        Config $cliConfig,
-        QuestionHelper $questionHelper
+        protected InputInterface $input,
+        protected OutputInterface $output,
+        protected Config $config,
+        protected QuestionHelper $questionHelper
     ) {
-        $this->input = $input;
-        $this->output = $output;
-        $this->stdErr = $output instanceof ConsoleOutputInterface
-            ? $output->getErrorOutput()
-            : $output;
-        $this->config = $cliConfig;
-        $this->questionHelper = $questionHelper;
+        $this->stdErr = $this->output instanceof ConsoleOutputInterface
+            ? $this->output->getErrorOutput()
+            : $this->output;
     }
 
     /**
@@ -48,7 +40,7 @@ class SelfUpdater
      * @param int $timeout
      *   The timeout in seconds.
      */
-    public function setTimeout($timeout)
+    public function setTimeout(int $timeout): void
     {
         $this->timeout = $timeout;
     }
@@ -58,7 +50,7 @@ class SelfUpdater
      *
      * @param bool $allowUnstable
      */
-    public function setAllowUnstable($allowUnstable = true)
+    public function setAllowUnstable(bool $allowUnstable = true): void
     {
         $this->allowUnstable = $allowUnstable;
     }
@@ -68,7 +60,7 @@ class SelfUpdater
      *
      * @param bool $allowMajor
      */
-    public function setAllowMajor($allowMajor = true)
+    public function setAllowMajor(bool $allowMajor = true): void
     {
         $this->allowMajor = $allowMajor;
     }
@@ -82,11 +74,11 @@ class SelfUpdater
      * @return false|string
      *   The new version number, or an empty string if there was no update, or false on error.
      */
-    public function update($manifestUrl = null, $currentVersion = null)
+    public function update(?string $manifestUrl = null, ?string $currentVersion = null): string|false
     {
         $currentVersion = $currentVersion ?: $this->config->getVersion();
-        $manifestUrl = $manifestUrl ?: $this->config->get('application.manifest_url');
-        $applicationName = $this->config->get('application.name');
+        $manifestUrl = $manifestUrl ?: $this->config->getStr('application.manifest_url');
+        $applicationName = $this->config->getStr('application.name');
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln(sprintf(
                 'This instance of the %s was not installed as a Phar archive.',
@@ -98,8 +90,8 @@ class SelfUpdater
                 $this->stdErr->writeln("Update using:\n\n  composer global update");
                 if ($this->config->has('application.package_name')) {
                     $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>):\n");
-                    $this->stdErr->writeln("  composer global remove " . $this->config->get('application.package_name'));
-                    $this->stdErr->writeln("  curl -sS " . $this->config->get('application.installer_url') . " | php\n");
+                    $this->stdErr->writeln("  composer global remove " . $this->config->getStr('application.package_name'));
+                    $this->stdErr->writeln("  curl -sS " . $this->config->getStr('application.installer_url') . " | php\n");
                 } else {
                     $this->stdErr->writeln("\nOr you can switch to a Phar install (<options=bold>recommended</>)\n");
                 }
@@ -140,7 +132,7 @@ class SelfUpdater
 
         // Some dev versions cannot be compared against other version numbers,
         // so do not check for release notes in that case.
-        $currentIsDev = \strpos($currentVersion, 'dev-') === 0;
+        $currentIsDev = str_starts_with($currentVersion, 'dev-');
 
         if (!$currentIsDev && ($notes = $strategy->getUpdateNotesByVersion($currentVersion, $newVersionString))) {
             $this->stdErr->writeln('');
@@ -149,7 +141,7 @@ class SelfUpdater
                 if (\count($notes) > 1) {
                     $this->stdErr->writeln('<comment>' . $version . '</comment>:');
                 }
-                $this->stdErr->writeln(preg_replace('/^/m', '  ', $notesStr));
+                $this->stdErr->writeln(preg_replace('/^/m', '  ', (string) $notesStr));
                 $this->stdErr->writeln('');
             }
         }

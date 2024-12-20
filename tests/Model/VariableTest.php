@@ -7,9 +7,9 @@ use Platformsh\Cli\Model\Variable;
 
 class VariableTest extends TestCase
 {
-    private $invalidMessage = 'Variables must be defined as type:name=value';
+    private string $invalidMessage = 'Variables must be defined as type:name=value';
 
-    public function testParseValidVariables()
+    public function testParseValidVariables(): void
     {
         $this->assertEquals(
             ['env', 'foo', 'bar'],
@@ -37,7 +37,7 @@ class VariableTest extends TestCase
         );
     }
 
-    public function testParseInvalidVariableType()
+    public function testParseInvalidVariableType(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid variable type');
@@ -45,26 +45,26 @@ class VariableTest extends TestCase
     }
 
 
-    public function testParseInvalidVariableName()
+    public function testParseInvalidVariableName(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid variable name');
         (new Variable())->parse('a:b(c)=d');
     }
 
-    public function testParseVariableWithNoDelimiter() {
+    public function testParseVariableWithNoDelimiter(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage($this->invalidMessage);
         (new Variable())->parse('foo');
     }
 
-    public function testParseVariableWithWrongDelimiterOrder() {
+    public function testParseVariableWithWrongDelimiterOrder(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage($this->invalidMessage);
         (new Variable())->parse('a=b:c');
     }
 
-    public function testParseVariableWithEmptyType() {
+    public function testParseVariableWithEmptyType(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage($this->invalidMessage);
         (new Variable())->parse(':b=c');

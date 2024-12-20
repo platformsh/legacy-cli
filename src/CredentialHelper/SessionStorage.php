@@ -2,16 +2,14 @@
 
 namespace Platformsh\Cli\CredentialHelper;
 
-use Platformsh\Client\Session\SessionInterface;
 use Platformsh\Client\Session\Storage\SessionStorageInterface;
 
 /**
  * Stores sessions using the Credential Helper.
  */
-class SessionStorage implements SessionStorageInterface
+readonly class SessionStorage implements SessionStorageInterface
 {
-    private $serverUrlBase;
-    private $manager;
+    private string $serverUrlBase;
 
     /**
      * CredentialsHelperStorage constructor.
@@ -23,21 +21,20 @@ class SessionStorage implements SessionStorageInterface
      *   is more helpful to the user. In Windows this will be described as the
      *   "Internet or network address".
      */
-    public function __construct(Manager $manager, $serverUrlPrefix)
+    public function __construct(private Manager $manager, string $serverUrlPrefix)
     {
-        $this->manager = $manager;
         $this->serverUrlBase = rtrim($serverUrlPrefix, '/');
     }
 
     /**
-     * @param SessionInterface $session
+     * @param string $sessionId
      *
      * @return string
      */
-    private function serverUrl(SessionInterface $session) {
+    private function serverUrl(string $sessionId): string
+    {
         // Remove the 'cli-' prefix from the session ID;
-        $sessionId = $session->getId();
-        if (strpos($sessionId, 'cli-') === 0) {
+        if (str_starts_with($sessionId, 'cli-')) {
             $sessionId = substr($sessionId, 4);
         }
 
@@ -47,17 +44,15 @@ class SessionStorage implements SessionStorageInterface
     /**
      * {@inheritdoc}
      */
-    public function load(SessionInterface $session)
+    public function load(string $sessionId): array
     {
         try {
-            $secret = $this->manager->get($this->serverUrl($session));
+            $secret = $this->manager->get($this->serverUrl($sessionId));
         } catch (\RuntimeException $e) {
             throw new \RuntimeException('Failed to load the session', 0, $e);
         }
 
-        if ($secret !== false) {
-            $session->setData($this->deserialize($secret));
-        }
+        return $secret ? $this->deserialize($secret) : [];
     }
 
     /**
@@ -65,14 +60,14 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return bool
      */
-    public function hasAnySessions() {
+    public function hasAnySessions(): bool {
         return count($this->listAllServerUrls()) > 0;
     }
 
     /**
      * @return array
      */
-    public function listSessionIds()
+    public function listSessionIds(): array
     {
         $ids = [];
         foreach ($this->listAllServerUrls() as $url) {
@@ -87,7 +82,7 @@ class SessionStorage implements SessionStorageInterface
     /**
      * Deletes all sessions from the credential store.
      */
-    public function deleteAll() {
+    public function deleteAll(): void {
         foreach ($this->listAllServerUrls() as $url) {
             $this->manager->erase($url);
         }
@@ -96,21 +91,18 @@ class SessionStorage implements SessionStorageInterface
     /**
      * @return string[]
      */
-    private function listAllServerUrls() {
+    private function listAllServerUrls(): array {
         $list = $this->manager->listAll();
 
-        return array_filter(array_keys($list), function ($url) {
-            return strpos($url, $this->serverUrlBase . '/') === 0;
-        });
+        return array_filter(array_keys($list), fn($url): bool => str_starts_with((string) $url, $this->serverUrlBase . '/'));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function save(SessionInterface $session)
+    public function save(string $sessionId, array $data): void
     {
-        $serverUrl = $this->serverUrl($session);
-        $data = $session->getData();
+        $serverUrl = $this->serverUrl($sessionId);
         if (empty($data)) {
             try {
                 $this->manager->erase($serverUrl);
@@ -120,7 +112,7 @@ class SessionStorage implements SessionStorageInterface
             return;
         }
         try {
-            $this->manager->store($this->serverUrl($session), $this->serialize($data));
+            $this->manager->store($serverUrl, $this->serialize($data));
         } catch (\RuntimeException $e) {
             throw new \RuntimeException('Failed to store the session', 0, $e);
         }
@@ -133,7 +125,7 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return string
      */
-    private function serialize(array $data)
+    private function serialize(array $data): string
     {
         return base64_encode(json_encode($data, JSON_UNESCAPED_SLASHES));
     }
@@ -145,9 +137,9 @@ class SessionStorage implements SessionStorageInterface
      *
      * @return array
      */
-    private function deserialize($data)
+    private function deserialize(string $data): array
     {
-        $result = json_decode(base64_decode($data, true), true);
+        $result = json_decode((string) base64_decode($data, true), true);
 
         return is_array($result) ? $result : [];
     }

@@ -2,6 +2,8 @@
 
 namespace Platformsh\Cli\Console;
 
+use Symfony\Component\Console\Input\InputInterface;
+
 class ArrayArgument
 {
     const SPLIT_HELP = 'Values may be split by commas (e.g. "a,b,c") and/or whitespace.';
@@ -9,12 +11,12 @@ class ArrayArgument
     /**
      * Gets the value of an array input argument.
      *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      * @param string $argName
      *
      * @return string[]
      */
-    public static function getArgument(\Symfony\Component\Console\Input\InputInterface $input, $argName)
+    public static function getArgument(InputInterface $input, string $argName): array
     {
         $value = $input->getArgument($argName);
         if (!\is_array($value)) {
@@ -26,12 +28,12 @@ class ArrayArgument
     /**
      * Gets the value of an array input option.
      *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param InputInterface $input
      * @param string $optionName
      *
      * @return string[]
      */
-    public static function getOption(\Symfony\Component\Console\Input\InputInterface $input, $optionName)
+    public static function getOption(InputInterface $input, string $optionName): array
     {
         $value = $input->getOption($optionName);
         if (!\is_array($value)) {
@@ -45,14 +47,18 @@ class ArrayArgument
      *
      * @param string[] $args
      *
-     * @return array
+     * @return string[]
      */
-    public static function split($args)
+    public static function split(array $args): array
     {
         $split = [];
         foreach ($args as $arg) {
-            $split = \array_merge($split, \preg_split('/[,\s]+/', $arg));
+            $splitArg = \preg_split('/[,\s]+/', $arg);
+            if (!$splitArg) {
+                throw new \RuntimeException('Failed to split argument by commas/whitespace');
+            }
+            $split = \array_merge($split, $splitArg);
         }
-        return \array_filter($split, '\\strlen');
+        return \array_filter($split, fn(string $a): bool => \strlen($a) > 0);
     }
 }

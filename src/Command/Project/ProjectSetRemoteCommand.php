@@ -1,26 +1,39 @@
 <?php
 namespace Platformsh\Cli\Command\Project;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Git;
+use Platformsh\Cli\Service\Identifier;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
+#[AsCommand(name: 'project:set-remote', description: 'Set the remote project for the current Git repository', aliases: ['set-remote'])]
 class ProjectSetRemoteCommand extends CommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly \Platformsh\Cli\Service\Filesystem $filesystem, private readonly Git $git, private readonly Identifier $identifier, private readonly Io $io, private readonly LocalProject $localProject, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+    protected function configure(): void
     {
         $this
-            ->setName('project:set-remote')
-            ->setAliases(['set-remote'])
-            ->setDescription('Set the remote project for the current Git repository')
             ->addArgument('project', InputArgument::OPTIONAL, 'The project ID');
+        $this->addCompleter($this->selector);
         $this->addExample('Set the remote project for this repository to "abcdef123456"', 'abcdef123456');
         $this->addExample('Unset the remote project for this repository', '-');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectId = $input->getArgument('project');
         $unset = false;
@@ -30,15 +43,15 @@ class ProjectSetRemoteCommand extends CommandBase
         }
 
         if ($projectId) {
-            /** @var \Platformsh\Cli\Service\Identifier $identifier */
-            $identifier = $this->getService('identifier');
+            $identifier = $this->identifier;
             $result = $identifier->identify($projectId);
             $projectId = $result['projectId'];
         }
-
-        /** @var \Platformsh\Cli\Service\Git $git */
-        $git = $this->getService('git');
-        $root = $git->getRoot(getcwd());
+        $cwd = getcwd();
+        if (!$cwd) {
+            throw new \RuntimeException('Failed to find current working directory');
+        }
+        $root = $this->git->getRoot($cwd);
         if ($root === false) {
             $this->stdErr->writeln(
                 'No Git repository found. Use <info>git init</info> to create a repository.'
@@ -47,24 +60,18 @@ class ProjectSetRemoteCommand extends CommandBase
             return 1;
         }
 
-        $this->debug('Git repository found: ' . $root);
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-        /** @var \Platformsh\Cli\Local\LocalProject $localProject */
-        $localProject = $this->getService('local.project');
-        /** @var \Platformsh\Cli\Service\Filesystem $fs */
-        $fs = $this->getService('fs');
+        $this->io->debug('Git repository found: ' . $root);
+        $localProject = $this->localProject;
 
         if ($unset) {
-            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config()->get('local.project_config');
+            $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->getStr('local.project_config');
             if (!\file_exists($configFilename)) {
                 $configFilename = null;
             }
-            $git->ensureInstalled();
+            $this->git->ensureInstalled();
             $gitRemotes = [];
-            foreach ([$this->config()->get('detection.git_remote_name'), 'origin'] as $remote) {
-                $url = $git->getConfig(sprintf('remote.%s.url', $remote));
+            foreach ([$this->config->getStr('detection.git_remote_name'), 'origin'] as $remote) {
+                $url = $this->git->getConfig(sprintf('remote.%s.url', $remote));
                 if (\is_string($url) && $localProject->parseGitUrl($url) !== false) {
                     $gitRemotes[$remote] = $url;
                 }
@@ -76,17 +83,17 @@ class ProjectSetRemoteCommand extends CommandBase
             $this->stdErr->writeln('Unsetting the remote project for this repository');
             $this->stdErr->writeln('');
             if ($configFilename) {
-                $this->stdErr->writeln(sprintf('This config file will be deleted: <comment>%s</comment>', $fs->formatPathForDisplay($configFilename)));
+                $this->stdErr->writeln(sprintf('This config file will be deleted: <comment>%s</comment>', $this->filesystem->formatPathForDisplay($configFilename)));
             }
             if ($gitRemotes) {
                 $this->stdErr->writeln(sprintf('These Git remote(s) will be deleted: <comment>%s</comment>', \implode(', ', \array_keys($gitRemotes))));
             }
             $this->stdErr->writeln('');
-            if (!$questionHelper->confirm('Are you sure?')) {
+            if (!$this->questionHelper->confirm('Are you sure?')) {
                 return 1;
             }
             foreach (array_keys($gitRemotes) as $gitRemote) {
-                $git->execute(
+                $this->git->execute(
                     ['remote', 'rm', $gitRemote],
                     $root,
                     true
@@ -99,44 +106,46 @@ class ProjectSetRemoteCommand extends CommandBase
             return 0;
         }
 
-        $currentProject = $this->getCurrentProject(true);
+        $currentProject = $this->selector->getCurrentProject(true);
         if ($currentProject) {
             $this->stdErr->writeln(sprintf(
                 'This repository is already linked to the remote project: %s',
-                $this->api()->getProjectLabel($currentProject, 'comment')
+                $this->api->getProjectLabel($currentProject, 'comment')
             ));
-            if (!$questionHelper->confirm('Are you sure you want to change it?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to change it?')) {
                 return 1;
             }
             $this->stdErr->writeln('');
-            $this->chooseProjectText = 'Enter a number to choose another project:';
-            $this->enterProjectText = 'Enter the ID of another project';
+            $selectorConfig = new SelectorConfig(chooseProjectText: 'Enter a number to choose another project:', enterProjectText: 'Enter the ID of another project');
+        } else {
+            $selectorConfig = null;
         }
 
         $asking = $projectId === null;
-        $project = $this->selectProject($projectId, null, false);
+        $selection = $this->selector->getSelection($input, $selectorConfig);
         if ($asking) {
             $this->stdErr->writeln('');
         }
 
+        $project = $selection->getProject();
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
                 'The remote project for this repository is already set as: %s',
-                $this->api()->getProjectLabel($currentProject)
+                $this->api->getProjectLabel($currentProject)
             ));
 
             return 0;
         } elseif ($currentProject) {
             $this->stdErr->writeln(sprintf(
                 'Changing the remote project for this repository from %s to %s',
-                $this->api()->getProjectLabel($currentProject),
-                $this->api()->getProjectLabel($project)
+                $this->api->getProjectLabel($currentProject),
+                $this->api->getProjectLabel($project)
             ));
             $this->stdErr->writeln('');
         } else {
             $this->stdErr->writeln(sprintf(
                 'Setting the remote project for this repository to: %s',
-                $this->api()->getProjectLabel($project)
+                $this->api->getProjectLabel($project)
             ));
             $this->stdErr->writeln('');
         }
@@ -145,18 +154,18 @@ class ProjectSetRemoteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf(
             'The remote project for this repository is now set to: %s',
-            $this->api()->getProjectLabel($project)
+            $this->api->getProjectLabel($project)
         ));
 
         if ($input->isInteractive()) {
-            $currentBranch = $git->getCurrentBranch($root);
-            $currentEnvironment = $currentBranch ? $this->api()->getEnvironment($currentBranch, $project) : false;
+            $currentBranch = $this->git->getCurrentBranch($root);
+            $currentEnvironment = $currentBranch ? $this->api->getEnvironment($currentBranch, $project) : false;
             if ($currentBranch !== false && $currentEnvironment && $currentEnvironment->has_code) {
-                $headSha = $git->execute(['rev-parse', '--verify', 'HEAD'], $root);
+                $headSha = $this->git->execute(['rev-parse', '--verify', 'HEAD'], $root);
                 if ($currentEnvironment->head_commit === $headSha) {
                     $this->stdErr->writeln(sprintf("\nThe local branch <info>%s</info> is up to date.", $currentBranch));
-                } elseif ($questionHelper->confirm("\nDo you want to pull code from the project?")) {
-                    $success = $git->pull($project->getGitUrl(), $currentEnvironment->id, $root, false);
+                } elseif ($this->questionHelper->confirm("\nDo you want to pull code from the project?")) {
+                    $success = $this->git->pull($project->getGitUrl(), $currentEnvironment->id, $root, false);
 
                     return $success ? 0 : 1;
                 }

@@ -2,39 +2,50 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:size:list', description: 'List container profile sizes', aliases: ['resources:sizes'])]
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
-    protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
-
-    protected function configure()
+    /** @var array<string, string> */
+    protected array $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('resources:size:list')
-            ->setAliases(['resources:sizes'])
-            ->setDescription('List container profile sizes')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
-        $this->addProjectOption()->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
-        $nextDeployment = $this->loadNextDeployment($environment);
+        $environment = $selection->getEnvironment();
+        $nextDeployment = $this->resourcesUtil->loadNextDeployment($environment);
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->resourcesUtil->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -60,13 +71,11 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
                 return 1;
             }
         } elseif ($input->isInteractive()) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             $options = [];
             foreach ($servicesByProfile as $profile => $serviceNames) {
                 $options[$profile] = sprintf('%s (for %s: %s)', $profile, count($serviceNames) === 1 ? 'service' : 'services', implode(', ', $serviceNames));
             }
-            $profile = $questionHelper->choose($options, 'Enter a number to choose a container profile:');
+            $profile = $this->questionHelper->choose($options, 'Enter a number to choose a container profile:');
         } elseif (count($services) === 1) {
             $service = reset($services);
             $profile = $service->container_profile;
@@ -74,15 +83,12 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             throw new InvalidArgumentException('The --service or --profile is required.');
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
-
         $rows = [];
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            $rows[] = ['size' => $sizeName, 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
+            $rows[] = ['size' => $sizeName, 'cpu' => $this->resourcesUtil->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if (!empty($servicesByProfile[$profile])) {
                 $this->stdErr->writeln(sprintf(
                     'Available sizes in the container profile <info>%s</info> (for %s: <info>%s</info>):',
@@ -95,7 +101,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
         return 0;
     }

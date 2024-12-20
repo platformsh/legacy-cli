@@ -2,23 +2,18 @@
 
 namespace Platformsh\Cli\Console;
 
-class AnimationFrame
+readonly class AnimationFrame implements \Stringable
 {
-    private $content;
-    private $duration = 500000;
-
-    public function __construct($content, $duration = 50000)
+    public function __construct(private string $content, private int $duration = 50000)
     {
-        $this->content = $content;
-        $this->duration = $duration;
     }
 
-    public function getDuration()
+    public function getDuration(): int
     {
         return $this->duration;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->content;
     }

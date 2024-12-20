@@ -1,30 +1,27 @@
 <?php
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Console;
 
+use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
-use GuzzleHttp\Message\RequestInterface;
-use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Exception\ConnectionFailedException;
 use Platformsh\Cli\Exception\LoginRequiredException;
 use Platformsh\Cli\Exception\PermissionDeniedException;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Psr\Http\Message\RequestInterface;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class EventSubscriber implements EventSubscriberInterface
+readonly class EventSubscriber implements EventSubscriberInterface
 {
-    protected $config;
 
-    /**
-     * @param \Platformsh\Cli\Service\Config $config
-     */
-    public function __construct(Config $config)
+    public function __construct(private CacheProvider $cache, private Config $config)
     {
-        $this->config = $config;
     }
 
     /**
@@ -32,7 +29,7 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return [ConsoleEvents::ERROR => 'onException'];
+        return [ConsoleEvents::ERROR => 'onError'];
     }
 
     /**
@@ -40,17 +37,17 @@ class EventSubscriber implements EventSubscriberInterface
      *
      * @param ConsoleErrorEvent $event
      */
-    public function onException(ConsoleErrorEvent $event)
+    public function onError(ConsoleErrorEvent $event): void
     {
         $error = $event->getError();
 
         // Replace Guzzle connect exceptions with a friendlier message. This
         // also prevents the user from seeing two exceptions (one direct from
         // Guzzle, one from RingPHP).
-        if ($error instanceof ConnectException && strpos($error->getMessage(), 'cURL error 6') !== false) {
+        if ($error instanceof ConnectException && str_contains($error->getMessage(), 'cURL error 6')) {
             $request = $error->getRequest();
             $event->setError(new ConnectionFailedException(
-                "Failed to connect to host: " . $request->getHost()
+                "Failed to connect to host: " . $request->getUri()->getHost()
                 . " \nPlease check your Internet connection.",
                 $error
             ));
@@ -58,10 +55,9 @@ class EventSubscriber implements EventSubscriberInterface
         }
 
         // Handle Guzzle exceptions, i.e. HTTP 4xx or 5xx errors.
-        if (($error instanceof ClientException || $error instanceof ServerException)
-            && ($response = $error->getResponse())) {
+        if ($error instanceof ClientException || $error instanceof ServerException) {
+            $response = $error->getResponse();
             $request = $error->getRequest();
-            $requestConfig = $request->getConfig();
             $json = (array) json_decode($response->getBody()->__toString(), true);
 
             // Create a friendlier message for the OAuth2 "Invalid refresh token"
@@ -75,14 +71,14 @@ class EventSubscriber implements EventSubscriberInterface
                     $error
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 401 && $requestConfig['auth'] === 'oauth2') {
+            } elseif ($response->getStatusCode() === 401) {
                 $event->setError(new LoginRequiredException(
                     'Unauthorized.',
                     $this->config,
                     $error
                 ));
                 $event->stopPropagation();
-            } elseif ($response->getStatusCode() === 403 && $requestConfig['auth'] === 'oauth2') {
+            } elseif ($response->getStatusCode() === 403) {
                 $event->setError(new PermissionDeniedException($this->permissionDeniedMessage($request), $error));
                 $event->stopPropagation();
             }
@@ -91,7 +87,7 @@ class EventSubscriber implements EventSubscriberInterface
         // When an environment is found to be in the wrong state, perhaps our
         // cache is old - we should invalidate it.
         if ($error instanceof EnvironmentStateException) {
-            (new Api())->clearEnvironmentsCache($error->getEnvironment()->project);
+            $this->cache->delete('environments:' . $error->getEnvironment()->project);
         }
     }
 
@@ -101,7 +97,7 @@ class EventSubscriber implements EventSubscriberInterface
      * @param RequestInterface $request
      * @return string
      */
-    private function permissionDeniedMessage(RequestInterface $request)
+    private function permissionDeniedMessage(RequestInterface $request): string
     {
         $pathsPermissionTypes = [
             '/projects' => 'project',
@@ -109,10 +105,10 @@ class EventSubscriber implements EventSubscriberInterface
             '/environments' => 'environment',
             '/organizations' => 'organization'
         ];
-        $requestUrl = $request->getUrl();
+        $requestPath = $request->getUri()->getPath();
         $permissionTypes = [];
         foreach ($pathsPermissionTypes as $path => $pathsPermissionType) {
-            if (strpos($requestUrl, $path) !== false) {
+            if (str_contains($requestPath, $path)) {
                 $permissionTypes[$pathsPermissionType] = $pathsPermissionType;
             }
         }

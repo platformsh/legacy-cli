@@ -2,6 +2,14 @@
 
 namespace Platformsh\Cli\Command\Resources;
 
+use Platformsh\Cli\Service\ResourcesUtil;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Wildcard;
@@ -10,51 +18,57 @@ use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
 use Platformsh\Client\Model\Deployment\Worker;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'resources:set', description: 'Set the resources of apps and services on an environment')]
 class ResourcesSetCommand extends ResourcesCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly ResourcesUtil $resourcesUtil, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
-        $this->setName('resources:set')
-            ->setDescription('Set the resources of apps and services on an environment')
-            ->addOption('size', 'S', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
+        $this->addOption('size', 'S', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Set the profile size (CPU and memory) of apps, workers, or services.'
                 . "\nItems are in the format <info>name:value</info> and may be comma-separated."
                 . "\nThe % or * characters may be used as a wildcard for the name."
                 . "\nList available sizes with the <info>resources:sizes</info> command."
                 . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
             )
-            ->addOption('count', 'C', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
+            ->addOption('count', 'C', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Set the instance count of apps or workers.'
                 . "\nItems are in the format <info>name:value</info> as above."
             )
-            ->addOption('disk', 'D', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
+            ->addOption('disk', 'D', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Set the disk size (in MB) of apps or services.'
                 . "\nItems are in the format <info>name:value</info> as above."
                 . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
             )
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything')
-            ->addProjectOption()
-            ->addEnvironmentOption()
-            ->addWaitOptions();
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything');
+
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $helpLines = [
             'Configure the resources allocated to apps, workers and services on an environment.',
             '',
             'The resources may be the profile size, the instance count, or the disk size (MB).',
             '',
-            sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config()->get('application.executable')),
+            sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config->getStr('application.executable')),
             '',
             'If the same service and resource is specified on the command line multiple times, only the final value will be used.'
         ];
-        if ($this->config()->has('service.resources_help_url')) {
+        if ($this->config->has('service.resources_help_url')) {
             $helpLines[] = '';
-            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config()->get('service.resources_help_url') . '</info>';
+            $helpLines[] = 'For more information on managing resources, see: <info>' . $this->config->getStr('service.resources_help_url') . '</info>';
         }
         $this->setHelp(implode("\n", $helpLines));
 
@@ -65,27 +79,27 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->addExample('Set the same instance count for all apps using a wildcard', '--count ' . OsUtil::escapeShellArg('*:3'));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        if (!$this->api()->supportsSizingApi($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+        $selection = $this->selector->getSelection($input);
+        if (!$this->api->supportsSizingApi($selection->getProject())) {
+            $this->stdErr->writeln(sprintf('The flexible resources API is not enabled for the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
             return 1;
         }
 
-        $environment = $this->getSelectedEnvironment();
+        $environment = $selection->getEnvironment();
 
         try {
-            $nextDeployment = $this->loadNextDeployment($environment);
+            $nextDeployment = $this->resourcesUtil->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
-                $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api()->getEnvironmentLabel($environment, 'comment')));
+                $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api->getEnvironmentLabel($environment, 'comment')));
                 return 1;
             }
             throw $e;
         }
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->resourcesUtil->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -98,35 +112,26 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         // Validate the --size option.
-        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, function ($v, $serviceName, $service) use ($nextDeployment) {
-            return $this->validateProfileSize($v, $serviceName, $service, $nextDeployment);
-        });
+        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, fn($v, $serviceName, $service) => $this->validateProfileSize($v, $serviceName, $service, $nextDeployment));
 
         // Validate the --count option.
-        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, function ($v, $serviceName, $service) use ($instanceLimit) {
-            return $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit);
-        });
+        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, fn($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit));
         $errored = $errored || $countErrored;
 
         // Validate the --disk option.
-        list($givenDiskSizes, $diskErrored) = $this->parseSetting($input, 'disk', $services, function ($v, $serviceName, $service) {
-            return $this->validateDiskSize($v, $serviceName, $service);
-        });
+        list($givenDiskSizes, $diskErrored) = $this->parseSetting($input, 'disk', $services, fn($v, $serviceName, $service) => $this->validateDiskSize($v, $serviceName, $service));
         $errored = $errored || $diskErrored;
         if ($errored) {
             return 1;
         }
 
-        if (($exitCode = $this->runOtherCommand('resources:get', [
+        if (($exitCode = $this->subCommandRunner->run('resources:get', [
                 '--project' => $environment->project,
                 '--environment' => $environment->id,
             ], $this->stdErr)) !== 0) {
             return $exitCode;
         }
         $this->stdErr->writeln('');
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
 
         $containerProfiles = $nextDeployment->container_profiles;
 
@@ -150,7 +155,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
             $header = '<options=bold>' . ucfirst($type) . ': </><options=bold,underscore>' . $name . '</>';
             $headerShown = false;
-            $ensureHeader = function () use (&$headerShown, &$header) {
+            $ensureHeader = function () use (&$headerShown, &$header): void {
                 if (!$headerShown) {
                     $this->stdErr->writeln($header);
                     $this->stdErr->writeln('');
@@ -199,7 +204,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $this->stdErr->writeln(sprintf('No profile size can be found for the %s <comment>%s</comment> which satisfies its minimum resources.', $type, $name));
                     $errored = true;
                 } else {
-                    $profileSize = $questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $defaultOption, false, false);
+                    $profileSize = $this->questionHelper->chooseAssoc($options, sprintf('Choose %s profile size:', $new), $defaultOption, false, false);
                     if (!isset($properties['resources']['profile_size']) || $profileSize != $properties['resources']['profile_size']) {
                         $updates[$group][$name]['resources']['profile_size'] = $profileSize;
                     }
@@ -219,9 +224,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 } elseif ($showCompleteForm) {
                     $ensureHeader();
                     $default = $properties['instance_count'] ?: 1;
-                    $instanceCount = $questionHelper->askInput('Enter the number of instances', $default, [], function ($v) use ($name, $service, $instanceLimit) {
-                        return $this->validateInstanceCount($v, $name, $service, $instanceLimit);
-                    });
+                    $instanceCount = $this->questionHelper->askInput('Enter the number of instances', $default, [], fn($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit));
                     if ($instanceCount !== $properties['instance_count']) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
                     }
@@ -229,7 +232,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             }
 
             // Set the disk size.
-            if ($this->supportsDisk($service)) {
+            if ($this->resourcesUtil->supportsDisk($service)) {
                 if (isset($givenDiskSizes[$name])) {
                     if ($givenDiskSizes[$name] !== $service->disk) {
                         $updates[$group][$name]['disk'] = $givenDiskSizes[$name];
@@ -239,11 +242,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     if ($service->disk) {
                         $default = $service->disk;
                     } else {
-                        $default = isset($properties['resources']['default']['disk']) ? $properties['resources']['default']['disk'] : '512';
+                        $default = $properties['resources']['default']['disk'] ?? '512';
                     }
-                    $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  function ($v) use ($name, $service) {
-                        return $this->validateDiskSize($v, $name, $service);
-                    });
+                    $diskSize = $this->questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  fn($v) => $this->validateDiskSize($v, $name, $service));
                     if ($diskSize !== $service->disk) {
                         $updates[$group][$name]['disk'] = $diskSize;
                     }
@@ -269,19 +270,22 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $this->summarizeChanges($updates, $services, $containerProfiles);
 
-        $this->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
+        $this->io->debug('Raw updates: ' . json_encode($updates, JSON_UNESCAPED_SLASHES));
 
-        $project = $this->getSelectedProject();
-        $organization = $this->api()->getClient()->getOrganizationById($project->getProperty('organization'));
+        $project = $selection->getProject();
+        $organization = $this->api->getClient()->getOrganizationById($project->getProperty('organization'));
+        if (!$organization) {
+            throw new \RuntimeException('Failed to load project organization: ' . $project->getProperty('organization'));
+        }
         $profile = $organization->getProfile();
         if ($input->getOption('force') === false && isset($profile->resources_limit) && $profile->resources_limit) {
             $diff = $this->computeMemoryCPUStorageDiff($updates, $current);
             $limit = $profile->resources_limit['limit'];
             $used = $profile->resources_limit['used']['totals'];
 
-            $this->debug('Raw diff: ' . json_encode($diff, JSON_UNESCAPED_SLASHES));
-            $this->debug('Raw limits: ' . json_encode($limit, JSON_UNESCAPED_SLASHES));
-            $this->debug('Raw used: ' . json_encode($used, JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Raw diff: ' . json_encode($diff, JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Raw limits: ' . json_encode($limit, JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Raw used: ' . json_encode($used, JSON_UNESCAPED_SLASHES));
 
             $errored = false;
             if ($limit['cpu'] < $used['cpu'] + $diff['cpu']) {
@@ -319,18 +323,17 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+        if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 
         $this->stdErr->writeln('');
-        $this->stdErr->writeln('Setting the resources on the environment ' . $this->api()->getEnvironmentLabel($environment));
+        $this->stdErr->writeln('Setting the resources on the environment ' . $this->api->getEnvironmentLabel($environment));
         $result = $nextDeployment->update($updates);
 
-        if ($this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
-            $success = $activityMonitor->waitMultiple($result->getActivities(), $this->getSelectedProject());
+        if ($this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
+            $success = $activityMonitor->waitMultiple($result->getActivities(), $selection->getProject());
             if (!$success) {
                 return 1;
             }
@@ -342,12 +345,12 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Summarizes all the changes that would be made.
      *
-     * @param array $updates
+     * @param array<array<string, array<string, mixed>>> $updates
      * @param array<string, WebApp|Worker|Service> $services
-     * @param array $containerProfiles
+     * @param array<string, mixed> $containerProfiles
      * @return void
      */
-    private function summarizeChanges(array $updates, $services, array $containerProfiles)
+    private function summarizeChanges(array $updates, array $services, array $containerProfiles): void
     {
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
         foreach ($updates as $groupUpdates) {
@@ -360,40 +363,37 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Summarizes changes per service.
      *
-     * @param string $name The service name
-     * @param WebApp|Worker|Service $service
-     * @param array $updates
-     * @param array $containerProfiles
-     * @return void
+     * @param array<string, mixed> $updates
+     * @param array<string, mixed> $containerProfiles
      */
-    private function summarizeChangesPerService($name, $service, array $updates, array $containerProfiles)
+    private function summarizeChangesPerService(string $name, WebApp|Worker|Service $service, array $updates, array $containerProfiles): void
     {
         $this->stdErr->writeln(sprintf('  <options=bold>%s: </><options=bold,underscore>%s</>', ucfirst($this->typeName($service)), $name));
 
         $properties = $service->getProperties();
         if (isset($updates['resources']['profile_size'])) {
-            $sizeInfo = $this->sizeInfo($properties, $containerProfiles);
+            $sizeInfo = $this->resourcesUtil->sizeInfo($properties, $containerProfiles);
             $newProperties = array_replace_recursive($properties, $updates);
-            $newSizeInfo = $this->sizeInfo($newProperties, $containerProfiles);
-            $this->stdErr->writeln('    CPU: ' . $this->formatChange(
-                $this->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
-                $this->formatCPU($newSizeInfo['cpu'])
+            $newSizeInfo = $this->resourcesUtil->sizeInfo($newProperties, $containerProfiles);
+            $this->stdErr->writeln('    CPU: ' . $this->resourcesUtil->formatChange(
+                $this->resourcesUtil->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
+                $this->resourcesUtil->formatCPU($newSizeInfo['cpu'])
             ));
-            $this->stdErr->writeln('    Memory: ' . $this->formatChange(
+            $this->stdErr->writeln('    Memory: ' . $this->resourcesUtil->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,
                 $newSizeInfo['memory'],
             ' MB'
             ));
         }
         if (isset($updates['instance_count'])) {
-            $this->stdErr->writeln('    Instance count: ' . $this->formatChange(
-                isset($properties['instance_count']) ? $properties['instance_count'] : 1,
+            $this->stdErr->writeln('    Instance count: ' . $this->resourcesUtil->formatChange(
+                $properties['instance_count'] ?? 1,
                 $updates['instance_count']
             ));
         }
         if (isset($updates['disk'])) {
-            $this->stdErr->writeln('    Disk: ' . $this->formatChange(
-                isset($properties['disk']) ? $properties['disk'] : null,
+            $this->stdErr->writeln('    Disk: ' . $this->resourcesUtil->formatChange(
+                $properties['disk'] ?? null,
                 $updates['disk'],
                 ' MB'
             ));
@@ -402,11 +402,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     /**
      * Returns the group for a service (where it belongs in the deployment object).
-     *
-     * @param Service|WebApp|Worker $service
-     * @return string
      */
-    protected function group($service)
+    protected function group(WebApp|Worker|Service $service): string
     {
         if ($service instanceof WebApp) {
             return 'webapps';
@@ -419,12 +416,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
     /**
      * Returns the service type name for a service.
-     *
-     * @param Service|WebApp|Worker $service
-     *
-     * @return string
      */
-    protected function typeName($service)
+    protected function typeName(WebApp|Worker|Service $service): string
     {
         if ($service instanceof WebApp) {
             return 'app';
@@ -438,16 +431,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Validates a given instance count.
      *
-     * @param string $value
-     * @param string $serviceName
-     * @param Service|WebApp|Worker $service
-     * @param int|null $limit
-     *
      * @throws InvalidArgumentException
-     *
-     * @return int
      */
-    protected function validateInstanceCount($value, $serviceName, $service, $limit)
+    protected function validateInstanceCount(string $value, string $serviceName, WebApp|Worker|Service $service, ?int $limit): int
     {
         if ($service instanceof Service) {
             throw new InvalidArgumentException(sprintf('The instance count of the service <error>%s</error> cannot be changed.', $serviceName));
@@ -463,19 +449,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
     }
 
     /**
-     * Validate a given disk size.
-     *
-     * @param string $value
-     * @param string $serviceName
-     * @param Service|WebApp|Worker $service
+     * Validates a given disk size.
      *
      * @throws InvalidArgumentException
-     *
-     * @return int
      */
-    protected function validateDiskSize($value, $serviceName, $service)
+    protected function validateDiskSize(string $value, string $serviceName, WebApp|Worker|Service $service): int
     {
-        if (!$this->supportsDisk($service)) {
+        if (!$this->resourcesUtil->supportsDisk($service)) {
             throw new InvalidArgumentException(sprintf(
                 'The %s <error>%s</error> does not support a persistent disk.', $this->typeName($service), $serviceName
             ));
@@ -509,18 +489,11 @@ class ResourcesSetCommand extends ResourcesCommandBase
     }
 
     /**
-     * Validate a given profile size.
-     *
-     * @param string $value
-     * @param string $serviceName
-     * @param Service|WebApp|Worker $service
-     * @param EnvironmentDeployment $deployment
+     * Validates a given profile size.
      *
      * @throws InvalidArgumentException
-     *
-     * @return string
      */
-    protected function validateProfileSize($value, $serviceName, $service, EnvironmentDeployment $deployment)
+    protected function validateProfileSize(string $value, string $serviceName, WebApp|Worker|Service $service, EnvironmentDeployment $deployment): string
     {
         $properties = $service->getProperties();
         if ($value === 'default') {
@@ -576,7 +549,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @return array{array<string, mixed>, bool}
      *     An array of settings per service, and whether an error occurred.
      */
-    private function parseSetting(InputInterface $input, $optionName, $services, $validator)
+    private function parseSetting(InputInterface $input, string $optionName, array $services, ?callable $validator): array
     {
         $items = ArrayArgument::getOption($input, $optionName);
         $serviceNames = array_keys($services);
@@ -601,7 +574,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     continue;
                 }
                 if (isset($values[$name]) && $values[$name] !== $normalized) {
-                    $this->debug(sprintf('Overriding value %s with %s for %s in --%s', $values[$name], $normalized, $name, $optionName));
+                    $this->io->debug(sprintf('Overriding value %s with %s for %s in --%s', $values[$name], $normalized, $name, $optionName));
                 }
                 $values[$name] = $normalized;
             }
@@ -616,12 +589,12 @@ class ResourcesSetCommand extends ResourcesCommandBase
     /**
      * Print errors found after parsing a setting.
      *
-     * @param array $errors
+     * @param string[] $errors
      * @param string $optionName
      *
      * @return string[]
      */
-    private function formatErrors(array $errors, $optionName)
+    private function formatErrors(array $errors, string $optionName): array
     {
         if (!$errors) {
             return [];
@@ -643,12 +616,12 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * Compute the total memory/CPU/storage diff that will occur when the given update
      * is applied.
      *
-     * @param array $updates
-     * @param array $current
+     * @param array<string, array<string, array<string, mixed>>> $updates
+     * @param array<string, array<string, array<string, mixed>>> $current
      *
-     * @return array
+     * @return array{memory: int|float, cpu: int|float, disk: int|float}
      */
-    private function computeMemoryCPUStorageDiff(array $updates, array $current)
+    private function computeMemoryCPUStorageDiff(array $updates, array $current): array
     {
         $diff = [
             'memory' => 0,

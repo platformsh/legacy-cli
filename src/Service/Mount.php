@@ -21,7 +21,7 @@ class Mount
      *   trailing slashes are stripped. An empty shared path defaults to
      *   'files'.
      */
-    public function getSharedFileMounts(array $mounts)
+    public function getSharedFileMounts(array $mounts): array
     {
         $sharedFileMounts = [];
         foreach ($this->normalizeMounts($mounts) as $path => $definition) {
@@ -41,7 +41,7 @@ class Mount
      * @return array
      *   A normalized list of mounts.
      */
-    public function mountsFromConfig(AppConfig $appConfig)
+    public function mountsFromConfig(AppConfig $appConfig): array
     {
         $config = $appConfig->getNormalized();
         if (empty($config['mounts'])) {
@@ -62,7 +62,7 @@ class Mount
      *
      * @return array
      */
-    public function normalizeMounts(array $mounts)
+    public function normalizeMounts(array $mounts): array
     {
         $normalized = [];
         foreach ($mounts as $path => $definition) {
@@ -78,12 +78,12 @@ class Mount
      * @param string $path
      * @param array  $mounts
      *
-     * @throws \InvalidArgumentException if the path does not match
-     *
      * @return string
      *   If the $path matches, the normalized path is returned.
+     *@throws \InvalidArgumentException if the path does not match
+     *
      */
-    public function matchMountPath($path, array $mounts)
+    public function matchMountPath(string $path, array $mounts): string
     {
         $normalized = $this->normalizeRelativePath($path);
         if (isset($mounts[$normalized])) {
@@ -100,23 +100,23 @@ class Mount
      *
      * @return string
      */
-    private function normalizeRelativePath($path)
+    private function normalizeRelativePath(string $path): string
     {
         return trim(trim($path), '/');
     }
 
     /**
-     * Normalize a mount definition.
+     * Normalizes a mount definition.
      *
      * @param array|string $definition
      *
      * @return array
      *   An array containing at least 'source', and probably 'source_path'.
      */
-    private function normalizeDefinition($definition)
+    private function normalizeDefinition(array|string $definition): array
     {
         if (!is_array($definition)) {
-            if (!is_string($definition) || strpos($definition, 'shared:files') === false) {
+            if (!is_string($definition) || !str_contains($definition, 'shared:files')) {
                 throw new \RuntimeException('Failed to parse mount definition: ' . json_encode($definition));
             }
             $definition = [

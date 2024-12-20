@@ -7,7 +7,7 @@ use Platformsh\Cli\Util\StringUtil;
 
 class StringUtilTest extends TestCase
 {
-    public function testBetween()
+    public function testBetween(): void
     {
         $cases = [
             ['_BEGIN_foo_END_', '_BEGIN_', '_END_', 'foo'],

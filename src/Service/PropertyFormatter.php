@@ -11,25 +11,14 @@ use Symfony\Component\Yaml\Yaml;
 
 class PropertyFormatter implements InputConfiguringInterface
 {
-    /** @var InputInterface|null */
-    protected $input;
+    protected Config $config;
 
-    /** @var \Platformsh\Cli\Service\Config */
-    protected $config;
-
-    public function __construct(InputInterface $input = null, Config $config = null)
+    public function __construct(protected ?InputInterface $input = null, ?Config $config = null)
     {
-        $this->input = $input;
         $this->config = $config ?: new Config();
     }
 
-    /**
-     * @param mixed  $value
-     * @param string $property
-     *
-     * @return string
-     */
-    public function format($value, $property = null)
+    public function format(mixed $value, ?string $property = null): string
     {
         if ($value === null && $property !== 'parent') {
             return '';
@@ -77,8 +66,8 @@ class PropertyFormatter implements InputConfiguringInterface
                 break;
 
             case 'service_type':
-                if (substr_count($value, ':') === 2) {
-                    $value = substr($value, 0, strrpos($value, ':'));
+                if (substr_count((string) $value, ':') === 2) {
+                    $value = substr((string) $value, 0, strrpos((string) $value, ':'));
                 }
                 break;
         }
@@ -95,7 +84,7 @@ class PropertyFormatter implements InputConfiguringInterface
      *
      * @param InputDefinition $definition
      */
-    public static function configureInput(InputDefinition $definition)
+    public static function configureInput(InputDefinition $definition): void
     {
         static $config;
         $config = $config ?: new Config();
@@ -110,10 +99,8 @@ class PropertyFormatter implements InputConfiguringInterface
 
     /**
      * Returns the configured date format.
-     *
-     * @return string
      */
-    private function dateFormat()
+    private function dateFormat(): string
     {
         if (isset($this->input) && $this->input->hasOption('date-fmt')) {
             return $this->input->getOption('date-fmt');
@@ -124,15 +111,15 @@ class PropertyFormatter implements InputConfiguringInterface
     /**
      * Formats a string datetime.
      *
-     * @param string $value
+     * @param int|string $value
      *
      * @return string|null
      */
-    public function formatDate($value)
+    public function formatDate(int|string $value): ?string
     {
         // Workaround for the ssl.expires_on date, which is currently a
         // timestamp in milliseconds.
-        if (substr($value, -3) === '000' && strlen($value) === 13) {
+        if (str_ends_with($value, '000') && strlen($value) === 13) {
             $value = substr($value, 0, 10);
         }
 
@@ -143,22 +130,13 @@ class PropertyFormatter implements InputConfiguringInterface
 
     /**
      * Formats a UNIX timestamp.
-     *
-     * @param int $value
-     *
-     * @return string
      */
-    public function formatUnixTimestamp($value)
+    public function formatUnixTimestamp(int $value): string
     {
         return date($this->dateFormat(), $value);
     }
 
-    /**
-     * @param array|string|null $httpAccess
-     *
-     * @return string
-     */
-    protected function formatHttpAccess($httpAccess)
+    protected function formatHttpAccess(array|string|null $httpAccess): string
     {
         $info = (array) $httpAccess;
         $info += [
@@ -167,22 +145,20 @@ class PropertyFormatter implements InputConfiguringInterface
             'is_enabled' => true,
         ];
         // Hide passwords.
-        $info['basic_auth'] = array_map(function () {
-            return '******';
-        }, $info['basic_auth']);
+        $info['basic_auth'] = array_map(fn(): string => '******', $info['basic_auth']);
 
         return $this->format($info);
     }
 
     /**
-     * Display a complex data structure.
+     * Displays a complex data structure.
      *
-     * @param OutputInterface $output     An output object.
-     * @param array           $data       The data to display.
-     * @param string|null     $property   The property of the data to display
-     *                                    (a dot-separated string).
+     * @param OutputInterface $output An output object.
+     * @param array $data The data to display.
+     * @param string|null $property The property of the data to display
+     *                              (a dot-separated string).
      */
-    public function displayData(OutputInterface $output, array $data, $property = null)
+    public function displayData(OutputInterface $output, array $data, ?string $property = null): void
     {
         $key = null;
 

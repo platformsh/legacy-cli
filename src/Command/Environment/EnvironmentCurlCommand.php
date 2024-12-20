@@ -1,39 +1,38 @@
 <?php
 namespace Platformsh\Cli\Command\Environment;
 
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\CurlCli;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'environment:curl', description: "Run an authenticated cURL request on an environment's API")]
 class EnvironmentCurlCommand extends CommandBase
 {
-    protected $hiddenInList = true;
+    protected bool $hiddenInList = true;
 
-    protected function configure()
+    public function __construct(private readonly CurlCli $curlCli, private readonly Selector $selector)
     {
-        $this->setName('environment:curl')
-            ->setDescription("Run an authenticated cURL request on an environment's API");
-
-        CurlCli::configureInput($this->getDefinition());
-
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
+        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function configure(): void
     {
-        $this->validateInput($input, false, true);
+        CurlCli::configureInput($this->getDefinition());
 
-        // Initialize the API service so that it gets CommandBase's event listeners
-        // (allowing for auto login).
-        $this->api();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+    }
 
-        $url = $this->getSelectedEnvironment()->getUri();
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
+        $url = $selection->getEnvironment()->getUri();
 
-        /** @var CurlCli $curl */
-        $curl = $this->getService('curl_cli');
-
-        return $curl->run($url, $input, $output);
+        return $this->curlCli->run($url, $input, $output);
     }
 }

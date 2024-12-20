@@ -15,19 +15,11 @@ class Field
     const FORMAT_DISK = 'disk';
     const FORMAT_MEMORY = 'memory';
 
-    /** @var string */
-    private $name;
-
-    /** @var string */
-    private $format;
-
-    public function __construct($name, $format)
+    public function __construct(private readonly string $name, private readonly string $format)
     {
-        $this->name = $name;
-        $this->format = $format;
     }
 
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -40,7 +32,7 @@ class Field
      *
      * @return string
      */
-    private function formatPercent($pc, $warn = true)
+    private function formatPercent(float $pc, bool $warn = true): string
     {
         if ($warn) {
             if ($pc >= self::RED_WARNING_THRESHOLD) {
@@ -62,22 +54,17 @@ class Field
      *
      * @return string
      */
-    public function format(Sketch $value, $warn = true)
+    public function format(Sketch $value, bool $warn = true): string
     {
         if ($value->isInfinite()) {
             return '∞';
         }
-        switch ($this->format) {
-            case self::FORMAT_ROUNDED:
-                return (string) round($value->average());
-            case self::FORMAT_ROUNDED_2DP:
-                return (string) round($value->average(), 2);
-            case self::FORMAT_PERCENT:
-                return $this->formatPercent($value->average(), $warn);
-            case self::FORMAT_DISK:
-            case self::FORMAT_MEMORY:
-                return FormatterHelper::formatMemory($value->average());
-        }
-        throw new \InvalidArgumentException('Formatter not found: ' . $this->format);
+        return match ($this->format) {
+            self::FORMAT_ROUNDED => (string) round($value->average()),
+            self::FORMAT_ROUNDED_2DP => (string) round($value->average(), 2),
+            self::FORMAT_PERCENT => $this->formatPercent($value->average(), $warn),
+            self::FORMAT_DISK, self::FORMAT_MEMORY => FormatterHelper::formatMemory((int) $value->average()),
+            default => throw new \InvalidArgumentException('Formatter not found: ' . $this->format),
+        };
     }
 }

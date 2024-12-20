@@ -16,11 +16,10 @@ class SslUtil
      *
      * @throws \InvalidArgumentException
      *
-     * @return array
-     *   An array containing the contents of the certificate files, keyed as
-     *   'certificate' (string), 'key' (string), and 'chain' (array).
+     * @return array{certificate: string, key: string, chain: string[]}
+     *   An array containing the contents of the certificate files.
      */
-    public function validate($certPath, $keyPath, array $chainPaths)
+    public function validate(string $certPath, string $keyPath, array $chainPaths): array
     {
         // Get the contents.
         if (!is_readable($certPath)) {
@@ -65,7 +64,7 @@ class SslUtil
      * @return string[]
      *   Each certificate in the chain.
      */
-    public function validateChain(array $chainPaths)
+    public function validateChain(array $chainPaths): array
     {
         $chain = [];
         foreach ($chainPaths as $chainPath) {
@@ -78,11 +77,9 @@ class SslUtil
             }
             if (\extension_loaded('openssl')) {
                 foreach ($matches[0] as $chainCert) {
-                    $chainResource = openssl_x509_read($chainCert);
-                    if (!$chainResource) {
+                    if (!openssl_x509_read($chainCert)) {
                         throw new \InvalidArgumentException("The chain file contains an invalid X509 certificate: $chainPath");
                     }
-                    openssl_x509_free($chainResource);
                 }
             }
             $chain = \array_merge($chain, $matches[0]);
