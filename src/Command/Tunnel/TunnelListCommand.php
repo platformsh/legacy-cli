@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Tunnel;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Table;
+use Platformsh\Cli\Service\TunnelManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,9 +22,11 @@ class TunnelListCommand extends TunnelCommandBase
         'relationship' => 'Relationship',
         'url' => 'URL',
     ];
+
     /** @var string[] */
     protected array $defaultColumns = ['Port', 'Project', 'Environment', 'App', 'Relationship'];
-    public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table)
+
+    public function __construct(private readonly Config $config, private readonly Selector $selector, private readonly Table $table, private readonly TunnelManager $tunnelManager)
     {
         parent::__construct();
     }
@@ -41,7 +44,7 @@ class TunnelListCommand extends TunnelCommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $tunnels = $this->getTunnelInfo();
+        $tunnels = $this->tunnelManager->getTunnels();
         $allTunnelsCount = count($tunnels);
         if (!$allTunnelsCount) {
             $this->stdErr->writeln('No tunnels found.');
@@ -53,7 +56,8 @@ class TunnelListCommand extends TunnelCommandBase
         // Filter tunnels according to the current project and environment, if
         // available.
         if (!$input->getOption('all')) {
-            $tunnels = $this->filterTunnels($tunnels, $input);
+            $selection = $this->selector->getSelection($input);
+            $tunnels = $this->tunnelManager->filterBySelection($tunnels, $selection);
             if (!count($tunnels)) {
                 $this->stdErr->writeln('No tunnels found.');
                 $this->stdErr->writeln(sprintf(
@@ -64,15 +68,16 @@ class TunnelListCommand extends TunnelCommandBase
                 return 1;
             }
         }
+
         $rows = [];
         foreach ($tunnels as $tunnel) {
             $rows[] = [
-                'port' => $tunnel['localPort'],
-                'project' => $tunnel['projectId'],
-                'environment' => $tunnel['environmentId'],
-                'app' => $tunnel['appName'] ?: '[default]',
-                'relationship' => $this->formatTunnelRelationship($tunnel),
-                'url' => $this->getTunnelUrl($tunnel, $tunnel['service']),
+                'port' => $tunnel->localPort,
+                'project' => $tunnel->metadata['projectId'],
+                'environment' => $tunnel->metadata['environmentId'],
+                'app' => $tunnel->metadata['appName'] ?: '[default]',
+                'relationship' => $this->tunnelManager->formatRelationship($tunnel),
+                'url' => $this->tunnelManager->getUrl($tunnel),
             ];
         }
         $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
