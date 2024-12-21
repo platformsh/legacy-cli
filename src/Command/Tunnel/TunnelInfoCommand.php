@@ -6,6 +6,7 @@ use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Relationships;
+use Platformsh\Cli\Service\TunnelManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -14,10 +15,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:info', description: "View relationship info for SSH tunnels")]
 class TunnelInfoCommand extends TunnelCommandBase
 {
-    public function __construct(private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships, private readonly Selector $selector)
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Relationships $relationships, private readonly Selector $selector, private readonly TunnelManager $tunnelManager)
     {
         parent::__construct();
     }
+
     protected function configure(): void
     {
         $this
@@ -38,21 +40,21 @@ class TunnelInfoCommand extends TunnelCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['columns', 'format', 'no-header']);
 
-        $tunnels = $this->getTunnelInfo();
+        $tunnels = $this->tunnelManager->getTunnels();
         $relationships = [];
-        foreach ($this->filterTunnels($tunnels, $input) as $tunnel) {
-            $service = $tunnel['service'];
+        foreach ($this->tunnelManager->filterBySelection($tunnels, $this->selector->getSelection($input)) as $tunnel) {
+            $service = $tunnel->metadata['service'];
 
             // Overwrite the service's address with the local tunnel details.
             $service = array_merge($service, array_intersect_key([
-                'host' => self::LOCAL_IP,
-                'ip' => self::LOCAL_IP,
-                'port' => $tunnel['localPort'],
+                'host' => TunnelManager::LOCAL_IP,
+                'ip' => TunnelManager::LOCAL_IP,
+                'port' => $tunnel->localPort,
             ], $service));
 
             $service['url'] = $this->relationships->buildUrl($service);
 
-            $relationships[$tunnel['relationship']][$tunnel['serviceKey']] = $service;
+            $relationships[$tunnel->metadata['relationship']][$tunnel->metadata['serviceKey']] = $service;
         }
         if (!count($relationships)) {
             $this->stdErr->writeln('No tunnels found.');

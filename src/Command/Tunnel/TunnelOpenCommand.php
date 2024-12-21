@@ -10,6 +10,7 @@ use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
+use Platformsh\Cli\Service\TunnelManager;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'tunnel:open', description: "Open SSH tunnels to an app's relationships")]
 class TunnelOpenCommand extends TunnelCommandBase
 {
-    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh, private readonly TunnelManager $tunnelManager)
     {
         parent::__construct();
     }
@@ -73,11 +74,9 @@ EOF
         }
 
         $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
-        $project = $selection->getProject();
         $environment = $selection->getEnvironment();
 
         $container = $selection->getRemoteContainer();
-        $appName = $container->getName();
         $sshUrl = $container->getSshUrl();
         $host = $this->selector->getHostFromSelection($input, $selection);
         $relationships = $this->relationships->getRelationships($host);
@@ -96,7 +95,7 @@ EOF
         }
 
         $logFile = $this->config->getWritableUserDir() . '/tunnels.log';
-        if (!$log = $this->openLog($logFile)) {
+        if (!$log = $this->tunnelManager->openLog($logFile)) {
             $this->stdErr->writeln(sprintf('Failed to open log file for writing: %s', $logFile));
             return 1;
         }
@@ -120,39 +119,25 @@ EOF
 
         $error = false;
         $processIds = [];
-        foreach ($relationships as $relationship => $services) {
-            foreach ($services as $serviceKey => $service) {
-                $remoteHost = $service['host'];
-                $remotePort = $service['port'];
+        foreach ($relationships as $name => $services) {
+            foreach ($services as $key => $service) {
+                $service['_relationship_name'] = $name;
+                $service['_relationship_key'] = $key;
+                $tunnel = $this->tunnelManager->create($selection, $service);
 
-                $localPort = $this->getPort();
-                $tunnel = [
-                    'projectId' => $project->id,
-                    'environmentId' => $environment->id,
-                    'appName' => $appName,
-                    'relationship' => $relationship,
-                    'serviceKey' => $serviceKey,
-                    'remotePort' => $remotePort,
-                    'remoteHost' => $remoteHost,
-                    'localPort' => $localPort,
-                    'service' => $service,
-                    'pid' => null,
-                ];
+                $relationshipString = $this->tunnelManager->formatRelationship($tunnel);
 
-                $relationshipString = $this->formatTunnelRelationship($tunnel);
-
-                if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
+                if ($openTunnelInfo = $this->tunnelManager->isOpen($tunnel)) {
                     $this->stdErr->writeln(sprintf(
                         'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
                         $relationshipString,
-                        $this->getTunnelUrl($openTunnelInfo, $service)
+                        $this->tunnelManager->getUrl($openTunnelInfo)
                     ));
                     continue;
                 }
 
-                $process = $this->createTunnelProcess($sshUrl, $remoteHost, $remotePort, $localPort, $sshArgs);
-
-                $pidFile = $this->getPidFile($tunnel);
+                $process = $this->tunnelManager->createProcess($sshUrl, $tunnel, $sshArgs);
+                $pidFile = $this->tunnelManager->getPidFilename($tunnel);
 
                 try {
                     $pid = $processManager->startProcess($process, $pidFile, $log);
@@ -180,14 +165,12 @@ EOF
                 }
 
                 // Save information about the tunnel for use in other commands.
-                $tunnel['pid'] = $pid;
-                $this->tunnelInfo[] = $tunnel;
-                $this->saveTunnelInfo();
+                $this->tunnelManager->saveNewTunnel($tunnel, $pid);
 
                 $this->stdErr->writeln(sprintf(
                     'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
                     $relationshipString,
-                    $this->getTunnelUrl($tunnel, $service)
+                    $this->tunnelManager->getUrl($tunnel),
                 ));
 
                 $processIds[] = $pid;
