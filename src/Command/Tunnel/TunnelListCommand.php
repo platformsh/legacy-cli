@@ -63,7 +63,7 @@ class TunnelListCommand extends TunnelCommandBase
                 $this->stdErr->writeln('No tunnels found.');
                 $this->stdErr->writeln(sprintf(
                     'List all tunnels with: <info>%s tunnels --all</info>',
-                    $executable
+                    $executable,
                 ));
 
                 return 1;
@@ -89,7 +89,7 @@ class TunnelListCommand extends TunnelCommandBase
             if (!$input->getOption('all') && count($tunnels) < $allTunnelsCount) {
                 $this->stdErr->writeln(sprintf(
                     'List all tunnels with: <info>%s tunnels --all</info>',
-                    $executable
+                    $executable,
                 ));
             }
 

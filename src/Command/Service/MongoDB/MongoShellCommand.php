@@ -69,7 +69,7 @@ class MongoShellCommand extends CommandBase
 
         $this->stdErr->writeln(
             sprintf('Connecting to MongoDB service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel()),
-            OutputInterface::VERBOSITY_VERBOSE
+            OutputInterface::VERBOSITY_VERBOSE,
         );
 
         return $host->runCommandDirect($command);

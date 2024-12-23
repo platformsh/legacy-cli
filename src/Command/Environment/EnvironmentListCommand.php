@@ -81,7 +81,7 @@ class EnvironmentListCommand extends CommandBase
                 || ($parent === null && !isset($environments[$environment->parent]))) {
                 $this->children[$environment->id] = $this->buildEnvironmentTree(
                     $environments,
-                    $environment->id
+                    $environment->id,
                 );
                 $children[$environment->id] = $environment;
             }
@@ -139,7 +139,7 @@ class EnvironmentListCommand extends CommandBase
                     $this->children[$environment->id],
                     $indent,
                     $indicateCurrent,
-                    $indentAmount + 1
+                    $indentAmount + 1,
                 );
                 $rows = array_merge($rows, $childRows);
             }
@@ -200,7 +200,7 @@ class EnvironmentListCommand extends CommandBase
                 $this->stdErr->writeln('No environments found (filters in use: ' . $filtersUsed . ').');
             } else {
                 $this->stdErr->writeln(
-                    'No environments found.'
+                    'No environments found.',
                 );
             }
 
@@ -238,37 +238,37 @@ class EnvironmentListCommand extends CommandBase
         $executable = $this->config->getStr('application.executable');
 
         $this->stdErr->writeln(
-            'Check out a different environment by running <info>' . $executable . ' checkout [id]</info>'
+            'Check out a different environment by running <info>' . $executable . ' checkout [id]</info>',
         );
 
         if ($currentEnvironment->operationAvailable('branch')) {
             $this->stdErr->writeln(
-                'Branch a new environment by running <info>' . $executable . ' environment:branch [new-name]</info>'
+                'Branch a new environment by running <info>' . $executable . ' environment:branch [new-name]</info>',
             );
         }
         if ($currentEnvironment->operationAvailable('activate')) {
             $this->stdErr->writeln(
-                'Activate the current environment by running <info>' . $executable . ' environment:activate</info>'
+                'Activate the current environment by running <info>' . $executable . ' environment:activate</info>',
             );
         }
         if ($currentEnvironment->operationAvailable('delete')) {
             $this->stdErr->writeln(
-                'Delete the current environment by running <info>' . $executable . ' environment:delete</info>'
+                'Delete the current environment by running <info>' . $executable . ' environment:delete</info>',
             );
         }
         if ($currentEnvironment->operationAvailable('backup')) {
             $this->stdErr->writeln(
-                'Make a backup of the current environment by running <info>' . $executable . ' backup</info>'
+                'Make a backup of the current environment by running <info>' . $executable . ' backup</info>',
             );
         }
         if ($currentEnvironment->operationAvailable('merge')) {
             $this->stdErr->writeln(
-                'Merge the current environment by running <info>' . $executable . ' environment:merge</info>'
+                'Merge the current environment by running <info>' . $executable . ' environment:merge</info>',
             );
         }
         if ($currentEnvironment->operationAvailable('synchronize')) {
             $this->stdErr->writeln(
-                'Sync the current environment by running <info>' . $executable . ' environment:synchronize</info>'
+                'Sync the current environment by running <info>' . $executable . ' environment:synchronize</info>',
             );
         }
 
@@ -293,13 +293,13 @@ class EnvironmentListCommand extends CommandBase
     protected function filterEnvironments(array &$environments, array $filters): void
     {
         if (!empty($filters['no-inactive'])) {
-            $environments = array_filter($environments, fn ($environment): bool => $environment->status !== 'inactive');
+            $environments = array_filter($environments, fn($environment): bool => $environment->status !== 'inactive');
         }
         if (!empty($filters['type'])) {
-            $environments = array_filter($environments, fn (Environment $environment): bool => \in_array($environment->type, $filters['type']));
+            $environments = array_filter($environments, fn(Environment $environment): bool => \in_array($environment->type, $filters['type']));
         }
         if (!empty($filters['status'])) {
-            $environments = array_filter($environments, fn (Environment $environment): bool => \in_array($environment->status, $filters['status']));
+            $environments = array_filter($environments, fn(Environment $environment): bool => \in_array($environment->status, $filters['status']));
         }
     }
 }

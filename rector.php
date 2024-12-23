@@ -27,10 +27,10 @@ return RectorConfig::configure()
     ->withImportNames(importShortClasses: false, removeUnusedImports: true)
     ->withConfiguredRule(
         MethodCallToPropertyFetchRector::class,
-        [new MethodCallToPropertyFetch(CommandBase::class, 'api', 'api')]
+        [new MethodCallToPropertyFetch(CommandBase::class, 'api', 'api')],
     )
     ->withConfiguredRule(
         MethodCallToPropertyFetchRector::class,
-        [new MethodCallToPropertyFetch(CommandBase::class, 'config', 'config')]
+        [new MethodCallToPropertyFetch(CommandBase::class, 'config', 'config')],
     )
 ;

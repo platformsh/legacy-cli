@@ -55,7 +55,7 @@ class HelpCommand extends CommandBase
                   <info>%command.full_name% --format=json list</info>
 
                 To display the list of available commands, please use the <info>list</info> command.
-                EOF
+                EOF,
             );
     }
 

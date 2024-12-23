@@ -94,7 +94,7 @@ class DbDumpCommand extends CommandBase
                 && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
                 $schemas = array_intersect(
                     $schemas,
-                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges'])
+                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges']),
                 );
             }
 
@@ -149,7 +149,7 @@ class DbDumpCommand extends CommandBase
                     $includedTables,
                     $excludedTables,
                     $schemaOnly,
-                    $gzip
+                    $gzip,
                 );
                 $dumpFile = $projectRoot ? $projectRoot . '/' . $defaultFilename : $defaultFilename;
             }
@@ -190,7 +190,7 @@ class DbDumpCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Creating %s file: <info>%s</info>',
                 $gzip ? 'gzipped SQL dump' : 'SQL dump',
-                $dumpFile
+                $dumpFile,
             ));
         }
 
@@ -227,7 +227,7 @@ class DbDumpCommand extends CommandBase
                 }
                 if ($includedTables) {
                     $dumpCommand .= ' --tables '
-                        . implode(' ', array_map(fn ($table) => OsUtil::escapePosixShellArg($table), $includedTables));
+                        . implode(' ', array_map(fn($table) => OsUtil::escapePosixShellArg($table), $includedTables));
                 }
                 if (!empty($service->configuration['properties']['max_allowed_packet'])) {
                     $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
@@ -306,7 +306,7 @@ class DbDumpCommand extends CommandBase
         array $includedTables = [],
         array $excludedTables = [],
         bool $schemaOnly = false,
-        bool $gzip = false
+        bool $gzip = false,
     ): string {
         $prefix = $this->config->getStr('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');

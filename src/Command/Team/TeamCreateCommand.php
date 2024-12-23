@@ -97,7 +97,7 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        $getProjectRole = fn (array $perms): string => in_array('admin', $perms) ? 'admin' : 'viewer';
+        $getProjectRole = fn(array $perms): string => in_array('admin', $perms) ? 'admin' : 'viewer';
         $getEnvTypeRoles = function (array $perms): array {
             $roles = [];
             foreach ($perms as $perm) {
@@ -228,9 +228,9 @@ class TeamCreateCommand extends TeamCommandBase
         $this->stdErr->writeln('');
         $question = new Question(
             sprintf('Project role (default: %s) <question>%s</question>: ', $defaultRole, $this->describeRoleInput($validProjectRoles)),
-            $defaultRole
+            $defaultRole,
         );
-        $question->setValidator(fn ($answer) => $this->validateProjectRole($answer));
+        $question->setValidator(fn($answer) => $this->validateProjectRole($answer));
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
@@ -246,7 +246,7 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function describeRoles(array $roles): string
     {
-        $withInitials = array_map(fn ($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
+        $withInitials = array_map(fn($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
         $last = array_pop($withInitials);
 
         return implode(' or ', [implode(', ', $withInitials), $last]);
@@ -261,7 +261,7 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function describeRoleInput(array $roles): string
     {
-        return '[' . implode('/', array_map(fn ($role): string => substr((string) $role, 0, 1), $roles)) . ']';
+        return '[' . implode('/', array_map(fn($role): string => substr((string) $role, 0, 1), $roles)) . ']';
     }
 
 
@@ -310,7 +310,7 @@ class TeamCreateCommand extends TeamCommandBase
             $default = $defaultTypeRoles[$id] ?? 'none';
             $question = new Question(
                 sprintf('Role on type <info>%s</info> (default: %s) <question>%s</question>: ', $id, $default, $initials),
-                $default
+                $default,
             );
             $question->setValidator(function ($answer) {
                 if ($answer === 'q' || $answer === 'quit') {

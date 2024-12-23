@@ -9,9 +9,7 @@ readonly class TimeSpec
      * @param int $endTime End time (UNIX timestamp).
      * @param int $interval Interval (seconds).
      */
-    public function __construct(private int $startTime, private int $endTime, private int $interval)
-    {
-    }
+    public function __construct(private int $startTime, private int $endTime, private int $interval) {}
 
     public function getStartTime(): int
     {

@@ -37,7 +37,7 @@ class EnvironmentMergeCommand extends CommandBase
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample('Merge the environment "sprint-2" into its parent', 'sprint-2');
         $this->setHelp(
-            'This command will initiate a Git merge of the specified environment into its parent environment.'
+            'This command will initiate a Git merge of the specified environment into its parent environment.',
         );
     }
 
@@ -51,7 +51,7 @@ class EnvironmentMergeCommand extends CommandBase
         if (!$selectedEnvironment->operationAvailable('merge', true)) {
             $this->stdErr->writeln(sprintf(
                 "Operation not available: The environment <error>%s</error> can't be merged.",
-                $environmentId
+                $environmentId,
             ));
 
             if ($selectedEnvironment->getProperty('has_remote', false) === true
@@ -84,7 +84,7 @@ class EnvironmentMergeCommand extends CommandBase
         $confirmText = sprintf(
             'Are you sure you want to merge <info>%s</info> into its parent, <info>%s</info>?',
             $environmentId,
-            $parentId
+            $parentId,
         );
         if (!$this->questionHelper->confirm($confirmText)) {
             return 1;
@@ -93,7 +93,7 @@ class EnvironmentMergeCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Merging <info>%s</info> into <info>%s</info>',
             $environmentId,
-            $parentId
+            $parentId,
         ));
 
         $this->api->clearEnvironmentsCache($selectedEnvironment->project);

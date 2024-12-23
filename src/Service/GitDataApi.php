@@ -22,7 +22,7 @@ class GitDataApi
 
     public function __construct(
         Api $api = null,
-        CacheProvider $cache = null
+        CacheProvider $cache = null,
     ) {
         $this->api = $api ?: new Api();
         $this->cache = $cache ?: CacheFactory::createCacheProvider(new Config());
@@ -268,7 +268,7 @@ class GitDataApi
                 if (!$commit = $this->getCommit($environment, $normalizedSha)) {
                     throw new \InvalidArgumentException(sprintf(
                         'Commit not found: %s',
-                        $commitSha
+                        $commitSha,
                     ));
                 }
                 if (!$rootTree = $commit->getTree()) {

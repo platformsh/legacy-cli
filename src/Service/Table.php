@@ -42,9 +42,7 @@ class Table implements InputConfiguringInterface
      * @param InputInterface  $input
      * @param OutputInterface $output
      */
-    public function __construct(protected InputInterface $input, protected OutputInterface $output)
-    {
-    }
+    public function __construct(protected InputInterface $input, protected OutputInterface $output) {}
 
     /**
      * Add the --format and --columns options to a command's input definition.
@@ -92,7 +90,7 @@ class Table implements InputConfiguringInterface
             $defaultColumns = array_map('\strtolower', $defaultColumns);
             $columnNames = array_diff($columnNames, $defaultColumns);
             if ($markDefault) {
-                $defaultColumns = array_map(fn ($c): string => $c . '*', $defaultColumns);
+                $defaultColumns = array_map(fn($c): string => $c . '*', $defaultColumns);
             }
             $columnNames = array_merge($defaultColumns, $columnNames);
         }
@@ -197,7 +195,7 @@ class Table implements InputConfiguringInterface
             $matched = Wildcard::select($availableColumns, [$requestedCol]);
             if (empty($matched)) {
                 throw new InvalidArgumentException(
-                    sprintf('Column not found: %s (available columns: %s)', $requestedCol, self::formatAvailableColumns($availableColumns))
+                    sprintf('Column not found: %s (available columns: %s)', $requestedCol, self::formatAvailableColumns($availableColumns)),
                 );
             }
             $toDisplay = array_merge($toDisplay, $matched);

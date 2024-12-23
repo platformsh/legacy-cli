@@ -109,7 +109,7 @@ class SubscriptionInfoCommand extends CommandBase
         $currentValue = $subscription->getProperty($property);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-                "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property)
+                "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property),
             );
 
             return 0;
@@ -118,12 +118,12 @@ class SubscriptionInfoCommand extends CommandBase
             "Are you sure you want to change property '%s' from <comment>%s</comment> to <comment>%s</comment>?",
             $property,
             $this->propertyFormatter->format($currentValue, $property),
-            $this->propertyFormatter->format($value, $property)
+            $this->propertyFormatter->format($value, $property),
         );
         if ($this->config->getBool('warnings.project_users_billing')) {
             $warning = sprintf(
                 '<comment>This action may %s the cost of your subscription.</comment>',
-                is_numeric($value) && $value > $currentValue ? 'increase' : 'change'
+                is_numeric($value) && $value > $currentValue ? 'increase' : 'change',
             );
             $confirmMessage = $warning . "\n" . $confirmMessage;
             if (!$this->questionHelper->confirm($confirmMessage)) {
@@ -135,7 +135,7 @@ class SubscriptionInfoCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->propertyFormatter->format($value, $property)
+            $this->propertyFormatter->format($value, $property),
         ));
 
         return 0;

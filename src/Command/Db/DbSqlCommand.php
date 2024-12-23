@@ -84,7 +84,7 @@ class DbSqlCommand extends CommandBase
                 && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
                 $schemas = array_intersect(
                     $schemas,
-                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges'])
+                    array_keys($service->configuration['endpoints'][$database['rel']]['privileges']),
                 );
             }
 

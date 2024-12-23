@@ -13,9 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DependencyInstaller
 {
-    public function __construct(protected OutputInterface $output, protected Shell $shell)
-    {
-    }
+    public function __construct(protected OutputInterface $output, protected Shell $shell) {}
 
     /**
      * Modify the environment to make the installed dependencies available.
@@ -67,13 +65,13 @@ class DependencyInstaller
                 "Installing <info>%s</info> dependencies with '%s': %s",
                 $stack,
                 $manager->getCommandName(),
-                implode(', ', array_keys($stackDependencies))
+                implode(', ', array_keys($stackDependencies)),
             ));
             if (!$manager->isAvailable()) {
                 $this->output->writeln(sprintf(
                     "Cannot install <comment>%s</comment> dependencies: '%s' is not installed.",
                     $stack,
-                    $manager->getCommandName()
+                    $manager->getCommandName(),
                 ));
                 if ($manager->getInstallHelp()) {
                     $this->output->writeln($manager->getInstallHelp());

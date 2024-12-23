@@ -44,7 +44,7 @@ class Winky extends Animation
             $signatureIndent = str_repeat(' ', intval(strlen($indent) + floor($width / 2) - floor(strlen($signature) / 2)));
             $signature = "\n" . $signatureIndent . $signature;
         }
-        $sources = array_map(fn ($source): string => "\n" . preg_replace('/^/m', $indent, (string) $source) . $signature . "\n", $sources);
+        $sources = array_map(fn($source): string => "\n" . preg_replace('/^/m', $indent, (string) $source) . $signature . "\n", $sources);
 
         $frames = [];
         $frames[] = new AnimationFrame($sources['normal'], 1200000);

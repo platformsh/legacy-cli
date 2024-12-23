@@ -28,11 +28,11 @@ class IntegrationAddCommand extends IntegrationCommandBase
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Add an integration with a GitHub repository',
-            '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0'
+            '--type github --repository myuser/example-repo --token 9218376e14c2797e0d06e8d2f918d45f --fetch-branches 0',
         );
         $this->addExample(
             'Add an integration with a GitLab repository',
-            '--type gitlab --server-project mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com'
+            '--type gitlab --server-project mygroup/example-repo --token 22fe4d70dfbc20e4f668568a0b5422e2 --base-url https://gitlab.example.com',
         );
     }
 
@@ -71,7 +71,7 @@ class IntegrationAddCommand extends IntegrationCommandBase
         if (isset($values['type']) && in_array($values['type'], ['github', 'gitlab', 'bitbucket', 'bitbucket_server'])) {
             $this->stdErr->writeln(
                 "<comment>Warning:</comment> adding a '" . $values['type'] . "' integration will automatically synchronize code from the external Git repository."
-                . "\nThis means it can overwrite all the code in your project.\n"
+                . "\nThis means it can overwrite all the code in your project.\n",
             );
             if (!$this->questionHelper->confirm('Are you sure you want to continue?')) {
                 return 1;

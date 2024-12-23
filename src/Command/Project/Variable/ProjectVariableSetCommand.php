@@ -36,7 +36,7 @@ class ProjectVariableSetCommand extends CommandBase
             ->addOption('no-visible-runtime', null, InputOption::VALUE_NONE, 'Do not expose this variable at runtime');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
-            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
+            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>",
         );
         $this->selector->addProjectOption($this->getDefinition());
         $this->addCompleter($this->selector);

@@ -48,7 +48,7 @@ $revertScript = '';
 if ($config->has('application.installer_url')) {
     $revertScript = sprintf(
         'curl -sfS %s | php',
-        $config->get('application.installer_url')
+        $config->get('application.installer_url'),
     );
 }
 

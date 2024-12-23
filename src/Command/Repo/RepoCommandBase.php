@@ -52,7 +52,7 @@ class RepoCommandBase extends CommandBase
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',
                 $e->getMessage(),
-                $e->getPath()
+                $e->getPath(),
             ));
             $this->stdErr->writeln(sprintf('To list directory contents, run: <comment>%s repo:ls [path]</comment>', $this->config->getStr('application.executable')));
 
@@ -87,7 +87,7 @@ class RepoCommandBase extends CommandBase
             $this->stdErr->writeln(sprintf(
                 '%s: <error>%s</error>',
                 $e->getMessage(),
-                $e->getPath()
+                $e->getPath(),
             ));
             $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config->getStr('application.executable')));
 
@@ -102,9 +102,9 @@ class RepoCommandBase extends CommandBase
         $treeObjects = $tree->tree;
         if ($input->hasOption('files') && $input->hasOption('directories')) {
             if ($input->getOption('files') && !$input->getOption('directories')) {
-                $treeObjects = array_filter($treeObjects, fn (array $treeObject): bool => $treeObject['type'] === 'blob');
+                $treeObjects = array_filter($treeObjects, fn(array $treeObject): bool => $treeObject['type'] === 'blob');
             } elseif ($input->getOption('directories') && !$input->getOption('files')) {
-                $treeObjects = array_filter($treeObjects, fn (array $treeObject): bool => $treeObject['type'] === 'tree');
+                $treeObjects = array_filter($treeObjects, fn(array $treeObject): bool => $treeObject['type'] === 'tree');
             }
         }
 
@@ -117,7 +117,7 @@ class RepoCommandBase extends CommandBase
                     $object['mode'],
                     $object['type'],
                     $object['sha'],
-                    $object['path']
+                    $object['path'],
                 ));
             } else {
                 $format = '%s';

@@ -19,11 +19,11 @@ class WelcomeCommandTest extends TestCase
         $result = MockApp::runAndReturnOutput('welcome');
         $this->assertStringContainsString(
             'Project ID: test-project',
-            $result
+            $result,
         );
         $this->assertStringContainsString(
             'Local environment commands',
-            $result
+            $result,
         );
     }
 }

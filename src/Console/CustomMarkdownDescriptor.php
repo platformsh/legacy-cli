@@ -13,19 +13,17 @@ use Symfony\Component\Console\Input\InputOption;
 
 class CustomMarkdownDescriptor extends MarkdownDescriptor
 {
-    public function __construct(private readonly string $cliExecutableName)
-    {
-    }
+    public function __construct(private readonly string $cliExecutableName) {}
 
     /**
      * @inheritDoc
      */
-    protected function describeApplication(Application $application, array $options = array()): void
+    protected function describeApplication(Application $application, array $options = []): void
     {
         $describedNamespace = $options['namespace'] ?? null;
         $description = (new DescriptorUtils())->describeNamespaces($application, $describedNamespace, !empty($options['all']));
         $title = sprintf('%s %s', $application->getName(), $application->getVersion());
-        $this->write($title."\n".str_repeat('=', Helper::width($title)));
+        $this->write($title . "\n" . str_repeat('=', Helper::width($title)));
 
         foreach ($description['namespaces'] as $namespace) {
             if (empty($namespace['commands'])) {
@@ -33,7 +31,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
             }
             if (ApplicationDescription::GLOBAL_NAMESPACE !== $namespace['id']) {
                 $this->write("\n\n");
-                $this->write('**'.$namespace['id'].':**');
+                $this->write('**' . $namespace['id'] . ':**');
             }
 
             $this->write("\n\n");
@@ -57,7 +55,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $command->mergeApplicationDefinition(false);
 
         $this->write($command->getName() . "\n"
-            . str_repeat('-', strlen((string) $command->getName()))."\n");
+            . str_repeat('-', strlen((string) $command->getName())) . "\n");
 
         if ($description = $command->getDescription()) {
             $this->write("$description\n\n");
@@ -66,7 +64,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
         $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();
         if ($aliases) {
             $this->write(
-                'Aliases: ' . '`'.implode('`, `', $aliases).'`' . "\n\n"
+                'Aliases: ' . '`' . implode('`, `', $aliases) . '`' . "\n\n",
             );
         }
 
@@ -90,7 +88,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
                     $example['description'],
                     $this->cliExecutableName,
                     $name,
-                    $example['commandline']
+                    $example['commandline'],
                 ));
             }
             $this->write("\n");
@@ -124,7 +122,7 @@ class CustomMarkdownDescriptor extends MarkdownDescriptor
     {
         $this->write('* `--' . $option->getName() . '`');
         if ($shortcut = $option->getShortcut()) {
-            $this->write(" (`-" . implode('|-', explode('|', $shortcut)). "`)");
+            $this->write(" (`-" . implode('|-', explode('|', $shortcut)) . "`)");
         }
         $notes = [];
         if ($option->isArray()) {

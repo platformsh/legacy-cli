@@ -2,6 +2,4 @@
 
 namespace Platformsh\Cli\Exception;
 
-class ApiFeatureMissingException extends \RuntimeException
-{
-}
+class ApiFeatureMissingException extends \RuntimeException {}

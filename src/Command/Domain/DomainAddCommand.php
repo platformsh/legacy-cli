@@ -37,7 +37,7 @@ class DomainAddCommand extends DomainCommandBase
         $this->addExample('Add the domain example.com', 'example.com');
         $this->addExample(
             'Add the domain example.org with a custom SSL/TLS certificate',
-            'example.org --cert example-org.crt --key example-org.key'
+            'example.org --cert example-org.crt --key example-org.key',
         );
     }
 
@@ -51,7 +51,7 @@ class DomainAddCommand extends DomainCommandBase
         $selectorConfig = new SelectorConfig(envRequired: false);
         if ($this->isForEnvironment($input)) {
             $selectorConfig = new SelectorConfig(
-                chooseEnvFilter: fn (Environment $e): bool => $e->type !== 'production',
+                chooseEnvFilter: fn(Environment $e): bool => $e->type !== 'production',
             );
         }
         $selection = $this->selector->getSelection($input, $selectorConfig);
@@ -96,7 +96,7 @@ class DomainAddCommand extends DomainCommandBase
                     $this->stdErr->writeln(sprintf(
                         'The environment %s already has a domain with the same <comment>--attach</comment> value: <error>%s</error>',
                         $this->api->getEnvironmentLabel($environment, 'comment'),
-                        $data['detail']['conflicting_domain']
+                        $data['detail']['conflicting_domain'],
                     ));
                     return 1;
                 }
@@ -104,7 +104,7 @@ class DomainAddCommand extends DomainCommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
                         'The <comment>--attach</comment> domain does not exist on a production environment: <error>%s</error>',
-                        $this->attach
+                        $this->attach,
                     ));
                     if (!empty($data['detail']['prod-domains'])) {
                         $this->stdErr->writeln('');

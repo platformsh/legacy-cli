@@ -68,7 +68,7 @@ class CustomJsonDescriptor extends Descriptor
             $data['namespace'] = $describedNamespace;
         } else {
             // Only show namespaces with at least one (non-hidden) command.
-            $data['namespaces'] = array_values(array_filter($description['namespaces'], fn ($n): bool => !empty($n['commands'])));
+            $data['namespaces'] = array_values(array_filter($description['namespaces'], fn($n): bool => !empty($n['commands'])));
         }
 
         $this->writeData($data, $options);
@@ -99,8 +99,8 @@ class CustomJsonDescriptor extends Descriptor
     private function getInputOptionData(InputOption $option): array
     {
         return [
-            'name' => '--'.$option->getName(),
-            'shortcut' => $option->getShortcut() ? '-'.str_replace('|', '|-', $option->getShortcut()) : '',
+            'name' => '--' . $option->getName(),
+            'shortcut' => $option->getShortcut() ? '-' . str_replace('|', '|-', $option->getShortcut()) : '',
             'accept_value' => $option->acceptValue(),
             'is_value_required' => $option->isValueRequired(),
             'is_multiple' => $option->isArray(),

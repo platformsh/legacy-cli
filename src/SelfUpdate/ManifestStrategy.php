@@ -40,9 +40,7 @@ class ManifestStrategy implements StrategyInterface
      *                            version. Ignored if $localVersion is unstable
      *                            and there are no new stable versions.
      */
-    public function __construct(private readonly string $localVersion, private readonly string $manifestUrl, private readonly bool $allowMajor = false, private readonly bool $allowUnstable = false)
-    {
-    }
+    public function __construct(private readonly string $localVersion, private readonly string $manifestUrl, private readonly bool $allowMajor = false, private readonly bool $allowUnstable = false) {}
 
     /**
      * @param array<string, mixed> $opts
@@ -114,7 +112,7 @@ class ManifestStrategy implements StrategyInterface
                 }
             }
         }
-        uksort($notes, fn ($a, $b): int => \version_compare($a, $b));
+        uksort($notes, fn($a, $b): int => \version_compare($a, $b));
         return $notes;
     }
 
@@ -151,8 +149,8 @@ class ManifestStrategy implements StrategyInterface
                 sprintf(
                     'SHA-256 verification failed: expected %s, actual %s',
                     $versionInfo['sha256'],
-                    $tmpSha
-                )
+                    $tmpSha,
+                ),
             );
         }
     }
@@ -182,7 +180,7 @@ class ManifestStrategy implements StrategyInterface
                     throw new \RuntimeException(sprintf(
                         'Manifest item %s missing required key(s): %s',
                         $key,
-                        implode(',', $missing)
+                        implode(',', $missing),
                     ));
                 }
                 $this->availableVersions[$item['version']] = $item;
@@ -232,7 +230,7 @@ class ManifestStrategy implements StrategyInterface
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new JsonParsingException(
                     'Error parsing manifest file'
-                    . (function_exists('json_last_error_msg') ? ': ' . json_last_error_msg() : '')
+                    . (function_exists('json_last_error_msg') ? ': ' . json_last_error_msg() : ''),
                 );
             }
         }

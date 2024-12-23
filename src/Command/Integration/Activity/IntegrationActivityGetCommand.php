@@ -92,7 +92,7 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
         $this->stdErr->writeln(
             'The <comment>payload</comment> property has been omitted for brevity.'
             . ' You can still view it with the -P (--property) option.',
-            OutputInterface::VERBOSITY_VERBOSE
+            OutputInterface::VERBOSITY_VERBOSE,
         );
 
         $header = [];
@@ -111,12 +111,12 @@ class IntegrationActivityGetCommand extends IntegrationCommandBase
                 'To view the log for this activity, run: <info>%s integration:activity:log %s %s</info>',
                 $executable,
                 $integration->id,
-                $activity->id
+                $activity->id,
             ));
             $this->stdErr->writeln(sprintf(
                 'To list activities for this integration, run: <info>%s integration:activities %s</info>',
                 $executable,
-                $integration->id
+                $integration->id,
             ));
         }
 

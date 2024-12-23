@@ -29,13 +29,13 @@ class Url implements InputConfiguringInterface
             'browser',
             null,
             InputOption::VALUE_REQUIRED,
-            'The browser to use to open the URL. Set 0 for none.'
+            'The browser to use to open the URL. Set 0 for none.',
         ));
         $definition->addOption(new InputOption(
             'pipe',
             null,
             InputOption::VALUE_NONE,
-            'Output the URL to stdout.'
+            'Output the URL to stdout.',
         ));
     }
 

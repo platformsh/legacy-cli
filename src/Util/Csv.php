@@ -16,9 +16,7 @@ class Csv
      * @param string $delimiter The delimiter character between cells.
      * @param string $lineBreak The break character(s) between lines.
      */
-    public function __construct(private readonly string $delimiter = ',', private readonly string $lineBreak = "\r\n")
-    {
-    }
+    public function __construct(private readonly string $delimiter = ',', private readonly string $lineBreak = "\r\n") {}
 
     /**
      * Format an array of rows as a CSV spreadsheet.

@@ -55,7 +55,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 null,
                 InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter activities by type.'
-                . "\n" . ArrayArgument::SPLIT_HELP
+                . "\n" . ArrayArgument::SPLIT_HELP,
             )
             ->addOption(
                 'exclude-type',
@@ -63,7 +63,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Exclude activities by type.'
                 . "\n" . ArrayArgument::SPLIT_HELP
-                . "\nThe % or * characters can be used as a wildcard to exclude types."
+                . "\nThe % or * characters can be used as a wildcard to exclude types.",
             )
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
@@ -121,7 +121,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 'Activities on the project %s, integration <info>%s</info> (%s):',
                 $this->api->getProjectLabel($project),
                 $integration->id,
-                $integration->type
+                $integration->type,
             ));
         }
 
@@ -139,18 +139,18 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                     . ' To display older activities, increase <info>--limit</info> above %d, or set <info>--start</info> to a date in the past.'
                     . ' For more information, run: <info>%s integration:activity:list -h</info>',
                     $max,
-                    $executable
+                    $executable,
                 ));
             }
 
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for an activity, run: <info>%s integration:activity:log [integration] [activity]</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln(sprintf(
                 'To view more information about an activity, run: <info>%s integration:activity:get [integration] [activity]</info>',
-                $executable
+                $executable,
             ));
         }
 

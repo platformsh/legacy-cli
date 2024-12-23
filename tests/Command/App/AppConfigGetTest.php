@@ -24,19 +24,19 @@ class AppConfigGetTest extends TestCase
             'app',
             (new Parser())->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'name',
-            ]))
+            ])),
         );
         $this->assertEquals(
             [],
             (new Parser())->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'mounts',
-            ]))
+            ])),
         );
         $this->assertEquals(
             '',
             (new Parser())->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'blank',
-            ]))
+            ])),
         );
         putenv('PLATFORM_APPLICATION=');
     }

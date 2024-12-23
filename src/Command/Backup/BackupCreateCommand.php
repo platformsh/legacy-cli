@@ -36,7 +36,7 @@ class BackupCreateCommand extends CommandBase
                 InputOption::VALUE_NONE,
                 'Live backup: do not stop the environment.'
                 . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
-                . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.'
+                . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.',
             );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -58,7 +58,7 @@ class BackupCreateCommand extends CommandBase
         $environmentId = $selectedEnvironment->id;
         if (!$selectedEnvironment->operationAvailable('backup', true)) {
             $this->stdErr->writeln(
-                "Operation not available: cannot create a backup of <error>$environmentId</error>"
+                "Operation not available: cannot create a backup of <error>$environmentId</error>",
             );
 
             if ($selectedEnvironment->is_dirty) {
@@ -83,7 +83,7 @@ class BackupCreateCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Creating a %s of %s.',
             $live ? '<info>live</info> backup' : 'backup',
-            $this->api->getEnvironmentLabel($selectedEnvironment, 'info', false)
+            $this->api->getEnvironmentLabel($selectedEnvironment, 'info', false),
         ));
         $this->stdErr->writeln('Note: this may delete an older backup if the quota has been reached.');
         $this->stdErr->writeln('');
@@ -101,7 +101,7 @@ class BackupCreateCommand extends CommandBase
             // Strongly recommend using --no-wait in a cron job.
             if (!$this->io->isTerminal(STDIN)) {
                 $this->stdErr->writeln(
-                    '<comment>Warning:</comment> use the --no-wait (-W) option if you are running this in a cron job.'
+                    '<comment>Warning:</comment> use the --no-wait (-W) option if you are running this in a cron job.',
                 );
             }
 

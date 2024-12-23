@@ -44,7 +44,7 @@ class MongoExportCommand extends CommandBase
         if ($input->getOption('type') === 'csv' && !$input->getOption('fields')) {
             throw new InvalidArgumentException(
                 'CSV mode requires a field list.'
-                . "\n" . 'Use --fields (-f) to specify field(s) to export.'
+                . "\n" . 'Use --fields (-f) to specify field(s) to export.',
             );
         }
         $selection = $this->selector->getSelection($input, new SelectorConfig(
@@ -126,6 +126,6 @@ class MongoExportCommand extends CommandBase
 
         $collections = json_decode($result, true) ?: [];
 
-        return array_filter($collections, fn (string $collection): bool => !str_starts_with((string) $collection, 'system.'));
+        return array_filter($collections, fn(string $collection): bool => !str_starts_with((string) $collection, 'system.'));
     }
 }

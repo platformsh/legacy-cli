@@ -163,11 +163,11 @@ readonly class Identifier
             try {
                 $response = $this->api->getExternalHttpClient()
                     ->head($url, [
-                    'auth' => false,
-                    'timeout' => 5,
-                    'connect_timeout' => 5,
-                    'allow_redirects' => false,
-                ]);
+                        'auth' => false,
+                        'timeout' => 5,
+                        'connect_timeout' => 5,
+                        'allow_redirects' => false,
+                    ]);
             } catch (RequestException $e) {
                 // We can use a failed response, if one exists.
                 if ($e->getResponse()) {

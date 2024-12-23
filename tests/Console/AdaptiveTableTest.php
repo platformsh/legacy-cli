@@ -162,28 +162,28 @@ EOT;
     public function testWrapWithDecorationPlain(): void
     {
         $this->assertWrappedWithDecoration(
-            'This is a test of raw text which should be wrapped as normal.'
+            'This is a test of raw text which should be wrapped as normal.',
         );
     }
 
     public function testWrapWithDecorationSimple(): void
     {
         $this->assertWrappedWithDecoration(
-            'The quick brown <error>fox</error> <options=underscore>jumps</> over the lazy <info>dog</info>.'
+            'The quick brown <error>fox</error> <options=underscore>jumps</> over the lazy <info>dog</info>.',
         );
     }
 
     public function testWrapWithDecorationComplex(): void
     {
         $this->assertWrappedWithDecoration(
-            'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor <options=reverse>incididunt ut labore et dolore magna aliqua.</> Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+            'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor <options=reverse>incididunt ut labore et dolore magna aliqua.</> Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.',
         );
     }
 
     public function testWrapWithDecorationIncludingEscapedTags(): void
     {
         $this->assertWrappedWithDecoration(
-            'The quick brown fox <options=underscore>jumps</> over the lazy \\<script type="text/javascript">dog\\</script>.'
+            'The quick brown fox <options=underscore>jumps</> over the lazy \\<script type="text/javascript">dog\\</script>.',
         );
     }
 }

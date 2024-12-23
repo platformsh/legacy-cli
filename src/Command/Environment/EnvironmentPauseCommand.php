@@ -42,7 +42,7 @@ EOF;
         if ($environment->status === 'paused') {
             $this->stdErr->writeln(sprintf(
                 'The environment %s is already paused.',
-                $this->api->getEnvironmentLabel($environment)
+                $this->api->getEnvironmentLabel($environment),
             ));
             return 0;
         }
@@ -50,7 +50,7 @@ EOF;
         if (!$environment->operationAvailable('pause', true)) {
             $this->stdErr->writeln(sprintf(
                 "Operation not available: The environment %s can't be paused.",
-                $this->api->getEnvironmentLabel($environment, 'error')
+                $this->api->getEnvironmentLabel($environment, 'error'),
             ));
 
             if (!$environment->isActive()) {

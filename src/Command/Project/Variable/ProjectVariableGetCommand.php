@@ -32,7 +32,7 @@ class ProjectVariableGetCommand extends CommandBase
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
-            . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>"
+            . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>",
         );
         Table::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
@@ -48,9 +48,9 @@ class ProjectVariableGetCommand extends CommandBase
             'name' => $input->getArgument('name'),
             '--level' => 'project',
             '--project' => $selection->getProject()->id,
-            ] + array_filter([
-                '--format' => $input->getOption('format'),
-                '--pipe' => $input->getOption('pipe'),
-            ]));
+        ] + array_filter([
+            '--format' => $input->getOption('format'),
+            '--pipe' => $input->getOption('pipe'),
+        ]));
     }
 }

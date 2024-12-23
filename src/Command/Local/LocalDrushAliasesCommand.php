@@ -159,7 +159,7 @@ class LocalDrushAliasesCommand extends CommandBase
                         $this->stdErr->writeln(sprintf(
                             'Unable to find app root for environment %s, app %s',
                             $this->api->getEnvironmentLabel($environment, 'comment'),
-                            '<comment>' . $app->getName() . '</comment>'
+                            '<comment>' . $app->getName() . '</comment>',
                         ));
                         $this->stdErr->writeln($e->getMessage());
                         continue;

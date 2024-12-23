@@ -123,7 +123,7 @@ class ProjectInfoCommand extends CommandBase
         $currentValue = $project->getProperty($property);
         if ($currentValue === $value) {
             $this->stdErr->writeln(
-                "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property)
+                "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property),
             );
 
             return 0;
@@ -134,7 +134,7 @@ class ProjectInfoCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->propertyFormatter->format($value, $property)
+            $this->propertyFormatter->format($value, $property),
         ));
 
         $this->api->clearProjectsCache();

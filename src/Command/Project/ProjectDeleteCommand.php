@@ -34,7 +34,7 @@ class ProjectDeleteCommand extends CommandBase
         if ($projectId = $input->getArgument('project')) {
             if ($input->getOption('project')) {
                 throw new ConsoleInvalidArgumentException(
-                    'You cannot use both the <project> argument and the --project option'
+                    'You cannot use both the <project> argument and the --project option',
                 );
             }
             $input->setOption('project', $projectId);
@@ -59,7 +59,7 @@ class ProjectDeleteCommand extends CommandBase
             ' * All data associated with this project will be deleted, including backups.',
             ' * You will be charged at the end of the month for any remaining project costs.',
             '',
-            'Are you sure you want to delete this project?'
+            'Are you sure you want to delete this project?',
         ];
         if (!$this->questionHelper->confirm(implode("\n", $confirmQuestionLines), false)) {
             return 1;

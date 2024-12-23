@@ -17,7 +17,7 @@ readonly class CredentialHelperStorage implements StorageInterface
         $this->serverUrl = sprintf(
             '%s/%s/api-token',
             $config->getStr('application.slug'),
-            $config->getSessionId()
+            $config->getSessionId(),
         );
     }
 

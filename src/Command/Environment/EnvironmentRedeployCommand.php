@@ -35,7 +35,7 @@ class EnvironmentRedeployCommand extends CommandBase
 
         if (!$environment->operationAvailable('redeploy', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment " . $this->api->getEnvironmentLabel($environment, 'error') . " can't be redeployed."
+                "Operation not available: The environment " . $this->api->getEnvironmentLabel($environment, 'error') . " can't be redeployed.",
             );
 
             if (!$environment->isActive()) {

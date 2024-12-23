@@ -4,9 +4,7 @@ namespace Platformsh\Cli\Model\Metrics;
 
 readonly class Sketch
 {
-    private function __construct(private string|int|float|null $sum, private string|int|float $count, private string $name)
-    {
-    }
+    private function __construct(private string|int|float|null $sum, private string|int|float $count, private string $name) {}
 
     /**
      * @param array{value: array<string, mixed>, info: array<string, mixed>} $value

@@ -23,7 +23,7 @@ class VariableDeleteCommand extends CommandBase
         private readonly Api              $api,
         private readonly QuestionHelper   $questionHelper,
         private readonly Selector         $selector,
-        private readonly VariableCommandUtil $variableCommandUtil
+        private readonly VariableCommandUtil $variableCommandUtil,
     ) {
         parent::__construct();
     }
@@ -56,7 +56,7 @@ class VariableDeleteCommand extends CommandBase
                 $this->stdErr->writeln(
                     "The variable <error>$variableName</error> is inherited,"
                     . " so it cannot be deleted from this environment."
-                    . "\nYou could override its value with the <comment>variable:update</comment> command."
+                    . "\nYou could override its value with the <comment>variable:update</comment> command.",
                 );
             } else {
                 $this->stdErr->writeln("The variable <error>$variableName</error> cannot be deleted");
@@ -70,7 +70,7 @@ class VariableDeleteCommand extends CommandBase
                 $environmentId = $selection->getEnvironment()->id;
                 $confirm = $this->questionHelper->confirm(
                     "Are you sure you want to delete the variable <info>$variableName</info> from the environment <info>$environmentId</info>?",
-                    false
+                    false,
                 );
                 if (!$confirm) {
                     return 1;
@@ -80,7 +80,7 @@ class VariableDeleteCommand extends CommandBase
             case 'project':
                 $confirm = $this->questionHelper->confirm(
                     "Are you sure you want to delete the variable <info>$variableName</info> from the project " . $this->api->getProjectLabel($selection->getProject()) . "?",
-                    false
+                    false,
                 );
                 if (!$confirm) {
                     return 1;

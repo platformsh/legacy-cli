@@ -8,9 +8,7 @@ use Platformsh\Client\Model\Environment;
 
 readonly class App implements RemoteContainerInterface
 {
-    public function __construct(private WebApp $webApp, private Environment $environment)
-    {
-    }
+    public function __construct(private WebApp $webApp, private Environment $environment) {}
 
     public function getSshUrl($instance = ''): string
     {

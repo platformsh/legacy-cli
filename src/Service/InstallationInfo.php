@@ -15,7 +15,7 @@ class InstallationInfo
 
     public function __construct(
         private readonly Config $config,
-        private readonly Io     $io
+        private readonly Io     $io,
     ) {
         $this->osUtil = new OsUtil();
     }

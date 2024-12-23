@@ -48,8 +48,8 @@ class AuthInfoCommand extends CommandBase
                     sprintf(
                         'You cannot use both the <%s> argument and the --%s option',
                         'property',
-                        'property'
-                    )
+                        'property',
+                    ),
                 );
             }
             $property = $input->getOption('property');

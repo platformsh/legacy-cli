@@ -21,14 +21,14 @@ class DecodeTest extends TestCase
             rtrim(MockApp::runAndReturnOutput('decode', [
                 'value' => $var,
                 '--property' => 'foo',
-            ]), "\n")
+            ]), "\n"),
         );
         $this->assertEquals(
             'baz',
             rtrim(MockApp::runAndReturnOutput('decode', [
                 'value' => $var,
                 '--property' => 'nest.nested',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 
@@ -37,8 +37,8 @@ class DecodeTest extends TestCase
         $this->assertEquals(
             '{}',
             rtrim(MockApp::runAndReturnOutput('decode', [
-                'value' => base64_encode((string) json_encode(new \stdClass()))
-            ]), "\n")
+                'value' => base64_encode((string) json_encode(new \stdClass())),
+            ]), "\n"),
         );
 
         try {
@@ -46,8 +46,8 @@ class DecodeTest extends TestCase
                 'Property not found: nonexistent',
                 rtrim(MockApp::runAndReturnOutput('decode', [
                     'value' => base64_encode((string) json_encode(new \stdClass())),
-                    '--property' => 'nonexistent'
-                ]), "\n")
+                    '--property' => 'nonexistent',
+                ]), "\n"),
             );
         } catch (\RuntimeException) {
         }

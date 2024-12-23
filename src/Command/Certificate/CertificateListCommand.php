@@ -112,7 +112,7 @@ class CertificateListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single certificate, run: <info>%s certificate:get <id></info>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
         }
 
@@ -155,19 +155,19 @@ class CertificateListCommand extends CommandBase
                     break;
 
                 case 'only-auto':
-                    $certs = array_filter($certs, fn (Certificate $cert): bool => $cert->is_provisioned);
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => $cert->is_provisioned);
                     break;
 
                 case 'no-auto':
-                    $certs = array_filter($certs, fn (Certificate $cert): bool => !$cert->is_provisioned);
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => !$cert->is_provisioned);
                     break;
 
                 case 'no-expired':
-                    $certs = array_filter($certs, fn (Certificate $cert): bool => !$this->isExpired($cert));
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => !$this->isExpired($cert));
                     break;
 
                 case 'only-expired':
-                    $certs = array_filter($certs, fn (Certificate $cert): bool => $this->isExpired($cert));
+                    $certs = array_filter($certs, fn(Certificate $cert): bool => $this->isExpired($cert));
                     break;
             }
         }

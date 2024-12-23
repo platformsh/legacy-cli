@@ -13,9 +13,7 @@ class RemoteHost implements HostInterface
     /** @var string[] */
     private array $extraSshOptions = [];
 
-    public function __construct(private readonly string $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics)
-    {
-    }
+    public function __construct(private readonly string $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics) {}
 
     public function getLabel(): string
     {

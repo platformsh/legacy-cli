@@ -16,9 +16,7 @@ readonly class Rsync
      * @param Ssh $ssh
      * @param SshDiagnostics $sshDiagnostics
      */
-    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics)
-    {
-    }
+    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics) {}
 
     /**
      * Returns environment variables for configuring rsync.

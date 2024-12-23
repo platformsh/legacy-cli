@@ -50,7 +50,7 @@ class QuestionHelper extends BaseQuestionHelper
             trigger_error(
                 'A confirmation question is being asked with a default of "no" (false), despite being in non-interactive mode.'
                 . ' So --yes will not pick the default result for this question, which is confusing.',
-                E_USER_WARNING
+                E_USER_WARNING,
             );
         }
 

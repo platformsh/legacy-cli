@@ -75,7 +75,7 @@ class TeamUserAddCommand extends TeamCommandBase
                         "To invite the user, run:\n  <comment>%s org:user:add -o %s %s</comment>",
                         $this->config->getStr('application.executable'),
                         OsUtil::escapeShellArg($organization->id),
-                        OsUtil::escapeShellArg($identifier)
+                        OsUtil::escapeShellArg($identifier),
                     ));
                 }
                 return 1;

@@ -109,7 +109,7 @@ class DiskUsageCommand extends MetricsCommandBase
                 $input->getOption('tmp') ? 'temporary disk usage' : 'disk usage',
                 (new Duration())->humanize($timeSpec->getInterval()),
                 $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime())
+                $formatter->formatDate($timeSpec->getEndTime()),
             ));
         }
 

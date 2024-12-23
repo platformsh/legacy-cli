@@ -39,7 +39,7 @@ class EnvironmentUrlTest extends TestCase
             . "http://example.com\n",
             MockApp::runAndReturnOutput('env:url', [
                 '--pipe' => true,
-            ])
+            ]),
         );
     }
 
@@ -50,7 +50,7 @@ class EnvironmentUrlTest extends TestCase
             rtrim(MockApp::runAndReturnOutput('env:url', [
                 '--primary' => true,
                 '--browser' => '0',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 }

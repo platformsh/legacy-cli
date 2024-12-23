@@ -23,7 +23,7 @@ final class Page
             $this->pageNumber,
             $this->pageCount,
             $this->itemsPerPage,
-            $this->total
+            $this->total,
         );
     }
 }

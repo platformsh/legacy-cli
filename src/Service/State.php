@@ -15,9 +15,7 @@ class State
 
     protected bool $loaded = false;
 
-    public function __construct(protected readonly Config $config)
-    {
-    }
+    public function __construct(protected readonly Config $config) {}
 
     /**
      * Gets a state value.
@@ -56,7 +54,7 @@ class State
     {
         (new SymfonyFilesystem())->dumpFile(
             $this->getFilename(),
-            (string) json_encode($this->state)
+            (string) json_encode($this->state),
         );
     }
 

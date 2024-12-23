@@ -153,15 +153,15 @@ class Api
     #[Required]
     public function injectListeners(
         AutoLoginListener $autoLoginListener,
-        DrushAliasUpdater $drushAliasUpdater
+        DrushAliasUpdater $drushAliasUpdater,
     ): void {
         $this->dispatcher->addListener(
             'login.required',
-            $autoLoginListener->onLoginRequired(...)
+            $autoLoginListener->onLoginRequired(...),
         );
         $this->dispatcher->addListener(
             'environments.changed',
-            $drushAliasUpdater->onEnvironmentsChanged(...)
+            $drushAliasUpdater->onEnvironmentsChanged(...),
         );
     }
 
@@ -199,7 +199,7 @@ class Api
                 }
             }
         }
-        $ids = \array_filter($ids, fn ($id): bool => !str_starts_with((string) $id, 'api-token-'));
+        $ids = \array_filter($ids, fn($id): bool => !str_starts_with((string) $id, 'api-token-'));
 
         return \array_unique($ids);
     }
@@ -313,9 +313,9 @@ class Api
             $this->fileLock->release($refreshLockName);
         };
 
-        $connectorOptions['on_refresh_error'] = fn (IdentityProviderException $e): ?AccessToken => $this->onRefreshError($e);
+        $connectorOptions['on_refresh_error'] = fn(IdentityProviderException $e): ?AccessToken => $this->onRefreshError($e);
 
-        $connectorOptions['on_step_up_auth_response'] = fn (ResponseInterface $response) => $this->onStepUpAuthResponse($response);
+        $connectorOptions['on_step_up_auth_response'] = fn(ResponseInterface $response) => $this->onStepUpAuthResponse($response);
 
         $connectorOptions['centralized_permissions_enabled'] = $this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations');
 
@@ -324,7 +324,7 @@ class Api
         // Debug responses.
         $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getBool('api.debug'));
         // Handle 403 errors.
-        $connectorOptions['middlewares'][] = fn (callable $handler): \Closure => fn (RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
+        $connectorOptions['middlewares'][] = fn(callable $handler): \Closure => fn(RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
             if ($response->getStatusCode() === 403) {
                 $this->on403($request);
             }
@@ -878,7 +878,7 @@ class Api
             return [];
         } elseif ($refresh || !$cached) {
             $types = $project->getEnvironmentTypes();
-            $cachedTypes = \array_map(fn (EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
+            $cachedTypes = \array_map(fn(EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
             $this->cache->save($cacheKey, $cachedTypes, $this->config->getInt('api.environments_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
@@ -1046,10 +1046,10 @@ class Api
      */
     public static function sortResources(array &$resources, string $propertyPath, bool $reverse = false): void
     {
-        uasort($resources, fn (ApiResource $a, ApiResource $b) => Sort::compare(
+        uasort($resources, fn(ApiResource $a, ApiResource $b) => Sort::compare(
             static::getNestedProperty($a, $propertyPath, false),
             static::getNestedProperty($b, $propertyPath, false),
-            $reverse
+            $reverse,
         ));
     }
 
@@ -1077,7 +1077,7 @@ class Api
             throw new \InvalidArgumentException(sprintf(
                 'Invalid path "%s": the property "%s" is not an array.',
                 $propertyPath,
-                $propertyName
+                $propertyName,
             ));
         }
         $value = NestedArrayUtil::getNestedArrayValue($property, $parents, $keyExists);
@@ -1106,7 +1106,7 @@ class Api
      */
     public function getProjectLabel(
         Project|BasicProjectInfo|\Platformsh\Client\Model\Organization\Project|TeamProjectAccess|string $project,
-        string|false $tag = 'info'
+        string|false $tag = 'info',
     ): string {
         static $titleCache = [];
         if ($project instanceof Project || $project instanceof BasicProjectInfo || $project instanceof \Platformsh\Client\Model\Organization\Project) {
@@ -1188,15 +1188,15 @@ class Api
      */
     public function matchPartialId(string $id, array $resources, string $name = 'Resource'): ApiResource
     {
-        $matched = array_filter($resources, fn (ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
+        $matched = array_filter($resources, fn(ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
 
         if (count($matched) > 1) {
-            $matchedIds = array_map(fn (ApiResource $resource): mixed => $resource->getProperty('id'), $matched);
+            $matchedIds = array_map(fn(ApiResource $resource): mixed => $resource->getProperty('id'), $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',
                 $id,
                 strtolower($name),
-                "\n  " . implode("\n  ", $matchedIds)
+                "\n  " . implode("\n  ", $matchedIds),
             ));
         } elseif (count($matched) === 0) {
             throw new \InvalidArgumentException(sprintf('%s not found: "<error>%s</error>"', $name, $id));
@@ -1338,13 +1338,13 @@ class Api
         }
 
         // Check if there is only one "production" environment.
-        $prod = \array_filter($envs, fn (Environment $environment): bool => $environment->type === 'production');
+        $prod = \array_filter($envs, fn(Environment $environment): bool => $environment->type === 'production');
         if (\count($prod) === 1) {
             return \reset($prod);
         }
 
         // Check if there is only one "main" environment.
-        $main = \array_filter($envs, fn (Environment $environment) => $environment->is_main);
+        $main = \array_filter($envs, fn(Environment $environment) => $environment->is_main);
         if (\count($main) === 1) {
             return \reset($main);
         }
@@ -1368,7 +1368,7 @@ class Api
 
         // Return the first route that matches this app.
         // The routes will already have been sorted.
-        $routes = \array_filter($routes, fn (Route $route): bool => $route->type === 'upstream' && $route->getUpstreamName() === $appName);
+        $routes = \array_filter($routes, fn(Route $route): bool => $route->type === 'upstream' && $route->getUpstreamName() === $appName);
         $route = reset($routes);
         if ($route) {
             return $route->url;
@@ -1700,7 +1700,7 @@ class Api
             $this->stdErr->writeln(\sprintf(
                 'You are logged in as <info>%s</info> (<info>%s</info>)',
                 $account['username'],
-                $account['email']
+                $account['email'],
             ));
         }
     }

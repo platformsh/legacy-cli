@@ -139,7 +139,7 @@ class BackupRestoreCommand extends CommandBase
                 ->setBranchFrom($branchFrom)
                 ->setRestoreCode($input->getOption('no-code') ? false : null)
                 ->setRestoreResources($input->hasOption('no-resources') && $input->getOption('no-resources') ? false : null)
-                ->setResourcesInit($resourcesInit)
+                ->setResourcesInit($resourcesInit),
         );
 
         if ($this->activityMonitor->shouldWait($input) && $result->countActivities()) {

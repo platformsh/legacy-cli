@@ -23,7 +23,7 @@ class EnvironmentRelationshipsTest extends TestCase
                     'rel' => 'mysql',
                     'service' => 'database',
                     'query' => ['is_master' => true],
-                ]
+                ],
             ],
         ]));
         putenv('PLATFORM_RELATIONSHIPS=' . $mockRelationships);
@@ -40,7 +40,7 @@ class EnvironmentRelationshipsTest extends TestCase
             'database.internal',
             rtrim(MockApp::runAndReturnOutput('rel', [
                 '--property' => 'database.0.host',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 
@@ -50,7 +50,7 @@ class EnvironmentRelationshipsTest extends TestCase
             'mysql://main:123@database.internal:3306/main',
             rtrim(MockApp::runAndReturnOutput('rel', [
                 '--property' => 'database.0.url',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 }

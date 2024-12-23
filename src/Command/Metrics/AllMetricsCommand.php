@@ -88,7 +88,7 @@ class AllMetricsCommand extends MetricsCommandBase
         //
         // The fields are the selected column names (according to the $table
         // service), filtered to only those that contain an underscore.
-        $fieldNames = array_filter($this->table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn ($c): bool => str_contains((string) $c, '_'));
+        $fieldNames = array_filter($this->table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn($c): bool => str_contains((string) $c, '_'));
         $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), $fieldNames);
         if ($values === false) {
             return 1;
@@ -128,7 +128,7 @@ class AllMetricsCommand extends MetricsCommandBase
                 'Metrics at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),
                 $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime())
+                $formatter->formatDate($timeSpec->getEndTime()),
             ));
         }
 

@@ -31,7 +31,7 @@ class BlueGreenEnableCommand extends CommandBase
             'Use this command to enable blue/green deployments on an environment.'
             . "\n\n" . 'If multiple environment versions do not already exist, this creates a new version as a copy of the current one.'
             . "\n\n" . '100% of traffic is routed to the current version, and 0% to the new version. This can be flipped or changed with the blue-green:deploy command.'
-            . "\n\n" . 'While blue/green deployments are "enabled" (while multiple versions exist), the current version is "locked", and deployments (e.g. from Git pushes) affect the new version.'
+            . "\n\n" . 'While blue/green deployments are "enabled" (while multiple versions exist), the current version is "locked", and deployments (e.g. from Git pushes) affect the new version.',
         );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());

@@ -65,7 +65,7 @@ class TunnelSingleCommand extends TunnelCommandBase
                 . ' the relationship <comment>%s</comment> on the'
                 . ' environment <comment>%s</comment>?',
                 $service['_relationship_name'],
-                $this->api->getEnvironmentLabel($environment, false)
+                $this->api->getEnvironmentLabel($environment, false),
             );
             if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
@@ -100,7 +100,7 @@ class TunnelSingleCommand extends TunnelCommandBase
             $this->stdErr->writeln(sprintf(
                 'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
                 $relationshipString,
-                $this->tunnelManager->getUrl($openTunnelInfo)
+                $this->tunnelManager->getUrl($openTunnelInfo),
             ));
 
             return 1;
@@ -118,7 +118,7 @@ class TunnelSingleCommand extends TunnelCommandBase
             $this->stdErr->writeln(trim($process->getErrorOutput()));
             $this->stdErr->writeln(sprintf(
                 'Failed to open tunnel for relationship: <error>%s</error>',
-                $relationshipString
+                $relationshipString,
             ));
             unlink($pidFile);
 

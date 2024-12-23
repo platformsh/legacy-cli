@@ -33,7 +33,7 @@ class VariableGetCommand extends CommandBase
         private readonly Selector            $selector,
         private readonly SubCommandRunner    $subCommandRunner,
         private readonly Table               $table,
-        private readonly VariableCommandUtil $variableCommandUtil
+        private readonly VariableCommandUtil $variableCommandUtil,
     ) {
         parent::__construct();
     }
@@ -84,7 +84,7 @@ class VariableGetCommand extends CommandBase
                 "The variable <comment>%s</comment> is disabled.\nEnable it with: <comment>%s variable:enable %s</comment>",
                 $variable->name,
                 $this->config->getStr('application.executable'),
-                escapeshellarg($variable->name)
+                escapeshellarg($variable->name),
             ));
         }
 
@@ -124,7 +124,7 @@ class VariableGetCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To list other variables, run: <info>%s variables</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln(sprintf(
                 'To update the variable, use: <info>%s variable:update %s</info>',

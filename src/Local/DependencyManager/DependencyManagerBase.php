@@ -8,9 +8,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
 {
     protected string $command = 'undefined';
 
-    public function __construct(protected Shell $shell)
-    {
-    }
+    public function __construct(protected Shell $shell) {}
 
     /**
      * {@inheritdoc}
@@ -43,7 +41,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
             throw new \RuntimeException(sprintf(
                 'The command failed with the exit code %d: %s',
                 $code,
-                $command
+                $command,
             ));
         }
     }

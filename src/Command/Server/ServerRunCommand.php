@@ -84,7 +84,7 @@ class ServerRunCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
             $this->stdErr->writeln(sprintf(
                 'Build the application with: <comment>%s build</comment>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
             return 1;
         }
@@ -115,7 +115,7 @@ class ServerRunCommand extends ServerCommandBase
                     'A server is already running for the app <info>%s</info> at http://%s, PID %s',
                     $appId,
                     $otherServer['address'],
-                    $otherServer['pid']
+                    $otherServer['pid'],
                 ));
                 return 1;
             }
@@ -125,7 +125,7 @@ class ServerRunCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf(
                 'Stopping server for the app <info>%s</info> at http://%s',
                 $appId,
-                $otherServer['address']
+                $otherServer['address'],
             ));
             $this->stopServer($address, $otherServer['pid']);
             sleep(1);
@@ -142,7 +142,7 @@ class ServerRunCommand extends ServerCommandBase
                 $this->stdErr->writeln(sprintf(
                     'A server is already running at address: http://%s, PID %s',
                     $address,
-                    $otherPid === true ? 'unknown' : $otherPid
+                    $otherPid === true ? 'unknown' : $otherPid,
                 ));
                 return 1;
             }
@@ -158,16 +158,16 @@ class ServerRunCommand extends ServerCommandBase
         });
         $pid = $process->getPid();
         $this->writeServerInfo($address, $pid, [
-          'appId' => $appId,
-          'docRoot' => $docRoot,
-          'logFile' => $logFile,
-          'projectRoot' => $projectRoot,
+            'appId' => $appId,
+            'docRoot' => $docRoot,
+            'logFile' => $logFile,
+            'projectRoot' => $projectRoot,
         ]);
 
         $this->stdErr->writeln(sprintf(
             'Web server started at <info>http://%s</info> for app <info>%s</info>',
             $address,
-            $appId
+            $appId,
         ));
 
         if ($logFile) {

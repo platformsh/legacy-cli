@@ -13,9 +13,7 @@ use Platformsh\Client\Model\Environment;
  */
 readonly class BrokenEnv implements RemoteContainerInterface
 {
-    public function __construct(private Environment $environment, private string $appName)
-    {
-    }
+    public function __construct(private Environment $environment, private string $appName) {}
 
     /**
      * {@inheritdoc}

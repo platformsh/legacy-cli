@@ -28,7 +28,7 @@ class DecodeCommand extends CommandBase
 
         $this->addExample(
             sprintf('View "foo" in %sVARIABLES', $envPrefix),
-            sprintf('"$%sVARIABLES" -P foo', $envPrefix)
+            sprintf('"$%sVARIABLES" -P foo', $envPrefix),
         );
     }
 

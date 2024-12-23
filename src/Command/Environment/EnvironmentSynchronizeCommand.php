@@ -75,7 +75,7 @@ EOT;
 
         if (!$selectedEnvironment->operationAvailable('synchronize', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment <error>$environmentId</error> can't be synchronized."
+                "Operation not available: The environment <error>$environmentId</error> can't be synchronized.",
             );
 
             if ($selectedEnvironment->parent === null) {
@@ -143,7 +143,7 @@ EOT;
                 'Are you sure you want to synchronize %s from <info>%s</info> to <info>%s</info>?',
                 StringUtil::formatItemList($toSync, '<options=underscore>', '</>', ' and '),
                 $parentId,
-                $environmentId
+                $environmentId,
             );
             if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
@@ -155,7 +155,7 @@ EOT;
             if (!$integrationManagingCode) {
                 $syncCode = $this->questionHelper->confirm(
                     "Do you want to synchronize <options=underscore>code</> from <info>$parentId</info> to <info>$environmentId</info>?",
-                    false
+                    false,
                 );
 
                 if ($syncCode) {
@@ -163,7 +163,7 @@ EOT;
                     if (!$rebase) {
                         $rebase = $this->questionHelper->confirm(
                             "Do you want to synchronize code by rebasing instead of merging?",
-                            false
+                            false,
                         );
                     }
                 } elseif ($rebase) {
@@ -175,7 +175,7 @@ EOT;
 
             if ($this->questionHelper->confirm(
                 "Do you want to synchronize <options=underscore>data</> from <info>$parentId</info> to <info>$environmentId</info>?",
-                false
+                false,
             )) {
                 $toSync[] = 'data';
             }
@@ -185,7 +185,7 @@ EOT;
             if ($this->config->getBool('api.sizing') && $this->api->supportsSizingApi($selection->getProject())) {
                 if ($this->questionHelper->confirm(
                     "Do you want to synchronize <options=underscore>resources</> from <info>$parentId</info> to <info>$environmentId</info>?",
-                    false
+                    false,
                 )) {
                     $toSync[] = 'resources';
                 }

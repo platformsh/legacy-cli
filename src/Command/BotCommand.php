@@ -93,7 +93,7 @@ class BotCommand extends CommandBase
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 
-        return array_map(fn ($frame) => preg_replace('/^/m', $indent, (string) $frame) . $signature, $frames);
+        return array_map(fn($frame) => preg_replace('/^/m', $indent, (string) $frame) . $signature, $frames);
     }
 
     /**

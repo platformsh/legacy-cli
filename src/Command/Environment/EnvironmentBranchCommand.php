@@ -35,7 +35,7 @@ class EnvironmentBranchCommand extends CommandBase
         private readonly QuestionHelper   $questionHelper,
         private readonly ResourcesUtil    $resourcesUtil,
         private readonly Selector         $selector,
-        private readonly SubCommandRunner $subCommandRunner
+        private readonly SubCommandRunner $subCommandRunner,
     ) {
         parent::__construct();
     }
@@ -80,7 +80,7 @@ class EnvironmentBranchCommand extends CommandBase
                 // List environments.
                 return $this->subCommandRunner->run(
                     'environments',
-                    ['--project' => $selectedProject->id]
+                    ['--project' => $selectedProject->id],
                 );
             }
             $this->stdErr->writeln("<error>You must specify the name of the new branch.</error>");
@@ -106,12 +106,12 @@ class EnvironmentBranchCommand extends CommandBase
                 return 1;
             }
             $checkout = $this->questionHelper->confirm(
-                "The environment <comment>$branchName</comment> already exists. Check out?"
+                "The environment <comment>$branchName</comment> already exists. Check out?",
             );
             if ($checkout) {
                 return $this->subCommandRunner->run(
                     'environment:checkout',
-                    ['id' => $environment->id]
+                    ['id' => $environment->id],
                 );
             }
 
@@ -120,7 +120,7 @@ class EnvironmentBranchCommand extends CommandBase
 
         if (!$parentEnvironment->operationAvailable('branch', true)) {
             $this->stdErr->writeln(
-                "Operation not available: The environment " . $this->api->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched."
+                "Operation not available: The environment " . $this->api->getEnvironmentLabel($parentEnvironment, 'error', false) . " can't be branched.",
             );
 
             if ($parentEnvironment->getProperty('has_remote', false) === true
@@ -240,7 +240,7 @@ class EnvironmentBranchCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Setting the upstream for the local branch to: <info>%s/%s</info>',
                     $remoteName,
-                    $branchName
+                    $branchName,
                 ));
                 if ($this->git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
                     $this->git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);

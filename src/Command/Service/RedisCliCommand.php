@@ -58,7 +58,7 @@ class RedisCliCommand extends CommandBase
         $redisCommand = sprintf(
             'redis-cli -h %s -p %d',
             OsUtil::escapePosixShellArg($service['host']),
-            $service['port']
+            $service['port'],
         );
         if ($args = $input->getArgument('args')) {
             if (count($args) === 1) {
@@ -72,7 +72,7 @@ class RedisCliCommand extends CommandBase
         }
 
         $this->stdErr->writeln(
-            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel())
+            sprintf('Connecting to Redis service via relationship <info>%s</info> on <info>%s</info>', $service['_relationship_name'], $host->getLabel()),
         );
 
         return $host->runCommandDirect($redisCommand);

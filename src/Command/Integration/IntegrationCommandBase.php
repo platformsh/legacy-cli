@@ -110,7 +110,7 @@ abstract class IntegrationCommandBase extends CommandBase
             $this->stdErr->writeln(\sprintf(
                 'The option <error>--%s</error> cannot be used with the integration type <comment>%s</comment>.',
                 $field->getOptionName(),
-                $previousValues['type']
+                $previousValues['type'],
             ));
             return 1;
         }
@@ -231,7 +231,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     if ($this->selection->hasProject()) {
                         $integrations = $this->selectedProjectIntegrations();
                         if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
-                            return array_filter($allSupportedTypes, fn ($type): bool => !empty($integrations['config'][$type]['enabled']));
+                            return array_filter($allSupportedTypes, fn($type): bool => !empty($integrations['config'][$type]['enabled']));
                         }
                     }
                     return $allSupportedTypes;
@@ -292,7 +292,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     'gitlab',
                 ]],
                 'description' => 'The project (e.g. \'namespace/repo\')',
-                'validator' => fn ($string): bool => str_contains(substr((string) $string, 1), '/'),
+                'validator' => fn($string): bool => str_contains(substr((string) $string, 1), '/'),
             ]),
             'repository' => new Field('Repository', [
                 'conditions' => ['type' => [
@@ -302,7 +302,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 ]],
                 'description' => 'The repository to track (e.g. \'owner/repository\')',
                 'questionLine' => 'The repository (e.g. \'owner/repository\')',
-                'validator' => fn ($string): bool => substr_count((string) $string, '/', 1) === 1,
+                'validator' => fn($string): bool => substr_count((string) $string, '/', 1) === 1,
                 'normalizer' => function ($string) {
                     if (preg_match('#^https?://#', $string)) {
                         return parse_url($string, PHP_URL_PATH);
@@ -335,14 +335,14 @@ abstract class IntegrationCommandBase extends CommandBase
                 ],
             ]),
             'build_pull_requests_post_merge' => new BooleanField('Build pull requests post-merge', [
-              'conditions' => [
-                'type' => [
-                  'github',
+                'conditions' => [
+                    'type' => [
+                        'github',
+                    ],
+                    'build_pull_requests' => true,
                 ],
-                'build_pull_requests' => true,
-              ],
-              'default' => false,
-              'description' => 'Build pull requests based on their post-merge state',
+                'default' => false,
+                'description' => 'Build pull requests based on their post-merge state',
             ]),
             'build_wip_merge_requests' => new BooleanField('Build WIP merge requests', [
                 'conditions' => [
@@ -540,7 +540,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => 'sumologic'],
                 'description' => 'The Sumo Logic category, used for filtering',
                 'required' => false,
-                'normalizer' => fn ($val): string => (string) $val,
+                'normalizer' => fn($val): string => (string) $val,
             ]),
             'index' => new Field('Index', [
                 'conditions' => ['type' => 'splunk'],
@@ -571,7 +571,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'conditions' => ['type' => ['syslog']],
                 'description' => 'Syslog relay/collector port',
                 'autoCompleterValues' => ['6514'],
-                'validator' => fn ($value) => is_numeric($value) && $value >= 0 && $value <= 65535 ? true : "Invalid port number: $value",
+                'validator' => fn($value) => is_numeric($value) && $value >= 0 && $value <= 65535 ? true : "Invalid port number: $value",
             ]),
             'facility' => new Field('Facility', [
                 'conditions' => ['type' => ['syslog']],
@@ -579,7 +579,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 'default' => 1,
                 'required' => false,
                 'avoidQuestion' => true,
-                'validator' => fn ($value) => is_numeric($value) && $value >= 0 && $value <= 23 ? true : "Invalid syslog facility code: $value",
+                'validator' => fn($value) => is_numeric($value) && $value >= 0 && $value <= 23 ? true : "Invalid syslog facility code: $value",
             ]),
             'message_format' => new OptionsField('Message format', [
                 'conditions' => ['type' => ['syslog']],
@@ -721,7 +721,7 @@ abstract class IntegrationCommandBase extends CommandBase
         } else {
             $this->stdErr->writeln(sprintf(
                 'The following %d errors were found:',
-                count($errors)
+                count($errors),
             ));
         }
 

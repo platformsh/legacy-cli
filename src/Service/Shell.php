@@ -50,7 +50,7 @@ class Shell
     {
         $this->stdErr->writeln(
             sprintf('%sRunning command: <info>%s</info>', $this->debugPrefix, $commandline),
-            OutputInterface::VERBOSITY_VERY_VERBOSE
+            OutputInterface::VERBOSITY_VERY_VERBOSE,
         );
 
         if (!empty($env)) {
@@ -147,7 +147,7 @@ class Shell
 
         $this->stdErr->writeln(
             sprintf('%sRunning command: <info>%s</info>', $this->debugPrefix, $process->getCommandLine()),
-            OutputInterface::VERBOSITY_VERY_VERBOSE
+            OutputInterface::VERBOSITY_VERY_VERBOSE,
         );
 
         if (!empty($input) && is_string($input) && $this->stdErr->isDebug()) {

@@ -45,8 +45,7 @@ class UseSelectorServiceRector extends AbstractRector
 
     public function __construct(
         private readonly DependencyInjection $di,
-    ) {
-    }
+    ) {}
 
     public function getRuleDefinition(): RuleDefinition
     {

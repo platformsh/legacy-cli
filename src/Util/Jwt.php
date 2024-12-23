@@ -4,9 +4,7 @@ namespace Platformsh\Cli\Util;
 
 readonly class Jwt
 {
-    public function __construct(private string $token)
-    {
-    }
+    public function __construct(private string $token) {}
 
     /**
      * Returns the JWT payload claims without verification.

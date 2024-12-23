@@ -19,9 +19,7 @@ use Symfony\Component\Console\Terminal;
 
 class CustomTextDescriptor extends TextDescriptor
 {
-    public function __construct(private readonly string $cliExecutableName)
-    {
-    }
+    public function __construct(private readonly string $cliExecutableName) {}
 
     /**
      * @inheritdoc
@@ -53,7 +51,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText("\n");
         $definition = clone $command->getDefinition();
-        $definition->setOptions(array_filter($definition->getOptions(), fn (InputOption $opt): bool => !$opt instanceof HiddenInputOption));
+        $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
         $this->describeInputDefinition($definition, $options);
         $this->writeText("\n");
 
@@ -75,7 +73,7 @@ class CustomTextDescriptor extends TextDescriptor
                     $example['description'],
                     $this->cliExecutableName,
                     $name,
-                    $example['commandline']
+                    $example['commandline'],
                 ));
             }
         }
@@ -104,7 +102,7 @@ class CustomTextDescriptor extends TextDescriptor
             if ($describedNamespace) {
                 $this->writeText(
                     sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $application->findNamespace($describedNamespace)),
-                    $options
+                    $options,
                 );
             } else {
                 $this->writeText('<comment>Available commands:</comment>', $options);
@@ -134,9 +132,9 @@ class CustomTextDescriptor extends TextDescriptor
                         sprintf(
                             "  %-{$width}s %s",
                             '<info>' . $command->getName() . '</info>' . $this->formatAliases($aliases),
-                            $command->getDescription()
+                            $command->getDescription(),
                         ),
-                        $options
+                        $options,
                     );
                 }
             }
@@ -149,7 +147,7 @@ class CustomTextDescriptor extends TextDescriptor
     {
         $this->write(
             isset($options['raw_text']) && $options['raw_text'] ? strip_tags($content) : $content,
-            !isset($options['raw_output']) || !$options['raw_output']
+            !isset($options['raw_output']) || !$options['raw_output'],
         );
     }
 
@@ -207,7 +205,7 @@ class CustomTextDescriptor extends TextDescriptor
     /**
      * {@inheritdoc}
      */
-    protected function describeInputOption(InputOption $option, array $options = array()): void
+    protected function describeInputOption(InputOption $option, array $options = []): void
     {
         if ($option->acceptValue() && null !== $option->getDefault() && (!is_array($option->getDefault()) || count($option->getDefault()))) {
             $default = sprintf('<comment> [default: %s]</comment>', $this->formatDefaultValue($option->getDefault()));
@@ -217,18 +215,18 @@ class CustomTextDescriptor extends TextDescriptor
 
         $value = '';
         if ($option->acceptValue()) {
-            $value = '='.strtoupper($option->getName());
+            $value = '=' . strtoupper($option->getName());
 
             if ($option->isValueOptional()) {
-                $value = '['.$value.']';
+                $value = '[' . $value . ']';
             }
         }
 
-        $totalWidth = $options['total_width'] ?? $this->calculateTotalWidthForOptions(array($option));
+        $totalWidth = $options['total_width'] ?? $this->calculateTotalWidthForOptions([$option]);
         $synopsis = sprintf(
             '%s%s',
             $option->getShortcut() ? sprintf('-%s, ', $option->getShortcut()) : '    ',
-            sprintf('--%s%s', $option->getName(), $value)
+            sprintf('--%s%s', $option->getName(), $value),
         );
 
         $spacingWidth = $totalWidth - Helper::width($synopsis);
@@ -241,13 +239,13 @@ class CustomTextDescriptor extends TextDescriptor
         if ($option->isArray()) {
             $description .= '<comment> (multiple values allowed)</comment>';
         }
-        $description = preg_replace('/\s*[\r\n]\s*/', "\n".str_repeat(' ', $totalWidth + 4), wordwrap($description, $descriptionWidth));
+        $description = preg_replace('/\s*[\r\n]\s*/', "\n" . str_repeat(' ', $totalWidth + 4), wordwrap($description, $descriptionWidth));
 
         $this->writeText(sprintf(
             '  <info>%s</info>  %s%s',
             $synopsis,
             str_repeat(' ', $spacingWidth),
-            $description
+            $description,
         ), $options);
     }
 

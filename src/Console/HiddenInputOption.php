@@ -9,6 +9,4 @@ use Symfony\Component\Console\Input\InputOption;
  *
  * Used for deprecated options that need backwards compatibility.
  */
-class HiddenInputOption extends InputOption
-{
-}
+class HiddenInputOption extends InputOption {}

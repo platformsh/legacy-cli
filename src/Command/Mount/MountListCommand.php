@@ -55,7 +55,7 @@ class MountListCommand extends CommandBase
             if (empty($mounts)) {
                 $this->stdErr->writeln(sprintf(
                     'No mounts found in config variable: <info>%s</info>',
-                    $this->config->getStr('service.env_prefix') . 'APPLICATION'
+                    $this->config->getStr('service.env_prefix') . 'APPLICATION',
                 ));
 
                 return 0;
@@ -67,7 +67,7 @@ class MountListCommand extends CommandBase
             if ($container instanceof BrokenEnv) {
                 $this->stdErr->writeln(sprintf(
                     'Unable to find deployment information for the environment: %s',
-                    $this->api->getEnvironmentLabel($environment, 'error')
+                    $this->api->getEnvironmentLabel($environment, 'error'),
                 ));
                 return 1;
             }
@@ -79,7 +79,7 @@ class MountListCommand extends CommandBase
                     'No mounts found on environment %s, %s <info>%s</info>',
                     $this->api->getEnvironmentLabel($environment),
                     $appType,
-                    $appName
+                    $appName,
                 ));
 
                 return 0;
@@ -101,7 +101,7 @@ class MountListCommand extends CommandBase
                 'Mounts on environment %s, %s <info>%s</info>:',
                 $this->api->getEnvironmentLabel($environment),
                 $appType,
-                $appName
+                $appName,
             ));
         } else {
             $this->stdErr->writeln(sprintf('Mounts on %s <info>%s</info>:', $appType, $appName));

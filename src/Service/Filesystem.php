@@ -82,7 +82,7 @@ class Filesystem
     protected function unprotect(string|iterable $files, bool $recursive = false): bool
     {
         if (!$files instanceof \Traversable) {
-            $files = new \ArrayObject(is_array($files) ? $files : array($files));
+            $files = new \ArrayObject(is_array($files) ? $files : [$files]);
         }
 
         foreach ($files as $file) {
@@ -409,8 +409,8 @@ class Filesystem
         if (OsUtil::isWindows()) {
             $path = preg_replace_callback(
                 '#^([A-Z]):/#i',
-                fn (array $matches): string => '/' . strtolower((string) $matches[1]) . '/',
-                str_replace('\\', '/', $path)
+                fn(array $matches): string => '/' . strtolower((string) $matches[1]) . '/',
+                str_replace('\\', '/', $path),
             );
         }
 

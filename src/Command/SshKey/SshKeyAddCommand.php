@@ -40,7 +40,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
         $this->stdErr->writeln(sprintf(
             "Adding an SSH key to your %s account (<info>%s</info>)\n",
             $this->config->getStr('service.name'),
-            $this->api->getMyAccount()['email']
+            $this->api->getMyAccount()['email'],
         ));
 
         $this->stdErr->writeln($this->certificateNotice($this->config, false));
@@ -60,7 +60,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             // Look for an existing local key.
             if (\file_exists($defaultPublicKeyPath)
                 && $this->questionHelper->confirm(
-                    'Use existing local key <info>' . \basename($defaultPublicKeyPath) . '</info>?'
+                    'Use existing local key <info>' . \basename($defaultPublicKeyPath) . '</info>?',
                 )) {
                 $this->stdErr->writeln('');
                 $publicKeyPath = $defaultPublicKeyPath;
@@ -112,7 +112,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
             $this->stdErr->writeln('This key already exists in your account.');
             $this->stdErr->writeln(\sprintf(
                 'List your SSH keys with: <info>%s ssh-keys</info>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
 
             return 0;
@@ -131,7 +131,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
         $this->stdErr->writeln(\sprintf(
             'The SSH key <info>%s</info> has been successfully added to your %s account.',
             \basename((string) $publicKeyPath),
-            $this->config->getStr('service.name')
+            $this->config->getStr('service.name'),
         ));
 
         // Reset and warm the SSH keys cache.

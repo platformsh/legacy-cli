@@ -65,7 +65,7 @@ class Snippeter
                 $fileContents,
                 $insert,
                 $beginPos,
-                $endPos + strlen($end) - $beginPos
+                $endPos + strlen($end) - $beginPos,
             );
         }
 

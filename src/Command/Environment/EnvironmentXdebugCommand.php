@@ -100,7 +100,7 @@ class EnvironmentXdebugCommand extends CommandBase
                 "\n<comment># ...\n"
                 . "runtime:\n"
                 . "    xdebug:\n"
-                . "        idekey: <options=underscore>secret_key</>"
+                . "        idekey: <options=underscore>secret_key</>",
             );
 
             return 1;
@@ -139,7 +139,7 @@ class EnvironmentXdebugCommand extends CommandBase
         $this->stdErr->writeln('');
         $this->stdErr->writeln(
             "To start debugging, set a cookie like '<info>XDEBUG_SESSION=$ideKey</info>'"
-            . " or append '<info>XDEBUG_SESSION_START=$ideKey</info>' in the URL query string when visiting your project."
+            . " or append '<info>XDEBUG_SESSION_START=$ideKey</info>' in the URL query string when visiting your project.",
         );
         $this->stdErr->writeln('');
         $this->stdErr->writeln('To close the tunnel, quit this command by pressing <info>Ctrl+C</info>.');

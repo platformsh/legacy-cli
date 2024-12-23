@@ -41,14 +41,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 . "\nItems are in the format <info>name:value</info> and may be comma-separated."
                 . "\nThe % or * characters may be used as a wildcard for the name."
                 . "\nList available sizes with the <info>resources:sizes</info> command."
-                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
+                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum.",
         )
             ->addOption(
                 'count',
                 'C',
                 InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Set the instance count of apps or workers.'
-                . "\nItems are in the format <info>name:value</info> as above."
+                . "\nItems are in the format <info>name:value</info> as above.",
             )
             ->addOption(
                 'disk',
@@ -56,7 +56,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Set the disk size (in MB) of apps or services.'
                 . "\nItems are in the format <info>name:value</info> as above."
-                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum."
+                . "\nA value of 'default' will use the default size, and 'min' or 'minimum' will use the minimum.",
             )
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Try to run the update, even if it might exceed your limits')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything');
@@ -73,7 +73,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             '',
             sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config->getStr('application.executable')),
             '',
-            'If the same service and resource is specified on the command line multiple times, only the final value will be used.'
+            'If the same service and resource is specified on the command line multiple times, only the final value will be used.',
         ];
         if ($this->config->has('service.resources_help_url')) {
             $helpLines[] = '';
@@ -121,23 +121,23 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         // Validate the --size option.
-        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, fn ($v, $serviceName, $service) => $this->validateProfileSize($v, $serviceName, $service, $nextDeployment));
+        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, fn($v, $serviceName, $service) => $this->validateProfileSize($v, $serviceName, $service, $nextDeployment));
 
         // Validate the --count option.
-        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, fn ($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit));
+        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, fn($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit));
         $errored = $errored || $countErrored;
 
         // Validate the --disk option.
-        list($givenDiskSizes, $diskErrored) = $this->parseSetting($input, 'disk', $services, fn ($v, $serviceName, $service) => $this->validateDiskSize($v, $serviceName, $service));
+        list($givenDiskSizes, $diskErrored) = $this->parseSetting($input, 'disk', $services, fn($v, $serviceName, $service) => $this->validateDiskSize($v, $serviceName, $service));
         $errored = $errored || $diskErrored;
         if ($errored) {
             return 1;
         }
 
         if (($exitCode = $this->subCommandRunner->run('resources:get', [
-                '--project' => $environment->project,
-                '--environment' => $environment->id,
-            ], $this->stdErr)) !== 0) {
+            '--project' => $environment->project,
+            '--environment' => $environment->id,
+        ], $this->stdErr)) !== 0) {
             return $exitCode;
         }
         $this->stdErr->writeln('');
@@ -233,7 +233,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 } elseif ($showCompleteForm) {
                     $ensureHeader();
                     $default = $properties['instance_count'] ?: 1;
-                    $instanceCount = $this->questionHelper->askInput('Enter the number of instances', $default, [], fn ($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit));
+                    $instanceCount = $this->questionHelper->askInput('Enter the number of instances', $default, [], fn($v) => $this->validateInstanceCount($v, $name, $service, $instanceLimit));
                     if ($instanceCount !== $properties['instance_count']) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
                     }
@@ -253,7 +253,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     } else {
                         $default = $properties['resources']['default']['disk'] ?? '512';
                     }
-                    $diskSize = $this->questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'], fn ($v) => $this->validateDiskSize($v, $name, $service));
+                    $diskSize = $this->questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'], fn($v) => $this->validateDiskSize($v, $name, $service));
                     if ($diskSize !== $service->disk) {
                         $updates[$group][$name]['disk'] = $diskSize;
                     }
@@ -300,7 +300,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if ($limit['cpu'] < $used['cpu'] + $diff['cpu']) {
                 $this->stdErr->writeln(sprintf(
                     'The requested resources will exceed your organization\'s trial CPU limit, which is: <comment>%s</comment>.',
-                    $limit['cpu']
+                    $limit['cpu'],
                 ));
                 $errored = true;
             }
@@ -308,7 +308,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if ($limit['memory'] < $used['memory'] + ($diff['memory'] / 1024)) {
                 $this->stdErr->writeln(sprintf(
                     'The requested resources will exceed your organization\'s trial memory limit, which is: <comment>%sGB</comment>.',
-                    $limit['memory']
+                    $limit['memory'],
                 ));
                 $errored = true;
             }
@@ -316,7 +316,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if ($limit['storage'] < $used['storage'] + ($diff['disk'] / 1024)) {
                 $this->stdErr->writeln(sprintf(
                     'The requested resources will exceed your organization\'s trial storage limit, which is: <comment>%sGB</comment>.',
-                    $limit['storage']
+                    $limit['storage'],
                 ));
                 $errored = true;
             }
@@ -386,25 +386,25 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $newSizeInfo = $this->resourcesUtil->sizeInfo($newProperties, $containerProfiles);
             $this->stdErr->writeln('    CPU: ' . $this->resourcesUtil->formatChange(
                 $this->resourcesUtil->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
-                $this->resourcesUtil->formatCPU($newSizeInfo['cpu'])
+                $this->resourcesUtil->formatCPU($newSizeInfo['cpu']),
             ));
             $this->stdErr->writeln('    Memory: ' . $this->resourcesUtil->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,
                 $newSizeInfo['memory'],
-                ' MB'
+                ' MB',
             ));
         }
         if (isset($updates['instance_count'])) {
             $this->stdErr->writeln('    Instance count: ' . $this->resourcesUtil->formatChange(
                 $properties['instance_count'] ?? 1,
-                $updates['instance_count']
+                $updates['instance_count'],
             ));
         }
         if (isset($updates['disk'])) {
             $this->stdErr->writeln('    Disk: ' . $this->resourcesUtil->formatChange(
                 $properties['disk'] ?? null,
                 $updates['disk'],
-                ' MB'
+                ' MB',
             ));
         }
     }
@@ -468,14 +468,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
             throw new InvalidArgumentException(sprintf(
                 'The %s <error>%s</error> does not support a persistent disk.',
                 $this->typeName($service),
-                $serviceName
+                $serviceName,
             ));
         }
         $size = (int) $value;
         if ($size != $value || $value < 0) {
             throw new InvalidArgumentException(sprintf(
                 'Invalid disk size <error>%s</error>: it must be an integer in MB.',
-                $value
+                $value,
             ));
         }
         $properties = $service->getProperties();
@@ -496,7 +496,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 'Invalid disk size <error>%s</error>: the minimum size for this %s is <error>%d</error> MB.',
                 $value,
                 $this->typeName($service),
-                $properties['resources']['minimum']['disk']
+                $properties['resources']['minimum']['disk'],
             ));
         }
         return $size;
@@ -537,7 +537,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                         $sizeName,
                         $sizeInfo['cpu'],
                         $this->typeName($service),
-                        $resources['minimum']['cpu']
+                        $resources['minimum']['cpu'],
                     ));
                 }
                 if (isset($resources['minimum']['memory'], $sizeInfo['memory']) && $sizeInfo['memory'] < $resources['minimum']['memory']) {
@@ -546,7 +546,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                         $sizeName,
                         $sizeInfo['memory'],
                         $this->typeName($service),
-                        $resources['minimum']['memory']
+                        $resources['minimum']['memory'],
                     ));
                 }
                 return (string) $sizeName;

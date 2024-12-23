@@ -18,7 +18,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         'id' => 'ID',
         'title' => 'Title',
         'fingerprint' => 'Fingerprint',
-        'path' => 'Local path'
+        'path' => 'Local path',
     ];
     /** @var string[] */
     private array $defaultColumns = ['id', 'title', 'path'];
@@ -43,7 +43,7 @@ class SshKeyListCommand extends SshKeyCommandBase
         if (empty($keys)) {
             $this->stdErr->writeln(sprintf(
                 'You do not yet have any SSH public keys in your %s account.',
-                $this->config->getStr('service.name')
+                $this->config->getStr('service.name'),
             ));
         } else {
             $table = $this->table;

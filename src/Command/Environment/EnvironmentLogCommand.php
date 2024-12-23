@@ -100,7 +100,7 @@ class EnvironmentLogCommand extends CommandBase
             $files = $result && is_string($result) ? explode("\n", $result) : $defaultFiles;
 
             // Ask the user to choose a file.
-            $files = array_combine($files, array_map(fn ($file): string => str_replace('.log', '', basename(trim((string) $file))), $files));
+            $files = array_combine($files, array_map(fn($file): string => str_replace('.log', '', basename(trim((string) $file))), $files));
             $logFilename = $this->questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 

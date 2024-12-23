@@ -208,7 +208,7 @@ class Config
             if (is_string($value) && $value !== '') {
                 if (!is_dir($value)) {
                     throw new \RuntimeException(
-                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value)
+                        sprintf('Invalid environment variable %s: %s (not a directory)', $envVar, $value),
                     );
                 }
                 $this->homeDir = realpath($value) ?: $value;
@@ -561,7 +561,7 @@ class Config
     {
         $template = $this->getWithDefault(
             'api.user_agent',
-            '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})'
+            '{APP_NAME_DASH}/{VERSION} ({UNAME_S}; {UNAME_R}; PHP {PHP_VERSION})',
         );
         /** @var array<string, string> $replacements */
         $replacements = [

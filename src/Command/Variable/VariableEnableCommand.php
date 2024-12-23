@@ -31,7 +31,7 @@ class VariableEnableCommand extends CommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The name of the variable');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
-            . "\nInstead, use: <info>variable:update --enabled false [variable]</info>"
+            . "\nInstead, use: <info>variable:update --enabled false [variable]</info>",
         );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -44,13 +44,13 @@ class VariableEnableCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
 
         return $this->subCommandRunner->run('variable:update', [
-                'name' => $input->getArgument('name'),
-                '--enabled' => 'true',
-                '--project' => $selection->getProject()->id,
-                '--environment' => $selection->getEnvironment()->id,
-            ] + array_filter([
-                '--wait' => $input->getOption('wait'),
-                '--no-wait' => $input->getOption('no-wait'),
-            ]));
+            'name' => $input->getArgument('name'),
+            '--enabled' => 'true',
+            '--project' => $selection->getProject()->id,
+            '--environment' => $selection->getEnvironment()->id,
+        ] + array_filter([
+            '--wait' => $input->getOption('wait'),
+            '--no-wait' => $input->getOption('no-wait'),
+        ]));
     }
 }

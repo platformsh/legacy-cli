@@ -77,7 +77,7 @@ class LegacyMigration
 
         $this->stdErr->writeln(sprintf(
             'You are in a project using an old file structure, from previous versions of the %s.',
-            $this->config->getStr('application.name')
+            $this->config->getStr('application.name'),
         ));
         if ($this->input->isInteractive() && $promptMigrate) {
             if ($projectRoot && is_array($projectConfig)) {
@@ -92,7 +92,7 @@ class LegacyMigration
         } else {
             $this->stdErr->writeln(sprintf(
                 'Fix this with: <comment>%s legacy-migrate</comment>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
         }
         $this->stdErr->writeln('');

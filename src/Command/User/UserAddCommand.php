@@ -39,7 +39,7 @@ class UserAddCommand extends CommandBase
         private readonly Config            $config,
         private readonly Io                $io,
         private readonly QuestionHelper    $questionHelper,
-        protected readonly Selector        $selector
+        protected readonly Selector        $selector,
     ) {
         parent::__construct();
     }
@@ -74,7 +74,7 @@ class UserAddCommand extends CommandBase
             "The user's project role ('admin' or 'viewer') or environment type role (e.g. 'staging:contributor' or 'production:viewer')."
             . "\nTo remove a user from an environment type, set the role as 'none'."
             . "\nThe % or * characters can be used as a wildcard for the environment type, e.g. '%:viewer' to give the user the 'viewer' role on all types."
-            . "\nThe role can be abbreviated, e.g. 'production:v'."
+            . "\nThe role can be abbreviated, e.g. 'production:v'.",
         );
     }
 
@@ -312,7 +312,7 @@ class UserAddCommand extends CommandBase
         }
 
         // Filter out environment type roles of 'none' from the list.
-        $desiredTypeRoles = array_filter($desiredTypeRoles, fn ($role): bool => $role !== 'none');
+        $desiredTypeRoles = array_filter($desiredTypeRoles, fn($role): bool => $role !== 'none');
 
         // Add a new line if there has already been output.
         if ($hasOutput) {
@@ -329,7 +329,7 @@ class UserAddCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'To delete the user, run: <info>%s user:delete %s</info>',
                     $this->config->getStr('application.executable'),
-                    OsUtil::escapeShellArg($email)
+                    OsUtil::escapeShellArg($email),
                 ));
             }
 
@@ -508,7 +508,7 @@ class UserAddCommand extends CommandBase
      */
     private function describeRoles(array $roles): string
     {
-        $withInitials = array_map(fn ($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
+        $withInitials = array_map(fn($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
         $last = array_pop($withInitials);
 
         return implode(' or ', [implode(', ', $withInitials), $last]);
@@ -523,7 +523,7 @@ class UserAddCommand extends CommandBase
      */
     private function describeRoleInput(array $roles): string
     {
-        return '[' . implode('/', array_map(fn ($role): string => substr((string) $role, 0, 1), $roles)) . ']';
+        return '[' . implode('/', array_map(fn($role): string => substr((string) $role, 0, 1), $roles)) . ']';
     }
 
     /**
@@ -540,9 +540,9 @@ class UserAddCommand extends CommandBase
         $this->stdErr->writeln('');
         $question = new Question(
             sprintf('Project role (default: %s) <question>%s</question>: ', $defaultRole, $this->describeRoleInput(ProjectUserAccess::$projectRoles)),
-            $defaultRole
+            $defaultRole,
         );
-        $question->setValidator(fn ($answer) => $this->validateProjectRole($answer));
+        $question->setValidator(fn($answer) => $this->validateProjectRole($answer));
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
@@ -607,7 +607,7 @@ class UserAddCommand extends CommandBase
             $default = $defaultTypeRoles[$id] ?? 'none';
             $question = new Question(
                 sprintf('Role on type <info>%s</info> (default: %s) <question>%s</question>: ', $id, $default, $initials),
-                $default
+                $default,
             );
             $question->setValidator(function ($answer) {
                 if ($answer === 'q' || $answer === 'quit') {
@@ -693,7 +693,7 @@ class UserAddCommand extends CommandBase
     private function getSpecifiedTypeRoles(array &$roles, array $environmentTypes): array
     {
         $typeRoles = [];
-        $typeIds = array_map(fn (EnvironmentType $type) => $type->id, $environmentTypes);
+        $typeIds = array_map(fn(EnvironmentType $type) => $type->id, $environmentTypes);
         foreach ($roles as $key => $role) {
             if (!str_contains($role, ':')) {
                 continue;
@@ -757,7 +757,7 @@ class UserAddCommand extends CommandBase
                         $role,
                         count($roles),
                         $specifiedTypeRoles[$type],
-                        $type
+                        $type,
                     ));
                     return false;
                 }
@@ -765,7 +765,7 @@ class UserAddCommand extends CommandBase
                     'The role <comment>%s</comment> specified on %d environment(s) will be ignored as it is already specified on their type, <comment>%s</comment>.',
                     $role,
                     count($roles),
-                    $type
+                    $type,
                 ));
                 continue;
             }
@@ -773,7 +773,7 @@ class UserAddCommand extends CommandBase
                 'The role <comment>%s</comment> specified on %d environment(s) will actually be applied to all existing and future environments of the same type, <comment>%s</comment>.',
                 $role,
                 count($roles),
-                $type
+                $type,
             ));
             $specifiedTypeRoles[$type] = $role;
         }

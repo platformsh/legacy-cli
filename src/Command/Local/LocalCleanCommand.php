@@ -28,19 +28,19 @@ class LocalCleanCommand extends CommandBase
                 null,
                 InputOption::VALUE_REQUIRED,
                 'The maximum number of builds to keep',
-                5
+                5,
             )
             ->addOption(
                 'max-age',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'The maximum age of builds, in seconds. Ignored if not set.'
+                'The maximum age of builds, in seconds. Ignored if not set.',
             )
             ->addOption(
                 'include-active',
                 null,
                 InputOption::VALUE_NONE,
-                'Delete active build(s) too'
+                'Delete active build(s) too',
             );
     }
 
@@ -57,7 +57,7 @@ class LocalCleanCommand extends CommandBase
             $input->getOption('max-age'),
             $input->getOption('keep'),
             $input->getOption('include-active'),
-            false
+            false,
         );
 
         if (!$result[0] && !$result[1]) {

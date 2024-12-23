@@ -12,9 +12,7 @@ use Symfony\Component\Process\Process;
 
 readonly class CurlCli implements InputConfiguringInterface
 {
-    public function __construct(private Api $api)
-    {
-    }
+    public function __construct(private Api $api) {}
 
     public static function configureInput(InputDefinition $definition): void
     {
@@ -51,7 +49,7 @@ readonly class CurlCli implements InputConfiguringInterface
         $commandline = sprintf(
             'curl -H %s %s',
             escapeshellarg('Authorization: Bearer ' . $token),
-            escapeshellarg($url)
+            escapeshellarg($url),
         );
 
         $passThroughFlags = ['head', 'include', 'fail'];
@@ -98,7 +96,7 @@ readonly class CurlCli implements InputConfiguringInterface
         }
 
         // Censor the access token: this can be applied to verbose output.
-        $censor = fn ($str): array|string => str_replace($token, '[token]', $str);
+        $censor = fn($str): array|string => str_replace($token, '[token]', $str);
 
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
 

@@ -168,13 +168,13 @@ class ProcessManager
                         $log->writeln(sprintf(
                             'Process failed with exit code %s: %s',
                             $exitCode,
-                            $process->getCommandLine()
+                            $process->getCommandLine(),
                         ));
                     } else {
                         $log->writeln(sprintf(
                             'Process stopped with exit code %s: %s',
                             $exitCode,
-                            $process->getCommandLine()
+                            $process->getCommandLine(),
                         ));
                     }
                     unlink($pidFile);

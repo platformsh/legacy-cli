@@ -8,9 +8,7 @@ use Platformsh\Client\Model\Project;
 
 readonly class ProjectSshInfo
 {
-    public function __construct(private Ssh $ssh)
-    {
-    }
+    public function __construct(private Ssh $ssh) {}
 
     /**
      * Tests if a project's Git host is external (e.g. Bitbucket, GitHub, GitLab, etc.).

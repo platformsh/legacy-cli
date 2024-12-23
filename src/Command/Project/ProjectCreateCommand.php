@@ -73,7 +73,7 @@ out (15 minutes by default).
 
 If known, the project ID will be output to STDOUT. All other output will be sent
 to STDERR.
-EOF
+EOF,
         );
     }
 
@@ -159,12 +159,12 @@ EOF
                 $setRemote = $this->questionHelper->confirm(sprintf(
                     'Switch the remote project for this repository directory from <comment>%s</comment> to the new project <comment>%s</comment>?',
                     $this->api->getProjectLabel($currentProject, false),
-                    $options['title']
+                    $options['title'],
                 ), false);
             } else {
                 $setRemote = $this->questionHelper->confirm(sprintf(
                     'Set the new project <info>%s</info> as the remote for this repository directory?',
-                    $options['title']
+                    $options['title'],
                 ));
             }
             $this->stdErr->writeln('');
@@ -183,12 +183,12 @@ EOF
             ->getSubscriptionEstimate($options['plan'], (int) $options['storage'] * 1024, (int) $options['environments'], 1, null, $organization?->id);
         $costConfirm = sprintf(
             'The estimated monthly cost of this project is: <comment>%s</comment>',
-            $estimate['total']
+            $estimate['total'],
         );
         if ($this->config->has('service.pricing_url')) {
             $costConfirm .= sprintf(
                 "\nPricing information: <comment>%s</comment>",
-                $this->config->getStr('service.pricing_url')
+                $this->config->getStr('service.pricing_url'),
             );
         }
         $costConfirm .= "\n\nAre you sure you want to continue?";
@@ -214,12 +214,12 @@ EOF
         $this->stdErr->writeln(sprintf(
             'Your %s project has been requested (subscription ID: <comment>%s</comment>)',
             $this->config->getStr('service.name'),
-            $subscription->id
+            $subscription->id,
         ));
 
         $this->stdErr->writeln(sprintf(
             "\nThe %s Bot is activating your project\n",
-            $this->config->getStr('service.name')
+            $this->config->getStr('service.name'),
         ));
 
         $bot = new Bot($this->stdErr);
@@ -298,7 +298,7 @@ EOF
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Setting the remote project for this repository to: %s',
-                $this->api->getProjectLabel($project)
+                $this->api->getProjectLabel($project),
             ));
 
             $localProject = $this->localProject;
@@ -522,7 +522,7 @@ EOF
             $info = $region->id;
         }
         if (!empty($region->provider['name'])) {
-            $info .= ' ' .\sprintf('(%s)', $region->provider['name']);
+            $info .= ' ' . \sprintf('(%s)', $region->provider['name']);
         }
         if (!empty($region->environmental_impact['carbon_intensity'])) {
             $format = $green ? ' [<options=bold;fg=green>%d</> gC02eq/kWh]' : ' [%d gC02eq/kWh]';
@@ -540,78 +540,78 @@ EOF
     protected function getFields(?SetupOptions $setupOptions = null): array
     {
         return [
-          'title' => new Field('Project title', [
-            'optionName' => 'title',
-            'description' => 'The initial project title',
-            'questionLine' => '',
-            'default' => 'Untitled Project',
-          ]),
-          'region' => new OptionsField('Region', [
-            'optionName' => 'region',
-            'description' => trim("The region where the project will be hosted.\n" . $this->config->getStr('messages.region_discount')),
-            'optionsCallback' => fn () => $this->getAvailableRegions($setupOptions),
-            'allowOther' => true,
-          ]),
-          'plan' => new OptionsField('Plan', [
-            'optionName' => 'plan',
-            'description' => 'The subscription plan',
+            'title' => new Field('Project title', [
+                'optionName' => 'title',
+                'description' => 'The initial project title',
+                'questionLine' => '',
+                'default' => 'Untitled Project',
+            ]),
+            'region' => new OptionsField('Region', [
+                'optionName' => 'region',
+                'description' => trim("The region where the project will be hosted.\n" . $this->config->getStr('messages.region_discount')),
+                'optionsCallback' => fn() => $this->getAvailableRegions($setupOptions),
+                'allowOther' => true,
+            ]),
+            'plan' => new OptionsField('Plan', [
+                'optionName' => 'plan',
+                'description' => 'The subscription plan',
 
-            // The field starts with an empty list of plans. Then when it is
-            // initialized during "resolveOptions", replace the list of plans
-            // and set a default if possible. If the organization setup options
-            // have been supplied ($setupOptions is not null) then that plans
-            // list will be used.
-            'optionsCallback' => fn () => $this->getAvailablePlans($setupOptions),
-            'defaultCallback' => fn () => $this->getDefaultPlan($this->getAvailablePlans($setupOptions)),
+                // The field starts with an empty list of plans. Then when it is
+                // initialized during "resolveOptions", replace the list of plans
+                // and set a default if possible. If the organization setup options
+                // have been supplied ($setupOptions is not null) then that plans
+                // list will be used.
+                'optionsCallback' => fn() => $this->getAvailablePlans($setupOptions),
+                'defaultCallback' => fn() => $this->getDefaultPlan($this->getAvailablePlans($setupOptions)),
 
-            'allowOther' => true,
-            'avoidQuestion' => true,
-          ]),
-          'environments' => new Field('Environments', [
-            'optionName' => 'environments',
-            'description' => 'The number of environments',
-            'default' => 3,
-            'validator' => fn ($value): bool => is_numeric($value) && $value > 0 && $value < 50,
-            'avoidQuestion' => true,
-          ]),
-          'storage' => new Field('Storage', [
-            'description' => 'The amount of storage per environment, in GiB',
-            'default' => 5,
-            'validator' => fn ($value): bool => is_numeric($value) && $value > 0 && $value < 1024,
-            'avoidQuestion' => true,
-          ]),
-          'default_branch' => new Field('Default branch', [
-            'description' => 'The default Git branch name for the project (the production environment)',
-            'required' => false,
-            'default' => 'main',
-          ]),
-          'init_repo' => new UrlField('Initialize repository', [
-            'optionName' => 'init-repo',
-            'description' => 'URL of a Git repository to use for initialization. A GitHub path such as "platformsh-templates/nuxtjs" can be used.',
-            'required' => false,
-            'avoidQuestion' => true,
-            'normalizer' => function (string $url): string {
-                // Provide GitHub as a default.
-                if (str_starts_with($url, 'github.com')) {
-                    return 'https://github.com' . substr($url, 10);
-                }
-                if (!str_contains($url, '//') && preg_match('#^[a-z0-9-]+/[a-z0-9-]+$#', $url)) {
-                    return 'https://github.com/' . $url;
-                }
-                return $url;
-            },
-            'validator' => function ($url): string|true {
-                if (!str_starts_with($url, 'https://') && parse_url($url, PHP_URL_SCHEME) !== 'https') {
-                    return 'The initialize repository URL must start with "https://".';
-                }
-                $response = $this->api->getExternalHttpClient()->get($url, ['exceptions' => false]);
-                $code = $response->getStatusCode();
-                if ($code >= 400) {
-                    return sprintf('The initialize repository URL "%s" returned status code %d. The repository must be public.', $url, $code);
-                }
-                return true;
-            },
-          ]),
+                'allowOther' => true,
+                'avoidQuestion' => true,
+            ]),
+            'environments' => new Field('Environments', [
+                'optionName' => 'environments',
+                'description' => 'The number of environments',
+                'default' => 3,
+                'validator' => fn($value): bool => is_numeric($value) && $value > 0 && $value < 50,
+                'avoidQuestion' => true,
+            ]),
+            'storage' => new Field('Storage', [
+                'description' => 'The amount of storage per environment, in GiB',
+                'default' => 5,
+                'validator' => fn($value): bool => is_numeric($value) && $value > 0 && $value < 1024,
+                'avoidQuestion' => true,
+            ]),
+            'default_branch' => new Field('Default branch', [
+                'description' => 'The default Git branch name for the project (the production environment)',
+                'required' => false,
+                'default' => 'main',
+            ]),
+            'init_repo' => new UrlField('Initialize repository', [
+                'optionName' => 'init-repo',
+                'description' => 'URL of a Git repository to use for initialization. A GitHub path such as "platformsh-templates/nuxtjs" can be used.',
+                'required' => false,
+                'avoidQuestion' => true,
+                'normalizer' => function (string $url): string {
+                    // Provide GitHub as a default.
+                    if (str_starts_with($url, 'github.com')) {
+                        return 'https://github.com' . substr($url, 10);
+                    }
+                    if (!str_contains($url, '//') && preg_match('#^[a-z0-9-]+/[a-z0-9-]+$#', $url)) {
+                        return 'https://github.com/' . $url;
+                    }
+                    return $url;
+                },
+                'validator' => function ($url): string|true {
+                    if (!str_starts_with($url, 'https://') && parse_url($url, PHP_URL_SCHEME) !== 'https') {
+                        return 'The initialize repository URL must start with "https://".';
+                    }
+                    $response = $this->api->getExternalHttpClient()->get($url, ['exceptions' => false]);
+                    $code = $response->getStatusCode();
+                    if ($code >= 400) {
+                        return sprintf('The initialize repository URL "%s" returned status code %d. The repository must be public.', $url, $code);
+                    }
+                    return true;
+                },
+            ]),
         ];
     }
 

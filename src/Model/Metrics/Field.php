@@ -15,9 +15,7 @@ class Field
     public const FORMAT_DISK = 'disk';
     public const FORMAT_MEMORY = 'memory';
 
-    public function __construct(private readonly string $name, private readonly string $format)
-    {
-    }
+    public function __construct(private readonly string $name, private readonly string $format) {}
 
     public function getName(): string
     {

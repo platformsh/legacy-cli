@@ -37,7 +37,7 @@ class SelfInstallCommand extends CommandBase
             <<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
-EOT
+EOT,
         );
     }
 
@@ -63,7 +63,7 @@ EOT
                 $contents = \preg_replace('/^##[^\n]*\n/m', '', $contents);
                 // Replace configuration keys inside double curly brackets with
                 // their values.
-                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn ($matches) => $this->config->getStr($matches[1]), (string) $contents);
+                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn($matches) => $this->config->getStr($matches[1]), (string) $contents);
                 $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $destFile, $contents);
             }
         } catch (\Exception $e) {
@@ -151,7 +151,7 @@ EOT
                 throw new \RuntimeException(sprintf(
                     'File not writable: %s (defined in %s)',
                     $shellConfigOverride,
-                    $shellConfigOverrideVar
+                    $shellConfigOverrideVar,
                 ));
             }
             $this->io->debug(sprintf('Shell config file specified via %s', $shellConfigOverrideVar));
@@ -209,11 +209,11 @@ EOT
         $suggestedShellConfig = 'HOME=${HOME:-' . escapeshellarg($this->config->getHomeDirectory()) . '}';
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'export PATH=%s:"$PATH"',
-            '"$HOME/"' . escapeshellarg($configDirRelative . '/bin')
+            '"$HOME/"' . escapeshellarg($configDirRelative . '/bin'),
         );
         $suggestedShellConfig .= PHP_EOL . sprintf(
             'if [ -f %1$s ]; then . %1$s; fi',
-            '"$HOME/"' . escapeshellarg($rcDestination)
+            '"$HOME/"' . escapeshellarg($rcDestination),
         );
 
         if ($shellConfigFile !== false && str_contains($currentShellConfig, $suggestedShellConfig)) {
@@ -245,11 +245,11 @@ EOT
             if ($shellConfigFile !== false) {
                 $this->stdErr->writeln(sprintf(
                     'To set up the CLI, add the following lines to: <comment>%s</comment>',
-                    $shellConfigFile
+                    $shellConfigFile,
                 ));
             } else {
                 $this->stdErr->writeln(
-                    'To set up the CLI, add the following lines to your shell configuration file:'
+                    'To set up the CLI, add the following lines to your shell configuration file:',
                 );
             }
 
@@ -302,7 +302,7 @@ EOT
     private function getRunAdvice(string $shellConfigFile, string $binDir, ?bool $inPath = null, bool $newTerminal = false): array
     {
         $advice = [
-            sprintf('To use the %s,%s run:', $this->config->getStr('application.name'), $newTerminal ? ' open a new terminal, and' : '')
+            sprintf('To use the %s,%s run:', $this->config->getStr('application.name'), $newTerminal ? ' open a new terminal, and' : ''),
         ];
         if ($inPath === null) {
             $inPath = $this->inPath($binDir);
@@ -475,9 +475,9 @@ EOT
      */
     private function generateBatContents(string $binTarget): string
     {
-        return "@ECHO OFF\r\n".
-            "setlocal DISABLEDELAYEDEXPANSION\r\n".
-            "SET BIN_TARGET=%~dp0/" . trim(OsUtil::escapeShellArg($binTarget), '"\'') . "\r\n".
+        return "@ECHO OFF\r\n" .
+            "setlocal DISABLEDELAYEDEXPANSION\r\n" .
+            "SET BIN_TARGET=%~dp0/" . trim(OsUtil::escapeShellArg($binTarget), '"\'') . "\r\n" .
             "php \"%BIN_TARGET%\" %*\r\n";
     }
 }

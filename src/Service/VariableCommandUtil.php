@@ -168,18 +168,18 @@ class VariableCommandUtil
                 'level' => self::LEVEL_ENVIRONMENT,
             ],
             'questionLine' => 'On what environment should the variable be set?',
-            'optionsCallback' => fn (): array => array_keys($this->api->getEnvironments($getSelection()->getProject())),
+            'optionsCallback' => fn(): array => array_keys($this->api->getEnvironments($getSelection()->getProject())),
             'asChoice' => false,
             'includeAsOption' => false,
-            'defaultCallback' => fn (): ?string => $getSelection()->hasEnvironment() ? $getSelection()->getEnvironment()->id : null,
+            'defaultCallback' => fn(): ?string => $getSelection()->hasEnvironment() ? $getSelection()->getEnvironment()->id : null,
         ]);
         $fields['name'] = new Field('Name', [
             'description' => 'The variable name',
             'validators' => [
-                fn ($value): string|true => strlen((string) $value) > 256
+                fn($value): string|true => strlen((string) $value) > 256
                     ? 'The variable name exceeds the maximum length, 256 characters.'
                     : true,
-                fn ($value): string|true => str_contains((string) $value, ' ')
+                fn($value): string|true => str_contains((string) $value, ' ')
                     ? 'The variable name must not contain a space.'
                     : true,
             ],
@@ -202,10 +202,10 @@ class VariableCommandUtil
         $fields['prefix'] = new OptionsField('Prefix', [
             'description' => "The variable name's prefix which can determine its type, e.g. 'env'. Only applicable if the name does not already contain a prefix.",
             'conditions' => [
-                'name' => fn ($name): bool => !str_contains((string) $name, ':')
+                'name' => fn($name): bool => !str_contains((string) $name, ':'),
             ],
             'options' => $this->getPrefixOptions('NAME'),
-            'optionsCallback' => fn (array $previousValues) => $this->getPrefixOptions($previousValues['name'] ?? 'NAME'),
+            'optionsCallback' => fn(array $previousValues) => $this->getPrefixOptions($previousValues['name'] ?? 'NAME'),
             'allowOther' => true,
             'default' => 'none',
         ]);
@@ -230,7 +230,7 @@ class VariableCommandUtil
             'optionName' => 'visible-build',
             'description' => 'Whether the variable should be visible at build time',
             'questionLine' => 'Should the variable be available at build time?',
-            'defaultCallback' => fn (array $values): bool =>
+            'defaultCallback' => fn(array $values): bool =>
                 // Variables that are visible at build-time will affect the
                 // build cache, so it is good to minimise the number of them.
                 // This defaults to true for project-level variables, false otherwise.

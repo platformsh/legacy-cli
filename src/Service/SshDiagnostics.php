@@ -249,14 +249,14 @@ class SshDiagnostics
             if (!$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate() && $this->config->isCommandEnabled('ssh-cert:load')) {
                 $this->stdErr->writeln(\sprintf(
                     'You may need to create an SSH certificate, by running: <comment>%s ssh-cert:load</comment>',
-                    $executable
+                    $executable,
                 ));
                 return;
             }
             if ($this->config->isCommandEnabled('ssh-key:add') && !$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate()) {
                 $this->stdErr->writeln(\sprintf(
                     'You may need to add an SSH key, by running: <comment>%s ssh-key:add</comment>',
-                    $executable
+                    $executable,
                 ));
             }
         }

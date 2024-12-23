@@ -29,7 +29,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Update the custom certificate for the domain example.org',
-            'example.org --cert example-org.crt --key example-org.key'
+            'example.org --cert example-org.crt --key example-org.key',
         );
     }
 
@@ -41,7 +41,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $selectorConfig = new SelectorConfig(envRequired: false);
         if ($this->isForEnvironment($input)) {
             $selectorConfig = new SelectorConfig(
-                chooseEnvFilter: fn (Environment $e): bool => $e->type !== 'production',
+                chooseEnvFilter: fn(Environment $e): bool => $e->type !== 'production',
             );
         }
         $selection = $this->selector->getSelection($input, $selectorConfig);

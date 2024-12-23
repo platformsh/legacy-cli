@@ -210,7 +210,7 @@ class Git
             return false;
         }
 
-        $branches = array_map(fn ($line) => trim(ltrim($line, '* ')), explode("\n", $result));
+        $branches = array_map(fn($line) => trim(ltrim($line, '* ')), explode("\n", $result));
 
         return in_array($branchName, $branches, true);
     }

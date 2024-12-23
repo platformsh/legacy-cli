@@ -94,7 +94,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
                     'Available sizes in the container profile <info>%s</info> (for %s: <info>%s</info>):',
                     $profile,
                     count($servicesByProfile[$profile]) === 1 ? 'service' : 'services',
-                    implode('</info>, <info>', $servicesByProfile[$profile])
+                    implode('</info>, <info>', $servicesByProfile[$profile]),
                 ));
             } else {
                 $this->stdErr->writeln(sprintf('Available sizes in the container profile <info>%s</info>:', $profile));

@@ -96,7 +96,7 @@ class ActivityCancelCommand extends ActivityCommandBase
                     '%s: %s (%s)',
                     $this->propertyFormatter->formatDate($activity->created_at),
                     ActivityMonitor::getFormattedDescription($activity),
-                    ActivityMonitor::formatState($activity->state)
+                    ActivityMonitor::formatState($activity->state),
                 );
             }
             $id = $this->questionHelper->choose($choices, 'Enter a number to choose an activity to cancel:', (string) key($choices));

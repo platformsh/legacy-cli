@@ -28,7 +28,7 @@ class SelfUpdater
         protected InputInterface $input,
         protected OutputInterface $output,
         protected Config $config,
-        protected QuestionHelper $questionHelper
+        protected QuestionHelper $questionHelper,
     ) {
         $this->stdErr = $this->output instanceof ConsoleOutputInterface
             ? $this->output->getErrorOutput()
@@ -83,7 +83,7 @@ class SelfUpdater
         if (!extension_loaded('Phar') || !($localPhar = \Phar::running(false))) {
             $this->stdErr->writeln(sprintf(
                 'This instance of the %s was not installed as a Phar archive.',
-                $applicationName
+                $applicationName,
             ));
 
             // Instructions for users who are running a global Composer install.
@@ -104,7 +104,7 @@ class SelfUpdater
         $this->stdErr->writeln(sprintf(
             'Checking for %s updates (current version: <info>%s</info>)',
             $applicationName,
-            $currentVersion
+            $currentVersion,
         ));
 
         if (!is_writable($localPhar)) {
@@ -158,7 +158,7 @@ class SelfUpdater
         $this->stdErr->writeln(sprintf(
             'The %s has been successfully updated to version <info>%s</info>',
             $applicationName,
-            $newVersionString
+            $newVersionString,
         ));
 
         return $newVersionString;

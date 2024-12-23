@@ -43,7 +43,7 @@ class Drush
         Shell $shellHelper = null,
         LocalProject $localProject = null,
         Api $api = null,
-        ApplicationFinder $applicationFinder = null
+        ApplicationFinder $applicationFinder = null,
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
@@ -117,7 +117,7 @@ class Drush
     {
         if ($reset || !isset($this->version)) {
             $this->version = $this->shellHelper->execute(
-                [$this->getDrushExecutable(), 'version', '--format=string']
+                [$this->getDrushExecutable(), 'version', '--format=string'],
             );
         }
 
@@ -311,7 +311,7 @@ class Drush
     {
         return array_filter(
             $this->applicationFinder->findApplications($projectRoot),
-            fn (LocalApplication $app): bool => Drupal::isDrupal($app->getRoot())
+            fn(LocalApplication $app): bool => Drupal::isDrupal($app->getRoot()),
         );
     }
 

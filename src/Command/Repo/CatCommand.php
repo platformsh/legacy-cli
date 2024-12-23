@@ -28,7 +28,7 @@ class CatCommand extends RepoCommandBase
         $this->addCompleter($this->selector);
         $this->addExample(
             'Read the services configuration file',
-            $this->config->getStr('service.project_config_dir') . '/services.yaml'
+            $this->config->getStr('service.project_config_dir') . '/services.yaml',
         );
     }
 
