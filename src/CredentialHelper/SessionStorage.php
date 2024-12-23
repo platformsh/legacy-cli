@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\CredentialHelper;
 
 use Platformsh\Client\Session\Storage\SessionStorageInterface;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model\Host;
 
 use Platformsh\Cli\Service\Shell;

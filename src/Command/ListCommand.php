@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @file
  * Override Symfony Console's ListCommand to customize the list's appearance.

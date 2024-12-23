@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Command\Environment;
 
 use PHPUnit\Framework\Attributes\Group;

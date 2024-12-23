@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
