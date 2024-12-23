@@ -159,9 +159,9 @@ class Drush
      * @param bool $quiet
      *   Suppress command output.
      *
-     * @return string|bool
+     * @return string|false
      */
-    public function execute(array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true): string|bool
+    public function execute(array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true): string|false
     {
         array_unshift($args, $this->getDrushExecutable());
 
@@ -220,7 +220,7 @@ class Drush
      */
     public function clearCache(): bool
     {
-        return (bool) $this->execute(['cache-clear', 'drush']);
+        return $this->execute(['cache-clear', 'drush']) !== false;
     }
 
     /**

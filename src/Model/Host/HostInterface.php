@@ -33,14 +33,13 @@ interface HostInterface
     /**
      * Runs a command on the host.
      *
-     * @return string|bool
-     *   The command's output, or true if it succeeds with no output, or false
-     *   if it fails and $mustRun is false.
+     * @return string|false
+     *   The command's output, with trailing whitespace trimmed, or false on failure.
      *
      * @throws RuntimeException
      *   If $mustRun is enabled and the command fails.
      */
-    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, ?string $input = null): string|bool;
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, ?string $input = null): string|false;
 
     /**
      * Runs a command using the current STDIN, STDOUT and STDERR.

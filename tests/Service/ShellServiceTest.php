@@ -29,9 +29,9 @@ class ShellServiceTest extends TestCase
         $this->assertFalse($shell->execute(['which', 'nonexistent']));
 
         // With $mustRun enabled.
-        $this->assertNotEmpty($shell->execute([$workingCommand], null, true));
+        $this->assertNotEmpty($shell->execute([$workingCommand], mustRun: true));
         $this->expectException(\Exception::class);
-        $shell->execute(['which', 'nonexistent'], null, true);
+        $shell->execute(['which', 'nonexistent'], mustRun: true);
     }
 
     /**
