@@ -13,6 +13,7 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Descriptor\ApplicationDescription;
 use Symfony\Component\Console\Descriptor\TextDescriptor;
 use Symfony\Component\Console\Helper\Helper;
@@ -28,6 +29,10 @@ class CustomTextDescriptor extends TextDescriptor
      */
     protected function describeCommand(Command $command, array $options = []): void
     {
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
+        }
+
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
 
