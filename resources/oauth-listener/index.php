@@ -16,7 +16,8 @@ class Listener
     private $authMethods;
     private $maxAge;
 
-    public function __construct() {
+    public function __construct()
+    {
         $required = [
             'CLI_OAUTH_STATE',
             'CLI_OAUTH_AUTH_URL',

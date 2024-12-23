@@ -19,8 +19,7 @@ class PortUtilTest extends TestCase
         if ($returnVar === 0 && preg_match('/127\.0\.0\.1:([0-9]+)/', (string) end($output), $matches)) {
             $openPort = (int) $matches[1];
             $this->assertNotEquals($util->getPort($openPort), $openPort);
-        }
-        else {
+        } else {
             $this->markTestIncomplete('Failed to find open port');
         }
     }

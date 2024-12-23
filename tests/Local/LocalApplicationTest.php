@@ -12,7 +12,6 @@ use Platformsh\Cli\Service\Config;
 
 class LocalApplicationTest extends TestCase
 {
-
     private Config $config;
 
     public function setUp(): void

@@ -7,7 +7,8 @@ use Platformsh\Cli\Util\Sort;
 
 class SortTest extends TestCase
 {
-    public function testSortObjects(): void {
+    public function testSortObjects(): void
+    {
         $objects = [
             1 => (object) ['foo' => 'a', 'bar' => '1', 'num' => 5],
             2 => (object) ['foo' => 'd', 'bar' => '10', 'num' => 10],
@@ -48,7 +49,8 @@ class SortTest extends TestCase
         }
     }
 
-    public function testCompareDomains(): void {
+    public function testCompareDomains(): void
+    {
         $arr = [
             'region-1.fxample.com',
             'region-4.example.com',

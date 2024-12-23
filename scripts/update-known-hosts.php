@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 /**
  * @file
  * Fetches SSH host keys for Platform.sh public regions.

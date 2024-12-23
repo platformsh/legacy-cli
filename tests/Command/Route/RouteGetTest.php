@@ -32,7 +32,8 @@ class RouteGetTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    public function testGetPrimaryRouteUrl(): void {
+    public function testGetPrimaryRouteUrl(): void
+    {
         $this->assertEquals(
             'https://example.com',
             rtrim(MockApp::runAndReturnOutput('route:get', [
@@ -42,7 +43,8 @@ class RouteGetTest extends TestCase
         );
     }
 
-    public function testGetRouteByOriginalUrl(): void {
+    public function testGetRouteByOriginalUrl(): void
+    {
         $this->assertEquals(
             'false',
             rtrim(MockApp::runAndReturnOutput('route:get', [

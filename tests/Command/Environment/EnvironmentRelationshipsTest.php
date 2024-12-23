@@ -34,7 +34,8 @@ class EnvironmentRelationshipsTest extends TestCase
         putenv('PLATFORM_RELATIONSHIPS=');
     }
 
-    public function testGetRelationshipHost(): void {
+    public function testGetRelationshipHost(): void
+    {
         $this->assertEquals(
             'database.internal',
             rtrim(MockApp::runAndReturnOutput('rel', [
@@ -43,7 +44,8 @@ class EnvironmentRelationshipsTest extends TestCase
         );
     }
 
-    public function testGetRelationshipUrl(): void {
+    public function testGetRelationshipUrl(): void
+    {
         $this->assertEquals(
             'mysql://main:123@database.internal:3306/main',
             rtrim(MockApp::runAndReturnOutput('rel', [

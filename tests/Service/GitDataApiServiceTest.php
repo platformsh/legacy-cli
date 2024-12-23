@@ -7,7 +7,6 @@ use Platformsh\Cli\Service\GitDataApi;
 
 class GitDataApiServiceTest extends TestCase
 {
-
     /**
      * Test GitDataApi::parseParents().
      */

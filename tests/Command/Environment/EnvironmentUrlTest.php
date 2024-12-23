@@ -32,7 +32,8 @@ class EnvironmentUrlTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    public function testUrl(): void {
+    public function testUrl(): void
+    {
         $this->assertEquals(
             "https://example.com\n"
             . "http://example.com\n",
@@ -42,7 +43,8 @@ class EnvironmentUrlTest extends TestCase
         );
     }
 
-    public function testPrimaryUrl(): void {
+    public function testPrimaryUrl(): void
+    {
         $this->assertEquals(
             'https://example.com',
             rtrim(MockApp::runAndReturnOutput('env:url', [

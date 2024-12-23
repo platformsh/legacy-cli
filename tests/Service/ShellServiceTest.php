@@ -8,7 +8,6 @@ use Platformsh\Cli\Service\Shell;
 
 class ShellServiceTest extends TestCase
 {
-
     /**
      * Test Shell::execute().
      */

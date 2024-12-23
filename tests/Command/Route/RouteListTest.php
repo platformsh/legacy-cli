@@ -32,7 +32,8 @@ class RouteListTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    public function testListRoutes(): void {
+    public function testListRoutes(): void
+    {
         $this->assertEquals(
             "https://{default}\tupstream\tapp:http\n"
             . "http://{default}\tredirect\thttps://{default}\n",

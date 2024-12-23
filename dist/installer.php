@@ -53,7 +53,8 @@ if (!$isCliInclude) {
     (new Installer())->run();
 }
 
-class Installer {
+class Installer
+{
     private $envPrefix;
     private $manifestUrl;
     private $configDir;
@@ -66,7 +67,8 @@ class Installer {
     private $migratePrompt = false;
     private $migrateDocsUrl;
 
-    public function __construct(array $args = []) {
+    public function __construct(array $args = [])
+    {
         $this->argv = !empty($args) ? $args : $GLOBALS['argv'];
 
         // This config is automatically replaced by the self:build command,
@@ -115,7 +117,8 @@ class Installer {
     /**
      * Runs the install itself.
      */
-    public function run() {
+    public function run()
+    {
         error_reporting(E_ALL);
         ini_set('log_errors', 0);
         ini_set('display_errors', 1);
@@ -137,7 +140,7 @@ class Installer {
                 $this->output('');
                 $waitTime = 10;
                 // Check STDIN in a loop to see if the user hit a key.
-                if ($this->isTerminal(STDIN) && stream_set_blocking(STDIN, FALSE)) {
+                if ($this->isTerminal(STDIN) && stream_set_blocking(STDIN, false)) {
                     $start = microtime(true);
                     $this->output("Continuing with the installation in $waitTime seconds. Press Enter to continue now, or Ctrl+C to quit.");
                     while (microtime(true) - $start < $waitTime) {
@@ -334,7 +337,8 @@ class Installer {
      *
      * @param string $extension
      */
-    private function checkExtension($extension) {
+    private function checkExtension($extension)
+    {
         if (\extension_loaded($extension)) {
             $this->output('  [*] The "' . $extension . '" PHP extension is installed.', 'success');
             return;
@@ -375,7 +379,8 @@ class Installer {
      *
      * @return int The command's exit code.
      */
-    private function selfInstall($pharPath) {
+    private function selfInstall($pharPath)
+    {
         $command = 'php ' . escapeshellarg($pharPath) . ' self:install --yes';
         if ($shellType = $this->getOption('shell-type')) {
             $command .= ' --shell-type ' . escapeshellarg($shellType);
@@ -392,7 +397,8 @@ class Installer {
      *
      * @return TaskResult
      */
-    private function findLatestVersion($manifestUrl) {
+    private function findLatestVersion($manifestUrl)
+    {
         $manifest = file_get_contents($manifestUrl, false, \stream_context_create($this->getStreamContextOpts(15)));
         if ($manifest === false) {
             return TaskResult::failure('Failed to download manifest file: ' . $manifestUrl);
@@ -430,7 +436,8 @@ class Installer {
      *
      * @return mixed The result of the task, if any.
      */
-    private function performTask($summaryText, $task, $indent = '  ') {
+    private function performTask($summaryText, $task, $indent = '  ')
+    {
         $this->output($indent . $summaryText . '...', null, false);
         /** @var TaskResult $result */
         $result = $task();
@@ -475,7 +482,8 @@ class Installer {
      *
      * @return int The command's exit code.
      */
-    private function runCommand($cmd, $forceStdout = false) {
+    private function runCommand($cmd, $forceStdout = false)
+    {
         $process = proc_open($cmd, [STDIN, STDOUT, $forceStdout ? STDOUT : STDERR], $pipes);
 
         return proc_close($process);
@@ -489,14 +497,13 @@ class Installer {
      * @param callable $condition The condition to check.
      * @param bool     $exit      Whether to exit on failure.
      */
-    private function check($success, $failure, $condition, $exit = true) {
+    private function check($success, $failure, $condition, $exit = true)
+    {
         if ($condition()) {
             $this->output('  [*] ' . $success, 'success');
-        }
-        elseif (!$exit) {
+        } elseif (!$exit) {
             $this->output('  [!] ' . $failure, 'warning');
-        }
-        else {
+        } else {
             $this->output('  [X] ' . $failure, 'error');
             exit(1);
         }
@@ -509,7 +516,8 @@ class Installer {
      * @param string $color
      * @param bool   $newLine
      */
-    private function output($text, $color = null, $newLine = true) {
+    private function output($text, $color = null, $newLine = true)
+    {
         static $styles = [
             'success' => "\033[0;32m%s\033[0m",
             'error' => "\033[31;31m%s\033[0m",
@@ -538,7 +546,8 @@ class Installer {
      *
      * @return bool
      */
-    private function flagEnabled($flag) {
+    private function flagEnabled($flag)
+    {
         return in_array('--' . $flag, $this->argv, true);
     }
 
@@ -549,7 +558,8 @@ class Installer {
      *
      * @return string
      */
-    private function getOption($name) {
+    private function getOption($name)
+    {
         foreach ($this->argv as $key => $arg) {
             if (strpos($arg, '--' . $name . '=') === 0) {
                 return substr($arg, strlen('--' . $name . '='));
@@ -573,7 +583,8 @@ class Installer {
      *
      * @return bool
      */
-    private function terminalSupportsAnsi() {
+    private function terminalSupportsAnsi()
+    {
         static $ansi;
         if (isset($ansi)) {
             return $ansi;
@@ -583,8 +594,7 @@ class Installer {
         if (!empty($argv)) {
             if ($this->flagEnabled('no-ansi')) {
                 return $ansi = false;
-            }
-            elseif ($this->flagEnabled('ansi')) {
+            } elseif ($this->flagEnabled('ansi')) {
                 return $ansi = true;
             }
         }
@@ -603,7 +613,8 @@ class Installer {
      * @return string|false
      *   The user's home directory as an absolute path, or false on failure.
      */
-    private function getHomeDirectory() {
+    private function getHomeDirectory()
+    {
         $vars = [$this->envPrefix . 'HOME', 'HOME', 'USERPROFILE'];
         foreach ($vars as $var) {
             if ($home = getenv($var)) {
@@ -624,7 +635,8 @@ class Installer {
      *
      * @return array
      */
-    private function getStreamContextOpts($timeout) {
+    private function getStreamContextOpts($timeout)
+    {
         $opts = [
             'http' => [
                 'method' => 'GET',
@@ -659,7 +671,8 @@ class Installer {
      *
      * @return string|false
      */
-    private function getCaBundle() {
+    private function getCaBundle()
+    {
         static $path;
         if (isset($path)) {
             return $path;
@@ -748,7 +761,8 @@ class Installer {
      * @return string
      *   An authenticated redirection URL, if possible. Otherwise the original URL is returned.
      */
-    private function getAuthenticatedRedirect($url) {
+    private function getAuthenticatedRedirect($url)
+    {
         if (\strpos($url, '//github.com') === false) {
             return $url;
         }
@@ -783,7 +797,8 @@ class Installer {
      *
      * @return string[]
      */
-    private function authHeaders($url) {
+    private function authHeaders($url)
+    {
         $host = \parse_url($url, PHP_URL_HOST);
 
         if ($host === 'github.com') {
@@ -820,7 +835,8 @@ class Installer {
      *
      * @return string|null
      */
-    private function getProxy() {
+    private function getProxy()
+    {
         // The proxy variables should be ignored in a non-CLI context.
         // This check has probably already been run, but it's important.
         if (PHP_SAPI !== 'cli') {
@@ -891,39 +907,47 @@ class Installer {
     }
 }
 
-class TaskResult {
+class TaskResult
+{
     private $success = false;
     private $message = '';
     private $data;
 
-    private function __construct($success, $message = '', $data = null) {
+    private function __construct($success, $message = '', $data = null)
+    {
         $this->success = $success;
         $this->message = $message;
         $this->data = $data;
     }
 
-    public static function success($data = null) {
+    public static function success($data = null)
+    {
         return new self(true, '', $data);
     }
 
-    public static function failure($errorMessage) {
+    public static function failure($errorMessage)
+    {
         return new self(false, $errorMessage);
     }
 
-    public function isSuccess() {
+    public function isSuccess()
+    {
         return $this->success;
     }
 
-    public function getMessage() {
+    public function getMessage()
+    {
         return $this->message;
     }
 
-    public function getData() {
+    public function getData()
+    {
         return $this->data;
     }
 }
 
-class VersionResolver {
+class VersionResolver
+{
     /**
      * Finds the latest installable version in the manifest.
      *
@@ -934,7 +958,8 @@ class VersionResolver {
      * @return array
      *   A list of versions, filtered by those that are installable.
      */
-    public function findInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable']) {
+    public function findInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable'])
+    {
         $installable = [];
         foreach ($versions as $version) {
             if (isset($version['php']['min']) && version_compare($version['php']['min'], $phpVersion, '>')) {
@@ -961,7 +986,8 @@ class VersionResolver {
      *
      * @return string
      */
-    public function explainNoInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable']) {
+    public function explainNoInstallableVersions(array $versions, $phpVersion = PHP_VERSION, array $allowedSuffixes = ['stable'])
+    {
         $reasons = [];
         foreach ($versions as $version) {
             $name = 'v' . $version['version'];
@@ -999,7 +1025,8 @@ class VersionResolver {
      *
      * @return array
      */
-    public function findLatestVersion(array $versions, $min = '', $max = '') {
+    public function findLatestVersion(array $versions, $min = '', $max = '')
+    {
         usort($versions, function (array $a, array $b) {
             return version_compare($a['version'], $b['version']);
         });

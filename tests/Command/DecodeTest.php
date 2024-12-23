@@ -9,7 +9,8 @@ use Platformsh\Cli\Tests\MockApp;
 #[Group('commands')]
 class DecodeTest extends TestCase
 {
-    public function testDecode(): void {
+    public function testDecode(): void
+    {
         $var = base64_encode((string) json_encode([
             'foo' => 'bar',
             'fee' => 'bor',
@@ -31,7 +32,8 @@ class DecodeTest extends TestCase
         );
     }
 
-    public function testDecodeEmptyObject(): void {
+    public function testDecodeEmptyObject(): void
+    {
         $this->assertEquals(
             '{}',
             rtrim(MockApp::runAndReturnOutput('decode', [
@@ -47,6 +49,7 @@ class DecodeTest extends TestCase
                     '--property' => 'nonexistent'
                 ]), "\n")
             );
-        } catch (\RuntimeException) {}
+        } catch (\RuntimeException) {
+        }
     }
 }

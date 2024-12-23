@@ -9,7 +9,8 @@ use Platformsh\Cli\Tests\MockApp;
 #[Group('commands')]
 class WelcomeCommandTest extends TestCase
 {
-    public function testWelcomeOnLocalContainer(): void {
+    public function testWelcomeOnLocalContainer(): void
+    {
         chdir('/');
         putenv('PLATFORM_PROJECT=test-project');
         putenv('PLATFORM_BRANCH=test-environment');

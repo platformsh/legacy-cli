@@ -11,7 +11,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SshTest extends TestCase {
+class SshTest extends TestCase
+{
     private ?Ssh $ssh;
 
     public function setUp(): void

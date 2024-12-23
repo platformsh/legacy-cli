@@ -7,7 +7,6 @@ use PHPUnit\Framework\Attributes\Group;
 #[Group('slow')]
 class ComposerTest extends BuildFlavorTestBase
 {
-
     public function testBuildComposer(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/composer');
