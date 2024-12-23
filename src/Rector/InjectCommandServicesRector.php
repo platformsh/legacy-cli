@@ -95,8 +95,7 @@ class InjectCommandServicesRector extends AbstractRector
     public function __construct(
         private readonly BetterNodeFinder    $betterNodeFinder,
         private readonly DependencyInjection $di,
-    )
-    {
+    ) {
     }
 
     public function getRuleDefinition(): RuleDefinition

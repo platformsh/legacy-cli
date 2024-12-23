@@ -36,7 +36,8 @@ readonly class BrokenEnv implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfig(): AppConfig {
+    public function getConfig(): AppConfig
+    {
         return new AppConfig(!empty($this->appName) ? ['name' => $this->appName] : []);
     }
 

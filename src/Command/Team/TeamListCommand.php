@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Team;
 
 use Platformsh\Cli\Selector\Selection;

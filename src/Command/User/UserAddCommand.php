@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -31,7 +32,6 @@ use Symfony\Component\Console\Question\Question;
 #[AsCommand(name: 'user:add', description: 'Add a user to the project')]
 class UserAddCommand extends CommandBase
 {
-
     public function __construct(
         private readonly AccessApi $accessApi,
         protected readonly ActivityMonitor $activityMonitor,
@@ -40,8 +40,7 @@ class UserAddCommand extends CommandBase
         private readonly Io                $io,
         private readonly QuestionHelper    $questionHelper,
         protected readonly Selector        $selector
-    )
-    {
+    ) {
         parent::__construct();
     }
 
@@ -153,7 +152,7 @@ class UserAddCommand extends CommandBase
                     throw new InvalidArgumentException('Invalid email address: ' . $emailOrId);
                 }
             }
-        } else if (!$input->isInteractive()) {
+        } elseif (!$input->isInteractive()) {
             throw new InvalidArgumentException('An email address is required (in non-interactive mode).');
         } elseif ($update) {
             $userId = $this->questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user to update:');
@@ -313,7 +312,7 @@ class UserAddCommand extends CommandBase
         }
 
         // Filter out environment type roles of 'none' from the list.
-        $desiredTypeRoles = array_filter($desiredTypeRoles, fn($role): bool => $role !== 'none');
+        $desiredTypeRoles = array_filter($desiredTypeRoles, fn ($role): bool => $role !== 'none');
 
         // Add a new line if there has already been output.
         if ($hasOutput) {
@@ -509,7 +508,7 @@ class UserAddCommand extends CommandBase
      */
     private function describeRoles(array $roles): string
     {
-        $withInitials = array_map(fn($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
+        $withInitials = array_map(fn ($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
         $last = array_pop($withInitials);
 
         return implode(' or ', [implode(', ', $withInitials), $last]);
@@ -524,7 +523,7 @@ class UserAddCommand extends CommandBase
      */
     private function describeRoleInput(array $roles): string
     {
-        return '[' . implode('/', array_map(fn($role): string => substr((string) $role, 0, 1), $roles)) . ']';
+        return '[' . implode('/', array_map(fn ($role): string => substr((string) $role, 0, 1), $roles)) . ']';
     }
 
     /**
@@ -543,7 +542,7 @@ class UserAddCommand extends CommandBase
             sprintf('Project role (default: %s) <question>%s</question>: ', $defaultRole, $this->describeRoleInput(ProjectUserAccess::$projectRoles)),
             $defaultRole
         );
-        $question->setValidator(fn($answer) => $this->validateProjectRole($answer));
+        $question->setValidator(fn ($answer) => $this->validateProjectRole($answer));
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
@@ -694,7 +693,7 @@ class UserAddCommand extends CommandBase
     private function getSpecifiedTypeRoles(array &$roles, array $environmentTypes): array
     {
         $typeRoles = [];
-        $typeIds = array_map(fn(EnvironmentType $type) => $type->id, $environmentTypes);
+        $typeIds = array_map(fn (EnvironmentType $type) => $type->id, $environmentTypes);
         foreach ($roles as $key => $role) {
             if (!str_contains($role, ':')) {
                 continue;

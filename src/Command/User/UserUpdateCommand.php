@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\User;
 
 use Symfony\Component\Console\Attribute\AsCommand;

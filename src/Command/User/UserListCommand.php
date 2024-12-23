@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -34,8 +35,8 @@ class UserListCommand extends CommandBase
         private readonly Config            $config,
         private readonly PropertyFormatter $propertyFormatter,
         private readonly Selector          $selector,
-        private readonly Table             $table)
-    {
+        private readonly Table             $table
+    ) {
         parent::__construct();
     }
 

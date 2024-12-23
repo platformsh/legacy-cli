@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Integration;
 
 use Platformsh\Cli\Selector\Selector;
@@ -22,7 +23,8 @@ class IntegrationValidateCommand extends IntegrationCommandBase
             ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');
         $this->selector->addProjectOption($this->getDefinition());
         $this->addCompleter($this->selector);
-        $this->setHelp(<<<EOF
+        $this->setHelp(
+            <<<EOF
 This command allows you to check whether an integration is valid.
 
 An exit code of 0 means the integration is valid, while 4 means it is invalid.

@@ -45,7 +45,7 @@ use Symfony\Component\Console\Terminal;
  */
 class Selector implements CompleterInterface
 {
-    const DEFAULT_ENVIRONMENT_CODE = '.';
+    public const DEFAULT_ENVIRONMENT_CODE = '.';
 
     private readonly OutputInterface $stdErr;
 
@@ -204,7 +204,8 @@ class Selector implements CompleterInterface
      *
      * @param bool $blankLine Append an extra newline after the message, if any is printed.
      */
-    public function ensurePrintedSelection(Selection $selection, bool $blankLine = false): void {
+    public function ensurePrintedSelection(Selection $selection, bool $blankLine = false): void
+    {
         $outputAnything = false;
         if ($selection->hasProject() && $this->printedProject !== $selection->getProject()->id) {
             $this->stdErr->writeln('Selected project: ' . $this->api->getProjectLabel($selection->getProject()));
@@ -290,7 +291,7 @@ class Selector implements CompleterInterface
 
         if ($config->detectCurrentEnv) {
             throw new RootNotFoundException(
-                    "Could not determine the current project."
+                "Could not determine the current project."
                     . "\n\nSpecify it using --project, or go to a project directory."
             );
         }
@@ -403,7 +404,7 @@ class Selector implements CompleterInterface
                 $this->debug('No environment specified or detected: offering a choice...');
                 return $this->offerEnvironmentChoice($input, $project, $config, $environments);
             }
-            throw new InvalidArgumentException( 'Could not select an environment automatically.'
+            throw new InvalidArgumentException('Could not select an environment automatically.'
                 . "\n" . 'Specify one manually using --environment (-e).');
         }
 
@@ -787,7 +788,7 @@ class Selector implements CompleterInterface
         // been found.
         $appNames = $appName !== null
             ? [$appName]
-            : array_map(fn(WebApp $app) => $app->name, $deployment->webapps);
+            : array_map(fn (WebApp $app) => $app->name, $deployment->webapps);
         $choices = array_combine($appNames, $appNames);
         $choicesIncludeWorkers = false;
         if ($includeWorkers) {
@@ -817,7 +818,8 @@ class Selector implements CompleterInterface
             $choice = reset($appNames);
         } elseif ($input->isInteractive()) {
             if ($choicesIncludeWorkers) {
-                $text = sprintf('Enter a number to choose an app or %s worker:',
+                $text = sprintf(
+                    'Enter a number to choose an app or %s worker:',
                     count($choices) === 2 ? 'its' : 'a'
                 );
             } else {
@@ -1089,7 +1091,7 @@ class Selector implements CompleterInterface
         }
         $projects = $this->api->getMyProjects(false) ?: $this->api->getMyProjects();
         return array_map(
-            fn(BasicProjectInfo $p): Suggestion => new Suggestion($p->id, $p->title),
+            fn (BasicProjectInfo $p): Suggestion => new Suggestion($p->id, $p->title),
             $projects,
         );
     }

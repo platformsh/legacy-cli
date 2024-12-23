@@ -8,7 +8,8 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 /**
  * Stores API tokens using a hidden file.
  */
-readonly class FileStorage implements StorageInterface {
+readonly class FileStorage implements StorageInterface
+{
     private SymfonyFilesystem $fs;
 
     public function __construct(private Config $config, ?SymfonyFilesystem $fs = null)
@@ -31,18 +32,21 @@ readonly class FileStorage implements StorageInterface {
      *
      * @param string $value
      */
-    public function storeToken(string $value): void {
+    public function storeToken(string $value): void
+    {
         $this->save($value);
     }
 
     /**
      * Deletes the saved token.
      */
-    public function deleteToken(): void {
+    public function deleteToken(): void
+    {
         $this->save('');
     }
 
-    private function save(string $token): void {
+    private function save(string $token): void
+    {
         $filename = $this->getFilename();
         if (empty($token)) {
             if (file_exists($filename)) {
@@ -63,7 +67,8 @@ readonly class FileStorage implements StorageInterface {
     /**
      * @return string
      */
-    private function load(): string {
+    private function load(): string
+    {
         $filename = $this->getFilename();
         if (file_exists($filename)) {
             return trim((string) file_get_contents($filename));
@@ -75,14 +80,16 @@ readonly class FileStorage implements StorageInterface {
     /**
      * @return string
      */
-    private function getFilename(): string {
+    private function getFilename(): string
+    {
         return $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'api-token';
     }
 
     /**
      * Makes a relative path absolute, based on the user config dir.
      */
-    private function resolveTokenFile(string $tokenFile): string {
+    private function resolveTokenFile(string $tokenFile): string
+    {
         if (!str_starts_with($tokenFile, '/') && !str_starts_with($tokenFile, '\\')) {
             $tokenFile = $this->config->getUserConfigDir() . '/' . $tokenFile;
         }

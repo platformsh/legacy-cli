@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Selector\Selector;
@@ -15,7 +16,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:delete', description: 'Delete an environment backup')]
 class BackupDeleteCommand extends CommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();

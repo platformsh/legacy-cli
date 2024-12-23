@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
@@ -14,8 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:pause', description: 'Pause an environment')]
 class EnvironmentPauseCommand extends CommandBase
 {
-
-    const PAUSE_HELP = <<<EOF
+    public const PAUSE_HELP = <<<EOF
 Pausing an environment helps to reduce resource consumption and carbon emissions.
 
 The environment will be unavailable until it is resumed. No data will be lost.

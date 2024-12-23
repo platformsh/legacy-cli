@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'domain:add', description: 'Add a new domain to the project')]
 class DomainAddCommand extends DomainCommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
@@ -51,7 +51,7 @@ class DomainAddCommand extends DomainCommandBase
         $selectorConfig = new SelectorConfig(envRequired: false);
         if ($this->isForEnvironment($input)) {
             $selectorConfig = new SelectorConfig(
-                chooseEnvFilter: fn(Environment $e): bool => $e->type !== 'production',
+                chooseEnvFilter: fn (Environment $e): bool => $e->type !== 'production',
             );
         }
         $selection = $this->selector->getSelection($input, $selectorConfig);
@@ -95,7 +95,8 @@ class DomainAddCommand extends DomainCommandBase
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf(
                         'The environment %s already has a domain with the same <comment>--attach</comment> value: <error>%s</error>',
-                        $this->api->getEnvironmentLabel($environment, 'comment'), $data['detail']['conflicting_domain']
+                        $this->api->getEnvironmentLabel($environment, 'comment'),
+                        $data['detail']['conflicting_domain']
                     ));
                     return 1;
                 }

@@ -25,7 +25,7 @@ class TeamCommandBase extends CommandBase
     private Api $api;
 
     #[Required]
-    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector): void
     {
         $this->api = $api;
         $this->config = $config;

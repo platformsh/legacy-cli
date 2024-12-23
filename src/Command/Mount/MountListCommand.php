@@ -97,7 +97,8 @@ class MountListCommand extends CommandBase
             $rows[] = ['path' => $path, 'definition' => $this->propertyFormatter->format($definition)];
         }
         if ($environment !== null) {
-            $this->stdErr->writeln(sprintf('Mounts on environment %s, %s <info>%s</info>:',
+            $this->stdErr->writeln(sprintf(
+                'Mounts on environment %s, %s <info>%s</info>:',
                 $this->api->getEnvironmentLabel($environment),
                 $appType,
                 $appName

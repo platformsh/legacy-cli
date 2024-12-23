@@ -9,8 +9,7 @@ class RootNotFoundException extends \RuntimeException
     public function __construct(
         $message = 'Project root not found. This can only be run from inside a project directory.',
         $code = 2
-    )
-    {
+    ) {
         // If this is a Git repository that looks like an un-configured project,
         // then suggest the "project:set-remote" command.
         if (is_dir('.git')) {

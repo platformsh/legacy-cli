@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Selector\Selector;
@@ -14,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:get', description: 'View an environment backup')]
 class BackupGetCommand extends CommandBase
 {
-
     public function __construct(private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();

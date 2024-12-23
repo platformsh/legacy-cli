@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Server;
 
 use Platformsh\Cli\Selector\Selector;

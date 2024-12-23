@@ -31,14 +31,15 @@ class VariableCreateCommand extends CommandBase
 
     private Selection $selection;
 
-    public function __construct(private readonly ActivityMonitor  $activityMonitor,
-                                private readonly Api              $api,
-                                private readonly Config           $config,
-                                private readonly QuestionHelper   $questionHelper,
-                                private readonly Selector         $selector,
-                                private readonly SubCommandRunner $subCommandRunner,
-                                private readonly VariableCommandUtil $variableCommandUtil)
-    {
+    public function __construct(
+        private readonly ActivityMonitor  $activityMonitor,
+        private readonly Api              $api,
+        private readonly Config           $config,
+        private readonly QuestionHelper   $questionHelper,
+        private readonly Selector         $selector,
+        private readonly SubCommandRunner $subCommandRunner,
+        private readonly VariableCommandUtil $variableCommandUtil
+    ) {
         $this->selection = new Selection();
         parent::__construct();
     }
@@ -196,7 +197,10 @@ class VariableCreateCommand extends CommandBase
                 }
 
                 $this->stdErr->writeln(sprintf(
-                    'Creating variable <info>%s</info> on the environment <info>%s</info>', $values['name'], $environment->id));
+                    'Creating variable <info>%s</info> on the environment <info>%s</info>',
+                    $values['name'],
+                    $environment->id
+                ));
 
                 try {
                     $result = Variable::create($values, $environment->getLink('#manage-variables'), $this->api->getHttpClient());

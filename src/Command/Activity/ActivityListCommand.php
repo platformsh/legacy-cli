@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -52,7 +53,10 @@ class ActivityListCommand extends ActivityCommandBase
         if ($this->config->has('service.activity_type_list_url')) {
             $typeDescription .= "\nFor a list of types see: <info>" . $this->config->getStr('service.activity_type_list_url') . '</info>';
         }
-        $this->addOption('type', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+        $this->addOption(
+            'type',
+            't',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             $typeDescription
             . "\n" . ArrayArgument::SPLIT_HELP
             . "\nThe first part of the activity name can be omitted, e.g. 'cron' can select 'environment.cron' activities."
@@ -60,7 +64,10 @@ class ActivityListCommand extends ActivityCommandBase
             null,
             ActivityLoader::getAvailableTypes(),
         );
-        $this->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+        $this->addOption(
+            'exclude-type',
+            'x',
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             'Exclude activities by type.'
             . "\n" . ArrayArgument::SPLIT_HELP
             . "\nThe first part of the activity name can be omitted, e.g. 'cron' can exclude 'environment.cron' activities."

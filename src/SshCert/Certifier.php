@@ -13,8 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Certifier
 {
-    const KEY_ALGORITHM = 'ed25519';
-    const PRIVATE_KEY_FILENAME = 'id_ed25519';
+    public const KEY_ALGORITHM = 'ed25519';
+    public const PRIVATE_KEY_FILENAME = 'id_ed25519';
     private readonly OutputInterface $stdErr;
 
     private static bool $disableAutoLoad = false;

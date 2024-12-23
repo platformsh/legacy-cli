@@ -4,8 +4,8 @@ namespace Platformsh\Cli\Model;
 
 use Platformsh\Client\Model\Activity as ApiActivity;
 
-class Activity {
-
+class Activity
+{
     /**
      * Calculates the duration of an activity, whether complete or not.
      */

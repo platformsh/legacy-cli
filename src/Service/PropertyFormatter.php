@@ -155,7 +155,7 @@ class PropertyFormatter implements InputConfiguringInterface
             'is_enabled' => true,
         ];
         // Hide passwords.
-        $info['basic_auth'] = array_map(fn(): string => '******', $info['basic_auth']);
+        $info['basic_auth'] = array_map(fn (): string => '******', $info['basic_auth']);
 
         return $this->format($info);
     }

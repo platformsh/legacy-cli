@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:logs', description: "Read an environment's logs", aliases: ['log'])]
 class EnvironmentLogCommand extends CommandBase
 {
-
     public function __construct(private readonly CacheProvider $cacheProvider, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
@@ -100,7 +100,7 @@ class EnvironmentLogCommand extends CommandBase
             $files = $result && is_string($result) ? explode("\n", $result) : $defaultFiles;
 
             // Ask the user to choose a file.
-            $files = array_combine($files, array_map(fn($file): string => str_replace('.log', '', basename(trim((string) $file))), $files));
+            $files = array_combine($files, array_map(fn ($file): string => str_replace('.log', '', basename(trim((string) $file))), $files));
             $logFilename = $this->questionHelper->choose($files, 'Enter a number to choose a log: ');
         }
 

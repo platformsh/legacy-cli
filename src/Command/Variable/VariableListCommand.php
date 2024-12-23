@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -26,12 +27,13 @@ class VariableListCommand extends CommandBase
         'is_enabled' => 'Enabled',
     ];
 
-    public function __construct(private readonly Api                 $api,
-                                private readonly Config              $config,
-                                private readonly Selector            $selector,
-                                private readonly Table               $table,
-                                private readonly VariableCommandUtil $variableCommandUtil)
-    {
+    public function __construct(
+        private readonly Api                 $api,
+        private readonly Config              $config,
+        private readonly Selector            $selector,
+        private readonly Table               $table,
+        private readonly VariableCommandUtil $variableCommandUtil
+    ) {
         parent::__construct();
     }
 

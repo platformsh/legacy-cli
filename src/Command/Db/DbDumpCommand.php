@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Selector\Selector;
@@ -23,7 +24,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'db:dump', description: 'Create a local dump of the remote database')]
 class DbDumpCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Filesystem $filesystem, private readonly Git $git, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();
@@ -227,7 +227,7 @@ class DbDumpCommand extends CommandBase
                 }
                 if ($includedTables) {
                     $dumpCommand .= ' --tables '
-                        . implode(' ', array_map(fn($table) => OsUtil::escapePosixShellArg($table), $includedTables));
+                        . implode(' ', array_map(fn ($table) => OsUtil::escapePosixShellArg($table), $includedTables));
                 }
                 if (!empty($service->configuration['properties']['max_allowed_packet'])) {
                     $dumpCommand .= ' --max_allowed_packet=' . $service->configuration['properties']['max_allowed_packet'] . 'MB';
@@ -306,8 +306,8 @@ class DbDumpCommand extends CommandBase
         array $includedTables = [],
         array $excludedTables = [],
         bool $schemaOnly = false,
-        bool $gzip = false): string
-    {
+        bool $gzip = false
+    ): string {
         $prefix = $this->config->getStr('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentMachineName = $environment ? $environment->machine_name : getenv($prefix . 'ENVIRONMENT');

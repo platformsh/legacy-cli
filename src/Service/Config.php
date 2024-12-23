@@ -534,7 +534,8 @@ class Config
     /**
      * Returns this application version.
      */
-    public function getVersion(): string {
+    public function getVersion(): string
+    {
         if (isset($this->version)) {
             return $this->version;
         }
@@ -580,7 +581,8 @@ class Config
      *
      * @return array{https?: string, http?: string}
      */
-    public function getProxies(): array {
+    public function getProxies(): array
+    {
         $proxies = [];
         if (\getenv('https_proxy') !== false) {
             $proxies['https'] = \getenv('https_proxy');

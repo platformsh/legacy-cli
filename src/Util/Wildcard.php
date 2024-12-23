@@ -4,7 +4,7 @@ namespace Platformsh\Cli\Util;
 
 class Wildcard
 {
-    const HELP = 'The % or * characters may be used as a wildcard.';
+    public const HELP = 'The % or * characters may be used as a wildcard.';
 
     /**
      * Selects strings in a list matching a list of wildcards.

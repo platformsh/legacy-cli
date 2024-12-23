@@ -15,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'legacy-migrate', description: 'Migrate from the legacy file structure')]
 class LegacyMigrateCommand extends CommandBase
 {
-
     public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalProject $localProject, private readonly Selector $selector)
     {
         parent::__construct();
@@ -26,7 +25,8 @@ class LegacyMigrateCommand extends CommandBase
             ->addOption('no-backup', null, InputOption::VALUE_NONE, 'Do not create a backup of the project.');
         $cliName = $this->config->getStr('application.name');
         $localDir = $this->config->getStr('local.local_dir');
-        $this->setHelp(<<<EOF
+        $this->setHelp(
+            <<<EOF
 Before version 3.x, the {$cliName} required a project to have a "repository"
 directory containing the Git repository, "builds", "shared" and others. From
 version 3, the Git repository itself is treated as the project. Metadata is

@@ -22,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'operation:list', description: 'List runtime operations on an environment', aliases: ['ops'])]
 class ListCommand extends CommandBase
 {
-    const COMMAND_MAX_LENGTH = 24;
+    public const COMMAND_MAX_LENGTH = 24;
 
     /** @var array<string, string> */
     private array $tableHeader = ['service' => 'Service', 'name' => 'Operation name', 'start' => 'Start command', 'stop' => 'Stop command', 'role' => 'Role'];

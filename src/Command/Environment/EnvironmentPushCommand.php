@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -29,24 +30,25 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:push', description: 'Push code to an environment', aliases: ['push'])]
 class EnvironmentPushCommand extends CommandBase
 {
-    const PUSH_FAILURE_EXIT_CODE = 87;
+    public const PUSH_FAILURE_EXIT_CODE = 87;
 
     /** @var string[] */
     private array $validResourcesInitOptions = ['parent', 'default', 'minimum', 'manual'];
 
-    public function __construct(private readonly ActivityMonitor $activityMonitor,
-                                private readonly Api             $api,
-                                private readonly Config          $config,
-                                private readonly Git             $git,
-                                private readonly Io              $io,
-                                private readonly LocalProject    $localProject,
-                                private readonly ProjectSshInfo  $projectSshInfo,
-                                private readonly QuestionHelper  $questionHelper,
-                                private readonly ResourcesUtil   $resourcesUtil,
-                                private readonly Selector        $selector,
-                                private readonly Shell           $shell,
-                                private readonly SshDiagnostics  $sshDiagnostics)
-    {
+    public function __construct(
+        private readonly ActivityMonitor $activityMonitor,
+        private readonly Api             $api,
+        private readonly Config          $config,
+        private readonly Git             $git,
+        private readonly Io              $io,
+        private readonly LocalProject    $localProject,
+        private readonly ProjectSshInfo  $projectSshInfo,
+        private readonly QuestionHelper  $questionHelper,
+        private readonly ResourcesUtil   $resourcesUtil,
+        private readonly Selector        $selector,
+        private readonly Shell           $shell,
+        private readonly SshDiagnostics  $sshDiagnostics
+    ) {
         parent::__construct();
     }
 
@@ -374,7 +376,8 @@ class EnvironmentPushCommand extends CommandBase
      *
      * @return Activity[]
      */
-    private function ensureActive(Environment $targetEnvironment, ?string $parentId, bool $cloneParent, ?string $type): array {
+    private function ensureActive(Environment $targetEnvironment, ?string $parentId, bool $cloneParent, ?string $type): array
+    {
         $activities = [];
         $updates = [];
         if ($parentId !== null && $targetEnvironment->parent !== $parentId) {

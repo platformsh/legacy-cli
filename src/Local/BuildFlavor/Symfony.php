@@ -4,7 +4,6 @@ namespace Platformsh\Cli\Local\BuildFlavor;
 
 class Symfony extends Composer
 {
-
     public function getKeys(): array
     {
         return ['symfony'];

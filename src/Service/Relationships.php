@@ -16,7 +16,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Relationships implements InputConfiguringInterface
 {
-
     /**
      * @param RemoteEnvVars $envVarService
      */
@@ -114,7 +113,7 @@ class Relationships implements InputConfiguringInterface
             && ($relationshipName = $input->getOption('relationship'))) {
             // Normalise the relationship name to remove a trailing ".0".
             if (str_ends_with((string) $relationshipName, '.0')
-                && isset($relationships[$relationshipName]) && count($relationships[$relationshipName]) ===1) {
+                && isset($relationships[$relationshipName]) && count($relationships[$relationshipName]) === 1) {
                 $relationshipName = substr((string) $relationshipName, 0, strlen((string) $relationshipName) - 2);
             }
             if (!isset($choices[$relationshipName])) {
@@ -206,7 +205,7 @@ class Relationships implements InputConfiguringInterface
                 if (isset($instance['scheme']) && isset($instance['host'])
                     && $instance['scheme'] === 'mongodb' && str_starts_with((string) $instance['host'], 'mongodb://')) {
                     $mongodbUri = $instance['host'];
-                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', fn($matches): string => $matches[1] . \explode(',', (string) $matches[2])[0] . $matches[3], (string) $mongodbUri);
+                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', fn ($matches): string => $matches[1] . \explode(',', (string) $matches[2])[0] . $matches[3], (string) $mongodbUri);
                     $urlParts = \parse_url((string) $url);
                     if ($urlParts) {
                         $instance = array_merge($urlParts, $instance);

@@ -409,7 +409,7 @@ class Filesystem
         if (OsUtil::isWindows()) {
             $path = preg_replace_callback(
                 '#^([A-Z]):/#i',
-                fn(array $matches): string => '/' . strtolower((string) $matches[1]) . '/',
+                fn (array $matches): string => '/' . strtolower((string) $matches[1]) . '/',
                 str_replace('\\', '/', $path)
             );
         }

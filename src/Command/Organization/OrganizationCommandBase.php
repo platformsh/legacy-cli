@@ -20,7 +20,7 @@ class OrganizationCommandBase extends CommandBase
     private Api $api;
 
     #[Required]
-    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper) : void
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper): void
     {
         $this->api = $api;
         $this->config = $config;

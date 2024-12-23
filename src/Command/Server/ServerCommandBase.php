@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Platformsh\Cli\Command\Server;
@@ -26,7 +27,7 @@ abstract class ServerCommandBase extends CommandBase
     private ?array $serverInfo = null;
 
     #[Required]
-    public function autowire(Config $config, LocalProject $localProject, Selector $selector, Shell $shell) : void
+    public function autowire(Config $config, LocalProject $localProject, Selector $selector, Shell $shell): void
     {
         $this->config = $config;
         $this->localProject = $localProject;

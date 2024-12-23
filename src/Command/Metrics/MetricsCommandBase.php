@@ -32,12 +32,12 @@ abstract class MetricsCommandBase extends CommandBase
     private Config $config;
     private Api $api;
 
-    const MIN_INTERVAL = 60; // 1 minute
+    public const MIN_INTERVAL = 60; // 1 minute
 
-    const MIN_RANGE = 300; // 5 minutes
-    const DEFAULT_RANGE = 600;
+    public const MIN_RANGE = 300; // 5 minutes
+    public const DEFAULT_RANGE = 600;
 
-    const MAX_INTERVALS = 100; // intervals per range
+    public const MAX_INTERVALS = 100; // intervals per range
 
     /**
      * @var bool Whether services have been identified that use high memory.
@@ -99,7 +99,7 @@ abstract class MetricsCommandBase extends CommandBase
         ],
     ];
     #[Required]
-    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter) : void
+    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter): void
     {
         $this->api = $api;
         $this->config = $config;
@@ -118,7 +118,10 @@ abstract class MetricsCommandBase extends CommandBase
     protected function addMetricsOptions(): self
     {
         $duration = new Duration();
-        $this->addOption('range', 'r', InputOption::VALUE_REQUIRED,
+        $this->addOption(
+            'range',
+            'r',
+            InputOption::VALUE_REQUIRED,
             'The time range. Metrics will be loaded for this duration until the end time (--to).'
             . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
             . "\n" . \sprintf(
@@ -128,15 +131,18 @@ abstract class MetricsCommandBase extends CommandBase
             )
         );
         // The $default is left at null so the lack of input can be detected.
-        $this->addOption('interval', 'i', InputOption::VALUE_REQUIRED,
+        $this->addOption(
+            'interval',
+            'i',
+            InputOption::VALUE_REQUIRED,
             'The time interval. Defaults to a division of the range.'
             . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
             . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL))
         );
         $this->addOption('to', null, InputOption::VALUE_REQUIRED, 'The end time. Defaults to now.');
         $this->addOption('latest', '1', InputOption::VALUE_NONE, 'Show only the latest single data point');
-        $this->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service or application name' . "\n" . Wildcard::HELP);
-        $this->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service type (if --service is not provided). The version is not required.' . "\n" . Wildcard::HELP);
+        $this->addOption('service', 's', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service or application name' . "\n" . Wildcard::HELP);
+        $this->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service type (if --service is not provided). The version is not required.' . "\n" . Wildcard::HELP);
         return $this;
     }
 
@@ -269,7 +275,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         if ($this->stdErr->isDebug()) {
-            $this->io->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         }
 
         // Perform the metrics query.
@@ -312,7 +318,10 @@ abstract class MetricsCommandBase extends CommandBase
                 if (isset($values[$time][$service][$dimension][$fieldPrefix . $name])) {
                     $this->stdErr->writeln(\sprintf(
                         '<comment>Warning:</comment> duplicate value found for time %s, service %s, dimension %s, field %s',
-                        $time, $service, $dimension, $fieldPrefix . $name
+                        $time,
+                        $service,
+                        $dimension,
+                        $fieldPrefix . $name
                     ));
                 } else {
                     $values[$time][$service][$dimension][$fieldPrefix . $name] = Sketch::fromApiValue($value);
@@ -427,7 +436,7 @@ abstract class MetricsCommandBase extends CommandBase
         $divisor = 5; // Number of points per time range.
         // Number of seconds to round to:
         $granularity = 10;
-        foreach ([3600*24, 3600*6, 3600*3, 3600, 600, 300, 60, 30] as $level) {
+        foreach ([3600 * 24, 3600 * 6, 3600 * 3, 3600, 600, 300, 60, 30] as $level) {
             if ($range >= $level * $divisor) {
                 $granularity = $level;
                 break;

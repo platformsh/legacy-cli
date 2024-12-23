@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Override Symfony Console's TextDescriptor to customize the appearance of the
@@ -52,7 +53,7 @@ class CustomTextDescriptor extends TextDescriptor
 
         $this->writeText("\n");
         $definition = clone $command->getDefinition();
-        $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
+        $definition->setOptions(array_filter($definition->getOptions(), fn (InputOption $opt): bool => !$opt instanceof HiddenInputOption));
         $this->describeInputDefinition($definition, $options);
         $this->writeText("\n");
 
@@ -224,7 +225,8 @@ class CustomTextDescriptor extends TextDescriptor
         }
 
         $totalWidth = $options['total_width'] ?? $this->calculateTotalWidthForOptions(array($option));
-        $synopsis = sprintf('%s%s',
+        $synopsis = sprintf(
+            '%s%s',
             $option->getShortcut() ? sprintf('-%s, ', $option->getShortcut()) : '    ',
             sprintf('--%s%s', $option->getName(), $value)
         );
@@ -241,7 +243,8 @@ class CustomTextDescriptor extends TextDescriptor
         }
         $description = preg_replace('/\s*[\r\n]\s*/', "\n".str_repeat(' ', $totalWidth + 4), wordwrap($description, $descriptionWidth));
 
-        $this->writeText(sprintf('  <info>%s</info>  %s%s',
+        $this->writeText(sprintf(
+            '  <info>%s</info>  %s%s',
             $synopsis,
             str_repeat(' ', $spacingWidth),
             $description

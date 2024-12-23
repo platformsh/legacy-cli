@@ -15,7 +15,7 @@ use Platformsh\Client\Model\Project;
  */
 class GitDataApi
 {
-    const COMMIT_SYNTAX_HELP = 'This can also accept "HEAD", and caret (^) or tilde (~) suffixes for parent commits.';
+    public const COMMIT_SYNTAX_HELP = 'This can also accept "HEAD", and caret (^) or tilde (~) suffixes for parent commits.';
 
     private readonly Api $api;
     private readonly CacheProvider $cache;

@@ -240,7 +240,7 @@ class AdaptiveTable extends Table
 
         // Ensure that tags are closed at the end of each line and re-opened at
         // the beginning of the next one.
-        $wrapped = preg_replace_callback('@(<' . $tagRegex . '>)(((?!(?<!\\\)</).)+)@s', fn(array $matches) => $matches[1] . str_replace("\n", "</>\n" . $matches[1], $matches[2]), $wrapped);
+        $wrapped = preg_replace_callback('@(<' . $tagRegex . '>)(((?!(?<!\\\)</).)+)@s', fn (array $matches) => $matches[1] . str_replace("\n", "</>\n" . $matches[1], $matches[2]), $wrapped);
 
         return $wrapped;
     }

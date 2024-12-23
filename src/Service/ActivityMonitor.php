@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityMonitor
 {
-    const STREAM_WAIT = 200000; // microseconds
+    public const STREAM_WAIT = 200000; // microseconds
 
     private const RESULT_NAMES = [
         Activity::RESULT_FAILURE => 'failure',
@@ -129,7 +129,7 @@ class ActivityMonitor
             return $this->formatState($overrideState ?: $activity->state);
         });
         $startTime = $this->getStart($activity) ?: time();
-        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn () => $this->formatDuration(time() - $startTime));
         $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
         $bar->setFormat('[%bar%] <fg=%fgColor%>%elapsed:6s%</> (%state%)');
         $bar->start();
@@ -289,7 +289,8 @@ class ActivityMonitor
      *
      * @return array{'items': LogItem[], 'seal': bool}
      */
-    private function parseLog(string &$buffer): array {
+    private function parseLog(string &$buffer): array
+    {
         if (\strlen($buffer) <= 1) {
             return ['items' => [], 'seal' => false];
         }
@@ -313,7 +314,8 @@ class ActivityMonitor
      *
      * @return string
      */
-    public function formatLog(array $items, bool|string $timestamps = false): string {
+    public function formatLog(array $items, bool|string $timestamps = false): string
+    {
         $timestampFormat = false;
         if ($timestamps !== false) {
             $timestampFormat = $timestamps === true ? $this->config->getStr('application.date_format') : $timestamps;
@@ -357,8 +359,8 @@ class ActivityMonitor
         }
 
         // Split integration and non-integration activities, and put the latter first.
-        $integrationActivities = array_filter($activities, fn(Activity $a): bool => str_starts_with($a->type, 'integration.'));
-        $nonIntegrationActivities = array_filter($activities, fn(Activity $a): bool => !str_starts_with($a->type, 'integration.'));
+        $integrationActivities = array_filter($activities, fn (Activity $a): bool => str_starts_with($a->type, 'integration.'));
+        $nonIntegrationActivities = array_filter($activities, fn (Activity $a): bool => !str_starts_with($a->type, 'integration.'));
         $activities = array_merge($nonIntegrationActivities, $integrationActivities);
 
         // For more than one activity, output a list of their descriptions.
@@ -462,7 +464,7 @@ class ActivityMonitor
             return implode(', ', $withCount);
         });
         $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
-        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn () => $this->formatDuration(time() - $startTime));
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix
@@ -654,7 +656,8 @@ class ActivityMonitor
      *
      * @return false|int
      */
-    private function getStart(Activity $activity): int|false {
+    private function getStart(Activity $activity): int|false
+    {
         return !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
     }
 
@@ -667,7 +670,8 @@ class ActivityMonitor
      *
      * @return resource
      */
-    private function getLogStream(Activity $activity, ProgressBar $bar) {
+    private function getLogStream(Activity $activity, ProgressBar $bar)
+    {
         $url = $activity->getLink('log');
 
         // Try fetching the stream with a 10 second timeout per call, and a .5

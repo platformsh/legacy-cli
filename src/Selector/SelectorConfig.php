@@ -41,7 +41,7 @@ class SelectorConfig
      */
     public static function filterEnvsMaybeActive(): callable
     {
-        return fn(Environment $e): bool => \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
+        return fn (Environment $e): bool => \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
     }
 
     /**
@@ -51,6 +51,6 @@ class SelectorConfig
      */
     public static function filterEnvsByStatus(array $statuses): callable
     {
-        return fn(Environment $e): bool => \in_array($e->status, $statuses, true);
+        return fn (Environment $e): bool => \in_array($e->status, $statuses, true);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Service\Login;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Question\Question;
 #[AsCommand(name: 'auth:api-token-login', description: 'Log in using an API token')]
 class ApiTokenLoginCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Login $login, private readonly QuestionHelper $questionHelper, private readonly TokenConfig $tokenConfig)
     {
         parent::__construct();
@@ -95,7 +95,8 @@ class ApiTokenLoginCommand extends CommandBase
      * @param string      $apiToken
      * @param AccessToken $accessToken
      */
-    private function saveTokens(string $apiToken, AccessToken $accessToken): void {
+    private function saveTokens(string $apiToken, AccessToken $accessToken): void
+    {
         $this->api->logout();
         $this->tokenConfig->storage()->storeToken($apiToken);
 
@@ -110,7 +111,8 @@ class ApiTokenLoginCommand extends CommandBase
      *
      * @return bool
      */
-    private function exceptionMeansInvalidToken(\Exception $e): bool {
+    private function exceptionMeansInvalidToken(\Exception $e): bool
+    {
         if (!$e instanceof BadResponseException || !in_array($e->getResponse()->getStatusCode(), [400, 401], true)) {
             return false;
         }

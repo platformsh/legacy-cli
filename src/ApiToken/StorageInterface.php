@@ -2,7 +2,8 @@
 
 namespace Platformsh\Cli\ApiToken;
 
-interface StorageInterface {
+interface StorageInterface
+{
     /**
      * Loads the API token.
      */

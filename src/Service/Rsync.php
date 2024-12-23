@@ -9,7 +9,6 @@ use Platformsh\Cli\Exception\ProcessFailedException;
  */
 readonly class Rsync
 {
-
     /**
      * Constructor.
      *
@@ -26,7 +25,8 @@ readonly class Rsync
      *
      * @return array<string, string>
      */
-    private function env(string $sshUrl): array {
+    private function env(string $sshUrl): array
+    {
         return [
             'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, omitUrl: true),
         ] + $this->ssh->getEnv();

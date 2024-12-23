@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Selector\Selector;
@@ -13,11 +14,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'local:clean', description: 'Remove old project builds', aliases: ['clean'])]
 class LocalCleanCommand extends CommandBase
 {
-        protected bool $hiddenInList = true;
-        public function __construct(private readonly LocalBuild $localBuild, private readonly Selector $selector)
-        {
-            parent::__construct();
-        }
+    protected bool $hiddenInList = true;
+    public function __construct(private readonly LocalBuild $localBuild, private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
 
     protected function configure(): void
     {

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -21,7 +22,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:create', description: 'Make a backup of an environment', aliases: ['backup'])]
 class BackupCreateCommand extends CommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();
@@ -30,7 +30,10 @@ class BackupCreateCommand extends CommandBase
     {
         $this
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment')
-            ->addOption('live', null, InputOption::VALUE_NONE,
+            ->addOption(
+                'live',
+                null,
+                InputOption::VALUE_NONE,
                 'Live backup: do not stop the environment.'
                 . "\n" . 'If set, this leaves the environment running and open to connections during the backup.'
                 . "\n" . 'This reduces downtime, at the risk of backing up data in an inconsistent state.'

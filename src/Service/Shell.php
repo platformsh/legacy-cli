@@ -49,7 +49,7 @@ class Shell
     public function executeSimple(string $commandline, ?string $dir = null, array $env = []): int
     {
         $this->stdErr->writeln(
-            sprintf( '%sRunning command: <info>%s</info>', $this->debugPrefix, $commandline),
+            sprintf('%sRunning command: <info>%s</info>', $this->debugPrefix, $commandline),
             OutputInterface::VERBOSITY_VERY_VERBOSE
         );
 
@@ -146,7 +146,7 @@ class Shell
         }
 
         $this->stdErr->writeln(
-            sprintf( '%sRunning command: <info>%s</info>', $this->debugPrefix, $process->getCommandLine()),
+            sprintf('%sRunning command: <info>%s</info>', $this->debugPrefix, $process->getCommandLine()),
             OutputInterface::VERBOSITY_VERY_VERBOSE
         );
 
@@ -275,7 +275,8 @@ class Shell
      *
      * @return bool
      */
-    public function exceptionMeansCommandDoesNotExist(ProcessFailedException $e): bool {
+    public function exceptionMeansCommandDoesNotExist(ProcessFailedException $e): bool
+    {
         $process = $e->getProcess();
         if ($process->getExitCode() === 127) {
             return true;

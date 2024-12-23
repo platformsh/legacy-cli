@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Service\Io;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'self:install', description: 'Install or update CLI configuration files')]
 class SelfInstallCommand extends CommandBase
 {
-    const INSTALLED_FILENAME = 'self_installed';
+    public const INSTALLED_FILENAME = 'self_installed';
     public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Shell $shell, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
@@ -32,7 +33,8 @@ class SelfInstallCommand extends CommandBase
              ->addOption('shell-type', null, InputOption::VALUE_REQUIRED, 'The shell type for autocompletion (bash or zsh)');
         $this->setHiddenAliases(['local:install']);
         $cliName = $this->config->getStr('application.name');
-        $this->setHelp(<<<EOT
+        $this->setHelp(
+            <<<EOT
 This command automatically installs shell configuration for the {$cliName},
 adding autocompletion support and handy aliases. Bash and ZSH are supported.
 EOT
@@ -61,7 +63,7 @@ EOT
                 $contents = \preg_replace('/^##[^\n]*\n/m', '', $contents);
                 // Replace configuration keys inside double curly brackets with
                 // their values.
-                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn($matches) => $this->config->getStr($matches[1]), (string) $contents);
+                $contents = \preg_replace_callback('/\{\{ ?([a-z\d_.-]+) ?}}/', fn ($matches) => $this->config->getStr($matches[1]), (string) $contents);
                 $fs->dumpFile($configDir . DIRECTORY_SEPARATOR . $destFile, $contents);
             }
         } catch (\Exception $e) {

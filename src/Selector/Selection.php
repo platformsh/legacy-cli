@@ -16,8 +16,8 @@ class Selection
         private readonly ?Project                  $project = null,
         private readonly ?Environment              $environment = null,
         private ?string                            $appName = null,
-        private readonly ?RemoteContainerInterface $remoteContainer = null)
-    {
+        private readonly ?RemoteContainerInterface $remoteContainer = null
+    ) {
         $this->config = $config ?: new SelectorConfig();
     }
 
@@ -94,7 +94,8 @@ class Selection
     /**
      * Get the remote container selected by the user.
      */
-    public function getRemoteContainer(): RemoteContainerInterface {
+    public function getRemoteContainer(): RemoteContainerInterface
+    {
         if (!$this->remoteContainer) {
             throw new \BadMethodCallException('No container selected');
         }

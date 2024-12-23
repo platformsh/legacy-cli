@@ -15,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 readonly class ActivityLoader
 {
-
     private OutputInterface $stdErr;
 
     /**
@@ -85,7 +84,7 @@ readonly class ActivityLoader
             }
         }
         if (empty($typesFilter) && !empty($typesToExclude)) {
-            $typesFilter = \array_filter($availableTypes, fn($type): bool => !\in_array($type, $typesToExclude, true));
+            $typesFilter = \array_filter($availableTypes, fn ($type): bool => !\in_array($type, $typesToExclude, true));
         }
         if (!empty($typesFilter) && $this->stdErr->isDebug()) {
             $this->stdErr->writeln('<options=reverse>DEBUG</> Selected activity type(s): ' . implode(',', $typesFilter));
@@ -97,7 +96,7 @@ readonly class ActivityLoader
         }
         $activities = $this->load($apiResource, $limit, $typesFilter, $startsAt, $state, $result);
         if ($withOperation) {
-            $activities = array_filter($activities, fn(Activity $activity): bool => $activity->operationAvailable($withOperation));
+            $activities = array_filter($activities, fn (Activity $activity): bool => $activity->operationAvailable($withOperation));
         }
         return $activities;
     }

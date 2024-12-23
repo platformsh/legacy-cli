@@ -20,8 +20,7 @@ class SelfInstallChecker
         private readonly SubCommandRunner $subCommandRunner,
         private readonly State            $state,
         OutputInterface                   $output,
-    )
-    {
+    ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 

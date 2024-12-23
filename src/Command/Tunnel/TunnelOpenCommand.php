@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -34,7 +35,8 @@ class TunnelOpenCommand extends TunnelCommandBase
         $this->selector->addAppOption($this->getDefinition());
         $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
-        $this->setHelp(<<<EOF
+        $this->setHelp(
+            <<<EOF
 This command opens SSH tunnels to all of the relationships of an application.
 
 Connections can then be made to the application's services as if they were

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:checkout', description: 'Check out an environment', aliases: ['checkout'])]
 class EnvironmentCheckoutCommand extends CommandBase
 {
-
     public function __construct(
         private readonly Api            $api,
         private readonly Config         $config,
@@ -27,8 +27,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         private readonly LocalProject   $localProject,
         private readonly Selector       $selector,
         private readonly QuestionHelper $questionHelper
-    )
-    {
+    ) {
         parent::__construct();
     }
 

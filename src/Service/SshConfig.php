@@ -10,7 +10,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Process\Process;
 
-class SshConfig {
+class SshConfig
+{
     private readonly OutputInterface $stdErr;
     private false|string|null $openSshVersion = null;
 
@@ -520,7 +521,8 @@ class SshConfig {
      *
      * @return bool
      */
-    public function supportsInclude(): bool {
+    public function supportsInclude(): bool
+    {
         return !$this->versionIsBelow('7.3');
     }
 
@@ -529,7 +531,8 @@ class SshConfig {
      *
      * @return bool
      */
-    public function supportsCertificateFile(): bool {
+    public function supportsCertificateFile(): bool
+    {
         return !$this->versionIsBelow('7.2');
     }
 

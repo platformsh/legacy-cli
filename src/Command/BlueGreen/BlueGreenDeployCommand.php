@@ -85,7 +85,7 @@ class BlueGreenDeployCommand extends CommandBase
             $this->stdErr->writeln(sprintf('Version <info>%s</info> has now been deployed.', $latestVersionData['id']));
             $this->stdErr->writeln(sprintf('List versions with: <info>%s versions</info>.', $this->config->getStr('application.executable')));
         } else {
-            $this->stdErr->writeln(sprintf('Version <info>%s</info> now has a routing percentage of %d.', $latestVersionData['id'] ,$targetPercentage));
+            $this->stdErr->writeln(sprintf('Version <info>%s</info> now has a routing percentage of %d.', $latestVersionData['id'], $targetPercentage));
         }
 
         return 0;

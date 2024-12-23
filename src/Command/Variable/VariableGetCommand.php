@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -24,15 +25,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:get', description: 'View a variable', aliases: ['vget'])]
 class VariableGetCommand extends CommandBase
 {
-    public function __construct(private readonly Config              $config,
-                                private readonly Io                  $io,
-                                private readonly QuestionHelper      $questionHelper,
-                                private readonly PropertyFormatter   $propertyFormatter,
-                                private readonly Selector            $selector,
-                                private readonly SubCommandRunner    $subCommandRunner,
-                                private readonly Table               $table,
-                                private readonly VariableCommandUtil $variableCommandUtil)
-    {
+    public function __construct(
+        private readonly Config              $config,
+        private readonly Io                  $io,
+        private readonly QuestionHelper      $questionHelper,
+        private readonly PropertyFormatter   $propertyFormatter,
+        private readonly Selector            $selector,
+        private readonly SubCommandRunner    $subCommandRunner,
+        private readonly Table               $table,
+        private readonly VariableCommandUtil $variableCommandUtil
+    ) {
         parent::__construct();
     }
 
@@ -134,7 +136,8 @@ class VariableGetCommand extends CommandBase
         return 0;
     }
 
-    private function chooseVariable(Selection $selection, ?string $level): ProjectLevelVariable|EnvironmentLevelVariable|false {
+    private function chooseVariable(Selection $selection, ?string $level): ProjectLevelVariable|EnvironmentLevelVariable|false
+    {
         $projectVariables = [];
         if ($level === 'project' || $level === null) {
             foreach ($selection->getProject()->getVariables() as $variable) {

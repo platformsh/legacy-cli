@@ -8,8 +8,8 @@ use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Filesystem\Filesystem;
 
-class Manager {
-
+class Manager
+{
     private readonly Shell $shell;
 
     private static ?bool $isInstalled = null;
@@ -24,7 +24,8 @@ class Manager {
      *
      * @return bool
      */
-    public function isSupported(): bool {
+    public function isSupported(): bool
+    {
         if ($this->config->getBool('api.disable_credential_helpers')) {
             return false;
         }
@@ -41,7 +42,8 @@ class Manager {
      *
      * @return bool
      */
-    public function isInstalled(): bool {
+    public function isInstalled(): bool
+    {
         if (isset(self::$isInstalled)) {
             return self::$isInstalled;
         }
@@ -60,7 +62,8 @@ class Manager {
     /**
      * Installs the credential helper.
      */
-    public function install(): void {
+    public function install(): void
+    {
         if ($this->isInstalled()) {
             return;
         }
@@ -73,7 +76,8 @@ class Manager {
     /**
      * Stores a secret.
      */
-    public function store(string $serverUrl, string $secret): void {
+    public function store(string $serverUrl, string $secret): void
+    {
         $this->exec('store', json_encode([
             'ServerURL' => $serverUrl,
             'Username' => (string) (OsUtil::isWindows() ? getenv('USERNAME') : getenv('USER')),
@@ -84,7 +88,8 @@ class Manager {
     /**
      * Erases a secret.
      */
-    public function erase(string $serverUrl): void {
+    public function erase(string $serverUrl): void
+    {
         try {
             $this->exec('erase', $serverUrl);
         } catch (ProcessFailedException $e) {
@@ -99,7 +104,8 @@ class Manager {
     /**
      * Loads a secret.
      */
-    public function get(string $serverUrl): string|false {
+    public function get(string $serverUrl): string|false
+    {
         try {
             $data = $this->exec('get', $serverUrl);
         } catch (ProcessFailedException $e) {
@@ -122,7 +128,8 @@ class Manager {
      *
      * @return array<string, string>
      */
-    public function listAll(): array {
+    public function listAll(): array
+    {
         $data = $this->exec('list');
 
         return (array) json_decode($data, true);
@@ -133,7 +140,8 @@ class Manager {
      *
      * @param array{url: string, filename: string, sha256: string} $helper
      */
-    private function helperExists(array $helper, string $path): bool {
+    private function helperExists(array $helper, string $path): bool
+    {
         if (!file_exists($path) || !is_executable($path)) {
             return false;
         }
@@ -147,7 +155,8 @@ class Manager {
      * @param array{url: string, filename: string, sha256: string} $helper
      * @param string $destination
      */
-    private function download(array $helper, string $destination): void {
+    private function download(array $helper, string $destination): void
+    {
         if ($this->helperExists($helper, $destination)) {
             return;
         }
@@ -233,7 +242,8 @@ class Manager {
     /**
      * @return array<string, array<string, array{url: string, filename: string, sha256: string}>>
      */
-    private function getHelpers(): array {
+    private function getHelpers(): array
+    {
         return [
             'windows' => [
                 'amd64' => [
@@ -338,7 +348,8 @@ class Manager {
     /**
      * Executes a command on the credential helper.
      */
-    private function exec(string $command, mixed $input = null): string {
+    private function exec(string $command, mixed $input = null): string
+    {
         $this->install();
 
         return $this->shell->mustExecute([$this->getExecutablePath(), $command], timeout: 10, input: $input);
@@ -349,7 +360,8 @@ class Manager {
      *
      * @return string
      */
-    private function getExecutablePath(): string {
+    private function getExecutablePath(): string
+    {
         $path = $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . 'credential-helper';
         if (OsUtil::isWindows()) {
             $path .= '.exe';

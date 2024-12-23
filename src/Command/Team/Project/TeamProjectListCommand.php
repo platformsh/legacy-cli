@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Team\Project;
 
 use Platformsh\Cli\Selector\Selector;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'team:project:list', description: 'List projects in a team', aliases: ['team:projects', 'team:pro'])]
 class TeamProjectListCommand extends TeamCommandBase
 {
-    const MAX_COUNT = 200;
+    public const MAX_COUNT = 200;
 
     /** @var array<string, string> */
     private array $tableHeader = [

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Service\SubCommandRunner;
@@ -295,8 +296,7 @@ class SelfReleaseCommand extends CommandBase
         $result = file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         if ($result !== false) {
             $this->stdErr->writeln('Updated manifest file: ' . $manifestFile);
-        }
-        else {
+        } else {
             $this->stdErr->writeln('Failed to update manifest file: ' . $manifestFile);
 
             return 1;

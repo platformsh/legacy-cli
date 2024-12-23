@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Organization;
 
 use Platformsh\Cli\Service\CountryService;
@@ -18,7 +19,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:create', description: 'Create a new organization')]
 class OrganizationCreateCommand extends OrganizationCommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly CountryService $countryService, private readonly QuestionHelper $questionHelper, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
@@ -46,15 +46,15 @@ END_HELP;
             ]),
             'name' => new Field('Name', [
                 'description' => 'The organization machine name, used for URL paths and similar purposes.',
-                'defaultCallback' => fn($values) => isset($values['label']) ? (new Slugify())->slugify($values['label']) : null,
+                'defaultCallback' => fn ($values) => isset($values['label']) ? (new Slugify())->slugify($values['label']) : null,
             ]),
             'country' => new OptionsField('Country', [
                 'description' => 'The organization country. Used as the default for the billing address.',
                 'options' => $countryList,
                 'asChoice' => false,
-                'defaultCallback' => fn() => $this->api->getUser()->country ?: null,
+                'defaultCallback' => fn () => $this->api->getUser()->country ?: null,
                 'normalizer' => $this->countryService->countryToCode(...),
-                'validator' => fn($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
+                'validator' => fn ($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
             ]),
         ]);
     }

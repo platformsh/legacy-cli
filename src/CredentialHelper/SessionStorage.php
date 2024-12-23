@@ -60,7 +60,8 @@ readonly class SessionStorage implements SessionStorageInterface
      *
      * @return bool
      */
-    public function hasAnySessions(): bool {
+    public function hasAnySessions(): bool
+    {
         return count($this->listAllServerUrls()) > 0;
     }
 
@@ -82,7 +83,8 @@ readonly class SessionStorage implements SessionStorageInterface
     /**
      * Deletes all sessions from the credential store.
      */
-    public function deleteAll(): void {
+    public function deleteAll(): void
+    {
         foreach ($this->listAllServerUrls() as $url) {
             $this->manager->erase($url);
         }
@@ -91,10 +93,11 @@ readonly class SessionStorage implements SessionStorageInterface
     /**
      * @return string[]
      */
-    private function listAllServerUrls(): array {
+    private function listAllServerUrls(): array
+    {
         $list = $this->manager->listAll();
 
-        return array_filter(array_keys($list), fn($url): bool => str_starts_with((string) $url, $this->serverUrlBase . '/'));
+        return array_filter(array_keys($list), fn ($url): bool => str_starts_with((string) $url, $this->serverUrlBase . '/'));
     }
 
     /**

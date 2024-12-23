@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Console;
 
 use Platformsh\Cli\Command\CommandBase;

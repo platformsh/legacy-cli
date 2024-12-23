@@ -160,7 +160,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         ));
         $this->stdErr->writeln('  Memory: ' . $this->resourcesUtil->formatChange(
             $current['memory'],
-                $updates['memory'] ?? $current['memory'],
+            $updates['memory'] ?? $current['memory'],
             ' MB'
         ));
     }

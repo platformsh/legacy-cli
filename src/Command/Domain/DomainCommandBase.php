@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\Selection;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class DomainCommandBase extends CommandBase
 {
-
     private Selector $selector;
     private QuestionHelper $questionHelper;
     private Config $config;
@@ -34,7 +34,7 @@ abstract class DomainCommandBase extends CommandBase
     protected ?string $attach = null;
 
     #[Required]
-    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector) : void
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper, Selector $selector): void
     {
         $this->api = $api;
         $this->config = $config;

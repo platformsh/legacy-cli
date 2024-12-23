@@ -18,7 +18,7 @@ class RepoCommandBase extends CommandBase
     private Config $config;
 
     #[Required]
-    public function autowire(Config $config, GitDataApi $gitDataApi) : void
+    public function autowire(Config $config, GitDataApi $gitDataApi): void
     {
         $this->config = $config;
         $this->gitDataApi = $gitDataApi;
@@ -102,9 +102,9 @@ class RepoCommandBase extends CommandBase
         $treeObjects = $tree->tree;
         if ($input->hasOption('files') && $input->hasOption('directories')) {
             if ($input->getOption('files') && !$input->getOption('directories')) {
-                $treeObjects = array_filter($treeObjects, fn(array $treeObject): bool => $treeObject['type'] === 'blob');
+                $treeObjects = array_filter($treeObjects, fn (array $treeObject): bool => $treeObject['type'] === 'blob');
             } elseif ($input->getOption('directories') && !$input->getOption('files')) {
-                $treeObjects = array_filter($treeObjects, fn(array $treeObject): bool => $treeObject['type'] === 'tree');
+                $treeObjects = array_filter($treeObjects, fn (array $treeObject): bool => $treeObject['type'] === 'tree');
             }
         }
 

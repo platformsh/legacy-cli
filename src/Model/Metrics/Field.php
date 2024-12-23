@@ -6,14 +6,14 @@ use Symfony\Component\Console\Helper\FormatterHelper;
 
 class Field
 {
-    const RED_WARNING_THRESHOLD = 90; // percent
-    const YELLOW_WARNING_THRESHOLD = 80; // percent
+    public const RED_WARNING_THRESHOLD = 90; // percent
+    public const YELLOW_WARNING_THRESHOLD = 80; // percent
 
-    const FORMAT_ROUNDED = 'rounded';
-    const FORMAT_ROUNDED_2DP = 'rounded_2';
-    const FORMAT_PERCENT = 'percent';
-    const FORMAT_DISK = 'disk';
-    const FORMAT_MEMORY = 'memory';
+    public const FORMAT_ROUNDED = 'rounded';
+    public const FORMAT_ROUNDED_2DP = 'rounded_2';
+    public const FORMAT_PERCENT = 'percent';
+    public const FORMAT_DISK = 'disk';
+    public const FORMAT_MEMORY = 'memory';
 
     public function __construct(private readonly string $name, private readonly string $format)
     {

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\User;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -16,13 +17,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'user:delete', description: 'Delete a user from the project')]
 class UserDeleteCommand extends CommandBase
 {
-
-    public function __construct(private readonly AccessApi         $accessApi,
-                                protected readonly ActivityMonitor $activityMonitor,
-                                private readonly Api               $api,
-                                private readonly QuestionHelper    $questionHelper,
-                                private readonly Selector          $selector)
-    {
+    public function __construct(
+        private readonly AccessApi         $accessApi,
+        protected readonly ActivityMonitor $activityMonitor,
+        private readonly Api               $api,
+        private readonly QuestionHelper    $questionHelper,
+        private readonly Selector          $selector
+    ) {
         parent::__construct();
     }
 

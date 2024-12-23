@@ -13,7 +13,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'session:switch', description: 'Switch between sessions')]
-class SessionSwitchCommand extends CommandBase {
+class SessionSwitchCommand extends CommandBase
+{
     protected bool $hiddenInList = true;
     protected string $stability = self::STABILITY_BETA;
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly SshConfig $sshConfig)

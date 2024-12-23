@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Service\Login;
@@ -39,7 +40,7 @@ class BrowserLoginCommand extends CommandBase
 
         $this
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Log in again, even if already logged in')
-            ->addOption('method', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Require specific authentication method(s)')
+            ->addOption('method', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Require specific authentication method(s)')
             ->addOption('max-age', null, InputOption::VALUE_REQUIRED, 'The maximum age (in seconds) of the web authentication session');
         Url::configureInput($this->getDefinition());
 

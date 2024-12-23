@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Finds the correct project and environment for a given URL/string.
@@ -80,7 +81,7 @@ readonly class Identifier
         $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
 
         if (preg_match($site_pattern, $host)) {
-            list($env_project_app,) = explode('.', $host, 2);
+            list($env_project_app, ) = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);
             }

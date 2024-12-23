@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Override Symfony Console's HelpCommand to customize the appearance of help.
@@ -43,7 +44,8 @@ class HelpCommand extends CommandBase
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, json, or md)', 'txt'),
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command help'),
             ])
-            ->setHelp(<<<'EOF'
+            ->setHelp(
+                <<<'EOF'
                 The <info>%command.name%</info> command displays help for a given command:
 
                   <info>%command.full_name% list</info>

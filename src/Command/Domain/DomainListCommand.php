@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -121,8 +122,7 @@ class DomainListCommand extends DomainCommandBase
                         OsUtil::escapeShellArg($environment->name)
                     ));
                 }
-            }
-            else {
+            } else {
                 $this->stdErr->writeln('No domains found for ' . $this->api->getProjectLabel($project) . '.');
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(

@@ -57,7 +57,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
                 $this->stdErr->writeln('A user email address is required.');
                 return 1;
             } else {
-                $email = $this->questionHelper->askInput('Enter the email address of a user to add', null, [], fn($answer) => $this->validateEmail($answer));
+                $email = $this->questionHelper->askInput('Enter the email address of a user to add', null, [], fn ($answer) => $this->validateEmail($answer));
                 $this->stdErr->writeln('');
             }
         }

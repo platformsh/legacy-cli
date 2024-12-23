@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -14,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'domain:update', description: 'Update a domain')]
 class DomainUpdateCommand extends DomainCommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Selector $selector)
     {
         parent::__construct();
@@ -41,7 +41,7 @@ class DomainUpdateCommand extends DomainCommandBase
         $selectorConfig = new SelectorConfig(envRequired: false);
         if ($this->isForEnvironment($input)) {
             $selectorConfig = new SelectorConfig(
-                chooseEnvFilter: fn(Environment $e): bool => $e->type !== 'production',
+                chooseEnvFilter: fn (Environment $e): bool => $e->type !== 'production',
             );
         }
         $selection = $this->selector->getSelection($input, $selectorConfig);

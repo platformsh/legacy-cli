@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Selector\Selector;
@@ -18,7 +19,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'local:build', description: 'Build the current project locally', aliases: ['build'])]
 class LocalBuildCommand extends CommandBase
 {
-
     public function __construct(private readonly Config $config, private readonly Filesystem $filesystem, private readonly LocalBuild $localBuild, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();

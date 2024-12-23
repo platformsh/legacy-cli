@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -17,7 +18,7 @@ use Symfony\Component\Process\Process;
 #[AsCommand(name: 'environment:xdebug', description: 'Open a tunnel to Xdebug on the environment', aliases: ['xdebug'])]
 class EnvironmentXdebugCommand extends CommandBase
 {
-    const SOCKET_PATH = '/run/xdebug-tunnel.sock';
+    public const SOCKET_PATH = '/run/xdebug-tunnel.sock';
     public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly Io $io, private readonly Selector $selector, private readonly Ssh $ssh)
     {
         parent::__construct();

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\SelfUpdate;
 
 use Humbug\SelfUpdate\Exception\HttpRequestException;
@@ -113,7 +114,7 @@ class ManifestStrategy implements StrategyInterface
                 }
             }
         }
-        uksort($notes, fn($a, $b): int => \version_compare($a, $b));
+        uksort($notes, fn ($a, $b): int => \version_compare($a, $b));
         return $notes;
     }
 

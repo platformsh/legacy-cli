@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Service\Io;
@@ -151,7 +152,7 @@ class ProjectGetCommand extends CommandBase
             $this->io->debug('Initializing the project');
             $localProject->mapDirectory($projectRoot, $project);
 
-            if($this->git->getCurrentBranch($projectRoot) != $project->default_branch) {
+            if ($this->git->getCurrentBranch($projectRoot) != $project->default_branch) {
                 $this->io->debug('current branch does not match the default_branch, create it.');
                 $this->git->checkOutNew($project->default_branch, null, null, $projectRoot);
             }
@@ -252,7 +253,8 @@ class ProjectGetCommand extends CommandBase
      *
      * @return void
      */
-    private function validateDepth(InputInterface $input): void {
+    private function validateDepth(InputInterface $input): void
+    {
         if ($input->getOption('depth') !== null && !preg_match('/^[0-9]+$/', (string) $input->getOption('depth'))) {
             throw new InvalidArgumentException('The --depth value must be an integer.');
         }
@@ -263,7 +265,8 @@ class ProjectGetCommand extends CommandBase
      *
      * @return void
      */
-    private function mergeProjectArgument(InputInterface $input): void {
+    private function mergeProjectArgument(InputInterface $input): void
+    {
         if ($input->getOption('project') && $input->getArgument('project')) {
             throw new InvalidArgumentException('You cannot use both the --project option and the <project> argument.');
         }
@@ -278,7 +281,8 @@ class ProjectGetCommand extends CommandBase
      *
      * @return string
      */
-    private function chooseDirectory(Project $project, InputInterface $input): string {
+    private function chooseDirectory(Project $project, InputInterface $input): string
+    {
         $directory = $input->getArgument('directory');
         if (empty($directory)) {
             $slugify = new Slugify();
@@ -310,7 +314,7 @@ class ProjectGetCommand extends CommandBase
         // Remove the path from the git URI to get the SSH part.
         $gitSshUri = '';
         if (str_contains($gitUrl, ':')) {
-            list($gitSshUri,) = explode(':', $gitUrl, 2);
+            list($gitSshUri, ) = explode(':', $gitUrl, 2);
         }
         $this->sshDiagnostics->diagnoseFailure($gitSshUri, $process);
     }

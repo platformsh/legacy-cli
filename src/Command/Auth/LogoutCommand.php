@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Service\Config;
@@ -13,7 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:logout', description: 'Log out', aliases: ['logout'])]
 class LogoutCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly SshConfig $sshConfig)
     {
         parent::__construct();
@@ -38,7 +38,7 @@ class LogoutCommand extends CommandBase
         if ($input->getOption('other') && !$input->getOption('all')) {
             $currentSessionId = $this->config->getSessionId();
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $currentSessionId));
-            $other = \array_filter($this->api->listSessionIds(), fn($sessionId): bool => $sessionId !== $currentSessionId);
+            $other = \array_filter($this->api->listSessionIds(), fn ($sessionId): bool => $sessionId !== $currentSessionId);
             if (empty($other)) {
                 $this->stdErr->writeln('No other sessions exist.');
                 return 0;

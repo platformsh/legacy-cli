@@ -210,7 +210,7 @@ class Git
             return false;
         }
 
-        $branches = array_map(fn($line) => trim(ltrim($line, '* ')), explode("\n", $result));
+        $branches = array_map(fn ($line) => trim(ltrim($line, '* ')), explode("\n", $result));
 
         return in_array($branchName, $branches, true);
     }
@@ -266,7 +266,8 @@ class Git
     /**
      * Pulls a ref from a repository (runs "git pull").
      */
-    public function pull(?string $repository = null, ?string $ref = null, ?string $dir = null, bool $mustRun = true, bool $quiet = false): bool {
+    public function pull(?string $repository = null, ?string $ref = null, ?string $dir = null, bool $mustRun = true, bool $quiet = false): bool
+    {
         $args = ['pull'];
         if ($repository !== null) {
             $args[] = $repository;
