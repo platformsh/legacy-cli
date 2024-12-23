@@ -18,7 +18,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'environment:synchronize', description: "Synchronize an environment's code, data and/or resources rom its parent", aliases: ['sync'])]
+#[AsCommand(name: 'environment:synchronize', description: "Synchronize an environment's code, data and/or resources from its parent", aliases: ['sync'])]
 class EnvironmentSynchronizeCommand extends CommandBase
 {
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
