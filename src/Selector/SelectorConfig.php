@@ -19,8 +19,7 @@ class SelectorConfig
         public bool $requireApiOnLocal = false,
         /** @var callable|null */
         public mixed $chooseEnvFilter = null,
-    ) {
-    }
+    ) {}
 
     public function with(
         ?bool $envRequired = null,
@@ -41,7 +40,7 @@ class SelectorConfig
      */
     public static function filterEnvsMaybeActive(): callable
     {
-        return fn (Environment $e): bool => \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
+        return fn(Environment $e): bool => \in_array($e->status, ['active', 'dirty'], true) || count($e->getSshUrls()) > 0;
     }
 
     /**
@@ -51,6 +50,6 @@ class SelectorConfig
      */
     public static function filterEnvsByStatus(array $statuses): callable
     {
-        return fn (Environment $e): bool => \in_array($e->status, $statuses, true);
+        return fn(Environment $e): bool => \in_array($e->status, $statuses, true);
     }
 }

@@ -97,7 +97,7 @@ readonly class SessionStorage implements SessionStorageInterface
     {
         $list = $this->manager->listAll();
 
-        return array_filter(array_keys($list), fn ($url): bool => str_starts_with((string) $url, $this->serverUrlBase . '/'));
+        return array_filter(array_keys($list), fn($url): bool => str_starts_with((string) $url, $this->serverUrlBase . '/'));
     }
 
     /**

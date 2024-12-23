@@ -19,9 +19,7 @@ class RemoteEnvVars
      * @param CacheProvider   $cache
      * @param Config          $config
      */
-    public function __construct(protected Ssh $ssh, protected CacheProvider $cache, protected Config $config)
-    {
-    }
+    public function __construct(protected Ssh $ssh, protected CacheProvider $cache, protected Config $config) {}
 
     /**
      * Read an environment variable from a remote application.

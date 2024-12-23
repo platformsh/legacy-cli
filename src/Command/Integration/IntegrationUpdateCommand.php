@@ -30,7 +30,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->addExample(
             'Switch on the "fetch branches" option for a specific integration',
-            'ZXhhbXBsZSB --fetch-branches 1'
+            'ZXhhbXBsZSB --fetch-branches 1',
         );
     }
 
@@ -38,7 +38,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
     {
         $this->io->warnAboutDeprecatedOptions(
             ['type'],
-            'The --type option is not supported on the integration:update command. The integration type cannot be changed.'
+            'The --type option is not supported on the integration:update command. The integration type cannot be changed.',
         );
 
         $selection = $this->selector->getSelection($input);
@@ -104,7 +104,7 @@ class IntegrationUpdateCommand extends IntegrationCommandBase
                 $this->stdErr->writeln(sprintf(
                     'The integration <error>%s</error> (type: %s) is invalid.',
                     $integration->id,
-                    $integration->type
+                    $integration->type,
                 ));
                 $this->stdErr->writeln('');
                 $this->listValidationErrors($errors, $output);

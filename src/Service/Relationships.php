@@ -19,9 +19,7 @@ class Relationships implements InputConfiguringInterface
     /**
      * @param RemoteEnvVars $envVarService
      */
-    public function __construct(protected RemoteEnvVars $envVarService)
-    {
-    }
+    public function __construct(protected RemoteEnvVars $envVarService) {}
 
     /**
      * @param InputDefinition $definition
@@ -29,7 +27,7 @@ class Relationships implements InputConfiguringInterface
     public static function configureInput(InputDefinition $definition): void
     {
         $definition->addOption(
-            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The service relationship to use')
+            new InputOption('relationship', 'r', InputOption::VALUE_REQUIRED, 'The service relationship to use'),
         );
     }
 
@@ -180,7 +178,7 @@ class Relationships implements InputConfiguringInterface
     public function getRelationships(HostInterface $host, bool $refresh = false): array
     {
         return $this->normalizeRelationships(
-            $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh)
+            $this->envVarService->getArrayEnvVar('RELATIONSHIPS', $host, $refresh),
         );
     }
 
@@ -205,7 +203,7 @@ class Relationships implements InputConfiguringInterface
                 if (isset($instance['scheme']) && isset($instance['host'])
                     && $instance['scheme'] === 'mongodb' && str_starts_with((string) $instance['host'], 'mongodb://')) {
                     $mongodbUri = $instance['host'];
-                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', fn ($matches): string => $matches[1] . \explode(',', (string) $matches[2])[0] . $matches[3], (string) $mongodbUri);
+                    $url = \preg_replace_callback('#^(mongodb://)([^/?]+)([/?]|$)#', fn($matches): string => $matches[1] . \explode(',', (string) $matches[2])[0] . $matches[3], (string) $mongodbUri);
                     $urlParts = \parse_url((string) $url);
                     if ($urlParts) {
                         $instance = array_merge($urlParts, $instance);
@@ -283,7 +281,7 @@ class Relationships implements InputConfiguringInterface
                     $database['username'],
                     $database['password'],
                     $database['host'],
-                    $database['port']
+                    $database['port'],
                 );
                 if ($schema !== '') {
                     $url .= '/' . rawurlencode((string) $schema);
@@ -300,7 +298,7 @@ class Relationships implements InputConfiguringInterface
                     OsUtil::escapePosixShellArg($database['username']),
                     OsUtil::escapePosixShellArg($database['password']),
                     OsUtil::escapePosixShellArg($database['host']),
-                    $database['port']
+                    $database['port'],
                 );
                 if ($schema !== '') {
                     $args .= ' ' . OsUtil::escapePosixShellArg($schema);
@@ -323,7 +321,7 @@ class Relationships implements InputConfiguringInterface
                     OsUtil::escapePosixShellArg($database['username']),
                     OsUtil::escapePosixShellArg($database['password']),
                     OsUtil::escapePosixShellArg($database['host']),
-                    $database['port']
+                    $database['port'],
                 );
                 if ($schema !== '') {
                     $args .= ' --authenticationDatabase ' . OsUtil::escapePosixShellArg($schema);

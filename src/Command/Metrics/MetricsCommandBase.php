@@ -127,8 +127,8 @@ abstract class MetricsCommandBase extends CommandBase
             . "\n" . \sprintf(
                 'Minimum <comment>%s</comment>, maximum <comment>8h</comment> or more (depending on the project), default <comment>%s</comment>.',
                 $duration->humanize(self::MIN_RANGE),
-                $duration->humanize(self::DEFAULT_RANGE)
-            )
+                $duration->humanize(self::DEFAULT_RANGE),
+            ),
         );
         // The $default is left at null so the lack of input can be detected.
         $this->addOption(
@@ -137,7 +137,7 @@ abstract class MetricsCommandBase extends CommandBase
             InputOption::VALUE_REQUIRED,
             'The time interval. Defaults to a division of the range.'
             . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
-            . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL))
+            . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL)),
         );
         $this->addOption('to', null, InputOption::VALUE_REQUIRED, 'The end time. Defaults to now.');
         $this->addOption('latest', '1', InputOption::VALUE_NONE, 'Show only the latest single data point');
@@ -220,7 +220,7 @@ abstract class MetricsCommandBase extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'No query fields are defined for the deployment type: <comment>%s</comment>. Falling back to: <comment>%s</comment>',
                 $deploymentType,
-                $fallback
+                $fallback,
             ));
             $deploymentType = $fallback;
         }
@@ -321,7 +321,7 @@ abstract class MetricsCommandBase extends CommandBase
                         $time,
                         $service,
                         $dimension,
-                        $fieldPrefix . $name
+                        $fieldPrefix . $name,
                     ));
                 } else {
                     $values[$time][$service][$dimension][$fieldPrefix . $name] = Sketch::fromApiValue($value);
@@ -410,7 +410,7 @@ abstract class MetricsCommandBase extends CommandBase
                 'The --interval <error>%s</error> is too short relative to the --range (<error>%s</error>): the maximum number of intervals is <error>%d</error>.',
                 (new Duration())->humanize($interval),
                 (new Duration())->humanize($rangeSeconds),
-                self::MAX_INTERVALS
+                self::MAX_INTERVALS,
             ));
             return false;
         }

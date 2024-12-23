@@ -24,7 +24,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
             ->addArgument(
                 'id',
                 InputArgument::OPTIONAL,
-                'The ID of the SSH key to delete'
+                'The ID of the SSH key to delete',
             );
         $this->addExample('Delete the key 123', '123');
         $help = 'This command lets you delete SSH keys from your account.'
@@ -51,7 +51,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
             $this->stdErr->writeln('<error>You must specify the ID of the SSH key to delete.</error>');
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
-                'List your SSH keys with: <comment>' . $this->config->getStr('application.executable') . ' ssh-keys</comment>'
+                'List your SSH keys with: <comment>' . $this->config->getStr('application.executable') . ' ssh-keys</comment>',
             );
 
             return 1;
@@ -70,7 +70,7 @@ class SshKeyDeleteCommand extends SshKeyCommandBase
         $this->stdErr->writeln(sprintf(
             'The SSH key <info>%s</info> has been deleted from your %s account.',
             $id,
-            $this->config->getStr('service.name')
+            $this->config->getStr('service.name'),
         ));
 
         // Reset and warm the SSH keys cache.

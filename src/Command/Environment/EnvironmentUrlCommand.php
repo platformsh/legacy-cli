@@ -77,7 +77,7 @@ class EnvironmentUrlCommand extends CommandBase
         }
 
         // Build a list of all the route URLs.
-        $urls = array_map(fn (Route $route) => $route->url, $routes);
+        $urls = array_map(fn(Route $route) => $route->url, $routes);
 
         $this->displayOrOpenUrls($urls, $input, $output);
 

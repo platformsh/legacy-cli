@@ -126,7 +126,7 @@ class Selector implements CompleterInterface
             $this->stdErr->writeln(sprintf(
                 'Project ID read from environment variable %s: %s',
                 $envPrefix . 'PROJECT',
-                $projectId
+                $projectId,
             ), OutputInterface::VERBOSITY_VERBOSE);
         }
 
@@ -146,8 +146,8 @@ class Selector implements CompleterInterface
                     sprintf(
                         'You cannot use both the <%s> argument and the --%s option',
                         $envArgName,
-                        $envOptionName
-                    )
+                        $envOptionName,
+                    ),
                 );
             }
             $argument = $input->getArgument($envArgName);
@@ -292,7 +292,7 @@ class Selector implements CompleterInterface
         if ($config->detectCurrentEnv) {
             throw new RootNotFoundException(
                 "Could not determine the current project."
-                    . "\n\nSpecify it using --project, or go to a project directory."
+                    . "\n\nSpecify it using --project, or go to a project directory.",
             );
         }
 
@@ -349,7 +349,7 @@ class Selector implements CompleterInterface
             $this->stdErr->writeln(sprintf(
                 'Environment ID read from environment variable %s: %s',
                 $envPrefix . 'BRANCH',
-                $environmentId
+                $environmentId,
             ), OutputInterface::VERBOSITY_VERBOSE);
         }
 
@@ -552,7 +552,7 @@ class Selector implements CompleterInterface
                 }
                 throw new ProjectNotFoundException(
                     "Project not found: " . $config['id']
-                    . "\nEither you do not have access to the project or it no longer exists."
+                    . "\nEither you do not have access to the project or it no longer exists.",
                 );
             }
         }
@@ -705,7 +705,7 @@ class Selector implements CompleterInterface
         try {
             $deployment = $this->api->getCurrentDeployment(
                 $environment,
-                $input->hasOption('refresh') && $input->getOption('refresh')
+                $input->hasOption('refresh') && $input->getOption('refresh'),
             );
         } catch (EnvironmentStateException $e) {
             if ($environment->isActive() && $e->getMessage() === 'Current deployment not found') {
@@ -731,7 +731,7 @@ class Selector implements CompleterInterface
                 throw new InvalidArgumentException(sprintf(
                     'App name "%s" conflicts with worker name "%s"',
                     $appName,
-                    $workerOption
+                    $workerOption,
                 ));
             }
 
@@ -773,12 +773,12 @@ class Selector implements CompleterInterface
                 throw new InvalidArgumentException(sprintf(
                     'Ambiguous worker name: %s (matches: %s)',
                     $workerOption,
-                    implode(', ', $workerNames)
+                    implode(', ', $workerNames),
                 ));
             }
             $workerName = $this->questionHelper->choose(
                 array_combine($workerNames, $workerNames),
-                'Enter a number to choose a worker:'
+                'Enter a number to choose a worker:',
             );
             $this->stdErr->writeln(sprintf('Selected worker: <info>%s</info>', $workerName), OutputInterface::VERBOSITY_VERBOSE);
 
@@ -788,7 +788,7 @@ class Selector implements CompleterInterface
         // been found.
         $appNames = $appName !== null
             ? [$appName]
-            : array_map(fn (WebApp $app) => $app->name, $deployment->webapps);
+            : array_map(fn(WebApp $app) => $app->name, $deployment->webapps);
         $choices = array_combine($appNames, $appNames);
         $choicesIncludeWorkers = false;
         if ($includeWorkers) {
@@ -820,7 +820,7 @@ class Selector implements CompleterInterface
             if ($choicesIncludeWorkers) {
                 $text = sprintf(
                     'Enter a number to choose an app or %s worker:',
-                    count($choices) === 2 ? 'its' : 'a'
+                    count($choices) === 2 ? 'its' : 'a',
                 );
             } else {
                 $text = 'Enter a number to choose an app:';
@@ -831,7 +831,7 @@ class Selector implements CompleterInterface
             throw new InvalidArgumentException(
                 $includeWorkers
                     ? 'Specifying the --app or --worker is required in non-interactive mode'
-                    : 'Specifying the --app is required in non-interactive mode'
+                    : 'Specifying the --app is required in non-interactive mode',
             );
         }
 
@@ -943,7 +943,7 @@ class Selector implements CompleterInterface
                     $this->stdErr->writeln(sprintf(
                         'Not auto-selecting project organization %s (it does not have the link <comment>%s</comment>)',
                         $this->api->getOrganizationLabel($organization, 'comment'),
-                        $filterByLink
+                        $filterByLink,
                     ));
                 }
             }
@@ -1091,7 +1091,7 @@ class Selector implements CompleterInterface
         }
         $projects = $this->api->getMyProjects(false) ?: $this->api->getMyProjects();
         return array_map(
-            fn (BasicProjectInfo $p): Suggestion => new Suggestion($p->id, $p->title),
+            fn(BasicProjectInfo $p): Suggestion => new Suggestion($p->id, $p->title),
             $projects,
         );
     }

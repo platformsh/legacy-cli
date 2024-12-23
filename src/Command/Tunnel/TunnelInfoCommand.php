@@ -63,7 +63,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             if (count($tunnels) > count($relationships)) {
                 $this->stdErr->writeln(sprintf(
                     'List all tunnels with: <info>%s tunnels --all</info>',
-                    $this->config->getStr('application.executable')
+                    $this->config->getStr('application.executable'),
                 ));
             }
 

@@ -55,7 +55,7 @@ readonly class Io
             if ($this->input->hasOption($option) && $this->input->getOption($option)) {
                 $this->labeledMessage(
                     'DEPRECATED',
-                    sprintf($template, $option)
+                    sprintf($template, $option),
                 );
             }
         }

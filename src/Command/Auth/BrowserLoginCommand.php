@@ -86,7 +86,7 @@ class BrowserLoginCommand extends CommandBase
                 $this->stdErr->writeln(\sprintf(
                     'You are already logged in as <info>%s</info> (<info>%s</info>)',
                     $account['username'],
-                    $account['email']
+                    $account['email'],
                 ));
 
                 if (!$this->questionHelper->confirm('Log in anyway?', false)) {
@@ -145,7 +145,7 @@ class BrowserLoginCommand extends CommandBase
             '-S',
             $localAddress,
             '-t',
-            $listenerDir
+            $listenerDir,
         ]);
         $codeVerifier = $this->generateCodeVerifier();
         $process->setEnv([

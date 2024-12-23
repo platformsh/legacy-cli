@@ -69,7 +69,7 @@ class Composer extends DependencyManagerBase
         $this->runCommand(
             'composer global require '
             . '--no-progress --prefer-dist --optimize-autoloader --no-interaction '
-            . implode(' ', array_map('escapeshellarg', $requirements))
+            . implode(' ', array_map('escapeshellarg', $requirements)),
         );
     }
 }

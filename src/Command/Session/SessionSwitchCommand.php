@@ -28,7 +28,7 @@ class SessionSwitchCommand extends CommandBase
             ->addArgument('id', InputArgument::OPTIONAL, 'The new session ID');
         $this->setHelp(
             'Multiple session IDs allow you to be logged into multiple accounts at the same time.'
-            . "\n\nThe default ID is \"default\"."
+            . "\n\nThe default ID is \"default\".",
         );
         $this->addExample('Change to the session named "personal"', 'personal');
         $this->addExample('Change to the default session', 'default');
@@ -102,7 +102,7 @@ class SessionSwitchCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
                 $account['username'],
-                $account['email']
+                $account['email'],
             ));
             return;
         }

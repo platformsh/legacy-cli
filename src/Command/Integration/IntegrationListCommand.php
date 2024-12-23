@@ -44,7 +44,7 @@ class IntegrationListCommand extends IntegrationCommandBase
         }
 
         if ($type = $input->getOption('type')) {
-            $integrations = array_filter($integrations, fn (Integration $i): bool => $i->type === $type);
+            $integrations = array_filter($integrations, fn(Integration $i): bool => $i->type === $type);
         }
         $rows = [];
 

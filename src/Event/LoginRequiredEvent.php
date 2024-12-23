@@ -9,9 +9,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class LoginRequiredEvent extends Event
 {
     /** @param string[] $authMethods */
-    public function __construct(private readonly array $authMethods = [], private readonly ?int $maxAge = null, private readonly bool $hasApiToken = false)
-    {
-    }
+    public function __construct(private readonly array $authMethods = [], private readonly ?int $maxAge = null, private readonly bool $hasApiToken = false) {}
 
     public function getMessage(): string
     {

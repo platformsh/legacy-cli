@@ -47,7 +47,7 @@ This command requires the posix and pcntl PHP extensions (as multiple
 background CLI processes are created to keep the SSH tunnels open). The
 <info>tunnel:single</info> command can be used on systems without these
 extensions.
-EOF
+EOF,
         );
     }
 
@@ -132,7 +132,7 @@ EOF
                     $this->stdErr->writeln(sprintf(
                         'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
                         $relationshipString,
-                        $this->tunnelManager->getUrl($openTunnelInfo)
+                        $this->tunnelManager->getUrl($openTunnelInfo),
                     ));
                     continue;
                 }
@@ -146,7 +146,7 @@ EOF
                     $this->stdErr->writeln(sprintf(
                         'Failed to open tunnel for relationship <error>%s</error>: %s',
                         $relationshipString,
-                        $e->getMessage()
+                        $e->getMessage(),
                     ));
                     $error = true;
                     continue;
@@ -158,7 +158,7 @@ EOF
                     $this->stdErr->writeln(trim($process->getErrorOutput()));
                     $this->stdErr->writeln(sprintf(
                         'Failed to open tunnel for relationship: <error>%s</error>',
-                        $relationshipString
+                        $relationshipString,
                     ));
                     unlink($pidFile);
                     $error = true;
@@ -193,7 +193,7 @@ EOF
             $this->stdErr->writeln('');
             $this->stdErr->writeln(
                 "Save encoded tunnel details to the $variable variable using:"
-                . "\n  <info>export $variable=\"$($executable tunnel:info --encode)\"</info>"
+                . "\n  <info>export $variable=\"$($executable tunnel:info --encode)\"</info>",
             );
         }
 

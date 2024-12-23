@@ -35,7 +35,7 @@ class UserListCommand extends CommandBase
         private readonly Config            $config,
         private readonly PropertyFormatter $propertyFormatter,
         private readonly Selector          $selector,
-        private readonly Table             $table
+        private readonly Table             $table,
     ) {
         parent::__construct();
     }
@@ -105,7 +105,7 @@ class UserListCommand extends CommandBase
         if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Users on the project %s:',
-                $this->api->getProjectLabel($project)
+                $this->api->getProjectLabel($project),
             ));
         }
 

@@ -26,7 +26,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         private readonly Git            $git,
         private readonly LocalProject   $localProject,
         private readonly Selector       $selector,
-        private readonly QuestionHelper $questionHelper
+        private readonly QuestionHelper $questionHelper,
     ) {
         parent::__construct();
     }
@@ -36,7 +36,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         $this->addArgument(
             'environment',
             InputArgument::OPTIONAL,
-            'The ID of the environment to check out. For example: "sprint2"'
+            'The ID of the environment to check out. For example: "sprint2"',
         );
         $this->addCompleter($this->selector);
         Ssh::configureInput($this->getDefinition());
@@ -145,7 +145,7 @@ class EnvironmentCheckoutCommand extends CommandBase
         if (!count($environmentList)) {
             $this->stdErr->writeln(sprintf(
                 'To create a new environment, run: <info>%s branch [new-branch]</info>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
 
             return false;

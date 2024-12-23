@@ -24,7 +24,7 @@ class Listener
             'CLI_OAUTH_CLIENT_ID',
             'CLI_OAUTH_FILE',
             'CLI_OAUTH_CODE_CHALLENGE',
-            'CLI_OAUTH_PROMPT'
+            'CLI_OAUTH_PROMPT',
         ];
         if ($missing = array_diff($required, array_keys($_ENV))) {
             throw new \RuntimeException('Invalid environment, missing: ' . implode(', ', $missing));
@@ -112,7 +112,7 @@ class Listener
         // In any other case: redirect to login.
         $url = $this->getOAuthUrl();
         $this->setRedirect($url);
-        $this->response->content = '<p><a href="' . htmlspecialchars($url) .'">Log in</a>.</p>';
+        $this->response->content = '<p><a href="' . htmlspecialchars($url) . '">Log in</a>.</p>';
         return;
     }
 

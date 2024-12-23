@@ -25,8 +25,7 @@ readonly class DependencyInjection
         private BuilderFactory           $builderFactory,
         private PhpAttributeGroupFactory $phpAttributeGroupFactory,
         private NodeFactory              $nodeFactory,
-    ) {
-    }
+    ) {}
 
     public function addDependencyInjection(Class_ $classNode, string $propertyName, string $serviceClass, bool $constructor = true): void
     {
@@ -56,11 +55,11 @@ readonly class DependencyInjection
                 ->getNode();
             $method->stmts[] = new Expression(new Assign(
                 new PropertyFetch(new Variable('this'), $propertyName),
-                new Variable($propertyName)
+                new Variable($propertyName),
             ));
         }
 
-        usort($method->params, fn (Param $a, Param $b): int => $a->var->name <=> $b->var->name);
+        usort($method->params, fn(Param $a, Param $b): int => $a->var->name <=> $b->var->name);
     }
 
     private function getOrCreateMethod(Class_ $classNode, string $name): ClassMethod

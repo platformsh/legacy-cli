@@ -182,13 +182,13 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if (!isset($this->synopsis[$key])) {
             $definition = clone $this->getDefinition();
-            $definition->setOptions(array_filter($definition->getOptions(), fn (InputOption $opt): bool => !$opt instanceof HiddenInputOption));
+            $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
 
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
                 $this->config->getStr('application.executable'),
                 $this->getPreferredName(),
-                $definition->getSynopsis($short)
+                $definition->getSynopsis($short),
             ));
         }
 

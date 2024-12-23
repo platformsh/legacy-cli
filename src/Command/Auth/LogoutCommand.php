@@ -38,7 +38,7 @@ class LogoutCommand extends CommandBase
         if ($input->getOption('other') && !$input->getOption('all')) {
             $currentSessionId = $this->config->getSessionId();
             $this->stdErr->writeln(sprintf('The current session ID is: <info>%s</info>', $currentSessionId));
-            $other = \array_filter($this->api->listSessionIds(), fn ($sessionId): bool => $sessionId !== $currentSessionId);
+            $other = \array_filter($this->api->listSessionIds(), fn($sessionId): bool => $sessionId !== $currentSessionId);
             if (empty($other)) {
                 $this->stdErr->writeln('No other sessions exist.');
                 return 0;
@@ -73,7 +73,7 @@ class LogoutCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'Other sessions exist. Log out of all sessions with: <comment>%s logout --all</comment>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
         }
 

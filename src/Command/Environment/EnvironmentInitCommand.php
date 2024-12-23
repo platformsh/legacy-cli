@@ -59,7 +59,7 @@ class EnvironmentInitCommand extends CommandBase
         if (!$environment->operationAvailable('initialize', true)) {
             $this->stdErr->writeln(sprintf(
                 "Operation not available: The environment <error>%s</error> can't be initialized.",
-                $environment->id
+                $environment->id,
             ));
 
             if ($environment->has_code) {

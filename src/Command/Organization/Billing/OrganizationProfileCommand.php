@@ -81,7 +81,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $this->propertyFormatter->format($profile->getProperty($property, false), $property)
+                $this->propertyFormatter->format($profile->getProperty($property, false), $property),
             ));
 
             return 0;
@@ -106,7 +106,7 @@ class OrganizationProfileCommand extends OrganizationCommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->propertyFormatter->format($profile->$property, $property)
+            $this->propertyFormatter->format($profile->$property, $property),
         ));
 
         return 0;

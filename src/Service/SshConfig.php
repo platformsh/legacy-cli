@@ -165,7 +165,7 @@ class SshConfig
         }
         $this->writeSshIncludeFile(
             $includerFilename,
-            $includerLines
+            $includerLines,
         );
 
         return true;
@@ -551,14 +551,14 @@ class SshConfig
         if (\version_compare($version, '6.5', '<')) {
             $this->stdErr->writeln(\sprintf(
                 'OpenSSH version <error>%s</error> is installed. Version 6.5 or above is required. Some features depend on version 7.3 or above.',
-                $version
+                $version,
             ));
             return false;
         }
         if (\version_compare($version, '7.3', '<')) {
             $this->stdErr->writeln(\sprintf(
                 'OpenSSH version <comment>%s</comment> is installed. Some features depend on version 7.3 or above.',
-                $version
+                $version,
             ));
         }
         return true;

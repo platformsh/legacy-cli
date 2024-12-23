@@ -29,12 +29,12 @@ class EnvironmentSetRemoteCommand extends CommandBase
             ->addArgument(
                 'environment',
                 InputArgument::REQUIRED,
-                'The environment machine name. Set to 0 to remove the mapping for a branch'
+                'The environment machine name. Set to 0 to remove the mapping for a branch',
             )
             ->addArgument(
                 'branch',
                 InputArgument::OPTIONAL,
-                'The Git branch to map (defaults to the current branch)'
+                'The Git branch to map (defaults to the current branch)',
             );
         $this->addExample('Set the remote environment for this branch to "pr-655"', 'pr-655');
     }
@@ -84,7 +84,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
             }
             if (!$mappedByDefault && $this->git->branchExists($specifiedEnvironmentId)) {
                 $this->stdErr->writeln(
-                    "A local branch already exists named <comment>$specifiedEnvironmentId</comment>"
+                    "A local branch already exists named <comment>$specifiedEnvironmentId</comment>",
                 );
             }
         }
@@ -111,19 +111,19 @@ class EnvironmentSetRemoteCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'The local branch <info>%s</info> is mapped to the remote environment <info>%s</info>',
                 $specifiedBranch,
-                $actualRemoteEnvironment
+                $actualRemoteEnvironment,
             ));
         } elseif ($mappedByDefault) {
             $actualRemoteEnvironment = $specifiedBranch;
             $this->stdErr->writeln(sprintf(
                 'The local branch <info>%s</info> is mapped to the default remote environment, <info>%s</info>',
                 $specifiedBranch,
-                $actualRemoteEnvironment
+                $actualRemoteEnvironment,
             ));
         } else {
             $this->stdErr->writeln(sprintf(
                 'The local branch <info>%s</info> is not mapped to a remote environment',
-                $specifiedBranch
+                $specifiedBranch,
             ));
         }
 

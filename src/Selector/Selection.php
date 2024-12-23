@@ -16,7 +16,7 @@ class Selection
         private readonly ?Project                  $project = null,
         private readonly ?Environment              $environment = null,
         private ?string                            $appName = null,
-        private readonly ?RemoteContainerInterface $remoteContainer = null
+        private readonly ?RemoteContainerInterface $remoteContainer = null,
     ) {
         $this->config = $config ?: new SelectorConfig();
     }

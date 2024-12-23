@@ -24,7 +24,7 @@ class DrushPhp extends DrushAlias
             $formatted[] = sprintf(
                 "\$aliases['%s'] = %s;\n",
                 str_replace("'", "\\'", $aliasName),
-                var_export($newAlias, true)
+                var_export($newAlias, true),
             );
         }
 

@@ -41,7 +41,7 @@ class RouteListTest extends TestCase
                 '--format' => 'tsv',
                 '--columns' => ['route,type,to'],
                 '--no-header' => true,
-            ])
+            ]),
         );
     }
 }

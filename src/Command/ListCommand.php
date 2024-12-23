@@ -51,7 +51,7 @@ You can also output the information in other formats by using the <comment>--for
 It's also possible to get raw list of commands (useful for embedding command runner):
 
   <info>%command.full_name% --raw</info>
-EOF
+EOF,
             )
         ;
         $this->addOption('all', null, InputOption::VALUE_NONE, 'Show all commands, including hidden ones');
@@ -71,7 +71,7 @@ EOF
                 'raw_text' => $input->getOption('raw'),
                 'namespace' => $input->getArgument('namespace'),
                 'all' => $input->getOption('all'),
-            ]
+            ],
         );
         return 0;
     }

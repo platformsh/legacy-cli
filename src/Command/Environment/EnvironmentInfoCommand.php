@@ -121,7 +121,7 @@ class EnvironmentInfoCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Property <info>%s</info> already set as: %s',
                 $property,
-                $this->propertyFormatter->format($environment->getProperty($property, false), $property)
+                $this->propertyFormatter->format($environment->getProperty($property, false), $property),
             ));
 
             return 0;
@@ -142,7 +142,7 @@ class EnvironmentInfoCommand extends CommandBase
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
-            $this->propertyFormatter->format($environment->$property, $property)
+            $this->propertyFormatter->format($environment->$property, $property),
         ));
 
         $this->api->clearEnvironmentsCache($environment->project);

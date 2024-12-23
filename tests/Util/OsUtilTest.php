@@ -11,15 +11,15 @@ class OsUtilTest extends TestCase
     {
         $this->assertEquals(
             "'This isn'\\''t an argument!'",
-            OsUtil::escapePosixShellArg("This isn't an argument!")
+            OsUtil::escapePosixShellArg("This isn't an argument!"),
         );
         $this->assertEquals(
             "'Yes it is'",
-            OsUtil::escapePosixShellArg("Yes it is")
+            OsUtil::escapePosixShellArg("Yes it is"),
         );
         $this->assertEquals(
             "'No it isn'\\''t'",
-            OsUtil::escapePosixShellArg("No it isn't")
+            OsUtil::escapePosixShellArg("No it isn't"),
         );
     }
 }

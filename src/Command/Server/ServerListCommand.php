@@ -34,7 +34,7 @@ class ServerListCommand extends ServerCommandBase
         $projectRoot = $this->selector->getProjectRoot();
         $all = $input->getOption('all');
         if (!$all && $projectRoot) {
-            $servers = array_filter($servers, fn ($server): bool => $server['projectRoot'] === $projectRoot);
+            $servers = array_filter($servers, fn($server): bool => $server['projectRoot'] === $projectRoot);
             if (!$servers) {
                 $this->stdErr->writeln('No servers are running for this project. Specify --all to view all servers.');
                 return 1;

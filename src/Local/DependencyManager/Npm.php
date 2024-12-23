@@ -71,7 +71,7 @@ class Npm extends DependencyManagerBase
     {
         if (!isset($this->globalList)) {
             $this->globalList = $this->shell->mustExecute(
-                ['npm', 'ls', '--global', '--no-progress', '--depth=0']
+                ['npm', 'ls', '--global', '--no-progress', '--depth=0'],
             );
         }
 

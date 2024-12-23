@@ -67,7 +67,7 @@ class DomainDeleteCommand extends DomainCommandBase
             || (!$forEnvironment || $selection->getEnvironment()->type === 'production');
         if ($isProductionDomain && $this->supportsNonProductionDomains($project)) {
             // Check the project has at least 1 non-inactive, non-production environment.
-            $hasNonProductionActiveEnvs = count(array_filter($this->api->getEnvironments($project), fn (Environment $e): bool => $e->type !== 'production' && $e->status !== 'inactive')) > 0;
+            $hasNonProductionActiveEnvs = count(array_filter($this->api->getEnvironments($project), fn(Environment $e): bool => $e->type !== 'production' && $e->status !== 'inactive')) > 0;
             if ($hasNonProductionActiveEnvs) {
                 $this->stdErr->writeln([
                     '<options=bold>Warning:</>',

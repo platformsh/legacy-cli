@@ -77,7 +77,7 @@ class ServiceListCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Services on the project <info>%s</info>, environment <info>%s</info>:',
                 $this->api->getProjectLabel($selection->getProject()),
-                $this->api->getEnvironmentLabel($selection->getEnvironment())
+                $this->api->getEnvironmentLabel($selection->getEnvironment()),
             ));
         }
 
@@ -97,20 +97,20 @@ class ServiceListCommand extends CommandBase
         if ($deployment->webapps) {
             $lines[] = sprintf(
                 'To list applications, run: <info>%s apps</info>',
-                $executable
+                $executable,
             );
         }
         if ($deployment->workers) {
             $lines[] = sprintf(
                 'To list workers, run: <info>%s workers</info>',
-                $executable
+                $executable,
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
             if (!empty($info['settings']['sizing_api_enabled']) && $this->config->getBool('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
-                    $executable
+                    $executable,
                 );
             }
         }

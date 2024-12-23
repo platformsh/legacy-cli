@@ -56,7 +56,7 @@ readonly class DrushAliasUpdater
         } catch (\Exception $e) {
             $this->stdErr->writeln(sprintf(
                 "<comment>Failed to update Drush aliases:</comment>\n%s\n",
-                preg_replace('/^/m', '  ', trim($e->getMessage()))
+                preg_replace('/^/m', '  ', trim($e->getMessage())),
             ));
         }
     }

@@ -33,7 +33,7 @@ version 3, the Git repository itself is treated as the project. Metadata is
 stored inside the repository (in {$localDir}) and ignored by Git.
 
 This command will migrate from the old file structure to the new one.
-EOF
+EOF,
         );
     }
 
@@ -60,7 +60,7 @@ EOF
             if ($this->selector->getProjectRoot()) {
                 $this->stdErr->writeln(sprintf(
                     'This project is already compatible with the %s version 3.x.',
-                    $this->config->getStr('application.name')
+                    $this->config->getStr('application.name'),
                 ));
 
                 return 0;
@@ -86,7 +86,7 @@ EOF
                 $this->stdErr->writeln(
                     'Move (or delete) the backup, then run <comment>'
                     . $this->config->getStr('application.executable')
-                    . ' legacy-migrate</comment> to continue.'
+                    . ' legacy-migrate</comment> to continue.',
                 );
 
                 return 1;
@@ -113,7 +113,7 @@ EOF
             $this->stdErr->writeln('Moving project config file.');
             $this->filesystem->copy(
                 $legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'),
-                $legacyRoot . '/' . $this->config->getStr('local.project_config')
+                $legacyRoot . '/' . $this->config->getStr('local.project_config'),
             );
             $this->filesystem->remove($legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'));
         }
@@ -148,7 +148,7 @@ EOF
         } elseif (file_exists($legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'))) {
             $this->stdErr->writeln(sprintf(
                 'Error: file still exists: <error>%s</error>',
-                $legacyRoot . '/' . $this->config->getStr('local.project_config_legacy')
+                $legacyRoot . '/' . $this->config->getStr('local.project_config_legacy'),
             ));
 
             return 1;

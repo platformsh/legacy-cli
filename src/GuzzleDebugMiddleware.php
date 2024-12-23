@@ -31,7 +31,7 @@ class GuzzleDebugMiddleware
             $this->stdErr->writeln(sprintf(
                 '<options=reverse>></> Making HTTP request #%d: %s',
                 $seq,
-                $this->formatMessage($request, '> ')
+                $this->formatMessage($request, '> '),
             ));
 
             /** @var PromiseInterface $promise */
@@ -42,7 +42,7 @@ class GuzzleDebugMiddleware
                     '<options=reverse>\<</> Received response for #%d after %d ms: %s',
                     $seq,
                     (microtime(true) - $started) * 1000,
-                    $this->formatMessage($response, '< ')
+                    $this->formatMessage($response, '< '),
                 ));
                 return $response;
             });

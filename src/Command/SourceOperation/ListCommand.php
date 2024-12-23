@@ -69,7 +69,7 @@ class ListCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Source operations on the project <info>%s</info>, environment <info>%s</info>:',
                 $this->api->getProjectLabel($selection->getProject()),
-                $this->api->getEnvironmentLabel($selection->getEnvironment())
+                $this->api->getEnvironmentLabel($selection->getEnvironment()),
             ));
         }
 

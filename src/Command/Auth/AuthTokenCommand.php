@@ -31,7 +31,7 @@ class AuthTokenCommand extends CommandBase
             'This command prints a valid OAuth 2 access token to stdout. It can be used to make API requests via standard Bearer authentication (RFC 6750).'
             . "\n\n" . '<comment>Warning: access tokens must be kept secret.</comment>'
             . "\n\n" . 'Using this command is not generally recommended, as it increases the chance of the token being leaked.'
-            . ' Take care not to expose the token in a shared program or system, or to send the token to the wrong API domain.'
+            . ' Take care not to expose the token in a shared program or system, or to send the token to the wrong API domain.',
         );
         $executable = $this->config->getStr('application.executable');
         $apiUrl = $this->config->getApiUrl();
@@ -50,7 +50,7 @@ class AuthTokenCommand extends CommandBase
     {
         if (!$input->getOption('no-warn')) {
             $this->stdErr->writeln(
-                '<fg=yellow>Warning: keep access tokens secret.</>'
+                '<fg=yellow>Warning: keep access tokens secret.</>',
             );
         }
 

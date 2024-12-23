@@ -83,7 +83,7 @@ class RunCommand extends CommandBase
             $this->stdErr->writeln(\sprintf('Running source operation <info>%s</info>', $operation));
             $result = $selection->getEnvironment()->runSourceOperation(
                 $operation,
-                $variables
+                $variables,
             );
         } catch (OperationUnavailableException) {
             throw new ApiFeatureMissingException('This project does not support source operations.');

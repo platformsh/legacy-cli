@@ -31,7 +31,7 @@ class ProjectVariableDeleteCommand extends CommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
-            . "\nInstead, use: <info>variable:delete --level project [variable]</info>"
+            . "\nInstead, use: <info>variable:delete --level project [variable]</info>",
         );
         $this->selector->addProjectOption($this->getDefinition());
         $this->addCompleter($this->selector);
@@ -43,12 +43,12 @@ class ProjectVariableDeleteCommand extends CommandBase
         $selection = $this->selector->getSelection($input);
 
         return $this->subCommandRunner->run('variable:delete', [
-                'name' => $input->getArgument('name'),
-                '--level' => 'project',
-                '--project' => $selection->getProject()->id,
-            ] + array_filter([
-                '--wait' => $input->getOption('wait'),
-                '--no-wait' => $input->getOption('no-wait'),
-            ]));
+            'name' => $input->getArgument('name'),
+            '--level' => 'project',
+            '--project' => $selection->getProject()->id,
+        ] + array_filter([
+            '--wait' => $input->getOption('wait'),
+            '--no-wait' => $input->getOption('no-wait'),
+        ]));
     }
 }

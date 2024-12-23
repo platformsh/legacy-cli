@@ -56,7 +56,7 @@ class Application extends ParentApplication
         // Use the configured timezone, or fall back to the system timezone.
         date_default_timezone_set(
             $this->config->getWithDefault('application.timezone', null)
-                ?: TimezoneUtil::getTimezone()
+                ?: TimezoneUtil::getTimezone(),
         );
 
         // Set the Config service.
@@ -142,7 +142,7 @@ class Application extends ParentApplication
                     throw new \RuntimeException(sprintf(
                         'Failed to load services.yaml file %s: %s',
                         $servicesFile,
-                        $e->getMessage()
+                        $e->getMessage(),
                     ));
                 }
                 $this->container->addCompilerPass(new AddConsoleCommandPass());
@@ -175,7 +175,7 @@ class Application extends ParentApplication
                 null,
                 InputOption::VALUE_NONE,
                 'Do not ask any interactive questions; accept default values. '
-                . sprintf('Equivalent to using the environment variable: <comment>%sNO_INTERACTION=1</comment>', $this->envPrefix)
+                . sprintf('Equivalent to using the environment variable: <comment>%sNO_INTERACTION=1</comment>', $this->envPrefix),
             ),
             new HiddenInputOption('--ansi', '', InputOption::VALUE_NONE, 'Force ANSI output'),
             new HiddenInputOption('--no-ansi', '', InputOption::VALUE_NONE, 'Disable ANSI output'),
@@ -213,7 +213,7 @@ class Application extends ParentApplication
                 '  %-29s %s %s',
                 '<info>--' . $option->getName() . '</info>',
                 $option->getShortcut() ? '<info>-' . $option->getShortcut() . '</info>' : '  ',
-                $option->getDescription()
+                $option->getDescription(),
             );
         }
 
@@ -320,7 +320,7 @@ class Application extends ParentApplication
         }
 
         if (\function_exists('putenv')) {
-            @putenv('SHELL_VERBOSITY='.$shellVerbosity);
+            @putenv('SHELL_VERBOSITY=' . $shellVerbosity);
         }
         $_ENV['SHELL_VERBOSITY'] = $shellVerbosity;
         $_SERVER['SHELL_VERBOSITY'] = $shellVerbosity;

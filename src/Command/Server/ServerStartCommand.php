@@ -76,11 +76,11 @@ class ServerStartCommand extends ServerCommandBase
                 $this->stdErr->writeln(sprintf(
                     'Document root not found for app <error>%s</error>: %s',
                     $appId,
-                    $docRoot
+                    $docRoot,
                 ));
                 $this->stdErr->writeln(sprintf(
                     'Build the application with: <comment>%s build</comment>',
-                    $executable
+                    $executable,
                 ));
                 continue;
             }
@@ -100,16 +100,16 @@ class ServerStartCommand extends ServerCommandBase
                 $result = $this->subCommandRunner->run(
                     'tunnel:info',
                     ['--encode' => true] + ($app->isSingle() ? [] : ['--app' => $appId]),
-                    $bufferedOutput
+                    $bufferedOutput,
                 );
                 if ($result != 0) {
                     $this->stdErr->writeln(sprintf(
                         'Failed to get SSH tunnel information for the app <error>%s</error>',
-                        $appId
+                        $appId,
                     ));
                     $this->stdErr->writeln(sprintf(
                         'Run <comment>%s tunnel:open</comment> to create tunnels.',
-                        $executable
+                        $executable,
                     ));
                     unset($items[$appId]);
                     continue;
@@ -150,7 +150,7 @@ class ServerStartCommand extends ServerCommandBase
                         'A server is already running for the app <info>%s</info> at http://%s, PID %s',
                         $appId,
                         $otherServer['address'],
-                        $otherServer['pid']
+                        $otherServer['pid'],
                     ));
                     continue;
                 }
@@ -160,7 +160,7 @@ class ServerStartCommand extends ServerCommandBase
                 $this->stdErr->writeln(sprintf(
                     'Stopping server for the app <info>%s</info> at http://%s',
                     $appId,
-                    $otherServer['address']
+                    $otherServer['address'],
                 ));
                 $this->stopServer($address, $otherServer['pid']);
                 sleep(1);
@@ -175,7 +175,7 @@ class ServerStartCommand extends ServerCommandBase
                     $this->stdErr->writeln(sprintf(
                         'A server is already running at address: http://%s, PID %s',
                         $address,
-                        $otherPid === true ? 'unknown' : $otherPid
+                        $otherPid === true ? 'unknown' : $otherPid,
                     ));
                     $error = true;
                     continue;
@@ -201,10 +201,10 @@ class ServerStartCommand extends ServerCommandBase
             // Save metadata on the server.
             $pid = $process->getPid();
             $this->writeServerInfo($address, $pid, [
-              'appId' => $appId,
-              'docRoot' => $docRoot,
-              'logFile' => $logFile,
-              'projectRoot' => $projectRoot,
+                'appId' => $appId,
+                'docRoot' => $docRoot,
+                'logFile' => $logFile,
+                'projectRoot' => $projectRoot,
             ]);
 
             // Wait a small time to capture any immediate errors.
@@ -220,7 +220,7 @@ class ServerStartCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf(
                 'Web server started at <info>http://%s</info> for app <info>%s</info>',
                 $address,
-                $appId
+                $appId,
             ));
         }
 

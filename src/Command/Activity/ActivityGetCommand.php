@@ -58,7 +58,7 @@ class ActivityGetCommand extends ActivityCommandBase
                 'i',
                 InputOption::VALUE_NONE,
                 'Include only incomplete activities (when selecting a default activity).'
-                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>'
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>',
             )
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         $this->selector->addProjectOption($this->getDefinition());
@@ -122,7 +122,7 @@ class ActivityGetCommand extends ActivityCommandBase
         $this->stdErr->writeln(
             'The <comment>payload</comment> property has been omitted for brevity.'
             . ' You can still view it with the -P (--property) option.',
-            OutputInterface::VERBOSITY_VERBOSE
+            OutputInterface::VERBOSITY_VERBOSE,
         );
 
         $header = [];
@@ -140,11 +140,11 @@ class ActivityGetCommand extends ActivityCommandBase
             $this->stdErr->writeln(sprintf(
                 'To view the log for this activity, run: <info>%s activity:log %s</info>',
                 $executable,
-                $activity->id
+                $activity->id,
             ));
             $this->stdErr->writeln(sprintf(
                 'To list activities, run: <info>%s activities</info>',
-                $executable
+                $executable,
             ));
         }
 

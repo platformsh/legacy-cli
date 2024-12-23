@@ -16,7 +16,7 @@ readonly class SubCommandRunner
     public function __construct(
         private Config          $config,
         private InputInterface  $input,
-        private OutputInterface $output
+        private OutputInterface $output,
     ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
@@ -49,7 +49,7 @@ readonly class SubCommandRunner
 
         $this->stdErr->writeln(
             '<options=reverse>DEBUG</> Running sub-command: <info>' . $command->getName() . '</info>',
-            OutputInterface::VERBOSITY_DEBUG
+            OutputInterface::VERBOSITY_DEBUG,
         );
 
         return $application->run($cmdInput, $output ?: $this->output);

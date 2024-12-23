@@ -16,9 +16,7 @@ use Platformsh\Client\Model\Project;
  */
 abstract class DrushAlias implements SiteAliasTypeInterface
 {
-    public function __construct(protected Config $config, protected Drush $drush)
-    {
-    }
+    public function __construct(protected Config $config, protected Drush $drush) {}
 
     /**
      * {@inheritdoc}

@@ -47,7 +47,7 @@ class EnvironmentPushCommand extends CommandBase
         private readonly ResourcesUtil   $resourcesUtil,
         private readonly Selector        $selector,
         private readonly Shell           $shell,
-        private readonly SshDiagnostics  $sshDiagnostics
+        private readonly SshDiagnostics  $sshDiagnostics,
     ) {
         parent::__construct();
     }
@@ -69,7 +69,7 @@ class EnvironmentPushCommand extends CommandBase
             $this->getDefinition(),
             $this->validResourcesInitOptions,
             'Set the resources to use for new services: parent, default, minimum, or manual.'
-            . "\n" . 'Currently the default is "default" but this will change to "parent" in future.'
+            . "\n" . 'Currently the default is "default" but this will change to "parent" in future.',
         );
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
@@ -80,7 +80,7 @@ class EnvironmentPushCommand extends CommandBase
         $this->addExample('Push code, without waiting for deployment', '--no-wait');
         $this->addExample(
             'Push code, branching or activating the environment as a child of \'develop\'',
-            '--activate --parent develop'
+            '--activate --parent develop',
         );
     }
 
@@ -116,7 +116,7 @@ class EnvironmentPushCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Alternatively, run: <comment>%s set-remote %s</comment>',
                     $this->config->getStr('application.executable'),
-                    OsUtil::escapeShellArg($project->id)
+                    OsUtil::escapeShellArg($project->id),
                 ));
 
             }
@@ -311,7 +311,7 @@ class EnvironmentPushCommand extends CommandBase
                     $this->stdErr->writeln(sprintf(
                         'Configure resources for the environment by running: <comment>%s %s</comment>',
                         $this->config->getStr('application.executable'),
-                        $cmd
+                        $cmd,
                     ));
                 }
                 return self::PUSH_FAILURE_EXIT_CODE;
@@ -393,7 +393,7 @@ class EnvironmentPushCommand extends CommandBase
             $this->io->debug('Updating environment ' . $targetEnvironment->id . ' with properties: ' . json_encode($updates));
             $activities = array_merge(
                 $activities,
-                $targetEnvironment->update($updates)->getActivities()
+                $targetEnvironment->update($updates)->getActivities(),
             );
         }
         if ($targetEnvironment->status === 'dirty') {

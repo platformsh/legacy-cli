@@ -103,20 +103,20 @@ class LocalProject
         $this->git->ensureInstalled();
         $currentUrl = $this->git->getConfig(
             sprintf('remote.%s.url', $this->config->getStr('detection.git_remote_name')),
-            $dir
+            $dir,
         );
         if (!$currentUrl) {
             $this->git->execute(
                 ['remote', 'add', $this->config->getStr('detection.git_remote_name'), $url],
                 $dir,
-                true
+                true,
             );
         } elseif ($currentUrl !== $url) {
             $this->git->execute([
                 'remote',
                 'set-url',
                 $this->config->getStr('detection.git_remote_name'),
-                $url
+                $url,
             ], $dir, true);
         }
     }
@@ -242,7 +242,7 @@ class LocalProject
             return !empty($config);
         });
         $this->io->debug(
-            $result ? 'Project root found: ' . $result : 'Project root not found'
+            $result ? 'Project root found: ' . $result : 'Project root not found',
         );
 
         return $cache[$startDir] = $result;
@@ -344,7 +344,7 @@ other data to help work with your project locally.
 It is not used on remote environments at all - the directory is excluded from
 your Git repository (via .git/info/exclude).
 
-EOF
+EOF,
             );
         }
     }

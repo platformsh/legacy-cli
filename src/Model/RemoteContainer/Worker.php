@@ -8,9 +8,7 @@ use Platformsh\Client\Model\Deployment\Worker as DeployedWorker;
 
 readonly class Worker implements RemoteContainerInterface
 {
-    public function __construct(private DeployedWorker $worker, private Environment $environment)
-    {
-    }
+    public function __construct(private DeployedWorker $worker, private Environment $environment) {}
 
     public function getSshUrl($instance = ''): string
     {

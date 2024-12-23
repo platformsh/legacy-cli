@@ -56,7 +56,7 @@ readonly class Login
         $this->stdErr->writeln(sprintf(
             "\nUsername: <info>%s</info>\nEmail address: <info>%s</info>",
             $account['username'],
-            $account['email']
+            $account['email'],
         ));
     }
 

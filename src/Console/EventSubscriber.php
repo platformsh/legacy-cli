@@ -20,9 +20,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 readonly class EventSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private CacheProvider $cache, private Config $config)
-    {
-    }
+    public function __construct(private CacheProvider $cache, private Config $config) {}
 
     /**
      * {@inheritdoc}
@@ -49,7 +47,7 @@ readonly class EventSubscriber implements EventSubscriberInterface
             $event->setError(new ConnectionFailedException(
                 "Failed to connect to host: " . $request->getUri()->getHost()
                 . " \nPlease check your Internet connection.",
-                $error
+                $error,
             ));
             $event->stopPropagation();
         }
@@ -68,14 +66,14 @@ readonly class EventSubscriber implements EventSubscriberInterface
                 $event->setError(new LoginRequiredException(
                     'Invalid refresh token.',
                     $this->config,
-                    $error
+                    $error,
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 401) {
                 $event->setError(new LoginRequiredException(
                     'Unauthorized.',
                     $this->config,
-                    $error
+                    $error,
                 ));
                 $event->stopPropagation();
             } elseif ($response->getStatusCode() === 403) {
@@ -103,7 +101,7 @@ readonly class EventSubscriber implements EventSubscriberInterface
             '/projects' => 'project',
             '/subscriptions' => 'project',
             '/environments' => 'environment',
-            '/organizations' => 'organization'
+            '/organizations' => 'organization',
         ];
         $requestPath = $request->getUri()->getPath();
         $permissionTypes = [];

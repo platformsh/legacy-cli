@@ -129,7 +129,7 @@ class ActivityMonitor
             return $this->formatState($overrideState ?: $activity->state);
         });
         $startTime = $this->getStart($activity) ?: time();
-        $bar->setPlaceholderFormatterDefinition('elapsed', fn () => $this->formatDuration(time() - $startTime));
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
         $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
         $bar->setFormat('[%bar%] <fg=%fgColor%>%elapsed:6s%</> (%state%)');
         $bar->start();
@@ -322,7 +322,7 @@ class ActivityMonitor
         }
         $formatItem = function (LogItem $item) use ($timestampFormat): string {
             if ($timestampFormat !== false) {
-                return '[' . $item->getTime()->format($timestampFormat) . '] '. $item->getMessage();
+                return '[' . $item->getTime()->format($timestampFormat) . '] ' . $item->getMessage();
             }
 
             return $item->getMessage();
@@ -359,8 +359,8 @@ class ActivityMonitor
         }
 
         // Split integration and non-integration activities, and put the latter first.
-        $integrationActivities = array_filter($activities, fn (Activity $a): bool => str_starts_with($a->type, 'integration.'));
-        $nonIntegrationActivities = array_filter($activities, fn (Activity $a): bool => !str_starts_with($a->type, 'integration.'));
+        $integrationActivities = array_filter($activities, fn(Activity $a): bool => str_starts_with($a->type, 'integration.'));
+        $nonIntegrationActivities = array_filter($activities, fn(Activity $a): bool => !str_starts_with($a->type, 'integration.'));
         $activities = array_merge($nonIntegrationActivities, $integrationActivities);
 
         // For more than one activity, output a list of their descriptions.
@@ -464,7 +464,7 @@ class ActivityMonitor
             return implode(', ', $withCount);
         });
         $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
-        $bar->setPlaceholderFormatterDefinition('elapsed', fn () => $this->formatDuration(time() - $startTime));
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix

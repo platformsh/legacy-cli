@@ -29,7 +29,7 @@ class Ssh implements InputConfiguringInterface
     public static function configureInput(InputDefinition $definition): void
     {
         $definition->addOption(
-            new HiddenInputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated: an SSH identity (private key) to use. The auto-generated certificate is recommended instead.')
+            new HiddenInputOption('identity-file', 'i', InputOption::VALUE_REQUIRED, 'Deprecated: an SSH identity (private key) to use. The auto-generated certificate is recommended instead.'),
         );
     }
 

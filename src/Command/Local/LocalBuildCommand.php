@@ -31,92 +31,92 @@ class LocalBuildCommand extends CommandBase
                 'abslinks',
                 'a',
                 InputOption::VALUE_NONE,
-                'Use absolute links'
+                'Use absolute links',
             )
             ->addOption(
                 'source',
                 's',
                 InputOption::VALUE_REQUIRED,
-                'The source directory. Defaults to the current project root.'
+                'The source directory. Defaults to the current project root.',
             )
             ->addOption(
                 'destination',
                 'd',
                 InputOption::VALUE_REQUIRED,
-                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config->getStr('local.web_root')
+                'The destination, to which the web root of each app will be symlinked. Default: ' . $this->config->getStr('local.web_root'),
             )
             ->addOption(
                 'copy',
                 'c',
                 InputOption::VALUE_NONE,
-                'Copy to a build directory, instead of symlinking from the source'
+                'Copy to a build directory, instead of symlinking from the source',
             )
             ->addOption(
                 'clone',
                 null,
                 InputOption::VALUE_NONE,
-                'Use Git to clone the current HEAD to the build directory'
+                'Use Git to clone the current HEAD to the build directory',
             )
             ->addOption(
                 'run-deploy-hooks',
                 null,
                 InputOption::VALUE_NONE,
-                'Run deploy and/or post_deploy hooks'
+                'Run deploy and/or post_deploy hooks',
             )
             ->addOption(
                 'no-clean',
                 null,
                 InputOption::VALUE_NONE,
-                'Do not remove old builds'
+                'Do not remove old builds',
             )
             ->addOption(
                 'no-archive',
                 null,
                 InputOption::VALUE_NONE,
-                'Do not create or use a build archive'
+                'Do not create or use a build archive',
             )
             ->addOption(
                 'no-backup',
                 null,
                 InputOption::VALUE_NONE,
-                'Do not back up the previous build'
+                'Do not back up the previous build',
             )
             ->addOption(
                 'no-cache',
                 null,
                 InputOption::VALUE_NONE,
-                'Disable caching'
+                'Disable caching',
             )
             ->addOption(
                 'no-build-hooks',
                 null,
                 InputOption::VALUE_NONE,
-                'Do not run post-build hooks'
+                'Do not run post-build hooks',
             )
             ->addOption(
                 'no-deps',
                 null,
                 InputOption::VALUE_NONE,
-                'Do not install build dependencies locally'
+                'Do not install build dependencies locally',
             )
             ->addOption(
                 'working-copy',
                 null,
                 InputOption::VALUE_NONE,
-                'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version'
+                'Drush: use git to clone a repository of each Drupal module rather than simply downloading a version',
             )
             ->addOption(
                 'concurrency',
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Drush: set the number of concurrent projects that will be processed at the same time',
-                4
+                4,
             )
             ->addOption(
                 'lock',
                 null,
                 InputOption::VALUE_NONE,
-                'Drush: create or update a lock file (only available with Drush version 7+)'
+                'Drush: create or update a lock file (only available with Drush version 7+)',
             );
         $this->addExample('Build the current project');
         $this->addExample('Build the app "example" without symlinking the source files', 'example --copy');
@@ -167,7 +167,7 @@ class LocalBuildCommand extends CommandBase
             $destination = $fs->makePathAbsolute($destination);
         } elseif (!$projectRoot) {
             throw new RootNotFoundException(
-                'Project root not found. Specify --destination or go to a project directory.'
+                'Project root not found. Specify --destination or go to a project directory.',
             );
         } else {
             $destination = $projectRoot . '/' . $this->config->getStr('local.web_root');
@@ -188,7 +188,7 @@ class LocalBuildCommand extends CommandBase
             $default = is_link($destination);
             if (!$this->questionHelper->confirm(
                 "The destination exists: <comment>$destination</comment>. Overwrite?",
-                $default
+                $default,
             )) {
                 return 1;
             }

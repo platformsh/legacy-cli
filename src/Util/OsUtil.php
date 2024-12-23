@@ -94,7 +94,7 @@ class OsUtil
 
         foreach ($suffixes as $suffix) {
             foreach ($dirs as $dir) {
-                if (@is_file($file = $dir.\DIRECTORY_SEPARATOR.$name.$suffix) && ($isWindows || @is_executable($file))) {
+                if (@is_file($file = $dir . \DIRECTORY_SEPARATOR . $name . $suffix) && ($isWindows || @is_executable($file))) {
                     $found[] = $file;
                 }
             }

@@ -18,9 +18,9 @@ $run_php = function ($filename) {
                 $_SERVER['REMOTE_PORT'],
                 http_response_code(),
                 $_SERVER['REQUEST_METHOD'],
-                $_SERVER['REQUEST_URI']
+                $_SERVER['REQUEST_URI'],
             ),
-            ERROR_LOG_TYPE_SAPI
+            ERROR_LOG_TYPE_SAPI,
         );
     });
 
@@ -139,7 +139,7 @@ if (!empty($location['rules'])) {
                     error_log(sprintf(
                         'Static file "%s" blocked by rule "%s"',
                         $relative_path,
-                        $pattern
+                        $pattern,
                     ), ERROR_LOG_TYPE_SAPI);
                 }
             }

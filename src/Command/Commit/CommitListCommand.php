@@ -71,7 +71,7 @@ class CommitListCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Commits on the project %s, environment %s:',
                 $this->api->getProjectLabel($selection->getProject()),
-                $this->api->getEnvironmentLabel($environment)
+                $this->api->getEnvironmentLabel($environment),
             ));
         }
 
@@ -82,7 +82,7 @@ class CommitListCommand extends CommandBase
             $row = [];
             $row[] = new AdaptiveTableCell(
                 $this->propertyFormatter->format($commit->author['date'], 'author.date'),
-                ['wrap' => false]
+                ['wrap' => false],
             );
             $row[] = $commit->sha;
             $row[] = $commit->author['name'];

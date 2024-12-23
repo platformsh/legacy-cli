@@ -89,7 +89,7 @@ class RouteListCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Routes on the project %s, environment %s:',
                     $this->api->getProjectLabel($selection->getProject()),
-                    $this->api->getEnvironmentLabel($selection->getEnvironment())
+                    $this->api->getEnvironmentLabel($selection->getEnvironment()),
                 ));
             }
         }
@@ -100,7 +100,7 @@ class RouteListCommand extends CommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single route, run: <info>%s route:get <route></info>',
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
         }
 

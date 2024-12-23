@@ -52,7 +52,7 @@ class LocalBuild
         Filesystem $fs = null,
         Git $git = null,
         DependencyInstaller $dependencyInstaller = null,
-        ApplicationFinder $applicationFinder = null
+        ApplicationFinder $applicationFinder = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
@@ -156,7 +156,7 @@ class LocalBuild
         $tree = preg_replace(
             '#^|\n[^\n]+?' . preg_quote($this->config->getStr('service.project_config_dir')) . '\n|$#',
             "\n",
-            $tree
+            $tree,
         );
         $hashes[] = sha1((string) $tree);
 
@@ -170,7 +170,7 @@ class LocalBuild
                 '-x ' . $this->config->getStr('service.project_config_dir'),
                 '.',
             ],
-            $appRoot
+            $appRoot,
         );
         if ($others === false) {
             return false;
@@ -243,7 +243,7 @@ class LocalBuild
                     '<comment>Warning:</comment> the application <comment>%s</comment> expects PHP %s, but the system version is %s.',
                     $appId,
                     $version,
-                    $localPhpVersion
+                    $localPhpVersion,
                 ));
             }
         }
@@ -284,7 +284,7 @@ class LocalBuild
                 } else {
                     $success = $this->dependencyInstaller->installDependencies(
                         $depsDir,
-                        $appConfig['dependencies']
+                        $appConfig['dependencies'],
                     );
                 }
 
@@ -328,7 +328,7 @@ class LocalBuild
         if (!rename($tmpBuildDir, $buildDir)) {
             $this->output->writeln(sprintf(
                 'Failed to move temporary build directory into <error>%s</error>',
-                $buildDir
+                $buildDir,
             ));
 
             return false;
@@ -421,7 +421,7 @@ class LocalBuild
     {
         $code = $this->shellHelper->executeSimple(
             implode("\n", (array) $hook),
-            $dir
+            $dir,
         );
         if ($code !== 0) {
             $this->output->writeln("<comment>The hook failed with the exit code: $code</comment>");
@@ -456,7 +456,7 @@ class LocalBuild
             $maxAge,
             $keepMax,
             $exclude,
-            $quiet
+            $quiet,
         );
     }
 
@@ -530,7 +530,7 @@ class LocalBuild
             $maxAge,
             $keepMax,
             [],
-            $quiet
+            $quiet,
         );
     }
 
@@ -557,7 +557,7 @@ class LocalBuild
         // Sort files by modified time (descending).
         usort(
             $files,
-            fn (string $a, string $b): int => filemtime($a) <=> filemtime($b)
+            fn(string $a, string $b): int => filemtime($a) <=> filemtime($b),
         );
         $now = time();
         $numDeleted = 0;

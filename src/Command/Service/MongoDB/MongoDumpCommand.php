@@ -74,7 +74,7 @@ class MongoDumpCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Creating %s file: <info>%s</info>',
                 $gzip ? 'gzipped BSON archive' : 'BSON archive',
-                $dumpFile
+                $dumpFile,
             ));
         }
         $service = $this->relationships->chooseService($host, $input, $output, ['mongodb']);
@@ -152,7 +152,7 @@ class MongoDumpCommand extends CommandBase
         Environment $environment = null,
         ?string $appName = null,
         ?string $collection = '',
-        bool $gzip = false
+        bool $gzip = false,
     ): string {
         $prefix = $this->config->getStr('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');

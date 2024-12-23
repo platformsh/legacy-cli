@@ -89,7 +89,7 @@ class MountDownloadCommand extends CommandBase
 
             $choice = $this->questionHelper->choose(
                 $mountOptions,
-                'Enter a number to choose a mount to download from:'
+                'Enter a number to choose a mount to download from:',
             );
             if ($choice === '\\ALL') {
                 $all = true;
@@ -148,7 +148,7 @@ class MountDownloadCommand extends CommandBase
             $confirmText = sprintf(
                 'Downloading files from all remote mounts to <comment>%s</comment>'
                 . "\n\nAre you sure you want to continue?",
-                $this->filesystem->formatPathForDisplay($target)
+                $this->filesystem->formatPathForDisplay($target),
             );
             if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
@@ -169,7 +169,7 @@ class MountDownloadCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Downloading files from <comment>%s</comment> to <comment>%s</comment>',
                     $mountPath,
-                    $this->filesystem->formatPathForDisplay($mountSpecificTarget)
+                    $this->filesystem->formatPathForDisplay($mountSpecificTarget),
                 ));
                 $this->filesystem->mkdir($mountSpecificTarget);
                 $this->rsync->syncDown($sshUrl, $mountPath, $mountSpecificTarget, $rsyncOptions);
@@ -179,7 +179,7 @@ class MountDownloadCommand extends CommandBase
                 'Downloading files from the remote mount <comment>%s</comment> to <comment>%s</comment>'
                 . "\n\nAre you sure you want to continue?",
                 $mountPath,
-                $this->filesystem->formatPathForDisplay($target)
+                $this->filesystem->formatPathForDisplay($target),
             );
             if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;

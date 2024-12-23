@@ -74,7 +74,7 @@ class MountUploadCommand extends CommandBase
 
             $mountPath = $this->questionHelper->choose(
                 $options,
-                'Enter a number to choose a mount to upload to:'
+                'Enter a number to choose a mount to upload to:',
             );
         } else {
             $this->stdErr->writeln('The <error>--mount</error> option must be specified (in non-interactive mode).');
@@ -130,7 +130,7 @@ class MountUploadCommand extends CommandBase
             "\nUploading files from <comment>%s</comment> to the remote mount <comment>%s</comment>"
             . "\n\nAre you sure you want to continue?",
             $this->filesystem->formatPathForDisplay($source),
-            $mountPath
+            $mountPath,
         );
         if (!$this->questionHelper->confirm($confirmText)) {
             return 1;

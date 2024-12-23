@@ -59,6 +59,6 @@ class ArrayArgument
             }
             $split = \array_merge($split, $splitArg);
         }
-        return \array_filter($split, fn (string $a): bool => \strlen($a) > 0);
+        return \array_filter($split, fn(string $a): bool => \strlen($a) > 0);
     }
 }

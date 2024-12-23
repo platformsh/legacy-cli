@@ -9,9 +9,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class EnvironmentsChangedEvent extends Event
 {
     /** @param Environment[] $environments */
-    public function __construct(private readonly Project $project, private readonly array $environments)
-    {
-    }
+    public function __construct(private readonly Project $project, private readonly array $environments) {}
 
     public function getProject(): Project
     {

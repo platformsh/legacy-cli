@@ -118,7 +118,7 @@ readonly class SshKey
             return [];
         }
 
-        return \array_map(fn (SshKeyModel $sshKey) => $sshKey->fingerprint, $keys);
+        return \array_map(fn(SshKeyModel $sshKey) => $sshKey->fingerprint, $keys);
     }
 
     /**

@@ -55,6 +55,6 @@ class DocsCommand extends CommandBase
      */
     protected function getSearchQuery(array $args): string
     {
-        return implode(' ', array_map(fn ($term) => strpos((string) $term, ' ') ? '"' . $term . '"' : $term, $args));
+        return implode(' ', array_map(fn($term) => strpos((string) $term, ' ') ? '"' . $term . '"' : $term, $args));
     }
 }

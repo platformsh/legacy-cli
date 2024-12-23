@@ -134,7 +134,7 @@ class DbSizeCommand extends CommandBase
                 list($schema, $table) = explode("\t", $row);
 
                 return sprintf('ALTER TABLE `%s`.`%s` ENGINE="InnoDB";', $schema, $table);
-            }, $rows)
+            }, $rows),
         );
     }
 
@@ -262,7 +262,7 @@ class DbSizeCommand extends CommandBase
 
         return sprintf(
             'psql --echo-hidden -t --no-align %s',
-            $dbUrl
+            $dbUrl,
         );
     }
 
@@ -278,7 +278,7 @@ class DbSizeCommand extends CommandBase
             'mongo %s --quiet --eval %s',
             $dbUrl,
             // See https://docs.mongodb.com/manual/reference/command/dbStats/
-            OsUtil::escapePosixShellArg('db.stats().fsUsedSize')
+            OsUtil::escapePosixShellArg('db.stats().fsUsedSize'),
         );
     }
 
@@ -298,7 +298,7 @@ class DbSizeCommand extends CommandBase
         return sprintf(
             '%s %s --no-auto-rehash --raw --skip-column-names',
             $cmdInvocation,
-            $connectionParams
+            $connectionParams,
         );
     }
 
@@ -350,7 +350,7 @@ class DbSizeCommand extends CommandBase
     private function mysqlTablesInNeedOfOptimizing(): string
     {
         /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/
-        return 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND TABLE_TYPE="BASE TABLE" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
+        return 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND TABLE_TYPE="BASE TABLE" AND ((data_free+1)/(data_length+1))*100 >= ' . self::WASTED_SPACE_WARNING_THRESHOLD . ' ORDER BY data_free DESC LIMIT 10';
     }
 
     /**

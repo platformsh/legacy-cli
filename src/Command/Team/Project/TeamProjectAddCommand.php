@@ -45,7 +45,7 @@ class TeamProjectAddCommand extends TeamCommandBase
         }
 
         $teamProjects = $this->loadTeamProjects($team);
-        $teamProjectIds = array_map(fn (TeamProjectAccess $a) => $a->project_id, $teamProjects);
+        $teamProjectIds = array_map(fn(TeamProjectAccess $a) => $a->project_id, $teamProjects);
 
         $projectIds = ArrayArgument::getArgument($input, 'projects');
 
@@ -70,7 +70,7 @@ class TeamProjectAddCommand extends TeamCommandBase
                 $this->stdErr->writeln(sprintf("No projects were found in the team's organization (%s)", $team->organization_id));
                 return 1;
             }
-            $orgProjectsFiltered = array_filter($orgProjects, fn (OrgProject $orgProject): bool => !in_array($orgProject->id, $teamProjectIds));
+            $orgProjectsFiltered = array_filter($orgProjects, fn(OrgProject $orgProject): bool => !in_array($orgProject->id, $teamProjectIds));
             if (!$orgProjectsFiltered) {
                 $this->stdErr->writeln('The team currently has access to the project(s): ');
                 foreach ($teamProjects as $teamProject) {

@@ -95,7 +95,7 @@ class PropertyFormatter implements InputConfiguringInterface
             null,
             InputOption::VALUE_REQUIRED,
             'The date format (as a PHP date format string)',
-            $config->getStr('application.date_format')
+            $config->getStr('application.date_format'),
         ));
     }
 
@@ -128,7 +128,7 @@ class PropertyFormatter implements InputConfiguringInterface
         }
         $dateTime->setTimezone(new \DateTimeZone(
             $this->config->getWithDefault('application.timezone', null)
-            ?: TimezoneUtil::getTimezone()
+            ?: TimezoneUtil::getTimezone(),
         ));
 
         return $dateTime->format($this->dateFormat());
@@ -155,7 +155,7 @@ class PropertyFormatter implements InputConfiguringInterface
             'is_enabled' => true,
         ];
         // Hide passwords.
-        $info['basic_auth'] = array_map(fn (): string => '******', $info['basic_auth']);
+        $info['basic_auth'] = array_map(fn(): string => '******', $info['basic_auth']);
 
         return $this->format($info);
     }

@@ -107,7 +107,7 @@ class DrupalTest extends BuildFlavorTestBase
 
         // Build. This should create an archive.
         $this->builder->build($this->buildSettings, $projectRoot);
-        $archive = $projectRoot . '/' . self::$config->getStr('local.archive_dir')  .'/' . $treeId . '.tar.gz';
+        $archive = $projectRoot . '/' . self::$config->getStr('local.archive_dir') . '/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.

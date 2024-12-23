@@ -8,9 +8,7 @@ use Platformsh\Client\Model\Environment;
 
 readonly class HostFactory
 {
-    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics)
-    {
-    }
+    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics) {}
 
     public function local(): LocalHost
     {

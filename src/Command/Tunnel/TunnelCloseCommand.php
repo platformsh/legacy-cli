@@ -57,7 +57,7 @@ class TunnelCloseCommand extends TunnelCommandBase
             $questionText = sprintf(
                 'Close tunnel to relationship <comment>%s</comment> on %s?',
                 $relationshipString,
-                $appString
+                $appString,
             );
             if ($this->questionHelper->confirm($questionText)) {
                 $this->tunnelManager->close($tunnel);

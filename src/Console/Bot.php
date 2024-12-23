@@ -26,7 +26,7 @@ class Bot extends Animation
         }
 
         // The frames are the contents of each file, with each line indented.
-        $frames = array_map(fn ($filename) => preg_replace('/^/m', $indent, (string) file_get_contents($filename))
+        $frames = array_map(fn($filename) => preg_replace('/^/m', $indent, (string) file_get_contents($filename))
             . $signature, $filenames);
 
         parent::__construct($output, $frames);

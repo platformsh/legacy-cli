@@ -101,7 +101,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
                 $this->resourcesUtil->formatCPU($settings['build_resources']['cpu']),
                 [],
                 $validateCpu,
-                'current: '
+                'current: ',
             );
 
             $memoryOption = $this->questionHelper->askInput(
@@ -109,7 +109,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
                 $settings['build_resources']['memory'],
                 [],
                 $validateMemory,
-                'current: '
+                'current: ',
             );
             $this->stdErr->writeln('');
         }
@@ -156,12 +156,12 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('<options=bold>Summary of changes:</>');
         $this->stdErr->writeln('  CPU: ' . $this->resourcesUtil->formatChange(
             $this->resourcesUtil->formatCPU($current['cpu']),
-            $this->resourcesUtil->formatCPU($updates['cpu'] ?? $current['cpu'])
+            $this->resourcesUtil->formatCPU($updates['cpu'] ?? $current['cpu']),
         ));
         $this->stdErr->writeln('  Memory: ' . $this->resourcesUtil->formatChange(
             $current['memory'],
             $updates['memory'] ?? $current['memory'],
-            ' MB'
+            ' MB',
         ));
     }
 }

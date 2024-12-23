@@ -142,7 +142,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             $absDestination = str_replace(
                 ['{webroot}', '{approot}'],
                 [$this->getWebRoot(), $this->buildDir],
-                $relDestination
+                $relDestination,
             );
 
             foreach ($matched as $source) {
@@ -170,8 +170,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                     $this->stdErr->writeln(
                         sprintf(
                             "Overriding existing path '%s' in destination",
-                            str_replace($this->buildDir . '/', '', $destination)
-                        )
+                            str_replace($this->buildDir . '/', '', $destination),
+                        ),
                     );
                     $this->fsHelper->remove($destination);
                 }
@@ -313,7 +313,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                 $this->fsHelper->mkdir($target, 0775);
             }
             $this->stdErr->writeln(
-                '  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>'
+                '  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>',
             );
             $this->fsHelper->symlink($target, $link);
         }
@@ -337,7 +337,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                 $this->stdErr->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
                 $this->stdErr->writeln(
-                    'Edit this file to add your database credentials and other Drupal configuration.'
+                    'Edit this file to add your database credentials and other Drupal configuration.',
                 );
             } else {
                 $this->stdErr->writeln("Symlinking <info>$relative</info> into sites/default");

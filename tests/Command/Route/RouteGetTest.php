@@ -39,7 +39,7 @@ class RouteGetTest extends TestCase
             rtrim(MockApp::runAndReturnOutput('route:get', [
                 '--primary' => true,
                 '--property' => 'url',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 
@@ -50,14 +50,14 @@ class RouteGetTest extends TestCase
             rtrim(MockApp::runAndReturnOutput('route:get', [
                 'route' => 'http://{default}',
                 '--property' => 'primary',
-            ]), "\n")
+            ]), "\n"),
         );
         $this->assertEquals(
             'true',
             rtrim(MockApp::runAndReturnOutput('route:get', [
                 'route' => 'https://{default}',
                 '--property' => 'primary',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 }

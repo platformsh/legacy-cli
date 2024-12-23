@@ -34,7 +34,7 @@ class ActivityLogCommand extends ActivityCommandBase
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Activity refresh interval (seconds). Set to 0 to disable refreshing.',
-                3
+                3,
             )
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
             ->addOption(
@@ -64,7 +64,7 @@ class ActivityLogCommand extends ActivityCommandBase
                 'i',
                 InputOption::VALUE_NONE,
                 'Include only incomplete activities (when selecting a default activity).'
-                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>'
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>',
             )
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         PropertyFormatter::configureInput($this->getDefinition());

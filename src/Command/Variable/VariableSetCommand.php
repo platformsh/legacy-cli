@@ -40,7 +40,7 @@ class VariableSetCommand extends CommandBase
         $this->activityMonitor->addWaitOptions($this->getDefinition());
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
-            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>"
+            . "\nInstead, use <info>variable:create</info> and <info>variable:update</info>",
         );
     }
 

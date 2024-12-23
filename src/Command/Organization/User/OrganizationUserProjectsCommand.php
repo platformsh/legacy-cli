@@ -161,12 +161,12 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
                 $this->stdErr->writeln(\sprintf(
                     'Project access for the user %s in the organization %s:',
                     $this->api->getUserRefLabel($userRef),
-                    $this->api->getOrganizationLabel($organization)
+                    $this->api->getOrganizationLabel($organization),
                 ));
             } else {
                 $this->stdErr->writeln(\sprintf(
                     'All project access for the user %s:',
-                    $this->api->getUserRefLabel($userRef)
+                    $this->api->getUserRefLabel($userRef),
                 ));
             }
         }

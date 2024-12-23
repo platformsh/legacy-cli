@@ -29,7 +29,7 @@ class EnvironmentDeleteCommand extends CommandBase
         private readonly Config          $config,
         private readonly ProjectSshInfo  $projectSshInfo,
         private readonly QuestionHelper  $questionHelper,
-        private readonly Selector        $selector
+        private readonly Selector        $selector,
     ) {
         parent::__construct();
     }
@@ -67,7 +67,7 @@ class EnvironmentDeleteCommand extends CommandBase
             files.
 
             This command allows you to delete environments as well as their Git branches.
-            EOF
+            EOF,
         );
     }
 
@@ -98,7 +98,7 @@ class EnvironmentDeleteCommand extends CommandBase
         }
         if ($specifiedEnvironmentIds) {
             $anythingSpecified = true;
-            $allIds = \array_map(fn (Environment $e) => $e->id, $environments);
+            $allIds = \array_map(fn(Environment $e) => $e->id, $environments);
             $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             if (!empty($notFound)) {
@@ -128,9 +128,9 @@ class EnvironmentDeleteCommand extends CommandBase
             }
             $inactive = array_filter(
                 $environments,
-                fn ($environment): bool =>
+                fn($environment): bool =>
                     /** @var Environment $environment */
-                    $environment->status == 'inactive'
+                    $environment->status == 'inactive',
             );
             $this->stdErr->writeln($this->formatPlural(count($inactive), 'inactive environment') . ' found.');
             $this->stdErr->writeln('');
@@ -183,7 +183,7 @@ class EnvironmentDeleteCommand extends CommandBase
         if (!$anythingSpecified
             && empty($selectedEnvironments)
             && ($current = $this->selector->getCurrentEnvironment($selection->getProject()))) {
-            $this->stdErr->writeln('Nothing specified; selecting the current environment: '. $this->api->getEnvironmentLabel($current));
+            $this->stdErr->writeln('Nothing specified; selecting the current environment: ' . $this->api->getEnvironmentLabel($current));
             $this->stdErr->writeln('');
             $selectedEnvironments[$current->id] = $current;
         }
@@ -418,7 +418,7 @@ class EnvironmentDeleteCommand extends CommandBase
      */
     private function listEnvironments(array $environments, string $tag = 'info'): string
     {
-        $uniqueIds = \array_unique(\array_map(fn (Environment $e) => $e->id, $environments));
+        $uniqueIds = \array_unique(\array_map(fn(Environment $e) => $e->id, $environments));
         natcasesort($uniqueIds);
         return "<$tag>" . implode("</$tag>, <$tag>", $uniqueIds) . "</$tag>";
     }

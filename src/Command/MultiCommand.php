@@ -40,7 +40,7 @@ class MultiCommand extends CommandBase
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the order of project options');
         $this->addExample(
             'List variables on the "main" environment for multiple projects',
-            "-p l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx -- var -e main"
+            "-p l7ywemwizmmgb,o43m25zns6k2d,3nyujoslhydhx -- var -e main",
         );
     }
 
@@ -64,13 +64,13 @@ class MultiCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'The command <error>%s</error> cannot be run via "%s multi".',
                 $commandName,
-                $this->config->getStr('application.executable')
+                $this->config->getStr('application.executable'),
             ));
             return 1;
         } elseif (!$command->getDefinition()->hasOption('project')) {
             $this->stdErr->writeln(sprintf(
                 'The command <error>%s</error> does not have a --project option.',
-                $commandName
+                $commandName,
             ));
             return 1;
         }
@@ -86,7 +86,7 @@ class MultiCommand extends CommandBase
             "Running command on %d %s:  <info>%s</info>",
             count($projects),
             count($projects) === 1 ? 'project' : 'projects',
-            $commandLine
+            $commandLine,
         ));
         foreach ($projects as $project) {
             $this->stdErr->writeln('');
@@ -126,7 +126,7 @@ class MultiCommand extends CommandBase
             escapeshellarg($text),
             $height,
             $width,
-            $listHeight
+            $listHeight,
         );
         foreach ($options as $tag => $option) {
             $command .= sprintf(' %s %s off', escapeshellarg($tag), escapeshellarg($option));
@@ -140,7 +140,7 @@ class MultiCommand extends CommandBase
 
         $pipes = [2 => null];
         $process = proc_open($command, [
-            2 => array('pipe', 'w'),
+            2 => ['pipe', 'w'],
         ], $pipes);
         if (!$process) {
             throw new \RuntimeException('Failed to start dialog command: ' . $process);

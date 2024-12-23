@@ -32,7 +32,7 @@ class VariableListCommand extends CommandBase
         private readonly Config              $config,
         private readonly Selector            $selector,
         private readonly Table               $table,
-        private readonly VariableCommandUtil $variableCommandUtil
+        private readonly VariableCommandUtil $variableCommandUtil,
     ) {
         parent::__construct();
     }
@@ -114,19 +114,19 @@ class VariableListCommand extends CommandBase
             $executable = $this->config->getStr('application.executable');
             $this->stdErr->writeln(sprintf(
                 'To view variable details, run: <info>%s variable:get [name]</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln(sprintf(
                 'To create a new variable, run: <info>%s variable:create</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln(sprintf(
                 'To update a variable, run: <info>%s variable:update [name]</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln(sprintf(
                 'To delete a variable, run: <info>%s variable:delete [name]</info>',
-                $executable
+                $executable,
             ));
         }
 

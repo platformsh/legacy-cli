@@ -27,7 +27,7 @@ class InstallerTest extends TestCase
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
                 ['version' => '1.0.3-dev'],
-            ], PHP_VERSION, ['beta'])
+            ], PHP_VERSION, ['beta']),
         );
         $this->assertEquals(
             [
@@ -40,7 +40,7 @@ class InstallerTest extends TestCase
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
                 ['version' => '1.0.3-dev'],
-            ], PHP_VERSION, ['stable', 'beta'])
+            ], PHP_VERSION, ['stable', 'beta']),
         );
     }
 
@@ -50,7 +50,7 @@ class InstallerTest extends TestCase
             [
                 'version' => '1.0.0',
                 'php' => ['min' => '5.5.9'],
-            ]
+            ],
         ], '5.5.0'));
     }
 

@@ -38,7 +38,7 @@ class VariableCreateCommand extends CommandBase
         private readonly QuestionHelper   $questionHelper,
         private readonly Selector         $selector,
         private readonly SubCommandRunner $subCommandRunner,
-        private readonly VariableCommandUtil $variableCommandUtil
+        private readonly VariableCommandUtil $variableCommandUtil,
     ) {
         $this->selection = new Selection();
         parent::__construct();
@@ -49,7 +49,7 @@ class VariableCreateCommand extends CommandBase
         $this
             ->addArgument('name', InputArgument::OPTIONAL, 'The variable name')
             ->addOption('update', 'u', InputOption::VALUE_NONE, 'Update the variable if it already exists');
-        $this->form = Form::fromArray($this->variableCommandUtil->getFields(fn () => $this->selection));
+        $this->form = Form::fromArray($this->variableCommandUtil->getFields(fn() => $this->selection));
         $this->form->configureInputDefinition($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -75,7 +75,7 @@ class VariableCreateCommand extends CommandBase
         // Check whether the variable already exists, if a name is provided.
         if (($name = $input->getOption('name'))) {
             if (($prefix = $input->getOption('prefix')) && $prefix !== 'none') {
-                $name = rtrim((string) $prefix, ':') . ':' .  $name;
+                $name = rtrim((string) $prefix, ':') . ':' . $name;
             }
             $existing = $this->variableCommandUtil->getExistingVariable($name, $selection, $this->variableCommandUtil->getRequestedLevel($input));
             if ($existing) {
@@ -87,10 +87,10 @@ class VariableCreateCommand extends CommandBase
                     $this->stdErr->writeln(sprintf(
                         'To view the variable, use: <comment>%s variable:get %s</comment>',
                         $executable,
-                        OsUtil::escapeShellArg($name)
+                        OsUtil::escapeShellArg($name),
                     ));
                     $this->stdErr->writeln(
-                        'To skip this check, use the <comment>--update</comment> (<comment>-u</comment>) option.'
+                        'To skip this check, use the <comment>--update</comment> (<comment>-u</comment>) option.',
                     );
 
                     return 1;
@@ -125,7 +125,7 @@ class VariableCreateCommand extends CommandBase
                     'The option <error>--%s</error> can only be used for variables at the <comment>%s</comment> level, not at the <comment>%s</comment> level.',
                     $field->getOptionName(),
                     $conditions['level'],
-                    $previousValues['level']
+                    $previousValues['level'],
                 ));
                 return 1;
             }
@@ -134,7 +134,7 @@ class VariableCreateCommand extends CommandBase
 
         if (isset($values['prefix']) && isset($values['name'])) {
             if ($values['prefix'] !== 'none') {
-                $values['name'] = rtrim((string) $values['prefix'], ':') . ':' .  $values['name'];
+                $values['name'] = rtrim((string) $values['prefix'], ':') . ':' . $values['name'];
             }
             unset($values['prefix']);
         }
@@ -190,7 +190,7 @@ class VariableCreateCommand extends CommandBase
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the environment <error>%s</error>',
                         $values['name'],
-                        $environment->id
+                        $environment->id,
                     ));
 
                     return 1;
@@ -199,7 +199,7 @@ class VariableCreateCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the environment <info>%s</info>',
                     $values['name'],
-                    $environment->id
+                    $environment->id,
                 ));
 
                 try {
@@ -226,7 +226,7 @@ class VariableCreateCommand extends CommandBase
                     $this->stdErr->writeln(sprintf(
                         'The variable <error>%s</error> already exists on the project %s',
                         $values['name'],
-                        $this->api->getProjectLabel($project, 'error')
+                        $this->api->getProjectLabel($project, 'error'),
                     ));
 
                     return 1;
@@ -234,7 +234,7 @@ class VariableCreateCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Creating variable <info>%s</info> on the project %s',
                     $values['name'],
-                    $this->api->getProjectLabel($project, 'info')
+                    $this->api->getProjectLabel($project, 'info'),
                 ));
 
                 $result = ProjectLevelVariable::create($values, $project->getUri() . '/variables', $this->api->getHttpClient());

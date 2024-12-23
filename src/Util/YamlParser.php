@@ -183,7 +183,7 @@ class YamlParser
                 'string' => $this->readFile($includeFile),
                 default => throw new InvalidConfigException(sprintf(
                     'Unrecognized !include tag type "%s"',
-                    $includeType
+                    $includeType,
                 ), $filename, $configKey),
             };
         } catch (\Exception $e) {

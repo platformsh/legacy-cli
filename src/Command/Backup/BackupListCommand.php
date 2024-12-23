@@ -93,7 +93,7 @@ class BackupListCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Backups on the project %s, environment %s:',
                 $this->api->getProjectLabel($selection->getProject()),
-                $this->api->getEnvironmentLabel($environment)
+                $this->api->getEnvironmentLabel($environment),
             ));
         }
 

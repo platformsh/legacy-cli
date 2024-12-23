@@ -120,7 +120,7 @@ class SelfReleaseCommand extends CommandBase
             if (!$allowLower && version_compare($next, $lastVersion, '<=')) {
                 throw new \InvalidArgumentException(
                     'The new version number must be greater than ' . $lastVersion
-                    . "\n" . 'Use --allow-lower to skip this check.'
+                    . "\n" . 'Use --allow-lower to skip this check.',
                 );
             }
 
@@ -262,7 +262,7 @@ class SelfReleaseCommand extends CommandBase
             $versionInPhar = $this->shell->mustExecute([
                 (new PhpExecutableFinder())->find() ?: PHP_BINARY,
                 $pharFilename,
-                '--version'
+                '--version',
             ]);
             if (!str_contains($versionInPhar, (string) $newVersion)) {
                 $this->stdErr->writeln('The file ' . $pharFilename . ' reports a different version: "' . $versionInPhar . '"');
@@ -275,7 +275,7 @@ class SelfReleaseCommand extends CommandBase
         $pharPublicFilename = $this->config->getStr('application.executable') . '.phar';
         $download_url = str_replace('{tag}', $tagName, $this->config->getWithDefault(
             'application.download_url',
-            'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename
+            'https://github.com/' . $repoUrl . '/releases/download/{tag}/' . $pharPublicFilename,
         ));
 
         // Construct the new manifest item details.
@@ -473,7 +473,7 @@ class SelfReleaseCommand extends CommandBase
             '--grep=(Release v|\[skip changelog\])',
             '--perl-regexp',
             '--regexp-ignore-case',
-            $since . '...HEAD'
+            $since . '...HEAD',
         ], CLI_ROOT);
         if (!is_string($changelog)) {
             return '';

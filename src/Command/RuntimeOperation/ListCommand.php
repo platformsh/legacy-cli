@@ -100,12 +100,12 @@ class ListCommand extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Runtime operations on the environment %s, app <info>%s</info>:',
                     $this->api->getEnvironmentLabel($selection->getEnvironment()),
-                    $selectedApp->getName()
+                    $selectedApp->getName(),
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Runtime operations on the environment %s:',
-                    $this->api->getEnvironmentLabel($selection->getEnvironment())
+                    $this->api->getEnvironmentLabel($selection->getEnvironment()),
                 ));
             }
         }

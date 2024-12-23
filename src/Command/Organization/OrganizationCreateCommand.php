@@ -46,15 +46,15 @@ END_HELP;
             ]),
             'name' => new Field('Name', [
                 'description' => 'The organization machine name, used for URL paths and similar purposes.',
-                'defaultCallback' => fn ($values) => isset($values['label']) ? (new Slugify())->slugify($values['label']) : null,
+                'defaultCallback' => fn($values) => isset($values['label']) ? (new Slugify())->slugify($values['label']) : null,
             ]),
             'country' => new OptionsField('Country', [
                 'description' => 'The organization country. Used as the default for the billing address.',
                 'options' => $countryList,
                 'asChoice' => false,
-                'defaultCallback' => fn () => $this->api->getUser()->country ?: null,
+                'defaultCallback' => fn() => $this->api->getUser()->country ?: null,
                 'normalizer' => $this->countryService->countryToCode(...),
-                'validator' => fn ($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
+                'validator' => fn($countryCode) => isset($countryList[$countryCode]) ? true : "Invalid country: $countryCode",
             ]),
         ]);
     }

@@ -206,7 +206,7 @@ class Drupal extends BuildFlavorBase
                     $core
                     ? "Couldn't find a core make file in the directory."
                     : "Couldn't find a make file in the directory."
-                ) . " Possible filenames: " . implode(',', $candidates)
+                ) . " Possible filenames: " . implode(',', $candidates),
             );
         }
 
@@ -239,7 +239,7 @@ class Drupal extends BuildFlavorBase
 
         $args = array_merge(
             ['make', $projectMake, $drupalRoot],
-            $drushFlags
+            $drushFlags,
         );
 
         // Create a lock file automatically.
@@ -274,7 +274,7 @@ class Drupal extends BuildFlavorBase
             true,
             false,
             array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
-            $this->copy
+            $this->copy,
         );
     }
 
@@ -310,7 +310,7 @@ class Drupal extends BuildFlavorBase
 
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
-                $drushFlags
+                $drushFlags,
             );
 
             // Create a lock file automatically.
@@ -324,7 +324,7 @@ class Drupal extends BuildFlavorBase
         if ($projectCoreMake) {
             $args = array_merge(
                 ['make', $projectCoreMake, $drupalRoot],
-                $drushFlags
+                $drushFlags,
             );
 
             // Create a lock file automatically.
@@ -365,7 +365,7 @@ class Drupal extends BuildFlavorBase
             true,
             true,
             array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
-            $this->copy
+            $this->copy,
         );
     }
 
@@ -391,7 +391,7 @@ class Drupal extends BuildFlavorBase
             $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->stdErr->writeln(
                 "  <comment>Your settings.php file has been copied (not symlinked) into the build directory."
-                . "\n  You will need to rebuild if you edit this file.</comment>"
+                . "\n  You will need to rebuild if you edit this file.</comment>",
             );
             $this->ignoredFiles[] = 'settings.php';
         }

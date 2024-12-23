@@ -148,12 +148,12 @@ class ActivityListCommand extends ActivityCommandBase
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s, environment %s:',
                     $this->api->getProjectLabel($project),
-                    $this->api->getEnvironmentLabel($apiResource)
+                    $this->api->getEnvironmentLabel($apiResource),
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Activities on the project %s:',
-                    $this->api->getProjectLabel($project)
+                    $this->api->getProjectLabel($project),
                 ));
             }
         }
@@ -170,7 +170,7 @@ class ActivityListCommand extends ActivityCommandBase
                 $this->stdErr->writeln('More activities may be available.');
                 $this->stdErr->writeln(sprintf(
                     'To display older activities, increase <info>--limit</info> above %d, or set <info>--start</info> to a date in the past.',
-                    $max
+                    $max,
                 ));
                 $this->suggestExclusions($activities);
             }
@@ -178,11 +178,11 @@ class ActivityListCommand extends ActivityCommandBase
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view the log for an activity, run: <info>%s activity:log [id]</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln(sprintf(
                 'To view more information about an activity, run: <info>%s activity:get [id]</info>',
-                $executable
+                $executable,
             ));
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf('For more information, run: <info>%s activity:list -h</info>', $executable));

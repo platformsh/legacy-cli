@@ -41,7 +41,7 @@ class ProjectListCommand extends CommandBase
         private readonly Config            $config,
         private readonly PropertyFormatter $propertyFormatter,
         private readonly Io                $io,
-        private readonly Table             $table
+        private readonly Table             $table,
     ) {
         parent::__construct();
     }
@@ -120,13 +120,13 @@ class ProjectListCommand extends CommandBase
                 return 0;
             }
             $this->stdErr->writeln(
-                'You do not have any ' . $this->config->getStr('service.name') . ' projects yet.'
+                'You do not have any ' . $this->config->getStr('service.name') . ' projects yet.',
             );
             if ($this->config->isCommandEnabled('project:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf(
                     'To create a new project, run: <info>%s create</info>',
-                    $this->config->getStr('application.executable')
+                    $this->config->getStr('application.executable'),
                 ));
             }
 
@@ -135,7 +135,7 @@ class ProjectListCommand extends CommandBase
 
         // Display a simple list of project IDs, if --pipe is used.
         if ($input->getOption('pipe')) {
-            $output->writeln(\array_map(fn (BasicProjectInfo $info): string => $info->id, $projects));
+            $output->writeln(\array_map(fn(BasicProjectInfo $info): string => $info->id, $projects));
 
             return 0;
         }
@@ -144,7 +144,7 @@ class ProjectListCommand extends CommandBase
         if (!$this->config->getBool('pagination.enabled') && $input->getOption('page') === null) {
             $itemsPerPage = 0;
         } elseif ($input->getOption('count') !== null) {
-            $itemsPerPage = (int)$input->getOption('count');
+            $itemsPerPage = (int) $input->getOption('count');
         } else {
             $itemsPerPage = $this->config->getInt('pagination.count');
         }
@@ -168,7 +168,7 @@ class ProjectListCommand extends CommandBase
             if (!$machineReadable && $projectInfo->status === Subscription::STATUS_SUSPENDED) {
                 $title = sprintf(
                     '<fg=white;bg=black>%s</> <fg=yellow;bg=black>(suspended)</>',
-                    $title
+                    $title,
                 );
             }
 
@@ -236,11 +236,11 @@ class ProjectListCommand extends CommandBase
         foreach ($filters as $filter => $value) {
             switch ($filter) {
                 case 'region':
-                    $projects = array_filter($projects, fn (BasicProjectInfo $project): bool => strcasecmp((string) $value, (string) $project->region) === 0);
+                    $projects = array_filter($projects, fn(BasicProjectInfo $project): bool => strcasecmp((string) $value, (string) $project->region) === 0);
                     break;
 
                 case 'title':
-                    $projects = array_filter($projects, fn (BasicProjectInfo $project): bool => stripos($project->title, (string) $value) !== false);
+                    $projects = array_filter($projects, fn(BasicProjectInfo $project): bool => stripos($project->title, (string) $value) !== false);
                     break;
 
                 case 'my':

@@ -162,7 +162,7 @@ abstract class ServerCommandBase extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     'Failed to kill process <error>%d</error> (POSIX error %s)',
                     $pid,
-                    posix_get_last_error()
+                    posix_get_last_error(),
                 ));
             }
         }
@@ -241,7 +241,7 @@ abstract class ServerCommandBase extends CommandBase
                 $this->stdErr->writeln(sprintf(
                     '<comment>Warning:</comment> your local PHP version is %s, but the app expects %s',
                     $localPhpVersion,
-                    $version
+                    $version,
                 ));
             }
         }
@@ -251,7 +251,7 @@ abstract class ServerCommandBase extends CommandBase
         if (isset($appConfig['web']['commands']['start'])) {
             // Bail out. We can't support custom 'start' commands for now.
             throw new \Exception(
-                "Not supported: the CLI doesn't support starting a server with a custom 'start' command"
+                "Not supported: the CLI doesn't support starting a server with a custom 'start' command",
             );
         }
 
@@ -266,11 +266,11 @@ abstract class ServerCommandBase extends CommandBase
         }
 
         $arguments = array_merge($arguments, [
-          '-t',
-          $docRoot,
-          '-S',
-          $address,
-          $router,
+            '-t',
+            $docRoot,
+            '-S',
+            $address,
+            $router,
         ]);
 
         $process = new Process($arguments);
@@ -416,7 +416,7 @@ abstract class ServerCommandBase extends CommandBase
             return;
         }
         $this->stdErr->writeln(
-            '<comment>Warning:</comment> this uses the PHP built-in web server, which is neither secure nor reliable for production use'
+            '<comment>Warning:</comment> this uses the PHP built-in web server, which is neither secure nor reliable for production use',
         );
         $shown = true;
     }

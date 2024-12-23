@@ -106,27 +106,27 @@ class DomainListCommand extends DomainCommandBase
                 $this->stdErr->writeln(sprintf(
                     'No domains found for the environment %s on the project %s.',
                     $this->api->getEnvironmentLabel($environment),
-                    $this->api->getProjectLabel($project)
+                    $this->api->getProjectLabel($project),
                 ));
                 $this->stdErr->writeln('');
                 if ($environment->is_main) {
                     $this->stdErr->writeln(sprintf(
                         'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name]</info>',
                         $executable,
-                        OsUtil::escapeShellArg($environment->name)
+                        OsUtil::escapeShellArg($environment->name),
                     ));
                 } else {
                     $this->stdErr->writeln(sprintf(
                         'Add a domain to the environment by running <info>%s domain:add -e %s [domain-name] --attach [attach]</info>',
                         $executable,
-                        OsUtil::escapeShellArg($environment->name)
+                        OsUtil::escapeShellArg($environment->name),
                     ));
                 }
             } else {
                 $this->stdErr->writeln('No domains found for ' . $this->api->getProjectLabel($project) . '.');
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(
-                    'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>'
+                    'Add a domain to the project by running <info>' . $executable . ' domain:add [domain-name]</info>',
                 );
             }
 
@@ -139,12 +139,12 @@ class DomainListCommand extends DomainCommandBase
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s, environment %s:',
                     $this->api->getProjectLabel($project),
-                    $this->api->getEnvironmentLabel($selection->getEnvironment())
+                    $this->api->getEnvironmentLabel($selection->getEnvironment()),
                 ));
             } else {
                 $this->stdErr->writeln(sprintf(
                     'Domains on the project %s:',
-                    $this->api->getProjectLabel($project)
+                    $this->api->getProjectLabel($project),
                 ));
             }
         }

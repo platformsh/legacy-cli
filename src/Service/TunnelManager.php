@@ -18,9 +18,7 @@ class TunnelManager
     /** @var Tunnel[]|null */
     private array|null $tunnels;
 
-    public function __construct(private readonly Config $config, private readonly Io $io, private readonly Relationships $relationships)
-    {
-    }
+    public function __construct(private readonly Config $config, private readonly Io $io, private readonly Relationships $relationships) {}
 
     /**
      * @param array{projectId: string, environmentId: string, appName: ?string, relationship: string, serviceKey: string|int, service: array<string, mixed>} $metadata
@@ -148,7 +146,7 @@ class TunnelManager
                 if ($t->pid && function_exists('posix_kill') && !posix_kill($t->pid, 0)) {
                     $this->io->debug(sprintf(
                         'The tunnel at port %d is no longer open, removing from list',
-                        $t->localPort
+                        $t->localPort,
                     ));
                     $this->close($t);
                     return false;
@@ -207,7 +205,7 @@ class TunnelManager
                 throw new \RuntimeException(sprintf(
                     'Failed to kill process %d (POSIX error: %s)',
                     $tunnel->pid,
-                    posix_get_last_error()
+                    posix_get_last_error(),
                 ));
             }
         }
@@ -215,7 +213,7 @@ class TunnelManager
         if (file_exists($pidFile) && !unlink($pidFile)) {
             throw new \RuntimeException(sprintf(
                 'Failed to delete file: %s',
-                $pidFile
+                $pidFile,
             ));
         }
     }

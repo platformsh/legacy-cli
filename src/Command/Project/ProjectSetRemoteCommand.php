@@ -55,7 +55,7 @@ class ProjectSetRemoteCommand extends CommandBase
         $root = $this->git->getRoot($cwd);
         if ($root === false) {
             $this->stdErr->writeln(
-                'No Git repository found. Use <info>git init</info> to create a repository.'
+                'No Git repository found. Use <info>git init</info> to create a repository.',
             );
 
             return 1;
@@ -97,7 +97,7 @@ class ProjectSetRemoteCommand extends CommandBase
                 $this->git->execute(
                     ['remote', 'rm', $gitRemote],
                     $root,
-                    true
+                    true,
                 );
             }
             if ($configFilename) {
@@ -111,7 +111,7 @@ class ProjectSetRemoteCommand extends CommandBase
         if ($currentProject) {
             $this->stdErr->writeln(sprintf(
                 'This repository is already linked to the remote project: %s',
-                $this->api->getProjectLabel($currentProject, 'comment')
+                $this->api->getProjectLabel($currentProject, 'comment'),
             ));
             if (!$this->questionHelper->confirm('Are you sure you want to change it?')) {
                 return 1;
@@ -132,7 +132,7 @@ class ProjectSetRemoteCommand extends CommandBase
         if ($currentProject && $currentProject->id === $project->id) {
             $this->stdErr->writeln(sprintf(
                 'The remote project for this repository is already set as: %s',
-                $this->api->getProjectLabel($currentProject)
+                $this->api->getProjectLabel($currentProject),
             ));
 
             return 0;
@@ -140,13 +140,13 @@ class ProjectSetRemoteCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'Changing the remote project for this repository from %s to %s',
                 $this->api->getProjectLabel($currentProject),
-                $this->api->getProjectLabel($project)
+                $this->api->getProjectLabel($project),
             ));
             $this->stdErr->writeln('');
         } else {
             $this->stdErr->writeln(sprintf(
                 'Setting the remote project for this repository to: %s',
-                $this->api->getProjectLabel($project)
+                $this->api->getProjectLabel($project),
             ));
             $this->stdErr->writeln('');
         }
@@ -155,7 +155,7 @@ class ProjectSetRemoteCommand extends CommandBase
 
         $this->stdErr->writeln(sprintf(
             'The remote project for this repository is now set to: %s',
-            $this->api->getProjectLabel($project)
+            $this->api->getProjectLabel($project),
         ));
 
         if ($input->isInteractive()) {

@@ -34,7 +34,7 @@ Integrations are validated automatically on creation and on update. However,
 because they involve external resources, it is possible for a valid integration
 to become invalid. For example, an access token may be revoked, or an external
 repository may be deleted.
-EOF
+EOF,
         );
     }
 
@@ -52,7 +52,7 @@ EOF
         $this->stdErr->writeln(sprintf(
             'Validating the integration <info>%s</info> (type: %s)...',
             $integration->id,
-            $integration->type
+            $integration->type,
         ));
 
         try {

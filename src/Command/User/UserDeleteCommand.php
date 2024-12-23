@@ -22,7 +22,7 @@ class UserDeleteCommand extends CommandBase
         protected readonly ActivityMonitor $activityMonitor,
         private readonly Api               $api,
         private readonly QuestionHelper    $questionHelper,
-        private readonly Selector          $selector
+        private readonly Selector          $selector,
     ) {
         parent::__construct();
     }
@@ -55,7 +55,7 @@ class UserDeleteCommand extends CommandBase
             $this->stdErr->writeln(sprintf(
                 'The user <error>%s</error> is the owner of the project %s.',
                 $email,
-                $this->api->getProjectLabel($project, 'error')
+                $this->api->getProjectLabel($project, 'error'),
             ));
             $this->stdErr->writeln("The project's owner cannot be deleted.");
             return 1;

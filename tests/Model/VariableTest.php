@@ -13,27 +13,27 @@ class VariableTest extends TestCase
     {
         $this->assertEquals(
             ['env', 'foo', 'bar'],
-            (new Variable())->parse('env:foo=bar')
+            (new Variable())->parse('env:foo=bar'),
         );
 
         $this->assertEquals(
             ['env', 'foo:oof', 'bar'],
-            (new Variable())->parse('env:foo:oof=bar')
+            (new Variable())->parse('env:foo:oof=bar'),
         );
 
         $this->assertEquals(
             ['env', 'foo.123', 'bar'],
-            (new Variable())->parse('env:foo.123=bar')
+            (new Variable())->parse('env:foo.123=bar'),
         );
 
         $this->assertEquals(
             ['complex', 'json', '{"foo":"bar"}'],
-            (new Variable())->parse('complex:json={"foo":"bar"}')
+            (new Variable())->parse('complex:json={"foo":"bar"}'),
         );
 
         $this->assertEquals(
             ['empty', 'value', ''],
-            (new Variable())->parse('empty:value=')
+            (new Variable())->parse('empty:value='),
         );
     }
 

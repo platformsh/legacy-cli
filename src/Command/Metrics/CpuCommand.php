@@ -75,7 +75,7 @@ class CpuCommand extends MetricsCommandBase
                 'Average CPU usage at <info>%s</info> intervals from <info>%s</info> to <info>%s</info>:',
                 (new Duration())->humanize($timeSpec->getInterval()),
                 $formatter->formatDate($timeSpec->getStartTime()),
-                $formatter->formatDate($timeSpec->getEndTime())
+                $formatter->formatDate($timeSpec->getEndTime()),
             ));
         }
 

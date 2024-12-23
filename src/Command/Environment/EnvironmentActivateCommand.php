@@ -112,14 +112,14 @@ class EnvironmentActivateCommand extends CommandBase
                     }
                     $output->writeln(sprintf(
                         'To resume the environment, run: <comment>%s environment:resume</comment>',
-                        $this->config->getStr('application.executable')
+                        $this->config->getStr('application.executable'),
                     ));
                     $count--;
                     continue;
                 }
 
                 $output->writeln(
-                    "Operation not available: The environment " . $this->api->getEnvironmentLabel($environment, 'error') . " can't be activated."
+                    "Operation not available: The environment " . $this->api->getEnvironmentLabel($environment, 'error') . " can't be activated.",
                 );
                 if ($environment->is_main && !$environment->has_code) {
                     $output->writeln('');
@@ -150,14 +150,14 @@ class EnvironmentActivateCommand extends CommandBase
                     $output->writeln(sprintf(
                         'Setting parent of environment <info>%s</info> to <info>%s</info>',
                         $environmentId,
-                        $parentId
+                        $parentId,
                     ));
                     $result = $environment->update(['parent' => $parentId]);
                     $activities = array_merge($activities, $result->getActivities());
                 }
                 $output->writeln(sprintf(
                     'Activating environment <info>%s</info>',
-                    $environmentId
+                    $environmentId,
                 ));
                 $activities = array_merge($activities, $environment->runOperation('activate', 'POST', $params)->getActivities());
                 $processed++;

@@ -29,19 +29,19 @@ class EnvironmentHttpAccessCommand extends CommandBase
                 'access',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'Access restriction in the format "permission:address". Use 0 to clear all addresses.'
+                'Access restriction in the format "permission:address". Use 0 to clear all addresses.',
             )
             ->addOption(
                 'auth',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'HTTP Basic auth credentials in the format "username:password". Use 0 to clear all credentials.'
+                'HTTP Basic auth credentials in the format "username:password". Use 0 to clear all credentials.',
             )
             ->addOption(
                 'enabled',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Whether access control should be enabled: 1 to enable, 0 to disable'
+                'Whether access control should be enabled: 1 to enable, 0 to disable',
             );
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());
@@ -91,7 +91,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         if (count($parts) != 2) {
             $message = sprintf(
                 'Access "<error>%s</error>" is not valid, please use the format: permission:address',
-                $access
+                $access,
             );
             throw new InvalidArgumentException($message);
         }
@@ -99,7 +99,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
         if (!in_array($parts[0], ['allow', 'deny'])) {
             $message = sprintf(
                 "The permission type '<error>%s</error>' is not valid; it must be one of 'allow' or 'deny'",
-                $parts[0]
+                $parts[0],
             );
             throw new InvalidArgumentException($message);
         }
