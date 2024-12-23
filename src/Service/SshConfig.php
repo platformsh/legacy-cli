@@ -48,7 +48,7 @@ class SshConfig {
             if (!is_array($additionalKeys)) {
                 $additionalKeys = explode("\n", $additionalKeys);
             }
-            $hostKeys = rtrim($hostKeys, "\n") . "\n" . $additionalKeys;
+            $hostKeys = rtrim($hostKeys, "\n") . "\n" . implode("\n", $additionalKeys);
         }
         if (empty($hostKeys)) {
             return null;
