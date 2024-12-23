@@ -23,7 +23,7 @@ trait HasTempDirTrait
     {
         if (!($tempDir = tempnam($parentDir, $prefix))
           || !unlink($tempDir)
-          || !mkdir($tempDir, 0755)) {
+          || !mkdir($tempDir, 0o755)) {
             throw new \RuntimeException('Failed to create temporary directory in: ' . $parentDir);
         }
 

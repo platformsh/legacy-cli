@@ -6,7 +6,7 @@
  */
 
 define('ERROR_LOG_TYPE_SAPI', 4);
-$variables_prefix = isset($_ENV['_PLATFORM_VARIABLES_PREFIX']) ? $_ENV['_PLATFORM_VARIABLES_PREFIX'] : 'PLATFORM_';
+$variables_prefix = $_ENV['_PLATFORM_VARIABLES_PREFIX'] ?? 'PLATFORM_';
 
 // Define a callback for running a PHP file (usually the passthru script).
 $run_php = function ($filename) {
@@ -63,7 +63,7 @@ if (!empty($app['drupal_7_workaround'])) {
 }
 
 // Find the correct location.
-$locations = isset($app['web']['locations']) ? $app['web']['locations'] : [];
+$locations = $app['web']['locations'] ?? [];
 $location = ['allow' => true];
 $matchedLocation = '/';
 foreach (array_keys($locations) as $path) {

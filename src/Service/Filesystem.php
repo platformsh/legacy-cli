@@ -90,13 +90,13 @@ class Filesystem
                 continue;
             } elseif (is_dir($file)) {
                 if ((!is_executable($file) || !is_writable($file))
-                    && true !== @chmod($file, 0700)) {
+                    && true !== @chmod($file, 0o700)) {
                     return false;
                 }
                 if ($recursive && !$this->unprotect(new \FilesystemIterator($file), true)) {
                     return false;
                 }
-            } elseif (!is_writable($file) && true !== @chmod($file, 0600)) {
+            } elseif (!is_writable($file) && true !== @chmod($file, 0o600)) {
                 return false;
             }
         }
@@ -104,7 +104,7 @@ class Filesystem
         return true;
     }
 
-    public function mkdir(string $dir, int $mode = 0755): void
+    public function mkdir(string $dir, int $mode = 0o755): void
     {
         $this->fs->mkdir($dir, $mode);
     }
@@ -128,7 +128,7 @@ class Filesystem
     public function copyAll(string $source, string $destination, array $skip = ['.git', '.DS_Store'], bool $override = false): void
     {
         if (is_dir($source) && !is_dir($destination)) {
-            if (!mkdir($destination, 0755, true)) {
+            if (!mkdir($destination, 0o755, true)) {
                 throw new \RuntimeException("Failed to create directory: " . $destination);
             }
         }
@@ -390,7 +390,7 @@ class Filesystem
         if (!file_exists($archive)) {
             throw new \InvalidArgumentException("Archive not found: $archive");
         }
-        if (!file_exists($destination) && !mkdir($destination, 0755, true)) {
+        if (!file_exists($destination) && !mkdir($destination, 0o755, true)) {
             throw new \InvalidArgumentException("Could not create destination directory: $destination");
         }
         $tar = $this->getTarExecutable();

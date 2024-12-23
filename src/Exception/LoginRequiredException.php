@@ -13,7 +13,7 @@ class LoginRequiredException extends HttpException
 
     public function __construct(
         $message = null,
-        Config $config = null,
+        ?Config $config = null,
         $previous = null,
     ) {
         $message = $message ?: $this->message;

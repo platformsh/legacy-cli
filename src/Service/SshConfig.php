@@ -253,7 +253,7 @@ class SshConfig
         } else {
             $this->stdErr->writeln(sprintf('Validated SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERY_VERBOSE);
         }
-        $this->chmod($filename, 0600);
+        $this->chmod($filename, 0o600);
     }
 
     /**
@@ -341,7 +341,7 @@ class SshConfig
             $this->stdErr->writeln('Configuration file updated successfully: <info>' . $filename . '</info>');
         }
 
-        $this->chmod($filename, 0600);
+        $this->chmod($filename, 0o600);
 
         return true;
     }

@@ -21,7 +21,7 @@ class Variable
         if (!preg_match('#^([^:=]+) ?: ?([^=]+) ?= ?([^=]*)$#', $variable, $matches)) {
             throw new \InvalidArgumentException('Variables must be defined as type:name=value.');
         }
-        list(, $type, $name, $value) = $matches;
+        [, $type, $name, $value] = $matches;
 
         return [$this->validateType($type), $this->validateName($name), $value];
     }

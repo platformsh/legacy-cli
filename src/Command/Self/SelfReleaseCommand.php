@@ -234,7 +234,7 @@ class SelfReleaseCommand extends CommandBase
         }
 
         // Confirm the release changelog.
-        list($changelogFilename, $changelog) = $this->getReleaseChangelog($lastTag, $tagName);
+        [$changelogFilename, $changelog] = $this->getReleaseChangelog($lastTag, $tagName);
         $questionText = "\nChangelog:\n\n" . $changelog . "\n\nIs this changelog correct?";
         if (!$this->questionHelper->confirm($questionText)) {
             $this->stdErr->writeln('Update or delete the file <comment>' . $changelogFilename . '</comment> and re-run this command.');

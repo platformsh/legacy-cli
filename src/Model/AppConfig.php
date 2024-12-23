@@ -86,7 +86,7 @@ final class AppConfig
             if (!strpos((string) $config['toolstack'], ':')) {
                 throw new InvalidConfigException("Invalid value for 'toolstack'");
             }
-            list($config['type'], $config['build']['flavor']) = explode(':', (string) $config['toolstack'], 2);
+            [$config['type'], $config['build']['flavor']] = explode(':', (string) $config['toolstack'], 2);
         }
 
         // The `web` section has changed to `web`.`locations`.

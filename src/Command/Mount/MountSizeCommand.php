@@ -50,13 +50,13 @@ class MountSizeCommand extends CommandBase
         $this->selector->addRemoteContainerOptions($this->getDefinition());
         $this->addCompleter($this->selector);
         $help = <<<EOF
-Use this command to check the disk size and usage for an application's mounts.
+            Use this command to check the disk size and usage for an application's mounts.
 
-Mounts are directories mounted into the application from a persistent, writable
-filesystem. They are configured in the <info>mounts</info> key in the application configuration.
+            Mounts are directories mounted into the application from a persistent, writable
+            filesystem. They are configured in the <info>mounts</info> key in the application configuration.
 
-The filesystem's total size is determined by the <info>disk</info> key in the same file.
-EOF;
+            The filesystem's total size is determined by the <info>disk</info> key in the same file.
+            EOF;
         if ($this->config->getBool('api.metrics')) {
             $this->stability = self::STABILITY_DEPRECATED;
             $help .= "\n\n";
@@ -131,7 +131,7 @@ EOF;
         $result = $host->runCommand($command);
 
         // Separate the commands' output.
-        list($appDir, $dfOutput, $duOutput) = explode("\n\n", (string) $result, 3);
+        [$appDir, $dfOutput, $duOutput] = explode("\n\n", (string) $result, 3);
 
         // Parse the output.
         $volumeInfo = $this->parseDf($dfOutput, $appDir, $mountPaths);

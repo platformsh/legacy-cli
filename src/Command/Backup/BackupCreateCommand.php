@@ -132,7 +132,7 @@ class BackupCreateCommand extends CommandBase
                 return false;
             }
             $roles = $userAccess->getEnvironmentTypeRoles();
-            $role = isset($roles[$environment->type]) ? $roles[$environment->type] : $userAccess->getProjectRole();
+            $role = $roles[$environment->type] ?? $userAccess->getProjectRole();
             return $role === 'admin';
         }
 

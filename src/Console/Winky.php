@@ -19,7 +19,7 @@ class Winky extends Animation
         $sources['wink'] = (string) file_get_contents($dir . '/wink');
         $sources['twitch'] = (string) file_get_contents($dir . '/twitch');
 
-        list($firstLine, ) = explode("\n", trim($sources['normal']), 2);
+        [$firstLine, ] = explode("\n", trim($sources['normal']), 2);
         $width = mb_strlen($firstLine);
 
         // Replace Unicode characters with ANSI background colors.

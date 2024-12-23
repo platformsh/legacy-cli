@@ -27,13 +27,13 @@ class LegacyMigrateCommand extends CommandBase
         $localDir = $this->config->getStr('local.local_dir');
         $this->setHelp(
             <<<EOF
-Before version 3.x, the {$cliName} required a project to have a "repository"
-directory containing the Git repository, "builds", "shared" and others. From
-version 3, the Git repository itself is treated as the project. Metadata is
-stored inside the repository (in {$localDir}) and ignored by Git.
+                Before version 3.x, the {$cliName} required a project to have a "repository"
+                directory containing the Git repository, "builds", "shared" and others. From
+                version 3, the Git repository itself is treated as the project. Metadata is
+                stored inside the repository (in {$localDir}) and ignored by Git.
 
-This command will migrate from the old file structure to the new one.
-EOF,
+                This command will migrate from the old file structure to the new one.
+                EOF,
         );
     }
 

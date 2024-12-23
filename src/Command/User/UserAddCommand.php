@@ -231,7 +231,7 @@ class UserAddCommand extends CommandBase
             $this->stdErr->writeln(sprintf('  Project role: <info>%s</info>', $existingProjectRole));
             if ($existingProjectRole !== ProjectUserAccess::ROLE_ADMIN) {
                 foreach ($environmentTypes as $type) {
-                    $role = isset($existingTypeRoles[$type->id]) ? $existingTypeRoles[$type->id] : '[none]';
+                    $role = $existingTypeRoles[$type->id] ?? '[none]';
                     $this->stdErr->writeln(sprintf('    Role on environment type <info>%s</info>: %s', $type->id, $role));
                 }
             }
@@ -664,7 +664,7 @@ class UserAddCommand extends CommandBase
             if (!str_contains($role, ':')) {
                 continue;
             }
-            list($id, $role) = explode(':', $role, 2);
+            [$id, $role] = explode(':', $role, 2);
             $role = $this->validateEnvironmentRole($role);
             // Match environment IDs by wildcard.
             $matched = Wildcard::select(\array_keys($environments), [$id]);
@@ -698,7 +698,7 @@ class UserAddCommand extends CommandBase
             if (!str_contains($role, ':')) {
                 continue;
             }
-            list($id, $role) = explode(':', $role, 2);
+            [$id, $role] = explode(':', $role, 2);
             $role = $this->validateEnvironmentRole($role);
             // Match type IDs by wildcard.
             $matched = Wildcard::select($typeIds, [$id]);

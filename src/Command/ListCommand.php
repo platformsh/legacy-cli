@@ -36,22 +36,22 @@ class ListCommand extends CommandBase
             ])
             ->setHelp(
                 <<<'EOF'
-The <info>%command.name%</info> command lists all commands:
+                    The <info>%command.name%</info> command lists all commands:
 
-  <info>%command.full_name%</info>
+                      <info>%command.full_name%</info>
 
-You can also display the commands for a specific namespace:
+                    You can also display the commands for a specific namespace:
 
-  <info>%command.full_name% project</info>
+                      <info>%command.full_name% project</info>
 
-You can also output the information in other formats by using the <comment>--format</comment> option:
+                    You can also output the information in other formats by using the <comment>--format</comment> option:
 
-  <info>%command.full_name% --format=xml</info>
+                      <info>%command.full_name% --format=xml</info>
 
-It's also possible to get raw list of commands (useful for embedding command runner):
+                    It's also possible to get raw list of commands (useful for embedding command runner):
 
-  <info>%command.full_name% --raw</info>
-EOF,
+                      <info>%command.full_name% --raw</info>
+                    EOF,
             )
         ;
         $this->addOption('all', null, InputOption::VALUE_NONE, 'Show all commands, including hidden ones');

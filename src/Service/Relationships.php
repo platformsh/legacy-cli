@@ -142,7 +142,7 @@ class Relationships implements InputConfiguringInterface
         }
 
         if (str_contains((string) $identifier, '.')) {
-            list($name, $key) = explode('.', (string) $identifier, 2);
+            [$name, $key] = explode('.', (string) $identifier, 2);
         } else {
             $name = $identifier;
             $key = 0;
@@ -155,7 +155,7 @@ class Relationships implements InputConfiguringInterface
         if (!isset($relationship['service'])) {
             $appConfig = $this->envVarService->getArrayEnvVar('APPLICATION', $host);
             if (!empty($appConfig['relationships'][$name]) && is_string($appConfig['relationships'][$name])) {
-                list($serviceName, ) = explode(':', $appConfig['relationships'][$name], 2);
+                [$serviceName, ] = explode(':', $appConfig['relationships'][$name], 2);
                 $relationship['service'] = $serviceName;
             }
         }

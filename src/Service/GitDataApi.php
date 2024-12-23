@@ -21,8 +21,8 @@ class GitDataApi
     private readonly CacheProvider $cache;
 
     public function __construct(
-        Api $api = null,
-        CacheProvider $cache = null,
+        ?Api $api = null,
+        ?CacheProvider $cache = null,
     ) {
         $this->api = $api ?: new Api();
         $this->cache = $cache ?: CacheFactory::createCacheProvider(new Config());

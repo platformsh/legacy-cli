@@ -179,7 +179,7 @@ class AdaptiveTable extends Table
         $tagChunks = [];
         $lastTagClose = 0;
         foreach ($matches[0] as $match) {
-            list($tagChunk, $tagOffset) = $match;
+            [$tagChunk, $tagOffset] = $match;
             if (substr($formattedText, $tagOffset - 1, 1) === '\\') {
                 continue;
             }

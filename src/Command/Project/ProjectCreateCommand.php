@@ -61,19 +61,19 @@ class ProjectCreateCommand extends CommandBase
 
         $this->setHelp(
             <<<EOF
-Use this command to create a new project.
+                Use this command to create a new project.
 
-An interactive form will be presented with the available options. If the
-command is run non-interactively (with --yes), the form will not be displayed,
-and the --region option will be required.
+                An interactive form will be presented with the available options. If the
+                command is run non-interactively (with --yes), the form will not be displayed,
+                and the --region option will be required.
 
-A project subscription will be requested, and then checked periodically (every
-3 seconds) until the project has been activated, or until the process times
-out (15 minutes by default).
+                A project subscription will be requested, and then checked periodically (every
+                3 seconds) until the project has been activated, or until the process times
+                out (15 minutes by default).
 
-If known, the project ID will be output to STDOUT. All other output will be sent
-to STDERR.
-EOF,
+                If known, the project ID will be output to STDOUT. All other output will be sent
+                to STDERR.
+                EOF,
         );
     }
 

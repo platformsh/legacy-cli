@@ -51,18 +51,18 @@ class UseSelectorServiceRector extends AbstractRector
     {
         return new RuleDefinition('Use Selector service instead of old CommandBase methods', [
             new CodeSample(<<<'END'
-                $this->validateInput($input);
-                $project = $this->getSelectedProject();
-                $environment = $this->getSelectedEnvironment();
-                $projectRoot = $this->getProjectRoot();
-                $currentProject = $this->getCurrentProject();
-            END, <<<'END'
-                $selection = $this->selector->getSelection($input);
-                $project = $selection->getProject();
-                $environment = $this->getSelectedEnvironment();
-                $projectRoot = $this->selector->getProjectRoot();
-                $currentProject = $this->selector->getCurrentProject();
-            END),
+                    $this->validateInput($input);
+                    $project = $this->getSelectedProject();
+                    $environment = $this->getSelectedEnvironment();
+                    $projectRoot = $this->getProjectRoot();
+                    $currentProject = $this->getCurrentProject();
+                END, <<<'END'
+                    $selection = $this->selector->getSelection($input);
+                    $project = $selection->getProject();
+                    $environment = $this->getSelectedEnvironment();
+                    $projectRoot = $this->selector->getProjectRoot();
+                    $currentProject = $this->selector->getCurrentProject();
+                END),
         ]);
     }
 

@@ -25,16 +25,16 @@ class IntegrationValidateCommand extends IntegrationCommandBase
         $this->addCompleter($this->selector);
         $this->setHelp(
             <<<EOF
-This command allows you to check whether an integration is valid.
+                This command allows you to check whether an integration is valid.
 
-An exit code of 0 means the integration is valid, while 4 means it is invalid.
-Any other exit code indicates an unexpected error.
+                An exit code of 0 means the integration is valid, while 4 means it is invalid.
+                Any other exit code indicates an unexpected error.
 
-Integrations are validated automatically on creation and on update. However,
-because they involve external resources, it is possible for a valid integration
-to become invalid. For example, an access token may be revoked, or an external
-repository may be deleted.
-EOF,
+                Integrations are validated automatically on creation and on update. However,
+                because they involve external resources, it is possible for a valid integration
+                to become invalid. For example, an access token may be revoked, or an external
+                repository may be deleted.
+                EOF,
         );
     }
 

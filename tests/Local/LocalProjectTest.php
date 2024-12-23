@@ -15,7 +15,7 @@ class LocalProjectTest extends TestCase
     {
         $this->tempDirSetUp();
         $testDir = $this->tempDir;
-        mkdir("$testDir/1/2/3/4/5", 0755, true);
+        mkdir("$testDir/1/2/3/4/5", 0o755, true);
 
         $expectedRoot = "$testDir/1";
         $config = new Config();

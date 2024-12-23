@@ -246,7 +246,7 @@ class LocalDrushAliasesCommand extends CommandBase
             return;
         }
 
-        if (!file_exists($newDrushDir) && !mkdir($newDrushDir, 0755, true)) {
+        if (!file_exists($newDrushDir) && !mkdir($newDrushDir, 0o755, true)) {
             $this->stdErr->writeln(sprintf('Failed to create directory: <error>%s</error>', $newDrushDir));
             $this->stdErr->writeln('The alias files have not been moved.');
             return;

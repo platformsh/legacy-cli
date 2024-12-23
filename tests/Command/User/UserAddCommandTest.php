@@ -84,7 +84,7 @@ class UserAddCommandTest extends TestCase
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($args, $expectedRoles) = $case;
+            [$args, $expectedRoles] = $case;
             $errorMessage = $case[2] ?? '';
             try {
                 $result = $m->invoke($command, $args, $this->mockEnvironments);
@@ -125,7 +125,7 @@ class UserAddCommandTest extends TestCase
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($roles, $expectedRoles, $expectedRemainingRoles) = $case;
+            [$roles, $expectedRoles, $expectedRemainingRoles] = $case;
             $result = $m->invokeArgs($command, [&$roles, $this->mockTypes]);
             $this->assertEquals($expectedRoles, $result, "case $i roles");
             $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
@@ -169,7 +169,7 @@ class UserAddCommandTest extends TestCase
         ];
         $output = new NullOutput();
         foreach ($cases as $i => $case) {
-            list($environmentRoles, $typeRoles, $expectedTypeRoles) = $case;
+            [$environmentRoles, $typeRoles, $expectedTypeRoles] = $case;
             $result = $m->invoke($command, $environmentRoles, $typeRoles, $this->mockEnvironments, $output);
             $this->assertEquals($expectedTypeRoles, $result, "case $i");
         }

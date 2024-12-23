@@ -35,11 +35,11 @@ class Listener
         $this->file = $_ENV['CLI_OAUTH_FILE'];
         $this->prompt = $_ENV['CLI_OAUTH_PROMPT'];
         $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
-        $this->scope = isset($_ENV['CLI_OAUTH_SCOPE']) ? $_ENV['CLI_OAUTH_SCOPE'] : '';
+        $this->scope = $_ENV['CLI_OAUTH_SCOPE'] ?? '';
         $this->localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
-        $this->authMethods = isset($_ENV['CLI_OAUTH_METHODS']) ? $_ENV['CLI_OAUTH_METHODS'] : '';
-        $this->maxAge = isset($_ENV['CLI_OAUTH_MAX_AGE']) ? $_ENV['CLI_OAUTH_MAX_AGE'] : null;
+        $this->authMethods = $_ENV['CLI_OAUTH_METHODS'] ?? '';
+        $this->maxAge = $_ENV['CLI_OAUTH_MAX_AGE'] ?? null;
     }
 
     /**
@@ -103,8 +103,8 @@ class Listener
 
         // Respond after an OAuth2 error.
         if (isset($_GET['error'])) {
-            $message = isset($_GET['error_description']) ? $_GET['error_description'] : null;
-            $hint = isset($_GET['error_hint']) ? $_GET['error_hint'] : null;
+            $message = $_GET['error_description'] ?? null;
+            $hint = $_GET['error_hint'] ?? null;
             $this->reportError($message, $_GET['error'], $hint);
             return;
         }

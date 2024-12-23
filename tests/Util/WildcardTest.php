@@ -25,7 +25,7 @@ class WildcardTest extends TestCase
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($subjects, $wildcards, $result) = $case;
+            [$subjects, $wildcards, $result] = $case;
             $this->assertEquals($result, Wildcard::select($subjects, $wildcards), "Case $i");
         }
     }

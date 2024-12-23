@@ -126,13 +126,13 @@ class Api
      * @param Io|null $io
      */
     public function __construct(
-        Config                   $config = null,
-        CacheProvider            $cache = null,
-        OutputInterface          $output = null,
-        Io                       $io = null,
-        TokenConfig              $tokenConfig = null,
-        FileLock                 $fileLock = null,
-        EventDispatcherInterface $dispatcher = null,
+        ?Config                   $config = null,
+        ?CacheProvider            $cache = null,
+        ?OutputInterface          $output = null,
+        ?Io                       $io = null,
+        ?TokenConfig              $tokenConfig = null,
+        ?FileLock                 $fileLock = null,
+        ?EventDispatcherInterface $dispatcher = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();

@@ -136,7 +136,7 @@ class ResourcesUtil
             $byType = [];
             foreach ($services as $name => $service) {
                 $type = $service->type;
-                list($prefix) = explode(':', $service->type, 2);
+                [$prefix] = explode(':', $service->type, 2);
                 $byType[$type][] = $name;
                 $byType[$prefix][] = $name;
             }

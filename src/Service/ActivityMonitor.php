@@ -428,7 +428,7 @@ class ActivityMonitor
                         $stdErr->writeln(sprintf('%s finished with an <fg=%s>unknown result</>:', $summaryCount, $fgColor));
                 }
                 foreach ($items as $item) {
-                    list($num, $activity) = $item;
+                    [$num, $activity] = $item;
                     $stdErr->writeln(sprintf('  <fg=%s>#%d</> %s', $fgColor, $num, self::getFormattedDescription($activity, true, true, $fgColor)));
                     if ($showLog) {
                         $stdErr->writeln('  <error>Log:</error>');

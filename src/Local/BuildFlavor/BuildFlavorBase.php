@@ -310,7 +310,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                 $this->fsHelper->remove($link);
             }
             if (!file_exists($target)) {
-                $this->fsHelper->mkdir($target, 0775);
+                $this->fsHelper->mkdir($target, 0o775);
             }
             $this->stdErr->writeln(
                 '  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>',

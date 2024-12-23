@@ -121,14 +121,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         // Validate the --size option.
-        list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, fn($v, $serviceName, $service) => $this->validateProfileSize($v, $serviceName, $service, $nextDeployment));
+        [$givenSizes, $errored] = $this->parseSetting($input, 'size', $services, fn($v, $serviceName, $service) => $this->validateProfileSize($v, $serviceName, $service, $nextDeployment));
 
         // Validate the --count option.
-        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, fn($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit));
+        [$givenCounts, $countErrored] = $this->parseSetting($input, 'count', $services, fn($v, $serviceName, $service) => $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit));
         $errored = $errored || $countErrored;
 
         // Validate the --disk option.
-        list($givenDiskSizes, $diskErrored) = $this->parseSetting($input, 'disk', $services, fn($v, $serviceName, $service) => $this->validateDiskSize($v, $serviceName, $service));
+        [$givenDiskSizes, $diskErrored] = $this->parseSetting($input, 'disk', $services, fn($v, $serviceName, $service) => $this->validateDiskSize($v, $serviceName, $service));
         $errored = $errored || $diskErrored;
         if ($errored) {
             return 1;
@@ -580,7 +580,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                 $errors[] = sprintf('<error>%s</error> is not valid; it must be in the format "name:value".', $item);
                 continue;
             }
-            list($pattern, $value) = $parts;
+            [$pattern, $value] = $parts;
             $givenServiceNames = Wildcard::select($serviceNames, [$pattern]);
             if (empty($givenServiceNames)) {
                 $errors[] = sprintf('App or service <error>%s</error> not found.', $pattern);

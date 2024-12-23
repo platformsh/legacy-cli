@@ -139,7 +139,7 @@ abstract class IntegrationCommandBase extends CommandBase
             }
             // Split bitbucket_server "repository" into project/repository.
             if (isset($values['repository']) && str_contains(substr((string) $values['repository'], 1), '/')) {
-                list($values['project'], $values['repository']) = explode('/', (string) $values['repository'], 2);
+                [$values['project'], $values['repository']] = explode('/', (string) $values['repository'], 2);
             }
         }
 

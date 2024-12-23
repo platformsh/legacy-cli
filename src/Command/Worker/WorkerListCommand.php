@@ -64,7 +64,7 @@ class WorkerListCommand extends CommandBase
         }
         $rows = [];
         foreach ($workers as $worker) {
-            $commands = isset($worker->worker['commands']) ? $worker->worker['commands'] : [];
+            $commands = $worker->worker['commands'] ?? [];
             $rows[] = [$worker->name, $this->propertyFormatter->format($worker->type, 'service_type'), $this->propertyFormatter->format($commands)];
         }
 

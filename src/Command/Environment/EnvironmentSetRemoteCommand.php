@@ -77,7 +77,7 @@ class EnvironmentSetRemoteCommand extends CommandBase
         if ($specifiedEnvironmentId != '0' && !$mappedByDefault) {
             $upstream = $this->git->getUpstream($specifiedBranch);
             if (strpos((string) $upstream, '/')) {
-                list(, $upstream) = explode('/', (string) $upstream, 2);
+                [, $upstream] = explode('/', (string) $upstream, 2);
             }
             if ($upstream === $specifiedEnvironmentId) {
                 $mappedByDefault = true;

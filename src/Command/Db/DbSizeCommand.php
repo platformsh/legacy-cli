@@ -131,7 +131,7 @@ class DbSizeCommand extends CommandBase
                 if (!strpos($row, "\t")) {
                     return null;
                 }
-                list($schema, $table) = explode("\t", $row);
+                [$schema, $table] = explode("\t", $row);
 
                 return sprintf('ALTER TABLE `%s`.`%s` ENGINE="InnoDB";', $schema, $table);
             }, $rows),

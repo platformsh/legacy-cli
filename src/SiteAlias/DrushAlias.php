@@ -29,7 +29,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
 
         // Prepare the Drush directory and file.
         $aliasDir = $this->drush->getSiteAliasDir();
-        if (!is_dir($aliasDir) && !mkdir($aliasDir, 0755, true)) {
+        if (!is_dir($aliasDir) && !mkdir($aliasDir, 0o755, true)) {
             throw new \RuntimeException('Drush aliases directory not found: ' . $aliasDir);
         }
         if (!is_writable($aliasDir)) {
@@ -254,7 +254,7 @@ abstract class DrushAlias implements SiteAliasTypeInterface
             $alias['root'] = '/app/' . $app->getDocumentRoot();
         }
 
-        list($alias['user'], $alias['host']) = explode('@', $sshUrl, 2);
+        [$alias['user'], $alias['host']] = explode('@', $sshUrl, 2);
 
         if ($url = $this->drush->getSiteUrl($environment, $app)) {
             $alias['uri'] = $url;

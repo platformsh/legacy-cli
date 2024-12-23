@@ -25,7 +25,7 @@ class ProjectRoles
         foreach ($permissions as $permission) {
             $parts = explode(':', $permission, 2);
             if (count($parts) === 2) {
-                list($environmentType, $role) = $parts;
+                [$environmentType, $role] = $parts;
                 $byType[$environmentType] = $role;
             }
         }

@@ -102,7 +102,7 @@ class TeamCreateCommand extends TeamCommandBase
             $roles = [];
             foreach ($perms as $perm) {
                 if (str_contains($perm, ':')) {
-                    list($type, $role) = explode(':', $perm, 2);
+                    [$type, $role] = explode(':', $perm, 2);
                     $roles[$type] = $role;
                 }
             }
@@ -374,7 +374,7 @@ class TeamCreateCommand extends TeamCommandBase
             if (!str_contains($role, ':')) {
                 continue;
             }
-            list($id, $role) = explode(':', $role, 2);
+            [$id, $role] = explode(':', $role, 2);
             $role = $this->validateEnvironmentTypeRole($role);
             // Match type IDs by wildcard.
             $matched = Wildcard::select($typeIds, [$id]);

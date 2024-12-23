@@ -61,7 +61,7 @@ readonly class FileStorage implements StorageInterface
         }
 
         $this->fs->dumpFile($filename, $token);
-        $this->fs->chmod($filename, 0600);
+        $this->fs->chmod($filename, 0o600);
     }
 
     /**

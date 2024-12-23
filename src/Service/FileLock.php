@@ -142,7 +142,7 @@ class FileLock
     {
         $dir = \dirname($filename);
         if (!\is_dir($dir)) {
-            if (!\mkdir($dir, 0777, true)) {
+            if (!\mkdir($dir, 0o777, true)) {
                 throw new \RuntimeException('Failed to create directory: ' . $dir);
             }
         }

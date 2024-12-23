@@ -28,12 +28,12 @@ class OrganizationCreateCommand extends OrganizationCommandBase
         $this->getForm()->configureInputDefinition($this->getDefinition());
         $serviceName = $this->config->getStr('service.name');
         $help = <<<END_HELP
-Organizations allow you to manage your $serviceName projects, users and billing. Projects are owned by organizations.
+            Organizations allow you to manage your $serviceName projects, users and billing. Projects are owned by organizations.
 
-You can add other users to your organization, for collaboratively managing the organization as well as its projects and billing information.
+            You can add other users to your organization, for collaboratively managing the organization as well as its projects and billing information.
 
-Access to individual projects (API and SSH) is managed separately, for now.
-END_HELP;
+            Access to individual projects (API and SSH) is managed separately, for now.
+            END_HELP;
         $this->setHelp($help);
     }
 

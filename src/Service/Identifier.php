@@ -81,7 +81,7 @@ readonly class Identifier
         $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
 
         if (preg_match($site_pattern, $host)) {
-            list($env_project_app, ) = explode('.', $host, 2);
+            [$env_project_app, ] = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);
             }
@@ -142,7 +142,7 @@ readonly class Identifier
         $cluster = $this->getClusterHeader($url);
         if (!empty($cluster)) {
             $this->io->debug('Identified project cluster: ' . $cluster);
-            list($result['projectId'], $result['environmentId']) = explode('-', $cluster, 2);
+            [$result['projectId'], $result['environmentId']] = explode('-', $cluster, 2);
         }
 
         return $result;

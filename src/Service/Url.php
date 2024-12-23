@@ -128,7 +128,7 @@ class Url implements InputConfiguringInterface
         if ($browserOption === '0') {
             return false;
         } elseif (!empty($browserOption)) {
-            list($command, ) = explode(' ', $browserOption, 2);
+            [$command, ] = explode(' ', $browserOption, 2);
             if (!$this->shell->commandExists($command)) {
                 $this->stdErr->writeln(sprintf('Command not found: <error>%s</error>', $command));
                 return false;

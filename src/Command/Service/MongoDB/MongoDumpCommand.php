@@ -149,7 +149,7 @@ class MongoDumpCommand extends CommandBase
      * @return string
      */
     private function getDefaultFilename(
-        Environment $environment = null,
+        ?Environment $environment = null,
         ?string $appName = null,
         ?string $collection = '',
         bool $gzip = false,

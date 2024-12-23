@@ -19,11 +19,11 @@ class UnnecessaryServiceVariablesRector extends AbstractRector
     {
         return new RuleDefinition('Remove unnecessary service variables', [
             new CodeSample(<<<'END'
-                $formatter = $this->propertyFormatter;
-                $output->writeln($formatter->format($value));
-            END, <<<'END'
-                $output->writeln($this->propertyFormatter->format($value));
-            END),
+                    $formatter = $this->propertyFormatter;
+                    $output->writeln($formatter->format($value));
+                END, <<<'END'
+                    $output->writeln($this->propertyFormatter->format($value));
+                END),
         ]);
     }
 
