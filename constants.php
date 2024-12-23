@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Constants used throughout the CLI.

@@ -54,7 +54,7 @@ class TimezoneUtilTest extends TestCase
     public function testConvertTz(): void
     {
         $util = new TimezoneUtil();
-        $method = new \ReflectionMethod($util,'convertTz');
+        $method = new \ReflectionMethod($util, 'convertTz');
         $method->setAccessible(true);
         $dataDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'data';
         $cases = [

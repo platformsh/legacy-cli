@@ -52,19 +52,22 @@ class VariableTest extends TestCase
         (new Variable())->parse('a:b(c)=d');
     }
 
-    public function testParseVariableWithNoDelimiter(): void {
+    public function testParseVariableWithNoDelimiter(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage($this->invalidMessage);
         (new Variable())->parse('foo');
     }
 
-    public function testParseVariableWithWrongDelimiterOrder(): void {
+    public function testParseVariableWithWrongDelimiterOrder(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage($this->invalidMessage);
         (new Variable())->parse('a=b:c');
     }
 
-    public function testParseVariableWithEmptyType(): void {
+    public function testParseVariableWithEmptyType(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage($this->invalidMessage);
         (new Variable())->parse(':b=c');

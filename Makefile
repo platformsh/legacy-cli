@@ -14,7 +14,7 @@ lint-phpstan: composer-dev
 
 .PHONY: lint-php-cs-fixer
 lint-php-cs-fixer: composer-dev
-	./vendor/bin/php-cs-fixer check src
+	./vendor/bin/php-cs-fixer check --config .php-cs-fixer.dist.php
 
 .PHONY: lint-gofmt
 lint-gofmt:

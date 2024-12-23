@@ -25,8 +25,12 @@ return RectorConfig::configure()
         UnnecessaryServiceVariablesRector::class,
     ])
     ->withImportNames(importShortClasses: false, removeUnusedImports: true)
-    ->withConfiguredRule(MethodCallToPropertyFetchRector::class,
-        [new MethodCallToPropertyFetch(CommandBase::class, 'api', 'api')])
-    ->withConfiguredRule(MethodCallToPropertyFetchRector::class,
-        [new MethodCallToPropertyFetch(CommandBase::class, 'config', 'config')])
-    ;
+    ->withConfiguredRule(
+        MethodCallToPropertyFetchRector::class,
+        [new MethodCallToPropertyFetch(CommandBase::class, 'api', 'api')]
+    )
+    ->withConfiguredRule(
+        MethodCallToPropertyFetchRector::class,
+        [new MethodCallToPropertyFetch(CommandBase::class, 'config', 'config')]
+    )
+;

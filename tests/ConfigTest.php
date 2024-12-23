@@ -32,10 +32,10 @@ class ConfigTest extends TestCase
         $this->assertNotEmpty($homeDir, 'Home directory returned');
         $this->assertNotEquals('.', $homeDir, 'Home directory not relative');
 
-        $homeDir = (new Config(['MOCK_CLI_HOME' => __DIR__ . '/data', 'HOME' => __DIR__],  $this->configFile))->getHomeDirectory();
+        $homeDir = (new Config(['MOCK_CLI_HOME' => __DIR__ . '/data', 'HOME' => __DIR__], $this->configFile))->getHomeDirectory();
         $this->assertEquals(__DIR__ . '/data', $homeDir, 'Home directory overridden');
 
-        $homeDir = (new Config(['MOCK_CLI_HOME' => '', 'HOME' => __DIR__],  $this->configFile))->getHomeDirectory();
+        $homeDir = (new Config(['MOCK_CLI_HOME' => '', 'HOME' => __DIR__], $this->configFile))->getHomeDirectory();
         $this->assertEquals(__DIR__, $homeDir, 'Empty value treated as nonexistent');
     }
 

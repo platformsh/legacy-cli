@@ -10,7 +10,6 @@ use Platformsh\Cli\Tests\HasTempDirTrait;
 #[Group('slow')]
 class GitServiceTest extends TestCase
 {
-
     use HasTempDirTrait;
 
     protected Git $git;

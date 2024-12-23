@@ -10,7 +10,8 @@ use Symfony\Component\Yaml\Parser;
 #[Group('commands')]
 class AppConfigGetTest extends TestCase
 {
-    public function testGetConfig(): void {
+    public function testGetConfig(): void
+    {
         $app = base64_encode((string) json_encode([
             'type' => 'php:7.3',
             'name' => 'app',
@@ -21,19 +22,19 @@ class AppConfigGetTest extends TestCase
         putenv('PLATFORM_APPLICATION=' . $app);
         $this->assertEquals(
             'app',
-            (new Parser)->parse(MockApp::runAndReturnOutput('app:config', [
+            (new Parser())->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'name',
             ]))
         );
         $this->assertEquals(
             [],
-            (new Parser)->parse(MockApp::runAndReturnOutput('app:config', [
+            (new Parser())->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'mounts',
             ]))
         );
         $this->assertEquals(
             '',
-            (new Parser)->parse(MockApp::runAndReturnOutput('app:config', [
+            (new Parser())->parse(MockApp::runAndReturnOutput('app:config', [
                 '--property' => 'blank',
             ]))
         );

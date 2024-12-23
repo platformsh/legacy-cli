@@ -9,7 +9,6 @@ use Platformsh\Cli\Tests\HasTempDirTrait;
 
 class LocalProjectTest extends TestCase
 {
-
     use HasTempDirTrait;
 
     public function testGetLegacyProjectRoot(): void
