@@ -7,6 +7,7 @@ namespace Platformsh\Cli\Console;
 use Platformsh\Cli\Command\CommandBase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Descriptor\Descriptor;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -132,6 +133,10 @@ class CustomJsonDescriptor extends Descriptor
 
     private function getCommandData(Command $command): array
     {
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
+        }
+
         $command->getSynopsis();
         $command->mergeApplicationDefinition(false);
         $aliases = $command instanceof CommandBase ? $command->getVisibleAliases() : $command->getAliases();

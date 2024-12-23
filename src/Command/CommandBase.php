@@ -19,8 +19,6 @@ use Symfony\Contracts\Service\Attribute\Required;
 
 abstract class CommandBase extends Command implements MultiAwareInterface
 {
-    use HasExamplesTrait;
-
     public const STABILITY_STABLE = 'STABLE';
     public const STABILITY_BETA = 'BETA';
     public const STABILITY_DEPRECATED = 'DEPRECATED';
@@ -60,6 +58,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
     /** @var CompleterInterface[] */
     private array $completers = [];
+
+    /** @var array<array{'commandline': string, 'description': string}> */
+    private array $examples = [];
 
     public function __construct()
     {
@@ -243,5 +244,20 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         foreach ($this->completers as $completer) {
             $completer->complete($input, $suggestions);
         }
+    }
+
+    protected function addExample(string $description, string $commandline = ''): self
+    {
+        $this->examples[] = ['commandline' => $commandline, 'description' => $description];
+
+        return $this;
+    }
+
+    /**
+     * @return array<array{'commandline': string, 'description': string}>
+     */
+    public function getExamples(): array
+    {
+        return $this->examples;
     }
 }
