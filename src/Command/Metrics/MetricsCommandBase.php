@@ -253,7 +253,7 @@ abstract class MetricsCommandBase extends CommandBase
             $byType = [];
             foreach ($allServices as $name => $service) {
                 $type = $service->type;
-                list($prefix) = explode(':', $service->type, 2);
+                [$prefix] = explode(':', $service->type, 2);
                 $byType[$type][] = $name;
                 $byType[$prefix][] = $name;
             }

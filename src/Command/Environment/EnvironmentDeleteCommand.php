@@ -62,12 +62,12 @@ class EnvironmentDeleteCommand extends CommandBase
         $service = $this->config->getStr('service.name');
         $this->setHelp(
             <<<EOF
-            When a {$service} environment is deleted, it will become "inactive": it will
-            exist only as a Git branch, containing code but no services, databases nor
-            files.
+                When a {$service} environment is deleted, it will become "inactive": it will
+                exist only as a Git branch, containing code but no services, databases nor
+                files.
 
-            This command allows you to delete environments as well as their Git branches.
-            EOF,
+                This command allows you to delete environments as well as their Git branches.
+                EOF,
         );
     }
 

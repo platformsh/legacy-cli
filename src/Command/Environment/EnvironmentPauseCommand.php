@@ -16,10 +16,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EnvironmentPauseCommand extends CommandBase
 {
     public const PAUSE_HELP = <<<EOF
-Pausing an environment helps to reduce resource consumption and carbon emissions.
+        Pausing an environment helps to reduce resource consumption and carbon emissions.
 
-The environment will be unavailable until it is resumed. No data will be lost.
-EOF;
+        The environment will be unavailable until it is resumed. No data will be lost.
+        EOF;
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();

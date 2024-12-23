@@ -546,7 +546,7 @@ class Git
         if (!file_put_contents($tempFile, trim($sshCommand) . "\n")) {
             throw new \RuntimeException('Failed to write temporary file: ' . $tempFile);
         }
-        if (!chmod($tempFile, 0750)) {
+        if (!chmod($tempFile, 0o750)) {
             throw new \RuntimeException('Failed to make temporary SSH command file executable: ' . $tempFile);
         }
 

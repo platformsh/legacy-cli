@@ -221,7 +221,7 @@ class TunnelManager
     public function getPidFilename(Tunnel $tunnel): string
     {
         $dir = $this->config->getWritableUserDir() . '/.tunnels';
-        if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
+        if (!is_dir($dir) && !mkdir($dir, 0o700, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $dir);
         }
 

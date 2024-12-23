@@ -89,7 +89,7 @@ class DependencyInstaller
 
     protected function ensureDirectory(string $path): void
     {
-        if (!is_dir($path) && !mkdir($path, 0755, true)) {
+        if (!is_dir($path) && !mkdir($path, 0o755, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $path);
         }
     }

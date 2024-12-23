@@ -46,12 +46,12 @@ class YamlParserTest extends TestCase
         $file = 'example.yaml';
         $content = <<<EOF
 
-  name: example-indented-yaml
-  key: value
+              name: example-indented-yaml
+              key: value
 
-  foo:
-    nested: bar
-EOF;
+              foo:
+                nested: bar
+            EOF;
         $result = (new YamlParser())->parseContent($content, $file);
         $this->assertEquals([
             'name' => 'example-indented-yaml',

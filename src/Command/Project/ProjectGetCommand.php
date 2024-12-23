@@ -314,7 +314,7 @@ class ProjectGetCommand extends CommandBase
         // Remove the path from the git URI to get the SSH part.
         $gitSshUri = '';
         if (str_contains($gitUrl, ':')) {
-            list($gitSshUri, ) = explode(':', $gitUrl, 2);
+            [$gitSshUri, ] = explode(':', $gitUrl, 2);
         }
         $this->sshDiagnostics->diagnoseFailure($gitSshUri, $process);
     }

@@ -46,13 +46,13 @@ class LocalBuild
      * @param DependencyInstaller|null $dependencyInstaller
      */
     public function __construct(
-        Config $config = null,
-        OutputInterface $output = null,
-        Shell $shell = null,
-        Filesystem $fs = null,
-        Git $git = null,
-        DependencyInstaller $dependencyInstaller = null,
-        ApplicationFinder $applicationFinder = null,
+        ?Config $config = null,
+        ?OutputInterface $output = null,
+        ?Shell $shell = null,
+        ?Filesystem $fs = null,
+        ?Git $git = null,
+        ?DependencyInstaller $dependencyInstaller = null,
+        ?ApplicationFinder $applicationFinder = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
@@ -236,7 +236,7 @@ class LocalBuild
 
         // Warn about a mismatched PHP version.
         if (isset($appConfig['type']) && strpos((string) $appConfig['type'], ':')) {
-            list($stack, $version) = explode(':', (string) $appConfig['type'], 2);
+            [$stack, $version] = explode(':', (string) $appConfig['type'], 2);
             $localPhpVersion = $this->shellHelper->getPhpVersion();
             if ($stack === 'php' && version_compare($version, $localPhpVersion, '>')) {
                 $this->output->writeln(sprintf(

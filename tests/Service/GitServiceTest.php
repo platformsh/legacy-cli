@@ -25,7 +25,7 @@ class GitServiceTest extends TestCase
     {
         $this->tempDirSetUp();
         $repository = $this->getRepositoryDir();
-        if (!is_dir($repository) && !mkdir($repository, 0755, true)) {
+        if (!is_dir($repository) && !mkdir($repository, 0o755, true)) {
             throw new \Exception("Failed to create directories.");
         }
 
@@ -64,7 +64,7 @@ class GitServiceTest extends TestCase
         // Test a real repository.
         $repositoryDir = $this->getRepositoryDir();
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir));
-        mkdir($repositoryDir . '/1/2/3/4/5', 0755, true);
+        mkdir($repositoryDir . '/1/2/3/4/5', 0o755, true);
         $this->assertEquals($repositoryDir, $this->git->getRoot($repositoryDir . '/1/2/3/4/5'));
 
         // Test a non-repository.

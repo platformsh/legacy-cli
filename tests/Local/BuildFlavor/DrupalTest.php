@@ -27,7 +27,7 @@ class DrupalTest extends BuildFlavorTestBase
 
         // Insert a dummy file into 'shared'.
         if (!file_exists($shared)) {
-            mkdir($shared, 0755, true);
+            mkdir($shared, 0o755, true);
         }
         touch($shared . '/symlink_me');
 

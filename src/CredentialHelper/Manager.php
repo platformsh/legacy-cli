@@ -188,7 +188,7 @@ class Manager
             }
 
             // Make the file executable and move it into place.
-            $fs->chmod($tmpFile, 0700);
+            $fs->chmod($tmpFile, 0o700);
             $fs->rename($tmpFile, $destination, true);
         } finally {
             $fs->remove($tmpFile);

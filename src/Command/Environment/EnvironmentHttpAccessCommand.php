@@ -104,7 +104,7 @@ class EnvironmentHttpAccessCommand extends CommandBase
             throw new InvalidArgumentException($message);
         }
 
-        list($permission, $address) = $parts;
+        [$permission, $address] = $parts;
 
         $this->validateAddress($address);
 

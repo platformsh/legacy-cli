@@ -149,7 +149,7 @@ class Application extends ParentApplication
                 $this->container->compile();
                 $dumper = new PhpDumper($this->container);
                 if (!is_dir(dirname($cacheFile))) {
-                    mkdir(dirname($cacheFile), 0755, true);
+                    mkdir(dirname($cacheFile), 0o755, true);
                 }
                 file_put_contents($cacheFile, $dumper->dump());
             }

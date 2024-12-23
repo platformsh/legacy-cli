@@ -226,13 +226,13 @@ class Ssh implements InputConfiguringInterface
     private function getHost(string $uri): string|false
     {
         if (str_contains($uri, '@')) {
-            list(, $uri) = \explode('@', $uri, 2);
+            [, $uri] = \explode('@', $uri, 2);
         }
         if (str_contains($uri, '://')) {
-            list(, $uri) = \explode('://', $uri, 2);
+            [, $uri] = \explode('://', $uri, 2);
         }
         if (str_contains($uri, ':')) {
-            list($uri, ) = \explode(':', $uri, 2);
+            [$uri, ] = \explode(':', $uri, 2);
         }
         if (!preg_match('@^[\p{Ll}0-9-]+\.[\p{Ll}0-9-]+@', $uri)) {
             return false;

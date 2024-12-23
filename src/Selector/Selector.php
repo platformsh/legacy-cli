@@ -444,7 +444,7 @@ class Selector implements CompleterInterface
             }
             asort($autocomplete, SORT_NATURAL | SORT_FLAG_CASE);
             return $this->questionHelper->askInput($config->enterProjectText, null, array_values($autocomplete), function ($value) use ($autocomplete): string {
-                list($id, ) = explode(' - ', $value);
+                [$id, ] = explode(' - ', $value);
                 if (empty(trim($id))) {
                     throw new InvalidArgumentException('A project ID is required');
                 }
@@ -600,7 +600,7 @@ class Selector implements CompleterInterface
         // ID.
         $upstream = $this->git->getUpstream();
         if ($upstream && str_contains($upstream, '/')) {
-            list(, $potentialEnvironment) = explode('/', $upstream, 2);
+            [, $potentialEnvironment] = explode('/', $upstream, 2);
             $environment = $this->api->getEnvironment($potentialEnvironment, $project, $refresh);
             if ($environment) {
                 $this->debug('Selected environment ' . $this->api->getEnvironmentLabel($environment) . ', based on Git upstream: ' . $upstream);
@@ -804,7 +804,7 @@ class Selector implements CompleterInterface
                     // separate SSH endpoints for workers.
                     continue;
                 }
-                list($appPart, ) = explode('--', $worker->name, 2);
+                [$appPart, ] = explode('--', $worker->name, 2);
                 if (in_array($appPart, $appNames, true)) {
                     $choices[$worker->name] = $worker->name;
                     $choicesIncludeWorkers = true;

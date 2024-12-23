@@ -146,7 +146,7 @@ class FilesystemServiceTest extends TestCase
 
     public function testCanWrite(): void
     {
-        \umask(0002);
+        \umask(0o002);
 
         $testDir = $this->createTempSubDir();
         if (touch($testDir . '/test-file')) {
@@ -155,10 +155,10 @@ class FilesystemServiceTest extends TestCase
             $this->markTestIncomplete('Failed to create file: ' . $testDir . '/test-file');
         }
 
-        chmod($testDir . '/test-file', 0500);
+        chmod($testDir . '/test-file', 0o500);
         $this->assertEquals(\is_writable($testDir . '/test-file'), $this->fs->canWrite($testDir . '/test-file'));
 
-        if (mkdir($testDir . '/test-dir', 0700)) {
+        if (mkdir($testDir . '/test-dir', 0o700)) {
             $this->assertTrue($this->fs->canWrite($testDir . '/test-dir'));
             $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1'));
             $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1/2/3'));
@@ -166,7 +166,7 @@ class FilesystemServiceTest extends TestCase
             $this->markTestIncomplete('Failed to create directory: ' . $testDir . '/test-dir');
         }
 
-        if (mkdir($testDir . '/test-ro-dir', 0500)) {
+        if (mkdir($testDir . '/test-ro-dir', 0o500)) {
             $this->assertEquals(is_writable($testDir . '/test-ro-dir'), $this->fs->canWrite($testDir . '/test-ro-dir'));
             $this->assertEquals(is_writable($testDir . '/test-ro-dir'), $this->fs->canWrite($testDir . '/test-ro-dir/1'));
         } else {
@@ -188,7 +188,7 @@ class FilesystemServiceTest extends TestCase
             touch($testDir . '/test-file');
             mkdir($testDir . '/test-dir');
             touch($testDir . '/test-dir/test-file');
-            mkdir($testDir . '/test-nesting/1/2/3', 0755, true);
+            mkdir($testDir . '/test-nesting/1/2/3', 0o755, true);
             touch($testDir . '/test-nesting/1/2/3/test-file');
         }
 

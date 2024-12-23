@@ -39,11 +39,11 @@ class Drush
      * @param ApplicationFinder|null $applicationFinder
      */
     public function __construct(
-        Config $config = null,
-        Shell $shellHelper = null,
-        LocalProject $localProject = null,
-        Api $api = null,
-        ApplicationFinder $applicationFinder = null,
+        ?Config $config = null,
+        ?Shell $shellHelper = null,
+        ?LocalProject $localProject = null,
+        ?Api $api = null,
+        ?ApplicationFinder $applicationFinder = null,
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();

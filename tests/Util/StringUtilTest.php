@@ -18,7 +18,7 @@ class StringUtilTest extends TestCase
             ["_BEGIN_\nfoo\n_END_", "_BEGIN_\n", "\n_END_", 'foo'],
         ];
         foreach ($cases as $key => $case) {
-            list($str, $begin, $end, $result) = $case;
+            [$str, $begin, $end, $result] = $case;
             $this->assertEquals($result, StringUtil::between($str, $begin, $end), "case $key");
         }
     }

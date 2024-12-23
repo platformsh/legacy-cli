@@ -94,7 +94,7 @@ abstract class ServerCommandBase extends CommandBase
             $this->stopServer($address);
         }
 
-        list($hostname, $port) = explode(':', $address);
+        [$hostname, $port] = explode(':', $address);
 
         return PortUtil::isPortInUse((int) $port, $hostname);
     }
@@ -182,7 +182,7 @@ abstract class ServerCommandBase extends CommandBase
     protected function writeServerInfo(string $address, int $pid, array $info): void
     {
         file_put_contents($this->getPidFile($address), $pid);
-        list($ip, $port) = explode(':', $address);
+        [$ip, $port] = explode(':', $address);
         $this->serverInfo[$address] = $info + [
             'address' => $address,
             'pid' => $pid,
@@ -389,7 +389,7 @@ abstract class ServerCommandBase extends CommandBase
             $envPrefix . 'ROUTES' => base64_encode((string) json_encode($this->getRoutesList($projectRoot, $address))),
         ];
 
-        list($env['IP'], $env['PORT']) = explode(':', $address);
+        [$env['IP'], $env['PORT']] = explode(':', $address);
 
         if (dirname($realDocRoot, 2) === $projectRoot . '/' . $this->config->getStr('local.build_dir')) {
             $env[$envPrefix . 'APP_DIR'] = dirname($realDocRoot);

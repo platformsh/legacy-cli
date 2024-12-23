@@ -324,7 +324,7 @@ class LocalProject
         $localDirRelative = $this->config->getStr('local.local_dir');
         $dir = $projectRoot . '/' . $localDirRelative;
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0o755, true);
         }
         $this->writeGitExclude($projectRoot);
         if (!file_exists($dir . '/.gitignore')) {
@@ -335,16 +335,16 @@ class LocalProject
             file_put_contents(
                 $dir . '/README.txt',
                 <<<EOF
-{$localDirRelative}
-===============
+                    {$localDirRelative}
+                    ===============
 
-This directory is where the {$cliName} stores configuration files, builds, and
-other data to help work with your project locally.
+                    This directory is where the {$cliName} stores configuration files, builds, and
+                    other data to help work with your project locally.
 
-It is not used on remote environments at all - the directory is excluded from
-your Git repository (via .git/info/exclude).
+                    It is not used on remote environments at all - the directory is excluded from
+                    your Git repository (via .git/info/exclude).
 
-EOF,
+                    EOF,
             );
         }
     }

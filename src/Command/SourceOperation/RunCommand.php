@@ -113,7 +113,7 @@ class RunCommand extends CommandBase
         $map = [];
         $variable = new Variable();
         foreach ($variables as $var) {
-            list($type, $name, $value) = $variable->parse($var);
+            [$type, $name, $value] = $variable->parse($var);
             $map[$type][$name] = $value;
         }
 

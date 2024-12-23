@@ -136,7 +136,7 @@ class BrowserLoginCommand extends CommandBase
         if (file_put_contents($responseFile, '', LOCK_EX) === false) {
             throw new \RuntimeException('Failed to create temporary file: ' . $responseFile);
         }
-        chmod($responseFile, 0600);
+        chmod($responseFile, 0o600);
 
         // Start the local server.
         $process = new Process([
@@ -293,7 +293,7 @@ class BrowserLoginCommand extends CommandBase
      */
     private function createDocumentRoot(string $dir): void
     {
-        if (!is_dir($dir) && !mkdir($dir, 0700, true)) {
+        if (!is_dir($dir) && !mkdir($dir, 0o700, true)) {
             throw new \RuntimeException('Failed to create temporary directory: ' . $dir);
         }
         if (!file_put_contents($dir . '/index.php', (string) file_get_contents(CLI_ROOT . '/resources/oauth-listener/index.php'))) {

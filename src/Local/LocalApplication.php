@@ -203,7 +203,7 @@ class LocalApplication
         }
 
         $key = $appConfig['build']['flavor'] ?? 'default';
-        list($stack, ) = explode(':', (string) $appConfig['type'], 2);
+        [$stack, ] = explode(':', (string) $appConfig['type'], 2);
         foreach (self::getBuildFlavors() as $candidate) {
             if (in_array($key, $candidate->getKeys())
                 && ($candidate->getStacks() === [] || in_array($stack, $candidate->getStacks()))) {

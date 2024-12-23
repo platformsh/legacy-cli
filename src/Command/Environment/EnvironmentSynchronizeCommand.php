@@ -45,20 +45,20 @@ class EnvironmentSynchronizeCommand extends CommandBase
         $this->addExample('Synchronize code and data from the parent environment', 'code data');
 
         $help = <<<EOT
-This command synchronizes to a child environment from its parent environment.
+            This command synchronizes to a child environment from its parent environment.
 
-Synchronizing "code" means there will be a Git merge from the parent to the
-child.
+            Synchronizing "code" means there will be a Git merge from the parent to the
+            child.
 
-Synchronizing "data" means that all files in all services (including
-static files, databases, logs, search indices, etc.) will be copied from the
-parent to the child.
-EOT;
+            Synchronizing "data" means that all files in all services (including
+            static files, databases, logs, search indices, etc.) will be copied from the
+            parent to the child.
+            EOT;
         if ($this->config->getBool('api.sizing')) {
             $help .= "\n\n" . <<<EOT
-Synchronizing "resources" means that the parent environment's resource sizes
-will be used for all corresponding apps and services in the child environment.
-EOT;
+                Synchronizing "resources" means that the parent environment's resource sizes
+                will be used for all corresponding apps and services in the child environment.
+                EOT;
             $this->addExample('Synchronize code, data and resources from the parent environment', 'code data resources');
         }
 

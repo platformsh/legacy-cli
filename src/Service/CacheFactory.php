@@ -22,7 +22,7 @@ class CacheFactory
         return new FilesystemCache(
             $cliConfig->getWritableUserDir() . '/cache',
             FilesystemCache::EXTENSION,
-            0077, // Remove all permissions from the group and others.
+            0o077, // Remove all permissions from the group and others.
         );
     }
 }

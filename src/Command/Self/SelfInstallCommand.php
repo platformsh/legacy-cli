@@ -35,9 +35,9 @@ class SelfInstallCommand extends CommandBase
         $cliName = $this->config->getStr('application.name');
         $this->setHelp(
             <<<EOT
-This command automatically installs shell configuration for the {$cliName},
-adding autocompletion support and handy aliases. Bash and ZSH are supported.
-EOT,
+                This command automatically installs shell configuration for the {$cliName},
+                adding autocompletion support and handy aliases. Bash and ZSH are supported.
+                EOT,
         );
     }
 

@@ -247,10 +247,10 @@ class ManifestStrategy implements StrategyInterface
      */
     private function filterByLocalMajorVersion(array $versions): array
     {
-        list($localMajorVersion, ) = explode('.', $this->localVersion, 2);
+        [$localMajorVersion, ] = explode('.', $this->localVersion, 2);
 
         return array_filter($versions, function ($version) use ($localMajorVersion): bool {
-            list($majorVersion, ) = explode('.', $version, 2);
+            [$majorVersion, ] = explode('.', $version, 2);
             return $majorVersion === $localMajorVersion;
         });
     }

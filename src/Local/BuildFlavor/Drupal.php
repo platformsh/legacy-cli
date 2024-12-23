@@ -420,7 +420,7 @@ class Drupal extends BuildFlavorBase
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {
-                list($skip[], ) = explode('/', $mount, 2);
+                [$skip[], ] = explode('/', $mount, 2);
             }
 
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);

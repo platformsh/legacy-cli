@@ -97,8 +97,8 @@ class SelfUpdateChecker
         if ($newVersion !== false) {
             // Update succeeded. Continue (based on a few conditions).
             $exitCode = 0;
-            list($currentMajorVersion, ) = explode('.', $currentVersion, 2);
-            list($newMajorVersion, ) = explode('.', $newVersion, 2);
+            [$currentMajorVersion, ] = explode('.', $currentVersion, 2);
+            [$newMajorVersion, ] = explode('.', $newVersion, 2);
             if ($newMajorVersion === $currentMajorVersion
                 && $this->input instanceof ArgvInput
                 && is_executable($pharFilename)) {

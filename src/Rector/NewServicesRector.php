@@ -54,12 +54,12 @@ class NewServicesRector extends AbstractRector
     {
         return new RuleDefinition('Use various new services instead of old CommandBase methods', [
             new CodeSample(<<<'END'
-                $this->addWaitOptions();
-                $this->runSubCommand('foo');
-            END, <<<'END'
-                $this->activityMonitor->addWaitOptions($this->getDefinition());
-                $this->subCommandRunnder->run('foo');
-            END),
+                    $this->addWaitOptions();
+                    $this->runSubCommand('foo');
+                END, <<<'END'
+                    $this->activityMonitor->addWaitOptions($this->getDefinition());
+                    $this->subCommandRunnder->run('foo');
+                END),
         ]);
     }
 

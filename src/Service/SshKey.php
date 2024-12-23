@@ -173,7 +173,7 @@ readonly class SshKey
         if (!str_contains($contents, ' ')) {
             throw new \RuntimeException('Invalid public key: ' . $filename);
         }
-        list(, $keyB64) = \explode(' ', $contents, 3);
+        [, $keyB64] = \explode(' ', $contents, 3);
         $key = \base64_decode($keyB64, true);
         if ($key === false) {
             throw new \RuntimeException('Failed to base64-decode public key: ' . $filename);

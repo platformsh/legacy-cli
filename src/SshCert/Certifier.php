@@ -79,7 +79,7 @@ class Certifier
     private function doGenerateCertificate(bool $forceNewKey = false): Certificate
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
-        $this->fs->mkdir($dir, 0700);
+        $this->fs->mkdir($dir, 0o700);
 
         $privateKeyFilename = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
         $certificateFilename = $privateKeyFilename . '-cert.pub';
@@ -120,7 +120,7 @@ class Certifier
             throw new \RuntimeException('Failed to write file: ' . $tempCertificateFilename);
         }
 
-        if (!chmod($tempCertificateFilename, 0600)) {
+        if (!chmod($tempCertificateFilename, 0o600)) {
             throw new \RuntimeException('Failed to change permissions on file: ' . $tempCertificateFilename);
         }
 

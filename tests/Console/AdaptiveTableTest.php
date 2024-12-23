@@ -40,20 +40,20 @@ class AdaptiveTableTest extends TestCase
         $this->assertLessThanOrEqual($maxTableWidth, max($lineWidths));
 
         $expected = <<<'EOT'
-+-----+------------+------------+------------+----------+
-| Row | Lorem      | ipsum      | dolor      | sit      |
-+-----+------------+------------+------------+----------+
-| #1  | amet       | consectetu | adipiscing | Quisque  |
-|     |            | r          | elit       | pulvinar |
-| #2  | tellus sit | sollicitud | tincidunt  | risus    |
-|     | amet       | in         |            |          |
-+-----+------------+------------+------------+----------+
-| #3  | risus      | sem        | mattis     | ex       |
-| #4  | quis       | luctus     | lorem      | ligula   |
-|     |            | metus      | cursus     |          |
-+-----+------------+------------+------------+----------+
+            +-----+------------+------------+------------+----------+
+            | Row | Lorem      | ipsum      | dolor      | sit      |
+            +-----+------------+------------+------------+----------+
+            | #1  | amet       | consectetu | adipiscing | Quisque  |
+            |     |            | r          | elit       | pulvinar |
+            | #2  | tellus sit | sollicitud | tincidunt  | risus    |
+            |     | amet       | in         |            |          |
+            +-----+------------+------------+------------+----------+
+            | #3  | risus      | sem        | mattis     | ex       |
+            | #4  | quis       | luctus     | lorem      | ligula   |
+            |     |            | metus      | cursus     |          |
+            +-----+------------+------------+------------+----------+
 
-EOT;
+            EOT;
         $this->assertEquals($expected, $result);
     }
 
@@ -86,20 +86,20 @@ EOT;
         $this->assertLessThanOrEqual($maxTableWidth, max($lineWidths));
 
         $expected = <<<'EOT'
-+-----+------------+-------------+--------------+------------+
-| Row | Lorem      | ipsum       | dolor        | Indented   |
-+-----+------------+-------------+--------------+------------+
-| #1  | amet       | consectetur | adipiscing   |   Quisque  |
-|     |            |             | elit         |   pulvinar |
-| #2  | tellus sit | sollicitudi | tincidunt    |   risus    |
-|     | amet       | n           |              |            |
-+-----+------------+-------------+--------------+------------+
-| #3  | risus      | sem         | mattis       |   ex       |
-| #4  | quis       | luctus      | lorem cursus |   ligula   |
-|     |            | metus       |              |            |
-+-----+------------+-------------+--------------+------------+
+            +-----+------------+-------------+--------------+------------+
+            | Row | Lorem      | ipsum       | dolor        | Indented   |
+            +-----+------------+-------------+--------------+------------+
+            | #1  | amet       | consectetur | adipiscing   |   Quisque  |
+            |     |            |             | elit         |   pulvinar |
+            | #2  | tellus sit | sollicitudi | tincidunt    |   risus    |
+            |     | amet       | n           |              |            |
+            +-----+------------+-------------+--------------+------------+
+            | #3  | risus      | sem         | mattis       |   ex       |
+            | #4  | quis       | luctus      | lorem cursus |   ligula   |
+            |     |            | metus       |              |            |
+            +-----+------------+-------------+--------------+------------+
 
-EOT;
+            EOT;
         $this->assertEquals($expected, $result);
     }
 
@@ -124,19 +124,19 @@ EOT;
         $result = $buffer->fetch();
 
         $expected = <<<'EOT'
-+-----+------------+--------------+------------+----------+
-| Row | Lorem      | ipsum        | dolor      | sit      |
-+-----+------------+--------------+------------+----------+
-| #1  | amet       | consectetur  | adipiscing | Quisque  |
-|     |            |              | elit       | pulvinar |
-| #2  | tellus sit | sollicitudin | tincidunt  | risus    |
-|     | amet       |              |            |          |
-| #3  | risus      | sem          | mattis     | ex       |
-| #4  | quis       | luctus metus | lorem      | ligula   |
-|     |            |              | cursus     |          |
-+-----+------------+--------------+------------+----------+
+            +-----+------------+--------------+------------+----------+
+            | Row | Lorem      | ipsum        | dolor      | sit      |
+            +-----+------------+--------------+------------+----------+
+            | #1  | amet       | consectetur  | adipiscing | Quisque  |
+            |     |            |              | elit       | pulvinar |
+            | #2  | tellus sit | sollicitudin | tincidunt  | risus    |
+            |     | amet       |              |            |          |
+            | #3  | risus      | sem          | mattis     | ex       |
+            | #4  | quis       | luctus metus | lorem      | ligula   |
+            |     |            |              | cursus     |          |
+            +-----+------------+--------------+------------+----------+
 
-EOT;
+            EOT;
         $this->assertEquals($expected, $result);
     }
 
