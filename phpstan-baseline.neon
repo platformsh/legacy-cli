@@ -221,11 +221,6 @@ parameters:
 			path: src/Console/CustomTextDescriptor.php
 
 		-
-			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:getColumnWidth\\(\\) should return int but returns float\\|int\\<35, max\\>\\.$#"
-			count: 1
-			path: src/Console/CustomTextDescriptor.php
-
-		-
 			message: "#^Method Platformsh\\\\Cli\\\\Console\\\\CustomTextDescriptor\\:\\:writeText\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: src/Console/CustomTextDescriptor.php
