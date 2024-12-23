@@ -1,20 +1,19 @@
 GO_TESTS_DIR=go-tests
 
-tools=vendor/bin/phpstan vendor/bin/php-cs-fixer
-
-$(tools):
-	composer install
+.PHONY: composer-dev
+composer-dev:
+	composer install --no-interaction
 
 .PHONY: clean
 clean:
 	rm config/cache/container.php
 
 .PHONY: lint-phpstan
-lint-phpstan: vendor/bin/phpstan
+lint-phpstan: composer-dev
 	./vendor/bin/phpstan analyse
 
 .PHONY: lint-php-cs-fixer
-lint-php-cs-fixer: vendor/bin/php-cs-fixer
+lint-php-cs-fixer: composer-dev
 	./vendor/bin/php-cs-fixer check src
 
 .PHONY: lint-gofmt
