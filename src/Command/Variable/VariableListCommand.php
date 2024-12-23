@@ -9,6 +9,7 @@ use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Api;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\VariableCommandUtil;
 use Platformsh\Client\Model\ProjectLevelVariable;
 use Platformsh\Client\Model\Variable;
@@ -32,6 +33,7 @@ class VariableListCommand extends CommandBase
     public function __construct(
         private readonly Api                 $api,
         private readonly Config              $config,
+        private readonly PropertyFormatter   $propertyFormatter,
         private readonly Selector            $selector,
         private readonly Table               $table,
         private readonly VariableCommandUtil $variableCommandUtil,
@@ -101,10 +103,10 @@ class VariableListCommand extends CommandBase
             if (!$variable->hasProperty('value', false) && $variable->is_sensitive) {
                 $row['value'] = $this->table->formatIsMachineReadable() ? '' : '<fg=yellow>[Hidden: sensitive value]</>';
             } else {
-                $row['value'] = $variable->value;
+                $row['value'] = $this->propertyFormatter->format($variable->value, 'value');
             }
 
-            $row['is_enabled'] = $variable->getProperty('is_enabled', false) ?? '';
+            $row['is_enabled'] = $this->propertyFormatter->format($variable->getProperty('is_enabled', false), 'is_enabled');
 
             $rows[] = $row;
         }

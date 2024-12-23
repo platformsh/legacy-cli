@@ -347,11 +347,11 @@ class AdaptiveTable extends Table
      * This is inspired by Table->getCellWidth(), but this also accounts for
      * multi-line cells.
      *
-     * @param string|int|float|TableCell $cell
+     * @param mixed $cell
      *
      * @return float|int
      */
-    private function getCellWidth(string|int|float|TableCell $cell): int|float
+    private function getCellWidth(mixed $cell): int|float
     {
         $lineWidths = [0];
         foreach (explode(PHP_EOL, (string) $cell) as $line) {
