@@ -9,24 +9,24 @@ use Platformsh\Cli\Service\Config;
 
 require '../vendor/autoload.php';
 $config = new Config();
-$appName = $config->get('application.name');
-$envPrefix = $config->get('service.env_prefix');
-$branch = getenv($envPrefix . 'BRANCH', true);
-$treeId = getenv($envPrefix . 'TREE_ID', true);
+$appName = $config->getStr('application.name');
+$envPrefix = $config->getStr('service.env_prefix');
+$branch = (string) getenv($envPrefix . 'BRANCH', true);
+$treeId = (string) getenv($envPrefix . 'TREE_ID', true);
 
 $pharUrl = getenv('CLI_URL_PATH', true) ?: 'platform.phar';
-$pharHash = hash_file('sha256', __DIR__ . '/' . ltrim(getenv('CLI_URL_PATH', true), '/'));
+$pharHash = hash_file('sha256', __DIR__ . '/' . ltrim((string) getenv('CLI_URL_PATH', true), '/'));
 if ($timestamp = getenv('CLI_BUILD_DATE', true)) {
-    $pharDate = date('c', is_int($timestamp) ? $timestamp : strtotime($timestamp));
+    $pharDate = date('c', is_numeric($timestamp) ? (int) $timestamp : (int) strtotime($timestamp));
 } else {
     $pharDate = false;
 }
 
-if ($config->getWithDefault('application.github_repo', '')) {
-    $sourceLink = 'https://github.com/' . $config->get('application.github_repo');
+if ($config->has('application.github_repo')) {
+    $sourceLink = 'https://github.com/' . $config->getStr('application.github_repo');
     $sourceLinkSpecific = $sourceLink;
     if ($branch) {
-        if (strpos($branch, 'pr-') === 0 && is_numeric(substr($branch, 3))) {
+        if (str_starts_with($branch, 'pr-') && is_numeric(substr($branch, 3))) {
             $sourceLinkSpecific .= '/pull/' . substr($branch, 3);
         } else {
             $sourceLinkSpecific .= '/tree/' . rawurlencode($branch);
@@ -48,7 +48,7 @@ $revertScript = '';
 if ($config->has('application.installer_url')) {
     $revertScript = sprintf(
         'curl -sfS %s | php',
-        $config->get('application.installer_url'),
+        $config->getStr('application.installer_url'),
     );
 }
 
@@ -118,11 +118,10 @@ if ($config->has('application.installer_url')) {
     <?php endif; ?>
     <h2>Development build</h2>
 
-    <?php if ($pharUrl): ?>
-        <p>
-            Download: <a href="<?= htmlspecialchars($pharUrl) ?>"><?= htmlspecialchars($pharUrl) ?></a>
-        </p>
-    <?php endif; ?>
+    <p>
+        Download: <a href="<?= htmlspecialchars($pharUrl) ?>"><?= htmlspecialchars($pharUrl) ?></a>
+    </p>
+
     <?php if ($pharDate): ?>
         <p>
             Build date: <code><?= htmlspecialchars($pharDate) ?></code>
@@ -148,18 +147,17 @@ if ($config->has('application.installer_url')) {
             Source: <a href="<?= htmlspecialchars($sourceLinkSpecific) ?>"><?= htmlspecialchars($sourceLinkSpecific) ?></a>
         </p>
     <?php endif; ?>
-    <?php if ($installScript): ?>
-        <h3>Testing instructions</h3>
-        <p>
-            Install this version with:<br/>
-            <code class="code-block"><?= htmlspecialchars($installScript) ?></code>
-        </p>
-        <?php if ($revertScript): ?>
-        <p>
-            Install the stable version again with:<br/>
-            <code class="code-block"><?= htmlspecialchars($revertScript) ?></code>
-        </p>
-        <?php endif; ?>
+
+    <h3>Testing instructions</h3>
+    <p>
+        Install this version with:<br/>
+        <code class="code-block"><?= htmlspecialchars($installScript) ?></code>
+    </p>
+    <?php if ($revertScript): ?>
+    <p>
+        Install the stable version again with:<br/>
+        <code class="code-block"><?= htmlspecialchars($revertScript) ?></code>
+    </p>
     <?php endif; ?>
 
 </body>
