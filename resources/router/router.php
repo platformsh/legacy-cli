@@ -58,8 +58,8 @@ if (!empty($app['drupal_7_workaround'])) {
     // The Drupal 7 request_path() function has a strange check which causes
     // the path to be treated as the front page if ($path == basename($_SERVER['PHP_SELF']).
     // Setting $_GET['q'] manually works around this.
-    $url = parse_url($_SERVER['REQUEST_URI']);
-    $_GET['q'] = $_REQUEST['q'] = ltrim($url['path'], '/');
+    $urlPath = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $_GET['q'] = $_REQUEST['q'] = ltrim($urlPath, '/');
 }
 
 // Find the correct location.
@@ -67,7 +67,7 @@ $locations = $app['web']['locations'] ?? [];
 $location = ['allow' => true];
 $matchedLocation = '/';
 foreach (array_keys($locations) as $path) {
-    if (strpos($_SERVER['REQUEST_URI'], $path) === 0) {
+    if (str_starts_with($_SERVER['REQUEST_URI'], (string) $path)) {
         $matchedLocation = $path;
     } elseif (preg_match($pregQuoteNginxPattern($path), $_SERVER['REQUEST_URI'])) {
         $matchedLocation = $path;
