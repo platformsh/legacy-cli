@@ -5,6 +5,7 @@ $finder = (new PhpCsFixer\Finder())
     ->notPath([
         'config/cache/container.php', // Ignore generated file
         'dist/installer.php', // Keep old PHP compatibility
+        'tests/data', // Ignore test data
     ])
 ;
 

@@ -56,13 +56,16 @@ class Drupal extends BuildFlavorBase
                ->depth($depth)
                ->name('index.php');
         foreach ($finder as $file) {
-            if (($f = fopen($file, 'r')) !== false) {
-                $beginning = fread($f, 3178);
-                fclose($f);
-                if ($beginning !== false && str_contains($beginning, 'Drupal')) {
-                    return true;
-                }
+            try {
+                $o = $file->openFile();
+            } catch (\RuntimeException) {
+                continue;
             }
+            $beginning = $o->fread(3178);
+            if ($beginning !== false && str_contains($beginning, 'Drupal')) {
+                return true;
+            }
+            unset($o);
         }
 
         // Check whether there is a composer.json file requiring Drupal core.

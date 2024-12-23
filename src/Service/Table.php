@@ -163,7 +163,7 @@ class Table implements InputConfiguringInterface
     /**
      * Returns the columns to display, based on defaults and user input.
      *
-     * @param string[]|array<string, string> $header
+     * @param array<int|string, string|TableCell> $header
      * @param string[] $defaultColumns
      * @return string[] A list of (lower-case) column names.
      */

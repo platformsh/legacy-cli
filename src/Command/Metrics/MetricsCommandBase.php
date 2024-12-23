@@ -8,6 +8,7 @@ use Platformsh\Cli\Service\Io;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Api;
+use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Psr7\Request;
@@ -475,7 +476,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @param array<string, Field> $fields
      *   An array of fields keyed by column name.
      *
-     * @return array<array<string, string|\Stringable>|TableSeparator>
+     * @return array<array<string, string|TableCell>|TableSeparator>
      *   Table rows.
      */
     protected function buildRows(array $values, array $fields, Environment $environment): array
@@ -554,8 +555,8 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * Merges table rows per service to reduce unnecessary empty cells.
      *
-     * @param array<array<string, string|\Stringable>|TableSeparator> $rows
-     * @return array<array<string, string|\Stringable>|TableSeparator>
+     * @param array<array<string, string|TableCell>|TableSeparator> $rows
+     * @return array<array<string, string|TableCell>|TableSeparator>
      */
     private function mergeRows(array $rows): array
     {

@@ -50,7 +50,7 @@ class LocalDrushAliasesCommand extends CommandBase
         }
 
         // Only show this command if drush_aliases are enabled.
-        if (!$this->config->getStr('application.drush_aliases')) {
+        if (!$this->config->getBool('application.drush_aliases')) {
             return true;
         }
 

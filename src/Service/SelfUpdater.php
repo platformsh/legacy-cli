@@ -144,7 +144,7 @@ class SelfUpdater
                 if (\count($notes) > 1) {
                     $this->stdErr->writeln('<comment>' . $version . '</comment>:');
                 }
-                $this->stdErr->writeln(preg_replace('/^/m', '  ', (string) $notesStr));
+                $this->stdErr->writeln(preg_replace('/^/m', '  ', $notesStr));
                 $this->stdErr->writeln('');
             }
         }

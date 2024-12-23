@@ -1389,9 +1389,8 @@ class Api
      */
     private function on403(RequestInterface $request): void
     {
-        $url = $request->getUri();
-        $path = parse_url($url, PHP_URL_PATH);
-        if ($path && str_starts_with($path, '/api/projects/')) {
+        $path = $request->getUri()->getPath();
+        if (str_starts_with($path, '/api/projects/')) {
             // Clear the environments cache for environment request errors.
             if (preg_match('#^/api/projects/([^/]+?)/environments/#', $path, $matches)) {
                 $this->clearEnvironmentsCache($matches[1]);

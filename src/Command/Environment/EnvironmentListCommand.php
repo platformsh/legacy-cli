@@ -16,6 +16,7 @@ use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Environment;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -96,7 +97,7 @@ class EnvironmentListCommand extends CommandBase
      * Recursively builds rows of the environment table.
      *
      * @param Environment[] $tree
-     * @return array<array<int|string, string>>
+     * @return array<array<int|string, string|TableCell>>
      */
     protected function buildEnvironmentRows(array $tree, bool $indent = true, bool $indicateCurrent = true, int $indentAmount = 0): array
     {

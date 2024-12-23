@@ -175,7 +175,7 @@ class CustomTextDescriptor extends TextDescriptor
         return json_encode($default, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
-    protected function getColumnWidth(array $commands): int
+    protected function getColumnWidth(array $commands): int|float
     {
         $width = 0;
         foreach ($commands as $command) {

@@ -35,12 +35,12 @@ class YamlParser
      * @param string $filename The filename where the content originated. This
      *                         is required for formatting useful error messages.
      *
-     * @return \TaggedValue|string|array
+     * @return TaggedValue|string|array<mixed>
      *
      * @throws ParseException if the config could not be parsed
      * @throws InvalidConfigException if the config is invalid
      */
-    public function parseContent(string $content, string $filename): \TaggedValue|string|array
+    public function parseContent(string $content, string $filename): TaggedValue|string|array
     {
         $content = $this->cleanUp($content);
         try {
