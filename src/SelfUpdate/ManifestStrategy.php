@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\SelfUpdate;
 
 use Humbug\SelfUpdate\Exception\HttpRequestException;

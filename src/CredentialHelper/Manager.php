@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\CredentialHelper;
 
 use Platformsh\Cli\Exception\ProcessFailedException;

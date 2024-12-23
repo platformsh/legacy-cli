@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\SshCert;
 
 use Platformsh\Cli\Service\Api;

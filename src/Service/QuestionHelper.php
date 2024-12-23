@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @file
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model;
 
 use Platformsh\Cli\Exception\InvalidConfigException;

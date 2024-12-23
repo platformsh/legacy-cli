@@ -1,6 +1,8 @@
 #!/usr/bin/env php
 <?php
 
+declare(strict_types=1);
+
 /**
  * @file
  * Downloads country codes and English names from the Unicode CLDR project.

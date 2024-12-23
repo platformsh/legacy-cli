@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
@@ -33,12 +35,12 @@ class YamlParser
      * @param string $filename The filename where the content originated. This
      *                         is required for formatting useful error messages.
      *
-     * @return TaggedValue|string|array<mixed>
+     * @return \TaggedValue|string|array
      *
      * @throws ParseException if the config could not be parsed
      * @throws InvalidConfigException if the config is invalid
      */
-    public function parseContent(string $content, string $filename): TaggedValue|string|array
+    public function parseContent(string $content, string $filename): \TaggedValue|string|array
     {
         $content = $this->cleanUp($content);
         try {
@@ -101,22 +103,16 @@ class YamlParser
     /**
      * Recursively processes custom tags in the parsed config.
      *
-     * @param TaggedValue|string|array<mixed> $config
-     *
-     * @throws InvalidConfigException
-     *
-     * @return TaggedValue|string|array<mixed>
+     * @param TaggedValue|array<mixed> $config
      */
-    private function processTags(TaggedValue|string|array $config, string $filename): TaggedValue|string|array
+    private function processTags(mixed $config, string $filename): mixed
     {
-        if (!is_array($config)) {
+        if ($config instanceof TaggedValue) {
             return $this->processSingleTag($config, $filename);
         }
-        foreach ($config as $key => $item) {
-            if (is_array($item)) {
+        if (is_array($config)) {
+            foreach ($config as $key => $item) {
                 $config[$key] = $this->processTags($item, $filename);
-            } else {
-                $config[$key] = $this->processSingleTag($item, $filename, (string) $key);
             }
         }
 
@@ -126,27 +122,23 @@ class YamlParser
     /**
      * Processes a single config item, which may be a custom tag.
      *
-     * @param TaggedValue|string $item
+     * @param TaggedValue $item
      * @param string $filename
      * @param string $configKey
      *
      * @return TaggedValue|string|array<string,mixed>|array<mixed>
      */
-    private function processSingleTag(TaggedValue|string $item, string $filename, string $configKey = ''): TaggedValue|string|array
+    private function processSingleTag(TaggedValue $item, string $filename, string $configKey = ''): TaggedValue|string|array
     {
-        if ($item instanceof TaggedValue) {
-            $tag = $item->getTag();
-            $value = $item->getValue();
+        $tag = $item->getTag();
+        $value = $item->getValue();
 
-            // Process the '!include' tag. The '!archive' and '!file' tags are
-            // ignored as they are not relevant to the CLI (yet).
-            return match ($tag) {
-                'include' => $this->resolveInclude($value, $filename, $configKey),
-                default => $item,
-            };
-        }
-
-        return $item;
+        // Process the '!include' tag. The '!archive' and '!file' tags are
+        // ignored as they are not relevant to the CLI (yet).
+        return match ($tag) {
+            'include' => $this->resolveInclude($value, $filename, $configKey),
+            default => $item,
+        };
     }
 
     /**

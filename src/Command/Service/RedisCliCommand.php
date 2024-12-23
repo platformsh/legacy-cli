@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Service;
 
 use Platformsh\Cli\Selector\SelectorConfig;
