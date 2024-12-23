@@ -124,9 +124,7 @@ class Shell
      */
     public function mustExecute(string|array $args, ?string $dir = null, bool $quiet = true, array $env = [], ?int $timeout = 3600, mixed $input = null): string
     {
-        $process = $this->setupProcess($args, $dir, $env, $timeout, $input);
-        $this->runProcess($process, true, $quiet);
-        return rtrim($process->getOutput());
+        return (string) $this->execute($args, $dir, true, $quiet, $env, $timeout, $input);
     }
 
     /**
@@ -328,12 +326,11 @@ class Shell
     public function getPhpVersion(): string
     {
         if (!isset(self::$phpVersion)) {
-            $result = $this->execute([
+            self::$phpVersion = $this->execute([
                 (new PhpExecutableFinder())->find() ?: PHP_BINARY,
                 '-r',
                 'echo PHP_VERSION;',
-            ]);
-            self::$phpVersion = is_string($result) ? $result : PHP_VERSION;
+            ]) ?: PHP_VERSION;
         }
         return self::$phpVersion;
     }

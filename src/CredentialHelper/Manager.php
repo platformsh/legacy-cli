@@ -335,7 +335,7 @@ class Manager
             }
 
             // The Linux helper needs "libsecret" to be installed.
-            if (!$this->shell->execute('ldconfig --print-cache | grep -q libsecret')) {
+            if ($this->shell->execute('ldconfig --print-cache | grep -q libsecret') === false) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (libsecret is not installed)');
             }
         }

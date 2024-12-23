@@ -101,7 +101,7 @@ class SshKeyAddCommand extends SshKeyCommandBase
 
         // Use ssh-keygen to help validate the key.
         if ($this->shell->commandExists('ssh-keygen')) {
-            if (!$this->shell->execute(['ssh-keygen', '-l', '-f', $publicKeyPath])) {
+            if ($this->shell->execute(['ssh-keygen', '-l', '-f', $publicKeyPath]) === false) {
                 $this->stdErr->writeln("The file does not contain a valid public key: <error>$publicKeyPath</error>");
                 return 1;
             }

@@ -33,7 +33,7 @@ class RemoteHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): bool|string
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): false|string
     {
         try {
             return $this->shell->execute($this->wrapCommandLine($command), mustRun: $mustRun, quiet: $quiet, env: $this->sshService->getEnv(), input: $input);

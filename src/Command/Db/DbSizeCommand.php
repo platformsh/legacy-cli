@@ -382,7 +382,7 @@ class DbSizeCommand extends CommandBase
      */
     private function getPgSqlUsage(HostInterface $host, array $database): float
     {
-        return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
+        return (float) $host->runCommand($this->getPsqlCommand($database), input: $this->psqlQuery());
     }
 
     /**
@@ -406,12 +406,12 @@ class DbSizeCommand extends CommandBase
     private function getMySqlUsage(HostInterface $host, array $database): float
     {
         $this->io->debug('Getting MySQL usage...');
-        $allocatedSizeSupported = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbAllocatedSizeExists());
+        $allocatedSizeSupported = $host->runCommand($this->getMysqlCommand($database), input: $this->mysqlInnodbAllocatedSizeExists());
         $innoDbSize = 0;
         if ($allocatedSizeSupported) {
             $this->io->debug('Checking InnoDB separately for more accurate results...');
             try {
-                $innoDbSize = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbQuery());
+                $innoDbSize = $host->runCommand($this->getMysqlCommand($database), input: $this->mysqlInnodbQuery());
             } catch (RuntimeException $e) {
                 // Some configurations do not have PROCESS privilege(s) and thus have no access to the sys_tablespaces
                 // table. Ignore MySQL's 1227 Access Denied error, and revert to the legacy calculation.
@@ -424,7 +424,7 @@ class DbSizeCommand extends CommandBase
             }
         }
 
-        $otherSizes = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlNonInnodbQuery((bool) $allocatedSizeSupported));
+        $otherSizes = $host->runCommand($this->getMysqlCommand($database), input: $this->mysqlNonInnodbQuery((bool) $allocatedSizeSupported));
 
         return (float) $otherSizes + (float) $innoDbSize;
     }
