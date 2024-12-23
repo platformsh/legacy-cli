@@ -6,6 +6,8 @@ namespace Platformsh\Cli\Command\Repo;
 
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'repo:ls', description: 'List files in the project repository')]
 class LsCommand extends RepoCommandBase
 {
-    public function __construct(private readonly Selector $selector)
+    public function __construct(private readonly Config $config, private readonly Selector $selector)
     {
         parent::__construct();
     }
@@ -40,6 +42,16 @@ class LsCommand extends RepoCommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        return $this->ls($selection->getEnvironment(), $input, $output);
+        try {
+            return $this->ls($input->getArgument('path') ?: '/', $selection->getEnvironment(), $input, $output);
+        } catch (GitObjectTypeException $e) {
+            $this->stdErr->writeln(sprintf(
+                '%s: <error>%s</error>',
+                $e->getMessage(),
+                $e->getPath(),
+            ));
+            $this->stdErr->writeln(sprintf('To read a file, run: <comment>%s repo:cat [path]</comment>', $this->config->getStr('application.executable')));
+            return 3;
+        }
     }
 }

@@ -6,6 +6,7 @@ namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Exception\GitObjectTypeException;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Git\Blob;
 use Platformsh\Client\Model\Git\Commit;
@@ -171,7 +172,9 @@ class GitDataApi
         $data = $this->cache->fetch($cacheKey);
         if (!is_array($data)) {
             $object = $this->getObject($filename, $environment, $commitSha);
-            if (!$object instanceof Blob) {
+            if ($object instanceof Tree) {
+                throw new GitObjectTypeException('The requested file is a directory', $filename);
+            } elseif ($object === false) {
                 $data['raw'] = false;
             } else {
                 $data['raw'] = $object->getRawContent();

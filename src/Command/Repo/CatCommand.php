@@ -7,6 +7,7 @@ namespace Platformsh\Cli\Command\Repo;
 use Platformsh\Cli\Selector\SelectorConfig;
 use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Config;
+use Platformsh\Client\Exception\GitObjectTypeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -41,6 +42,16 @@ class CatCommand extends RepoCommandBase
     {
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
 
-        return $this->cat($selection->getEnvironment(), $input, $output);
+        try {
+            return $this->cat($input->getArgument('path'), $selection->getEnvironment(), $input, $output);
+        } catch (GitObjectTypeException $e) {
+            $this->stdErr->writeln(sprintf(
+                '%s: <error>%s</error>',
+                $e->getMessage(),
+                $e->getPath(),
+            ));
+            $this->stdErr->writeln(sprintf('To list directory contents, run: <comment>%s repo:ls [path]</comment>', $this->config->getStr('application.executable')));
+            return 3;
+        }
     }
 }
