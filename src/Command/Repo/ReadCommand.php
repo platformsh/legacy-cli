@@ -39,7 +39,7 @@ class ReadCommand extends RepoCommandBase
         $selection = $this->selector->getSelection($input, new SelectorConfig(selectDefaultEnv: true));
         $environment = $selection->getEnvironment();
 
-        $path = $input->getArgument('path');
+        $path = $input->getArgument('path') ?: '/';
         $object = $this->gitDataApi->getObject($path, $environment, $input->getOption('commit'));
         if ($object === false) {
             $this->stdErr->writeln(sprintf('File or directory not found: <error>%s</error>', $path));
@@ -48,7 +48,7 @@ class ReadCommand extends RepoCommandBase
         }
 
         return $object instanceof Tree
-            ? $this->ls($environment, $input, $output)
-            : $this->cat($environment, $input, $output);
+            ? $this->ls($path, $environment, $input, $output)
+            : $this->cat($path, $environment, $input, $output);
     }
 }
