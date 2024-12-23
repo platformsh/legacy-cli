@@ -8,7 +8,6 @@ use Doctrine\Common\Cache\VoidCache;
 
 class CacheFactory
 {
-
     /**
      * @param Config $cliConfig
      *

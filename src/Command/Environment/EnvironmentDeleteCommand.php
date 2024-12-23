@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -22,7 +23,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:delete', description: 'Delete one or more environments')]
 class EnvironmentDeleteCommand extends CommandBase
 {
-
     public function __construct(
         private readonly ActivityMonitor $activityMonitor,
         private readonly Api             $api,
@@ -60,7 +60,8 @@ class EnvironmentDeleteCommand extends CommandBase
         $this->addExample('Delete all inactive environments', '--inactive');
         $this->addExample('Delete all environments merged with their parent', '--merged');
         $service = $this->config->getStr('service.name');
-        $this->setHelp(<<<EOF
+        $this->setHelp(
+            <<<EOF
             When a {$service} environment is deleted, it will become "inactive": it will
             exist only as a Git branch, containing code but no services, databases nor
             files.
@@ -97,7 +98,7 @@ class EnvironmentDeleteCommand extends CommandBase
         }
         if ($specifiedEnvironmentIds) {
             $anythingSpecified = true;
-            $allIds = \array_map(fn(Environment $e) => $e->id, $environments);
+            $allIds = \array_map(fn (Environment $e) => $e->id, $environments);
             $specifiedEnvironmentIds = Wildcard::select($allIds, $specifiedEnvironmentIds);
             $notFound = array_diff($specifiedEnvironmentIds, array_keys($environments));
             if (!empty($notFound)) {
@@ -127,7 +128,7 @@ class EnvironmentDeleteCommand extends CommandBase
             }
             $inactive = array_filter(
                 $environments,
-                fn($environment): bool =>
+                fn ($environment): bool =>
                     /** @var Environment $environment */
                     $environment->status == 'inactive'
             );
@@ -267,7 +268,7 @@ class EnvironmentDeleteCommand extends CommandBase
         }
 
         // Confirm which of the environments the user wishes to be deleted.
-        ksort($selectedEnvironments, SORT_NATURAL|SORT_FLAG_CASE);
+        ksort($selectedEnvironments, SORT_NATURAL | SORT_FLAG_CASE);
         $toDeleteBranch = [];
         $toDeactivate = [];
         $shouldWait = $this->activityMonitor->shouldWait($input);
@@ -417,7 +418,7 @@ class EnvironmentDeleteCommand extends CommandBase
      */
     private function listEnvironments(array $environments, string $tag = 'info'): string
     {
-        $uniqueIds = \array_unique(\array_map(fn(Environment $e) => $e->id, $environments));
+        $uniqueIds = \array_unique(\array_map(fn (Environment $e) => $e->id, $environments));
         natcasesort($uniqueIds);
         return "<$tag>" . implode("</$tag>, <$tag>", $uniqueIds) . "</$tag>";
     }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command;
 
 use Platformsh\Cli\Service\Config;

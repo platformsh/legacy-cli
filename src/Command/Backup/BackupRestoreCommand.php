@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Service\Io;

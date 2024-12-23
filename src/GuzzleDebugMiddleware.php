@@ -30,7 +30,8 @@ class GuzzleDebugMiddleware
 
             $this->stdErr->writeln(sprintf(
                 '<options=reverse>></> Making HTTP request #%d: %s',
-                $seq, $this->formatMessage($request, '> ')
+                $seq,
+                $this->formatMessage($request, '> ')
             ));
 
             /** @var PromiseInterface $promise */
@@ -39,7 +40,9 @@ class GuzzleDebugMiddleware
             return $promise->then(function (ResponseInterface $response) use ($seq, $started): ResponseInterface|PromiseInterface {
                 $this->stdErr->writeln(sprintf(
                     '<options=reverse>\<</> Received response for #%d after %d ms: %s',
-                    $seq, (microtime(true) - $started) * 1000, $this->formatMessage($response, '< ')
+                    $seq,
+                    (microtime(true) - $started) * 1000,
+                    $this->formatMessage($response, '< ')
                 ));
                 return $response;
             });
@@ -65,7 +68,8 @@ class GuzzleDebugMiddleware
         return $startLine . $headers;
     }
 
-    private function getRequestFirstLine(RequestInterface $request): string {
+    private function getRequestFirstLine(RequestInterface $request): string
+    {
         $method = $request->getMethod();
         $uri = $request->getUri();
         $protocolVersion = $request->getProtocolVersion();
@@ -73,7 +77,8 @@ class GuzzleDebugMiddleware
         return sprintf('%s %s HTTP/%s', $method, $uri, $protocolVersion);
     }
 
-    private function getResponseFirstLine(ResponseInterface $response): string {
+    private function getResponseFirstLine(ResponseInterface $response): string
+    {
         $statusCode = $response->getStatusCode();
         $reasonPhrase = $response->getReasonPhrase();
         $protocolVersion = $response->getProtocolVersion();

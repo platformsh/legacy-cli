@@ -11,7 +11,7 @@ class ResourcesCommandBase extends CommandBase
     private Config $config;
 
     #[Required]
-    public function autowire(Config $config) : void
+    public function autowire(Config $config): void
     {
         $this->config = $config;
     }

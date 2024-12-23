@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Terminal;
 #[AsCommand(name: 'environment:drush', description: 'Run a drush command on the remote environment', aliases: ['drush'])]
 class EnvironmentDrushCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector)
     {
         parent::__construct();
@@ -74,7 +74,7 @@ class EnvironmentDrushCommand extends CommandBase
             }
         }
         if (!preg_match('/\b((verbose|debug|quiet)\b|-v)/', (string) $drushCommand)) {
-            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG ) {
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
                 $drushCommand .= " --debug";
             } elseif ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                 $drushCommand .= " --verbose";

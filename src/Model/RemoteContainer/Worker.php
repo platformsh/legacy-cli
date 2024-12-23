@@ -22,7 +22,8 @@ readonly class Worker implements RemoteContainerInterface
         return $this->worker->name;
     }
 
-    public function getConfig(): AppConfig {
+    public function getConfig(): AppConfig
+    {
         return new AppConfig($this->worker->getProperties());
     }
 

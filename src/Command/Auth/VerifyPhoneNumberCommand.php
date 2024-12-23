@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Service\Io;
@@ -106,7 +107,7 @@ class VerifyPhoneNumberCommand extends CommandBase
         });
 
         $this->io->debug('Refreshing phone verification status');
-        $response = $httpClient->post( '/me/verification?force_refresh=1');
+        $response = $httpClient->post('/me/verification?force_refresh=1');
         $needsVerify = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $this->stdErr->writeln('');
 

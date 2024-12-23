@@ -10,7 +10,8 @@ use Platformsh\Cli\Service\Config;
  */
 class Storage
 {
-    public static function factory(Config $config): StorageInterface {
+    public static function factory(Config $config): StorageInterface
+    {
         $manager = new Manager($config);
         if ($manager->isSupported()) {
             return new CredentialHelperStorage($config, $manager);

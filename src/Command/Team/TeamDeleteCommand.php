@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Team;
 
 use Platformsh\Cli\Selector\Selector;
@@ -10,7 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'team:delete', description: 'Delete a team')]
 class TeamDeleteCommand extends TeamCommandBase
 {
-
     public function __construct(private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();

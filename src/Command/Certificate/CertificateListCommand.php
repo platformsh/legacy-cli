@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Selector\Selector;
@@ -154,19 +155,19 @@ class CertificateListCommand extends CommandBase
                     break;
 
                 case 'only-auto':
-                    $certs = array_filter($certs, fn(Certificate $cert): bool => $cert->is_provisioned);
+                    $certs = array_filter($certs, fn (Certificate $cert): bool => $cert->is_provisioned);
                     break;
 
                 case 'no-auto':
-                    $certs = array_filter($certs, fn(Certificate $cert): bool => !$cert->is_provisioned);
+                    $certs = array_filter($certs, fn (Certificate $cert): bool => !$cert->is_provisioned);
                     break;
 
                 case 'no-expired':
-                    $certs = array_filter($certs, fn(Certificate $cert): bool => !$this->isExpired($cert));
+                    $certs = array_filter($certs, fn (Certificate $cert): bool => !$this->isExpired($cert));
                     break;
 
                 case 'only-expired':
-                    $certs = array_filter($certs, fn(Certificate $cert): bool => $this->isExpired($cert));
+                    $certs = array_filter($certs, fn (Certificate $cert): bool => $this->isExpired($cert));
                     break;
             }
         }
@@ -184,7 +185,8 @@ class CertificateListCommand extends CommandBase
         return time() >= strtotime($cert->expires_at);
     }
 
-    private function getCertificateIssuerByAlias(Certificate $cert, string $alias): string|false {
+    private function getCertificateIssuerByAlias(Certificate $cert, string $alias): string|false
+    {
         foreach ($cert->issuer as $issuer) {
             if (isset($issuer['alias'], $issuer['value']) && $issuer['alias'] === $alias) {
                 return $issuer['value'];

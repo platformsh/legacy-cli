@@ -68,7 +68,7 @@ class BotCommand extends CommandBase
 
         // Stay positive: return code 0 when the user quits.
         if (function_exists('pcntl_signal')) {
-            declare(ticks = 1);
+            declare(ticks=1);
             pcntl_signal(SIGINT, function (): void {
                 echo "\n";
                 exit;
@@ -93,7 +93,7 @@ class BotCommand extends CommandBase
             $signature = "\n" . $signatureIndent . '<info>' . $signature . '</info>';
         }
 
-        return array_map(fn($frame) => preg_replace('/^/m', $indent, (string) $frame) . $signature, $frames);
+        return array_map(fn ($frame) => preg_replace('/^/m', $indent, (string) $frame) . $signature, $frames);
     }
 
     /**

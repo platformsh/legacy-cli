@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Platformsh\Cli;
@@ -82,15 +83,19 @@ class Application extends ParentApplication
     /**
      * {@inheritDoc}
      */
-    public function getVersion(): string {
+    public function getVersion(): string
+    {
         return $this->config->getVersion();
     }
 
     /**
-     * Re-compile the container and alias caches.
+     * Re-compile the container and other caches.
      */
-    public function warmCaches(): void {
-        $this->container(true);
+    public static function warmCaches(): void
+    {
+        require_once dirname(__DIR__) . '/constants.php';
+        $a = new self();
+        $a->container(true);
     }
 
     /**
@@ -277,12 +282,18 @@ class Application extends ParentApplication
         }
 
         switch ($shellVerbosity = (int) getenv('SHELL_VERBOSITY')) {
-            case -2: $output->setVerbosity(OutputInterface::VERBOSITY_SILENT); break;
-            case -1: $stdErr->setVerbosity(OutputInterface::VERBOSITY_QUIET); break;
-            case 1: $output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE); break;
-            case 2: $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE); break;
-            case 3: $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG); break;
-            default: $shellVerbosity = 0; break;
+            case -2: $output->setVerbosity(OutputInterface::VERBOSITY_SILENT);
+                break;
+            case -1: $stdErr->setVerbosity(OutputInterface::VERBOSITY_QUIET);
+                break;
+            case 1: $output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+                break;
+            case 2: $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+                break;
+            case 3: $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+                break;
+            default: $shellVerbosity = 0;
+                break;
         }
 
         if (true === $input->hasParameterOption(['--silent'], true)) {

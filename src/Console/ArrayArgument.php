@@ -6,7 +6,7 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class ArrayArgument
 {
-    const SPLIT_HELP = 'Values may be split by commas (e.g. "a,b,c") and/or whitespace.';
+    public const SPLIT_HELP = 'Values may be split by commas (e.g. "a,b,c") and/or whitespace.';
 
     /**
      * Gets the value of an array input argument.
@@ -59,6 +59,6 @@ class ArrayArgument
             }
             $split = \array_merge($split, $splitArg);
         }
-        return \array_filter($split, fn(string $a): bool => \strlen($a) > 0);
+        return \array_filter($split, fn (string $a): bool => \strlen($a) > 0);
     }
 }

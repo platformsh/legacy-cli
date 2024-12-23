@@ -14,8 +14,8 @@ class LoginRequiredException extends HttpException
     public function __construct(
         $message = null,
         Config $config = null,
-        $previous = null)
-    {
+        $previous = null
+    ) {
         $message = $message ?: $this->message;
         $this->config = $config ?: new Config();
         $executable = $this->config->getStr('application.executable');

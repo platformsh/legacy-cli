@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Local\DependencyManager;
 
 interface DependencyManagerInterface

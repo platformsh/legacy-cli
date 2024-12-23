@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -25,16 +26,17 @@ class EnvironmentBranchCommand extends CommandBase
     /** @var string[] */
     private array $validResourcesInitOptions = ['parent', 'default', 'minimum'];
 
-    public function __construct(private readonly ActivityMonitor  $activityMonitor,
-                                private readonly Api              $api,
-                                private readonly Config           $config,
-                                private readonly Git              $git,
-                                private readonly Io               $io,
-                                private readonly QuestionHelper   $questionHelper,
-                                private readonly ResourcesUtil    $resourcesUtil,
-                                private readonly Selector         $selector,
-                                private readonly SubCommandRunner $subCommandRunner)
-    {
+    public function __construct(
+        private readonly ActivityMonitor  $activityMonitor,
+        private readonly Api              $api,
+        private readonly Config           $config,
+        private readonly Git              $git,
+        private readonly Io               $io,
+        private readonly QuestionHelper   $questionHelper,
+        private readonly ResourcesUtil    $resourcesUtil,
+        private readonly Selector         $selector,
+        private readonly SubCommandRunner $subCommandRunner
+    ) {
         parent::__construct();
     }
 
@@ -237,7 +239,8 @@ class EnvironmentBranchCommand extends CommandBase
             if ($gitUrl && $this->git->getConfig(sprintf('remote.%s.url', $remoteName), $projectRoot) === $gitUrl) {
                 $this->stdErr->writeln(sprintf(
                     'Setting the upstream for the local branch to: <info>%s/%s</info>',
-                    $remoteName, $branchName
+                    $remoteName,
+                    $branchName
                 ));
                 if ($this->git->fetch($remoteName, $branchName, $gitUrl, $projectRoot)) {
                     $this->git->setUpstream($remoteName . '/' . $branchName, $branchName, $projectRoot);

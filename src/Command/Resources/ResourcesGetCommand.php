@@ -41,9 +41,9 @@ class ResourcesGetCommand extends ResourcesCommandBase
     protected function configure(): void
     {
         $this
-            ->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service name. This can select any service, including apps and workers.')
-            ->addOption('app', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by app name')
-            ->addOption('worker', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by worker name')
+            ->addOption('service', 's', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service name. This can select any service, including apps and workers.')
+            ->addOption('app', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by app name')
+            ->addOption('worker', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by worker name')
             ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service, app or worker type, e.g. "postgresql"');
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());

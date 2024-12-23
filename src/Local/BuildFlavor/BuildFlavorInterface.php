@@ -8,7 +8,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 interface BuildFlavorInterface
 {
-
     /**
      * Get the compatible stack(s) for the build flavor.
      *

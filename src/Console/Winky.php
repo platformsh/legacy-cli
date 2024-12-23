@@ -19,7 +19,7 @@ class Winky extends Animation
         $sources['wink'] = (string) file_get_contents($dir . '/wink');
         $sources['twitch'] = (string) file_get_contents($dir . '/twitch');
 
-        list($firstLine,) = explode("\n", trim($sources['normal']), 2);
+        list($firstLine, ) = explode("\n", trim($sources['normal']), 2);
         $width = mb_strlen($firstLine);
 
         // Replace Unicode characters with ANSI background colors.
@@ -44,7 +44,7 @@ class Winky extends Animation
             $signatureIndent = str_repeat(' ', intval(strlen($indent) + floor($width / 2) - floor(strlen($signature) / 2)));
             $signature = "\n" . $signatureIndent . $signature;
         }
-        $sources = array_map(fn($source): string => "\n" . preg_replace('/^/m', $indent, (string) $source) . $signature . "\n", $sources);
+        $sources = array_map(fn ($source): string => "\n" . preg_replace('/^/m', $indent, (string) $source) . $signature . "\n", $sources);
 
         $frames = [];
         $frames[] = new AnimationFrame($sources['normal'], 1200000);

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Domain;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'domain:get', description: 'Show detailed information for a domain')]
 class DomainGetCommand extends DomainCommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();

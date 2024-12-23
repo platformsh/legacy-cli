@@ -64,12 +64,12 @@ class Api
     private static bool $printedApiTokenWarning = false;
 
     private readonly EventDispatcherInterface $dispatcher;
-    private readonly  Config $config;
-    private readonly  CacheProvider $cache;
-    private readonly  OutputInterface $output;
-    private readonly  OutputInterface $stdErr;
-    private readonly  TokenConfig $tokenConfig;
-    private readonly  FileLock $fileLock;
+    private readonly Config $config;
+    private readonly CacheProvider $cache;
+    private readonly OutputInterface $output;
+    private readonly OutputInterface $stdErr;
+    private readonly TokenConfig $tokenConfig;
+    private readonly FileLock $fileLock;
     private readonly Io $io;
 
     /**
@@ -136,7 +136,7 @@ class Api
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
-        $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput(): $this->output;
+        $this->stdErr = $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
         $this->io = $io ?: new Io($this->output);
         $this->tokenConfig = $tokenConfig ?: new TokenConfig($this->config);
         $this->fileLock = $fileLock ?: new FileLock($this->config);
@@ -154,8 +154,7 @@ class Api
     public function injectListeners(
         AutoLoginListener $autoLoginListener,
         DrushAliasUpdater $drushAliasUpdater
-    ): void
-    {
+    ): void {
         $this->dispatcher->addListener(
             'login.required',
             $autoLoginListener->onLoginRequired(...)
@@ -200,7 +199,7 @@ class Api
                 }
             }
         }
-        $ids = \array_filter($ids, fn($id): bool => !str_starts_with((string) $id, 'api-token-'));
+        $ids = \array_filter($ids, fn ($id): bool => !str_starts_with((string) $id, 'api-token-'));
 
         return \array_unique($ids);
     }
@@ -267,7 +266,8 @@ class Api
      *
      * @return array<string, mixed>
      */
-    private function getConnectorOptions(): array {
+    private function getConnectorOptions(): array
+    {
         $connectorOptions = [];
         $connectorOptions['api_url'] = $this->config->getApiUrl();
         if ($this->config->has('api.accounts_api_url')) {
@@ -313,9 +313,9 @@ class Api
             $this->fileLock->release($refreshLockName);
         };
 
-        $connectorOptions['on_refresh_error'] = fn(IdentityProviderException $e): ?AccessToken => $this->onRefreshError($e);
+        $connectorOptions['on_refresh_error'] = fn (IdentityProviderException $e): ?AccessToken => $this->onRefreshError($e);
 
-        $connectorOptions['on_step_up_auth_response'] = fn(ResponseInterface $response) => $this->onStepUpAuthResponse($response);
+        $connectorOptions['on_step_up_auth_response'] = fn (ResponseInterface $response) => $this->onStepUpAuthResponse($response);
 
         $connectorOptions['centralized_permissions_enabled'] = $this->config->getBool('api.centralized_permissions') && $this->config->getBool('api.organizations');
 
@@ -324,7 +324,7 @@ class Api
         // Debug responses.
         $connectorOptions['middlewares'][] = new GuzzleDebugMiddleware($this->output, $this->config->getBool('api.debug'));
         // Handle 403 errors.
-        $connectorOptions['middlewares'][] = fn(callable $handler): \Closure => fn(RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
+        $connectorOptions['middlewares'][] = fn (callable $handler): \Closure => fn (RequestInterface $request, array $options) => $handler($request, $options)->then(function (ResponseInterface $response) use ($request): ResponseInterface {
             if ($response->getStatusCode() === 403) {
                 $this->on403($request);
             }
@@ -452,7 +452,8 @@ class Api
      *
      * @return AccessToken|null
      */
-    private function tokenFromSession(SessionInterface $session): ?AccessToken {
+    private function tokenFromSession(SessionInterface $session): ?AccessToken
+    {
         if (!$session->get('accessToken')) {
             return null;
         }
@@ -480,7 +481,8 @@ class Api
      *
      * @return array<string, mixed>
      */
-    public function getGuzzleOptions(): array {
+    public function getGuzzleOptions(): array
+    {
         $options = [
             'headers' => ['User-Agent' => $this->config->getUserAgent()],
             'debug' => false,
@@ -509,7 +511,7 @@ class Api
      */
     private function guzzleProxyConfig(): array
     {
-        return array_map(function($proxyUrl) {
+        return array_map(function ($proxyUrl) {
             // If Guzzle is going to use PHP's built-in HTTP streams,
             // rather than curl, then transform the proxy scheme.
             if (!\extension_loaded('curl') && \ini_get('allow_url_fopen')) {
@@ -602,7 +604,8 @@ class Api
     /**
      * Initializes session credential storage.
      */
-    private function initSessionStorage(): void {
+    private function initSessionStorage(): void
+    {
         if (!isset($this->sessionStorage)) {
             // Attempt to use the docker-credential-helpers.
             $manager = new Manager($this->config);
@@ -630,7 +633,8 @@ class Api
      *
      * @return resource
      */
-    public function getStreamContext(int|float $timeout = 15) {
+    public function getStreamContext(int|float $timeout = 15)
+    {
         $opts = $this->config->getStreamContextOptions($timeout);
         $opts['http']['header'] = [
             'Authorization: Bearer ' . $this->getAccessToken(),
@@ -874,7 +878,7 @@ class Api
             return [];
         } elseif ($refresh || !$cached) {
             $types = $project->getEnvironmentTypes();
-            $cachedTypes = \array_map(fn(EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
+            $cachedTypes = \array_map(fn (EnvironmentType $type) => $type->getData() + ['_uri' => $type->getUri()], $types);
             $this->cache->save($cacheKey, $cachedTypes, $this->config->getInt('api.environments_ttl'));
         } else {
             $guzzleClient = $this->getHttpClient();
@@ -1042,7 +1046,7 @@ class Api
      */
     public static function sortResources(array &$resources, string $propertyPath, bool $reverse = false): void
     {
-        uasort($resources, fn(ApiResource $a, ApiResource $b) => Sort::compare(
+        uasort($resources, fn (ApiResource $a, ApiResource $b) => Sort::compare(
             static::getNestedProperty($a, $propertyPath, false),
             static::getNestedProperty($b, $propertyPath, false),
             $reverse
@@ -1102,8 +1106,8 @@ class Api
      */
     public function getProjectLabel(
         Project|BasicProjectInfo|\Platformsh\Client\Model\Organization\Project|TeamProjectAccess|string $project,
-        string|false $tag = 'info'): string
-    {
+        string|false $tag = 'info'
+    ): string {
         static $titleCache = [];
         if ($project instanceof Project || $project instanceof BasicProjectInfo || $project instanceof \Platformsh\Client\Model\Organization\Project) {
             $title = $project->title;
@@ -1184,10 +1188,10 @@ class Api
      */
     public function matchPartialId(string $id, array $resources, string $name = 'Resource'): ApiResource
     {
-        $matched = array_filter($resources, fn(ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
+        $matched = array_filter($resources, fn (ApiResource $resource): bool => str_starts_with((string) $resource->getProperty('id'), $id));
 
         if (count($matched) > 1) {
-            $matchedIds = array_map(fn(ApiResource $resource): mixed => $resource->getProperty('id'), $matched);
+            $matchedIds = array_map(fn (ApiResource $resource): mixed => $resource->getProperty('id'), $matched);
             throw new \InvalidArgumentException(sprintf(
                 'The partial ID "<error>%s</error>" is ambiguous; it matches the following %s IDs: %s',
                 $id,
@@ -1334,13 +1338,13 @@ class Api
         }
 
         // Check if there is only one "production" environment.
-        $prod = \array_filter($envs, fn(Environment $environment): bool => $environment->type === 'production');
+        $prod = \array_filter($envs, fn (Environment $environment): bool => $environment->type === 'production');
         if (\count($prod) === 1) {
             return \reset($prod);
         }
 
         // Check if there is only one "main" environment.
-        $main = \array_filter($envs, fn(Environment $environment) => $environment->is_main);
+        $main = \array_filter($envs, fn (Environment $environment) => $environment->is_main);
         if (\count($main) === 1) {
             return \reset($main);
         }
@@ -1364,7 +1368,7 @@ class Api
 
         // Return the first route that matches this app.
         // The routes will already have been sorted.
-        $routes = \array_filter($routes, fn(Route $route): bool => $route->type === 'upstream' && $route->getUpstreamName() === $appName);
+        $routes = \array_filter($routes, fn (Route $route): bool => $route->type === 'upstream' && $route->getUpstreamName() === $appName);
         $route = reset($routes);
         if ($route) {
             return $route->url;

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Override Symfony Console's ListCommand to customize the list's appearance.
@@ -18,7 +19,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ListCommand extends CommandBase
 {
-
     public function __construct(private readonly Config $config)
     {
         parent::__construct();
@@ -34,7 +34,8 @@ class ListCommand extends CommandBase
                 new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'),
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, xml, json, or md)', 'txt'),
             ])
-            ->setHelp(<<<'EOF'
+            ->setHelp(
+                <<<'EOF'
 The <info>%command.name%</info> command lists all commands:
 
   <info>%command.full_name%</info>

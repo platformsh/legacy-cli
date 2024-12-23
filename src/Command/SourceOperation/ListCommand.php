@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'source-operation:list', description: 'List source operations on an environment', aliases: ['source-ops'])]
 class ListCommand extends CommandBase
 {
-    const COMMAND_MAX_LENGTH = 24;
+    public const COMMAND_MAX_LENGTH = 24;
 
     /** @var array<string|int, string> */
     private array $tableHeader = ['Operation', 'App', 'Command'];

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Selector\Selector;

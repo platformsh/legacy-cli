@@ -8,7 +8,6 @@ use Symfony\Component\Finder\Finder;
 
 class Drupal extends BuildFlavorBase
 {
-
     public function getStacks(): array
     {
         return ['php', 'hhvm'];
@@ -203,7 +202,8 @@ class Drupal extends BuildFlavorBase
 
         if ($required) {
             throw new \Exception(
-                ($core
+                (
+                    $core
                     ? "Couldn't find a core make file in the directory."
                     : "Couldn't find a make file in the directory."
                 ) . " Possible filenames: " . implode(',', $candidates)
@@ -420,7 +420,7 @@ class Drupal extends BuildFlavorBase
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {
-                list($skip[],) = explode('/', $mount, 2);
+                list($skip[], ) = explode('/', $mount, 2);
             }
 
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);

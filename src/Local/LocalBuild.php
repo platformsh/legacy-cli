@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Local;
 
 use Symfony\Component\Finder\SplFileInfo;
@@ -13,10 +14,9 @@ use Symfony\Component\Finder\Finder;
 
 class LocalBuild
 {
-
     // Some changes may not be backwards-compatible with previous build
     // archives. Increment this number as breaking changes are released.
-    const BUILD_VERSION = 3;
+    public const BUILD_VERSION = 3;
 
     /** @var array<string, mixed> */
     protected array $settings = [];
@@ -557,7 +557,7 @@ class LocalBuild
         // Sort files by modified time (descending).
         usort(
             $files,
-            fn(string $a, string $b): int => filemtime($a) <=> filemtime($b)
+            fn (string $a, string $b): int => filemtime($a) <=> filemtime($b)
         );
         $now = time();
         $numDeleted = 0;

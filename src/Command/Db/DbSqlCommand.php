@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Db;
 
 use Platformsh\Cli\Service\Io;
@@ -21,7 +22,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'db:sql', description: 'Run SQL on the remote database', aliases: ['sql'])]
 class DbSqlCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector)
     {
         parent::__construct();

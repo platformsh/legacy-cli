@@ -17,8 +17,7 @@ readonly class Login
         private QuestionHelper $questionHelper,
         private SshConfig      $sshConfig,
         OutputInterface        $output,
-    )
-    {
+    ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 

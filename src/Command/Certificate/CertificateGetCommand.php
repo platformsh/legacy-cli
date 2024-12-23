@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Selector\Selector;
@@ -15,7 +16,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'certificate:get', description: 'View a certificate')]
 class CertificateGetCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();

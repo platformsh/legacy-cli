@@ -13,7 +13,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class BuildFlavorBase implements BuildFlavorInterface
 {
-
     /**
      * Files from the app root to ignore during install.
      *

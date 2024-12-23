@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.

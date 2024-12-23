@@ -59,7 +59,8 @@ class ProjectCreateCommand extends CommandBase
         $this->addHiddenOption('check-timeout', null, InputOption::VALUE_REQUIRED, 'The API timeout while checking the project status', 30)
             ->addHiddenOption('timeout', null, InputOption::VALUE_REQUIRED, 'The total timeout for all API checks (0 to disable the timeout)', 900);
 
-        $this->setHelp(<<<EOF
+        $this->setHelp(
+            <<<EOF
 Use this command to create a new project.
 
 An interactive form will be presented with the available options. If the
@@ -548,7 +549,7 @@ EOF
           'region' => new OptionsField('Region', [
             'optionName' => 'region',
             'description' => trim("The region where the project will be hosted.\n" . $this->config->getStr('messages.region_discount')),
-            'optionsCallback' => fn() => $this->getAvailableRegions($setupOptions),
+            'optionsCallback' => fn () => $this->getAvailableRegions($setupOptions),
             'allowOther' => true,
           ]),
           'plan' => new OptionsField('Plan', [
@@ -560,8 +561,8 @@ EOF
             // and set a default if possible. If the organization setup options
             // have been supplied ($setupOptions is not null) then that plans
             // list will be used.
-            'optionsCallback' => fn() => $this->getAvailablePlans($setupOptions),
-            'defaultCallback' => fn() => $this->getDefaultPlan($this->getAvailablePlans($setupOptions)),
+            'optionsCallback' => fn () => $this->getAvailablePlans($setupOptions),
+            'defaultCallback' => fn () => $this->getDefaultPlan($this->getAvailablePlans($setupOptions)),
 
             'allowOther' => true,
             'avoidQuestion' => true,
@@ -570,13 +571,13 @@ EOF
             'optionName' => 'environments',
             'description' => 'The number of environments',
             'default' => 3,
-            'validator' => fn($value): bool => is_numeric($value) && $value > 0 && $value < 50,
+            'validator' => fn ($value): bool => is_numeric($value) && $value > 0 && $value < 50,
             'avoidQuestion' => true,
           ]),
           'storage' => new Field('Storage', [
             'description' => 'The amount of storage per environment, in GiB',
             'default' => 5,
-            'validator' => fn($value): bool => is_numeric($value) && $value > 0 && $value < 1024,
+            'validator' => fn ($value): bool => is_numeric($value) && $value > 0 && $value < 1024,
             'avoidQuestion' => true,
           ]),
           'default_branch' => new Field('Default branch', [

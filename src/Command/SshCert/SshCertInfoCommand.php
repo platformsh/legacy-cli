@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\SshCert;
 
 use Platformsh\Cli\SshCert\Certifier;

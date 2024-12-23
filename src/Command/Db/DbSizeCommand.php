@@ -25,7 +25,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'db:size', description: 'Estimate the disk usage of a database')]
 class DbSizeCommand extends CommandBase
 {
-
     /** @var array<string, string> */
     private array $tableHeader = ['max' => 'Allocated disk', 'used' => 'Estimated usage', 'percent_used' => '% used'];
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Table $table)
@@ -33,14 +32,15 @@ class DbSizeCommand extends CommandBase
         parent::__construct();
     }
 
-    const RED_WARNING_THRESHOLD = 90;//percentage
-    const YELLOW_WARNING_THRESHOLD = 80;//percentage
-    const BYTE_TO_MEGABYTE = 1048576;
-    const WASTED_SPACE_WARNING_THRESHOLD = 200;//percentage
+    public const RED_WARNING_THRESHOLD = 90;//percentage
+    public const YELLOW_WARNING_THRESHOLD = 80;//percentage
+    public const BYTE_TO_MEGABYTE = 1048576;
+    public const WASTED_SPACE_WARNING_THRESHOLD = 200;//percentage
 
-    const ESTIMATE_WARNING = 'This is an estimate of the database disk usage. The real size on disk is usually higher because of overhead.';
+    public const ESTIMATE_WARNING = 'This is an estimate of the database disk usage. The real size on disk is usually higher because of overhead.';
 
-    protected function configure(): void {
+    protected function configure(): void
+    {
         $this
             ->addOption('bytes', 'B', InputOption::VALUE_NONE, 'Show sizes in bytes.')
             ->addOption('cleanup', 'C', InputOption::VALUE_NONE, 'Check if tables can be cleaned up and show me recommendations (InnoDb only).');
@@ -65,7 +65,8 @@ class DbSizeCommand extends CommandBase
     /**
      * {@inheritDoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int {
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
         $selection = $this->selector->getSelection($input, new SelectorConfig(allowLocalHost: $this->relationships->hasLocalEnvVar(), chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
         $host = $this->selector->getHostFromSelection($input, $selection);
 
@@ -123,9 +124,10 @@ class DbSizeCommand extends CommandBase
      *
      * @return string[]
      */
-    private function getCleanupQueries(array $rows): array {
+    private function getCleanupQueries(array $rows): array
+    {
         return array_filter(
-            array_map(function($row): ?string {
+            array_map(function ($row): ?string {
                 if (!strpos($row, "\t")) {
                     return null;
                 }
@@ -141,7 +143,8 @@ class DbSizeCommand extends CommandBase
      *
      * @param array<string, mixed> $database
      */
-    private function checkInnoDbTablesInNeedOfOptimizing(HostInterface $host, array $database, InputInterface $input): void {
+    private function checkInnoDbTablesInNeedOfOptimizing(HostInterface $host, array $database, InputInterface $input): void
+    {
         $tablesNeedingCleanup = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlTablesInNeedOfOptimizing());
         $queries = [];
         if (is_string($tablesNeedingCleanup)) {
@@ -183,7 +186,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return void
      */
-    private function showInaccessibleSchemas(Service $service, array $database): void {
+    private function showInaccessibleSchemas(Service $service, array $database): void
+    {
         // Find if not all the available schemas were accessible via this relationship.
         if (isset($database['rel'])
             && isset($service->configuration['endpoints'][$database['rel']]['privileges'])) {
@@ -209,7 +213,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return void
      */
-    private function showWarnings(int|float $percentageUsed): void {
+    private function showWarnings(int|float $percentageUsed): void
+    {
         if ($percentageUsed > self::RED_WARNING_THRESHOLD) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold;fg=red>Warning:</>');
@@ -251,7 +256,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function getPsqlCommand(array $database): string {
+    private function getPsqlCommand(array $database): string
+    {
         $dbUrl = $this->relationships->getDbCommandArgs('psql', $database, '');
 
         return sprintf(
@@ -264,7 +270,8 @@ class DbSizeCommand extends CommandBase
      * @param array<string, mixed> $database
      * @return string
      */
-    private function getMongoDbCommand(array $database): string {
+    private function getMongoDbCommand(array $database): string
+    {
         $dbUrl = $this->relationships->getDbCommandArgs('mongo', $database);
 
         return sprintf(
@@ -282,7 +289,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function getMysqlCommand(array $database): string {
+    private function getMysqlCommand(array $database): string
+    {
         $cmdName = $this->relationships->isMariaDB($database) ? 'mariadb' : 'mysql';
         $cmdInvocation = $this->relationships->mariaDbCommandWithFallback($cmdName);
         $connectionParams = $this->relationships->getDbCommandArgs($cmdName, $database, '');
@@ -329,7 +337,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function mysqlInnodbAllocatedSizeExists(): string {
+    private function mysqlInnodbAllocatedSizeExists(): string
+    {
         return 'SELECT count(COLUMN_NAME) FROM information_schema.COLUMNS WHERE table_schema ="information_schema" AND table_name="innodb_sys_tablespaces" AND column_name LIKE "ALLOCATED_SIZE";';
     }
 
@@ -338,7 +347,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function mysqlTablesInNeedOfOptimizing(): string {
+    private function mysqlTablesInNeedOfOptimizing(): string
+    {
         /*, data_free, data_length, ((data_free+1)/(data_length+1))*100 as wasted_space_percentage*/
         return 'SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables WHERE ENGINE = "InnoDB" AND TABLE_TYPE="BASE TABLE" AND ((data_free+1)/(data_length+1))*100 >= '.self::WASTED_SPACE_WARNING_THRESHOLD.' ORDER BY data_free DESC LIMIT 10';
     }
@@ -351,7 +361,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return float Estimated usage in bytes.
      */
-    private function getEstimatedUsage(HostInterface $host, array $database): float {
+    private function getEstimatedUsage(HostInterface $host, array $database): float
+    {
         return match ($database['scheme']) {
             'pgsql' => $this->getPgSqlUsage($host, $database),
             'mongodb' => $this->getMongoDbUsage($host, $database),
@@ -367,7 +378,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return float Estimated usage in bytes
      */
-    private function getPgSqlUsage(HostInterface $host, array $database): float {
+    private function getPgSqlUsage(HostInterface $host, array $database): float
+    {
         return (float) $host->runCommand($this->getPsqlCommand($database), true, true, $this->psqlQuery());
     }
 
@@ -376,7 +388,8 @@ class DbSizeCommand extends CommandBase
      * @param array<string, mixed> $database
      * @return float
      */
-    private function getMongoDbUsage(HostInterface $host, array $database): float {
+    private function getMongoDbUsage(HostInterface $host, array $database): float
+    {
         return (float) $host->runCommand($this->getMongoDbCommand($database));
     }
 
@@ -388,7 +401,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return float Estimated usage in bytes
      */
-    private function getMySqlUsage(HostInterface $host, array $database): float {
+    private function getMySqlUsage(HostInterface $host, array $database): float
+    {
         $this->io->debug('Getting MySQL usage...');
         $allocatedSizeSupported = $host->runCommand($this->getMysqlCommand($database), true, true, $this->mysqlInnodbAllocatedSizeExists());
         $innoDbSize = 0;
@@ -421,7 +435,8 @@ class DbSizeCommand extends CommandBase
      *
      * @return string
      */
-    private function formatPercentage(int|float $percentage, bool $machineReadable): string {
+    private function formatPercentage(int|float $percentage, bool $machineReadable): string
+    {
         if ($machineReadable) {
             $format = '%d';
         } elseif ($percentage > self::RED_WARNING_THRESHOLD) {

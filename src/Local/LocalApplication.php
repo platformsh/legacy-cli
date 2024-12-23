@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
@@ -23,7 +24,6 @@ use Platformsh\Cli\Util\YamlParser;
  */
 class LocalApplication
 {
-
     protected string $appRoot;
     protected string $sourceDir;
     protected Config $cliConfig;
@@ -75,7 +75,7 @@ class LocalApplication
      */
     public function isSingle(): bool
     {
-       return $this->single;
+        return $this->single;
     }
 
     /**

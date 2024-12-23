@@ -21,7 +21,7 @@ readonly class AutoLoginListener
         private Url              $urlService,
         OutputInterface          $output,
     ) {
-        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput(): $output;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**

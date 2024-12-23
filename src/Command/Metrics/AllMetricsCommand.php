@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Metrics;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -87,7 +88,7 @@ class AllMetricsCommand extends MetricsCommandBase
         //
         // The fields are the selected column names (according to the $table
         // service), filtered to only those that contain an underscore.
-        $fieldNames = array_filter($this->table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn($c): bool => str_contains((string) $c, '_'));
+        $fieldNames = array_filter($this->table->columnsToDisplay($this->tableHeader, $this->defaultColumns), fn ($c): bool => str_contains((string) $c, '_'));
         $values = $this->fetchMetrics($input, $timeSpec, $selection->getEnvironment(), $fieldNames);
         if ($values === false) {
             return 1;

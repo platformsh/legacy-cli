@@ -23,7 +23,7 @@ class Animation
      */
     public function __construct(protected OutputInterface $output, array $frames, protected int $interval = 500000)
     {
-        $this->frames = \array_map(fn($frame) => \is_string($frame) ? new AnimationFrame($frame, $this->interval) : $frame, $frames);
+        $this->frames = \array_map(fn ($frame) => \is_string($frame) ? new AnimationFrame($frame, $this->interval) : $frame, $frames);
     }
 
     /**

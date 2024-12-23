@@ -126,6 +126,6 @@ class MongoExportCommand extends CommandBase
 
         $collections = json_decode($result, true) ?: [];
 
-        return array_filter($collections, fn(string $collection): bool => !str_starts_with((string) $collection, 'system.'));
+        return array_filter($collections, fn (string $collection): bool => !str_starts_with((string) $collection, 'system.'));
     }
 }

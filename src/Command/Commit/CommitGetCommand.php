@@ -17,7 +17,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'commit:get', description: 'Show commit details')]
 class CommitGetCommand extends CommandBase
 {
-
     public function __construct(private readonly GitDataApi $gitDataApi, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();

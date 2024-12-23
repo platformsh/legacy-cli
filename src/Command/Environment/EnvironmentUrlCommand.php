@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -19,7 +20,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:url', description: 'Get the public URLs of an environment', aliases: ['url'])]
 class EnvironmentUrlCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
@@ -77,7 +77,7 @@ class EnvironmentUrlCommand extends CommandBase
         }
 
         // Build a list of all the route URLs.
-        $urls = array_map(fn(Route $route) => $route->url, $routes);
+        $urls = array_map(fn (Route $route) => $route->url, $routes);
 
         $this->displayOrOpenUrls($urls, $input, $output);
 

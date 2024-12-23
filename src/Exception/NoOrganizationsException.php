@@ -2,8 +2,8 @@
 
 namespace Platformsh\Cli\Exception;
 
-class NoOrganizationsException extends \Exception {
-
+class NoOrganizationsException extends \Exception
+{
     public function __construct(string $message, private readonly int $totalNumOrgs)
     {
         parent::__construct($message);

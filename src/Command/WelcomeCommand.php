@@ -23,8 +23,7 @@ class WelcomeCommand extends CommandBase
         private readonly Selector $selector,
         private readonly SshKey   $sshKey,
         private readonly SubCommandRunner $subCommandRunner,
-    )
-    {
+    ) {
         parent::__construct();
     }
 

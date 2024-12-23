@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Local;
 
 use Platformsh\Cli\Local\DependencyManager\Pip;

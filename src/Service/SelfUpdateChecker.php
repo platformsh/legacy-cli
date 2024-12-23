@@ -21,8 +21,7 @@ class SelfUpdateChecker
         private readonly Shell          $shell,
         private readonly State          $state,
         OutputInterface                 $output,
-    )
-    {
+    ) {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
@@ -98,8 +97,8 @@ class SelfUpdateChecker
         if ($newVersion !== false) {
             // Update succeeded. Continue (based on a few conditions).
             $exitCode = 0;
-            list($currentMajorVersion,) = explode('.', $currentVersion, 2);
-            list($newMajorVersion,) = explode('.', $newVersion, 2);
+            list($currentMajorVersion, ) = explode('.', $currentVersion, 2);
+            list($newMajorVersion, ) = explode('.', $newVersion, 2);
             if ($newMajorVersion === $currentMajorVersion
                 && $this->input instanceof ArgvInput
                 && is_executable($pharFilename)) {

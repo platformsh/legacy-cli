@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Service\HostFactory;
@@ -26,7 +27,6 @@ use Symfony\Component\Yaml\Yaml;
 #[AsCommand(name: 'local:drush-aliases', description: 'Find the project\'s Drush aliases', aliases: ['drush-aliases'])]
 class LocalDrushAliasesCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Drush $drush, private readonly Filesystem $filesystem, private readonly HostFactory $hostFactory, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly RemoteEnvVars $remoteEnvVars, private readonly Selector $selector)
     {
         parent::__construct();

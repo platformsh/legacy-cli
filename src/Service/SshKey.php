@@ -9,10 +9,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * SSH key utilities.
  */
-readonly class SshKey {
+readonly class SshKey
+{
     private OutputInterface $stdErr;
 
-    public function __construct(private Config $config, private Api $api, OutputInterface $output) {
+    public function __construct(private Config $config, private Api $api, OutputInterface $output)
+    {
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
@@ -53,7 +55,8 @@ readonly class SshKey {
      *   An absolute filename of an SSH private key, or null if there is no
      *   selected key.
      */
-    public function selectIdentity(bool $reset = false): ?string {
+    public function selectIdentity(bool $reset = false): ?string
+    {
         // Cache, mainly to avoid repetition of the output message.
         static $selectedIdentity = false;
         if (!$reset && $selectedIdentity !== false) {
@@ -115,7 +118,7 @@ readonly class SshKey {
             return [];
         }
 
-        return \array_map(fn(SshKeyModel $sshKey) => $sshKey->fingerprint, $keys);
+        return \array_map(fn (SshKeyModel $sshKey) => $sshKey->fingerprint, $keys);
     }
 
     /**
@@ -161,7 +164,8 @@ readonly class SshKey {
      *
      * @return string
      */
-    public function getPublicKeyFingerprint(string $filename): string {
+    public function getPublicKeyFingerprint(string $filename): string
+    {
         $contents = \file_get_contents($filename);
         if ($contents === false) {
             throw new \RuntimeException('Failed to read file: ' . $filename);

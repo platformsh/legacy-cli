@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Team;
 
 use Platformsh\Cli\Selector\Selector;
@@ -23,7 +24,6 @@ use Symfony\Component\Console\Question\Question;
 #[AsCommand(name: 'team:create', description: 'Create a new team')]
 class TeamCreateCommand extends TeamCommandBase
 {
-
     public function __construct(protected ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, protected readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
     {
         parent::__construct();
@@ -33,7 +33,7 @@ class TeamCreateCommand extends TeamCommandBase
     {
         $this->addOption('label', null, InputOption::VALUE_REQUIRED, 'The team label')
             ->addOption('no-check-unique', null, InputOption::VALUE_NONE, 'Do not error if another team exists with the same label in the organization')
-            ->addOption('role', 'r', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, "Set the team's project and environment type roles\n"
+            ->addOption('role', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, "Set the team's project and environment type roles\n"
                 . ArrayArgument::SPLIT_HELP . "\n" . Wildcard::HELP)
             ->addOption('output-id', null, InputOption::VALUE_NONE, "Output the new team's ID to stdout (instead of displaying the team info)");
         $this->selector->addOrganizationOptions($this->getDefinition());
@@ -97,7 +97,7 @@ class TeamCreateCommand extends TeamCommandBase
             }
         }
 
-        $getProjectRole = fn(array $perms): string => in_array('admin', $perms) ? 'admin' : 'viewer';
+        $getProjectRole = fn (array $perms): string => in_array('admin', $perms) ? 'admin' : 'viewer';
         $getEnvTypeRoles = function (array $perms): array {
             $roles = [];
             foreach ($perms as $perm) {
@@ -230,7 +230,7 @@ class TeamCreateCommand extends TeamCommandBase
             sprintf('Project role (default: %s) <question>%s</question>: ', $defaultRole, $this->describeRoleInput($validProjectRoles)),
             $defaultRole
         );
-        $question->setValidator(fn($answer) => $this->validateProjectRole($answer));
+        $question->setValidator(fn ($answer) => $this->validateProjectRole($answer));
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
@@ -246,7 +246,7 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function describeRoles(array $roles): string
     {
-        $withInitials = array_map(fn($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
+        $withInitials = array_map(fn ($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
         $last = array_pop($withInitials);
 
         return implode(' or ', [implode(', ', $withInitials), $last]);
@@ -261,7 +261,7 @@ class TeamCreateCommand extends TeamCommandBase
      */
     private function describeRoleInput(array $roles): string
     {
-        return '[' . implode('/', array_map(fn($role): string => substr((string) $role, 0, 1), $roles)) . ']';
+        return '[' . implode('/', array_map(fn ($role): string => substr((string) $role, 0, 1), $roles)) . ']';
     }
 
 

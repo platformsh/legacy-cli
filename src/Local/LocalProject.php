@@ -332,7 +332,9 @@ class LocalProject
         }
         if (!file_exists($dir . '/README.txt')) {
             $cliName = $this->config->getStr('application.name');
-            file_put_contents($dir . '/README.txt', <<<EOF
+            file_put_contents(
+                $dir . '/README.txt',
+                <<<EOF
 {$localDirRelative}
 ===============
 

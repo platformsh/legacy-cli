@@ -70,7 +70,7 @@ class ProcessManager
         } elseif ($pid > 0) {
             // This is the parent process. If the child process succeeds, this
             // receives SIGCHLD. If it fails, this receives SIGTERM.
-            declare (ticks = 1);
+            declare (ticks=1);
             pcntl_signal(SIGCHLD, function (): void {
                 exit;
             });

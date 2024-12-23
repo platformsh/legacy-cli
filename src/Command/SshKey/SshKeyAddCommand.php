@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\SshKey;
 
 use Platformsh\Cli\Service\Io;

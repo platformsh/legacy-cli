@@ -52,7 +52,8 @@ class LoginRequiredEvent extends Event
     /**
      * @return array<string, mixed>
      */
-    public function getLoginOptions(): array {
+    public function getLoginOptions(): array
+    {
         $loginOptions = [];
         if (count($this->authMethods) > 0) {
             $loginOptions['--method'] = $this->authMethods;
@@ -66,7 +67,8 @@ class LoginRequiredEvent extends Event
     /**
      * @return string
      */
-    public function getLoginOptionsCmdLine(): string {
+    public function getLoginOptionsCmdLine(): string
+    {
         $args = [];
         foreach ($this->getLoginOptions() as $option => $value) {
             $args[] = $option;

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Backup;
 
 use Platformsh\Cli\Service\Io;
@@ -16,7 +17,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'backup:list', description: 'List available backups of an environment', aliases: ['backups'])]
 class BackupListCommand extends CommandBase
 {
-
     /** @var array<string, string> */
     private array $tableHeader = [
         'created_at' => 'Created',

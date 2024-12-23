@@ -8,7 +8,8 @@ use Platformsh\Cli\Service\Config;
 /**
  * Stores API tokens using the docker credential helpers.
  */
-readonly class CredentialHelperStorage implements StorageInterface {
+readonly class CredentialHelperStorage implements StorageInterface
+{
     private string $serverUrl;
 
     public function __construct(Config $config, private Manager $manager)

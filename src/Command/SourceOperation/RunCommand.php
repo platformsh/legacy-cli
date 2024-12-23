@@ -29,7 +29,7 @@ class RunCommand extends CommandBase
     {
         $this
             ->addArgument('operation', InputArgument::OPTIONAL, 'The operation name')
-            ->addOption('variable', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'A variable to set during the operation, in the format <info>type:name=value</info>');
+            ->addOption('variable', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'A variable to set during the operation, in the format <info>type:name=value</info>');
 
         $this->selector->addProjectOption($this->getDefinition());
         $this->selector->addEnvironmentOption($this->getDefinition());

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Activity;
 
 use Platformsh\Cli\Selector\SelectorConfig;
@@ -36,14 +37,20 @@ class ActivityLogCommand extends ActivityCommandBase
                 3
             )
             ->addOption('timestamps', 't', InputOption::VALUE_NONE, 'Display a timestamp next to each message')
-            ->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            ->addOption(
+                'type',
+                null,
+                InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Filter by type (when selecting a default activity).'
                 . "\n" . ArrayArgument::SPLIT_HELP
                 . "\nThe % or * characters can be used as a wildcard for the type, e.g. '%var%' to select variable-related activities.",
                 null,
                 ActivityLoader::getAvailableTypes(),
             )
-            ->addOption('exclude-type', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+            ->addOption(
+                'exclude-type',
+                'x',
+                InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Exclude by type (when selecting a default activity).'
                 . "\n" . ArrayArgument::SPLIT_HELP
                 . "\nThe % or * characters can be used as a wildcard to exclude types.",
@@ -52,9 +59,13 @@ class ActivityLogCommand extends ActivityCommandBase
             )
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by state (when selecting a default activity): in_progress, pending, complete, or cancelled.' . "\n" . ArrayArgument::SPLIT_HELP, null, self::STATE_VALUES)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter by result (when selecting a default activity): success or failure', null, self::RESULT_VALUES)
-            ->addOption('incomplete', 'i', InputOption::VALUE_NONE,
+            ->addOption(
+                'incomplete',
+                'i',
+                InputOption::VALUE_NONE,
                 'Include only incomplete activities (when selecting a default activity).'
-                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>')
+                . "\n" . 'This is a shorthand for <info>--state=in_progress,pending</info>'
+            )
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Check recent activities on all environments (when selecting a default activity)');
         PropertyFormatter::configureInput($this->getDefinition());
         $this->selector->addProjectOption($this->getDefinition());

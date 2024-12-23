@@ -38,7 +38,7 @@ class OrganizationUserCommandBase extends OrganizationCommandBase
         return $this->addOption(
             'permission',
             null,
-            InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY,
+            InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             'Permission(s) for the user on the organization. '
             . "\n" . 'Valid permissions are: <info>' . implode('</info>, <info>', self::$allPermissions) . '</info>',
             null,

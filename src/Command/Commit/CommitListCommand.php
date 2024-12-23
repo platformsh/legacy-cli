@@ -116,7 +116,7 @@ class CommitListCommand extends CommandBase
         $progress->setFormat('%message% %current% (limit: %max%)');
         $progress->start($limit);
         for ($currentCommit = $startCommit;
-             count($currentCommit->parents) && count($commits) < $limit;) {
+            count($currentCommit->parents) && count($commits) < $limit;) {
             foreach (array_reverse($currentCommit->parents) as $parentSha) {
                 if (!isset($commits[$parentSha])) {
                     $commit = $this->gitDataApi->getCommit($environment, $parentSha);

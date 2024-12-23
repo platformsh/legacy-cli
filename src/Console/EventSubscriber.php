@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Platformsh\Cli\Console;
@@ -19,7 +20,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 readonly class EventSubscriber implements EventSubscriberInterface
 {
-
     public function __construct(private CacheProvider $cache, private Config $config)
     {
     }

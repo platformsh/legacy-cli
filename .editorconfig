@@ -23,5 +23,8 @@ indent_style = tab
 [*.json]
 indent_size = 2
 
+[composer.json]
+indent_size = 4
+
 [*.neon]
 indent_style = tab

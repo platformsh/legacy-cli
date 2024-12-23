@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Local;
 
 use Platformsh\Cli\Selector\Selector;
@@ -13,7 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'local:dir', description: 'Find the local project root', aliases: ['dir'])]
 class LocalDirCommand extends CommandBase
 {
-
     public function __construct(private readonly Config $config, private readonly Selector $selector)
     {
         parent::__construct();

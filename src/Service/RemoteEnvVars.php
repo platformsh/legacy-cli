@@ -12,7 +12,6 @@ use Platformsh\Cli\Util\StringUtil;
  */
 class RemoteEnvVars
 {
-
     /**
      * Constructor (dependencies are injected via the DIC).
      *

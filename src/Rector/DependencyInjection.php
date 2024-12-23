@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Platformsh\Cli\Rector;
@@ -24,8 +25,7 @@ readonly class DependencyInjection
         private BuilderFactory           $builderFactory,
         private PhpAttributeGroupFactory $phpAttributeGroupFactory,
         private NodeFactory              $nodeFactory,
-    )
-    {
+    ) {
     }
 
     public function addDependencyInjection(Class_ $classNode, string $propertyName, string $serviceClass, bool $constructor = true): void

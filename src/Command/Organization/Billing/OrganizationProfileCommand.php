@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Organization\Billing;
 
 use Platformsh\Cli\Selector\Selector;
@@ -17,7 +18,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'organization:billing:profile', description: "View or change an organization's billing profile")]
 class OrganizationProfileCommand extends OrganizationCommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
         parent::__construct();

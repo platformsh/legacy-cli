@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Self;
 
 use Platformsh\Cli\Application;
@@ -118,7 +119,7 @@ class SelfBuildCommand extends CommandBase
         }
 
         $this->stdErr->writeln('Warming application caches');
-        (new Application())->warmCaches();
+        Application::warmCaches();
 
         $boxArgs = [CLI_ROOT . '/vendor-bin/box/vendor/bin/box', 'compile', '--no-interaction'];
         if ($output->isVeryVerbose()) {

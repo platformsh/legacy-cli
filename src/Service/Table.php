@@ -92,7 +92,7 @@ class Table implements InputConfiguringInterface
             $defaultColumns = array_map('\strtolower', $defaultColumns);
             $columnNames = array_diff($columnNames, $defaultColumns);
             if ($markDefault) {
-                $defaultColumns = array_map(fn($c): string => $c . '*', $defaultColumns);
+                $defaultColumns = array_map(fn ($c): string => $c . '*', $defaultColumns);
             }
             $columnNames = array_merge($defaultColumns, $columnNames);
         }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
@@ -15,7 +16,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:http-access', description: 'Update HTTP access settings for an environment', aliases: ['httpaccess'])]
 class EnvironmentHttpAccessCommand extends CommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
         parent::__construct();

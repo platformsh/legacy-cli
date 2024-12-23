@@ -10,8 +10,8 @@ use Symfony\Component\Process\Process;
 
 class SshDiagnostics
 {
-    const _SSH_ERROR_EXIT_CODE = 255;
-    const _GIT_SSH_ERROR_EXIT_CODE = 128;
+    public const _SSH_ERROR_EXIT_CODE = 255;
+    public const _GIT_SSH_ERROR_EXIT_CODE = 128;
     private readonly OutputInterface $stdErr;
 
     public function __construct(private readonly Ssh $ssh, OutputInterface $output, private readonly Certifier $certifier, private readonly SshKey $sshKey, private readonly Api $api, private readonly Config $config)
@@ -124,7 +124,7 @@ class SshDiagnostics
     private function authMethodsMatch(array $challengeMethods, array $currentMethods): bool
     {
         $unmatched = array_diff($challengeMethods, $currentMethods);
-        if (in_array('sso:*', $currentMethods, TRUE)) {
+        if (in_array('sso:*', $currentMethods, true)) {
             foreach ($unmatched as $key => $method) {
                 if (str_starts_with($method, 'sso:')) {
                     unset($unmatched[$key]);

@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Environment;
 
 use Platformsh\Cli\Selector\Selector;
@@ -14,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'environment:resume', description: 'Resume a paused environment')]
 class EnvironmentResumeCommand extends CommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Selector $selector)
     {
         parent::__construct();

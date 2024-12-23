@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Platformsh\Cli\Tunnel;
@@ -14,7 +15,7 @@ class Tunnel
         public readonly string $remoteHost,
         public readonly int    $remotePort,
         public readonly array  $metadata,
-        public ?int $pid = null)
-    {
+        public ?int $pid = null
+    ) {
     }
 }

@@ -20,7 +20,8 @@ final class Route
     /**
      * @param array<string, mixed> $data
      */
-    public static function fromData(array $data): self {
+    public static function fromData(array $data): self
+    {
         return new self($data + ['id' => null, 'primary' => false]);
     }
 
@@ -29,7 +30,8 @@ final class Route
      *
      * @return string|false
      */
-    public function getUpstreamName(): false|string {
+    public function getUpstreamName(): false|string
+    {
         if (!isset($this->data['upstream'])) {
             return false;
         }
@@ -83,7 +85,8 @@ final class Route
      *
      * @return Route[]
      */
-    private static function sort(array $routes): array {
+    private static function sort(array $routes): array
+    {
         usort($routes, function (Route $a, Route $b): int {
             $result = 0;
             if ($a->primary) {

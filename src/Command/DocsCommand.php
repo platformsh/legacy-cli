@@ -12,7 +12,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'docs', description: 'Open the online documentation')]
 class DocsCommand extends CommandBase
 {
-
     public function __construct(private readonly Config $config, private readonly Url $url)
     {
         parent::__construct();
@@ -56,6 +55,6 @@ class DocsCommand extends CommandBase
      */
     protected function getSearchQuery(array $args): string
     {
-        return implode(' ', array_map(fn($term) => strpos((string) $term, ' ') ? '"' . $term . '"' : $term, $args));
+        return implode(' ', array_map(fn ($term) => strpos((string) $term, ' ') ? '"' . $term . '"' : $term, $args));
     }
 }

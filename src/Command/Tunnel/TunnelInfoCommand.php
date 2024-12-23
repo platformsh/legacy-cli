@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Tunnel;
 
 use Platformsh\Cli\Service\Io;

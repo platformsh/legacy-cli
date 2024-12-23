@@ -10,8 +10,8 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
-readonly class CurlCli implements InputConfiguringInterface {
-
+readonly class CurlCli implements InputConfiguringInterface
+{
     public function __construct(private Api $api)
     {
     }
@@ -33,7 +33,8 @@ readonly class CurlCli implements InputConfiguringInterface {
     /**
      * Runs the curl command.
      */
-    public function run(string $baseUrl, InputInterface $input, OutputInterface $output): int {
+    public function run(string $baseUrl, InputInterface $input, OutputInterface $output): int
+    {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $url = rtrim($baseUrl, '/');
 
@@ -97,7 +98,7 @@ readonly class CurlCli implements InputConfiguringInterface {
         }
 
         // Censor the access token: this can be applied to verbose output.
-        $censor = fn($str): array|string => str_replace($token, '[token]', $str);
+        $censor = fn ($str): array|string => str_replace($token, '[token]', $str);
 
         $stdErr->writeln(sprintf('Running command: <info>%s</info>', $censor($commandline)), OutputInterface::VERBOSITY_VERBOSE);
 

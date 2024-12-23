@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Variable;
 
 use Platformsh\Cli\Command\CommandBase;
@@ -17,13 +18,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'variable:delete', description: 'Delete a variable')]
 class VariableDeleteCommand extends CommandBase
 {
-
-    public function __construct(private readonly ActivityMonitor  $activityMonitor,
-                                private readonly Api              $api,
-                                private readonly QuestionHelper   $questionHelper,
-                                private readonly Selector         $selector,
-                                private readonly VariableCommandUtil $variableCommandUtil)
-    {
+    public function __construct(
+        private readonly ActivityMonitor  $activityMonitor,
+        private readonly Api              $api,
+        private readonly QuestionHelper   $questionHelper,
+        private readonly Selector         $selector,
+        private readonly VariableCommandUtil $variableCommandUtil
+    ) {
         parent::__construct();
     }
 

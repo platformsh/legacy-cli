@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Project;
 
 use Platformsh\Cli\Service\Api;
@@ -134,7 +135,7 @@ class ProjectListCommand extends CommandBase
 
         // Display a simple list of project IDs, if --pipe is used.
         if ($input->getOption('pipe')) {
-            $output->writeln(\array_map(fn(BasicProjectInfo $info): string => $info->id, $projects));
+            $output->writeln(\array_map(fn (BasicProjectInfo $info): string => $info->id, $projects));
 
             return 0;
         }
@@ -235,11 +236,11 @@ class ProjectListCommand extends CommandBase
         foreach ($filters as $filter => $value) {
             switch ($filter) {
                 case 'region':
-                    $projects = array_filter($projects, fn(BasicProjectInfo $project): bool => strcasecmp((string) $value, (string) $project->region) === 0);
+                    $projects = array_filter($projects, fn (BasicProjectInfo $project): bool => strcasecmp((string) $value, (string) $project->region) === 0);
                     break;
 
                 case 'title':
-                    $projects = array_filter($projects, fn(BasicProjectInfo $project): bool => stripos($project->title, (string) $value) !== false);
+                    $projects = array_filter($projects, fn (BasicProjectInfo $project): bool => stripos($project->title, (string) $value) !== false);
                     break;
 
                 case 'my':

@@ -46,7 +46,7 @@ class MultiCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $commandArgs = ArrayArgument::getArgument($input,'cmd');
+        $commandArgs = ArrayArgument::getArgument($input, 'cmd');
         $commandName = reset($commandArgs);
         $commandLine = implode(' ', array_map('escapeshellarg', $commandArgs));
         if (!$commandName) {

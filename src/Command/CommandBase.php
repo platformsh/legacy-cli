@@ -19,9 +19,9 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 {
     use HasExamplesTrait;
 
-    const STABILITY_STABLE = 'STABLE';
-    const STABILITY_BETA = 'BETA';
-    const STABILITY_DEPRECATED = 'DEPRECATED';
+    public const STABILITY_STABLE = 'STABLE';
+    public const STABILITY_BETA = 'BETA';
+    public const STABILITY_DEPRECATED = 'DEPRECATED';
 
     protected OutputInterface $stdErr;
 
@@ -182,7 +182,7 @@ abstract class CommandBase extends Command implements MultiAwareInterface
 
         if (!isset($this->synopsis[$key])) {
             $definition = clone $this->getDefinition();
-            $definition->setOptions(array_filter($definition->getOptions(), fn(InputOption $opt): bool => !$opt instanceof HiddenInputOption));
+            $definition->setOptions(array_filter($definition->getOptions(), fn (InputOption $opt): bool => !$opt instanceof HiddenInputOption));
 
             $this->synopsis[$key] = trim(sprintf(
                 '%s %s %s',
@@ -216,7 +216,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
     /**
      * {@inheritDoc}
      */
-    public function getDescription(): string {
+    public function getDescription(): string
+    {
         $description = parent::getDescription();
 
         if ($this->stability !== self::STABILITY_STABLE) {

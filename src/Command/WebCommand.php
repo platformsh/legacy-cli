@@ -15,7 +15,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'web', description: 'Open the project in the Web Console')]
 class WebCommand extends CommandBase
 {
-
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();

@@ -35,7 +35,7 @@ class StringUtil
         if (count($items) === 0) {
             return '';
         }
-        $items = array_map(fn($i): string => $before . $i . $after, $items);
+        $items = array_map(fn ($i): string => $before . $i . $after, $items);
         if (count($items) === 1) {
             return reset($items);
         }

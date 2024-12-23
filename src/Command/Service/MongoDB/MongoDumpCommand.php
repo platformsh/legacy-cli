@@ -152,8 +152,8 @@ class MongoDumpCommand extends CommandBase
         Environment $environment = null,
         ?string $appName = null,
         ?string $collection = '',
-        bool $gzip = false): string
-    {
+        bool $gzip = false
+    ): string {
         $prefix = $this->config->getStr('service.env_prefix');
         $projectId = $environment ? $environment->project : getenv($prefix . 'PROJECT');
         $environmentId = $environment ? $environment->id : getenv($prefix . 'BRANCH');

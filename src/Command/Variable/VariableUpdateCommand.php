@@ -22,11 +22,12 @@ class VariableUpdateCommand extends CommandBase
     private ?Form $form = null;
     private Selection $selection;
 
-    public function __construct(private readonly ActivityMonitor     $activityMonitor,
-                                private readonly Api                 $api,
-                                private readonly Selector            $selector,
-                                private readonly VariableCommandUtil $variableCommandUtil)
-    {
+    public function __construct(
+        private readonly ActivityMonitor     $activityMonitor,
+        private readonly Api                 $api,
+        private readonly Selector            $selector,
+        private readonly VariableCommandUtil $variableCommandUtil
+    ) {
         $this->selection = new Selection();
         parent::__construct();
     }
@@ -37,7 +38,7 @@ class VariableUpdateCommand extends CommandBase
             ->addArgument('name', InputArgument::REQUIRED, 'The variable name')
             ->addOption('allow-no-change', null, InputOption::VALUE_NONE, 'Return success (zero exit code) if no changes were provided');
         $this->variableCommandUtil->addLevelOption($this->getDefinition());
-        $fields = $this->variableCommandUtil->getFields(fn() => $this->selection);
+        $fields = $this->variableCommandUtil->getFields(fn () => $this->selection);
         unset($fields['name'], $fields['prefix'], $fields['environment'], $fields['level']);
         $this->form = Form::fromArray($fields);
         $this->form->configureInputDefinition($this->getDefinition());

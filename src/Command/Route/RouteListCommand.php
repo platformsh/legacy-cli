@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Route;
 
 use Platformsh\Cli\Service\Io;

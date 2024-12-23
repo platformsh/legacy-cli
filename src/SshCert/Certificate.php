@@ -4,7 +4,8 @@ namespace Platformsh\Cli\SshCert;
 
 use Platformsh\Client\SshCert\Metadata;
 
-class Certificate {
+class Certificate
+{
     private readonly Metadata $metadata;
     private readonly string|bool $contents;
 
@@ -69,7 +70,8 @@ class Certificate {
      *
      * @return bool
      */
-    public function hasExpired(int $buffer = 120): bool {
+    public function hasExpired(int $buffer = 120): bool
+    {
         return $this->metadata->getValidBefore() - $buffer < \time();
     }
 
@@ -92,7 +94,8 @@ class Certificate {
      *
      * @return bool
      */
-    public function isApp(): bool {
+    public function isApp(): bool
+    {
         return \array_key_exists('is-app@platform.sh', $this->metadata->getExtensions());
     }
 
@@ -123,7 +126,8 @@ class Certificate {
      *
      * @return string[]
      */
-    public function ssoProviders(): array {
+    public function ssoProviders(): array
+    {
         $tokenClaims = $this->tokenClaims();
         if (!isset($tokenClaims['amr'])) {
             return [];

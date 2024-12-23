@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Auth;
 
 use Platformsh\Cli\Service\Api;
@@ -12,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'auth:token', description: 'Obtain an OAuth 2 access token for API requests')]
 class AuthTokenCommand extends CommandBase
 {
-    const RFC6750_PREFIX = 'Authorization: Bearer ';
+    public const RFC6750_PREFIX = 'Authorization: Bearer ';
 
     protected bool $hiddenInList = true;
     public function __construct(private readonly Api $api, private readonly Config $config)

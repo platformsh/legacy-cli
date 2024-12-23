@@ -1,4 +1,5 @@
 <?php
+
 namespace Platformsh\Cli\Command\Certificate;
 
 use Platformsh\Cli\Selector\Selector;
@@ -13,7 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'certificate:add', description: 'Add an SSL certificate to the project')]
 class CertificateAddCommand extends CommandBase
 {
-
     public function __construct(private readonly ActivityMonitor $activityMonitor, private readonly Selector $selector)
     {
         parent::__construct();

@@ -48,7 +48,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^11",
-        "rector/rector": "^1.2"
+        "rector/rector": "^1.2",
+        "friendsofphp/php-cs-fixer": "^3.65"
     },
     "authors": [
         {
@@ -68,6 +69,7 @@
     },
     "scripts": {
         "update-countries": "php scripts/update-countries.php",
-        "update-known-hosts": "php scripts/update-known-hosts.php"
+        "update-known-hosts": "php scripts/update-known-hosts.php",
+        "post-install-cmd": ["Platformsh\\Cli\\Application::warmCaches"]
     }
 }

@@ -68,7 +68,7 @@ class CustomJsonDescriptor extends Descriptor
             $data['namespace'] = $describedNamespace;
         } else {
             // Only show namespaces with at least one (non-hidden) command.
-            $data['namespaces'] = array_values(array_filter($description['namespaces'], fn($n): bool => !empty($n['commands'])));
+            $data['namespaces'] = array_values(array_filter($description['namespaces'], fn ($n): bool => !empty($n['commands'])));
         }
 
         $this->writeData($data, $options);
