@@ -43,8 +43,7 @@ class RepoCommandBase extends CommandBase
      */
     protected function cat(string $path, Environment $environment, InputInterface $input, OutputInterface $output): int
     {
-        $gitData = $this->gitDataApi;
-        $content = $gitData->readFile($path, $environment, $input->getOption('commit'));
+        $content = $this->gitDataApi->readFile($path, $environment, $input->getOption('commit'));
         if ($content === false) {
             $this->stdErr->writeln(sprintf('File not found: <error>%s</error>', $path));
 
@@ -68,8 +67,7 @@ class RepoCommandBase extends CommandBase
      */
     protected function ls(string $path, Environment $environment, InputInterface $input, OutputInterface $output): int
     {
-        $gitData = $this->gitDataApi;
-        $tree = $gitData->getTree($environment, $path, $input->getOption('commit'));
+        $tree = $this->gitDataApi->getTree($environment, $path, $input->getOption('commit'));
         if (!$tree) {
             $this->stdErr->writeln(sprintf('Directory not found: <error>%s</error>', $input->getArgument('path')));
 

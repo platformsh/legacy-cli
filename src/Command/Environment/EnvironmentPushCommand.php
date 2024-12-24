@@ -216,20 +216,18 @@ class EnvironmentPushCommand extends CommandBase
 
         $activities = [];
 
-        $localProject = $this->localProject;
-
         $remoteName = $this->config->getStr('detection.git_remote_name');
 
         // Map the current directory to the project.
         if ($input->getOption('set-upstream') && (!$currentProject || $currentProject->id !== $project->id)) {
             $this->stdErr->writeln(sprintf('Mapping the directory <info>%s</info> to the project %s', $gitRoot, $this->api->getProjectLabel($project)));
             $this->stdErr->writeln('');
-            $localProject->mapDirectory($gitRoot, $project);
+            $this->localProject->mapDirectory($gitRoot, $project);
             $currentProject = $project;
             $remoteRepoSpec = $remoteName;
         } elseif ($currentProject && $currentProject->id === $project->id) {
             // Ensure the current project's Git remote conforms.
-            $localProject->ensureGitRemote($gitRoot, $gitUrl);
+            $this->localProject->ensureGitRemote($gitRoot, $gitUrl);
             $remoteRepoSpec = $remoteName;
         } elseif ($this->git->getConfig("remote.$remoteName.url") === $gitUrl) {
             $remoteRepoSpec = $remoteName;

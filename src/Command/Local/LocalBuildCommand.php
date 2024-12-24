@@ -197,9 +197,7 @@ class LocalBuildCommand extends CommandBase
         }
 
         $apps = $input->getArgument('app');
-
-        $builder = $this->localBuild;
-        $success = $builder->build($input->getOptions(), $sourceDir, $destination, $apps);
+        $success = $this->localBuild->build($input->getOptions(), $sourceDir, $destination, $apps);
 
         return $success ? 0 : 1;
     }

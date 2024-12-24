@@ -32,10 +32,8 @@ class SshCertInfoCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $certifier = $this->certifier;
-
-        $cert = $certifier->getExistingCertificate();
-        if (!$cert || !$certifier->isValid($cert)) {
+        $cert = $this->certifier->getExistingCertificate();
+        if (!$cert || !$this->certifier->isValid($cert)) {
             if ($input->getOption('no-refresh')) {
                 $this->stdErr->writeln('No valid SSH certificate found.');
                 $this->stdErr->writeln('To generate a certificate, run this command again without the <comment>--no-refresh</comment> option.');
@@ -45,7 +43,7 @@ class SshCertInfoCommand extends CommandBase
                 return 1;
             }
             // Generate a new certificate.
-            $cert = $certifier->generateCertificate($cert);
+            $cert = $this->certifier->generateCertificate($cert);
         }
         $properties = [
             'filename' => $cert->certificateFilename(),

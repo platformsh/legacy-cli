@@ -9,6 +9,10 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\Type\ObjectType;
+use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Cli\Local\LocalBuild;
+use Platformsh\Cli\Local\LocalProject;
+use Platformsh\Cli\SshCert\Certifier;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -83,6 +87,17 @@ class UnnecessaryServiceVariablesRector extends AbstractRector
     private function isService(Node $node): bool
     {
         $type = $this->nodeTypeResolver->getType($node);
-        return $type instanceof ObjectType && str_starts_with($type->getClassName(), 'Platformsh\\Cli\\Service\\');
+        if (!$type instanceof ObjectType) {
+            return false;
+        }
+        $className = $type->getClassName();
+        if (str_starts_with($className, 'Platformsh\\Cli\\Service\\')) {
+            return true;
+        }
+        if (in_array($className, [LocalProject::class, LocalBuild::class, LocalApplication::class, Certifier::class])) {
+            return true;
+        }
+
+        return false;
     }
 }

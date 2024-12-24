@@ -47,9 +47,7 @@ class SshCertLoadCommand extends CommandBase
     {
         $this->io->warnAboutDeprecatedOptions(['new-key'], 'The --new-key option is deprecated. Use --new instead.');
 
-        $certifier = $this->certifier;
-
-        $sshCert = $certifier->getExistingCertificate();
+        $sshCert = $this->certifier->getExistingCertificate();
 
         $refreshOnly = $input->getOption('refresh-only');
 
@@ -65,7 +63,7 @@ class SshCertLoadCommand extends CommandBase
         if ($sshCert
             && !$input->getOption('new')
             && !$input->getOption('new-key')
-            && $certifier->isValid($sshCert)) {
+            && $this->certifier->isValid($sshCert)) {
             if ($refreshOnly && $this->stdErr->isQuiet()) {
                 return 0;
             }
@@ -79,11 +77,11 @@ class SshCertLoadCommand extends CommandBase
                 return 1;
             }
             if ($refreshOnly && $this->stdErr->isQuiet()) {
-                $certifier->generateCertificate($sshCert, $input->getOption('new-key'));
+                $this->certifier->generateCertificate($sshCert, $input->getOption('new-key'));
                 return 0;
             }
             $this->stdErr->writeln('Generating SSH certificate...');
-            $sshCert = $certifier->generateCertificate($sshCert, $input->getOption('new-key'));
+            $sshCert = $this->certifier->generateCertificate($sshCert, $input->getOption('new-key'));
             $this->displayCertificate($sshCert);
         }
 

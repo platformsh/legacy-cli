@@ -64,7 +64,6 @@ class ProjectSetRemoteCommand extends CommandBase
         }
 
         $this->io->debug('Git repository found: ' . $root);
-        $localProject = $this->localProject;
 
         if ($unset) {
             $configFilename = $root . DIRECTORY_SEPARATOR . $this->config->getStr('local.project_config');
@@ -75,7 +74,7 @@ class ProjectSetRemoteCommand extends CommandBase
             $gitRemotes = [];
             foreach ([$this->config->getStr('detection.git_remote_name'), 'origin'] as $remote) {
                 $url = $this->git->getConfig(sprintf('remote.%s.url', $remote));
-                if (\is_string($url) && $localProject->parseGitUrl($url) !== false) {
+                if (\is_string($url) && $this->localProject->parseGitUrl($url) !== false) {
                     $gitRemotes[$remote] = $url;
                 }
             }
@@ -153,7 +152,7 @@ class ProjectSetRemoteCommand extends CommandBase
             $this->stdErr->writeln('');
         }
 
-        $localProject->mapDirectory($root, $project);
+        $this->localProject->mapDirectory($root, $project);
 
         $this->stdErr->writeln(sprintf(
             'The remote project for this repository is now set to: %s',

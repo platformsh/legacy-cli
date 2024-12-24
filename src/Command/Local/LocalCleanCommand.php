@@ -52,9 +52,7 @@ class LocalCleanCommand extends CommandBase
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
-
-        $builder = $this->localBuild;
-        $result = $builder->cleanBuilds(
+        $result = $this->localBuild->cleanBuilds(
             $projectRoot,
             $input->getOption('max-age'),
             $input->getOption('keep'),
@@ -73,7 +71,7 @@ class LocalCleanCommand extends CommandBase
             }
         }
 
-        $archivesResult = $builder->cleanArchives($projectRoot);
+        $archivesResult = $this->localBuild->cleanArchives($projectRoot);
         if ($archivesResult[0]) {
             $this->stdErr->writeln("Deleted <info>{$archivesResult[0]}</info> archive(s)");
         }

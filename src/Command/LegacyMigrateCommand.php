@@ -44,9 +44,8 @@ class LegacyMigrateCommand extends CommandBase
         if (parent::isHidden()) {
             return true;
         }
-        $localProject = $this->localProject;
 
-        return !$localProject->getLegacyProjectRoot();
+        return !$this->localProject->getLegacyProjectRoot();
     }
 
     public function isEnabled(): bool
@@ -56,8 +55,7 @@ class LegacyMigrateCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $localProject = $this->localProject;
-        $legacyRoot = $localProject->getLegacyProjectRoot();
+        $legacyRoot = $this->localProject->getLegacyProjectRoot();
         if (!$legacyRoot) {
             if ($this->selector->getProjectRoot()) {
                 $this->stdErr->writeln(sprintf(
@@ -99,7 +97,7 @@ class LegacyMigrateCommand extends CommandBase
         }
 
         $this->stdErr->writeln('Creating directory: ' . $this->config->getStr('local.local_dir'));
-        $localProject->ensureLocalDir($repositoryDir);
+        $this->localProject->ensureLocalDir($repositoryDir);
 
         if (file_exists($legacyRoot . '/shared')) {
             $this->stdErr->writeln('Moving "shared" directory.');
