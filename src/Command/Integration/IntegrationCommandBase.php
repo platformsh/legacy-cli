@@ -754,7 +754,6 @@ abstract class IntegrationCommandBase extends CommandBase
             return;
         }
         $this->stdErr->writeln(sprintf('Updating Git remote URL from %s to %s', $oldGitUrl, $newGitUrl));
-        $localProject = $this->localProject;
-        $localProject->ensureGitRemote($projectRoot, $newGitUrl);
+        $this->localProject->ensureGitRemote($projectRoot, $newGitUrl);
     }
 }

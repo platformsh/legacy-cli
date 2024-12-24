@@ -90,21 +90,18 @@ class EnvironmentSetRemoteCommand extends CommandBase
                 );
             }
         }
-
-        // Perform the mapping or unmapping.
-        $localProject = $this->localProject;
-        $projectConfig = $localProject->getProjectConfig($projectRoot);
+        $projectConfig = $this->localProject->getProjectConfig($projectRoot);
         $projectConfig += ['mapping' => []];
         if ($mappedByDefault || $specifiedEnvironmentId == '0') {
             unset($projectConfig['mapping'][$specifiedBranch]);
-            $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+            $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
         } else {
             if (isset($projectConfig['mapping'])
                 && ($current = array_search($specifiedEnvironmentId, $projectConfig['mapping'])) !== false) {
                 unset($projectConfig['mapping'][$current]);
             }
             $projectConfig['mapping'][$specifiedBranch] = $specifiedEnvironmentId;
-            $localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
+            $this->localProject->writeCurrentProjectConfig($projectConfig, $projectRoot);
         }
 
         // Check the success of the operation.

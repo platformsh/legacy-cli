@@ -57,8 +57,6 @@ class ProjectGetCommand extends CommandBase
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $localProject = $this->localProject;
-
         // Validate input options and arguments.
         $this->validateDepth($input);
         $this->mergeProjectArgument($input);
@@ -74,8 +72,8 @@ class ProjectGetCommand extends CommandBase
         $insideCwd = !$input->getArgument('directory')
             || basename((string) $input->getArgument('directory')) === $input->getArgument('directory');
         if ($insideCwd && ($gitRoot = $this->git->getRoot()) !== false && $input->isInteractive()) {
-            $oldProjectRoot = $localProject->getProjectRoot($gitRoot);
-            $oldProjectConfig = $oldProjectRoot ? $localProject->getProjectConfig($oldProjectRoot) : false;
+            $oldProjectRoot = $this->localProject->getProjectRoot($gitRoot);
+            $oldProjectConfig = $oldProjectRoot ? $this->localProject->getProjectConfig($oldProjectRoot) : false;
             $oldProject = $oldProjectConfig ? $this->api->getProject($oldProjectConfig['id']) : false;
             if ($oldProjectRoot && $oldProject && $oldProject->id === $project->id) {
                 $this->stdErr->writeln(sprintf(
@@ -152,7 +150,7 @@ class ProjectGetCommand extends CommandBase
             $this->git->init($projectRoot, $project->default_branch, true);
 
             $this->io->debug('Initializing the project');
-            $localProject->mapDirectory($projectRoot, $project);
+            $this->localProject->mapDirectory($projectRoot, $project);
 
             if ($this->git->getCurrentBranch($projectRoot) != $project->default_branch) {
                 $this->io->debug('current branch does not match the default_branch, create it.');
@@ -206,7 +204,7 @@ class ProjectGetCommand extends CommandBase
         }
 
         $this->io->debug('Initializing the project');
-        $localProject->mapDirectory($projectRoot, $project);
+        $this->localProject->mapDirectory($projectRoot, $project);
 
         $this->io->debug('Downloading submodules (if any)');
         $this->git->updateSubmodules(true, $projectRoot);
@@ -299,9 +297,7 @@ class ProjectGetCommand extends CommandBase
         if (!$parent = realpath(dirname((string) $directory))) {
             throw new InvalidArgumentException('Directory not found: ' . dirname((string) $directory));
         }
-
-        $localProject = $this->localProject;
-        if ($localProject->getProjectRoot($directory) !== false) {
+        if ($this->localProject->getProjectRoot($directory) !== false) {
             throw new InvalidArgumentException('A project cannot be cloned inside another project.');
         }
 
