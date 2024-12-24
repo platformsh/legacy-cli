@@ -161,7 +161,7 @@ class Git
         if ($initial_branch !== '' && $this->supportsGitInitialBranchFlag()) {
             $args[] = "--initial-branch=$initial_branch";
         }
-        return (bool) $this->execute($args, $dir, $mustRun, false);
+        return $this->execute($args, $dir, $mustRun, false) !== false;
     }
 
     /**
@@ -249,7 +249,7 @@ class Git
             $args[] = $upstream;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false);
+        return $this->execute($args, $dir, $mustRun, false) !== false;
     }
 
     /**
@@ -262,7 +262,7 @@ class Git
             $args[] = $branch;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false, [], true, $uri);
+        return $this->execute($args, $dir, $mustRun, false, [], true, $uri) !== false;
     }
 
     /**
@@ -278,7 +278,7 @@ class Git
             $args[] = $ref;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, $quiet, [], true, $repository);
+        return $this->execute($args, $dir, $mustRun, $quiet, [], true, $repository) !== false;
     }
 
     /**
@@ -295,10 +295,10 @@ class Git
      */
     public function checkOut(string $name, ?string $dir = null, bool $mustRun = false, bool $quiet = false): bool
     {
-        return (bool) $this->execute([
+        return $this->execute([
             'checkout',
             $name,
-        ], $dir, $mustRun, $quiet);
+        ], $dir, $mustRun, $quiet) !== false;
     }
 
     /**
@@ -359,7 +359,7 @@ class Git
             $args[] = $branch;
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun);
+        return $this->execute($args, $dir, $mustRun) !== false;
     }
 
     /**
@@ -401,7 +401,7 @@ class Git
             $args[] = $destination;
         }
 
-        return (bool) $this->execute($args, false, $mustRun, false, [], $urlOrPath[0] !== '/', $urlOrPath);
+        return $this->execute($args, false, $mustRun, false, [], $urlOrPath[0] !== '/', $urlOrPath) !== false;
     }
 
     /**
@@ -448,7 +448,7 @@ class Git
      */
     public function checkIgnore(string $file, ?string $dir = null): bool
     {
-        return (bool) $this->execute(['check-ignore', $file], $dir);
+        return $this->execute(['check-ignore', $file], $dir) !== false;
     }
 
     /**
@@ -470,7 +470,7 @@ class Git
             $args[] = '--recursive';
         }
 
-        return (bool) $this->execute($args, $dir, $mustRun, false);
+        return $this->execute($args, $dir, $mustRun, false) !== false;
     }
 
     /**
