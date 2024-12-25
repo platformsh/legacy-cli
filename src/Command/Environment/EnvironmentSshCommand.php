@@ -90,9 +90,19 @@ class EnvironmentSshCommand extends CommandBase
             throw new InvalidArgumentException('The cmd argument is required when running via "multi"');
         }
 
+        $options = $input->getOption('option');
+
+        // Send the TERM environment variable by default, when it has a
+        // supported value and when opening a shell (i.e. when no command is
+        // specified).
+        $validTermInfo =  ['xterm', 'xterm-color', 'xterm-256color'];
+        if (empty($remoteCommand) && in_array(getenv('TERM'), $validTermInfo, true)) {
+            $options = array_merge(['SendEnv TERM'], $options);
+        }
+
         /** @var \Platformsh\Cli\Service\Ssh $ssh */
         $ssh = $this->getService('ssh');
-        $command = $ssh->getSshCommand($sshUrl, $input->getOption('option'), $remoteCommand);
+        $command = $ssh->getSshCommand($sshUrl, $options, $remoteCommand);
 
         /** @var \Platformsh\Cli\Service\Shell $shell */
         $shell = $this->getService('shell');
