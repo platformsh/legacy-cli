@@ -42,7 +42,7 @@ trait HasTempDirTrait
         return $this->createTempDir($this->tempDir, $prefix);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         if (!empty($this->tempDir)) {
             exec('rm -Rf ' . escapeshellarg($this->tempDir));

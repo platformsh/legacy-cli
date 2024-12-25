@@ -2,12 +2,13 @@
 
 namespace Platformsh\Cli\Tests\Command\App;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\App\AppConfigGetCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Yaml\Parser;
 
-class AppConfigGetTest extends \PHPUnit_Framework_TestCase
+class AppConfigGetTest extends TestCase
 {
     private function runCommand(array $args) {
         $output = new BufferedOutput();

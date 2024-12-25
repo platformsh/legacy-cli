@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Git;
 use Platformsh\Cli\Tests\Container;
 use Platformsh\Cli\Tests\HasTempDirTrait;
@@ -10,7 +11,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 /**
  * @group slow
  */
-class GitServiceTest extends \PHPUnit_Framework_TestCase
+class GitServiceTest extends TestCase
 {
 
     use HasTempDirTrait;
@@ -25,7 +26,7 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
      *
      * @throws \Exception
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->tempDirSetUp();
         $repository = $this->getRepositoryDir();
@@ -59,6 +60,7 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
      */
     public function testEnsureInstalled()
     {
+        $this->expectNotToPerformAssertions();
         $this->git->ensureInstalled();
     }
 
@@ -75,7 +77,8 @@ class GitServiceTest extends \PHPUnit_Framework_TestCase
 
         // Test a non-repository.
         $this->assertFalse($this->git->getRoot($this->tempDir));
-        $this->setExpectedException('Exception', 'Not a git repository');
+        $this->expectException('Exception');
+        $this->expectExceptionMessage('Not a git repository');
         $this->git->getRoot($this->tempDir, true);
     }
 
