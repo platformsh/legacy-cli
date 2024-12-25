@@ -1,19 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Organization\Member;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:list', description: 'List organization users', aliases: ['org:users'])]
 class OrganizationUserListCommand extends OrganizationCommandBase
 {
-    private $tableHeader = [
+    /** @var array<string, string> */
+    private array $tableHeader = [
         'id' => 'ID',
         'first_name' => 'First name',
         'last_name' => 'Last name',
@@ -26,35 +34,39 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         'created_at' => 'Created at',
         'updated_at' => 'Updated at',
     ];
-    private $defaultColumns = ['id', 'email', 'owner', 'permissions'];
+    /** @var string[] */
+    private array $defaultColumns = ['id', 'email', 'owner', 'permissions'];
 
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('organization:user:list')
-            ->setDescription('List organization users')
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A property to sort by (created_at or updated_at)', 'created_at')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Reverse the sort order')
-            ->setAliases(['org:users'])
-            ->setHiddenAliases(['organization:users'])
-            ->addOrganizationOptions();
+            ->setHiddenAliases(['organization:users']);
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input, 'members');
+        $organization = $this->selector->selectOrganization($input, 'members');
 
         if (!$organization->hasLink('members')) {
-            $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api()->getOrganizationLabel($organization, 'comment') . '.');
+            $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');
             return 1;
         }
 
         $options = [];
 
         $count = $input->getOption('count');
-        $itemsPerPage = (int) $this->config()->getWithDefault('pagination.count', 20);
+        $itemsPerPage = $this->config->getInt('pagination.count');
         if ($count !== null && $count !== '0') {
             if (!\is_numeric($count) || $count > 100) {
                 $this->stdErr->writeln('The --count must be a number between 1 and 100, or 0 to disable pagination.');
@@ -71,13 +83,13 @@ class OrganizationUserListCommand extends OrganizationCommandBase
         }
 
         $options['query']['page[size]'] = $itemsPerPage;
-        $fetchAllPages = !$this->config()->getWithDefault('pagination.enabled', true);
+        $fetchAllPages = !$this->config->getBool('pagination.enabled');
         if ($count === '0') {
             $fetchAllPages = true;
             $options['query']['page[size]'] = 100;
         }
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $url = $organization->getLink('members');
         /** @var Member[] $members */
         $members = [];
@@ -98,9 +110,6 @@ class OrganizationUserListCommand extends OrganizationCommandBase
             return 1;
         }
 
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $rows = [];
         foreach ($members as $member) {
             $userInfo = $member->getUserInfo();
@@ -110,35 +119,33 @@ class OrganizationUserListCommand extends OrganizationCommandBase
                 'last_name' => $userInfo ? $userInfo->last_name : '',
                 'email' => $userInfo ? $userInfo->email : '',
                 'username' => $userInfo ? $userInfo->username : '',
-                'owner' => $formatter->format($member->owner, 'owner'),
-                'mfa_enabled' => $userInfo && isset($userInfo->mfa_enabled) ? $formatter->format($userInfo->mfa_enabled, 'mfa_enabled') : '',
-                'sso_enabled' => $userInfo && isset($userInfo->sso_enabled) ? $formatter->format($userInfo->sso_enabled, 'sso_enabled') : '',
-                'permissions' => $formatter->format($member->permissions, 'permissions'),
-                'updated_at' => $formatter->format($member->updated_at, 'updated_at'),
-                'created_at' => $formatter->format($member->created_at, 'created_at'),
+                'owner' => $this->propertyFormatter->format($member->owner, 'owner'),
+                'mfa_enabled' => $userInfo && isset($userInfo->mfa_enabled) ? $this->propertyFormatter->format($userInfo->mfa_enabled, 'mfa_enabled') : '',
+                'sso_enabled' => $userInfo && isset($userInfo->sso_enabled) ? $this->propertyFormatter->format($userInfo->sso_enabled, 'sso_enabled') : '',
+                'permissions' => $this->propertyFormatter->format($member->permissions, 'permissions'),
+                'updated_at' => $this->propertyFormatter->format($member->updated_at, 'updated_at'),
+                'created_at' => $this->propertyFormatter->format($member->created_at, 'created_at'),
             ];
             $rows[] = $row;
         }
-        /** @var Table $table */
-        $table = $this->getService('table');
 
-        if (!$table->formatIsMachineReadable()) {
-            $this->stdErr->writeln('Users in the organization ' . $this->api()->getOrganizationLabel($organization) . ':');
+        if (!$this->table->formatIsMachineReadable()) {
+            $this->stdErr->writeln('Users in the organization ' . $this->api->getOrganizationLabel($organization) . ':');
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         $total = $result['collection']->getTotalCount();
         $moreAvailable = !$fetchAllPages && $total > count($members);
         if ($moreAvailable) {
-            if (!$table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
+            if (!$this->table->formatIsMachineReadable() || $this->stdErr->isDecorated()) {
                 $this->stdErr->writeln('');
             }
             $this->stdErr->writeln(sprintf('More users are available (displaying <info>%d</info>, total <info>%d</info>)', count($members), $total));
             $this->stdErr->writeln('Show all users with: <info>--count 0</info> (<info>-c0</info>)');
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(\sprintf('To get full user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', '[email]')));
             $this->stdErr->writeln(\sprintf('To add a user, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:add', '[email]')));

@@ -1,33 +1,42 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:get', description: 'View details of an integration')]
 class IntegrationGetCommand extends IntegrationCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector)
     {
-        $this
-            ->setName('integration:get')
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view')
-            ->setDescription('View details of an integration');
-        Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function configure(): void
     {
-        $this->validateInput($input);
+        $this
+            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
+            ->addOption('property', 'P', InputOption::VALUE_OPTIONAL, 'The integration property to view');
+        Table::configureInput($this->getDefinition());
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+    }
 
-        $project = $this->getSelectedProject();
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $selection = $this->selector->getSelection($input);
+
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
@@ -38,11 +47,10 @@ class IntegrationGetCommand extends IntegrationCommandBase
             if ($property === 'hook_url' && $integration->hasLink('#hook')) {
                 $value = $integration->getLink('#hook');
             } else {
-                $value = $this->api()->getNestedProperty($integration, $property);
+                $value = $this->api->getNestedProperty($integration, $property);
             }
 
-            /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-            $formatter = $this->getService('property_formatter');
+            $formatter = $this->propertyFormatter;
             $output->writeln($formatter->format($value, $property));
 
             return 0;

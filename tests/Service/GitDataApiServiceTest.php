@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
@@ -7,11 +9,10 @@ use Platformsh\Cli\Service\GitDataApi;
 
 class GitDataApiServiceTest extends TestCase
 {
-
     /**
      * Test GitDataApi::parseParents().
      */
-    public function testParseParents()
+    public function testParseParents(): void
     {
         $gitData = new GitDataApi();
         $reflection = new \ReflectionClass($gitData);

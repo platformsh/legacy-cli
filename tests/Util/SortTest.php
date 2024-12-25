@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Util;
 
 use PHPUnit\Framework\TestCase;
@@ -7,7 +9,8 @@ use Platformsh\Cli\Util\Sort;
 
 class SortTest extends TestCase
 {
-    public function testSortObjects() {
+    public function testSortObjects(): void
+    {
         $objects = [
             1 => (object) ['foo' => 'a', 'bar' => '1', 'num' => 5],
             2 => (object) ['foo' => 'd', 'bar' => '10', 'num' => 10],
@@ -41,14 +44,15 @@ class SortTest extends TestCase
             ]],
         ];
         foreach ($cases as $i => $case) {
-            list($property, $reverse, $expected) = $case;
+            [$property, $reverse, $expected] = $case;
             $o = $objects;
             Sort::sortObjects($o, $property, $reverse);
-            $this->assertEquals($expected, $o, $i);
+            $this->assertEquals($expected, $o, (string) $i);
         }
     }
 
-    public function testCompareDomains() {
+    public function testCompareDomains(): void
+    {
         $arr = [
             'region-1.fxample.com',
             'region-4.example.com',
@@ -61,7 +65,7 @@ class SortTest extends TestCase
             'region-2.fxample.com',
             'region.example.com',
         ];
-        \usort($arr, [Sort::class, 'compareDomains']);
+        \usort($arr, Sort::compareDomains(...));
         $this->assertEquals([
             'a',
             'example.com',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests;
 
 use PHPUnit\Framework\TestCase;
@@ -8,13 +10,12 @@ use Platformsh\Cli\Installer\VersionResolver;
 
 class InstallerTest extends TestCase
 {
-
     public function setUp(): void
     {
         require_once CLI_ROOT . '/dist/installer.php';
     }
 
-    public function testFindInstallableVersionsChecksForSuffix()
+    public function testFindInstallableVersionsChecksForSuffix(): void
     {
         $resolver = new VersionResolver();
         $this->assertEquals(
@@ -28,7 +29,7 @@ class InstallerTest extends TestCase
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
                 ['version' => '1.0.3-dev'],
-            ], PHP_VERSION, ['beta'])
+            ], PHP_VERSION, ['beta']),
         );
         $this->assertEquals(
             [
@@ -41,21 +42,21 @@ class InstallerTest extends TestCase
                 ['version' => '1.0.1'],
                 ['version' => '1.0.2-beta'],
                 ['version' => '1.0.3-dev'],
-            ], PHP_VERSION, ['stable', 'beta'])
+            ], PHP_VERSION, ['stable', 'beta']),
         );
     }
 
-    public function testFindInstallableVersionsChecksFoMinPhp()
+    public function testFindInstallableVersionsChecksFoMinPhp(): void
     {
         $this->assertEmpty((new VersionResolver())->findInstallableVersions([
             [
                 'version' => '1.0.0',
                 'php' => ['min' => '5.5.9'],
-            ]
+            ],
         ], '5.5.0'));
     }
 
-    public function testFindLatestVersionWithMax()
+    public function testFindLatestVersionWithMax(): void
     {
         $this->assertEquals('3.0.0', (new VersionResolver())->findLatestVersion([
             ['version' => '1.0.0'],
@@ -65,7 +66,7 @@ class InstallerTest extends TestCase
         ], '', '3.0.0')['version']);
     }
 
-    public function testFindLatestVersionWithMin()
+    public function testFindLatestVersionWithMin(): void
     {
         $this->assertEquals('3.0.1', (new VersionResolver())->findLatestVersion([
             ['version' => '1.0.0'],
@@ -83,7 +84,7 @@ class InstallerTest extends TestCase
         ], 'v3.1');
     }
 
-    public function testGetOption()
+    public function testGetOption(): void
     {
         $method = new \ReflectionMethod(Installer::class, 'getOption');
         $method->setAccessible(true);

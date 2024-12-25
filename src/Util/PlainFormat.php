@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 /**
@@ -10,14 +12,13 @@ namespace Platformsh\Cli\Util;
  */
 class PlainFormat extends Csv
 {
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct("\t", "\n");
     }
 
-    /**
-     * @inheritDoc
-     */
-    protected function formatCell($cell) {
+    protected function formatCell(string|\Stringable $cell): string
+    {
         // Replace any newline or tab characters with a space.
         return \preg_replace('#[\r\n\t]+#', ' ', (string) $cell);
     }

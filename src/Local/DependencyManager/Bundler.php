@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local\DependencyManager;
 
 class Bundler extends DependencyManagerBase
 {
-    protected $command = 'bundler';
+    protected string $command = 'bundler';
 
     /**
      * {@inheritdoc}
      */
-    public function getInstallHelp()
+    public function getInstallHelp(): string
     {
         return 'See http://bundler.io/ for installation instructions.';
     }
@@ -17,7 +19,7 @@ class Bundler extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths(string $prefix): array
     {
         return [$prefix . '/bin'];
     }
@@ -25,7 +27,7 @@ class Bundler extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies, $global = false)
+    public function install($path, array $dependencies, $global = false): void
     {
         $gemFile = $path . '/Gemfile';
         $gemFileContent = $this->formatGemfile($dependencies);
@@ -44,11 +46,11 @@ class Bundler extends DependencyManagerBase
     }
 
     /**
-     * @param array $dependencies
+     * @param array<string, mixed> $dependencies
      *
      * @return string
      */
-    private function formatGemfile(array $dependencies)
+    private function formatGemfile(array $dependencies): string
     {
         $lines = ["source 'https://rubygems.org'"];
         foreach ($dependencies as $package => $version) {

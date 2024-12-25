@@ -1,34 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
+use Platformsh\Cli\ApiToken\StorageInterface;
 use Platformsh\Cli\ApiToken\Storage;
 
-class TokenConfig
+readonly class TokenConfig
 {
-    private $config;
-    private $apiTokenStorage;
+    private Config $config;
+    private StorageInterface $apiTokenStorage;
 
-    public function __construct(Config $config = null)
+    public function __construct(?Config $config = null)
     {
         $this->config = $config ?: new Config();
         $this->apiTokenStorage = Storage::factory($this->config);
     }
 
-    /**
-     * @return \Platformsh\Cli\ApiToken\StorageInterface
-     */
-    public function storage()
+    public function storage(): StorageInterface
     {
         return $this->apiTokenStorage;
     }
 
-    /**
-     * @param bool $includeStored
-     *
-     * @return string|null
-     */
-    public function getApiToken($includeStored = true)
+    public function getApiToken(bool $includeStored = true): ?string
     {
         if ($includeStored) {
             $storedToken = $this->apiTokenStorage->getToken();
@@ -50,25 +45,22 @@ class TokenConfig
         return null;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getAccessToken()
+    public function getAccessToken(): ?string
     {
         return $this->config->getWithDefault('api.access_token', null);
     }
 
     /**
-     * Load an API token from a file.
+     * Loads an API token from a file.
      *
      * @param string $filename
      *   A filename, either relative to the user config directory, or absolute.
      *
      * @return string
      */
-    private function loadTokenFromFile($filename)
+    private function loadTokenFromFile(string $filename): string
     {
-        if (strpos($filename, '/') !== 0 && strpos($filename, '\\') !== 0) {
+        if (!str_starts_with($filename, '/') && !str_starts_with($filename, '\\')) {
             $filename = $this->config->getUserConfigDir() . '/' . $filename;
         }
 

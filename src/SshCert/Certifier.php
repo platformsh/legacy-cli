@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\SshCert;
 
 use Platformsh\Cli\Service\Api;
@@ -13,26 +15,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Certifier
 {
-    const KEY_ALGORITHM = 'ed25519';
-    const PRIVATE_KEY_FILENAME = 'id_ed25519';
+    public const KEY_ALGORITHM = 'ed25519';
+    public const PRIVATE_KEY_FILENAME = 'id_ed25519';
+    private readonly OutputInterface $stdErr;
 
-    private $api;
-    private $config;
-    private $shell;
-    private $fs;
-    private $stdErr;
-    private $fileLock;
+    private static bool $disableAutoLoad = false;
 
-    private static $disableAutoLoad = false;
-
-    public function __construct(Api $api, Config $config, Shell $shell, Filesystem $fs, OutputInterface $output, FileLock $fileLock)
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Shell $shell, private readonly Filesystem $fs, OutputInterface $output, private readonly FileLock $fileLock)
     {
-        $this->api = $api;
-        $this->config = $config;
-        $this->shell = $shell;
-        $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->fileLock = $fileLock;
     }
 
     /**
@@ -40,19 +31,15 @@ class Certifier
      *
      * @return bool
      */
-    public function isAutoLoadEnabled()
+    public function isAutoLoadEnabled(): bool
     {
-        return !self::$disableAutoLoad && $this->config->getWithDefault('ssh.auto_load_cert', false);
+        return !self::$disableAutoLoad && $this->config->getBool('ssh.auto_load_cert');
     }
 
     /**
      * Generates a new certificate.
-     *
-     * @param Certificate|null $previousCert
-     *
-     * @return Certificate
      */
-    public function generateCertificate($previousCert, $forceNewKey = false)
+    public function generateCertificate(?Certificate $previousCert, bool $forceNewKey = false): Certificate
     {
         // Ensure the user is logged in to the API, so that an auto-login will
         // not be triggered after we have generated keys (auto-login triggers a
@@ -67,7 +54,7 @@ class Certifier
         // Acquire a lock to prevent race conditions when certificate and key
         // files are changed at the same time in different CLI processes.
         $lockName = 'ssh-cert--' . $this->config->getSessionIdSlug();
-        $result = $this->fileLock->acquireOrWait($lockName, function () {
+        $result = $this->fileLock->acquireOrWait($lockName, function (): void {
             $this->stdErr->writeln('Waiting for SSH certificate generation lock', OutputInterface::VERBOSITY_VERBOSE);
         }, function () use ($previousCert) {
             // While waiting for the lock, check if a new certificate has
@@ -89,15 +76,12 @@ class Certifier
     /**
      * Inner function to generate the actual certificate.
      *
-     * @param bool $forceNewKey
-     * @return Certificate
-     *
      * @see self::generateCertificate()
      */
-    private function doGenerateCertificate($forceNewKey = false)
+    private function doGenerateCertificate(bool $forceNewKey = false): Certificate
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
-        $this->fs->mkdir($dir, 0700);
+        $this->fs->mkdir($dir, 0o700);
 
         $privateKeyFilename = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
         $certificateFilename = $privateKeyFilename . '-cert.pub';
@@ -107,7 +91,7 @@ class Certifier
         $tempPublicKeyFilename = $tempPrivateKeyFilename . '.pub';
 
         // Remove the old certificate and key from the SSH agent.
-        if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
+        if ($this->config->getBool('ssh.add_to_agent')) {
             $this->shell->execute(['ssh-add', '-d', $privateKeyFilename], null, false, !$this->stdErr->isVeryVerbose());
         }
 
@@ -138,7 +122,7 @@ class Certifier
             throw new \RuntimeException('Failed to write file: ' . $tempCertificateFilename);
         }
 
-        if (!chmod($tempCertificateFilename, 0600)) {
+        if (!chmod($tempCertificateFilename, 0o600)) {
             throw new \RuntimeException('Failed to change permissions on file: ' . $tempCertificateFilename);
         }
 
@@ -156,9 +140,9 @@ class Certifier
         // Add the key to the SSH agent, if possible, silently.
         // In verbose mode the full command will be printed, so the user can
         // re-run it to check error details.
-        if ($this->config->getWithDefault('ssh.add_to_agent', false)) {
+        if ($this->config->getBool('ssh.add_to_agent')) {
             $lifetime = ($certificate->metadata()->getValidBefore() - time()) ?: 3600;
-            $this->shell->execute(['ssh-add', '-t', $lifetime, $privateKeyFilename], null, false, !$this->stdErr->isVerbose());
+            $this->shell->execute(['ssh-add', '-t', (string) $lifetime, $privateKeyFilename], null, false, !$this->stdErr->isVerbose());
         }
 
         return $certificate;
@@ -169,7 +153,7 @@ class Certifier
      *
      * @return Certificate|null
      */
-    public function getExistingCertificate()
+    public function getExistingCertificate(): ?Certificate
     {
         $dir = $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
         $private = $dir . DIRECTORY_SEPARATOR . self::PRIVATE_KEY_FILENAME;
@@ -190,7 +174,7 @@ class Certifier
      * @param Certificate $certificate
      * @return bool
      */
-    public function isValid(Certificate $certificate)
+    public function isValid(Certificate $certificate): bool
     {
         if ($certificate->hasExpired()) {
             return false;
@@ -213,7 +197,7 @@ class Certifier
      *
      * @return bool
      */
-    public function certificateConflictsWithJwt(Certificate $certificate, $jwt = null)
+    public function certificateConflictsWithJwt(Certificate $certificate, ?string $jwt = null): bool
     {
         $extensions = $certificate->metadata()->getExtensions();
         if (!isset($extensions['access-id@platform.sh']) && !isset($extensions['access@platform.sh']) && !isset($extensions['token-claims@platform.sh'])) {
@@ -265,7 +249,7 @@ class Certifier
      * @param string $filename
      *   The private key filename.
      */
-    private function generateSshKey($filename)
+    private function generateSshKey(string $filename): void
     {
         $this->stdErr->writeln('Generating local key pair', OutputInterface::VERBOSITY_VERBOSE);
 
@@ -274,14 +258,14 @@ class Certifier
             '-t', self::KEY_ALGORITHM,
             '-f', $filename,
             '-N', '', // No passphrase
-            '-C', $this->config->get('application.slug') . '-temporary-cert', // Key comment
+            '-C', $this->config->getStr('application.slug') . '-temporary-cert', // Key comment
         ];
 
         // The "y\n" input is passed to avoid an error or prompt if ssh-keygen
         // encounters existing keys. This seems to be necessary during race
         // conditions despite deleting keys in advance with $this->fs->remove().
         $this->fs->remove([$filename, $filename . '.pub']);
-        $this->shell->execute($args, null, true, true, [], 60, "y\n");
+        $this->shell->mustExecute($args, timeout: 60, input: "y\n");
     }
 
     /**
@@ -290,7 +274,7 @@ class Certifier
      * @param string $source
      * @param string $target
      */
-    private function rename($source, $target)
+    private function rename(string $source, string $target): void
     {
         if (!\rename($source, $target)) {
             throw new \RuntimeException(sprintf('Failed to rename file from %s to %s', $source, $target));

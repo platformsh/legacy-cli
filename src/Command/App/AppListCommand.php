@@ -1,44 +1,57 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\App;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'app:list', description: 'List apps in the project', aliases: ['apps'])]
 class AppListCommand extends CommandBase
 {
-    private $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
-    private $defaultColumns = ['name', 'type'];
+    /** @var array<string|int, string> */
+    private array $tableHeader = ['Name', 'Type', 'disk' => 'Disk', 'Size', 'path' => 'Path'];
+    /** @var string[] */
+    private array $defaultColumns = ['name', 'type'];
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('app:list')
-            ->setAliases(['apps'])
-            ->setDescription('List apps in the project')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of app names only');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
 
         // Find a list of deployed web apps.
-        $deployment = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+        $deployment = $this->api
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
         $apps = $deployment->webapps;
 
         if (!count($apps)) {
@@ -62,9 +75,8 @@ class AppListCommand extends CommandBase
         // @todo The "Local path" column is mainly here for legacy reasons, and can be removed in a future version.
         $showLocalPath = false;
         $localApps = [];
-        if (($projectRoot = $this->getProjectRoot()) && $this->selectedProjectIsCurrent() && $this->config()->has('service.app_config_file')) {
-            /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-            $finder = $this->getService('app_finder');
+        if (($projectRoot = $this->selector->getProjectRoot()) && $this->selector->isProjectCurrent($selection->getProject()) && $this->config->has('service.app_config_file')) {
+            $finder = $this->applicationFinder;
             $localApps = $finder->findApplications($projectRoot);
             $showLocalPath = true;
         }
@@ -86,58 +98,52 @@ class AppListCommand extends CommandBase
             $defaultColumns[] = 'path';
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $rows = [];
         foreach ($apps as $app) {
-            $row = [$app->name, $formatter->format($app->type, 'service_type'), 'disk' => $app->disk, $app->size];
+            $row = [$app->name, $this->propertyFormatter->format($app->type, 'service_type'), 'disk' => (string) $app->disk, $app->size];
             if ($showLocalPath) {
                 $row['path'] = $getLocalPath($app->name);
             }
             $rows[] = $row;
         }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Applications on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment()),
             ));
         }
 
-        $table->render($rows, $headers, $defaultColumns);
+        $this->table->render($rows, $headers, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);
         }
 
         return 0;
     }
 
-    private function recommendOtherCommands(EnvironmentDeployment $deployment)
+    private function recommendOtherCommands(EnvironmentDeployment $deployment): void
     {
         $lines = [];
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         if ($deployment->services) {
             $lines[] = sprintf(
                 'To list services, run: <info>%s services</info>',
-                $executable
+                $executable,
             );
         }
         if ($deployment->workers) {
             $lines[] = sprintf(
                 'To list workers, run: <info>%s workers</info>',
-                $executable
+                $executable,
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
-            if (!empty($info['settings']['sizing_api_enabled']) && $this->config()->get('api.sizing') && $this->config()->isCommandEnabled('resources:set')) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->getBool('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
-                    $executable
+                    $executable,
                 );
             }
         }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util\Pager;
 
 class Pager
@@ -7,13 +9,9 @@ class Pager
     /**
      * Creates a Page.
      *
-     * @param array $items
-     * @param int $pageNumber
-     * @param int $itemsPerPage
-     *
-     * @return Page
+     * @param object[] $items
      */
-    public function page(array $items, $pageNumber, $itemsPerPage)
+    public function page(array $items, int $pageNumber, int $itemsPerPage): Page
     {
         if ($pageNumber < 1) {
             throw new \InvalidArgumentException('The page number cannot be less than 1');

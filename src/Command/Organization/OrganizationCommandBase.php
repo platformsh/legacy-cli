@@ -1,7 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Organization;
 
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Contracts\Service\Attribute\Required;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Client\Model\Organization\Member;
@@ -11,15 +17,27 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class OrganizationCommandBase extends CommandBase
 {
-    public function isEnabled()
+    private QuestionHelper $questionHelper;
+    private Config $config;
+    private Api $api;
+
+    #[Required]
+    public function autowire(Api $api, Config $config, QuestionHelper $questionHelper): void
     {
-        if (!$this->config()->getWithDefault('api.organizations', false)) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->questionHelper = $questionHelper;
+    }
+
+    public function isEnabled(): bool
+    {
+        if (!$this->config->getBool('api.organizations')) {
             return false;
         }
         return parent::isEnabled();
     }
 
-    protected function memberLabel(Member $member)
+    protected function memberLabel(Member $member): string
     {
         if ($info = $member->getUserInfo()) {
             return $info->email;
@@ -41,10 +59,10 @@ class OrganizationCommandBase extends CommandBase
      *
      * @return string
      */
-    protected function otherCommandExample(InputInterface $input, $commandName, $otherArgs = '')
+    protected function otherCommandExample(InputInterface $input, string $commandName, string $otherArgs = ''): string
     {
         $args = [
-            $this->config()->get('application.executable'),
+            $this->config->getStr('application.executable'),
             $commandName,
         ];
         if ($input->hasOption('org') && $input->getOption('org')) {
@@ -57,60 +75,14 @@ class OrganizationCommandBase extends CommandBase
     }
 
     /**
-     * Returns a list of countries, keyed by 2-letter country code.
-     *
-     * @return array
-     */
-    protected function countryList()
-    {
-        static $data;
-        if (isset($data)) {
-            return $data;
-        }
-        $filename = CLI_ROOT . '/resources/cldr/countries.json';
-        $data = \json_decode((string) \file_get_contents($filename), true);
-        if (!$data) {
-            throw new \RuntimeException('Failed to read CLDR file: ' . $filename);
-        }
-        return $data;
-    }
-
-    /**
-     * Normalizes a given country, transforming it into a country code, if possible.
-     *
-     * @param string $country
-     *
-     * @return string
-     */
-    protected function normalizeCountryCode($country)
-    {
-        $countryList = $this->countryList();
-        if (isset($countryList[$country])) {
-            return $country;
-        }
-        // Exact match.
-        if (($code = \array_search($country, $countryList)) !== false) {
-            return $code;
-        }
-        // Case-insensitive match.
-        $lower = \strtolower($country);
-        foreach ($countryList as $code => $name) {
-            if ($lower === \strtolower($name) || $lower === \strtolower($code)) {
-                return $code;
-            }
-        }
-        return $country;
-    }
-
-    /**
      * Presents an interactive choice to pick a member in the organization.
      *
      * @param Organization $organization
      * @return Member
      */
-    protected function chooseMember(Organization $organization)
+    protected function chooseMember(Organization $organization): Member
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $options = ['query' => ['page[size]' => 100]];
         $url = $organization->getUri() . '/members';
         /** @var Member[] $members */
@@ -134,20 +106,18 @@ class OrganizationCommandBase extends CommandBase
                 continue;
             }
             $emailAddresses[$member->user_id] = $member->getUserInfo()->email;
-            $choices[$member->user_id] = $this->api()->getMemberLabel($member);
+            $choices[$member->user_id] = $this->api->getMemberLabel($member);
             $byId[$member->user_id] = $member;
         }
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         if (count($choices) < 25) {
             $default = null;
             if (isset($choices[$organization->owner_id])) {
                 $choices[$organization->owner_id] .= ' (<info>owner - default</info>)';
                 $default = $organization->owner_id;
             }
-            $userId = $questionHelper->choose($choices, 'Enter a number to choose a user:', $default);
+            $userId = $this->questionHelper->choose($choices, 'Enter a number to choose a user:', $default);
         } else {
-            $userId = $questionHelper->askInput('Enter an email address to choose a user', null, array_values($emailAddresses), function ($email) use ($emailAddresses) {
+            $userId = $this->questionHelper->askInput('Enter an email address to choose a user', null, array_values($emailAddresses), function (string $email) use ($emailAddresses): string {
                 if (($key = array_search($email, $emailAddresses)) === false) {
                     throw new InvalidArgumentException('User not found: ' . $email);
                 }

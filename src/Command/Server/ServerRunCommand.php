@@ -1,22 +1,33 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Local\ApplicationFinder;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Exception\RootNotFoundException;
 use Platformsh\Cli\Local\BuildFlavor\Drupal;
 use Platformsh\Cli\Service\Url;
 use Platformsh\Cli\Util\PortUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\RuntimeException;
 
+#[AsCommand(name: 'server:run', description: 'Run a local PHP web server')]
 class ServerRunCommand extends ServerCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly ApplicationFinder $applicationFinder, private readonly Config $config, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly Url $url)
+    {
+        parent::__construct();
+    }
+    protected function configure(): void
     {
         $this
-          ->setName('server:run')
-          ->setDescription('Run a local PHP web server')
           ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force starting server')
           ->addOption('app', null, InputOption::VALUE_REQUIRED, 'The app name')
           ->addOption('ip', null, InputOption::VALUE_REQUIRED, 'The IP address', '127.0.0.1')
@@ -25,9 +36,9 @@ class ServerRunCommand extends ServerCommandBase
         Url::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         if (!$projectRoot) {
             throw new RootNotFoundException();
         }
@@ -44,16 +55,12 @@ class ServerRunCommand extends ServerCommandBase
             return 1;
         }
 
-        /** @var \Platformsh\Cli\Local\ApplicationFinder $finder */
-        $finder = $this->getService('app_finder');
+        $finder = $this->applicationFinder;
         $apps = $finder->findApplications($projectRoot);
         if (!count($apps)) {
             $this->stdErr->writeln(sprintf('No applications found in directory: %s', $projectRoot));
             return 1;
         }
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
 
         $appId = $input->getOption('app');
         if (!$appId) {
@@ -61,7 +68,7 @@ class ServerRunCommand extends ServerCommandBase
             foreach ($apps as $appCandidate) {
                 $appChoices[$appCandidate->getId()] = $appCandidate->getId();
             }
-            $appId = $questionHelper->choose($appChoices, 'Enter a number to choose an app:');
+            $appId = $this->questionHelper->choose($appChoices, 'Enter a number to choose an app:');
         }
         foreach ($apps as $appCandidate) {
             if ($appCandidate->getId() === $appId) {
@@ -79,7 +86,7 @@ class ServerRunCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf('Document root not found: <error>%s</error>', $docRoot));
             $this->stdErr->writeln(sprintf(
                 'Build the application with: <comment>%s build</comment>',
-                $this->config()->get('application.executable')
+                $this->config->getStr('application.executable'),
             ));
             return 1;
         }
@@ -110,7 +117,7 @@ class ServerRunCommand extends ServerCommandBase
                     'A server is already running for the app <info>%s</info> at http://%s, PID %s',
                     $appId,
                     $otherServer['address'],
-                    $otherServer['pid']
+                    $otherServer['pid'],
                 ));
                 return 1;
             }
@@ -120,7 +127,7 @@ class ServerRunCommand extends ServerCommandBase
             $this->stdErr->writeln(sprintf(
                 'Stopping server for the app <info>%s</info> at http://%s',
                 $appId,
-                $otherServer['address']
+                $otherServer['address'],
             ));
             $this->stopServer($address, $otherServer['pid']);
             sleep(1);
@@ -137,7 +144,7 @@ class ServerRunCommand extends ServerCommandBase
                 $this->stdErr->writeln(sprintf(
                     'A server is already running at address: http://%s, PID %s',
                     $address,
-                    $otherPid === true ? 'unknown' : $otherPid
+                    $otherPid === true ? 'unknown' : $otherPid,
                 ));
                 return 1;
             }
@@ -148,21 +155,21 @@ class ServerRunCommand extends ServerCommandBase
         }
 
         $process = $this->createServerProcess($address, $docRoot, $projectRoot, $appConfig);
-        $process->start(function ($type, $buffer) use ($log) {
+        $process->start(function ($type, $buffer) use ($log): void {
             $log->write($buffer);
         });
         $pid = $process->getPid();
         $this->writeServerInfo($address, $pid, [
-          'appId' => $appId,
-          'docRoot' => $docRoot,
-          'logFile' => $logFile,
-          'projectRoot' => $projectRoot,
+            'appId' => $appId,
+            'docRoot' => $docRoot,
+            'logFile' => $logFile,
+            'projectRoot' => $projectRoot,
         ]);
 
         $this->stdErr->writeln(sprintf(
             'Web server started at <info>http://%s</info> for app <info>%s</info>',
             $address,
-            $appId
+            $appId,
         ));
 
         if ($logFile) {
@@ -174,8 +181,7 @@ class ServerRunCommand extends ServerCommandBase
         sleep(1);
 
         if ($process->isRunning()) {
-            /** @var Url $urlService */
-            $urlService = $this->getService('url');
+            $urlService = $this->url;
             $urlService->openUrl('http://' . $address);
         }
 

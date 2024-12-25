@@ -1,28 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\SshCert;
 
 use Platformsh\Client\SshCert\Metadata;
 
-class Certificate {
-    private $certFile;
-    private $privateKeyFile;
-    private $metadata;
-    private $contents;
+class Certificate
+{
+    private readonly Metadata $metadata;
+    private readonly string|bool $contents;
 
-    private $tokenClaims;
-    private $inlineAccess;
+    /** @var array<string, mixed>|null */
+    private ?array $tokenClaims = null;
+    /** @var array<string, mixed>|null */
+    private ?array $inlineAccess = null;
 
-    /**
-     * Certificate constructor.
-     *
-     * @param string $certFile
-     * @param string $privateKeyFile
-     */
-    public function __construct($certFile, $privateKeyFile)
+    public function __construct(private readonly string $certFile, private readonly string $privateKeyFile)
     {
-        $this->certFile = $certFile;
-        $this->privateKeyFile = $privateKeyFile;
         $this->contents = \file_get_contents($this->certFile);
         if (!$this->contents) {
             throw new \RuntimeException('Failed to read certificate file: ' . $this->certFile);
@@ -37,7 +32,7 @@ class Certificate {
      *
      * @return bool
      */
-    public function isIdentical(Certificate $cert)
+    public function isIdentical(Certificate $cert): bool
     {
         return $cert->contents === $this->contents;
     }
@@ -45,7 +40,7 @@ class Certificate {
     /**
      * @return string
      */
-    public function certificateFilename()
+    public function certificateFilename(): string
     {
         return $this->certFile;
     }
@@ -53,7 +48,7 @@ class Certificate {
     /**
      * @return string
      */
-    public function privateKeyFilename()
+    public function privateKeyFilename(): string
     {
         return $this->privateKeyFile;
     }
@@ -63,7 +58,7 @@ class Certificate {
      *
      * @return Metadata
      */
-    public function metadata()
+    public function metadata(): Metadata
     {
         return $this->metadata;
     }
@@ -77,7 +72,8 @@ class Certificate {
      *
      * @return bool
      */
-    public function hasExpired($buffer = 120) {
+    public function hasExpired(int $buffer = 120): bool
+    {
         return $this->metadata->getValidBefore() - $buffer < \time();
     }
 
@@ -86,7 +82,8 @@ class Certificate {
      *
      * @return bool
      */
-    public function hasMfa() {
+    public function hasMfa(): bool
+    {
         if (\array_key_exists('has-mfa@platform.sh', $this->metadata->getExtensions())) {
             return true;
         }
@@ -99,7 +96,8 @@ class Certificate {
      *
      * @return bool
      */
-    public function isApp() {
+    public function isApp(): bool
+    {
         return \array_key_exists('is-app@platform.sh', $this->metadata->getExtensions());
     }
 
@@ -114,11 +112,12 @@ class Certificate {
      *     act?: array{sub?: string, src?: string}
      * }
      */
-    public function tokenClaims() {
+    public function tokenClaims(): array
+    {
         if (!isset($this->tokenClaims)) {
             $ext = $this->metadata->getExtensions();
             $this->tokenClaims = isset($ext['token-claims@platform.sh'])
-                ? json_decode($ext['token-claims@platform.sh'], true)
+                ? json_decode((string) $ext['token-claims@platform.sh'], true)
                 : [];
         }
         return $this->tokenClaims;
@@ -129,14 +128,15 @@ class Certificate {
      *
      * @return string[]
      */
-    public function ssoProviders() {
+    public function ssoProviders(): array
+    {
         $tokenClaims = $this->tokenClaims();
         if (!isset($tokenClaims['amr'])) {
             return [];
         }
         $ssoProviders = [];
         foreach ($tokenClaims['amr'] as $authMethod) {
-            if (strpos($authMethod, 'sso:') === 0) {
+            if (str_starts_with($authMethod, 'sso:')) {
                 $ssoProviders[] = substr($authMethod, 4);
             }
         }
@@ -146,13 +146,14 @@ class Certificate {
     /**
      * Returns access info embedded in the certificate.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function inlineAccess() {
+    public function inlineAccess(): array
+    {
         if (!isset($this->inlineAccess)) {
             $ext = $this->metadata->getExtensions();
             $this->inlineAccess = isset($ext['access@platform.sh'])
-                ? json_decode($ext['access@platform.sh'], true)
+                ? json_decode((string) $ext['access@platform.sh'], true)
                 : [];
         }
         return $this->inlineAccess;

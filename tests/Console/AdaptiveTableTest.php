@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Console;
 
 use PHPUnit\Framework\TestCase;
@@ -14,7 +16,7 @@ class AdaptiveTableTest extends TestCase
     /**
      * Test that a wide table is adapted to a maximum width.
      */
-    public function testAdaptedRowsFitMaxTableWidth()
+    public function testAdaptedRowsFitMaxTableWidth(): void
     {
         $maxTableWidth = 60;
         $buffer = new BufferedOutput();
@@ -40,27 +42,27 @@ class AdaptiveTableTest extends TestCase
         $this->assertLessThanOrEqual($maxTableWidth, max($lineWidths));
 
         $expected = <<<'EOT'
-+-----+------------+------------+------------+----------+
-| Row | Lorem      | ipsum      | dolor      | sit      |
-+-----+------------+------------+------------+----------+
-| #1  | amet       | consectetu | adipiscing | Quisque  |
-|     |            | r          | elit       | pulvinar |
-| #2  | tellus sit | sollicitud | tincidunt  | risus    |
-|     | amet       | in         |            |          |
-+-----+------------+------------+------------+----------+
-| #3  | risus      | sem        | mattis     | ex       |
-| #4  | quis       | luctus     | lorem      | ligula   |
-|     |            | metus      | cursus     |          |
-+-----+------------+------------+------------+----------+
+            +-----+------------+------------+------------+----------+
+            | Row | Lorem      | ipsum      | dolor      | sit      |
+            +-----+------------+------------+------------+----------+
+            | #1  | amet       | consectetu | adipiscing | Quisque  |
+            |     |            | r          | elit       | pulvinar |
+            | #2  | tellus sit | sollicitud | tincidunt  | risus    |
+            |     | amet       | in         |            |          |
+            +-----+------------+------------+------------+----------+
+            | #3  | risus      | sem        | mattis     | ex       |
+            | #4  | quis       | luctus     | lorem      | ligula   |
+            |     |            | metus      | cursus     |          |
+            +-----+------------+------------+------------+----------+
 
-EOT;
+            EOT;
         $this->assertEquals($expected, $result);
     }
 
     /**
      * Test that the left-indent of cells is preserved.
      */
-    public function testAdaptedRowsWithIndent()
+    public function testAdaptedRowsWithIndent(): void
     {
         $maxTableWidth = 75;
         $buffer = new BufferedOutput();
@@ -86,27 +88,27 @@ EOT;
         $this->assertLessThanOrEqual($maxTableWidth, max($lineWidths));
 
         $expected = <<<'EOT'
-+-----+------------+-------------+--------------+------------+
-| Row | Lorem      | ipsum       | dolor        | Indented   |
-+-----+------------+-------------+--------------+------------+
-| #1  | amet       | consectetur | adipiscing   |   Quisque  |
-|     |            |             | elit         |   pulvinar |
-| #2  | tellus sit | sollicitudi | tincidunt    |   risus    |
-|     | amet       | n           |              |            |
-+-----+------------+-------------+--------------+------------+
-| #3  | risus      | sem         | mattis       |   ex       |
-| #4  | quis       | luctus      | lorem cursus |   ligula   |
-|     |            | metus       |              |            |
-+-----+------------+-------------+--------------+------------+
+            +-----+------------+-------------+--------------+------------+
+            | Row | Lorem      | ipsum       | dolor        | Indented   |
+            +-----+------------+-------------+--------------+------------+
+            | #1  | amet       | consectetur | adipiscing   |   Quisque  |
+            |     |            |             | elit         |   pulvinar |
+            | #2  | tellus sit | sollicitudi | tincidunt    |   risus    |
+            |     | amet       | n           |              |            |
+            +-----+------------+-------------+--------------+------------+
+            | #3  | risus      | sem         | mattis       |   ex       |
+            | #4  | quis       | luctus      | lorem cursus |   ligula   |
+            |     |            | metus       |              |            |
+            +-----+------------+-------------+--------------+------------+
 
-EOT;
+            EOT;
         $this->assertEquals($expected, $result);
     }
 
     /**
      * Test a non-wrapping table cell.
      */
-    public function testAdaptedRowsWithNonWrappingCell()
+    public function testAdaptedRowsWithNonWrappingCell(): void
     {
         $maxTableWidth = 60;
         $buffer = new BufferedOutput();
@@ -124,19 +126,19 @@ EOT;
         $result = $buffer->fetch();
 
         $expected = <<<'EOT'
-+-----+------------+--------------+------------+----------+
-| Row | Lorem      | ipsum        | dolor      | sit      |
-+-----+------------+--------------+------------+----------+
-| #1  | amet       | consectetur  | adipiscing | Quisque  |
-|     |            |              | elit       | pulvinar |
-| #2  | tellus sit | sollicitudin | tincidunt  | risus    |
-|     | amet       |              |            |          |
-| #3  | risus      | sem          | mattis     | ex       |
-| #4  | quis       | luctus metus | lorem      | ligula   |
-|     |            |              | cursus     |          |
-+-----+------------+--------------+------------+----------+
+            +-----+------------+--------------+------------+----------+
+            | Row | Lorem      | ipsum        | dolor      | sit      |
+            +-----+------------+--------------+------------+----------+
+            | #1  | amet       | consectetur  | adipiscing | Quisque  |
+            |     |            |              | elit       | pulvinar |
+            | #2  | tellus sit | sollicitudin | tincidunt  | risus    |
+            |     | amet       |              |            |          |
+            | #3  | risus      | sem          | mattis     | ex       |
+            | #4  | quis       | luctus metus | lorem      | ligula   |
+            |     |            |              | cursus     |          |
+            +-----+------------+--------------+------------+----------+
 
-EOT;
+            EOT;
         $this->assertEquals($expected, $result);
     }
 
@@ -146,7 +148,7 @@ EOT;
      * @param string $input
      * @param int[]  $maxLengths
      */
-    private function assertWrappedWithDecoration($input, array $maxLengths = [5, 8, 13, 21, 34, 55, 89])
+    private function assertWrappedWithDecoration(string $input, array $maxLengths = [5, 8, 13, 21, 34, 55, 89]): void
     {
         $o = new BufferedOutput();
         $f = $o->getFormatter();
@@ -159,31 +161,31 @@ EOT;
         }
     }
 
-    public function testWrapWithDecorationPlain()
+    public function testWrapWithDecorationPlain(): void
     {
         $this->assertWrappedWithDecoration(
-            'This is a test of raw text which should be wrapped as normal.'
+            'This is a test of raw text which should be wrapped as normal.',
         );
     }
 
-    public function testWrapWithDecorationSimple()
+    public function testWrapWithDecorationSimple(): void
     {
         $this->assertWrappedWithDecoration(
-            'The quick brown <error>fox</error> <options=underscore>jumps</> over the lazy <info>dog</info>.'
+            'The quick brown <error>fox</error> <options=underscore>jumps</> over the lazy <info>dog</info>.',
         );
     }
 
-    public function testWrapWithDecorationComplex()
+    public function testWrapWithDecorationComplex(): void
     {
         $this->assertWrappedWithDecoration(
-            'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor <options=reverse>incididunt ut labore et dolore magna aliqua.</> Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+            'Lorem ipsum <info>dolor</info> sit <info>amet,</info> consectetur <error>adipiscing elit,</error> sed do eiusmod tempor <options=reverse>incididunt ut labore et dolore magna aliqua.</> Ut enim ad minim veniam, quis nostrud <options=underscore>exercitation</> ullamco laboris nisi ut aliquip ex ea commodo <options=reverse>consequat. Duis</> aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat (cupidatat) non <info>proident</info>, sunt in culpa qui officia deserunt mollit anim id est laborum.',
         );
     }
 
-    public function testWrapWithDecorationIncludingEscapedTags()
+    public function testWrapWithDecorationIncludingEscapedTags(): void
     {
         $this->assertWrappedWithDecoration(
-            'The quick brown fox <options=underscore>jumps</> over the lazy \\<script type="text/javascript">dog\\</script>.'
+            'The quick brown fox <options=underscore>jumps</> over the lazy \\<script type="text/javascript">dog\\</script>.',
         );
     }
 }

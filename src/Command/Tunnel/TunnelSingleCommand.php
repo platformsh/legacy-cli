@@ -1,29 +1,40 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Tunnel;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Service\Relationships;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Console\ProcessManager;
+use Platformsh\Cli\Service\TunnelManager;
 use Platformsh\Cli\Util\PortUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'tunnel:single', description: 'Open a single SSH tunnel to an app relationship')]
 class TunnelSingleCommand extends TunnelCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly QuestionHelper $questionHelper, private readonly Relationships $relationships, private readonly Selector $selector, private readonly Ssh $ssh, private readonly TunnelManager $tunnelManager)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('tunnel:single')
-            ->setDescription('Open a single SSH tunnel to an app relationship')
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'The local port');
         $this->addOption('gateway-ports', 'g', InputOption::VALUE_NONE, 'Allow remote hosts to connect to local forwarded ports');
-        $this->addProjectOption();
-        $this->addEnvironmentOption();
-        $this->addAppOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->selector->addAppOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Relationships::configureInput($this->getDefinition());
         Ssh::configureInput($this->getDefinition());
     }
@@ -31,42 +42,34 @@ class TunnelSingleCommand extends TunnelCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->chooseEnvFilter = $this->filterEnvsMaybeActive();
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-        $environment = $this->getSelectedEnvironment();
+        $selection = $this->selector->getSelection($input, new SelectorConfig(chooseEnvFilter: SelectorConfig::filterEnvsMaybeActive()));
+        $environment = $selection->getEnvironment();
 
-        $container = $this->selectRemoteContainer($input, false);
-        $appName = $container->getName();
+        $container = $selection->getRemoteContainer();
         $sshUrl = $container->getSshUrl();
-        $host = $this->selectHost($input, false, $container);
-
-        /** @var \Platformsh\Cli\Service\Relationships $relationshipsService */
-        $relationshipsService = $this->getService('relationships');
-        $relationships = $relationshipsService->getRelationships($host);
+        $host = $this->selector->getHostFromSelection($input, $selection);
+        $relationships = $this->relationships->getRelationships($host);
         if (!$relationships) {
             $this->stdErr->writeln('No relationships found.');
             return 1;
         }
 
-        $service = $relationshipsService->chooseService($host, $input, $output);
+        $service = $this->relationships->chooseService($host, $input, $output);
         if (!$service) {
             return 1;
         }
 
         if ($environment->is_main) {
-            /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-            $questionHelper = $this->getService('question_helper');
             $confirmText = sprintf(
                 'Are you sure you want to open an SSH tunnel to'
                 . ' the relationship <comment>%s</comment> on the'
                 . ' environment <comment>%s</comment>?',
                 $service['_relationship_name'],
-                $this->api()->getEnvironmentLabel($environment, false)
+                $this->api->getEnvironmentLabel($environment, false),
             );
-            if (!$questionHelper->confirm($confirmText)) {
+            if (!$this->questionHelper->confirm($confirmText)) {
                 return 1;
             }
             $this->stdErr->writeln('');
@@ -76,13 +79,7 @@ class TunnelSingleCommand extends TunnelCommandBase
         if ($input->getOption('gateway-ports')) {
             $sshOptions[] = 'GatewayPorts yes';
         }
-
-        /** @var \Platformsh\Cli\Service\Ssh $ssh */
-        $ssh = $this->getService('ssh');
-        $sshArgs = $ssh->getSshArgs($sshUrl, $sshOptions);
-
-        $remoteHost = $service['host'];
-        $remotePort = $service['port'];
+        $sshArgs = $this->ssh->getSshArgs($sshUrl, $sshOptions);
 
         if ($localPort = $input->getOption('port')) {
             if (!PortUtil::validatePort($localPort)) {
@@ -95,39 +92,26 @@ class TunnelSingleCommand extends TunnelCommandBase
 
                 return 1;
             }
-        } else {
-            $localPort = $this->getPort();
         }
 
-        $tunnel = [
-            'projectId' => $project->id,
-            'environmentId' => $environment->id,
-            'appName' => $appName,
-            'relationship' => $service['_relationship_name'],
-            'serviceKey' => $service['_relationship_key'],
-            'remotePort' => $remotePort,
-            'remoteHost' => $remoteHost,
-            'localPort' => $localPort,
-            'service' => $service,
-            'pid' => null,
-        ];
+        $tunnel = $this->tunnelManager->create($selection, $service, $localPort);
 
-        $relationshipString = $this->formatTunnelRelationship($tunnel);
+        $relationshipString = $this->tunnelManager->formatRelationship($tunnel);
 
-        if ($openTunnelInfo = $this->isTunnelOpen($tunnel)) {
+        if ($openTunnelInfo = $this->tunnelManager->isOpen($tunnel)) {
             $this->stdErr->writeln(sprintf(
                 'A tunnel is already opened to the relationship <info>%s</info>, at: <info>%s</info>',
                 $relationshipString,
-                $this->getTunnelUrl($openTunnelInfo, $service)
+                $this->tunnelManager->getUrl($openTunnelInfo),
             ));
 
             return 1;
         }
 
-        $pidFile = $this->getPidFile($tunnel);
+        $pidFile = $this->tunnelManager->getPidFilename($tunnel);
 
         $processManager = new ProcessManager();
-        $process = $this->createTunnelProcess($sshUrl, $remoteHost, $remotePort, $localPort, $sshArgs);
+        $process = $this->tunnelManager->createProcess($sshUrl, $tunnel, $sshArgs);
         $pid = $processManager->startProcess($process, $pidFile, $output);
 
         // Wait a very small time to capture any immediate errors.
@@ -136,16 +120,14 @@ class TunnelSingleCommand extends TunnelCommandBase
             $this->stdErr->writeln(trim($process->getErrorOutput()));
             $this->stdErr->writeln(sprintf(
                 'Failed to open tunnel for relationship: <error>%s</error>',
-                $relationshipString
+                $relationshipString,
             ));
             unlink($pidFile);
 
             return 1;
         }
 
-        $tunnel['pid'] = $pid;
-        $this->tunnelInfo[] = $tunnel;
-        $this->saveTunnelInfo();
+        $this->tunnelManager->saveNewTunnel($tunnel, $pid);
 
         if ($output->isVerbose()) {
             // Just an extra line for separation from the process manager's log.
@@ -155,7 +137,7 @@ class TunnelSingleCommand extends TunnelCommandBase
         $this->stdErr->writeln(sprintf(
             'SSH tunnel opened to <info>%s</info> at: <info>%s</info>',
             $relationshipString,
-            $this->getTunnelUrl($tunnel, $service)
+            $this->tunnelManager->getUrl($tunnel),
         ));
 
         $this->stdErr->writeln('');

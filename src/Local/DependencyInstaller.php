@@ -1,28 +1,29 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local;
 
+use Platformsh\Cli\Local\DependencyManager\Pip;
+use Platformsh\Cli\Local\DependencyManager\Npm;
+use Platformsh\Cli\Local\DependencyManager\Bundler;
+use Platformsh\Cli\Local\DependencyManager\Composer;
+use Platformsh\Cli\Local\DependencyManager\DependencyManagerInterface;
 use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DependencyInstaller
 {
-    protected $output;
-    protected $shell;
-
-    public function __construct(OutputInterface $output, Shell $shell)
-    {
-        $this->output = $output;
-        $this->shell = $shell;
-    }
+    public function __construct(protected OutputInterface $output, protected Shell $shell) {}
 
     /**
      * Modify the environment to make the installed dependencies available.
      *
      * @param string $destination
-     * @param array  $dependencies
+     * @param array<string, mixed> $dependencies
      */
-    public function putEnv($destination, array $dependencies)
+    public function putEnv(string $destination, array $dependencies): void
     {
         $env = [];
         $paths = [];
@@ -46,18 +47,18 @@ class DependencyInstaller
     }
 
     /**
-     * Install dependencies into a directory.
+     * Installs dependencies into a directory.
      *
      * @param string $destination
-     * @param array  $dependencies
-     * @param bool   $global
-     *
-     * @throws \Exception If a dependency fails to install.
+     * @param array<string, mixed> $dependencies
+     * @param bool $global
      *
      * @return bool
      *     False if a dependency manager is not available; otherwise true.
+     *
+     * @throws \Exception If a dependency fails to install.
      */
-    public function installDependencies($destination, array $dependencies, $global = false)
+    public function installDependencies(string $destination, array $dependencies, bool $global = false): bool
     {
         $success = true;
         foreach ($dependencies as $stack => $stackDependencies) {
@@ -66,13 +67,13 @@ class DependencyInstaller
                 "Installing <info>%s</info> dependencies with '%s': %s",
                 $stack,
                 $manager->getCommandName(),
-                implode(', ', array_keys($stackDependencies))
+                implode(', ', array_keys($stackDependencies)),
             ));
             if (!$manager->isAvailable()) {
                 $this->output->writeln(sprintf(
                     "Cannot install <comment>%s</comment> dependencies: '%s' is not installed.",
                     $stack,
-                    $manager->getCommandName()
+                    $manager->getCommandName(),
                 ));
                 if ($manager->getInstallHelp()) {
                     $this->output->writeln($manager->getInstallHelp());
@@ -88,12 +89,9 @@ class DependencyInstaller
         return $success;
     }
 
-    /**
-     * @param string $path
-     */
-    protected function ensureDirectory($path)
+    protected function ensureDirectory(string $path): void
     {
-        if (!is_dir($path) && !mkdir($path, 0755, true)) {
+        if (!is_dir($path) && !mkdir($path, 0o755, true)) {
             throw new \RuntimeException('Failed to create directory: ' . $path);
         }
     }
@@ -103,19 +101,19 @@ class DependencyInstaller
      *
      * @param string $name
      *
-     * @return \Platformsh\Cli\Local\DependencyManager\DependencyManagerInterface
+     * @return DependencyManagerInterface
      */
-    protected function getManager($name)
+    protected function getManager(string $name): DependencyManagerInterface
     {
         // Python has 'python', 'python2', and 'python3'.
-        if (strpos($name, 'python') === 0) {
-            return new DependencyManager\Pip($this->shell, $name);
+        if (str_starts_with($name, 'python')) {
+            return new Pip($this->shell, $name);
         }
 
         $stacks = [
-            'nodejs' => new DependencyManager\Npm($this->shell),
-            'ruby' => new DependencyManager\Bundler($this->shell),
-            'php' => new DependencyManager\Composer($this->shell),
+            'nodejs' => new Npm($this->shell),
+            'ruby' => new Bundler($this->shell),
+            'php' => new Composer($this->shell),
         ];
         if (isset($stacks[$name])) {
             return $stacks[$name];

@@ -1,22 +1,21 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local\DependencyManager;
 
 use Platformsh\Cli\Service\Shell;
 
 abstract class DependencyManagerBase implements DependencyManagerInterface
 {
-    protected $shell;
-    protected $command = 'undefined';
+    protected string $command = 'undefined';
 
-    public function __construct(Shell $shell)
-    {
-        $this->shell = $shell;
-    }
+    public function __construct(protected Shell $shell) {}
 
     /**
      * {@inheritdoc}
      */
-    public function getCommandName()
+    public function getCommandName(): string
     {
         return $this->command;
     }
@@ -24,7 +23,7 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
     /**
      * {@inheritdoc}
      */
-    public function isAvailable()
+    public function isAvailable(): bool
     {
         return $this->shell->commandExists($this->getCommandName());
     }
@@ -32,23 +31,19 @@ abstract class DependencyManagerBase implements DependencyManagerInterface
     /**
      * {@inheritdoc}
      */
-    public function getEnvVars($path)
+    public function getEnvVars($path): array
     {
         return [];
     }
 
-    /**
-     * @param string      $command
-     * @param string|null $path
-     */
-    protected function runCommand($command, $path = null)
+    protected function runCommand(string $command, ?string $path = null): void
     {
         $code = $this->shell->executeSimple($command, $path);
         if ($code > 0) {
             throw new \RuntimeException(sprintf(
                 'The command failed with the exit code %d: %s',
                 $code,
-                $command
+                $command,
             ));
         }
     }

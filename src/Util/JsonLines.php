@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 class JsonLines
@@ -9,9 +11,9 @@ class JsonLines
      *
      * @param string $str
      *
-     * @return array
+     * @return array<array<mixed>>
      */
-    public static function decode($str)
+    public static function decode(string $str): array
     {
         $items = [];
         foreach (explode("\n", trim($str, "\n")) as $line) {

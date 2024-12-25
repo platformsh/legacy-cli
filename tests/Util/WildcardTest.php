@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Util;
 
 use PHPUnit\Framework\TestCase;
@@ -7,7 +9,7 @@ use Platformsh\Cli\Util\Wildcard;
 
 class WildcardTest extends TestCase
 {
-    public function testSelect()
+    public function testSelect(): void
     {
         $cases = [
             [['a', 'b', 'c'], ['a'], ['a']],
@@ -25,7 +27,7 @@ class WildcardTest extends TestCase
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($subjects, $wildcards, $result) = $case;
+            [$subjects, $wildcards, $result] = $case;
             $this->assertEquals($result, Wildcard::select($subjects, $wildcards), "Case $i");
         }
     }

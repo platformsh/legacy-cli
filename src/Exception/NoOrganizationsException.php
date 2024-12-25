@@ -1,25 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Exception;
 
-class NoOrganizationsException extends \Exception {
-    private $totalNumOrgs;
-
-    /**
-     * @param string $message
-     * @param int $totalNumOrgs
-     * @param string $filteredByLink
-     */
-    public function __construct($message, $totalNumOrgs)
+class NoOrganizationsException extends \Exception
+{
+    public function __construct(string $message, private readonly int $totalNumOrgs)
     {
-        $this->totalNumOrgs = $totalNumOrgs;
         parent::__construct($message);
     }
 
-    /**
-     * @return int
-     */
-    public function getTotalNumOrgs()
+    public function getTotalNumOrgs(): int
     {
         return $this->totalNumOrgs;
     }

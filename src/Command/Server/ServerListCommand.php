@@ -1,24 +1,31 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Server;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'server:list', description: 'List running local project web server(s)', aliases: ['servers'])]
 class ServerListCommand extends ServerCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
+    protected function configure(): void
     {
         $this
-          ->setName('server:list')
-          ->setAliases(['servers'])
-          ->setDescription('List running local project web server(s)')
           ->addOption('all', 'a', InputOption::VALUE_NONE, 'List all servers');
         Table::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $servers = $this->getServerInfo();
         if (!$servers) {
@@ -26,28 +33,24 @@ class ServerListCommand extends ServerCommandBase
             return 1;
         }
 
-        $projectRoot = $this->getProjectRoot();
+        $projectRoot = $this->selector->getProjectRoot();
         $all = $input->getOption('all');
         if (!$all && $projectRoot) {
-            $servers = array_filter($servers, function ($server) use ($projectRoot) {
-                return $server['projectRoot'] === $projectRoot;
-            });
+            $servers = array_filter($servers, fn($server): bool => $server['projectRoot'] === $projectRoot);
             if (!$servers) {
                 $this->stdErr->writeln('No servers are running for this project. Specify --all to view all servers.');
                 return 1;
             }
         }
-
-        $table = $this->getService('table');
         $headers = ['Address', 'PID', 'App', 'Project root', 'Log'];
         $rows = [];
         foreach ($servers as $address => $server) {
-            $row = [$address, $server['pid'], $server['appId'], $server['projectRoot']];
+            $row = [$address, (string) $server['pid'], $server['appId'], $server['projectRoot']];
             $logFile = ltrim(str_replace($server['projectRoot'], '', $server['logFile']), '/');
             $row[] = $logFile;
             $rows[] = $row;
         }
-        $table->render($rows, $headers);
+        $this->table->render($rows, $headers);
 
         return 0;
     }

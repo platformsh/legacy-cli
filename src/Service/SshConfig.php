@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\SshCert\Certifier;
@@ -10,21 +12,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Process\Process;
 
-class SshConfig {
-    private $config;
-    private $fs;
-    private $stdErr;
-    private $sshKey;
-    private $certifier;
-    private $openSshVersion;
+class SshConfig
+{
+    private readonly OutputInterface $stdErr;
+    private false|string|null $openSshVersion = null;
 
-    public function __construct(Config $config, Filesystem $fs, OutputInterface $output, SshKey $sshKey, Certifier $certifier)
+    public function __construct(private readonly Config $config, private readonly Filesystem $fs, OutputInterface $output, private readonly SshKey $sshKey, private readonly Certifier $certifier)
     {
-        $this->config = $config;
-        $this->fs = $fs;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->sshKey = $sshKey;
-        $this->certifier = $certifier;
     }
 
     /**
@@ -33,10 +28,10 @@ class SshConfig {
      * @return string|null
      *   The path to the file containing the host keys, if any.
      */
-    public function configureHostKeys()
+    public function configureHostKeys(): ?string
     {
         $hostKeys = '';
-        if ($hostKeysFile = $this->config->getWithDefault('ssh.host_keys_file', '')) {
+        if ($hostKeysFile = $this->config->getStr('ssh.host_keys_file')) {
             $hostKeysFile = CLI_ROOT . DIRECTORY_SEPARATOR . $hostKeysFile;
             $hostKeys = file_get_contents($hostKeysFile);
             if ($hostKeys === false) {
@@ -46,9 +41,9 @@ class SshConfig {
         }
         if ($additionalKeys = $this->config->getWithDefault('ssh.host_keys', [])) {
             if (!is_array($additionalKeys)) {
-                $additionalKeys = explode("\n", $additionalKeys);
+                $additionalKeys = explode("\n", (string) $additionalKeys);
             }
-            $hostKeys = rtrim($hostKeys, "\n") . "\n" . $additionalKeys;
+            $hostKeys = rtrim($hostKeys, "\n") . "\n" . implode("\n", $additionalKeys);
         }
         if (empty($hostKeys)) {
             return null;
@@ -74,7 +69,7 @@ class SshConfig {
      * @return bool
      *   True if there is any session configuration, false otherwise.
      */
-    public function configureSessionSsh()
+    public function configureSessionSsh(): bool
     {
         if (!$this->supportsInclude()) {
             return false;
@@ -95,7 +90,7 @@ class SshConfig {
 
         $certificate = $this->certifier->getExistingCertificate();
         if ($certificate) {
-            $executable = $this->config->get('application.executable');
+            $executable = $this->config->getStr('application.executable');
             $refreshCommand = sprintf('%s ssh-cert:load --refresh-only --yes --quiet', $executable);
 
             // On shells where it might work (POSIX compliant), skip refreshing
@@ -103,7 +98,7 @@ class SshConfig {
             // This skips unnecessary CLI bootstrapping while running SSH from
             // the CLI itself.
             /** @see Ssh::getEnv() */
-            if (in_array(basename(getenv('SHELL')), ['bash', 'csh', 'dash', 'ksh', 'tcsh', 'zsh'], true)) {
+            if (in_array(basename((string) getenv('SHELL')), ['bash', 'csh', 'dash', 'ksh', 'tcsh', 'zsh'], true)) {
                 // Literal double-quotes do not appear to be possible in SSH config.
                 // See: https://bugzilla.mindrot.org/show_bug.cgi?id=3474
                 // So the condition here uses single quotes after the variable
@@ -149,15 +144,10 @@ class SshConfig {
 
         $sessionSpecificFilename = $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config';
         $includerFilename = $this->getCliSshDir() . DIRECTORY_SEPARATOR . 'session.config';
-        if (empty($lines)) {
-            if (\file_exists($includerFilename) || \file_exists($sessionSpecificFilename)) {
-                $this->fs->remove([$includerFilename, $sessionSpecificFilename]);
-            }
-            return false;
-        }
 
         // Add other configured options.
         if ($configuredOptions = $this->config->get('ssh.options')) {
+            /** @var string[]|string $configuredOptions */
             $lines[] = '';
             $lines[] = "# Other options from the CLI's configuration.";
             $lines = array_merge($lines, is_array($configuredOptions) ? $configuredOptions : explode("\n", $configuredOptions));
@@ -177,7 +167,7 @@ class SshConfig {
         }
         $this->writeSshIncludeFile(
             $includerFilename,
-            $includerLines
+            $includerLines,
         );
 
         return true;
@@ -193,7 +183,7 @@ class SshConfig {
      *
      * @return string[]
      */
-    public function formattedPaths($path)
+    public function formattedPaths(string $path): array
     {
         // Convert absolute Windows paths (e.g. beginning "C:\") to Unix paths.
         // OpenSSH apparently treats the Windows format as a relative path.
@@ -231,15 +221,11 @@ class SshConfig {
      * the HOME environment variable is set to a directory other than the
      * current user's (notably on GitHub Actions containers), because the
      * OpenSSH client does not support reading HOME.
-     *
-     * @param string $path
-     *
-     * @return string
      */
-    private function quoteFilePath($path)
+    private function quoteFilePath(string $path): string
     {
         // Quote all paths containing a space.
-        if (\strpos($path, ' ') !== false) {
+        if (str_contains($path, ' ')) {
             // The three quote marks in the middle mean: end quote, literal quote mark, start quote.
             return '"' . \str_replace('"', '"""', $path) . '"';
         }
@@ -250,11 +236,9 @@ class SshConfig {
     /**
      * Creates or updates an SSH config include file.
      *
-     * @param string $filename
-     * @param array|string $lines
-     * @param bool   $allowDelete
+     * @param string[]|string $lines
      */
-    private function writeSshIncludeFile($filename, $lines, $allowDelete = true)
+    private function writeSshIncludeFile(string $filename, array|string $lines, bool $allowDelete = true): void
     {
         if (empty($lines) && $allowDelete && \file_exists($filename)) {
             $this->stdErr->writeln(sprintf('Deleting SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERBOSE);
@@ -271,7 +255,7 @@ class SshConfig {
         } else {
             $this->stdErr->writeln(sprintf('Validated SSH configuration include file: <info>%s</info>', $filename), OutputInterface::VERBOSITY_VERY_VERBOSE);
         }
-        $this->chmod($filename, 0600);
+        $this->chmod($filename, 0o600);
     }
 
     /**
@@ -279,7 +263,7 @@ class SshConfig {
      *
      * @return string
      */
-    public function getSessionSshDir()
+    public function getSessionSshDir(): string
     {
         return $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'ssh';
     }
@@ -291,7 +275,7 @@ class SshConfig {
      *
      * @return bool
      */
-    public function addUserSshConfig(QuestionHelper $questionHelper)
+    public function addUserSshConfig(QuestionHelper $questionHelper): bool
     {
         if (!$this->supportsInclude()) {
             return false;
@@ -328,7 +312,7 @@ class SshConfig {
                 $this->stdErr->writeln('Failed to read file: <comment>' . $filename . '</comment>');
                 return false;
             }
-            if (strpos($currentContents, $suggestedConfig) !== false) {
+            if (str_contains($currentContents, $suggestedConfig)) {
                 $this->stdErr->writeln('Validated SSH configuration file: <info>' . $filename . '</info>', OutputInterface::VERBOSITY_VERBOSE);
                 return true;
             }
@@ -359,7 +343,7 @@ class SshConfig {
             $this->stdErr->writeln('Configuration file updated successfully: <info>' . $filename . '</info>');
         }
 
-        $this->chmod($filename, 0600);
+        $this->chmod($filename, 0o600);
 
         return true;
     }
@@ -370,7 +354,7 @@ class SshConfig {
      * @return bool|null
      *   True for yes, false for no, null to prompt the user.
      */
-    private function shouldWriteUserSshConfig()
+    private function shouldWriteUserSshConfig(): ?bool
     {
         $value = $this->config->has('api.write_user_ssh_config')
             ? $this->config->get('api.write_user_ssh_config')
@@ -389,7 +373,7 @@ class SshConfig {
      *
      * Called from the logout command.
      */
-    public function deleteSessionConfiguration()
+    public function deleteSessionConfiguration(): void
     {
         $files = [
             $this->getSessionSshDir() . DIRECTORY_SEPARATOR . 'config',
@@ -410,7 +394,7 @@ class SshConfig {
      *
      * @return bool
      */
-    private function chmod($filename, $mode)
+    private function chmod(string $filename, int $mode): bool
     {
         if (!@chmod($filename, $mode)) {
             $this->stdErr->writeln('Warning: failed to change permissions on file: <comment>' . $filename . '</comment>');
@@ -424,7 +408,7 @@ class SshConfig {
      *
      * @return string
      */
-    private function getCliSshDir()
+    private function getCliSshDir(): string
     {
         return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . 'ssh';
     }
@@ -440,9 +424,9 @@ class SshConfig {
      *
      * @return string The new file contents.
      */
-    private function getUserSshConfigChanges($currentConfig, $newConfig)
+    private function getUserSshConfigChanges(string $currentConfig, string $newConfig): string
     {
-        $serviceName = (string)$this->config->get('service.name');
+        $serviceName = $this->config->getStr('service.name');
         $begin = '# BEGIN: ' . $serviceName . ' certificate configuration' . PHP_EOL;
         $end = PHP_EOL . '# END: ' . $serviceName . ' certificate configuration';
 
@@ -454,7 +438,7 @@ class SshConfig {
      *
      * @return string
      */
-    private function getUserSshConfigFilename()
+    private function getUserSshConfigFilename(): string
     {
         return $this->config->getHomeDirectory() . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . 'config';
     }
@@ -464,7 +448,7 @@ class SshConfig {
      *
      * @todo use this? maybe in an uninstall command
      */
-    public function removeUserSshConfig()
+    public function removeUserSshConfig(): void
     {
         $sshConfigFile = $this->getUserSshConfigFilename();
         if (!file_exists($sshConfigFile)) {
@@ -495,13 +479,13 @@ class SshConfig {
      *
      * @return string|false
      */
-    private function findVersion($reset = false)
+    private function findVersion(bool $reset = false): string|false
     {
         if (isset($this->openSshVersion) && !$reset) {
             return $this->openSshVersion;
         }
         $this->openSshVersion = false;
-        $process = new Process('ssh -V');
+        $process = new Process(['ssh', '-V']);
         $process->run();
         $errorOutput = $process->getErrorOutput();
         if (!$process->isSuccessful()) {
@@ -525,7 +509,7 @@ class SshConfig {
      * @return bool
      *   True if the version is determined and it is lower than the $test value, false otherwise.
      */
-    private function versionIsBelow($test)
+    private function versionIsBelow(string $test): bool
     {
         $version = $this->findVersion();
         if (!$version) {
@@ -539,7 +523,8 @@ class SshConfig {
      *
      * @return bool
      */
-    public function supportsInclude() {
+    public function supportsInclude(): bool
+    {
         return !$this->versionIsBelow('7.3');
     }
 
@@ -548,7 +533,8 @@ class SshConfig {
      *
      * @return bool
      */
-    public function supportsCertificateFile() {
+    public function supportsCertificateFile(): bool
+    {
         return !$this->versionIsBelow('7.2');
     }
 
@@ -558,7 +544,7 @@ class SshConfig {
      * @return bool
      *   False if an incorrect version is installed, true otherwise.
      */
-    public function checkRequiredVersion()
+    public function checkRequiredVersion(): bool
     {
         $version = $this->findVersion();
         if (!$version) {
@@ -567,14 +553,14 @@ class SshConfig {
         if (\version_compare($version, '6.5', '<')) {
             $this->stdErr->writeln(\sprintf(
                 'OpenSSH version <error>%s</error> is installed. Version 6.5 or above is required. Some features depend on version 7.3 or above.',
-                $version
+                $version,
             ));
             return false;
         }
         if (\version_compare($version, '7.3', '<')) {
             $this->stdErr->writeln(\sprintf(
                 'OpenSSH version <comment>%s</comment> is installed. Some features depend on version 7.3 or above.',
-                $version
+                $version,
             ));
         }
         return true;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
@@ -7,22 +9,26 @@ use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Ssh;
 use Platformsh\Cli\Tests\Container;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
-class SshTest extends TestCase {
-    /** @var Ssh|null */
-    private $ssh;
+class SshTest extends TestCase
+{
+    private ?Ssh $ssh;
 
     public function setUp(): void
     {
         $container = Container::instance();
-        $container->set('input', new ArrayInput([]));
-        $container->set('config', (new Config())->withOverrides([
+        $container->set(InputInterface::class, new ArrayInput([]));
+        $container->set(OutputInterface::class, new BufferedOutput());
+        $container->set(Config::class, (new Config())->withOverrides([
             'ssh.domain_wildcards' => ['*.ssh.example.com'],
         ]));
-        $this->ssh = $container->get('ssh');
+        $this->ssh = $container->get(Ssh::class);
     }
 
-    public function testGetHost()
+    public function testGetHost(): void
     {
         $method = new \ReflectionMethod($this->ssh, 'getHost');
         $method->setAccessible(true);
@@ -36,7 +42,7 @@ class SshTest extends TestCase {
         $this->assertFalse($method->invoke($this->ssh, '###'));
     }
 
-    public function testHostIsInternal()
+    public function testHostIsInternal(): void
     {
         $method = new \ReflectionMethod($this->ssh, 'hostIsInternal');
         $method->setAccessible(true);

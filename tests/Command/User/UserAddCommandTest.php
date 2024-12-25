@@ -1,19 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Command\User;
 
 use GuzzleHttp\Client;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Command\User\UserAddCommand;
+use Platformsh\Cli\Tests\MockApp;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\EnvironmentType;
-use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Output\NullOutput;
 
 class UserAddCommandTest extends TestCase
 {
-    private $mockEnvironments = [];
-    private $mockTypes = [];
+    /** @var Environment[] */
+    private array $mockEnvironments = [];
+    /** @var array<string, EnvironmentType> */
+    private array $mockTypes = [];
 
     protected function setUp(): void
     {
@@ -40,10 +45,21 @@ class UserAddCommandTest extends TestCase
         }
     }
 
-    public function testGetSpecifiedEnvironmentRoles()
+    private function getCommandInstance(): UserAddCommand
+    {
+        $app = MockApp::instance();
+        $command = $app->find('user:add');
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
+        }
+        /** @var UserAddCommand $command */
+        return $command;
+    }
+
+    public function testGetSpecifiedEnvironmentRoles(): void
     {
         // Set up a mock command to make the private method accessible.
-        $command = new UserAddCommand();
+        $command = $this->getCommandInstance();
         $m = new \ReflectionMethod($command, 'getSpecifiedEnvironmentRoles');
         $m->setAccessible(true);
 
@@ -70,10 +86,13 @@ class UserAddCommandTest extends TestCase
             ],
         ];
         foreach ($cases as $i => $case) {
-            list($args, $expectedRoles) = $case;
-            $errorMessage = isset($case[2]) ? $case[2] : '';
+            [$args, $expectedRoles] = $case;
+            $errorMessage = $case[2] ?? '';
             try {
                 $result = $m->invoke($command, $args, $this->mockEnvironments);
+                if ($errorMessage !== '') {
+                    $this->fail('No exception thrown');
+                }
                 $this->assertEquals($expectedRoles, $result, "case $i roles");
                 $this->assertEquals('', $errorMessage, "case $i error message");
             } catch (\InvalidArgumentException $e) {
@@ -82,49 +101,43 @@ class UserAddCommandTest extends TestCase
         }
     }
 
-//    public function testGetSpecifiedTypeRoles()
-//    {
-//        // Set up a mock command to make the private method accessible.
-//        $command = new UserAddCommand();
-//        // Fake running the command to set I/O properties.
-//        $cwd = getcwd();
-//        chdir('/tmp');
-//        try { $command->run(new ArrayInput([]), new NullOutput()); } catch (\RuntimeException $e) {}
-//        chdir($cwd);
-//        $m = new \ReflectionMethod($command, 'getSpecifiedTypeRoles');
-//        $m->setAccessible(true);
-//
-//        // Test cases: quintuples of role arguments, the output, whether to ignore errors, the error message if any, the remaining roles if any.
-//        // TODO convert to anonymous class in PHP 7
-//        $cases = [
-//            [
-//                ['staging:viewer', 'stg:admin', 'viewer'],
-//                ['staging' => 'viewer'],
-//                ['stg:admin', 'viewer'],
-//            ],
-//            [
-//                ['development:viewer', 'nonexistent:viewer', 'stg:admin'],
-//                ['development' => 'viewer'],
-//                ['nonexistent:viewer', 'stg:admin'],
-//            ],
-//            [
-//                ['dev%:v', 'prod:admin'],
-//                ['development' => 'viewer'],
-//                ['prod:admin'],
-//            ],
-//        ];
-//        foreach ($cases as $i => $case) {
-//            list($roles, $expectedRoles, $expectedRemainingRoles) = $case;
-//            $result = $m->invokeArgs($command, [&$roles, $this->mockTypes]);
-//            $this->assertEquals($expectedRoles, $result, "case $i roles");
-//            $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
-//        }
-//    }
+    public function testGetSpecifiedTypeRoles(): void
+    {
+        $command = $this->getCommandInstance();
+        $m = new \ReflectionMethod($command, 'getSpecifiedTypeRoles');
+        $m->setAccessible(true);
 
-    public function testConvertEnvironmentRolesToTypeRoles()
+        // Test cases: quintuples of role arguments, the output, whether to ignore errors, the error message if any, the remaining roles if any.
+        // TODO convert to anonymous class in PHP 7
+        $cases = [
+            [
+                ['staging:viewer', 'stg:admin', 'viewer'],
+                ['staging' => 'viewer'],
+                ['stg:admin', 'viewer'],
+            ],
+            [
+                ['development:viewer', 'nonexistent:viewer', 'stg:admin'],
+                ['development' => 'viewer'],
+                ['nonexistent:viewer', 'stg:admin'],
+            ],
+            [
+                ['dev%:v', 'prod:admin'],
+                ['development' => 'viewer'],
+                ['prod:admin'],
+            ],
+        ];
+        foreach ($cases as $i => $case) {
+            [$roles, $expectedRoles, $expectedRemainingRoles] = $case;
+            $result = $m->invokeArgs($command, [&$roles, $this->mockTypes]);
+            $this->assertEquals($expectedRoles, $result, "case $i roles");
+            $this->assertEquals($expectedRemainingRoles, array_values($roles), "case $i remaining roles");
+        }
+    }
+
+    public function testConvertEnvironmentRolesToTypeRoles(): void
     {
         // Set up a mock command to make the private method accessible.
-        $command = new UserAddCommand();
+        $command = $this->getCommandInstance();
         $m = new \ReflectionMethod($command, 'convertEnvironmentRolesToTypeRoles');
         $m->setAccessible(true);
 
@@ -158,7 +171,7 @@ class UserAddCommandTest extends TestCase
         ];
         $output = new NullOutput();
         foreach ($cases as $i => $case) {
-            list($environmentRoles, $typeRoles, $expectedTypeRoles) = $case;
+            [$environmentRoles, $typeRoles, $expectedTypeRoles] = $case;
             $result = $m->invoke($command, $environmentRoles, $typeRoles, $this->mockEnvironments, $output);
             $this->assertEquals($expectedTypeRoles, $result, "case $i");
         }

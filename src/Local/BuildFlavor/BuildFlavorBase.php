@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Config;
@@ -13,78 +15,54 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class BuildFlavorBase implements BuildFlavorInterface
 {
-
     /**
      * Files from the app root to ignore during install.
      *
      * @var string[]
      */
-    protected $ignoredFiles = [];
+    protected array $ignoredFiles = [];
 
     /**
      * Special destinations for installation.
      *
-     * @var array
+     * @var array<string, string>
      *   An array of filenames in the app root, mapped to destinations. The
      *   destinations are filenames supporting the replacements:
      *     "{webroot}" - see getWebRoot() (usually /app/public on Platform.sh)
      *     "{approot}" - the $buildDir (usually /app on Platform.sh)
      */
-    protected $specialDestinations = [];
+    protected array $specialDestinations;
 
-    /** @var LocalApplication */
-    protected $app;
+    protected ?LocalApplication $app = null;
+    /** @var array<string, mixed> $settings */
+    protected array $settings = [];
+    protected string $buildDir = '.';
+    protected bool $copy = false;
 
-    /** @var array */
-    protected $settings = [];
+    protected OutputInterface $output;
+    protected OutputInterface $stdErr;
 
-    /** @var string  */
-    protected $buildDir;
+    protected Filesystem $fsHelper;
+    protected Git $gitHelper;
+    protected Shell $shellHelper;
 
-    /** @var bool */
-    protected $copy = false;
+    protected ?Config $config = null;
 
-    /** @var OutputInterface */
-    protected $output;
+    protected ?string $appRoot = null;
 
-    /** @var OutputInterface */
-    protected $stdErr;
-
-    /** @var Filesystem */
-    protected $fsHelper;
-
-    /** @var Git */
-    protected $gitHelper;
-
-    /** @var Shell */
-    protected $shellHelper;
-
-    /** @var Config */
-    protected $config;
-
-    /** @var string */
-    protected $appRoot;
-
-    /** @var string */
-    private $documentRoot;
+    private ?string $documentRoot = null;
 
     /**
      * Whether all app files have just been symlinked or copied to the build.
-     *
-     * @var bool
      */
-    private $buildInPlace = false;
+    private bool $buildInPlace = false;
 
-    /**
-     * @param object     $fsHelper
-     * @param Shell|null $shellHelper
-     * @param object     $gitHelper
-     */
-    public function __construct($fsHelper = null, Shell $shellHelper = null, $gitHelper = null)
+    public function __construct(?Filesystem $fsHelper = null, ?Shell $shellHelper = null, ?Git $gitHelper = null)
     {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->fsHelper = $fsHelper ?: new Filesystem($this->shellHelper);
         $this->gitHelper = $gitHelper ?: new Git($this->shellHelper);
+
         $this->stdErr = $this->output = new NullOutput();
 
         $this->specialDestinations = [
@@ -93,13 +71,13 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
         ];
 
         // Platform.sh has '.platform.app.yaml', but we need to be stricter.
-        $this->ignoredFiles = ['.*', ];
+        $this->ignoredFiles = ['.*'];
     }
 
     /**
      * @inheritdoc
      */
-    public function setOutput(OutputInterface $output)
+    public function setOutput(OutputInterface $output): void
     {
         $this->output = $output;
         $this->stdErr = $output instanceof ConsoleOutputInterface
@@ -111,7 +89,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function addIgnoredFiles(array $ignoredFiles)
+    public function addIgnoredFiles(array $ignoredFiles): void
     {
         $this->ignoredFiles = array_merge($this->ignoredFiles, $ignoredFiles);
     }
@@ -119,7 +97,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function prepare($buildDir, LocalApplication $app, Config $config, array $settings = [])
+    public function prepare(string $buildDir, LocalApplication $app, Config $config, array $settings = []): void
     {
         $this->app = $app;
         $this->appRoot = $app->getRoot();
@@ -127,10 +105,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
         $this->settings = $settings;
         $this->config = $config;
 
-        if ($this->config->getWithDefault('local.copy_on_windows', false)) {
-            $this->fsHelper->setCopyOnWindows(true);
-        }
-        $this->ignoredFiles[] = $this->config->getWithDefault('local.web_root', '_www');
+        $this->fsHelper->setCopyOnWindows($this->config->getBool('local.copy_on_windows'));
+        $this->ignoredFiles[] = $this->config->getStr('local.web_root');
 
         $this->setBuildDir($buildDir);
 
@@ -145,7 +121,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * {@inheritdoc}
      */
-    public function setBuildDir($buildDir)
+    public function setBuildDir(string $buildDir): void
     {
         $this->buildDir = $buildDir;
     }
@@ -153,7 +129,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * Process the defined special destinations.
      */
-    protected function processSpecialDestinations()
+    protected function processSpecialDestinations(): void
     {
         foreach ($this->specialDestinations as $sourcePattern => $relDestination) {
             $matched = glob($this->appRoot . '/' . $sourcePattern, GLOB_NOSORT);
@@ -168,7 +144,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             $absDestination = str_replace(
                 ['{webroot}', '{approot}'],
                 [$this->getWebRoot(), $this->buildDir],
-                $relDestination
+                $relDestination,
             );
 
             foreach ($matched as $source) {
@@ -196,8 +172,8 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                     $this->stdErr->writeln(
                         sprintf(
                             "Overriding existing path '%s' in destination",
-                            str_replace($this->buildDir . '/', '', $destination)
-                        )
+                            str_replace($this->buildDir . '/', '', $destination),
+                        ),
                     );
                     $this->fsHelper->remove($destination);
                 }
@@ -218,11 +194,11 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      *
      * @return string
      */
-    protected function getSharedDir()
+    protected function getSharedDir(): string
     {
-        $shared = $this->app->getSourceDir() . '/' . $this->config->get('local.shared_dir');
+        $shared = $this->app->getSourceDir() . '/' . $this->config->getStr('local.shared_dir');
         if (!$this->app->isSingle()) {
-            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', $this->app->getName());
+            $shared .= '/' . preg_replace('/[^a-z0-9\-_]+/i', '-', (string) $this->app->getName());
         }
         $this->fsHelper->mkdir($shared);
 
@@ -232,7 +208,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function getWebRoot()
+    public function getWebRoot(): string
     {
         return $this->buildDir . '/' . $this->documentRoot;
     }
@@ -240,7 +216,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @return string
      */
-    public function getAppDir()
+    public function getAppDir(): string
     {
         return $this->buildDir;
     }
@@ -251,7 +227,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      * @return string
      *   The absolute path to the build directory where files have been copied.
      */
-    protected function copyToBuildDir()
+    protected function copyToBuildDir(): string
     {
         $this->buildInPlace = true;
         $buildDir = $this->buildDir;
@@ -274,10 +250,10 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      *
      * @param string $buildDir
      */
-    private function cloneToBuildDir($buildDir)
+    private function cloneToBuildDir(string $buildDir): void
     {
-        $gitRoot = $this->gitHelper->getRoot($this->appRoot, true);
-        $ref = $this->gitHelper->execute(['rev-parse', 'HEAD'], $gitRoot, true);
+        $gitRoot = (string) $this->gitHelper->getRoot($this->appRoot, true);
+        $ref = (string) $this->gitHelper->execute(['rev-parse', 'HEAD'], $gitRoot, true);
 
         $cloneArgs = ['--recursive', '--shared'];
         $tmpRepo = $buildDir . '-repo';
@@ -298,7 +274,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function install()
+    public function install(): void
     {
         $this->processSharedFileMounts();
     }
@@ -310,7 +286,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      * shared files directory, and symlinks it into the appropriate path in the
      * build.
      */
-    protected function processSharedFileMounts()
+    protected function processSharedFileMounts(): void
     {
         $sharedDir = $this->getSharedDir();
 
@@ -325,7 +301,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
             return;
         }
 
-        $sharedDirRelative = $this->config->get('local.shared_dir');
+        $sharedDirRelative = $this->config->getStr('local.shared_dir');
         $this->stdErr->writeln('Creating symbolic links to mimic shared file mounts');
         foreach ($sharedFileMounts as $appPath => $sharedPath) {
             $target = $sharedDir . '/' . $sharedPath;
@@ -336,10 +312,10 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
                 $this->fsHelper->remove($link);
             }
             if (!file_exists($target)) {
-                $this->fsHelper->mkdir($target, 0775);
+                $this->fsHelper->mkdir($target, 0o775);
             }
             $this->stdErr->writeln(
-                '  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>'
+                '  Symlinking <info>' . $appPath . '</info> to <info>' . $targetRelative . '</info>',
             );
             $this->fsHelper->symlink($target, $link);
         }
@@ -350,20 +326,20 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      *
      * This helps with database setup, etc.
      */
-    protected function installDrupalSettingsLocal()
+    protected function installDrupalSettingsLocal(): void
     {
         $sitesDefault = $this->getWebRoot() . '/sites/default';
         $shared = $this->getSharedDir();
         $settingsLocal = $sitesDefault . '/settings.local.php';
 
-        if ($shared !== false && is_dir($sitesDefault) && !file_exists($settingsLocal)) {
+        if (is_dir($sitesDefault) && !file_exists($settingsLocal)) {
             $sharedSettingsLocal = $shared . '/settings.local.php';
-            $relative = $this->config->get('local.shared_dir') . '/settings.local.php';
+            $relative = $this->config->getStr('local.shared_dir') . '/settings.local.php';
             if (!file_exists($sharedSettingsLocal)) {
                 $this->stdErr->writeln("Creating file: <info>$relative</info>");
                 $this->fsHelper->copy(CLI_ROOT . '/resources/drupal/settings.local.php.dist', $sharedSettingsLocal);
                 $this->stdErr->writeln(
-                    'Edit this file to add your database credentials and other Drupal configuration.'
+                    'Edit this file to add your database credentials and other Drupal configuration.',
                 );
             } else {
                 $this->stdErr->writeln("Symlinking <info>$relative</info> into sites/default");
@@ -375,7 +351,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function getKeys()
+    public function getKeys(): array
     {
         return ['default'];
     }
@@ -383,7 +359,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
     /**
      * @inheritdoc
      */
-    public function canArchive()
+    public function canArchive(): bool
     {
         return !$this->buildInPlace || $this->copy;
     }
@@ -394,7 +370,7 @@ abstract class BuildFlavorBase implements BuildFlavorInterface
      * @param string $source The path to a default .gitignore file, relative to
      *                       the 'resources' directory.
      */
-    protected function copyGitIgnore($source)
+    protected function copyGitIgnore(string $source): void
     {
         $source = CLI_ROOT . '/resources/' . $source;
         $gitRoot = $this->gitHelper->getRoot($this->appRoot);

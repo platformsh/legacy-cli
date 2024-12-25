@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Event\LoginRequiredEvent;
@@ -10,24 +12,13 @@ use Symfony\Component\Process\Process;
 
 class SshDiagnostics
 {
-    const _SSH_ERROR_EXIT_CODE = 255;
-    const _GIT_SSH_ERROR_EXIT_CODE = 128;
+    public const _SSH_ERROR_EXIT_CODE = 255;
+    public const _GIT_SSH_ERROR_EXIT_CODE = 128;
+    private readonly OutputInterface $stdErr;
 
-    private $ssh;
-    private $sshKey;
-    private $certifier;
-    private $stdErr;
-    private $api;
-    private $config;
-
-    public function __construct(Ssh $ssh, OutputInterface $output, Certifier $certifier, SshKey $sshKey, Api $api, Config $config)
+    public function __construct(private readonly Ssh $ssh, OutputInterface $output, private readonly Certifier $certifier, private readonly SshKey $sshKey, private readonly Api $api, private readonly Config $config)
     {
-        $this->ssh = $ssh;
         $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $this->sshKey = $sshKey;
-        $this->certifier = $certifier;
-        $this->api = $api;
-        $this->config = $config;
     }
 
     /**
@@ -37,7 +28,7 @@ class SshDiagnostics
      *
      * @return string
      */
-    private function noServiceAccessMessage(Process $failedProcess)
+    private function noServiceAccessMessage(Process $failedProcess): string
     {
         $errorOutput = $failedProcess->getErrorOutput();
         if (stripos($errorOutput, "you successfully authenticated") !== false) {
@@ -55,10 +46,10 @@ class SshDiagnostics
      *
      * @return array{amr?: string[], max_age?: int}
      */
-    private function stepUpAuthenticationParams(Process $failedProcess)
+    private function stepUpAuthenticationParams(Process $failedProcess): array
     {
         $errorOutput = $failedProcess->getErrorOutput();
-        if (strpos($errorOutput, 'Error: Access denied') === false) {
+        if (!str_contains($errorOutput, 'Error: Access denied')) {
             return [];
         }
         if (preg_match('/^Parameters: ({.+)$/m', $errorOutput, $matches)) {
@@ -75,7 +66,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function connectionFailedDueToMFA(Process $failedProcess)
+    private function connectionFailedDueToMFA(Process $failedProcess): bool
     {
         return stripos($failedProcess->getErrorOutput(), 'reason: access requires MFA') !== false;
     }
@@ -87,7 +78,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function hostKeyVerificationFailed(Process $failedProcess)
+    private function hostKeyVerificationFailed(Process $failedProcess): bool
     {
         $stdErr = $failedProcess->getErrorOutput();
 
@@ -101,7 +92,7 @@ class SshDiagnostics
      *
      * @return bool
      */
-    private function keyAuthenticationFailed(Process $failedProcess)
+    private function keyAuthenticationFailed(Process $failedProcess): bool
     {
         return stripos($failedProcess->getErrorOutput(), "Permission denied (publickey)") !== false;
     }
@@ -115,10 +106,10 @@ class SshDiagnostics
      * @return Process
      *   A process (already run) that tested the SSH connection.
      */
-    private function testConnection($uri, $timeout = 5)
+    private function testConnection(string $uri, float|int $timeout = 5): Process
     {
         $this->stdErr->writeln('Making test connection to diagnose SSH errors', OutputInterface::VERBOSITY_DEBUG);
-        $process = new Process($this->ssh->getSshCommand($uri, [], 'exit', false, false), null, $this->ssh->getEnv());
+        $process = Process::fromShellCommandline($this->ssh->getSshCommand($uri, [], 'exit', false, false), null, $this->ssh->getEnv());
         $process->setTimeout($timeout);
         $process->run();
         $this->stdErr->writeln('Test connection complete', OutputInterface::VERBOSITY_DEBUG);
@@ -132,12 +123,12 @@ class SshDiagnostics
      * @param string[] $currentMethods
      * @return bool
      */
-    private function authMethodsMatch(array $challengeMethods, array $currentMethods)
+    private function authMethodsMatch(array $challengeMethods, array $currentMethods): bool
     {
         $unmatched = array_diff($challengeMethods, $currentMethods);
-        if (in_array('sso:*', $currentMethods, TRUE)) {
+        if (in_array('sso:*', $currentMethods, true)) {
             foreach ($unmatched as $key => $method) {
-                if (strpos($method, 'sso:') === 0) {
+                if (str_starts_with($method, 'sso:')) {
                     unset($unmatched[$key]);
                 }
             }
@@ -155,7 +146,7 @@ class SshDiagnostics
      * @param bool $newline
      *   Whether to add a new line before messages.
      */
-    public function diagnoseFailure($uri, Process $failedProcess, $newline = true)
+    public function diagnoseFailure(string $uri, Process $failedProcess, bool $newline = true): void
     {
         if (!$this->ssh->hostIsInternal($uri)) {
             return;
@@ -171,7 +162,7 @@ class SshDiagnostics
             return;
         }
 
-        $executable = $this->config->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         if ($params = $this->stepUpAuthenticationParams($failedProcess)) {
             if ($newline) {
@@ -192,7 +183,7 @@ class SshDiagnostics
                 }
             }
 
-            $loginRequiredEvent = new LoginRequiredEvent(isset($params['amr']) ? $params['amr'] : [], isset($params['max_age']) ? $params['max_age'] : null, $this->api->hasApiToken());
+            $loginRequiredEvent = new LoginRequiredEvent($params['amr'] ?? [], $params['max_age'] ?? null, $this->api->hasApiToken());
             $this->stdErr->writeln($loginRequiredEvent->getExtendedMessage($this->config));
             return;
         }
@@ -226,7 +217,7 @@ class SshDiagnostics
 
             $this->stdErr->writeln('MFA is not yet enabled on your account.');
             if ($this->config->has('api.mfa_setup_url')) {
-                $this->stdErr->writeln(\sprintf('Set up MFA at: <comment>%s</comment>', $this->config->get('api.mfa_setup_url')));
+                $this->stdErr->writeln(\sprintf('Set up MFA at: <comment>%s</comment>', $this->config->getStr('api.mfa_setup_url')));
                 $this->stdErr->writeln(\sprintf('Then log in again with: <comment>%s login -f</comment>', $executable));
                 return;
             }
@@ -260,14 +251,14 @@ class SshDiagnostics
             if (!$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate() && $this->config->isCommandEnabled('ssh-cert:load')) {
                 $this->stdErr->writeln(\sprintf(
                     'You may need to create an SSH certificate, by running: <comment>%s ssh-cert:load</comment>',
-                    $executable
+                    $executable,
                 ));
                 return;
             }
             if ($this->config->isCommandEnabled('ssh-key:add') && !$this->certifier->isAutoLoadEnabled() && !$this->certifier->getExistingCertificate()) {
                 $this->stdErr->writeln(\sprintf(
                     'You may need to add an SSH key, by running: <comment>%s ssh-key:add</comment>',
-                    $executable
+                    $executable,
                 ));
             }
         }
@@ -285,7 +276,7 @@ class SshDiagnostics
      * @param int $exitCode
      *   The exit code of the SSH command. Used to check if diagnostics are relevant.
      */
-    public function diagnoseFailureWithTest($uri, $startTime, $exitCode)
+    public function diagnoseFailureWithTest(string $uri, int $startTime, int $exitCode): void
     {
         if ($exitCode !== self::_SSH_ERROR_EXIT_CODE || !$this->ssh->hostIsInternal($uri)) {
             return;

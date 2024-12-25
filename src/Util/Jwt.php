@@ -1,25 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
-class Jwt
+readonly class Jwt
 {
-    private $token;
-
-    /**
-     * @param string $token
-     */
-    public function __construct($token)
-    {
-        $this->token = $token;
-    }
+    public function __construct(private string $token) {}
 
     /**
      * Returns the JWT payload claims without verification.
      *
      * @return false|array<string, mixed>
      */
-    public function unsafeGetUnverifiedClaims()
+    public function unsafeGetUnverifiedClaims(): array|false
     {
         $split = \explode('.', $this->token, 3);
         if (!isset($split[1])) {

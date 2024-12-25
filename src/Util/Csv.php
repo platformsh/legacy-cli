@@ -1,12 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 class Csv
 {
-    private $delimiter;
-    private $lineBreak;
-
     /**
      * Csv constructor.
      *
@@ -19,16 +18,12 @@ class Csv
      * @param string $delimiter The delimiter character between cells.
      * @param string $lineBreak The break character(s) between lines.
      */
-    public function __construct($delimiter = ',', $lineBreak = "\r\n")
-    {
-        $this->delimiter = $delimiter;
-        $this->lineBreak = $lineBreak;
-    }
+    public function __construct(private readonly string $delimiter = ',', private readonly string $lineBreak = "\r\n") {}
 
     /**
      * Format an array of rows as a CSV spreadsheet.
      *
-     * @param array $data
+     * @param array<array<string|int|float|\Stringable>> $data
      *   An array of rows. Each row is an array of cells (hopefully the same
      *   number in each row). Each cell must be a string, or a type that can
      *   be cast to a string.
@@ -37,7 +32,7 @@ class Csv
      *
      * @return string
      */
-    public function format(array $data, $appendLineBreak = true)
+    public function format(array $data, bool $appendLineBreak = true): string
     {
         return implode($this->lineBreak, array_map([$this, 'formatRow'], $data))
             . ($appendLineBreak ? $this->lineBreak : '');
@@ -46,11 +41,11 @@ class Csv
     /**
      * Format an array as a CSV row.
      *
-     * @param array $data
+     * @param array<string|\Stringable> $data
      *
      * @return string
      */
-    private function formatRow(array $data)
+    private function formatRow(array $data): string
     {
         return implode($this->delimiter, array_map([$this, 'formatCell'], $data));
     }
@@ -58,11 +53,11 @@ class Csv
     /**
      * Format a CSV cell.
      *
-     * @param string|object $cell
+     * @param string|\Stringable $cell
      *
      * @return string
      */
-    protected function formatCell($cell)
+    protected function formatCell(string|\Stringable $cell): string
     {
         // Cast cell data to a string.
         $cell = (string) $cell;
@@ -73,8 +68,6 @@ class Csv
         }
 
         // Standardize line breaks.
-        $cell = preg_replace('/\R/u', $this->lineBreak, $cell);
-
-        return $cell;
+        return preg_replace('/\R/u', $this->lineBreak, $cell);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local\BuildFlavor;
 
 use Platformsh\Cli\Service\Drush;
@@ -8,13 +10,12 @@ use Symfony\Component\Finder\Finder;
 
 class Drupal extends BuildFlavorBase
 {
-
-    public function getStacks()
+    public function getStacks(): array
     {
         return ['php', 'hhvm'];
     }
 
-    public function getKeys()
+    public function getKeys(): array
     {
         return ['drupal'];
     }
@@ -27,7 +28,7 @@ class Drupal extends BuildFlavorBase
      *
      * @return bool
      */
-    public static function isDrupal($directory, $depth = '< 2')
+    public static function isDrupal(string $directory, mixed $depth = '< 2'): bool
     {
         if (!is_dir($directory)) {
             return false;
@@ -55,13 +56,16 @@ class Drupal extends BuildFlavorBase
                ->depth($depth)
                ->name('index.php');
         foreach ($finder as $file) {
-            if (($f = fopen($file, 'r')) !== false) {
-                $beginning = fread($f, 3178);
-                fclose($f);
-                if ($beginning !== false && strpos($beginning, 'Drupal') !== false) {
-                    return true;
-                }
+            try {
+                $o = $file->openFile();
+            } catch (\RuntimeException) {
+                continue;
             }
+            $beginning = $o->fread(3178);
+            if ($beginning !== false && str_contains($beginning, 'Drupal')) {
+                return true;
+            }
+            unset($o);
         }
 
         // Check whether there is a composer.json file requiring Drupal core.
@@ -71,7 +75,7 @@ class Drupal extends BuildFlavorBase
                ->depth($depth)
                ->name('composer.json');
         foreach ($finder as $file) {
-            $composerJson = json_decode(file_get_contents($file), true);
+            $composerJson = json_decode($file->getContents(), true);
             if (isset($composerJson['require']['drupal/core'])
                 || isset($composerJson['require']['drupal/core-recommended'])
                 || isset($composerJson['require']['drupal/drupal'])
@@ -84,14 +88,14 @@ class Drupal extends BuildFlavorBase
         return false;
     }
 
-    public function build()
+    public function build(): void
     {
-        $profiles = glob($this->appRoot . '/*.profile');
+        $profiles = glob($this->appRoot . '/*.profile') ?: [];
         $projectMake = $this->findDrushMakeFile();
         if (count($profiles) > 1) {
             throw new \Exception("Found multiple files ending in '*.profile' in the directory.");
         } elseif (count($profiles) == 1) {
-            $profileName = strtok(basename($profiles[0]), '.');
+            [$profileName,] = explode('.', basename($profiles[0]), 2);
             $this->buildInProfileMode($profileName);
         } elseif ($projectMake) {
             $this->buildInProjectMode($projectMake);
@@ -111,12 +115,9 @@ class Drupal extends BuildFlavorBase
     }
 
     /**
-     * Check that an application file is ignored in .gitignore.
-     *
-     * @param string $filename
-     * @param string $suggestion
+     * Checks that an application file is ignored in .gitignore.
      */
-    protected function checkIgnored($filename, $suggestion = null)
+    protected function checkIgnored(string $filename, ?string $suggestion = null): void
     {
         if (!file_exists($filename)) {
             return;
@@ -134,9 +135,9 @@ class Drupal extends BuildFlavorBase
     /**
      * Set up options to pass to the drush commands.
      *
-     * @return array
+     * @return string[]
      */
-    protected function getDrushFlags()
+    protected function getDrushFlags(): array
     {
         $drushFlags = [
             '--yes',
@@ -179,7 +180,7 @@ class Drupal extends BuildFlavorBase
      * @return string|false
      *   The absolute filename of the make file.
      */
-    protected function findDrushMakeFile($required = false, $core = false)
+    protected function findDrushMakeFile(bool $required = false, bool $core = false): string|false
     {
         $candidates = [
             'project.make.yml',
@@ -206,10 +207,11 @@ class Drupal extends BuildFlavorBase
 
         if ($required) {
             throw new \Exception(
-                ($core
+                (
+                    $core
                     ? "Couldn't find a core make file in the directory."
                     : "Couldn't find a make file in the directory."
-                ) . " Possible filenames: " . implode(',', $candidates)
+                ) . " Possible filenames: " . implode(',', $candidates),
             );
         }
 
@@ -219,7 +221,7 @@ class Drupal extends BuildFlavorBase
     /**
      * @return Drush
      */
-    protected function getDrushHelper()
+    protected function getDrushHelper(): Drush
     {
         static $drushHelper;
         if (!isset($drushHelper)) {
@@ -230,11 +232,9 @@ class Drupal extends BuildFlavorBase
     }
 
     /**
-     * Build in 'project' mode, i.e. just using a Drush make file.
-     *
-     * @param string $projectMake
+     * Builds in 'project' mode, i.e. just using a Drush make file.
      */
-    protected function buildInProjectMode($projectMake)
+    protected function buildInProjectMode(string $projectMake): void
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
@@ -244,7 +244,7 @@ class Drupal extends BuildFlavorBase
 
         $args = array_merge(
             ['make', $projectMake, $drupalRoot],
-            $drushFlags
+            $drushFlags,
         );
 
         // Create a lock file automatically.
@@ -279,7 +279,7 @@ class Drupal extends BuildFlavorBase
             true,
             false,
             array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
-            $this->copy
+            $this->copy,
         );
     }
 
@@ -288,7 +288,7 @@ class Drupal extends BuildFlavorBase
      *
      * @param string $profileName
      */
-    protected function buildInProfileMode($profileName)
+    protected function buildInProfileMode(string $profileName): void
     {
         $drushHelper = $this->getDrushHelper();
         $drushHelper->ensureInstalled();
@@ -315,7 +315,7 @@ class Drupal extends BuildFlavorBase
 
             $args = array_merge(
                 ['make', '--no-core', '--contrib-destination=.', $projectMake, $tempProfileDir],
-                $drushFlags
+                $drushFlags,
             );
 
             // Create a lock file automatically.
@@ -329,7 +329,7 @@ class Drupal extends BuildFlavorBase
         if ($projectCoreMake) {
             $args = array_merge(
                 ['make', $projectCoreMake, $drupalRoot],
-                $drushFlags
+                $drushFlags,
             );
 
             // Create a lock file automatically.
@@ -370,7 +370,7 @@ class Drupal extends BuildFlavorBase
             true,
             true,
             array_merge($this->ignoredFiles, array_keys($this->specialDestinations)),
-            $this->copy
+            $this->copy,
         );
     }
 
@@ -384,7 +384,7 @@ class Drupal extends BuildFlavorBase
      *
      * See https://github.com/platformsh/platformsh-cli/issues/175
      */
-    protected function processSettingsPhp()
+    protected function processSettingsPhp(): void
     {
         if ($this->copy) {
             // This behaviour only relates to symlinking.
@@ -396,13 +396,13 @@ class Drupal extends BuildFlavorBase
             $this->fsHelper->copy($settingsPhpFile, $this->getWebRoot() . '/sites/default/settings.php');
             $this->stdErr->writeln(
                 "  <comment>Your settings.php file has been copied (not symlinked) into the build directory."
-                . "\n  You will need to rebuild if you edit this file.</comment>"
+                . "\n  You will need to rebuild if you edit this file.</comment>",
             );
             $this->ignoredFiles[] = 'settings.php';
         }
     }
 
-    public function install()
+    public function install(): void
     {
         $this->processSharedFileMounts();
 
@@ -421,11 +421,11 @@ class Drupal extends BuildFlavorBase
 
         // Symlink all files and folders from shared into sites/default.
         $shared = $this->getSharedDir();
-        if ($shared !== false && is_dir($sitesDefault)) {
+        if (is_dir($sitesDefault)) {
             // Hidden files and files defined in "mounts" are skipped.
             $skip = ['.*'];
             foreach ($this->app->getSharedFileMounts() as $mount) {
-                list($skip[],) = explode('/', $mount, 2);
+                [$skip[], ] = explode('/', $mount, 2);
             }
 
             $this->fsHelper->symlinkAll($shared, $sitesDefault, true, false, $skip);

@@ -1,66 +1,103 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Client\Model\Activity;
 use Platformsh\Client\Model\ActivityLog\LogItem;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ActivityMonitor
 {
-    const STREAM_WAIT = 200000; // microseconds
+    public const STREAM_WAIT = 200000; // microseconds
 
-    protected static $resultNames = [
+    private const RESULT_NAMES = [
         Activity::RESULT_FAILURE => 'failure',
         Activity::RESULT_SUCCESS => 'success',
     ];
 
-    protected static $stateNames = [
+    private const STATE_NAMES = [
         Activity::STATE_PENDING => 'pending',
         Activity::STATE_COMPLETE => 'complete',
         Activity::STATE_IN_PROGRESS => 'in progress',
         Activity::STATE_CANCELLED => 'cancelled',
     ];
 
-    protected $output;
-    protected $config;
-    protected $api;
+    private readonly OutputInterface $stdErr;
 
-    /**
-     * @param OutputInterface $output
-     * @param Config $config
-     * @param Api $api
-     */
-    public function __construct(OutputInterface $output, Config $config, Api $api)
+    public function __construct(private readonly Config $config, private readonly Api $api, private readonly Io $io, OutputInterface $output)
     {
-        $this->output = $output;
-        $this->config = $config;
-        $this->api = $api;
+        $this->stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
     }
 
     /**
-     * @return \Symfony\Component\Console\Output\OutputInterface
+     * Indents a multi-line string.
      */
-    protected function getStdErr()
-    {
-        return $this->output instanceof ConsoleOutputInterface ? $this->output->getErrorOutput() : $this->output;
-    }
-
-    /**
-     * Indent a multi-line string.
-     *
-     * @param string $string
-     * @param string $prefix
-     *
-     * @return string
-     */
-    protected function indent($string, $prefix = '    ')
+    protected function indent(string $string, string $prefix = '    '): string
     {
         return preg_replace('/^/m', $prefix, $string);
+    }
+
+    /**
+     * Add both the --no-wait and --wait options.
+     */
+    public function addWaitOptions(InputDefinition $definition): void
+    {
+        $definition->addOption(new InputOption('no-wait', 'W', InputOption::VALUE_NONE, 'Do not wait for the operation to complete'));
+        if ($this->detectRunningInHook()) {
+            $definition->addOption(new InputOption('wait', null, InputOption::VALUE_NONE, 'Wait for the operation to complete'));
+        } else {
+            $definition->addOption(new InputOption('wait', null, InputOption::VALUE_NONE, 'Wait for the operation to complete (default)'));
+        }
+    }
+
+    /**
+     * Returns whether we should wait for an operation to complete.
+     */
+    public function shouldWait(InputInterface $input): bool
+    {
+        if ($input->hasOption('no-wait') && $input->getOption('no-wait')) {
+            return false;
+        }
+        if ($input->hasOption('wait') && $input->getOption('wait')) {
+            return true;
+        }
+        if ($this->detectRunningInHook()) {
+            $serviceName = $this->config->getStr('service.name');
+            $message = "\n<comment>Warning:</comment> $serviceName hook environment detected: assuming <comment>--no-wait</comment> by default."
+                . "\nTo avoid ambiguity, please specify either --no-wait or --wait."
+                . "\n";
+            $this->stdErr->writeln($message);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Detects a Platform.sh non-terminal Dash environment; i.e. a hook.
+     *
+     * @return bool
+     */
+    private function detectRunningInHook(): bool
+    {
+        $envPrefix = $this->config->getStr('service.env_prefix');
+        if (getenv($envPrefix . 'PROJECT')
+            && basename((string) getenv('SHELL')) === 'dash'
+            && !$this->io->isTerminal(STDIN)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -75,9 +112,9 @@ class ActivityMonitor
      *
      * @return bool True if the activity succeeded, false otherwise.
      */
-    public function waitAndLog(Activity $activity, $pollInterval = 3, $timestamps = false, $context = true, OutputInterface $logOutput = null, $noResult = false)
+    public function waitAndLog(Activity $activity, int $pollInterval = 3, bool|string $timestamps = false, bool $context = true, ?OutputInterface $logOutput = null, bool $noResult = false): bool
     {
-        $stdErr = $this->getStdErr();
+        $stdErr = $this->stdErr;
         $logOutput = $logOutput ?: $stdErr;
 
         if ($context) {
@@ -94,10 +131,8 @@ class ActivityMonitor
             return $this->formatState($overrideState ?: $activity->state);
         });
         $startTime = $this->getStart($activity) ?: time();
-        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime) {
-            return $this->formatDuration(time() - $startTime);
-        });
-        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor) { return $progressColor; });
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
+        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
         $bar->setFormat('[%bar%] <fg=%fgColor%>%elapsed:6s%</> (%state%)');
         $bar->start();
 
@@ -233,7 +268,7 @@ class ActivityMonitor
      *
      * @return string
      */
-    private function formatDuration($value)
+    private function formatDuration(int|float $value): string
     {
         $hours = $minutes = 0;
         $seconds = (int) round($value);
@@ -256,7 +291,8 @@ class ActivityMonitor
      *
      * @return array{'items': LogItem[], 'seal': bool}
      */
-    private function parseLog(&$buffer) {
+    private function parseLog(string &$buffer): array
+    {
         if (\strlen($buffer) <= 1) {
             return ['items' => [], 'seal' => false];
         }
@@ -280,14 +316,15 @@ class ActivityMonitor
      *
      * @return string
      */
-    public function formatLog(array $items, $timestamps = false) {
+    public function formatLog(array $items, bool|string $timestamps = false): string
+    {
         $timestampFormat = false;
         if ($timestamps !== false) {
-            $timestampFormat = $timestamps ?: $this->config->getWithDefault('application.date_format', 'Y-m-d H:i:s');
+            $timestampFormat = $timestamps === true ? $this->config->getStr('application.date_format') : $timestamps;
         }
-        $formatItem = function (LogItem $item) use ($timestampFormat) {
+        $formatItem = function (LogItem $item) use ($timestampFormat): string {
             if ($timestampFormat !== false) {
-                return '[' . $item->getTime()->format($timestampFormat) . '] '. $item->getMessage();
+                return '[' . $item->getTime()->format($timestampFormat) . '] ' . $item->getMessage();
             }
 
             return $item->getMessage();
@@ -311,9 +348,9 @@ class ActivityMonitor
      * @return bool
      *   True if all activities succeed, false otherwise.
      */
-    public function waitMultiple(array $activities, Project $project, $context = true, $noLog = false, $noResult = false)
+    public function waitMultiple(array $activities, Project $project, bool $context = true, bool $noLog = false, bool $noResult = false): bool
     {
-        $stdErr = $this->getStdErr();
+        $stdErr = $this->stdErr;
 
         // If there is 1 activity then display its log.
         $count = count($activities);
@@ -324,12 +361,8 @@ class ActivityMonitor
         }
 
         // Split integration and non-integration activities, and put the latter first.
-        $integrationActivities = array_filter($activities, function (Activity $a) {
-            return strpos($a->type, 'integration.') === 0;
-        });
-        $nonIntegrationActivities = array_filter($activities, function (Activity $a) {
-            return strpos($a->type, 'integration.') !== 0;
-        });
+        $integrationActivities = array_filter($activities, fn(Activity $a): bool => str_starts_with($a->type, 'integration.'));
+        $nonIntegrationActivities = array_filter($activities, fn(Activity $a): bool => !str_starts_with($a->type, 'integration.'));
         $activities = array_merge($nonIntegrationActivities, $integrationActivities);
 
         // For more than one activity, output a list of their descriptions.
@@ -397,7 +430,7 @@ class ActivityMonitor
                         $stdErr->writeln(sprintf('%s finished with an <fg=%s>unknown result</>:', $summaryCount, $fgColor));
                 }
                 foreach ($items as $item) {
-                    list($num, $activity) = $item;
+                    [$num, $activity] = $item;
                     $stdErr->writeln(sprintf('  <fg=%s>#%d</> %s', $fgColor, $num, self::getFormattedDescription($activity, true, true, $fgColor)));
                     if ($showLog) {
                         $stdErr->writeln('  <error>Log:</error>');
@@ -432,10 +465,8 @@ class ActivityMonitor
             }
             return implode(', ', $withCount);
         });
-        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor) { return $progressColor; });
-        $bar->setPlaceholderFormatterDefinition('elapsed', function () use ($startTime, &$progressColor) {
-            return $this->formatDuration(time() - $startTime);
-        });
+        $bar->setPlaceholderFormatterDefinition('fgColor', function () use (&$progressColor): string { return $progressColor; });
+        $bar->setPlaceholderFormatterDefinition('elapsed', fn() => $this->formatDuration(time() - $startTime));
         $bar->start();
 
         // Get the most recent created date of each of the activities, as a Unix
@@ -516,9 +547,9 @@ class ActivityMonitor
      *
      * @return bool Success or failure.
      */
-    private function printResult(Activity $activity, $logOnFailure = false)
+    private function printResult(Activity $activity, bool $logOnFailure = false): bool
     {
-        $stdErr = $this->getStdErr();
+        $stdErr = $this->stdErr;
 
         // Display the success or failure messages.
         switch ($activity->result) {
@@ -545,28 +576,19 @@ class ActivityMonitor
     }
 
     /**
-     * Format a state name.
-     *
-     * @param string $state
-     *
-     * @return string
+     * Formats a state name.
      */
-    public static function formatState($state)
+    public static function formatState(string $state): string
     {
-        return isset(self::$stateNames[$state]) ? self::$stateNames[$state] : $state;
+        return self::STATE_NAMES[$state] ?? $state;
     }
 
     /**
-     * Format a result.
-     *
-     * @param string $result
-     * @param bool   $decorate
-     *
-     * @return string
+     * Formats an activity result.
      */
-    public static function formatResult($result, $decorate = true)
+    public static function formatResult(string $result, bool $decorate = true): string
     {
-        $name = isset(self::$resultNames[$result]) ? self::$resultNames[$result] : $result;
+        $name = self::RESULT_NAMES[$result] ?? $result;
 
         return $decorate && $result === Activity::RESULT_FAILURE
             ? '<error>' . $name . '</error>'
@@ -580,7 +602,7 @@ class ActivityMonitor
      *
      * @return ProgressBar
      */
-    protected function newProgressBar(OutputInterface $output)
+    protected function newProgressBar(OutputInterface $output): ProgressBar
     {
         // If the console output is not decorated (i.e. it does not support
         // ANSI), use NullOutput to suppress the progress bar entirely.
@@ -592,14 +614,14 @@ class ActivityMonitor
     /**
      * Get the formatted description of an activity.
      *
-     * @param \Platformsh\Client\Model\Activity $activity The activity.
+     * @param Activity $activity The activity.
      * @param bool $withDecoration Add decoration to activity tags.
      * @param bool $withId Add the activity ID.
      * @param string $fgColor Define a foreground color e.g. 'green', 'red', 'cyan'.
      *
      * @return string
      */
-    public static function getFormattedDescription(Activity $activity, $withDecoration = true, $withId = false, $fgColor = '')
+    public static function getFormattedDescription(Activity $activity, bool $withDecoration = true, bool $withId = false, string $fgColor = ''): string
     {
         if (!$withDecoration) {
             if ($withId) {
@@ -612,14 +634,14 @@ class ActivityMonitor
         // Replace description HTML elements with Symfony Console decoration
         // tags.
         $descr = preg_replace('@<[^/][^>]+>@', '<options=underscore>', $descr);
-        $descr = preg_replace('@</[^>]+>@', '</>', $descr);
+        $descr = preg_replace('@</[^>]+>@', '</>', (string) $descr);
 
         // Replace literal tags like "&lt;info&;gt;" with escaped tags like
         // "\<info>".
-        $descr = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', $descr);
+        $descr = preg_replace('@&lt;(/?[a-z][a-z0-9,_=;-]*+)&gt;@i', '\\\<$1>', (string) $descr);
 
         // Decode other HTML entities.
-        $descr = html_entity_decode($descr, ENT_QUOTES, 'utf-8');
+        $descr = html_entity_decode((string) $descr, ENT_QUOTES, 'utf-8');
 
         if ($withId) {
             if ($fgColor) {
@@ -636,7 +658,8 @@ class ActivityMonitor
      *
      * @return false|int
      */
-    private function getStart(Activity $activity) {
+    private function getStart(Activity $activity): int|false
+    {
         return !empty($activity->started_at) ? strtotime($activity->started_at) : strtotime($activity->created_at);
     }
 
@@ -649,7 +672,8 @@ class ActivityMonitor
      *
      * @return resource
      */
-    private function getLogStream(Activity $activity, ProgressBar $bar) {
+    private function getLogStream(Activity $activity, ProgressBar $bar)
+    {
         $url = $activity->getLink('log');
 
         // Try fetching the stream with a 10 second timeout per call, and a .5
@@ -657,9 +681,9 @@ class ActivityMonitor
         $readTimeout = 10;
         $interval = .5;
 
-        if ($this->config->getWithDefault('api.debug', false)) {
+        if ($this->config->getBool('api.debug')) {
             $bar->clear();
-            $stdErr = $this->getStdErr();
+            $stdErr = $this->stdErr;
             $stdErr->write($stdErr->isDecorated() ? "\n\033[1A" : "\n");
             $stdErr->writeln('<options=reverse>DEBUG</> Fetching stream: ' . $url);
             $bar->display();
@@ -672,7 +696,7 @@ class ActivityMonitor
                 throw new \RuntimeException('Failed to open activity log stream: ' . $url);
             }
             $bar->advance();
-            \usleep($interval * 1000000);
+            \usleep((int) $interval * 1000000);
             $bar->advance();
             $stream = \fopen($url, 'r', false, $this->api->getStreamContext($readTimeout));
         }

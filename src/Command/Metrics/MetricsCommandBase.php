@@ -1,8 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Metrics;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\PropertyFormatter;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\Api;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Contracts\Service\Attribute\Required;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Psr7\Request;
 use Khill\Duration\Duration;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
@@ -21,19 +30,25 @@ use Symfony\Component\Console\Input\InputOption;
 
 abstract class MetricsCommandBase extends CommandBase
 {
-    const MIN_INTERVAL = 60; // 1 minute
+    private Io $io;
+    private PropertyFormatter $propertyFormatter;
+    private Config $config;
+    private Api $api;
 
-    const MIN_RANGE = 300; // 5 minutes
-    const DEFAULT_RANGE = 600;
+    public const MIN_INTERVAL = 60; // 1 minute
 
-    const MAX_INTERVALS = 100; // intervals per range
+    public const MIN_RANGE = 300; // 5 minutes
+    public const DEFAULT_RANGE = 600;
+
+    public const MAX_INTERVALS = 100; // intervals per range
 
     /**
      * @var bool Whether services have been identified that use high memory.
      */
-    private $foundHighMemoryServices = false;
+    private bool $foundHighMemoryServices = false;
 
-    private $fields = [
+    /** @var array<string, array<string, string>> */
+    private array $fields = [
         // Grid.
         'local' => [
             'cpu_used' => "AVG(SUM((`cpu.user` + `cpu.kernel`) / `interval`, 'service', 'instance'), 'service')",
@@ -86,37 +101,51 @@ abstract class MetricsCommandBase extends CommandBase
             'inodes_limit' => "AVG(`disk.inodes.limit`, 'mountpoint')",
         ],
     ];
-
-    public function isEnabled()
+    #[Required]
+    public function autowire(Api $api, Config $config, Io $io, PropertyFormatter $propertyFormatter): void
     {
-        if (!$this->config()->getWithDefault('api.metrics', false)) {
+        $this->api = $api;
+        $this->config = $config;
+        $this->propertyFormatter = $propertyFormatter;
+        $this->io = $io;
+    }
+
+    public function isEnabled(): bool
+    {
+        if (!$this->config->getBool('api.metrics')) {
             return false;
         }
         return parent::isEnabled();
     }
 
-    protected function addMetricsOptions()
+    protected function addMetricsOptions(): self
     {
         $duration = new Duration();
-        $this->addOption('range', 'r', InputOption::VALUE_REQUIRED,
+        $this->addOption(
+            'range',
+            'r',
+            InputOption::VALUE_REQUIRED,
             'The time range. Metrics will be loaded for this duration until the end time (--to).'
             . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
             . "\n" . \sprintf(
                 'Minimum <comment>%s</comment>, maximum <comment>8h</comment> or more (depending on the project), default <comment>%s</comment>.',
                 $duration->humanize(self::MIN_RANGE),
-                $duration->humanize(self::DEFAULT_RANGE)
-            )
+                $duration->humanize(self::DEFAULT_RANGE),
+            ),
         );
         // The $default is left at null so the lack of input can be detected.
-        $this->addOption('interval', 'i', InputOption::VALUE_REQUIRED,
+        $this->addOption(
+            'interval',
+            'i',
+            InputOption::VALUE_REQUIRED,
             'The time interval. Defaults to a division of the range.'
             . "\n" . 'You can specify units: hours (h), minutes (m), or seconds (s).'
-            . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL))
+            . "\n" . \sprintf('Minimum <comment>%s</comment>.', $duration->humanize(self::MIN_INTERVAL)),
         );
         $this->addOption('to', null, InputOption::VALUE_REQUIRED, 'The end time. Defaults to now.');
         $this->addOption('latest', '1', InputOption::VALUE_NONE, 'Show only the latest single data point');
-        $this->addOption('service', 's', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service or application name' . "\n" . Wildcard::HELP);
-        $this->addOption('type', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Filter by service type (if --service is not provided). The version is not required.' . "\n" . Wildcard::HELP);
+        $this->addOption('service', 's', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service or application name' . "\n" . Wildcard::HELP);
+        $this->addOption('type', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter by service type (if --service is not provided). The version is not required.' . "\n" . Wildcard::HELP);
         return $this;
     }
 
@@ -126,16 +155,16 @@ abstract class MetricsCommandBase extends CommandBase
      * @return array{'href': string, 'collection': string}|false
      *   The link data or false on failure.
      */
-    protected function getMetricsLink(Environment $environment)
+    protected function getMetricsLink(Environment $environment): false|array
     {
         $environmentData = $environment->getData();
         if (!isset($environmentData['_links']['#metrics'])) {
-            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('The metrics API is not currently available on the environment: %s', $this->api->getEnvironmentLabel($environment, 'error')));
 
             return false;
         }
         if (!isset($environmentData['_links']['#metrics'][0]['href'], $environmentData['_links']['#metrics'][0]['collection'])) {
-            $this->stdErr->writeln(\sprintf('Unable to find metrics URLs for the environment: %s', $this->api()->getEnvironmentLabel($environment, 'error')));
+            $this->stdErr->writeln(\sprintf('Unable to find metrics URLs for the environment: %s', $this->api->getEnvironmentLabel($environment, 'error')));
 
             return false;
         }
@@ -149,7 +178,7 @@ abstract class MetricsCommandBase extends CommandBase
      * @param string $dimension
      * @return array<string, string>
      */
-    private function dimensionFields($dimension)
+    private function dimensionFields(string $dimension): array
     {
         $fields = ['service' => '', 'mountpoint' => '', 'instance' => ''];
         foreach (explode('/', $dimension) as $field) {
@@ -170,10 +199,10 @@ abstract class MetricsCommandBase extends CommandBase
      * @param string[] $fieldNames
      *   An array of field names, which map to queries in $this->fields.
      *
-     * @return false|array
+     * @return false|array<string, array<string, array<string, array<string, mixed>>>>
      *   False on failure, or an array of sketch values, keyed by: time, service, dimension, and name.
      */
-    protected function fetchMetrics(InputInterface $input, TimeSpec $timeSpec, Environment $environment, $fieldNames)
+    protected function fetchMetrics(InputInterface $input, TimeSpec $timeSpec, Environment $environment, array $fieldNames): array|false
     {
         $link = $this->getMetricsLink($environment);
         if (!$link) {
@@ -190,20 +219,18 @@ abstract class MetricsCommandBase extends CommandBase
 
         $deploymentType = $this->getDeploymentType($environment);
         if (!isset($this->fields[$deploymentType])) {
-            if (($fallback = key($this->fields)) === false) {
-                throw new \InvalidArgumentException('No query fields are defined');
-            }
+            $fallback = key($this->fields);
             $this->stdErr->writeln(sprintf(
                 'No query fields are defined for the deployment type: <comment>%s</comment>. Falling back to: <comment>%s</comment>',
                 $deploymentType,
-                $fallback
+                $fallback,
             ));
             $deploymentType = $fallback;
         }
 
         // Add fields and expressions to the query based on the requested $fieldNames.
-        $fieldNames = array_map(function ($f) {
-            if (substr($f, 0, 4) === 'tmp_') {
+        $fieldNames = array_map(function ($f): string {
+            if (str_starts_with($f, 'tmp_')) {
                 return substr($f, 4);
             }
             return $f;
@@ -215,7 +242,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         // Select services based on the --service or --type options.
-        $deployment = $this->api()->getCurrentDeployment($environment);
+        $deployment = $this->api->getCurrentDeployment($environment);
         $allServices = array_merge($deployment->webapps, $deployment->services, $deployment->workers);
         $servicesInput = ArrayArgument::getOption($input, 'service');
         $selectedServiceNames = [];
@@ -229,7 +256,7 @@ abstract class MetricsCommandBase extends CommandBase
             $byType = [];
             foreach ($allServices as $name => $service) {
                 $type = $service->type;
-                list($prefix) = explode(':', $service->type, 2);
+                [$prefix] = explode(':', $service->type, 2);
                 $byType[$type][] = $name;
                 $byType[$prefix][] = $name;
             }
@@ -244,19 +271,21 @@ abstract class MetricsCommandBase extends CommandBase
             $selectedServiceNames = array_unique($selectedServiceNames);
         }
         if (!empty($selectedServiceNames)) {
-            $this->debug('Selected service(s): ' . implode(', ', $selectedServiceNames));
+            $this->io->debug('Selected service(s): ' . implode(', ', $selectedServiceNames));
             if (count($selectedServiceNames) === 1) {
                 $query->addFilter('service', reset($selectedServiceNames));
             }
         }
 
         if ($this->stdErr->isDebug()) {
-            $this->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
+            $this->io->debug('Metrics query: ' . json_encode($query->asArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         }
 
         // Perform the metrics query.
-        $client = $this->api()->getHttpClient();
-        $request = $client->createRequest('POST', $metricsQueryUrl, ['json' => $query->asArray()]);
+        $client = $this->api->getHttpClient();
+        $request = new Request('POST', $metricsQueryUrl, [
+            'Content-Type' => 'application/json',
+        ], json_encode($query->asArray(), JSON_THROW_ON_ERROR));
         try {
             $result = $client->send($request);
         } catch (BadResponseException $e) {
@@ -276,7 +305,7 @@ abstract class MetricsCommandBase extends CommandBase
         $values = [];
         foreach ($items as $item) {
             $time = $item['point']['timestamp'];
-            $dimension = isset($item['point']['dimension']) ? $item['point']['dimension'] : '';
+            $dimension = $item['point']['dimension'] ?? '';
             $dimensionFields = $this->dimensionFields($dimension);
             $service = $dimensionFields['service'];
             // Skip the router service by default (if no services are selected).
@@ -292,7 +321,10 @@ abstract class MetricsCommandBase extends CommandBase
                 if (isset($values[$time][$service][$dimension][$fieldPrefix . $name])) {
                     $this->stdErr->writeln(\sprintf(
                         '<comment>Warning:</comment> duplicate value found for time %s, service %s, dimension %s, field %s',
-                        $time, $service, $dimension, $fieldPrefix . $name
+                        $time,
+                        $service,
+                        $dimension,
+                        $fieldPrefix . $name,
                     ));
                 } else {
                     $values[$time][$service][$dimension][$fieldPrefix . $name] = Sketch::fromApiValue($value);
@@ -335,7 +367,7 @@ abstract class MetricsCommandBase extends CommandBase
      *
      * @return TimeSpec|false
      */
-    protected function validateTimeInput(InputInterface $input)
+    protected function validateTimeInput(InputInterface $input): false|TimeSpec
     {
         $interval = null;
         if ($intervalStr = $input->getOption('interval')) {
@@ -352,7 +384,7 @@ abstract class MetricsCommandBase extends CommandBase
         }
 
         if ($to = $input->getOption('to')) {
-            $endTime = \strtotime($to);
+            $endTime = \strtotime((string) $to);
             if (!$endTime) {
                 $this->stdErr->writeln('Failed to parse --to time: ' . $to);
                 return false;
@@ -381,7 +413,7 @@ abstract class MetricsCommandBase extends CommandBase
                 'The --interval <error>%s</error> is too short relative to the --range (<error>%s</error>): the maximum number of intervals is <error>%d</error>.',
                 (new Duration())->humanize($interval),
                 (new Duration())->humanize($rangeSeconds),
-                self::MAX_INTERVALS
+                self::MAX_INTERVALS,
             ));
             return false;
         }
@@ -402,12 +434,12 @@ abstract class MetricsCommandBase extends CommandBase
      *
      * @return int
      */
-    private function defaultInterval($range)
+    private function defaultInterval(int $range): int
     {
         $divisor = 5; // Number of points per time range.
         // Number of seconds to round to:
         $granularity = 10;
-        foreach ([3600*24, 3600*6, 3600*3, 3600, 600, 300, 60, 30] as $level) {
+        foreach ([3600 * 24, 3600 * 6, 3600 * 3, 3600, 600, 300, 60, 30] as $level) {
             if ($range >= $level * $divisor) {
                 $granularity = $level;
                 break;
@@ -423,11 +455,8 @@ abstract class MetricsCommandBase extends CommandBase
 
     /**
      * Returns the deployment type of an environment (needed for differing queries).
-     *
-     * @param Environment $environment
-     * @return string
      */
-    private function getDeploymentType(Environment $environment)
+    private function getDeploymentType(Environment $environment): string
     {
         if (in_array($environment->deployment_target, ['local', 'enterprise', 'dedicated'])) {
             return $environment->deployment_target;
@@ -442,20 +471,17 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * Builds metrics table rows.
      *
-     * @param array $values
+     * @param array<string, array<string, array<string, array<string, mixed>>>> $values
      *   An array of values from fetchMetrics().
      * @param array<string, Field> $fields
      *   An array of fields keyed by column name.
      *
-     * @return array
+     * @return array<array<string, string|TableCell>|TableSeparator>
      *   Table rows.
      */
-    protected function buildRows(array $values, $fields)
+    protected function buildRows(array $values, array $fields, Environment $environment): array
     {
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
-        $deployment = $this->api()->getCurrentDeployment($this->getSelectedEnvironment());
+        $deployment = $this->api->getCurrentDeployment($environment);
 
         // Create a closure which can sort services by name, putting apps and
         // workers first.
@@ -464,9 +490,9 @@ abstract class MetricsCommandBase extends CommandBase
         $serviceNames = array_keys($deployment->services);
         sort($serviceNames, SORT_NATURAL);
         $nameOrder = array_flip(array_merge($appAndWorkerNames, $serviceNames, ['router']));
-        $sortServices = function ($a, $b) use ($nameOrder) {
-            $aPos = isset($nameOrder[$a]) ? $nameOrder[$a] : 1000;
-            $bPos = isset($nameOrder[$b]) ? $nameOrder[$b] : 1000;
+        $sortServices = function ($a, $b) use ($nameOrder): int {
+            $aPos = $nameOrder[$a] ?? 1000;
+            $bPos = $nameOrder[$b] ?? 1000;
             return $aPos > $bPos ? 1 : ($aPos < $bPos ? -1 : 0);
         };
 
@@ -478,7 +504,7 @@ abstract class MetricsCommandBase extends CommandBase
                 $rows[] = new TableSeparator();
             }
             $startCount = count($rows);
-            $formattedTimestamp = $formatter->formatDate($timestamp);
+            $formattedTimestamp = $this->propertyFormatter->formatDate($timestamp);
             uksort($byService, $sortServices);
             foreach ($byService as $service => $byDimension) {
                 if (isset($deployment->services[$service])) {
@@ -496,7 +522,7 @@ abstract class MetricsCommandBase extends CommandBase
                     $row = [];
                     $row['timestamp'] = new AdaptiveTableCell($formattedTimestamp, ['wrap' => false]);
                     $row['service'] = $service;
-                    $row['type'] = $formatter->format($type, 'service_type');
+                    $row['type'] = $this->propertyFormatter->format($type, 'service_type');
                     foreach ($fields as $columnName => $field) {
                         /** @var Field $field */
                         $fieldName = $field->getName();
@@ -529,10 +555,10 @@ abstract class MetricsCommandBase extends CommandBase
     /**
      * Merges table rows per service to reduce unnecessary empty cells.
      *
-     * @param array $rows
-     * @return array
+     * @param array<array<string, string|TableCell>|TableSeparator> $rows
+     * @return array<array<string, string|TableCell>|TableSeparator>
      */
-    private function mergeRows(array $rows)
+    private function mergeRows(array $rows): array
     {
         $infoKeys = array_flip(['service', 'timestamp', 'instance', 'type']);
         $previous = $previousKey = null;
@@ -552,25 +578,9 @@ abstract class MetricsCommandBase extends CommandBase
     }
 
     /**
-     * Displays the current project and environment, if not already displayed.
-     *
-     * @return void
-     */
-    protected function displayEnvironmentHeader()
-    {
-        if (!$this->printedSelectedEnvironment) {
-            $this->stdErr->writeln('Selected project: ' . $this->api()->getProjectLabel($this->getSelectedProject()));
-            $this->stdErr->writeln('Selected environment: ' . $this->api()->getEnvironmentLabel($this->getSelectedEnvironment()));
-        }
-        $this->stdErr->writeln('');
-    }
-
-    /**
      * Shows an explanation if services were found that use high memory.
-     *
-     * @return void
      */
-    protected function explainHighMemoryServices()
+    protected function explainHighMemoryServices(): void
     {
         if ($this->foundHighMemoryServices) {
             $this->stdErr->writeln('');

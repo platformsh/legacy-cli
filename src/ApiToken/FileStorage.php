@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\ApiToken;
 
 use Platformsh\Cli\Service\Config;
@@ -8,13 +10,12 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 /**
  * Stores API tokens using a hidden file.
  */
-class FileStorage implements StorageInterface {
-    private $config;
-    private $fs;
+readonly class FileStorage implements StorageInterface
+{
+    private SymfonyFilesystem $fs;
 
-    public function __construct(Config $config, SymfonyFilesystem $fs = null)
+    public function __construct(private Config $config, ?SymfonyFilesystem $fs = null)
     {
-        $this->config = $config;
         $this->fs = $fs ?: new SymfonyFilesystem();
     }
 
@@ -23,7 +24,8 @@ class FileStorage implements StorageInterface {
      *
      * @return string
      */
-    public function getToken() {
+    public function getToken(): string
+    {
         return $this->load();
     }
 
@@ -32,21 +34,21 @@ class FileStorage implements StorageInterface {
      *
      * @param string $value
      */
-    public function storeToken($value) {
+    public function storeToken(string $value): void
+    {
         $this->save($value);
     }
 
     /**
      * Deletes the saved token.
      */
-    public function deleteToken() {
+    public function deleteToken(): void
+    {
         $this->save('');
     }
 
-    /**
-     * @param string $token
-     */
-    private function save($token) {
+    private function save(string $token): void
+    {
         $filename = $this->getFilename();
         if (empty($token)) {
             if (file_exists($filename)) {
@@ -56,18 +58,19 @@ class FileStorage implements StorageInterface {
         }
 
         // Avoid overwriting an already configured token file.
-        if (file_exists($filename) && $this->config->has('api.token_file') && $this->resolveTokenFile($this->config->get('api.token_file')) === $filename) {
+        if (file_exists($filename) && $this->config->has('api.token_file') && $this->resolveTokenFile($this->config->getStr('api.token_file')) === $filename) {
             throw new \RuntimeException('Failed to save API token: it would conflict with the existing api.token_file configuration.');
         }
 
         $this->fs->dumpFile($filename, $token);
-        $this->fs->chmod($filename, 0600);
+        $this->fs->chmod($filename, 0o600);
     }
 
     /**
      * @return string
      */
-    private function load() {
+    private function load(): string
+    {
         $filename = $this->getFilename();
         if (file_exists($filename)) {
             return trim((string) file_get_contents($filename));
@@ -79,19 +82,17 @@ class FileStorage implements StorageInterface {
     /**
      * @return string
      */
-    private function getFilename() {
+    private function getFilename(): string
+    {
         return $this->config->getSessionDir(true) . DIRECTORY_SEPARATOR . 'api-token';
     }
 
     /**
      * Makes a relative path absolute, based on the user config dir.
-     *
-     * @param string $tokenFile
-     *
-     * @return string
      */
-    private function resolveTokenFile($tokenFile) {
-        if (strpos($tokenFile, '/') !== 0 && strpos($tokenFile, '\\') !== 0) {
+    private function resolveTokenFile(string $tokenFile): string
+    {
+        if (!str_starts_with($tokenFile, '/') && !str_starts_with($tokenFile, '\\')) {
             $tokenFile = $this->config->getUserConfigDir() . '/' . $tokenFile;
         }
 

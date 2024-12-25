@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 class SslUtil
@@ -12,15 +14,14 @@ class SslUtil
      *
      * @param string $certPath
      * @param string $keyPath
-     * @param array $chainPaths
+     * @param string[] $chainPaths
      *
      * @throws \InvalidArgumentException
      *
-     * @return array
-     *   An array containing the contents of the certificate files, keyed as
-     *   'certificate' (string), 'key' (string), and 'chain' (array).
+     * @return array{certificate: string, key: string, chain: string[]}
+     *   An array containing the contents of the certificate files.
      */
-    public function validate($certPath, $keyPath, array $chainPaths)
+    public function validate(string $certPath, string $keyPath, array $chainPaths): array
     {
         // Get the contents.
         if (!is_readable($certPath)) {
@@ -29,8 +30,8 @@ class SslUtil
         if (!is_readable($keyPath)) {
             throw new \InvalidArgumentException('The private key file could not be read: ' . $keyPath);
         }
-        $sslCert = trim(file_get_contents($certPath));
-        $sslPrivateKey = trim(file_get_contents($keyPath));
+        $sslCert = trim((string) file_get_contents($certPath));
+        $sslPrivateKey = trim((string) file_get_contents($keyPath));
 
         // Validate the certificate and the key together, if openssl is enabled.
         if (\extension_loaded('openssl')) {
@@ -65,24 +66,22 @@ class SslUtil
      * @return string[]
      *   Each certificate in the chain.
      */
-    public function validateChain(array $chainPaths)
+    public function validateChain(array $chainPaths): array
     {
         $chain = [];
         foreach ($chainPaths as $chainPath) {
             if (!is_readable($chainPath)) {
                 throw new \InvalidArgumentException("The chain file could not be read: $chainPath");
             }
-            $data = trim(file_get_contents($chainPath));
+            $data = trim((string) file_get_contents($chainPath));
             if (\preg_match_all('/--+BEGIN CERTIFICATE--+.+?--+END CERTIFICATE--+/is', $data, $matches) === false) {
                 throw new \InvalidArgumentException("The chain file is not a valid list of X509 certificates: $chainPath");
             }
             if (\extension_loaded('openssl')) {
                 foreach ($matches[0] as $chainCert) {
-                    $chainResource = openssl_x509_read($chainCert);
-                    if (!$chainResource) {
+                    if (!openssl_x509_read($chainCert)) {
                         throw new \InvalidArgumentException("The chain file contains an invalid X509 certificate: $chainPath");
                     }
-                    openssl_x509_free($chainResource);
                 }
             }
             $chain = \array_merge($chain, $matches[0]);

@@ -1,7 +1,15 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Team;
 
+use Platformsh\Cli\Selector\Selection;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Utils;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Model\ProjectRoles;
 use Platformsh\Cli\Service\PropertyFormatter;
@@ -9,13 +17,16 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Model\Project;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'team:list', description: 'List teams', aliases: ['teams'])]
 class TeamListCommand extends TeamCommandBase
 {
-    private $tableHeader = [
+    /** @var array<string, string> */
+    private array $tableHeader = [
         'id' => 'ID',
         'label' => 'Label',
         'member_count' => '# Users',
@@ -25,21 +36,21 @@ class TeamListCommand extends TeamCommandBase
         'updated_at' => 'Updated at',
         'granted_at' => 'Granted at',
     ];
-    private $defaultColumns = ['id', 'label', 'member_count', 'project_count', 'project_permissions'];
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    /** @var string[] */
+    private array $defaultColumns = ['id', 'label', 'member_count', 'project_count', 'project_permissions'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('team:list')
-            ->setAliases(['teams'])
-            ->setDescription('List teams')
-            ->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addOption('count', 'c', InputOption::VALUE_REQUIRED, 'The number of items to display per page. Use 0 to disable pagination.')
             ->addOption('sort', null, InputOption::VALUE_REQUIRED, 'A team property to sort by', 'label')
             ->addOption('reverse', null, InputOption::VALUE_NONE, 'Sort in reverse order')
-            ->addOption('all', 'A', InputOption::VALUE_NONE, 'List all teams in the organization (regardless of a selected project)')
-            ->addOrganizationOptions(true);
+            ->addOption('all', 'A', InputOption::VALUE_NONE, 'List all teams in the organization (regardless of a selected project)');
+        $this->selector->addOrganizationOptions($this->getDefinition(), true);
+        $this->addCompleter($this->selector);
         PropertyFormatter::configureInput($this->getDefinition());
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         $this->addExample('List teams (in the current project, if any)');
@@ -50,11 +61,15 @@ class TeamListCommand extends TeamCommandBase
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = $this->selectOrganization($input);
         if (!$organization) {
             return 1;
+        }
+        $selection = new Selection();
+        if ($input->getOption('project') || $this->selector->getCurrentProject()) {
+            $selection = $this->selector->getSelection($input);
         }
 
         $params = [];
@@ -72,17 +87,17 @@ class TeamListCommand extends TeamCommandBase
             $params['page[size]'] = $count;
         }
 
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
 
         // Fetch teams for a specific project.
-        $projectSpecific = !$input->getOption('all') && $this->hasSelectedProject();
+        $projectSpecific = !$input->getOption('all') && $selection->hasProject();
         if ($projectSpecific) {
-            $teamsOnProject = $this->loadTeamsOnProject($this->getSelectedProject());
+            $teamsOnProject = $this->loadTeamsOnProject($selection->getProject());
             if (!$teamsOnProject) {
-                $this->stdErr->writeln(sprintf('No teams found on the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+                $this->stdErr->writeln(sprintf('No teams found on the project %s.', $this->api->getProjectLabel($selection->getProject(), 'comment')));
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To list all teams in the organization, run: <info>%s teams --all</info>', $executable));
-                $this->stdErr->writeln(\sprintf('To add this project to a team, run: <info>%s team:project:add %s</info>', $executable, OsUtil::escapeShellArg($this->getSelectedProject()->id)));
+                $this->stdErr->writeln(\sprintf('To add this project to a team, run: <info>%s team:project:add %s</info>', $executable, OsUtil::escapeShellArg($selection->getProject()->id)));
                 return 1;
             }
             $params['filter[id][in]'] = implode(',', array_keys($teamsOnProject));
@@ -91,19 +106,14 @@ class TeamListCommand extends TeamCommandBase
         $teams = $this->loadTeams($organization, $fetchAllPages, $params);
         if (empty($teams)) {
             $this->stdErr->writeln('No teams found');
-            if ($this->config()->isCommandEnabled('team:create')) {
+            if ($this->config->isCommandEnabled('team:create')) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(\sprintf('To create a new team, run: <info>%s team:create</info>', $executable));
             }
             return 1;
         }
 
-        /** @var Table $table */
-        $table = $this->getService('table');
-        /** @var PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
-        $machineReadable = $table->formatIsMachineReadable();
+        $machineReadable = $this->table->formatIsMachineReadable();
 
         $rolesUtil = new ProjectRoles();
 
@@ -112,25 +122,25 @@ class TeamListCommand extends TeamCommandBase
             $row = [
                 'id' => $team->id,
                 'label' => $team->label,
-                'member_count' => $formatter->format($team->counts['member_count']),
-                'project_count' => $formatter->format($team->counts['project_count']),
+                'member_count' => $this->propertyFormatter->format($team->counts['member_count']),
+                'project_count' => $this->propertyFormatter->format($team->counts['project_count']),
                 'project_permissions' => $rolesUtil->formatPermissions($team->project_permissions, $machineReadable),
-                'created_at' => $formatter->format($team->created_at, 'created_at'),
-                'updated_at' => $formatter->format($team->created_at, 'updated_at'),
-                'granted_at' => isset($teamsOnProject[$team->id]) ? $formatter->format($teamsOnProject[$team->id], 'granted_at') : '',
+                'created_at' => $this->propertyFormatter->format($team->created_at, 'created_at'),
+                'updated_at' => $this->propertyFormatter->format($team->created_at, 'updated_at'),
+                'granted_at' => isset($teamsOnProject[$team->id]) ? $this->propertyFormatter->format($teamsOnProject[$team->id], 'granted_at') : '',
             ];
             $rows[] = $row;
         }
 
         if (!$machineReadable) {
             if ($projectSpecific) {
-                $this->stdErr->writeln(sprintf('Teams with access to the project %s:', $this->api()->getProjectLabel($this->getSelectedProject())));
+                $this->stdErr->writeln(sprintf('Teams with access to the project %s:', $this->api->getProjectLabel($selection->getProject())));
             } else {
-                $this->stdErr->writeln(sprintf('Teams in the organization %s:', $this->api()->getOrganizationLabel($organization)));
+                $this->stdErr->writeln(sprintf('Teams in the organization %s:', $this->api->getOrganizationLabel($organization)));
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
         if (!$machineReadable) {
             $this->stdErr->writeln('');
@@ -153,9 +163,9 @@ class TeamListCommand extends TeamCommandBase
      * @return array<string, string>
      *     An array mapping team ID to the granted_at date of the team.
      */
-    private function loadTeamsOnProject(Project $project)
+    private function loadTeamsOnProject(Project $project): array
     {
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         $url = $project->getUri() . '/team-access';
         $info = [];
         $progress = new ProgressMessage($this->stdErr);
@@ -165,15 +175,16 @@ class TeamListCommand extends TeamCommandBase
                 $progress->showIfOutputDecorated(sprintf('Loading project teams (page %d)...', $pageNumber));
             }
             try {
-                $data = $httpClient->get($url)->json();
+                $response = $httpClient->get($url);
             } catch (BadResponseException $e) {
                 throw ApiResponseException::create($e->getRequest(), $e->getResponse(), $e);
             }
+            $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
             foreach ($data['items'] as $item) {
                 $info[$item['team_id']] = $item['granted_at'];
             }
             $progress->done();
-            $url = isset($data['_links']['next']['href']) ? $data['_links']['next']['href'] : null;
+            $url = $data['_links']['next']['href'] ?? null;
             $pageNumber++;
         } while ($url);
         return $info;

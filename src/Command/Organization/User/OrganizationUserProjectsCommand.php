@@ -1,7 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\Organization\OrganizationCommandBase;
 use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Model\ProjectRoles;
@@ -10,14 +16,17 @@ use Platformsh\Cli\Service\Table;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Client\Model\CentralizedPermissions\UserExtendedAccess;
 use Platformsh\Client\Model\Ref\UserRef;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:projects', description: 'List the projects a user can access', aliases: ['oups'])]
 class OrganizationUserProjectsCommand extends OrganizationCommandBase
 {
-    protected $tableHeader = [
+    /** @var array<string, string> */
+    protected array $tableHeader = [
         'organization_id' => 'Organization ID',
         'organization_name' => 'Organization',
         'organization_label' => 'Organization label',
@@ -28,47 +37,53 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
         'updated_at' => 'Updated at',
         'region' => 'Region',
     ];
-    protected $defaultColumns = ['project_id', 'project_title', 'roles', 'updated_at'];
 
-    public function isEnabled()
+    /** @var string[] */
+    protected array $defaultColumns = ['project_id', 'project_title', 'roles', 'updated_at'];
+
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        return $this->config()->get('api.centralized_permissions')
-            && $this->config()->get('api.organizations')
+        parent::__construct();
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->config->getBool('api.centralized_permissions')
+            && $this->config->getBool('api.organizations')
             && parent::isEnabled();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
-        $this->setName('organization:user:projects')
-            ->setAliases(['oups'])
+        $this
             ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addHiddenOption('sort-granted', null, InputOption::VALUE_NONE, 'Deprecated option: unused')
             ->addHiddenOption('reverse', null, InputOption::VALUE_NONE, 'Deprecated option: unused');
-        $this->setDescription('List the projects a user can access');
-        $this->addOrganizationOptions();
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->addOption('list-all', null, InputOption::VALUE_NONE, 'List access across all organizations');
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
         PropertyFormatter::configureInput($this->getDefinition());
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $organization = null;
         if (!$input->getOption('list-all')) {
-            $organization = $this->validateOrganizationInput($input, 'members');
+            $organization = $this->selector->selectOrganization($input, 'members');
             if (!$organization->hasLink('members')) {
-                $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api()->getOrganizationLabel($organization, 'comment') . '.');
+                $this->stdErr->writeln('You do not have permission to view users in the organization ' . $this->api->getOrganizationLabel($organization, 'comment') . '.');
                 return 1;
             }
         }
         if ($email = $input->getArgument('email')) {
             if (!$organization) {
-                $this->debug('Finding user by email address');
-                $user = $this->api()->getUser('email=' . $email);
+                $this->io->debug('Finding user by email address');
+                $user = $this->api->getUser('email=' . $email);
                 $userId = $user->id;
                 $userRef = UserRef::fromData($user->getData());
             } else {
-                $member = $this->api()->loadMemberByEmail($organization, $email);
+                $member = $this->api->loadMemberByEmail($organization, $email);
                 if (!$member) {
                     $this->stdErr->writeln('User not found for email address: ' . $email);
                     return 1;
@@ -92,7 +107,7 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
 
         $options['query']['filter[resource_type]'] = 'project';
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
         /** @var UserExtendedAccess[] $items */
         $items = [];
         $url = '/users/' . rawurlencode($userId) . '/extended-access';
@@ -117,17 +132,12 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
                 return 0;
             }
             if ($organization) {
-                $this->stdErr->writeln(\sprintf('No projects were found for the user %s in the organization %s.', $this->api()->getUserRefLabel($userRef), $this->api()->getOrganizationLabel($organization)));
+                $this->stdErr->writeln(\sprintf('No projects were found for the user %s in the organization %s.', $this->api->getUserRefLabel($userRef), $this->api->getOrganizationLabel($organization)));
             } else {
-                $this->stdErr->writeln(\sprintf('No projects were found for the user %s.', $this->api()->getUserRefLabel($userRef)));
+                $this->stdErr->writeln(\sprintf('No projects were found for the user %s.', $this->api->getUserRefLabel($userRef)));
             }
             return 0;
         }
-
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
 
         $rolesUtil = new ProjectRoles();
 
@@ -136,9 +146,9 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $row = [];
             $row['organization_id'] = $item->organization_id;
             $row['project_id'] = $item->resource_id;
-            $row['roles'] = $rolesUtil->formatPermissions($item->permissions, $table->formatIsMachineReadable());
-            $row['granted_at'] = $formatter->format($item->granted_at, 'granted_at');
-            $row['updated_at'] = $formatter->format($item->updated_at, 'updated_at');
+            $row['roles'] = $rolesUtil->formatPermissions($item->permissions, $this->table->formatIsMachineReadable());
+            $row['granted_at'] = $this->propertyFormatter->format($item->granted_at, 'granted_at');
+            $row['updated_at'] = $this->propertyFormatter->format($item->updated_at, 'updated_at');
             $projectInfo = $item->getProjectInfo();
             $row['project_title'] = $projectInfo ? $projectInfo->title : '';
             $row['region'] = $projectInfo ? $projectInfo->region : '';
@@ -148,17 +158,17 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $rows[] = $row;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($organization) {
                 $this->stdErr->writeln(\sprintf(
                     'Project access for the user %s in the organization %s:',
-                    $this->api()->getUserRefLabel($userRef),
-                    $this->api()->getOrganizationLabel($organization)
+                    $this->api->getUserRefLabel($userRef),
+                    $this->api->getOrganizationLabel($organization),
                 ));
             } else {
                 $this->stdErr->writeln(\sprintf(
                     'All project access for the user %s:',
-                    $this->api()->getUserRefLabel($userRef)
+                    $this->api->getUserRefLabel($userRef),
                 ));
             }
         }
@@ -168,9 +178,9 @@ class OrganizationUserProjectsCommand extends OrganizationCommandBase
             $defaultColumns[] = 'organization_name';
         }
 
-        $table->render($rows, $this->tableHeader, $defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(\sprintf('To view the user details, run: <info>%s</info>', $this->otherCommandExample($input, 'org:user:get', OsUtil::escapeShellArg($userRef->email))));
         }
 

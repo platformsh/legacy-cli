@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
@@ -16,7 +18,7 @@ class TableServiceTest extends TestCase
     /**
      * Test a table filtered by allowed column names.
      */
-    public function testColumns()
+    public function testColumns(): void
     {
         $output = new BufferedOutput();
         $definition = new InputDefinition();
@@ -40,9 +42,9 @@ class TableServiceTest extends TestCase
         $this->assertEquals($expected, $tableService->columnsToDisplay($header));
 
         $rows = [
-            ['foo', 1, 2, 3],
+            ['foo', '1', '2', '3'],
             new TableSeparator(),
-            ['bar', 4, 5, 6],
+            ['bar', '4', '5', '6'],
         ];
         $expected = (new Csv(',', "\n"))->format([
             ['Value 2', 'Name'],
@@ -57,7 +59,7 @@ class TableServiceTest extends TestCase
     /**
      * Test that columns are validated.
      */
-    public function testInvalidColumn()
+    public function testInvalidColumn(): void
     {
         $definition = new InputDefinition();
         Table::configureInput($definition);

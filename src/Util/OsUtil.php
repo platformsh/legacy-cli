@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 class OsUtil
@@ -7,7 +9,7 @@ class OsUtil
     /**
      * @return bool
      */
-    public static function isWindows()
+    public static function isWindows(): bool
     {
         return defined('PHP_WINDOWS_VERSION_BUILD');
     }
@@ -15,7 +17,7 @@ class OsUtil
     /**
      * @return bool
      */
-    public static function isOsX()
+    public static function isOsX(): bool
     {
         return stripos(PHP_OS, 'Darwin') !== false;
     }
@@ -23,7 +25,7 @@ class OsUtil
     /**
      * @return bool
      */
-    public static function isLinux()
+    public static function isLinux(): bool
     {
         return stripos(PHP_OS, 'Linux') !== false;
     }
@@ -34,12 +36,8 @@ class OsUtil
      * PHP's escapeshellarg() function adapts its output depending on the
      * system. So to escape arguments consistently for remote non-Windows
      * systems, we need our own method.
-     *
-     * @param string $arg
-     *
-     * @return string
      */
-    public static function escapePosixShellArg($arg)
+    public static function escapePosixShellArg(string $arg): string
     {
         // Skip quoting the argument if it only contains safe characters.
         // This uses a fairly conservative allow-list.
@@ -53,20 +51,16 @@ class OsUtil
      * Escapes a shell argument, with Windows compatibility.
      *
      * @see \Symfony\Component\Process\Process::escapeArgument()
-     *
-     * @param string $argument
-     *
-     * @return string
      */
-    public static function escapeShellArg($argument)
+    public static function escapeShellArg(string $argument): string
     {
         if ('\\' !== \DIRECTORY_SEPARATOR) {
             return self::escapePosixShellArg($argument);
         }
-        if ('' === $argument = (string) $argument) {
+        if ('' === $argument) {
             return '""';
         }
-        if (false !== strpos($argument, "\0")) {
+        if (str_contains($argument, "\0")) {
             $argument = str_replace("\0", '?', $argument);
         }
         if (!preg_match('/[\/()%!^"<>&|\s]/', $argument)) {
@@ -84,11 +78,11 @@ class OsUtil
      *
      * @param string $name
      *
-     * @return array
+     * @return string[]
      */
-    public static function findExecutables($name)
+    public static function findExecutables(string $name): array
     {
-        $dirs = explode(\PATH_SEPARATOR, getenv('PATH') ?: getenv('Path'));
+        $dirs = explode(\PATH_SEPARATOR, (string) (getenv('PATH') ?: getenv('Path')));
         $suffixes = [''];
 
         $found = [];
@@ -102,8 +96,8 @@ class OsUtil
 
         foreach ($suffixes as $suffix) {
             foreach ($dirs as $dir) {
-                if (@is_file($file = $dir.\DIRECTORY_SEPARATOR.$name.$suffix) && ($isWindows || @is_executable($file))) {
-                    array_push($found, $file);
+                if (@is_file($file = $dir . \DIRECTORY_SEPARATOR . $name . $suffix) && ($isWindows || @is_executable($file))) {
+                    $found[] = $file;
                 }
             }
         }

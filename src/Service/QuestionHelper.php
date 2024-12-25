@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * @file
  * Overrides Symfony's QuestionHelper to provide --yes and --no options.
@@ -16,10 +19,7 @@ use Symfony\Component\Console\Question\Question;
 
 class QuestionHelper extends BaseQuestionHelper
 {
-    /** @var InputInterface */
-    private $input;
-    /** @var OutputInterface */
-    private $output;
+    private readonly OutputInterface $output;
 
     /**
      * QuestionHelper constructor.
@@ -27,9 +27,8 @@ class QuestionHelper extends BaseQuestionHelper
      * @param InputInterface  $input
      * @param OutputInterface $output
      */
-    public function __construct(InputInterface $input, OutputInterface $output)
+    public function __construct(private readonly InputInterface $input, OutputInterface $output)
     {
-        $this->input = $input;
         if ($output instanceof ConsoleOutputInterface) {
             $output = $output->getErrorOutput();
         }
@@ -47,13 +46,13 @@ class QuestionHelper extends BaseQuestionHelper
      *
      * @return bool
      */
-    public function confirm($questionText, $default = true)
+    public function confirm(string $questionText, bool $default = true): bool
     {
         if (!$this->input->isInteractive() && !$default) {
             trigger_error(
                 'A confirmation question is being asked with a default of "no" (false), despite being in non-interactive mode.'
                 . ' So --yes will not pick the default result for this question, which is confusing.',
-                E_USER_WARNING
+                E_USER_WARNING,
             );
         }
 
@@ -79,18 +78,18 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Provides an interactive choice question.
      *
-     * @param array  $items     An associative array of choices.
-     * @param string $text      Some text to precede the choices.
-     * @param mixed  $default   A default (as a key in $items).
-     * @param bool   $skipOnOne Whether to skip the choice if there is only one
+     * @param array<string, string> $items An associative array of choices.
+     * @param string $text Some text to precede the choices.
+     * @param string|null $default A default (as a key in $items).
+     * @param bool $skipOnOne Whether to skip the choice if there is only one
      *                          item.
      *
-     * @throws \RuntimeException on failure
-     *
-     * @return int|string|null
+     * @return string
      *   The chosen item (as a key in $items).
+     *
+     * @throws \RuntimeException on failure
      */
-    public function choose(array $items, $text = 'Enter a number to choose an item:', $default = null, $skipOnOne = true)
+    public function choose(array $items, string $text = 'Enter a number to choose an item:', ?string $default = null, bool $skipOnOne = true): string
     {
         if (count($items) === 1) {
             if ($skipOnOne) {
@@ -112,7 +111,7 @@ class QuestionHelper extends BaseQuestionHelper
 
         if (!$this->input->isInteractive()) {
             if (!isset($defaultKey)) {
-                return null;
+                throw new \RuntimeException('A choice is needed, input is not interactive, and no default is available.');
             }
             $choice = $itemList[$defaultKey];
             $choiceKey = array_search($choice, $items, true);
@@ -137,19 +136,19 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Provides an interactive choice question preserving the array keys.
      *
-     * @param array  $items     An associative array of choices.
+     * @param array<string, string> $items     An associative array of choices.
      * @param string $text      Some text to precede the choices.
-     * @param mixed  $default   A default (as a key in $items).
-     * @param bool   $skipOnOne Whether to skip the choice if there is only one
+     * @param string|null  $default   A default (as a key in $items).
+     * @param bool $skipOnOne Whether to skip the choice if there is only one
      *                          item.
-     * @param bool   $newLine   Whether to output a newline after asking the question.
+     * @param bool $newLine   Whether to output a newline after asking the question.
      *
-     * @throws \RuntimeException on failure
-     *
-     * @return int|string|null
+     * @return string
      *   The chosen item (as a key in $items).
+     *@throws \RuntimeException on failure
+     *
      */
-    public function chooseAssoc(array $items, $text = 'Choose an item:', $default = null, $skipOnOne = true, $newLine = true)
+    public function chooseAssoc(array $items, string $text = 'Choose an item:', ?string $default = null, bool $skipOnOne = true, bool $newLine = true): string
     {
         if (count($items) === 1) {
             if ($skipOnOne) {
@@ -170,16 +169,15 @@ class QuestionHelper extends BaseQuestionHelper
     /**
      * Ask a simple question which requires input.
      *
-     * @param string   $questionText
-     * @param mixed    $default
-     * @param array    $autoCompleterValues
-     * @param callable $validator
-     * @param string   $defaultLabel
-     *
-     * @return string
+     * @param string $questionText
+     * @param mixed|null $default
+     * @param string[] $autoCompleterValues
+     * @param callable|null $validator
+     * @param string $defaultLabel
+     * @return mixed
      *   The user's answer.
      */
-    public function askInput($questionText, $default = null, array $autoCompleterValues = [], callable $validator = null, $defaultLabel = 'default: ')
+    public function askInput(string $questionText, mixed $default = null, array $autoCompleterValues = [], ?callable $validator = null, string $defaultLabel = 'default: '): mixed
     {
         if ($default !== null) {
             $questionText .= sprintf(' (%s<question>%s</question>)', $defaultLabel, $default);

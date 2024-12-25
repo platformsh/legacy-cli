@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Util\NestedArrayUtil;
@@ -10,27 +12,20 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
  */
 class State
 {
-    protected $config;
+    /** @var array<string, mixed> */
+    protected array $state = [];
 
-    protected $state = [];
+    protected bool $loaded = false;
 
-    protected $loaded = false;
-
-    /**
-     * @param Config $config
-     */
-    public function __construct(Config $config)
-    {
-        $this->config = $config;
-    }
+    public function __construct(protected readonly Config $config) {}
 
     /**
-     * @param string $key
+     * Gets a state value.
      *
      * @return mixed|false
      *   The value, or false if the value does not exist.
      */
-    public function get($key)
+    public function get(string $key): mixed
     {
         $this->load();
         $value = NestedArrayUtil::getNestedArrayValue($this->state, explode('.', $key), $exists);
@@ -39,13 +34,9 @@ class State
     }
 
     /**
-     * Set a state value.
-     *
-     * @param string $key
-     * @param mixed  $value
-     * @param bool   $save
+     * Sets a state value.
      */
-    public function set($key, $value, $save = true)
+    public function set(string $key, mixed $value, bool $save = true): void
     {
         $this->load();
         $parents = explode('.', $key);
@@ -59,25 +50,25 @@ class State
     }
 
     /**
-     * Save state.
+     * Saves state.
      */
-    public function save()
+    public function save(): void
     {
         (new SymfonyFilesystem())->dumpFile(
             $this->getFilename(),
-            json_encode($this->state)
+            (string) json_encode($this->state),
         );
     }
 
     /**
      * Load state.
      */
-    protected function load()
+    protected function load(): void
     {
         if (!$this->loaded) {
             $filename = $this->getFilename();
             if (file_exists($filename)) {
-                $content = file_get_contents($filename);
+                $content = (string) file_get_contents($filename);
                 $this->state = json_decode($content, true) ?: [];
             }
             $this->loaded = true;
@@ -87,7 +78,7 @@ class State
     /**
      * @return string
      */
-    protected function getFilename()
+    protected function getFilename(): string
     {
         return $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . $this->config->getWithDefault('application.user_state_file', 'state.json');
     }

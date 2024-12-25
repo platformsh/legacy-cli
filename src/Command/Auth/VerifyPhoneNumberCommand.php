@@ -1,42 +1,46 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Auth;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Utils;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
 use Platformsh\Cli\Command\CommandBase;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'auth:verify-phone-number', description: 'Verify your phone number interactively')]
 class VerifyPhoneNumberCommand extends CommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly QuestionHelper $questionHelper)
     {
-        $this
-            ->setName('auth:verify-phone-number')
-            ->setDescription('Verify your phone number interactively');
+        parent::__construct();
     }
-
-    public function isEnabled()
+    public function isEnabled(): bool
     {
-        if (!$this->config()->getWithDefault('api.user_verification', false)) {
+        if (!$this->config->getBool('api.user_verification')) {
             return false;
         }
         return parent::isEnabled();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if (!$input->isInteractive()) {
             $this->stdErr->writeln('Non-interactive use of this command is not supported.');
             return 1;
         }
-        $myUser = $this->api()->getUser(null, true);
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $myUser = $this->api->getUser(null, true);
 
         if ($myUser->phone_number_verified) {
             $this->stdErr->writeln('Your user account already has a verified phone number.');
@@ -46,10 +50,10 @@ class VerifyPhoneNumberCommand extends CommandBase
         $defaultRegion = $myUser->country ?: null;
 
         $methods = ['sms' => 'SMS (default)', 'whatsapp' => 'WhatsApp message', 'call' => 'Call'];
-        $channel = $questionHelper->choose($methods, 'Enter a number to choose a phone number verification method:', 'sms');
+        $channel = $this->questionHelper->choose($methods, 'Enter a number to choose a phone number verification method:', 'sms');
 
         $phoneUtil = PhoneNumberUtil::getInstance();
-        $number = $questionHelper->askInput('Please enter your phone number', null, [], function ($number) use ($phoneUtil, $defaultRegion) {
+        $number = $this->questionHelper->askInput('Please enter your phone number', null, [], function ($number) use ($phoneUtil, $defaultRegion) {
             try {
                 $parsed = $phoneUtil->parse($number, $defaultRegion);
             } catch (NumberParseException $e) {
@@ -63,16 +67,19 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $this->debug('E164-formatted number: ' . $number);
+        $this->io->debug('E164-formatted number: ' . $number);
 
-        $httpClient = $this->api()->getHttpClient();
+        $httpClient = $this->api->getHttpClient();
 
-        $sid = $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber', [
+        $response = $httpClient->post('/users/' . rawurlencode($myUser->id) . '/phonenumber', [
             'json' => [
                 'channel' => $channel,
                 'phone_number' => $number,
             ],
-        ])->json()['sid'];
+        ]);
+        /** @var array{sid: string} $data */
+        $data = (array) Utils::jsonDecode((string) $response->getBody(), true);
+        $sid = $data['sid'];
 
         if ($channel === 'call') {
             $this->stdErr->writeln('Calling the number <info>' . $number . '</info> with a verification code.');
@@ -84,7 +91,7 @@ class VerifyPhoneNumberCommand extends CommandBase
 
         $this->stdErr->writeln('');
 
-        $questionHelper->askInput('Please enter the verification code', null, [], function ($code) use ($httpClient, $sid , $myUser) {
+        $this->questionHelper->askInput('Please enter the verification code', null, [], function ($code) use ($httpClient, $sid, $myUser): void {
             if (!is_numeric($code)) {
                 throw new InvalidArgumentException('Invalid verification code');
             }
@@ -94,15 +101,16 @@ class VerifyPhoneNumberCommand extends CommandBase
                 ]);
             } catch (BadResponseException $e) {
                 if (($response = $e->getResponse()) && $response->getStatusCode() === 400) {
-                    $detail = $response->json();
-                    throw new InvalidArgumentException(isset($detail['error']) ? ucfirst($detail['error']) : 'Invalid verification code');
+                    $detail = (array) Utils::jsonDecode((string) $response->getBody(), true);
+                    throw new InvalidArgumentException(isset($detail['error']) ? ucfirst((string) $detail['error']) : 'Invalid verification code');
                 }
                 throw $e;
             }
         });
 
-        $this->debug('Refreshing phone verification status');
-        $needsVerify = $httpClient->post( '/me/verification?force_refresh=1')->json();
+        $this->io->debug('Refreshing phone verification status');
+        $response = $httpClient->post('/me/verification?force_refresh=1');
+        $needsVerify = (array) Utils::jsonDecode((string) $response->getBody(), true);
         $this->stdErr->writeln('');
 
         if ($needsVerify['type'] === 'phone') {

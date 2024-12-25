@@ -1,8 +1,14 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Project\Variable;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -11,42 +17,42 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * @deprecated Use variable:get and variable:list instead
  */
+#[AsCommand(name: 'project:variable:get', description: 'View variable(s) for a project', aliases: ['project-variables', 'pvget'])]
 class ProjectVariableGetCommand extends CommandBase
 {
-    protected $hiddenInList = true;
-    protected $stability = 'deprecated';
+    protected bool $hiddenInList = true;
+    protected string $stability = 'deprecated';
+    public function __construct(private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    {
+        parent::__construct();
+    }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
-            ->setName('project:variable:get')
-            ->setAliases(['project-variables', 'pvget'])
             ->addArgument('name', InputArgument::OPTIONAL, 'The name of the variable')
-            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)')
-            ->setDescription('View variable(s) for a project');
+            ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the full variable value only (a "name" must be specified)');
         $this->setHelp(
             'This command is deprecated and will be removed in a future version.'
-            . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>"
+            . "\nInstead, use <info>variable:list</info> and <info>variable:get</info>",
         );
         Table::configureInput($this->getDefinition());
-        $this->addProjectOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         $this->setHiddenAliases(['project:variable:list']);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        return $this->runOtherCommand('variable:get', [
+        return $this->subCommandRunner->run('variable:get', [
             'name' => $input->getArgument('name'),
             '--level' => 'project',
-            '--project' => $this->getSelectedProject()->id,
-            ] + array_filter([
-                '--format' => $input->getOption('format'),
-                '--pipe' => $input->getOption('pipe'),
-            ]));
+            '--project' => $selection->getProject()->id,
+        ] + array_filter([
+            '--format' => $input->getOption('format'),
+            '--pipe' => $input->getOption('pipe'),
+        ]));
     }
 }

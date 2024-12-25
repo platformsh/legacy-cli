@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Local\BuildFlavor;
 
+use PHPUnit\Framework\Attributes\Group;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Shell;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DrupalTest extends BuildFlavorTestBase
 {
     public function setUp(): void
@@ -17,18 +18,18 @@ class DrupalTest extends BuildFlavorTestBase
         }
     }
 
-    public function testBuildDrupalInProjectMode()
+    public function testBuildDrupalInProjectMode(): void
     {
         $sourceDir = 'tests/data/apps/drupal/project';
         $projectRoot = $this->createDummyProject($sourceDir);
 
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
-        $shared = $projectRoot . '/' . self::$config->get('local.shared_dir');
-        $buildDir = $projectRoot . '/' . self::$config->get('local.build_dir') . '/default';
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
+        $shared = $projectRoot . '/' . self::$config->getStr('local.shared_dir');
+        $buildDir = $projectRoot . '/' . self::$config->getStr('local.build_dir') . '/default';
 
         // Insert a dummy file into 'shared'.
         if (!file_exists($shared)) {
-            mkdir($shared, 0755, true);
+            mkdir($shared, 0o755, true);
         }
         touch($shared . '/symlink_me');
 
@@ -71,10 +72,10 @@ class DrupalTest extends BuildFlavorTestBase
         $this->assertTrue($success2, 'Second build success for dir: ' . $sourceDir);
     }
 
-    public function testBuildDrupalInProfileMode()
+    public function testBuildDrupalInProfileMode(): void
     {
         $projectRoot = $this->assertBuildSucceeds('tests/data/apps/drupal/profile');
-        $webRoot = $projectRoot . '/' . self::$config->get('local.web_root');
+        $webRoot = $projectRoot . '/' . self::$config->getStr('local.web_root');
         $this->assertFileExists($webRoot . '/index.php');
         $this->assertFileExists($webRoot . '/sites/default/settings.php');
         $this->assertFileExists($webRoot . '/profiles/test/test.profile');
@@ -82,7 +83,7 @@ class DrupalTest extends BuildFlavorTestBase
         $this->assertFileExists($webRoot . '/profiles/test/modules/test_module/test_module_file.php');
     }
 
-    public function testBuildUpdateLock()
+    public function testBuildUpdateLock(): void
     {
         $sourceDir = 'tests/data/apps/drupal/yaml';
         self::$output->writeln("\nTesting build (with --lock) for directory: " . $sourceDir);
@@ -95,7 +96,7 @@ class DrupalTest extends BuildFlavorTestBase
      *
      * This is not Drupal-specific, but this is the simplest example.
      */
-    public function testArchiveAndExtract()
+    public function testArchiveAndExtract(): void
     {
         $projectRoot = $this->createDummyProject('tests/data/apps/drupal/project');
 
@@ -108,7 +109,7 @@ class DrupalTest extends BuildFlavorTestBase
 
         // Build. This should create an archive.
         $this->builder->build($this->buildSettings, $projectRoot);
-        $archive = $projectRoot . '/' . self::$config->get('local.archive_dir')  .'/' . $treeId . '.tar.gz';
+        $archive = $projectRoot . '/' . self::$config->getStr('local.archive_dir') . '/' . $treeId . '.tar.gz';
         $this->assertFileExists($archive);
 
         // Build again. This will extract the archive.
@@ -116,7 +117,7 @@ class DrupalTest extends BuildFlavorTestBase
         $this->assertTrue($success);
     }
 
-    public function testDoNotSymlinkBuildsIntoSitesDefault()
+    public function testDoNotSymlinkBuildsIntoSitesDefault(): void
     {
         $repository = $this->createTempSubDir('repo');
         $fsHelper = new Filesystem();

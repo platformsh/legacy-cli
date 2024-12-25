@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model\Host;
+
+use Symfony\Component\Process\Exception\RuntimeException;
 
 /**
  * Represents a host that can be accessed.
@@ -12,36 +16,30 @@ interface HostInterface
     /**
      * @return string A human-readable label for the host.
      */
-    public function getLabel();
+    public function getLabel(): string;
 
     /**
      * @return string A key that identifies the host, for caching purposes.
      */
-    public function getCacheKey();
+    public function getCacheKey(): string;
 
     /**
      * @return string
      *   The RFC3339 timestamp when the host last changed, for
      *   caching purposes, or an empty string if unknown.
      */
-    public function lastChanged();
+    public function lastChanged(): string;
 
     /**
      * Runs a command on the host.
      *
-     * @param string $command
-     * @param bool $mustRun
-     * @param bool $quiet
-     * @param string|null $input
+     * @return string|false
+     *   The command's output, with trailing whitespace trimmed, or false on failure.
      *
-     * @return string|true
-     *   The command's output, or true if it succeeds with no output, or false
-     *   if it fails and $mustRun is false.
-     *
-     * @throws \Symfony\Component\Process\Exception\RuntimeException
+     * @throws RuntimeException
      *   If $mustRun is enabled and the command fails.
      */
-    public function runCommand($command, $mustRun = true, $quiet = true, $input = null);
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, ?string $input = null): string|false;
 
     /**
      * Runs a command using the current STDIN, STDOUT and STDERR.
@@ -53,5 +51,5 @@ interface HostInterface
      *
      * @return int The command's exit code.
      */
-    public function runCommandDirect($commandLine, $append = '');
+    public function runCommandDirect(string $commandLine, string $append = ''): int;
 }

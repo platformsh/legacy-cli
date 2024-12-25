@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\DependencyMissingException;
@@ -16,35 +18,20 @@ use Platformsh\Client\Model\Project;
 
 class Drush
 {
-    /** @var Api */
-    protected $api;
+    protected Api $api;
+    protected Shell $shellHelper;
+    protected LocalProject $localProject;
+    protected Config $config;
+    protected ApplicationFinder $applicationFinder;
 
-    /** @var Shell */
-    protected $shellHelper;
-
-    /** @var LocalProject */
-    protected $localProject;
-
-    /** @var Config */
-    protected $config;
-
-    /** @var string|null */
-    protected $homeDir;
-
-    /** @var array */
-    protected $aliases = [];
-
-    /** @var string|false|null */
-    protected $version;
-
-    /** @var string|null */
-    protected $executable;
+    protected ?string $homeDir = null;
+    /** @var array<string, array<string, mixed>> */
+    protected array $aliases = [];
+    protected string|false|null $version;
+    protected ?string $executable = null;
 
     /** @var string[] */
-    protected $cachedAppRoots = [];
-
-    /** @var ApplicationFinder */
-    protected $applicationFinder;
+    protected array $cachedAppRoots = [];
 
     /**
      * @param Config|null $config
@@ -54,11 +41,11 @@ class Drush
      * @param ApplicationFinder|null $applicationFinder
      */
     public function __construct(
-        Config $config = null,
-        Shell $shellHelper = null,
-        LocalProject $localProject = null,
-        Api $api = null,
-        ApplicationFinder $applicationFinder = null
+        ?Config $config = null,
+        ?Shell $shellHelper = null,
+        ?LocalProject $localProject = null,
+        ?Api $api = null,
+        ?ApplicationFinder $applicationFinder = null,
     ) {
         $this->shellHelper = $shellHelper ?: new Shell();
         $this->config = $config ?: new Config();
@@ -67,41 +54,30 @@ class Drush
         $this->applicationFinder = $applicationFinder ?: new ApplicationFinder($this->config);
     }
 
-    public function setHomeDir($homeDir)
+    public function setHomeDir(string $homeDir): void
     {
         $this->homeDir = $homeDir;
     }
 
-    public function getHomeDir()
+    public function getHomeDir(): string
     {
         return $this->homeDir ?: $this->config->getHomeDirectory();
     }
 
-    /**
-     * @param string $sshUrl
-     * @param string $enterpriseAppRoot
-     */
-    public function setCachedAppRoot($sshUrl, $enterpriseAppRoot)
+    public function setCachedAppRoot(string $sshUrl, string $enterpriseAppRoot): void
     {
         $this->cachedAppRoots[$sshUrl] = $enterpriseAppRoot;
     }
 
-    /**
-     * @param string $sshUrl
-     *
-     * @return string
-     */
-    public function getCachedAppRoot($sshUrl)
+    public function getCachedAppRoot(string $sshUrl): string|false
     {
-        return isset($this->cachedAppRoots[$sshUrl]) ? $this->cachedAppRoots[$sshUrl] : false;
+        return $this->cachedAppRoots[$sshUrl] ?? false;
     }
 
     /**
-     * Find the global Drush configuration directory.
-     *
-     * @return string
+     * Finds the global Drush configuration directory.
      */
-    public function getDrushDir()
+    public function getDrushDir(): string
     {
         return $this->getHomeDir() . '/.drush';
     }
@@ -111,7 +87,7 @@ class Drush
      *
      * @return string
      */
-    public function getSiteAliasDir()
+    public function getSiteAliasDir(): string
     {
         $aliasDir = $this->getDrushDir() . '/site-aliases';
         if (!file_exists($aliasDir) && $this->getLegacyAliasFiles()) {
@@ -126,9 +102,9 @@ class Drush
      *
      * @return string[]
      */
-    public function getLegacyAliasFiles()
+    public function getLegacyAliasFiles(): array
     {
-        return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT);
+        return glob($this->getDrushDir() . '/*.alias*.*', GLOB_NOSORT) ?: [];
     }
 
     /**
@@ -139,11 +115,11 @@ class Drush
      * @return string|false
      *   The Drush version, or false if it cannot be determined.
      */
-    public function getVersion($reset = false)
+    public function getVersion(bool $reset = false): string|false
     {
         if ($reset || !isset($this->version)) {
             $this->version = $this->shellHelper->execute(
-                [$this->getDrushExecutable(), 'version', '--format=string']
+                [$this->getDrushExecutable(), 'version', '--format=string'],
             );
         }
 
@@ -154,7 +130,7 @@ class Drush
     /**
      * @throws DependencyMissingException
      */
-    public function ensureInstalled()
+    public function ensureInstalled(): void
     {
         if ($this->getVersion() === false) {
             throw new DependencyMissingException('Drush is not installed');
@@ -166,9 +142,9 @@ class Drush
      *
      * @return bool
      */
-    public function supportsMakeLock()
+    public function supportsMakeLock(): bool
     {
-        return version_compare($this->getVersion(), '7.0.0-rc1', '>=');
+        return version_compare((string) $this->getVersion(), '7.0.0-rc1', '>=');
     }
 
     /**
@@ -176,16 +152,16 @@ class Drush
      *
      * @param string[] $args
      *   Command arguments (everything after 'drush').
-     * @param string   $dir
+     * @param ?string $dir
      *   The working directory.
-     * @param bool     $mustRun
+     * @param bool $mustRun
      *   Enable exceptions if the command fails.
-     * @param bool     $quiet
+     * @param bool $quiet
      *   Suppress command output.
      *
-     * @return string|bool
+     * @return string|false
      */
-    public function execute(array $args, $dir = null, $mustRun = false, $quiet = true)
+    public function execute(array $args, ?string $dir = null, bool $mustRun = false, bool $quiet = true): string|false
     {
         array_unshift($args, $this->getDrushExecutable());
 
@@ -199,14 +175,14 @@ class Drush
      *   The absolute path to the executable, or 'drush' if the path is not
      *   known.
      */
-    protected function getDrushExecutable()
+    protected function getDrushExecutable(): string
     {
         if (isset($this->executable)) {
             return $this->executable;
         }
 
         if ($this->config->has('local.drush_executable')) {
-            return $this->executable = $this->config->get('local.drush_executable');
+            return $this->executable = $this->config->getStr('local.drush_executable');
         }
 
         // Find a locally installed Drush instance: first check the Composer
@@ -220,7 +196,7 @@ class Drush
 
         // Check the local dependencies directory (created via 'platform
         // build').
-        $drushDep = $localDir . '/' . $this->config->get('local.dependencies_dir') . '/php/vendor/bin/drush';
+        $drushDep = $localDir . '/' . $this->config->getStr('local.dependencies_dir') . '/php/vendor/bin/drush';
         if (is_executable($drushDep)) {
             return $this->executable = $drushDep;
         }
@@ -242,22 +218,19 @@ class Drush
     /**
      * @return bool
      */
-    public function clearCache()
+    public function clearCache(): bool
     {
-        return (bool) $this->execute(['cache-clear', 'drush']);
+        return $this->execute(['cache-clear', 'drush']) !== false;
     }
 
     /**
-     * Get existing Drush aliases for a group.
-     *
-     * @param string $groupName
-     * @param bool   $reset
+     * Gets existing Drush aliases for a group.
      *
      * @throws \Exception If the "drush sa" command fails.
      *
-     * @return array
+     * @return array<string, array<string, mixed>>
      */
-    public function getAliases($groupName, $reset = false)
+    public function getAliases(string $groupName, bool $reset = false): array
     {
         if (!$reset && isset($this->aliases[$groupName])) {
             return $this->aliases[$groupName];
@@ -272,10 +245,8 @@ class Drush
         // Run the command with a timeout. An exception will be thrown if it fails.
         // A user experienced timeouts when this was set to 5 seconds, so it was increased to 30.
         try {
-            $result = $this->shellHelper->execute($args, null, true, true, [], 30);
-            if (is_string($result)) {
-                $aliases = (array) json_decode($result, true);
-            }
+            $result = $this->shellHelper->mustExecute($args, timeout: 30);
+            $aliases = (array) json_decode($result, true);
         } catch (ProcessFailedException $e) {
             // The command will fail if the alias is not found. Throw an
             // exception for any other failures.
@@ -290,14 +261,9 @@ class Drush
     }
 
     /**
-     * Get the alias group for a project.
-     *
-     * @param Project $project
-     * @param string  $projectRoot
-     *
-     * @return string
+     * Gets the alias group from a project's local config file.
      */
-    public function getAliasGroup(Project $project, $projectRoot)
+    public function getAliasGroup(Project $project, string $projectRoot): string
     {
         $config = $this->localProject->getProjectConfig($projectRoot);
 
@@ -305,10 +271,9 @@ class Drush
     }
 
     /**
-     * @param string $newGroup
-     * @param string $projectRoot
+     * Sets and writes the alias group to the project's local config file.
      */
-    public function setAliasGroup($newGroup, $projectRoot)
+    public function setAliasGroup(string $newGroup, string $projectRoot): void
     {
         $this->localProject->writeCurrentProjectConfig(['alias-group' => $newGroup], $projectRoot, true);
     }
@@ -319,11 +284,11 @@ class Drush
      * @param Project       $project      The project
      * @param string        $projectRoot  The project root
      * @param Environment[] $environments The environments
-     * @param string        $original     The original group name
+     * @param ?string       $original     The original group name
      *
      * @return bool True on success, false on failure.
      */
-    public function createAliases(Project $project, $projectRoot, $environments, $original = null)
+    public function createAliases(Project $project, string $projectRoot, array $environments, ?string $original = null): bool
     {
         if (!$apps = $this->getDrupalApps($projectRoot)) {
             return false;
@@ -340,26 +305,22 @@ class Drush
     }
 
     /**
-     * Find Drupal applications in a project.
-     *
-     * @param string $projectRoot
+     * Finds Drupal applications in a project.
      *
      * @return LocalApplication[]
      */
-    public function getDrupalApps($projectRoot)
+    public function getDrupalApps(string $projectRoot): array
     {
         return array_filter(
             $this->applicationFinder->findApplications($projectRoot),
-            function (LocalApplication $app) {
-                return Drupal::isDrupal($app->getRoot());
-            }
+            fn(LocalApplication $app): bool => Drupal::isDrupal($app->getRoot()),
         );
     }
 
     /**
      * @return SiteAliasTypeInterface[]
      */
-    protected function getSiteAliasTypes()
+    protected function getSiteAliasTypes(): array
     {
         $types = [];
         $types[] = new DrushYaml($this->config, $this);
@@ -370,15 +331,8 @@ class Drush
 
     /**
      * Returns the site URL.
-     *
-     * @param Environment      $environment
-     * @param LocalApplication $app
-     *
-     * @todo this is really a hidden dependency on the Api service
-     *
-     * @return string|null
      */
-    public function getSiteUrl(Environment $environment, LocalApplication $app)
+    public function getSiteUrl(Environment $environment, LocalApplication $app): ?string
     {
         if ($this->api->hasCachedCurrentDeployment($environment)) {
             return $this->api->getSiteUrl($environment, $app->getName());
@@ -392,10 +346,7 @@ class Drush
         return null;
     }
 
-    /**
-     * @param string $group
-     */
-    public function deleteOldAliases($group)
+    public function deleteOldAliases(string $group): void
     {
         foreach ($this->getSiteAliasTypes() as $type) {
             $type->deleteAliases($group);

@@ -1,6 +1,18 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Service\AccessApi;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\Wildcard;
@@ -9,6 +21,7 @@ use Platformsh\Client\Model\Invitation\AlreadyInvitedException;
 use Platformsh\Client\Model\Invitation\Permission;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,22 +31,33 @@ use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-class UserAddCommand extends UserCommandBase
+#[AsCommand(name: 'user:add', description: 'Add a user to the project')]
+class UserAddCommand extends CommandBase
 {
+    public function __construct(
+        private readonly AccessApi $accessApi,
+        protected readonly ActivityMonitor $activityMonitor,
+        private readonly Api               $api,
+        private readonly Config            $config,
+        private readonly Io                $io,
+        private readonly QuestionHelper    $questionHelper,
+        protected readonly Selector        $selector,
+    ) {
+        parent::__construct();
+    }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
-            ->setName('user:add')
-            ->setDescription('Add a user to the project')
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address");
 
         $this->addRoleOption();
 
         $this->addOption('force-invite', null, InputOption::VALUE_NONE, 'Send an invitation, even if one has already been sent');
 
-        $this->addProjectOption();
-        $this->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         $this->addExample('Add Alice as a project admin', 'alice@example.com -r admin');
         $this->addExample('Add Bob as a viewer on the "production" environment type, and a contributor on "development" environments', 'bob@example.com -r production:v -r development:c');
@@ -43,7 +67,7 @@ class UserAddCommand extends UserCommandBase
     /**
      * Adds the --role (-r) option to the command.
      */
-    protected function addRoleOption()
+    protected function addRoleOption(): void
     {
         $this->addOption(
             'role',
@@ -52,28 +76,25 @@ class UserAddCommand extends UserCommandBase
             "The user's project role ('admin' or 'viewer') or environment type role (e.g. 'staging:contributor' or 'production:viewer')."
             . "\nTo remove a user from an environment type, set the role as 'none'."
             . "\nThe % or * characters can be used as a wildcard for the environment type, e.g. '%:viewer' to give the user the 'viewer' role on all types."
-            . "\nThe role can be abbreviated, e.g. 'production:v'."
+            . "\nThe role can be abbreviated, e.g. 'production:v'.",
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
-        $project = $this->getSelectedProject();
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $selection = $this->selector->getSelection($input);
+        $project = $selection->getProject();
 
         $hasOutput = false;
 
-        $environmentTypes = $this->api()->getEnvironmentTypes($project);
+        $environmentTypes = $this->api->getEnvironmentTypes($project);
 
         // Process the --role option.
         $roleInput = ArrayArgument::getOption($input, 'role');
         $specifiedProjectRole = $this->getSpecifiedProjectRole($roleInput);
         $specifiedTypeRoles = $this->getSpecifiedTypeRoles($roleInput, $environmentTypes);
         if (!empty($roleInput)) {
-            $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $this->api()->getEnvironments($project));
+            $specifiedEnvironmentRoles = $this->getSpecifiedEnvironmentRoles($roleInput, $this->api->getEnvironments($project));
         }
         if ($specifiedProjectRole === ProjectUserAccess::ROLE_ADMIN && (!empty($specifiedTypeRoles) || !empty($specifiedEnvironmentRoles))) {
             $this->warnProjectAdminConflictingRoles();
@@ -88,7 +109,7 @@ class UserAddCommand extends UserCommandBase
             // In interactive use, error out. In non-interactive use, warn but continue (for backwards compatibility).
             if ($input->isInteractive()) {
                 // Try to show an example of how to use type-based roles.
-                $environments = $this->api()->getEnvironments($project);
+                $environments = $this->api->getEnvironments($project);
                 $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $specifiedTypeRoles, $environments, new NullOutput());
                 if ($converted !== false) {
                     $this->stdErr->writeln('');
@@ -107,7 +128,7 @@ class UserAddCommand extends UserCommandBase
             $this->stdErr->writeln('');
             // Convert the list of environment-based roles to type-based roles.
             // Refresh the environments to check their types more accurately.
-            $environments = $this->api()->getEnvironments($project, true);
+            $environments = $this->api->getEnvironments($project, true);
             $converted = $this->convertEnvironmentRolesToTypeRoles($specifiedEnvironmentRoles, $specifiedTypeRoles, $environments, $this->stdErr);
             if ($converted === false) {
                 return 1;
@@ -121,9 +142,9 @@ class UserAddCommand extends UserCommandBase
         // This can be an email address or a user ID.
         // When adding a new user, it must be a valid email address.
         $email = null;
-        $update = stripos($input->getFirstArgument(), ':u');
+        $update = stripos((string) $input->getFirstArgument(), ':u');
         if ($emailOrId = $input->getArgument('email')) {
-            $selection = $this->loadProjectUser($project, $emailOrId);
+            $selection = $this->accessApi->loadProjectUser($project, $emailOrId);
             if (!$selection) {
                 if ($update) {
                     throw new InvalidArgumentException('User not found: ' . $emailOrId);
@@ -133,18 +154,18 @@ class UserAddCommand extends UserCommandBase
                     throw new InvalidArgumentException('Invalid email address: ' . $emailOrId);
                 }
             }
-        } else if (!$input->isInteractive()) {
+        } elseif (!$input->isInteractive()) {
             throw new InvalidArgumentException('An email address is required (in non-interactive mode).');
         } elseif ($update) {
-            $userId = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user to update:');
+            $userId = $this->questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user to update:');
             $hasOutput = true;
-            $selection = $this->loadProjectUser($project, $userId);
+            $selection = $this->accessApi->loadProjectUser($project, $userId);
             if (!$selection) {
                 throw new InvalidArgumentException('User not found: ' . $userId);
             }
         } else {
             $question = new Question("Enter the user's email address: ");
-            $question->setValidator(function ($answer) {
+            $question->setValidator(function (?string $answer) {
                 if (empty($answer)) {
                     throw new InvalidArgumentException('An email address is required.');
                 }
@@ -155,10 +176,10 @@ class UserAddCommand extends UserCommandBase
                 return $filtered;
             });
             $question->setMaxAttempts(5);
-            $email = $questionHelper->ask($input, $this->stdErr, $question);
+            $email = $this->questionHelper->ask($input, $this->stdErr, $question);
             $hasOutput = true;
             // A user may or may not already exist with this email address.
-            $selection = $this->loadProjectUser($project, $email);
+            $selection = $this->accessApi->loadProjectUser($project, $email);
         }
 
         $existingTypeRoles = [];
@@ -168,20 +189,20 @@ class UserAddCommand extends UserCommandBase
 
         if ($selection instanceof ProjectAccess) {
             $existingUserId = $selection->id;
-            $existingUserLabel = $this->getUserLabel($selection, true);
+            $existingUserLabel = $this->accessApi->getUserLabel($selection, true);
             $existingProjectRole = $selection->role;
             $existingTypeRoles = $this->getTypeRoles($selection, $environmentTypes);
-            $email = $this->legacyUserInfo($selection)['email'];
+            $email = $this->accessApi->legacyUserInfo($selection)['email'];
         } elseif ($selection) {
             $existingUserId = $selection->user_id;
-            $existingUserLabel = $this->getUserLabel($selection, true);
+            $existingUserLabel = $this->accessApi->getUserLabel($selection, true);
             $existingProjectRole = $selection->getProjectRole();
             $existingTypeRoles = $selection->getEnvironmentTypeRoles();
             $email = $selection->getUserInfo()->email;
         }
 
         if ($existingUserId !== null) {
-            $this->debug(sprintf('User %s found with user ID: %s', $email, $existingUserId));
+            $this->io->debug(sprintf('User %s found with user ID: %s', $email, $existingUserId));
         }
 
         // Exit if the user is the owner already.
@@ -190,7 +211,7 @@ class UserAddCommand extends UserCommandBase
                 $this->stdErr->writeln('');
             }
 
-            $this->stdErr->writeln(sprintf('The user %s is the owner of %s.', $existingUserLabel, $this->api()->getProjectLabel($project)));
+            $this->stdErr->writeln(sprintf('The user %s is the owner of %s.', $existingUserLabel, $this->api->getProjectLabel($project)));
             if ($specifiedProjectRole || $specifiedTypeRoles) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln("<comment>The project owner's role(s) cannot be changed.</comment>");
@@ -208,11 +229,11 @@ class UserAddCommand extends UserCommandBase
                 $this->stdErr->writeln('');
             }
 
-            $this->stdErr->writeln(sprintf('Current role(s) of %s on %s:', $existingUserLabel, $this->api()->getProjectLabel($project)));
+            $this->stdErr->writeln(sprintf('Current role(s) of %s on %s:', $existingUserLabel, $this->api->getProjectLabel($project)));
             $this->stdErr->writeln(sprintf('  Project role: <info>%s</info>', $existingProjectRole));
             if ($existingProjectRole !== ProjectUserAccess::ROLE_ADMIN) {
                 foreach ($environmentTypes as $type) {
-                    $role = isset($existingTypeRoles[$type->id]) ? $existingTypeRoles[$type->id] : '[none]';
+                    $role = $existingTypeRoles[$type->id] ?? '[none]';
                     $this->stdErr->writeln(sprintf('    Role on environment type <info>%s</info>: %s', $type->id, $role));
                 }
             }
@@ -267,9 +288,9 @@ class UserAddCommand extends UserCommandBase
             if ($desiredTypeRoles) {
                 foreach ($environmentTypes as $environmentType) {
                     $id = $environmentType->id;
-                    $new = isset($desiredTypeRoles[$id]) ? $desiredTypeRoles[$id] : 'none';
+                    $new = $desiredTypeRoles[$id] ?? 'none';
                     if ($existingTypeRoles) {
-                        $existing = isset($existingTypeRoles[$id]) ? $existingTypeRoles[$id] : 'none';
+                        $existing = $existingTypeRoles[$id] ?? 'none';
                         if ($existing !== $new) {
                             $changesText[] = sprintf('  Role on type <info>%s</info>: <error>%s</error> -> <info>%s</info>', $id, $existing, $new);
                             $typeChanges[$id] = $new;
@@ -293,9 +314,7 @@ class UserAddCommand extends UserCommandBase
         }
 
         // Filter out environment type roles of 'none' from the list.
-        $desiredTypeRoles = array_filter($desiredTypeRoles, function ($role) {
-            return $role !== 'none';
-        });
+        $desiredTypeRoles = array_filter($desiredTypeRoles, fn($role): bool => $role !== 'none');
 
         // Add a new line if there has already been output.
         if ($hasOutput) {
@@ -311,8 +330,8 @@ class UserAddCommand extends UserCommandBase
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf(
                     'To delete the user, run: <info>%s user:delete %s</info>',
-                    $this->config()->get('application.executable'),
-                    OsUtil::escapeShellArg($email)
+                    $this->config->getStr('application.executable'),
+                    OsUtil::escapeShellArg($email),
                 ));
             }
 
@@ -329,7 +348,7 @@ class UserAddCommand extends UserCommandBase
         if ($existingUserId !== null) {
             $this->stdErr->writeln('Summary of changes:');
         } else {
-            $this->stdErr->writeln(sprintf('Adding the user <info>%s</info> to %s:', $email, $this->api()->getProjectLabel($project)));
+            $this->stdErr->writeln(sprintf('Adding the user <info>%s</info> to %s:', $email, $this->api->getProjectLabel($project)));
         }
         foreach ($changesText as $change) {
             $this->stdErr->writeln('  ' . $change);
@@ -338,15 +357,15 @@ class UserAddCommand extends UserCommandBase
 
         // Ask for confirmation.
         if ($existingUserId !== null) {
-            if (!$questionHelper->confirm('Are you sure you want to make these change(s)?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to make these change(s)?')) {
                 return 1;
             }
         } else {
-            if ($this->config()->getWithDefault('warnings.project_users_billing', true)) {
+            if ($this->config->getBool('warnings.project_users_billing')) {
                 $this->stdErr->writeln('<comment>Adding users can result in additional charges.</comment>');
                 $this->stdErr->writeln('');
             }
-            if (!$questionHelper->confirm('Are you sure you want to add this user?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to add this user?')) {
                 return 1;
             }
         }
@@ -366,7 +385,7 @@ class UserAddCommand extends UserCommandBase
             } catch (AlreadyInvitedException $e) {
                 $this->stdErr->writeln('');
                 $this->stdErr->writeln(sprintf('An invitation has already been sent to <info>%s</info>', $e->getEmail()));
-                if ($questionHelper->confirm('Do you want to send this invitation anyway?')) {
+                if ($this->questionHelper->confirm('Do you want to send this invitation anyway?')) {
                     $project->inviteUserByEmail($email, $desiredProjectRole, [], true, $permissions);
                     $this->stdErr->writeln('');
                     $this->stdErr->writeln(sprintf('A new invitation has been sent to <info>%s</info>', $email));
@@ -384,12 +403,12 @@ class UserAddCommand extends UserCommandBase
             }
             if ($permissions != $selection->permissions) {
                 $this->stdErr->writeln("Updating the user's project access...");
-                $this->debug('New permissions: ' . implode(', ', $permissions));
+                $this->io->debug('New permissions: ' . implode(', ', $permissions));
                 $selection->update(['permissions' => $permissions]);
                 $this->stdErr->writeln('Access was updated successfully.');
             } else {
                 $this->stdErr->writeln('No changes to make');
-                $this->debug('Permissions match: ' . implode(', ', $permissions));
+                $this->io->debug('Permissions match: ' . implode(', ', $permissions));
             }
         } elseif ($selection instanceof ProjectAccess) {
             // Make the desired changes at the project level.
@@ -431,14 +450,13 @@ class UserAddCommand extends UserCommandBase
         }
 
         // Wait for activities to complete.
-        if ($activities && $this->shouldWait($input)) {
-            /** @var \Platformsh\Cli\Service\ActivityMonitor $activityMonitor */
-            $activityMonitor = $this->getService('activity_monitor');
+        if ($activities && $this->activityMonitor->shouldWait($input)) {
+            $activityMonitor = $this->activityMonitor;
             if (!$activityMonitor->waitMultiple($activities, $project)) {
                 return 1;
             }
-        } elseif (!$this->centralizedPermissionsEnabled()) {
-            $this->redeployWarning();
+        } elseif (!$this->accessApi->centralizedPermissionsEnabled()) {
+            $this->api->redeployWarning();
         }
 
         return 0;
@@ -449,7 +467,7 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function validateProjectRole($value)
+    private function validateProjectRole(string $value): string
     {
         return $this->matchRole($value, ProjectUserAccess::$projectRoles);
     }
@@ -459,7 +477,7 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function validateEnvironmentRole($value)
+    private function validateEnvironmentRole(string $value): string
     {
         return $this->matchRole($value, array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']));
     }
@@ -472,10 +490,10 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function matchRole($input, array $roles)
+    private function matchRole(string $input, array $roles): string
     {
         foreach ($roles as $role) {
-            if (strpos($role, strtolower($input)) === 0) {
+            if (str_starts_with($role, strtolower($input))) {
                 return $role;
             }
         }
@@ -490,11 +508,9 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function describeRoles(array $roles)
+    private function describeRoles(array $roles): string
     {
-        $withInitials = array_map(function ($role) {
-            return sprintf('%s (%s)', $role, substr($role, 0, 1));
-        }, $roles);
+        $withInitials = array_map(fn($role): string => sprintf('%s (%s)', $role, substr((string) $role, 0, 1)), $roles);
         $last = array_pop($withInitials);
 
         return implode(' or ', [implode(', ', $withInitials), $last]);
@@ -507,39 +523,32 @@ class UserAddCommand extends UserCommandBase
      *
      * @return string
      */
-    private function describeRoleInput(array $roles)
+    private function describeRoleInput(array $roles): string
     {
-        return '[' . implode('/', array_map(function ($role) {
-            return substr($role, 0, 1);
-        }, $roles)) . ']';
+        return '[' . implode('/', array_map(fn($role): string => substr((string) $role, 0, 1), $roles)) . ']';
     }
 
     /**
      * Show the form for entering the project role.
      *
-     * @param string                                          $defaultRole
+     * @param string $defaultRole
      * @param InputInterface $input
      *
      * @return string
      */
-    private function showProjectRoleForm($defaultRole, InputInterface $input)
+    private function showProjectRoleForm(string $defaultRole, InputInterface $input): mixed
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
-
         $this->stdErr->writeln("The user's project role can be " . $this->describeRoles(ProjectUserAccess::$projectRoles) . '.');
         $this->stdErr->writeln('');
         $question = new Question(
             sprintf('Project role (default: %s) <question>%s</question>: ', $defaultRole, $this->describeRoleInput(ProjectUserAccess::$projectRoles)),
-            $defaultRole
+            $defaultRole,
         );
-        $question->setValidator(function ($answer) {
-            return $this->validateProjectRole($answer);
-        });
+        $question->setValidator(fn($answer) => $this->validateProjectRole($answer));
         $question->setMaxAttempts(5);
         $question->setAutocompleterValues(ProjectUserAccess::$projectRoles);
 
-        return $questionHelper->ask($input, $this->stdErr, $question);
+        return $this->questionHelper->ask($input, $this->stdErr, $question);
     }
 
     /**
@@ -548,9 +557,9 @@ class UserAddCommand extends UserCommandBase
      * @param ProjectAccess $projectAccess
      * @param EnvironmentType[] $environmentTypes
      *
-     * @return array
+     * @return array<string, string>
      */
-    private function getTypeRoles(ProjectAccess $projectAccess, array $environmentTypes)
+    private function getTypeRoles(ProjectAccess $projectAccess, array $environmentTypes): array
     {
         if ($projectAccess->role === ProjectAccess::ROLE_ADMIN) {
             return [];
@@ -580,18 +589,16 @@ class UserAddCommand extends UserCommandBase
     /**
      * Show the form for entering environment type roles.
      *
-     * @param array $defaultTypeRoles
+     * @param array<string, string> $defaultTypeRoles
      * @param EnvironmentType[] $environmentTypes
      * @param InputInterface $input
      *
-     * @return array
+     * @return array<string, string>
      *   The environment type roles (keyed by type ID) including the user's
      *   answers.
      */
-    private function showTypeRolesForm(array $defaultTypeRoles, array $environmentTypes, InputInterface $input)
+    private function showTypeRolesForm(array $defaultTypeRoles, array $environmentTypes, InputInterface $input): array
     {
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
         $desiredTypeRoles = [];
         $validRoles = array_merge(ProjectUserAccess::$environmentTypeRoles, ['none']);
         $this->stdErr->writeln("The user's environment type role(s) can be " . $this->describeRoles($validRoles) . '.');
@@ -599,10 +606,10 @@ class UserAddCommand extends UserCommandBase
         $this->stdErr->writeln('');
         foreach ($environmentTypes as $environmentType) {
             $id = $environmentType->id;
-            $default = isset($defaultTypeRoles[$id]) ? $defaultTypeRoles[$id] : 'none';
+            $default = $defaultTypeRoles[$id] ?? 'none';
             $question = new Question(
                 sprintf('Role on type <info>%s</info> (default: %s) <question>%s</question>: ', $id, $default, $initials),
-                $default
+                $default,
             );
             $question->setValidator(function ($answer) {
                 if ($answer === 'q' || $answer === 'quit') {
@@ -613,7 +620,7 @@ class UserAddCommand extends UserCommandBase
             });
             $question->setAutocompleterValues(array_merge($validRoles, ['quit']));
             $question->setMaxAttempts(5);
-            $answer = $questionHelper->ask($input, $this->stdErr, $question);
+            $answer = $this->questionHelper->ask($input, $this->stdErr, $question);
             if ($answer === 'q' || $answer === 'quit') {
                 break;
             } else {
@@ -627,16 +634,15 @@ class UserAddCommand extends UserCommandBase
     /**
      * Extract the specified project role from the list (given in --role).
      *
-     * @param array &$roles
+     * @param string[] $roles
      *
      * @return string|null
      *   The project role, or null if none is specified.
      */
-    private function getSpecifiedProjectRole(array &$roles)
+    private function getSpecifiedProjectRole(array $roles): ?string
     {
-        foreach ($roles as $key => $role) {
-            if (strpos($role, ':') === false) {
-                unset($roles[$key]);
+        foreach ($roles as $role) {
+            if (!str_contains($role, ':')) {
                 return $this->validateProjectRole($role);
             }
         }
@@ -648,19 +654,19 @@ class UserAddCommand extends UserCommandBase
      * Extract the specified environment roles from the list (given in --role).
      *
      * @param string[] $roles
-     * @param array<string, \Platformsh\Client\Model\Environment> $environments
+     * @param array<string, Environment> $environments
      *
      * @return array<string, string>
      *   An array of environment roles, keyed by environment ID.
      */
-    private function getSpecifiedEnvironmentRoles(array $roles, array $environments)
+    private function getSpecifiedEnvironmentRoles(array $roles, array $environments): array
     {
         $environmentRoles = [];
         foreach ($roles as $role) {
-            if (strpos($role, ':') === false) {
+            if (!str_contains($role, ':')) {
                 continue;
             }
-            list($id, $role) = explode(':', $role, 2);
+            [$id, $role] = explode(':', $role, 2);
             $role = $this->validateEnvironmentRole($role);
             // Match environment IDs by wildcard.
             $matched = Wildcard::select(\array_keys($environments), [$id]);
@@ -686,15 +692,15 @@ class UserAddCommand extends UserCommandBase
      * @return array<string, string>
      *   An array of environment type roles, keyed by environment type ID.
      */
-    private function getSpecifiedTypeRoles(array &$roles, array $environmentTypes)
+    private function getSpecifiedTypeRoles(array &$roles, array $environmentTypes): array
     {
         $typeRoles = [];
-        $typeIds = array_map(function (EnvironmentType $type) { return $type->id; }, $environmentTypes);
+        $typeIds = array_map(fn(EnvironmentType $type) => $type->id, $environmentTypes);
         foreach ($roles as $key => $role) {
-            if (strpos($role, ':') === false) {
+            if (!str_contains($role, ':')) {
                 continue;
             }
-            list($id, $role) = explode(':', $role, 2);
+            [$id, $role] = explode(':', $role, 2);
             $role = $this->validateEnvironmentRole($role);
             // Match type IDs by wildcard.
             $matched = Wildcard::select($typeIds, [$id]);
@@ -718,13 +724,13 @@ class UserAddCommand extends UserCommandBase
      *
      * @param array<string, string> $specifiedEnvironmentRoles
      * @param array<string, string> $specifiedTypeRoles
-     * @param array<string, \Platformsh\Client\Model\Environment> $environments
+     * @param array<string, Environment> $environments
      * @param OutputInterface $stdErr
      *
      * @return array<string, string>|false
      *   A list of environment type roles, keyed by type, or false on failure.
      */
-    private function convertEnvironmentRolesToTypeRoles(array $specifiedEnvironmentRoles, array $specifiedTypeRoles, array $environments, OutputInterface $stdErr)
+    private function convertEnvironmentRolesToTypeRoles(array $specifiedEnvironmentRoles, array $specifiedTypeRoles, array $environments, OutputInterface $stdErr): false|array
     {
         /** @var array<string, array<string, string>> $byType Roles keyed by environment ID, then keyed by type */
         $byType = [];
@@ -753,7 +759,7 @@ class UserAddCommand extends UserCommandBase
                         $role,
                         count($roles),
                         $specifiedTypeRoles[$type],
-                        $type
+                        $type,
                     ));
                     return false;
                 }
@@ -761,7 +767,7 @@ class UserAddCommand extends UserCommandBase
                     'The role <comment>%s</comment> specified on %d environment(s) will be ignored as it is already specified on their type, <comment>%s</comment>.',
                     $role,
                     count($roles),
-                    $type
+                    $type,
                 ));
                 continue;
             }
@@ -769,14 +775,14 @@ class UserAddCommand extends UserCommandBase
                 'The role <comment>%s</comment> specified on %d environment(s) will actually be applied to all existing and future environments of the same type, <comment>%s</comment>.',
                 $role,
                 count($roles),
-                $type
+                $type,
             ));
             $specifiedTypeRoles[$type] = $role;
         }
         return $specifiedTypeRoles;
     }
 
-    private function warnProjectAdminConflictingRoles()
+    private function warnProjectAdminConflictingRoles(): void
     {
         $this->stdErr->writeln('<comment>A project admin has administrative access to all environment types.</comment>');
         $this->stdErr->writeln("To set the user's environment type role(s), set their project role to '" . ProjectUserAccess::ROLE_VIEWER . "'.");

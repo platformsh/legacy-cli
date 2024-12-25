@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Exception\ProcessFailedException;
@@ -7,37 +9,26 @@ use Platformsh\Cli\Exception\ProcessFailedException;
 /**
  * Helper class which runs rsync.
  */
-class Rsync
+readonly class Rsync
 {
-
-    private $shell;
-    private $ssh;
-    private $sshDiagnostics;
-
     /**
      * Constructor.
      *
-     * @param Shell $shellHelper
+     * @param Shell $shell
      * @param Ssh $ssh
      * @param SshDiagnostics $sshDiagnostics
      */
-    public function __construct(Shell $shellHelper, Ssh $ssh, SshDiagnostics $sshDiagnostics)
-    {
-        $this->shell = $shellHelper;
-        $this->ssh = $ssh;
-        $this->sshDiagnostics = $sshDiagnostics;
-    }
+    public function __construct(private Shell $shell, private Ssh $ssh, private SshDiagnostics $sshDiagnostics) {}
 
     /**
      * Returns environment variables for configuring rsync.
      *
-     * @param string $sshUrl
-     *
-     * @return array
+     * @return array<string, string>
      */
-    private function env($sshUrl) {
+    private function env(string $sshUrl): array
+    {
         return [
-            'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, [], null, true),
+            'RSYNC_RSH' => $this->ssh->getSshCommand($sshUrl, omitUrl: true),
         ] + $this->ssh->getEnv();
     }
 
@@ -46,13 +37,13 @@ class Rsync
      *
      * @return bool|null
      */
-    public function supportsConvertingFilenames()
+    public function supportsConvertingFilenames(): ?bool
     {
         static $supportsIconv;
         if (!isset($supportsIconv)) {
             $result = $this->shell->execute(['rsync', '-h']);
             if (is_string($result)) {
-                $supportsIconv = strpos($result, '--iconv') !== false;
+                $supportsIconv = str_contains($result, '--iconv');
             }
         }
 
@@ -62,12 +53,9 @@ class Rsync
     /**
      * Syncs files from a local to a remote location.
      *
-     * @param string $sshUrl
-     * @param string $localDir
-     * @param string $remoteDir
-     * @param array  $options
+     * @param array{verbose?: bool, quiet?: bool, convert-mac-filenames?: bool, delete?: bool, include?: string[], exclude?: string[]} $options
      */
-    public function syncUp($sshUrl, $localDir, $remoteDir, array $options = [])
+    public function syncUp(string $sshUrl, string $localDir, string $remoteDir, array $options = []): void
     {
         // Ensure a trailing slash on the "from" path, to copy the directory's
         // contents rather than the directory itself.
@@ -82,14 +70,11 @@ class Rsync
     }
 
     /**
-     * Syncs files from a remote to a local location.
+     * Syncs files from a remote to a local location
      *
-     * @param string $sshUrl
-     * @param string $remoteDir
-     * @param string $localDir
-     * @param array  $options
+     * @param array{verbose?: bool, quiet?: bool, convert-mac-filenames?: bool, delete?: bool, include?: string[], exclude?: string[]} $options
      */
-    public function syncDown($sshUrl, $remoteDir, $localDir, array $options = [])
+    public function syncDown(string $sshUrl, string $remoteDir, string $localDir, array $options = []): void
     {
         $from = sprintf('%s:%s/', $sshUrl, $remoteDir);
         $to = $localDir;
@@ -104,12 +89,9 @@ class Rsync
     /**
      * Runs rsync.
      *
-     * @param string $from
-     * @param string $to
-     * @param string $sshUrl
-     * @param array $options
+     * @param array{verbose?: bool, quiet?: bool, convert-mac-filenames?: bool, delete?: bool, include?: string[], exclude?: string[]} $options
      */
-    private function doSync($from, $to, $sshUrl, array $options = [])
+    private function doSync(string $from, string $to, string $sshUrl, array $options = []): void
     {
         $params = ['rsync', '--archive', '--compress', '--human-readable'];
 
@@ -146,6 +128,6 @@ class Rsync
             }
         }
 
-        $this->shell->execute($params, null, true, false, $this->env($sshUrl), null);
+        $this->shell->mustExecute($params, quiet: false, env: $this->env($sshUrl), timeout: null);
     }
 }

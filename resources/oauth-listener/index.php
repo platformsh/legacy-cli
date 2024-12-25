@@ -4,26 +4,27 @@ namespace Platformsh\Cli\OAuth;
 
 class Listener
 {
-    private $state;
-    private $authUrl;
-    private $clientId;
-    private $file;
-    private $localUrl;
-    private $response;
-    private $codeChallenge;
-    private $prompt;
-    private $scope;
-    private $authMethods;
-    private $maxAge;
+    private string $state;
+    private string $authUrl;
+    private string $clientId;
+    private string $file;
+    private string $localUrl;
+    private Response $response;
+    private string $codeChallenge;
+    private string $prompt;
+    private string $scope;
+    private string $authMethods;
+    private ?string $maxAge;
 
-    public function __construct() {
+    public function __construct()
+    {
         $required = [
             'CLI_OAUTH_STATE',
             'CLI_OAUTH_AUTH_URL',
             'CLI_OAUTH_CLIENT_ID',
             'CLI_OAUTH_FILE',
             'CLI_OAUTH_CODE_CHALLENGE',
-            'CLI_OAUTH_PROMPT'
+            'CLI_OAUTH_PROMPT',
         ];
         if ($missing = array_diff($required, array_keys($_ENV))) {
             throw new \RuntimeException('Invalid environment, missing: ' . implode(', ', $missing));
@@ -34,17 +35,17 @@ class Listener
         $this->file = $_ENV['CLI_OAUTH_FILE'];
         $this->prompt = $_ENV['CLI_OAUTH_PROMPT'];
         $this->codeChallenge = $_ENV['CLI_OAUTH_CODE_CHALLENGE'];
-        $this->scope = isset($_ENV['CLI_OAUTH_SCOPE']) ? $_ENV['CLI_OAUTH_SCOPE'] : '';
+        $this->scope = $_ENV['CLI_OAUTH_SCOPE'] ?? '';
         $this->localUrl = 'http://127.0.0.1:' . $_SERVER['SERVER_PORT'];
         $this->response = new Response();
-        $this->authMethods = isset($_ENV['CLI_OAUTH_METHODS']) ? $_ENV['CLI_OAUTH_METHODS'] : '';
-        $this->maxAge = isset($_ENV['CLI_OAUTH_MAX_AGE']) ? $_ENV['CLI_OAUTH_MAX_AGE'] : null;
+        $this->authMethods = $_ENV['CLI_OAUTH_METHODS'] ?? '';
+        $this->maxAge = $_ENV['CLI_OAUTH_MAX_AGE'] ?? null;
     }
 
     /**
      * @return string
      */
-    private function getOAuthUrl()
+    private function getOAuthUrl(): string
     {
         $params = [
             'redirect_uri' => $this->localUrl,
@@ -70,7 +71,7 @@ class Listener
     /**
      * Check state, run logic, set page content.
      */
-    public function run()
+    public function run(): void
     {
         // Respond after a successful OAuth2 redirect.
         if (isset($_GET['state'], $_GET['code'])) {
@@ -102,8 +103,8 @@ class Listener
 
         // Respond after an OAuth2 error.
         if (isset($_GET['error'])) {
-            $message = isset($_GET['error_description']) ? $_GET['error_description'] : null;
-            $hint = isset($_GET['error_hint']) ? $_GET['error_hint'] : null;
+            $message = $_GET['error_description'] ?? null;
+            $hint = $_GET['error_hint'] ?? null;
             $this->reportError($message, $_GET['error'], $hint);
             return;
         }
@@ -111,46 +112,42 @@ class Listener
         // In any other case: redirect to login.
         $url = $this->getOAuthUrl();
         $this->setRedirect($url);
-        $this->response->content = '<p><a href="' . htmlspecialchars($url) .'">Log in</a>.</p>';
-        return;
+        $this->response->content = '<p><a href="' . htmlspecialchars($url) . '">Log in</a>.</p>';
     }
 
     /**
      * @param string $url
-     * @param int    $code
+     * @param int $code
      */
-    private function setRedirect($url, $code = 302)
+    private function setRedirect(string $url, int $code = 302): void
     {
         $this->response->code = $code;
         $this->response->headers['Location'] = $url;
     }
 
-    /**
-     * @return \Platformsh\Cli\OAuth\Response
-     */
-    public function getResponse()
+    public function getResponse(): Response
     {
         return $this->response;
     }
 
     /**
-     * @param array $response
+     * @param array<string, mixed> $response
      *
      * @return bool
      */
-    private function sendToTerminal(array $response)
+    private function sendToTerminal(array $response): bool
     {
         return (bool) file_put_contents($this->file, json_encode($response), LOCK_EX);
     }
 
     /**
-     * @param string $message The error message.
+     * @param string|null $message The error message.
      * @param string|null $error An OAuth2 error type.
      * @param string|null $hint An OAuth2 error hint.
      */
-    private function reportError($message = null, $error = null, $hint = null)
+    private function reportError(?string $message = null, ?string $error = null, ?string $hint = null): void
     {
-        $this->response->headers['Status'] = 401;
+        $this->response->headers['Status'] = '401';
         $this->response->title = 'Error';
         if (isset($error)) {
             $this->response->content .= '<p class="error"><code>' . htmlspecialchars($error) . '</code></p>';
@@ -173,11 +170,12 @@ class Listener
 
 class Response
 {
-    public $headers = [];
-    public $code = 200;
-    public $headTitle = '';
-    public $title = '';
-    public $content = '';
+    /** @var array<string, string> */
+    public array $headers = [];
+    public int $code = 200;
+    public string $headTitle = '';
+    public string $title = '';
+    public string $content = '';
 
     public function __construct()
     {

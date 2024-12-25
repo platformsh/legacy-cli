@@ -1,60 +1,70 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Route;
 
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Model\Host\LocalHost;
 use Platformsh\Cli\Model\Route;
 use Platformsh\Cli\Service\Table;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'route:list', description: 'List all routes for an environment', aliases: ['routes'])]
 class RouteListCommand extends CommandBase
 {
-    private $tableHeader = [
+    /** @var array<string, string> */
+    private array $tableHeader = [
         'route' => 'Route',
         'type' => 'Type',
         'to' => 'To',
         'url' => 'URL',
     ];
-    private $defaultColumns = ['route', 'type', 'to'];
+    /** @var string[] */
+    private array $defaultColumns = ['route', 'type', 'to'];
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly Io $io, private readonly Selector $selector, private readonly Table $table)
+    {
+        parent::__construct();
+    }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
-            ->setName('route:list')
-            ->setAliases(['routes'])
-            ->setDescription('List all routes for an environment')
             ->addArgument('environment', InputArgument::OPTIONAL, 'The environment ID')
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Bypass the cache of routes');
         $this->setHiddenAliases(['environment:routes']);
         Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
-        $this->addProjectOption()
-             ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Allow override via PLATFORM_ROUTES.
-        $prefix = $this->config()->get('service.env_prefix');
+        $prefix = $this->config->getStr('service.env_prefix');
+        $selection = null;
         if (getenv($prefix . 'ROUTES') && !LocalHost::conflictsWithCommandLineOptions($input, $prefix)) {
-            $this->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
-            $decoded = json_decode(base64_decode(getenv($prefix . 'ROUTES'), true), true);
+            $this->io->debug('Reading routes from environment variable ' . $prefix . 'ROUTES');
+            $decoded = json_decode((string) base64_decode(getenv($prefix . 'ROUTES'), true), true);
             if (!is_array($decoded)) {
                 throw new \RuntimeException('Failed to decode: ' . $prefix . 'ROUTES');
             }
             $routes = Route::fromVariables($decoded);
             $fromEnv = true;
         } else {
-            $this->debug('Reading routes from the deployments API');
-            $this->validateInput($input);
-            $environment = $this->getSelectedEnvironment();
-            $deployment = $this->api()->getCurrentDeployment($environment, $input->getOption('refresh'));
+            $this->io->debug('Reading routes from the deployments API');
+            $selection = $this->selector->getSelection($input);
+            $deployment = $this->api->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
             $routes = Route::fromDeploymentApi($deployment->routes);
             $fromEnv = false;
         }
@@ -63,9 +73,6 @@ class RouteListCommand extends CommandBase
 
             return 0;
         }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
 
         $rows = [];
         foreach ($routes as $route) {
@@ -77,26 +84,25 @@ class RouteListCommand extends CommandBase
             $rows[] = $row;
         }
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             if ($fromEnv) {
                 $this->stdErr->writeln('Routes in the <info>' . $prefix . 'ROUTES</info> environment variable:');
-            }
-            if (isset($environment) && !$fromEnv) {
+            } else {
                 $this->stdErr->writeln(sprintf(
                     'Routes on the project %s, environment %s:',
-                    $this->api()->getProjectLabel($this->getSelectedProject()),
-                    $this->api()->getEnvironmentLabel($environment)
+                    $this->api->getProjectLabel($selection->getProject()),
+                    $this->api->getEnvironmentLabel($selection->getEnvironment()),
                 ));
             }
         }
 
-        $table->render($rows, $this->tableHeader, $this->defaultColumns);
+        $this->table->render($rows, $this->tableHeader, $this->defaultColumns);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln('');
             $this->stdErr->writeln(sprintf(
                 'To view a single route, run: <info>%s route:get <route></info>',
-                $this->config()->get('application.executable')
+                $this->config->getStr('application.executable'),
             ));
         }
 

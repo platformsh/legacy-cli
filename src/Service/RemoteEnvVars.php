@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Doctrine\Common\Cache\CacheProvider;
@@ -12,11 +14,6 @@ use Platformsh\Cli\Util\StringUtil;
  */
 class RemoteEnvVars
 {
-
-    protected $config;
-    protected $ssh;
-    protected $cache;
-
     /**
      * Constructor (dependencies are injected via the DIC).
      *
@@ -24,12 +21,7 @@ class RemoteEnvVars
      * @param CacheProvider   $cache
      * @param Config          $config
      */
-    public function __construct(Ssh $ssh, CacheProvider $cache, Config $config)
-    {
-        $this->ssh = $ssh;
-        $this->cache = $cache;
-        $this->config = $config;
-    }
+    public function __construct(protected Ssh $ssh, protected CacheProvider $cache, protected Config $config) {}
 
     /**
      * Read an environment variable from a remote application.
@@ -44,9 +36,9 @@ class RemoteEnvVars
      *
      * @return string The environment variable or an empty string.
      */
-    public function getEnvVar($variable, HostInterface $host, $refresh = false, $ttl = 3600)
+    public function getEnvVar(string $variable, HostInterface $host, bool $refresh = false, int $ttl = 3600): string
     {
-        $varName = $this->config->get('service.env_prefix') . $variable;
+        $varName = $this->config->getStr('service.env_prefix') . $variable;
         if ($host instanceof LocalHost) {
             return getenv($varName) !== false ? getenv($varName) : '';
         }
@@ -79,13 +71,13 @@ class RemoteEnvVars
      * @param HostInterface $host
      * @param bool $refresh
      *
-     * @return array
-     * @see \Platformsh\Cli\Service\RemoteEnvVars::getEnvVar()
+     * @return array<mixed>
+     * @see RemoteEnvVars::getEnvVar
      */
-    public function getArrayEnvVar($variable, HostInterface $host, $refresh = false)
+    public function getArrayEnvVar(string $variable, HostInterface $host, bool $refresh = false): array
     {
         $value = $this->getEnvVar($variable, $host, $refresh);
 
-        return json_decode(base64_decode($value), true) ?: [];
+        return json_decode((string) base64_decode($value), true) ?: [];
     }
 }

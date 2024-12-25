@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 class NestedArrayUtil
@@ -7,15 +9,15 @@ class NestedArrayUtil
     /**
      * Get a nested value in an array.
      *
-     * @see Copied from \Drupal\Component\Utility\NestedArray::getValue()
-     *
-     * @param array $array
-     * @param array $parents
-     * @param bool  $keyExists
+     * @param array<string, mixed> $array
+     * @param string[] $parents
+     * @param bool $keyExists
      *
      * @return mixed
+     * @noinspection PhpMissingParamTypeInspection
+     * @see Copied from \Drupal\Component\Utility\NestedArray::getValue()
      */
-    public static function &getNestedArrayValue(array &$array, array $parents, &$keyExists = false)
+    public static function &getNestedArrayValue(array &$array, array $parents, &$keyExists = false): mixed
     {
         $ref = &$array;
         foreach ($parents as $parent) {
@@ -33,16 +35,14 @@ class NestedArrayUtil
     }
 
     /**
-     * Set a nested value in an array.
+     * Sets a nested value in an array.
      *
      * @see Copied from \Drupal\Component\Utility\NestedArray::setValue()
      *
-     * @param array &$array
-     * @param array $parents
-     * @param mixed $value
-     * @param bool  $force
+     * @param array<string, mixed> &$array
+     * @param string[] $parents
      */
-    public static function setNestedArrayValue(array &$array, array $parents, $value, $force = false)
+    public static function setNestedArrayValue(array &$array, array $parents, mixed $value, bool $force = false): void
     {
         $ref = &$array;
         foreach ($parents as $parent) {

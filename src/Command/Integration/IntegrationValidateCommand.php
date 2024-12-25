@@ -1,42 +1,50 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Integration;
 
+use Platformsh\Cli\Selector\Selector;
 use Platformsh\Client\Exception\OperationUnavailableException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'integration:validate', description: 'Validate an existing integration')]
 class IntegrationValidateCommand extends IntegrationCommandBase
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Selector $selector)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('integration:validate')
-            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.')
-            ->setDescription('Validate an existing integration');
-        $this->addProjectOption();
-        $this->setHelp(<<<EOF
-This command allows you to check whether an integration is valid.
+            ->addArgument('id', InputArgument::OPTIONAL, 'An integration ID. Leave blank to choose from a list.');
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->setHelp(
+            <<<EOF
+                This command allows you to check whether an integration is valid.
 
-An exit code of 0 means the integration is valid, while 4 means it is invalid.
-Any other exit code indicates an unexpected error.
+                An exit code of 0 means the integration is valid, while 4 means it is invalid.
+                Any other exit code indicates an unexpected error.
 
-Integrations are validated automatically on creation and on update. However,
-because they involve external resources, it is possible for a valid integration
-to become invalid. For example, an access token may be revoked, or an external
-repository may be deleted.
-EOF
+                Integrations are validated automatically on creation and on update. However,
+                because they involve external resources, it is possible for a valid integration
+                to become invalid. For example, an access token may be revoked, or an external
+                repository may be deleted.
+                EOF,
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
-        $project = $this->getSelectedProject();
+        $project = $selection->getProject();
 
         $integration = $this->selectIntegration($project, $input->getArgument('id'), $input->isInteractive());
         if (!$integration) {
@@ -46,12 +54,12 @@ EOF
         $this->stdErr->writeln(sprintf(
             'Validating the integration <info>%s</info> (type: %s)...',
             $integration->id,
-            $integration->type
+            $integration->type,
         ));
 
         try {
             $errors = $integration->validate();
-        } catch (OperationUnavailableException $e) {
+        } catch (OperationUnavailableException) {
             $this->stdErr->writeln('This integration does not support validation.');
 
             return 1;

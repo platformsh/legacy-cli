@@ -1,11 +1,14 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * @file
  * Router for the PHP built-in web server.
  */
 
 define('ERROR_LOG_TYPE_SAPI', 4);
-$variables_prefix = isset($_ENV['_PLATFORM_VARIABLES_PREFIX']) ? $_ENV['_PLATFORM_VARIABLES_PREFIX'] : 'PLATFORM_';
+$variables_prefix = $_ENV['_PLATFORM_VARIABLES_PREFIX'] ?? 'PLATFORM_';
 
 // Define a callback for running a PHP file (usually the passthru script).
 $run_php = function ($filename) {
@@ -17,9 +20,9 @@ $run_php = function ($filename) {
                 $_SERVER['REMOTE_PORT'],
                 http_response_code(),
                 $_SERVER['REQUEST_METHOD'],
-                $_SERVER['REQUEST_URI']
+                $_SERVER['REQUEST_URI'],
             ),
-            ERROR_LOG_TYPE_SAPI
+            ERROR_LOG_TYPE_SAPI,
         );
     });
 
@@ -57,16 +60,16 @@ if (!empty($app['drupal_7_workaround'])) {
     // The Drupal 7 request_path() function has a strange check which causes
     // the path to be treated as the front page if ($path == basename($_SERVER['PHP_SELF']).
     // Setting $_GET['q'] manually works around this.
-    $url = parse_url($_SERVER['REQUEST_URI']);
-    $_GET['q'] = $_REQUEST['q'] = ltrim($url['path'], '/');
+    $urlPath = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $_GET['q'] = $_REQUEST['q'] = ltrim($urlPath, '/');
 }
 
 // Find the correct location.
-$locations = isset($app['web']['locations']) ? $app['web']['locations'] : [];
+$locations = $app['web']['locations'] ?? [];
 $location = ['allow' => true];
 $matchedLocation = '/';
 foreach (array_keys($locations) as $path) {
-    if (strpos($_SERVER['REQUEST_URI'], $path) === 0) {
+    if (str_starts_with($_SERVER['REQUEST_URI'], (string) $path)) {
         $matchedLocation = $path;
     } elseif (preg_match($pregQuoteNginxPattern($path), $_SERVER['REQUEST_URI'])) {
         $matchedLocation = $path;
@@ -138,7 +141,7 @@ if (!empty($location['rules'])) {
                     error_log(sprintf(
                         'Static file "%s" blocked by rule "%s"',
                         $relative_path,
-                        $pattern
+                        $pattern,
                     ), ERROR_LOG_TYPE_SAPI);
                 }
             }

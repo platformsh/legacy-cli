@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -12,9 +14,9 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ProgressMessage
 {
-    private $output;
-    private $message;
-    private $visible = false;
+    private readonly OutputInterface $output;
+    private ?string $message = null;
+    private bool $visible = false;
 
     /**
      * @param OutputInterface $output
@@ -26,10 +28,8 @@ class ProgressMessage
 
     /**
      * Shows a progress message, if the output supports decoration (ASCII escape codes).
-     *
-     * @param string $message
      */
-    public function showIfOutputDecorated($message)
+    public function showIfOutputDecorated(string $message): void
     {
         if ($this->output->isDecorated()) {
             $this->show($message);
@@ -38,10 +38,8 @@ class ProgressMessage
 
     /**
      * Shows a progress message.
-     *
-     * @param string $message
      */
-    public function show($message)
+    public function show(string $message): void
     {
         if ($message === '' || $message === $this->message) {
             return;
@@ -55,11 +53,11 @@ class ProgressMessage
     /**
      * Hides the progress message, if one is visible. Mark it as done if hiding is not supported.
      */
-    public function done()
+    public function done(): void
     {
         if ($this->visible) {
             if ($this->output->isDecorated() && !$this->output->isVeryVerbose()) {
-                $this->overwrite('', \substr_count($this->message, "\n"));
+                $this->overwrite('', \substr_count((string) $this->message, "\n"));
             }
             $this->visible = false;
         }
@@ -73,7 +71,7 @@ class ProgressMessage
      * @param string $message
      * @param int    $lineCount
      */
-    private function overwrite($message, $lineCount = 0)
+    private function overwrite(string $message, int $lineCount = 0): void
     {
         // Erase $lineCount previous lines.
         if ($lineCount > 0) {

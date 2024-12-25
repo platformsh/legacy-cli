@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model\Host;
 
 use Platformsh\Cli\Exception\ProcessFailedException;
@@ -10,26 +12,12 @@ use Platformsh\Client\Model\Environment;
 
 class RemoteHost implements HostInterface
 {
-    private $sshUrl;
-    private $environment;
-    private $sshService;
-    private $shell;
-    private $extraSshOptions = [];
-    private $sshDiagnostics;
+    /** @var string[] */
+    private array $extraSshOptions = [];
 
-    public function __construct($sshUrl, Environment $environment, Ssh $sshService, Shell $shell, SshDiagnostics $sshDiagnostics)
-    {
-        $this->sshUrl = $sshUrl;
-        $this->environment = $environment;
-        $this->sshService = $sshService;
-        $this->shell = $shell;
-        $this->sshDiagnostics = $sshDiagnostics;
-    }
+    public function __construct(private readonly string $sshUrl, private readonly Environment $environment, private readonly Ssh $sshService, private readonly Shell $shell, private readonly SshDiagnostics $sshDiagnostics) {}
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getLabel()
+    public function getLabel(): string
     {
         return $this->sshUrl;
     }
@@ -37,7 +25,7 @@ class RemoteHost implements HostInterface
     /**
      * @param string[] $options
      */
-    public function setExtraSshOptions(array $options)
+    public function setExtraSshOptions(array $options): void
     {
         $this->extraSshOptions = $options;
     }
@@ -45,10 +33,10 @@ class RemoteHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): false|string
     {
         try {
-            return $this->shell->execute($this->wrapCommandLine($command), null, $mustRun, $quiet, $this->sshService->getEnv(), 3600, $input);
+            return $this->shell->execute($this->wrapCommandLine($command), mustRun: $mustRun, quiet: $quiet, env: $this->sshService->getEnv(), input: $input);
         } catch (ProcessFailedException $e) {
             $this->sshDiagnostics->diagnoseFailure($this->sshUrl, $e->getProcess(), !$quiet);
             throw new ProcessFailedException($e->getProcess(), false);
@@ -62,15 +50,12 @@ class RemoteHost implements HostInterface
      *
      * @return string
      */
-    private function wrapCommandLine($commandLine)
+    private function wrapCommandLine(string $commandLine): string
     {
         return $this->sshService->getSshCommand($this->sshUrl, $this->extraSshOptions, $commandLine);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function runCommandDirect($commandLine, $append = '')
+    public function runCommandDirect($commandLine, $append = ''): int
     {
         $start = \time();
         $exitCode = $this->shell->executeSimple($this->wrapCommandLine($commandLine) . $append, null, $this->sshService->getEnv());
@@ -78,17 +63,14 @@ class RemoteHost implements HostInterface
         return $exitCode;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getCacheKey()
+    public function getCacheKey(): string
     {
         return $this->sshUrl . '--' . $this->environment->head_commit;
     }
 
-    public function lastChanged()
+    public function lastChanged(): string
     {
         $deployment_state = $this->environment->getProperty('deployment_state', false, false);
-        return isset($deployment_state['last_deployment_at']) ? $deployment_state['last_deployment_at'] : '';
+        return $deployment_state['last_deployment_at'] ?? '';
     }
 }

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * @file
  * Service to help with mounts.
@@ -13,15 +16,15 @@ class Mount
     /**
      * Get a list of shared file mounts configured for an app.
      *
-     * @param array $mounts An associative array of mounts, taken from the app
-     *                      configuration.
+     * @param array<string, mixed> $mounts
+     *   Mounts, from the app configuration.
      *
-     * @return array
+     * @return array<string, string>
      *   An array of shared file paths, keyed by the mount path. Leading and
      *   trailing slashes are stripped. An empty shared path defaults to
      *   'files'.
      */
-    public function getSharedFileMounts(array $mounts)
+    public function getSharedFileMounts(array $mounts): array
     {
         $sharedFileMounts = [];
         foreach ($this->normalizeMounts($mounts) as $path => $definition) {
@@ -38,10 +41,10 @@ class Mount
      *
      * @param AppConfig $appConfig
      *
-     * @return array
+     * @return array<string, array{source: string, source_path?: string}>
      *   A normalized list of mounts.
      */
-    public function mountsFromConfig(AppConfig $appConfig)
+    public function mountsFromConfig(AppConfig $appConfig): array
     {
         $config = $appConfig->getNormalized();
         if (empty($config['mounts'])) {
@@ -58,11 +61,11 @@ class Mount
      * the mount definition is in the newer structured format, with a 'source'
      * and probably a 'source_path'.
      *
-     * @param array $mounts
+     * @param array<string, mixed> $mounts
      *
-     * @return array
+     * @return array<string, array{source: string, source_path?: string}>
      */
-    public function normalizeMounts(array $mounts)
+    public function normalizeMounts(array $mounts): array
     {
         $normalized = [];
         foreach ($mounts as $path => $definition) {
@@ -76,14 +79,14 @@ class Mount
      * Checks that a given path matches a mount in the list.
      *
      * @param string $path
-     * @param array  $mounts
-     *
-     * @throws \InvalidArgumentException if the path does not match
+     * @param array<string, mixed> $mounts
      *
      * @return string
      *   If the $path matches, the normalized path is returned.
+     *@throws \InvalidArgumentException if the path does not match
+     *
      */
-    public function matchMountPath($path, array $mounts)
+    public function matchMountPath(string $path, array $mounts): string
     {
         $normalized = $this->normalizeRelativePath($path);
         if (isset($mounts[$normalized])) {
@@ -100,23 +103,22 @@ class Mount
      *
      * @return string
      */
-    private function normalizeRelativePath($path)
+    private function normalizeRelativePath(string $path): string
     {
         return trim(trim($path), '/');
     }
 
     /**
-     * Normalize a mount definition.
+     * Normalizes a mount definition.
      *
-     * @param array|string $definition
+     * @param array{source?: string, source_path?: string}|string $definition
      *
-     * @return array
-     *   An array containing at least 'source', and probably 'source_path'.
+     * @return array{source: string, source_path?: string}
      */
-    private function normalizeDefinition($definition)
+    private function normalizeDefinition(array|string $definition): array
     {
         if (!is_array($definition)) {
-            if (!is_string($definition) || strpos($definition, 'shared:files') === false) {
+            if (!str_contains($definition, 'shared:files')) {
                 throw new \RuntimeException('Failed to parse mount definition: ' . json_encode($definition));
             }
             $definition = [

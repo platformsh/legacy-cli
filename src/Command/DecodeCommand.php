@@ -1,42 +1,49 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command;
 
+use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Util\NestedArrayUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'decode', description: 'Decode a string that was encoded with JSON and Base64')]
 class DecodeCommand extends CommandBase
 {
-
-    protected function configure()
+    public function __construct(private readonly Config $config)
     {
-        $envPrefix = $this->config()->get('service.env_prefix');
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $envPrefix = $this->config->getStr('service.env_prefix');
 
         $this
-            ->setName('decode')
-            ->addArgument('value', InputArgument::REQUIRED, 'The variable value to decode')
-            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the variable')
-            ->setDescription(sprintf('Decode an encoded string such as %sVARIABLES', $envPrefix));
+            ->addArgument('value', InputArgument::REQUIRED, 'The value to decode')
+            ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The property to view within the value');
 
         $this->addExample(
             sprintf('View "foo" in %sVARIABLES', $envPrefix),
-            sprintf('"$%sVARIABLES" -P foo', $envPrefix)
+            sprintf('"$%sVARIABLES" -P foo', $envPrefix),
         );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $variable = $input->getArgument('value');
-        if (trim($variable) === '') {
+        if (trim((string) $variable) === '') {
             $this->stdErr->writeln('Failed to decode: the provided value is empty.');
 
             return 1;
         }
 
-        $b64decoded = base64_decode($variable, true);
+        $b64decoded = base64_decode((string) $variable, true);
         if ($b64decoded === false) {
             $this->stdErr->writeln('Invalid value: base64 decoding failed.');
 
@@ -67,7 +74,7 @@ class DecodeCommand extends CommandBase
             if (array_key_exists($property, $decoded)) {
                 $value = $decoded[$property];
             } else {
-                $value = NestedArrayUtil::getNestedArrayValue($decoded, explode('.', $property), $keyExists);
+                $value = NestedArrayUtil::getNestedArrayValue($decoded, explode('.', (string) $property), $keyExists);
                 if (!$keyExists) {
                     $this->stdErr->writeln('Property not found: <error>' . $property . '</error>');
 
@@ -85,7 +92,7 @@ class DecodeCommand extends CommandBase
         if (is_string($value)) {
             $output->writeln($value);
         } else {
-            $output->writeln(json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $output->writeln((string) json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
 
         return 0;

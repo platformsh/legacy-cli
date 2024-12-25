@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local\DependencyManager;
 
 class Composer extends DependencyManagerBase
 {
-    protected $command = 'composer';
+    protected string $command = 'composer';
 
     /**
      * {@inheritdoc}
      */
-    public function getInstallHelp()
+    public function getInstallHelp(): string
     {
         return 'See https://getcomposer.org/ for installation instructions.';
     }
@@ -17,7 +19,7 @@ class Composer extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function getBinPaths($prefix)
+    public function getBinPaths($prefix): array
     {
         return [$prefix . '/vendor/bin'];
     }
@@ -25,7 +27,7 @@ class Composer extends DependencyManagerBase
     /**
      * {@inheritdoc}
      */
-    public function install($path, array $dependencies, $global = false)
+    public function install($path, array $dependencies, $global = false): void
     {
         if ($global) {
             $this->installGlobal($dependencies);
@@ -58,9 +60,9 @@ class Composer extends DependencyManagerBase
     /**
      * Install dependencies globally.
      *
-     * @param array $dependencies
+     * @param array<string, mixed> $dependencies
      */
-    private function installGlobal(array $dependencies)
+    private function installGlobal(array $dependencies): void
     {
         $requirements = [];
         foreach ($dependencies as $package => $version) {
@@ -69,7 +71,7 @@ class Composer extends DependencyManagerBase
         $this->runCommand(
             'composer global require '
             . '--no-progress --prefer-dist --optimize-autoloader --no-interaction '
-            . implode(' ', array_map('escapeshellarg', $requirements))
+            . implode(' ', array_map('escapeshellarg', $requirements)),
         );
     }
 }

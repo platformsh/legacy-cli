@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
@@ -10,8 +12,7 @@ class FilesystemServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Filesystem */
-    protected $fs;
+    protected Filesystem $fs;
 
     /**
      * @{inheritdoc}
@@ -25,7 +26,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test our own self::tempDir().
      */
-    public function testTempDir()
+    public function testTempDir(): void
     {
         $tempDir = $this->tempDir();
         $this->assertTrue(is_dir($tempDir));
@@ -38,7 +39,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::remove() on directories.
      */
-    public function testRemoveDir()
+    public function testRemoveDir(): void
     {
         // Create a test directory containing some files in several levels.
         $testDir = $this->tempDir(true);
@@ -51,7 +52,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::copyAll().
      */
-    public function testCopyAll()
+    public function testCopyAll(): void
     {
         $source = $this->tempDir(true);
         $destination = $this->tempDir();
@@ -69,7 +70,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::symlinkDir().
      */
-    public function testSymlinkDir()
+    public function testSymlinkDir(): void
     {
         $testTarget = $this->tempDir();
         $testLink = $this->tempDir() . '/link';
@@ -82,7 +83,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::makePathAbsolute().
      */
-    public function testMakePathAbsolute()
+    public function testMakePathAbsolute(): void
     {
         $testDir = $this->tempDir();
         chdir($testDir);
@@ -107,7 +108,7 @@ class FilesystemServiceTest extends TestCase
     /**
      * Test FilesystemHelper::symlinkAll().
      */
-    public function testSymlinkAll()
+    public function testSymlinkAll(): void
     {
         $testSource = $this->tempDir(true);
         $testDestination = $this->tempDir();
@@ -129,7 +130,7 @@ class FilesystemServiceTest extends TestCase
 
         // Test with relative links. This has no effect on Windows.
         $testDestination = $this->tempDir();
-        $this->fs->setRelativeLinks(true);
+        $this->fs->setRelativeLinks();
         $this->fs->symlinkAll($testSource, $testDestination);
         $this->fs->setRelativeLinks(false);
         $this->assertFileExists($testDestination . '/test-file');
@@ -145,9 +146,9 @@ class FilesystemServiceTest extends TestCase
         $this->assertFileExists($testDestination . '/test-nesting/1/2/3/test-file');
     }
 
-    public function testCanWrite()
+    public function testCanWrite(): void
     {
-        \umask(0002);
+        \umask(0o002);
 
         $testDir = $this->createTempSubDir();
         if (touch($testDir . '/test-file')) {
@@ -156,10 +157,10 @@ class FilesystemServiceTest extends TestCase
             $this->markTestIncomplete('Failed to create file: ' . $testDir . '/test-file');
         }
 
-        chmod($testDir . '/test-file', 0500);
+        chmod($testDir . '/test-file', 0o500);
         $this->assertEquals(\is_writable($testDir . '/test-file'), $this->fs->canWrite($testDir . '/test-file'));
 
-        if (mkdir($testDir . '/test-dir', 0700)) {
+        if (mkdir($testDir . '/test-dir', 0o700)) {
             $this->assertTrue($this->fs->canWrite($testDir . '/test-dir'));
             $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1'));
             $this->assertTrue($this->fs->canWrite($testDir . '/test-dir/1/2/3'));
@@ -167,7 +168,7 @@ class FilesystemServiceTest extends TestCase
             $this->markTestIncomplete('Failed to create directory: ' . $testDir . '/test-dir');
         }
 
-        if (mkdir($testDir . '/test-ro-dir', 0500)) {
+        if (mkdir($testDir . '/test-ro-dir', 0o500)) {
             $this->assertEquals(is_writable($testDir . '/test-ro-dir'), $this->fs->canWrite($testDir . '/test-ro-dir'));
             $this->assertEquals(is_writable($testDir . '/test-ro-dir'), $this->fs->canWrite($testDir . '/test-ro-dir/1'));
         } else {
@@ -182,14 +183,14 @@ class FilesystemServiceTest extends TestCase
      *
      * @return string
      */
-    protected function tempDir($fill = false)
+    protected function tempDir(?bool $fill = false): string
     {
         $testDir = $this->createTempSubDir();
         if ($fill) {
             touch($testDir . '/test-file');
             mkdir($testDir . '/test-dir');
             touch($testDir . '/test-dir/test-file');
-            mkdir($testDir . '/test-nesting/1/2/3', 0755, true);
+            mkdir($testDir . '/test-nesting/1/2/3', 0o755, true);
             touch($testDir . '/test-nesting/1/2/3/test-file');
         }
 

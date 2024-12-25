@@ -1,30 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\SiteAlias;
 
+use Platformsh\Cli\Local\LocalApplication;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 
 interface SiteAliasTypeInterface
 {
     /**
-     * Create an alias file.
+     * Creates an alias file.
      *
-     * @param \Platformsh\Client\Model\Project         $project
-     * @param string                                   $aliasGroup
-     * @param \Platformsh\Cli\Local\LocalApplication[] $apps
-     * @param \Platformsh\Client\Model\Environment[]   $environments
-     * @param string|null                              $previousGroup
-     *
-     * @throws \RuntimeException
+     * @param LocalApplication[] $apps
+     * @param Environment[] $environments
      *
      * @return bool Whether any aliases have been created.
+     *
+     * @throws \RuntimeException
      */
-    public function createAliases(Project $project, $aliasGroup, array $apps, array $environments, $previousGroup = null);
+    public function createAliases(Project $project, string $aliasGroup, array $apps, array $environments, ?string $previousGroup = null): bool;
 
     /**
      * Delete old alias file(s).
      *
      * @param string $group
      */
-    public function deleteAliases($group);
+    public function deleteAliases(string $group): void;
 }

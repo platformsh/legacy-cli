@@ -5,3 +5,5 @@
 /release-changelog*.md
 /local-php-security-checker
 /.phpunit.result.cache
+/.phpunit.cache
+/.php-cs-fixer.cache

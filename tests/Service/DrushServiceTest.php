@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Service;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Drush;
@@ -11,21 +14,15 @@ use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Project;
 use Symfony\Component\Yaml\Yaml;
 
-/**
- * @group slow
- */
+#[Group('slow')]
 class DrushServiceTest extends TestCase
 {
     use HasTempDirTrait;
 
-    /** @var Drush */
-    protected $drush;
-
-    /** @var Project */
-    protected $project;
-
+    protected Drush $drush;
+    protected Project $project;
     /** @var Environment[] */
-    protected $environments = [];
+    protected array $environments = [];
 
     /**
      * @{inheritdoc}
@@ -52,7 +49,7 @@ class DrushServiceTest extends TestCase
         $this->tempDirSetUp();
     }
 
-    public function testCreateAliases()
+    public function testCreateAliases(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -80,12 +77,12 @@ class DrushServiceTest extends TestCase
 
         // Check that YAML aliases exist.
         $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
-        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
+        $aliases = Yaml::parse((string) file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
         $this->assertArrayHasKey('main', $aliases);
         $this->assertArrayHasKey('_local', $aliases);
     }
 
-    public function testCreateAliasesMultiApp()
+    public function testCreateAliasesMultiApp(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -117,7 +114,7 @@ class DrushServiceTest extends TestCase
         $this->assertCount(1, $apps);
     }
 
-    public function testCreateAliasesMultiDrupal()
+    public function testCreateAliasesMultiDrupal(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();
@@ -150,14 +147,14 @@ class DrushServiceTest extends TestCase
 
         // Check that YAML aliases exist.
         $this->assertFileExists($homeDir . '/.drush/site-aliases/test.site.yml');
-        $aliases = Yaml::parse(file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
+        $aliases = Yaml::parse((string) file_get_contents($homeDir . '/.drush/site-aliases/test.site.yml'));
         $this->assertArrayHasKey('main--drupal1', $aliases);
         $this->assertArrayHasKey('_local--drupal1', $aliases);
         $this->assertArrayHasKey('main--drupal2', $aliases);
         $this->assertArrayHasKey('_local--drupal2', $aliases);
     }
 
-    public function testGetSiteAliasDir()
+    public function testGetSiteAliasDir(): void
     {
         // Set up file structure.
         $testDir = $this->createTempSubDir();

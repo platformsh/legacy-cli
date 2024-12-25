@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Util;
 
 use PHPUnit\Framework\TestCase;
@@ -7,7 +9,7 @@ use Platformsh\Cli\Util\StringUtil;
 
 class StringUtilTest extends TestCase
 {
-    public function testBetween()
+    public function testBetween(): void
     {
         $cases = [
             ['_BEGIN_foo_END_', '_BEGIN_', '_END_', 'foo'],
@@ -18,7 +20,7 @@ class StringUtilTest extends TestCase
             ["_BEGIN_\nfoo\n_END_", "_BEGIN_\n", "\n_END_", 'foo'],
         ];
         foreach ($cases as $key => $case) {
-            list($str, $begin, $end, $result) = $case;
+            [$str, $begin, $end, $result] = $case;
             $this->assertEquals($result, StringUtil::between($str, $begin, $end), "case $key");
         }
     }

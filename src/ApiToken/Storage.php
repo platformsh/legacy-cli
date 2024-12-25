@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\ApiToken;
 
 use Platformsh\Cli\CredentialHelper\Manager;
@@ -10,12 +12,8 @@ use Platformsh\Cli\Service\Config;
  */
 class Storage
 {
-    /**
-     * @param Config $config
-     *
-     * @return StorageInterface
-     */
-    public static function factory(Config $config) {
+    public static function factory(Config $config): StorageInterface
+    {
         $manager = new Manager($config);
         if ($manager->isSupported()) {
             return new CredentialHelperStorage($config, $manager);

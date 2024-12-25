@@ -1,26 +1,44 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\User;
 
+use Platformsh\Cli\Command\CommandBase;
+use Platformsh\Cli\Selector\SelectorConfig;
+use Platformsh\Cli\Service\AccessApi;
+use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Cli\Service\Io;
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\SubCommandRunner;
+use Platformsh\Cli\Service\QuestionHelper;
+use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\ProjectAccess;
 use Platformsh\Client\Model\UserAccess\ProjectUserAccess;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class UserGetCommand extends UserCommandBase
+#[AsCommand(name: 'user:get', description: "View a user's role(s)")]
+class UserGetCommand extends CommandBase
 {
-    protected function configure()
+    public function __construct(private readonly AccessApi $accessApi, private readonly ActivityMonitor $activityMonitor, private readonly Io $io, private readonly QuestionHelper $questionHelper, private readonly Selector $selector, private readonly SubCommandRunner $subCommandRunner)
+    {
+        parent::__construct();
+    }
+
+    protected function configure(): void
     {
         $this
-            ->setName('user:get')
-            ->setDescription("View a user's role(s)")
             ->addArgument('email', InputArgument::OPTIONAL, "The user's email address")
-            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')")
+            ->addOption('level', 'l', InputOption::VALUE_REQUIRED, "The role level ('project' or 'environment')", null, ['project', 'environment'])
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output the role to stdout (after making any changes)');
-        $this->addProjectOption()
-             ->addEnvironmentOption()
-             ->addWaitOptions();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->activityMonitor->addWaitOptions($this->getDefinition());
 
         // Backwards compatibility.
         $this->setHiddenAliases(['user:role']);
@@ -30,7 +48,7 @@ class UserGetCommand extends UserCommandBase
         $this->addExample("View Alice's role on the current environment", 'alice@example.com --level environment --pipe');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('role')) {
             $this->stdErr->writeln('The <error>--role</error> option is no longer available for this command.');
@@ -48,29 +66,27 @@ class UserGetCommand extends UserCommandBase
             return 1;
         }
 
-        $this->validateInput($input, $level !== 'environment');
-        $project = $this->getSelectedProject();
+        $selectedUser = $this->selector->getSelection($input, new SelectorConfig(envRequired: $level === 'environment'));
+        $project = $selectedUser->getProject();
+        $environment = $selectedUser->hasEnvironment() ? $selectedUser->getEnvironment() : null;
 
-        $this->warnAboutDeprecatedOptions(['role']);
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $this->io->warnAboutDeprecatedOptions(['role']);
 
         // Load the user.
         $email = $input->getArgument('email');
         if ($email === null && $input->isInteractive()) {
-            $email = $questionHelper->choose($this->listUsers($project), 'Enter a number to choose a user:');
+            $email = $this->questionHelper->choose($this->accessApi->listUsers($project), 'Enter a number to choose a user:');
         }
 
-        $selection = $this->loadProjectUser($project, $email);
-        if (!$selection) {
+        $selectedUser = $this->accessApi->loadProjectUser($project, $email);
+        if (!$selectedUser) {
             $this->stdErr->writeln("User not found: <error>$email</error>");
 
             return 1;
         }
 
         if ($input->getOption('pipe')) {
-            $this->displayRole($selection, $level, $output);
+            $this->displayRole($selectedUser, $level, $output, $environment);
 
             return 0;
         }
@@ -81,24 +97,19 @@ class UserGetCommand extends UserCommandBase
             '--project' => $project->id,
             '--yes' => true,
         ];
-        return $this->runOtherCommand('user:add', $args, $output);
+        return $this->subCommandRunner->run('user:add', $args, $output);
     }
 
-    /**
-     * @param ProjectAccess|ProjectUserAccess $user
-     * @param string $level
-     * @param OutputInterface $output
-     */
-    private function displayRole($user, $level, OutputInterface $output)
+    private function displayRole(ProjectAccess|ProjectUserAccess $user, string $level, OutputInterface $output, ?Environment $environment = null): void
     {
         if ($level === 'environment') {
             if ($user instanceof ProjectAccess) {
-                $access = $this->getSelectedEnvironment()->getUser($user->id);
+                $access = $environment->getUser($user->id);
                 $currentRole = $access ? $access->role : 'none';
             } else {
                 $typeRoles = $user->getEnvironmentTypeRoles();
-                $envType = $this->getSelectedEnvironment()->type;
-                $currentRole = isset($typeRoles[$envType]) ? $typeRoles[$envType] : 'none';
+                $envType = $environment->type;
+                $currentRole = $typeRoles[$envType] ?? 'none';
             }
         } else {
             $currentRole = $user instanceof ProjectAccess ? $user->role : $user->getProjectRole();

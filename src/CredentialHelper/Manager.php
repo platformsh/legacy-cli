@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\CredentialHelper;
 
 use Platformsh\Cli\Exception\ProcessFailedException;
@@ -8,16 +10,14 @@ use Platformsh\Cli\Service\Shell;
 use Platformsh\Cli\Util\OsUtil;
 use Symfony\Component\Filesystem\Filesystem;
 
-class Manager {
+class Manager
+{
+    private readonly Shell $shell;
 
-    private $config;
-    private $shell;
+    private static ?bool $isInstalled = null;
 
-    private static $isInstalled;
-
-    public function __construct(Config $config, Shell $shell = null)
+    public function __construct(private readonly Config $config, ?Shell $shell = null)
     {
-        $this->config = $config;
         $this->shell = $shell ?: new Shell();
     }
 
@@ -26,8 +26,9 @@ class Manager {
      *
      * @return bool
      */
-    public function isSupported() {
-        if ($this->config->getWithDefault('api.disable_credential_helpers', false)) {
+    public function isSupported(): bool
+    {
+        if ($this->config->getBool('api.disable_credential_helpers')) {
             return false;
         }
         try {
@@ -43,14 +44,15 @@ class Manager {
      *
      * @return bool
      */
-    public function isInstalled() {
-        if (self::$isInstalled) {
-            return true;
+    public function isInstalled(): bool
+    {
+        if (isset(self::$isInstalled)) {
+            return self::$isInstalled;
         }
 
         try {
             $helper = $this->getHelper();
-        } catch (\RuntimeException $e) {
+        } catch (\RuntimeException) {
             return self::$isInstalled = false;
         }
 
@@ -62,7 +64,8 @@ class Manager {
     /**
      * Installs the credential helper.
      */
-    public function install() {
+    public function install(): void
+    {
         if ($this->isInstalled()) {
             return;
         }
@@ -74,11 +77,9 @@ class Manager {
 
     /**
      * Stores a secret.
-     *
-     * @param string $serverUrl
-     * @param string $secret
      */
-    public function store($serverUrl, $secret) {
+    public function store(string $serverUrl, string $secret): void
+    {
         $this->exec('store', json_encode([
             'ServerURL' => $serverUrl,
             'Username' => (string) (OsUtil::isWindows() ? getenv('USERNAME') : getenv('USER')),
@@ -88,10 +89,9 @@ class Manager {
 
     /**
      * Erases a secret.
-     *
-     * @param string $serverUrl
      */
-    public function erase($serverUrl) {
+    public function erase(string $serverUrl): void
+    {
         try {
             $this->exec('erase', $serverUrl);
         } catch (ProcessFailedException $e) {
@@ -105,12 +105,9 @@ class Manager {
 
     /**
      * Loads a secret.
-     *
-     * @param string $serverUrl
-     *
-     * @return string|false
      */
-    public function get($serverUrl) {
+    public function get(string $serverUrl): string|false
+    {
         try {
             $data = $this->exec('get', $serverUrl);
         } catch (ProcessFailedException $e) {
@@ -120,24 +117,21 @@ class Manager {
             throw $e;
         }
 
-        if (is_string($data)) {
-            $json = json_decode($data, true);
-            if ($json === null || !isset($json['Secret'])) {
-                throw new \RuntimeException('Failed to decode JSON from credential helper');
-            }
-
-            return $json['Secret'];
+        $json = json_decode($data, true);
+        if ($json === null || !isset($json['Secret'])) {
+            throw new \RuntimeException('Failed to decode JSON from credential helper');
         }
 
-        return false;
+        return $json['Secret'];
     }
 
     /**
      * Lists all secrets.
      *
-     * @return array
+     * @return array<string, string>
      */
-    public function listAll() {
+    public function listAll(): array
+    {
         $data = $this->exec('list');
 
         return (array) json_decode($data, true);
@@ -146,12 +140,10 @@ class Manager {
     /**
      * Verifies that a helper exists and is executable at a path.
      *
-     * @param array $helper
-     * @param string $path
-     *
-     * @return bool
+     * @param array{url: string, filename: string, sha256: string} $helper
      */
-    private function helperExists(array $helper, $path) {
+    private function helperExists(array $helper, string $path): bool
+    {
         if (!file_exists($path) || !is_executable($path)) {
             return false;
         }
@@ -162,10 +154,11 @@ class Manager {
     /**
      * Downloads, extracts, and moves the credential helper to a destination.
      *
-     * @param array $helper
+     * @param array{url: string, filename: string, sha256: string} $helper
      * @param string $destination
      */
-    private function download(array $helper, $destination) {
+    private function download(array $helper, string $destination): void
+    {
         if ($this->helperExists($helper, $destination)) {
             return;
         }
@@ -184,8 +177,8 @@ class Manager {
         $tmpFile = $destination . '-tmp';
         try {
             // Write the file, either directly or via extracting its archive.
-            if (preg_match('/(\.tar\.gz|\.tgz|\.zip)$/', $helper['url']) === 1) {
-                $this->extractBinFromArchive($contents, substr($helper['url'], -4) === '.zip', $helper['filename'], $tmpFile);
+            if (preg_match('/(\.tar\.gz|\.tgz|\.zip)$/', (string) $helper['url']) === 1) {
+                $this->extractBinFromArchive($contents, str_ends_with((string) $helper['url'], '.zip'), $helper['filename'], $tmpFile);
             } else {
                 $fs->dumpFile($tmpFile, $contents);
             }
@@ -197,7 +190,7 @@ class Manager {
             }
 
             // Make the file executable and move it into place.
-            $fs->chmod($tmpFile, 0700);
+            $fs->chmod($tmpFile, 0o700);
             $fs->rename($tmpFile, $destination, true);
         } finally {
             $fs->remove($tmpFile);
@@ -212,7 +205,7 @@ class Manager {
      * @param string $internalFilename
      * @param string $destination
      */
-    private function extractBinFromArchive($archiveContents, $zip, $internalFilename, $destination)
+    private function extractBinFromArchive(string $archiveContents, bool $zip, string $internalFilename, string $destination): void
     {
         $fs = new Filesystem();
         $tmpDir = $tmpFile = $fs->tempnam(sys_get_temp_dir(), 'cli-helpers');
@@ -231,13 +224,13 @@ class Manager {
                     }
                 } elseif ($this->shell->commandExists('unzip')) {
                     $command = 'unzip ' . escapeshellarg($tmpFile) . ' -d ' . escapeshellarg($tmpDir);
-                    $this->shell->execute($command, null, true);
+                    $this->shell->mustExecute($command);
                 } else {
                     throw new \RuntimeException('Failed to extract zip: unzip is not installed');
                 }
             } else {
                 $command = 'tar -xzp -f ' . escapeshellarg($tmpFile) . ' -C ' . escapeshellarg($tmpDir);
-                $this->shell->execute($command, null, true);
+                $this->shell->mustExecute($command);
             }
             if (!file_exists($tmpDir . DIRECTORY_SEPARATOR . $internalFilename)) {
                 throw new \RuntimeException('File not found: ' . $tmpDir . DIRECTORY_SEPARATOR . $internalFilename);
@@ -249,9 +242,10 @@ class Manager {
     }
 
     /**
-     * @return array
+     * @return array<string, array<string, array{url: string, filename: string, sha256: string}>>
      */
-    private function getHelpers() {
+    private function getHelpers(): array
+    {
         return [
             'windows' => [
                 'amd64' => [
@@ -295,9 +289,10 @@ class Manager {
     /**
      * Finds a helper package for this system.
      *
-     * @return array
+     * @return array{url: string, filename: string, sha256: string}
      */
-    private function getHelper() {
+    private function getHelper(): array
+    {
         $arch = php_uname('m');
         if ($arch === 'ARM64') {
             $arch = 'arm64';
@@ -340,12 +335,12 @@ class Manager {
             }
 
             // The Linux helper needs "libsecret" to be installed.
-            if (!$this->shell->execute('ldconfig --print-cache | grep -q libsecret')) {
+            if ($this->shell->execute('ldconfig --print-cache | grep -q libsecret') === false) {
                 throw new \RuntimeException('Unable to find a credentials helper for this system (libsecret is not installed)');
             }
         }
 
-        if (substr($helpers[$os][$arch]['url'], -4) === '.zip' && !class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
+        if (str_ends_with($helpers[$os][$arch]['url'], '.zip') && !class_exists('\\ZipArchive') && !$this->shell->commandExists('unzip')) {
             throw new \RuntimeException('Unable to install a credentials helper for this system (it is a .zip file and the zip extension is unavailable)');
         }
 
@@ -354,16 +349,12 @@ class Manager {
 
     /**
      * Executes a command on the credential helper.
-     *
-     * @param string $command
-     * @param mixed|null $input
-     *
-     * @return string|bool
      */
-    private function exec($command, $input = null) {
+    private function exec(string $command, mixed $input = null): string
+    {
         $this->install();
 
-        return $this->shell->execute([$this->getExecutablePath(), $command], null, true, true, [], 10, $input);
+        return $this->shell->mustExecute([$this->getExecutablePath(), $command], timeout: 10, input: $input);
     }
 
     /**
@@ -371,7 +362,8 @@ class Manager {
      *
      * @return string
      */
-    private function getExecutablePath() {
+    private function getExecutablePath(): string
+    {
         $path = $this->config->getWritableUserDir() . DIRECTORY_SEPARATOR . 'credential-helper';
         if (OsUtil::isWindows()) {
             $path .= '.exe';

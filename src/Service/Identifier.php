@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * @file
  * Finds the correct project and environment for a given URL/string.
@@ -10,46 +13,33 @@ use Doctrine\Common\Cache\CacheProvider;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 
-class Identifier
+readonly class Identifier
 {
-    private $config;
-    private $api;
-    private $stdErr;
-    private $cache;
+    private Config $config;
+    private Api $api;
+    private CacheProvider $cache;
+    private Io $io;
 
-    /**
-     * Constructor.
-     *
-     * @param \Platformsh\Cli\Service\Config|null $config
-     * @param \Platformsh\Cli\Service\Api|null $api
-     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
-     * @param CacheProvider|null $cache
-     */
-    public function __construct(Config $config = null, Api $api = null, OutputInterface $output = null, CacheProvider $cache = null)
+    public function __construct(?Config $config = null, ?Api $api = null, ?CacheProvider $cache = null, ?Io $io = null)
     {
         $this->config = $config ?: new Config();
         $this->api = $api ?: new Api();
-        $output = $output ?: new NullOutput();
-        $this->stdErr = $output instanceof ConsoleOutput ? $output->getErrorOutput() : $output;
         $this->cache = $cache ?: CacheFactory::createCacheProvider($this->config);
+        $this->io = $io ?: new Io(new ConsoleOutput());
     }
 
     /**
-     * Identify a project from an ID or URL.
+     * Identifies a project from an ID or URL.
      *
      * @param string $url
      *
-     * @return array
-     *   An array containing keys 'projectId', 'environmentId', 'host', and
-     *   'appId'. At least the 'projectId' will be populated.
+     * @return array{projectId: string, environmentId: ?string, host: ?string, appId: ?string}
      */
-    public function identify($url)
+    public function identify(string $url): array
     {
         $result = $this->parseProjectId($url);
-        if (empty($result['projectId']) && strpos($url, '.') !== false && $this->config->has('detection.cluster_header')) {
+        if (empty($result['projectId']) && str_contains($url, '.') && $this->config->has('detection.cluster_header')) {
             $result = $this->identifyFromHeaders($url);
         }
         if (empty($result['projectId'])) {
@@ -65,9 +55,9 @@ class Identifier
      * @param string $url
      *   A web UI, API, or public URL of the project.
      *
-     * @return array
+     * @return array{projectId?: string, environmentId?: string, appId?: string}
      */
-    private function parseProjectId($url)
+    private function parseProjectId(string $url): array
     {
         $result = [];
 
@@ -83,17 +73,17 @@ class Identifier
             return $result;
         }
 
-        $this->debug('Parsing URL to determine project ID: ' . $url);
+        $this->io->debug('Parsing URL to determine project ID: ' . $url);
 
         $host = $urlParts['host'];
-        $path = isset($urlParts['path']) ? $urlParts['path'] : '';
-        $fragment = isset($urlParts['fragment']) ? $urlParts['fragment'] : '';
+        $path = $urlParts['path'] ?? '';
+        $fragment = $urlParts['fragment'] ?? '';
 
-        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', $this->config->get('detection.site_domains'))) . ')';
+        $site_domains_pattern = '(' . implode('|', array_map('preg_quote', (array) $this->config->get('detection.site_domains'))) . ')';
         $site_pattern = '/\-\w+\.[a-z]{2}(\-[0-9])?\.' . $site_domains_pattern . '$/';
 
         if (preg_match($site_pattern, $host)) {
-            list($env_project_app,) = explode('.', $host, 2);
+            [$env_project_app, ] = explode('.', $host, 2);
             if (($tripleDashPos = strrpos($env_project_app, '---')) !== false) {
                 $env_project_app = substr($env_project_app, $tripleDashPos + 3);
             }
@@ -111,9 +101,9 @@ class Identifier
             return $result;
         }
 
-        if (strpos($path, '/projects/') !== false || strpos($fragment, '/projects/') !== false) {
+        if (str_contains($path, '/projects/') || str_contains($fragment, '/projects/')) {
             $result['host'] = $host;
-            $result['projectId'] = basename(preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
+            $result['projectId'] = basename((string) preg_replace('#/projects(/\w+)/?.*$#', '$1', $url));
             if (preg_match('#/environments(/[^/]+)/?.*$#', $url, $matches)) {
                 $result['environmentId'] = rawurldecode(basename($matches[1]));
             }
@@ -122,7 +112,7 @@ class Identifier
         }
 
         if ($this->config->has('detection.console_domain')
-            && $host === $this->config->get('detection.console_domain')
+            && $host === $this->config->getStr('detection.console_domain')
             && preg_match('#^/[a-z0-9-]+/([a-z0-9-]+)(/([^/]+))?#', $path, $matches)
             // Console uses /-/ to distinguish sub-paths and identifiers.
             && $matches[1] !== '-') {
@@ -138,65 +128,59 @@ class Identifier
     }
 
     /**
-     * Identify a project and environment from a URL's response headers.
+     * Identifies a project and environment from a URL's response headers.
      *
-     * @param string $url
-     *
-     * @return array
+     * @return array{projectId: ?string, environmentId: ?string}
      */
-    private function identifyFromHeaders($url)
+    private function identifyFromHeaders(string $url): array
     {
         if (!strpos($url, '.')) {
             throw new \InvalidArgumentException('Invalid URL: ' . $url);
         }
-        if (strpos($url, '//') === false) {
+        if (!str_contains($url, '//')) {
             $url = 'https://' . $url;
         }
         $result = ['projectId' => null, 'environmentId' => null];
         $cluster = $this->getClusterHeader($url);
         if (!empty($cluster)) {
-            $this->debug('Identified project cluster: ' . $cluster);
-            list($result['projectId'], $result['environmentId']) = explode('-', $cluster, 2);
+            $this->io->debug('Identified project cluster: ' . $cluster);
+            [$result['projectId'], $result['environmentId']] = explode('-', $cluster, 2);
         }
 
         return $result;
     }
 
     /**
-     * Get a project cluster from its URL.
-     *
-     * @param string $url
-     *
-     * @return string|false
+     * Finds a project cluster from its URL.
      */
-    private function getClusterHeader($url)
+    private function getClusterHeader(string $url): string|false
     {
         if (!$this->config->has('detection.cluster_header')) {
             return false;
         }
         $cacheKey = 'project-cluster:' . $url;
-        $cluster = $this->cache ? $this->cache->fetch($cacheKey) : false;
+        $cluster = $this->cache->fetch($cacheKey);
         if ($cluster === false) {
-            $this->debug('Making a HEAD request to identify project from URL: ' . $url);
+            $this->io->debug('Making a HEAD request to identify project from URL: ' . $url);
             try {
                 $response = $this->api->getExternalHttpClient()
                     ->head($url, [
-                    'auth' => false,
-                    'timeout' => 5,
-                    'connect_timeout' => 5,
-                    'allow_redirects' => false,
-                ]);
+                        'auth' => false,
+                        'timeout' => 5,
+                        'connect_timeout' => 5,
+                        'allow_redirects' => false,
+                    ]);
             } catch (RequestException $e) {
                 // We can use a failed response, if one exists.
                 if ($e->getResponse()) {
                     $response = $e->getResponse();
                 } else {
-                    $this->debug($e->getMessage());
+                    $this->io->debug($e->getMessage());
 
                     return false;
                 }
             }
-            $cluster = $response->getHeaderAsArray($this->config->get('detection.cluster_header'));
+            $cluster = $response->getHeader($this->config->getStr('detection.cluster_header'));
             $canCache = !empty($cluster)
                 || ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
             if ($canCache) {
@@ -205,13 +189,5 @@ class Identifier
         }
 
         return is_array($cluster) ? reset($cluster) : false;
-    }
-
-    /**
-     * @param string $message
-     */
-    private function debug($message)
-    {
-        $this->stdErr->writeln('<options=reverse>DEBUG</> ' . $message, OutputInterface::VERBOSITY_DEBUG);
     }
 }

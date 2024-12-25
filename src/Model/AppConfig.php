@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
@@ -8,38 +10,37 @@ use Platformsh\Client\Model\Deployment\WebApp;
 /**
  * A class to help reading and normalizing an application's configuration.
  */
-class AppConfig
+final class AppConfig
 {
-    private $config;
-    private $normalizedConfig;
+    /** @var array<string, mixed> */
+    private array $normalizedConfig;
 
     /**
      * AppConfig constructor.
      *
-     * @param array $config
+     * @param array<string, mixed> $config
      */
-    public function __construct(array $config)
+    public function __construct(private readonly array $config)
     {
-        $this->config = $config;
-        $this->normalizedConfig = $this->normalizeConfig($config);
+        $this->normalizedConfig = $this->normalizeConfig($this->config);
     }
 
     /**
-     * @param \Platformsh\Client\Model\Deployment\WebApp $app
+     * @param WebApp $app
      *
-     * @return static
+     * @return self
      */
-    public static function fromWebApp(WebApp $app)
+    public static function fromWebApp(WebApp $app): self
     {
-        return new static($app->getProperties());
+        return new self($app->getProperties());
     }
 
     /**
      * Get normalized configuration.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function getNormalized()
+    public function getNormalized(): array
     {
         if (!isset($this->normalizedConfig)) {
             $this->normalizedConfig = $this->normalizeConfig($this->config);
@@ -53,7 +54,7 @@ class AppConfig
      *
      * @return string
      */
-    public function getDocumentRoot()
+    public function getDocumentRoot(): string
     {
         $documentRoot = '';
         $normalized = $this->getNormalized();
@@ -69,25 +70,25 @@ class AppConfig
             }
         }
 
-        return ltrim($documentRoot, '/');
+        return ltrim((string) $documentRoot, '/');
     }
 
     /**
      * Normalize the application config.
      *
-     * @param array $config
+     * @param array<string, mixed> $config
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    private function normalizeConfig(array $config)
+    private function normalizeConfig(array $config): array
     {
         // Backwards compatibility with old config format: `toolstack` is
         // changed to application `type` and `build`.`flavor`.
         if (isset($config['toolstack'])) {
-            if (!strpos($config['toolstack'], ':')) {
+            if (!strpos((string) $config['toolstack'], ':')) {
                 throw new InvalidConfigException("Invalid value for 'toolstack'");
             }
-            list($config['type'], $config['build']['flavor']) = explode(':', $config['toolstack'], 2);
+            [$config['type'], $config['build']['flavor']] = explode(':', (string) $config['toolstack'], 2);
         }
 
         // The `web` section has changed to `web`.`locations`.
@@ -115,9 +116,9 @@ class AppConfig
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
-    private function getOldWebDefaults()
+    private function getOldWebDefaults(): array
     {
         return [
             'document_root' => '/public',

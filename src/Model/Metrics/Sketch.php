@@ -1,54 +1,46 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model\Metrics;
 
-class Sketch
+readonly class Sketch
 {
-    /** @var string|int|float */
-    private $sum;
-
-    /** @var string|int|float */
-    private $count;
-
-    /** @var string */
-    private $name;
+    private function __construct(private string|int|float|null $sum, private string|int|float $count, private string $name) {}
 
     /**
-     * @param array $value
-     * @return Sketch
+     * @param array{value: array<string, mixed>, info: array<string, mixed>} $value
+     * @return self
      */
-    public static function fromApiValue(array $value)
+    public static function fromApiValue(array $value): self
     {
-        $s = new Sketch();
-        $s->name = $value['info']['name'];
-        $s->count = isset($value['value']['count']) ? $value['value']['count'] : 1;
-        $s->sum = isset($value['value']['sum']) ? $value['value']['sum'] : 0;
-        return $s;
+        return new Sketch(
+            $value['value']['sum'] ?? null,
+            $value['value']['count'] ?? 1,
+            $value['info']['name'],
+        );
     }
 
-    /**
-     * @return string
-     */
-    public function name()
+    public function name(): string
     {
         return $this->name;
     }
 
-    /**
-     * @return bool
-     */
-    public function isInfinite()
+    public function isInfinite(): bool
     {
         return $this->sum === 'Infinity' || $this->count === 'Infinity';
     }
 
-    /**
-     * @return float
-     */
-    public function average()
+    public function average(): float
     {
         if ($this->isInfinite()) {
             throw new \RuntimeException('Cannot find the average of an infinite value');
+        }
+        if ($this->sum === null) {
+            return 0;
+        }
+        if (is_string($this->sum)) {
+            throw new \RuntimeException('Cannot find the average of a string "sum": ' . $this->sum);
         }
         return $this->sum / (float) $this->count;
     }

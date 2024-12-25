@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model\Host;
 
 use Platformsh\Cli\Service\Shell;
 use Symfony\Component\Console\Input\InputInterface;
 
-class LocalHost implements HostInterface
+readonly class LocalHost implements HostInterface
 {
-    private $shell;
+    private Shell $shell;
 
-    public function __construct(Shell $shell = null)
+    public function __construct(?Shell $shell = null)
     {
         $this->shell = $shell ?: new Shell();
     }
@@ -17,7 +19,7 @@ class LocalHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function getLabel()
+    public function getLabel(): string
     {
         return 'localhost';
     }
@@ -31,7 +33,7 @@ class LocalHost implements HostInterface
      * @return bool True if there is a conflict, or false if the local host can
      *              be safely used.
      */
-    public static function conflictsWithCommandLineOptions(InputInterface $input, $envPrefix)
+    public static function conflictsWithCommandLineOptions(InputInterface $input, string $envPrefix): bool
     {
         $map = [
             'PROJECT' => 'project',
@@ -52,28 +54,22 @@ class LocalHost implements HostInterface
     /**
      * {@inheritDoc}
      */
-    public function getCacheKey()
+    public function getCacheKey(): string
     {
         return 'localhost';
     }
 
-    public function lastChanged()
+    public function lastChanged(): string
     {
         return '';
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function runCommand($command, $mustRun = true, $quiet = true, $input = null)
+    public function runCommand(string $command, bool $mustRun = true, bool $quiet = true, mixed $input = null): false|string
     {
-        return $this->shell->execute($command, null, $mustRun, $quiet, [], 3600, $input);
+        return $this->shell->execute($command, mustRun: $mustRun, quiet: $quiet, input: $input);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function runCommandDirect($commandLine, $append = '')
+    public function runCommandDirect(string $commandLine, string $append = ''): int
     {
         return $this->shell->executeSimple($commandLine . $append);
     }

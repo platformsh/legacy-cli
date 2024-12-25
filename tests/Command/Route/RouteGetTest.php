@@ -1,20 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Tests\Command\Route;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use Platformsh\Cli\Command\Route\RouteGetCommand;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Platformsh\Cli\Tests\MockApp;
 
-/**
- * @group commands
- */
+#[Group('commands')]
 class RouteGetTest extends TestCase
 {
     public function setUp(): void
     {
-        $mockRoutes = base64_encode(json_encode([
+        $mockRoutes = base64_encode((string) json_encode([
             'https://example.com' => [
                 'primary' => true,
                 'type' => 'upstream',
@@ -35,39 +34,32 @@ class RouteGetTest extends TestCase
         putenv('PLATFORM_ROUTES=');
     }
 
-    private function runCommand(array $args) {
-        $output = new BufferedOutput();
-        $input = new ArrayInput($args);
-        $input->setInteractive(false);
-        (new RouteGetCommand())->run($input, $output);
-
-        return $output->fetch();
-    }
-
-    public function testGetPrimaryRouteUrl() {
+    public function testGetPrimaryRouteUrl(): void
+    {
         $this->assertEquals(
             'https://example.com',
-            rtrim($this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('route:get', [
                 '--primary' => true,
                 '--property' => 'url',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 
-    public function testGetRouteByOriginalUrl() {
+    public function testGetRouteByOriginalUrl(): void
+    {
         $this->assertEquals(
             'false',
-            rtrim($this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('route:get', [
                 'route' => 'http://{default}',
                 '--property' => 'primary',
-            ]), "\n")
+            ]), "\n"),
         );
         $this->assertEquals(
             'true',
-            rtrim($this->runCommand([
+            rtrim(MockApp::runAndReturnOutput('route:get', [
                 'route' => 'https://{default}',
                 '--property' => 'primary',
-            ]), "\n")
+            ]), "\n"),
         );
     }
 }

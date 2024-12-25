@@ -1,6 +1,10 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Local;
 
+use Symfony\Component\Finder\SplFileInfo;
 use Platformsh\Cli\Service\Config;
 use Platformsh\Cli\Service\Filesystem;
 use Platformsh\Cli\Service\Git;
@@ -12,53 +16,45 @@ use Symfony\Component\Finder\Finder;
 
 class LocalBuild
 {
-
     // Some changes may not be backwards-compatible with previous build
     // archives. Increment this number as breaking changes are released.
-    const BUILD_VERSION = 3;
+    public const BUILD_VERSION = 3;
 
-    /** @var array */
-    protected $settings = [];
+    /** @var array<string, mixed> */
+    protected array $settings = [];
 
-    /** @var OutputInterface */
-    protected $output;
+    protected OutputInterface $output;
 
-    /** @var Filesystem */
-    protected $fsHelper;
+    protected Filesystem $fsHelper;
 
-    /** @var Git */
-    protected $gitHelper;
+    protected Git $gitHelper;
 
-    /** @var Shell */
-    protected $shellHelper;
+    protected Shell $shellHelper;
 
-    /** @var DependencyInstaller */
-    protected $dependencyInstaller;
+    protected DependencyInstaller $dependencyInstaller;
 
-    /** @var Config */
-    protected $config;
+    protected Config $config;
 
-    /** @var ApplicationFinder */
-    protected $applicationFinder;
+    protected ApplicationFinder $applicationFinder;
 
     /**
      * LocalBuild constructor.
      *
      * @param Config|null                                    $config
      * @param OutputInterface|null                           $output
-     * @param \Platformsh\Cli\Service\Shell|null             $shell
-     * @param \Platformsh\Cli\Service\Filesystem|null        $fs
-     * @param \Platformsh\Cli\Service\Git|null               $git
-     * @param \Platformsh\Cli\Local\DependencyInstaller|null $dependencyInstaller
+     * @param Shell|null $shell
+     * @param Filesystem|null $fs
+     * @param Git|null $git
+     * @param DependencyInstaller|null $dependencyInstaller
      */
     public function __construct(
-        Config $config = null,
-        OutputInterface $output = null,
-        Shell $shell = null,
-        Filesystem $fs = null,
-        Git $git = null,
-        DependencyInstaller $dependencyInstaller = null,
-        ApplicationFinder $applicationFinder = null
+        ?Config $config = null,
+        ?OutputInterface $output = null,
+        ?Shell $shell = null,
+        ?Filesystem $fs = null,
+        ?Git $git = null,
+        ?DependencyInstaller $dependencyInstaller = null,
+        ?ApplicationFinder $applicationFinder = null,
     ) {
         $this->config = $config ?: new Config();
         $this->output = $output ?: new ConsoleOutput();
@@ -75,7 +71,7 @@ class LocalBuild
     /**
      * Build a project from any source directory, targeting any destination.
      *
-     * @param array  $settings    An array of build settings.
+     * @param array<string, mixed> $settings An array of build settings.
      *     Possible settings:
      *     - clone (bool, default false) Clone the repository to the build
      *       directory before building, where possible.
@@ -99,16 +95,15 @@ class LocalBuild
      *       file via Drush Make, if applicable.
      *     - run-deploy-hooks (bool, default false) Run deploy and/or
      *       post_deploy hooks.
-     * @param string $sourceDir   The absolute path to the source directory.
-     * @param string $destination Where the web root(s) will be linked (absolute
-     *                            path).
-     * @param array  $apps        An array of application names to build.
-     *
-     * @throws \Exception on failure
+     * @param string $sourceDir The absolute path to the source directory.
+     * @param ?string $destination Where the web root(s) will be linked
+     *                             (absolute path).
+     * @param string[] $apps An array of application names to build.
      *
      * @return bool
+     * @throws \Exception on failure
      */
-    public function build(array $settings, $sourceDir, $destination = null, array $apps = [])
+    public function build(array $settings, string $sourceDir, ?string $destination = null, array $apps = []): bool
     {
         $this->settings = $settings;
         $this->fsHelper->setRelativeLinks(empty($settings['abslinks']));
@@ -143,17 +138,14 @@ class LocalBuild
     }
 
     /**
-     * Get a hash of the application files.
+     * Calculates a hash of the application files.
      *
      * This should change if any of the application files or build settings
      * change.
      *
-     * @param string $appRoot
-     * @param array  $settings
-     *
-     * @return string|false
+     * @param array<string, mixed> $settings
      */
-    public function getTreeId($appRoot, array $settings)
+    public function getTreeId(string $appRoot, array $settings): false|string
     {
         $hashes = [];
 
@@ -164,11 +156,11 @@ class LocalBuild
             return false;
         }
         $tree = preg_replace(
-            '#^|\n[^\n]+?' . preg_quote($this->config->get('service.project_config_dir')) . '\n|$#',
+            '#^|\n[^\n]+?' . preg_quote($this->config->getStr('service.project_config_dir')) . '\n|$#',
             "\n",
-            $tree
+            $tree,
         );
-        $hashes[] = sha1($tree);
+        $hashes[] = sha1((string) $tree);
 
         // Include the hashes of untracked and modified files.
         $others = $this->gitHelper->execute(
@@ -177,10 +169,10 @@ class LocalBuild
                 '--modified',
                 '--others',
                 '--exclude-standard',
-                '-x ' . $this->config->get('service.project_config_dir'),
+                '-x ' . $this->config->getStr('service.project_config_dir'),
                 '.',
             ],
-            $appRoot
+            $appRoot,
         );
         if ($others === false) {
             return false;
@@ -209,19 +201,14 @@ class LocalBuild
     }
 
     /**
-     * Build a single application.
-     *
-     * @param LocalApplication $app
-     * @param string|null      $destination
-     *
-     * @return bool
+     * Builds a single application.
      */
-    protected function buildApp($app, $destination = null)
+    protected function buildApp(LocalApplication $app, ?string $destination = null): bool
     {
         $verbose = $this->output->isVerbose();
 
         $sourceDir = $app->getSourceDir();
-        $destination = $destination ?: $sourceDir . '/' . $this->config->getWithDefault('local.web_root', '_www');
+        $destination = $destination ?: $sourceDir . '/' . $this->config->getStr('local.web_root');
         $appRoot = $app->getRoot();
         $appConfig = $app->getConfig();
         $appId = $app->getId();
@@ -231,7 +218,7 @@ class LocalBuild
         // Find the right build directory.
         $buildName = $app->isSingle() ? 'default' : str_replace('/', '-', $appId);
 
-        $tmpBuildDir = $sourceDir . '/' . $this->config->get('local.build_dir') . '/' . $buildName . '-tmp';
+        $tmpBuildDir = $sourceDir . '/' . $this->config->getStr('local.build_dir') . '/' . $buildName . '-tmp';
 
         if (file_exists($tmpBuildDir)) {
             if (!$this->fsHelper->remove($tmpBuildDir)) {
@@ -243,22 +230,22 @@ class LocalBuild
 
         // If the destination is inside the source directory, ensure it isn't
         // copied or symlinked into the build.
-        if (strpos($destination, $sourceDir) === 0) {
+        if (str_starts_with($destination, $sourceDir)) {
             $buildFlavor->addIgnoredFiles([
                 ltrim(substr($destination, strlen($sourceDir)), '/'),
             ]);
         }
 
         // Warn about a mismatched PHP version.
-        if (isset($appConfig['type']) && strpos($appConfig['type'], ':')) {
-            list($stack, $version) = explode(':', $appConfig['type'], 2);
+        if (isset($appConfig['type']) && strpos((string) $appConfig['type'], ':')) {
+            [$stack, $version] = explode(':', (string) $appConfig['type'], 2);
             $localPhpVersion = $this->shellHelper->getPhpVersion();
             if ($stack === 'php' && version_compare($version, $localPhpVersion, '>')) {
                 $this->output->writeln(sprintf(
                     '<comment>Warning:</comment> the application <comment>%s</comment> expects PHP %s, but the system version is %s.',
                     $appId,
                     $version,
-                    $localPhpVersion
+                    $localPhpVersion,
                 ));
             }
         }
@@ -274,7 +261,7 @@ class LocalBuild
                 if ($verbose) {
                     $this->output->writeln("Tree ID: $treeId");
                 }
-                $archive = $sourceDir . '/' . $this->config->get('local.archive_dir') . '/' . $treeId . '.tar.gz';
+                $archive = $sourceDir . '/' . $this->config->getStr('local.archive_dir') . '/' . $treeId . '.tar.gz';
             }
         }
 
@@ -293,15 +280,14 @@ class LocalBuild
 
             // Install dependencies.
             if (isset($appConfig['dependencies'])) {
-                $depsDir = $sourceDir . '/' . $this->config->get('local.dependencies_dir');
+                $depsDir = $sourceDir . '/' . $this->config->getStr('local.dependencies_dir');
                 if (!empty($this->settings['no-deps'])) {
                     $this->output->writeln('Skipping build dependencies');
                 } else {
-                    $result = $this->dependencyInstaller->installDependencies(
+                    $success = $this->dependencyInstaller->installDependencies(
                         $depsDir,
-                        $appConfig['dependencies']
+                        $appConfig['dependencies'],
                     );
-                    $success = $success && $result;
                 }
 
                 // Use the dependencies' PATH and other environment variables
@@ -344,7 +330,7 @@ class LocalBuild
         if (!rename($tmpBuildDir, $buildDir)) {
             $this->output->writeln(sprintf(
                 'Failed to move temporary build directory into <error>%s</error>',
-                $buildDir
+                $buildDir,
             ));
 
             return false;
@@ -375,16 +361,15 @@ class LocalBuild
     }
 
     /**
-     * Run post-build hooks.
+     * Runs post-build hooks.
      *
-     * @param array  $appConfig
-     * @param string $buildDir
+     * @param array<string, mixed> $appConfig
      *
      * @return bool|null
      *   False if the build hooks fail, true if they succeed, null if not
      *   applicable.
      */
-    protected function runPostBuildHooks(array $appConfig, $buildDir)
+    protected function runPostBuildHooks(array $appConfig, string $buildDir): bool|null
     {
         if (!isset($appConfig['hooks']['build'])) {
             return null;
@@ -399,16 +384,15 @@ class LocalBuild
     }
 
     /**
-     * Run deploy and post_deploy hooks.
+     * Runs deploy and post_deploy hooks.
      *
-     * @param array  $appConfig
-     * @param string $appDir
+     * @param array<string, mixed> $appConfig
      *
      * @return bool|null
      *   False if the deploy hooks fail, true if they succeed, null if not
      *   applicable.
      */
-    protected function runDeployHooks(array $appConfig, $appDir)
+    protected function runDeployHooks(array $appConfig, string $appDir): bool|null
     {
         if (empty($this->settings['run-deploy-hooks'])) {
             return null;
@@ -431,18 +415,15 @@ class LocalBuild
     }
 
     /**
-     * Run a user-defined hook.
+     * Runs a user-defined hook.
      *
-     * @param string|array $hook
-     * @param string       $dir
-     *
-     * @return bool
+     * @param string|string[] $hook
      */
-    protected function runHook($hook, $dir)
+    private function runHook(string|array $hook, string $dir): bool
     {
         $code = $this->shellHelper->executeSimple(
             implode("\n", (array) $hook),
-            $dir
+            $dir,
         );
         if ($code !== 0) {
             $this->output->writeln("<comment>The hook failed with the exit code: $code</comment>");
@@ -457,16 +438,12 @@ class LocalBuild
      *
      * This preserves the currently active build.
      *
-     * @param string   $projectRoot
-     * @param int|null $maxAge
-     * @param int      $keepMax
-     * @param bool     $includeActive
-     * @param bool     $quiet
-     *
      * @return int[]
      *   The numbers of deleted and kept builds.
+     *
+     * @throws \Exception
      */
-    public function cleanBuilds($projectRoot, $maxAge = null, $keepMax = 10, $includeActive = false, $quiet = true)
+    public function cleanBuilds(string $projectRoot, ?int $maxAge = null, int $keepMax = 10, bool $includeActive = false, bool $quiet = true): array
     {
         // Find all the potentially active symlinks, which might be www itself
         // or symlinks inside www. This is so we can avoid deleting the active
@@ -477,11 +454,11 @@ class LocalBuild
         }
 
         return $this->cleanDirectory(
-            $projectRoot . '/' . $this->config->get('local.build_dir'),
+            $projectRoot . '/' . $this->config->getStr('local.build_dir'),
             $maxAge,
             $keepMax,
             $exclude,
-            $quiet
+            $quiet,
         );
     }
 
@@ -491,18 +468,18 @@ class LocalBuild
      * @throws \Exception If it cannot be determined whether or not a symlink
      *                    points to a genuine active build.
      *
-     * @return array The absolute paths to any active builds in the project.
+     * @return string[] The absolute paths to any active builds in the project.
      */
-    protected function getActiveBuilds($projectRoot)
+    protected function getActiveBuilds(string $projectRoot): array
     {
-        $www = $projectRoot . '/' . $this->config->getWithDefault('local.web_root', '_www');
+        $www = $projectRoot . '/' . $this->config->getStr('local.web_root');
         if (!file_exists($www)) {
             return [];
         }
         $links = [$www];
         if (!is_link($www) && is_dir($www)) {
             $finder = new Finder();
-            /** @var \Symfony\Component\Finder\SplFileInfo $file */
+            /** @var SplFileInfo $file */
             foreach ($finder->in($www)
                             ->directories()
                             ->depth(0) as $file) {
@@ -510,7 +487,7 @@ class LocalBuild
             }
         }
         $activeBuilds = [];
-        $buildsDir = $projectRoot . '/' . $this->config->get('local.build_dir');
+        $buildsDir = $projectRoot . '/' . $this->config->getStr('local.build_dir');
         foreach ($links as $link) {
             if (is_link($link) && ($target = readlink($link))) {
                 // Make the target into an absolute path.
@@ -519,14 +496,14 @@ class LocalBuild
                     continue;
                 }
                 // Ignore the target if it doesn't point to a build in 'builds'.
-                if (strpos($target, $buildsDir) === false) {
+                if (!str_contains($target, $buildsDir)) {
                     continue;
                 }
                 // The target should just be one level below the 'builds'
                 // directory, not more.
                 while (dirname($target) != $buildsDir) {
                     $target = dirname($target);
-                    if (strpos($target, $buildsDir) === false) {
+                    if (!str_contains($target, $buildsDir)) {
                         throw new \Exception('Error resolving active build directory');
                     }
                 }
@@ -538,24 +515,24 @@ class LocalBuild
     }
 
     /**
-     * Remove old build archives.
+     * Removes old build archives.
      *
-     * @param string   $projectRoot
+     * @param string $projectRoot
      * @param int|null $maxAge
-     * @param int      $keepMax
-     * @param bool     $quiet
+     * @param int $keepMax
+     * @param bool $quiet
      *
      * @return int[]
      *   The numbers of deleted and kept builds.
      */
-    public function cleanArchives($projectRoot, $maxAge = null, $keepMax = 10, $quiet = true)
+    public function cleanArchives(string $projectRoot, ?int $maxAge = null, int $keepMax = 10, bool $quiet = true): array
     {
         return $this->cleanDirectory(
-            $projectRoot . '/' . $this->config->get('local.archive_dir'),
+            $projectRoot . '/' . $this->config->getStr('local.archive_dir'),
             $maxAge,
             $keepMax,
             [],
-            $quiet
+            $quiet,
         );
     }
 
@@ -565,12 +542,12 @@ class LocalBuild
      * @param string   $directory
      * @param int|null $maxAge
      * @param int      $keepMax
-     * @param array    $exclude
+     * @param string[] $exclude
      * @param bool     $quiet
      *
      * @return int[]
      */
-    protected function cleanDirectory($directory, $maxAge = null, $keepMax = 5, array $exclude = [], $quiet = true)
+    protected function cleanDirectory(string $directory, ?int $maxAge = null, int $keepMax = 5, array $exclude = [], bool $quiet = true): array
     {
         if (!is_dir($directory)) {
             return [0, 0];
@@ -582,9 +559,7 @@ class LocalBuild
         // Sort files by modified time (descending).
         usort(
             $files,
-            function ($a, $b) {
-                return filemtime($a) < filemtime($b);
-            }
+            fn(string $a, string $b): int => filemtime($a) <=> filemtime($b),
         );
         $now = time();
         $numDeleted = 0;

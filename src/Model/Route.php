@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model;
 
 use Platformsh\Client\DataStructure\ReadOnlyStructureTrait;
@@ -13,12 +15,16 @@ use Platformsh\Client\DataStructure\ReadOnlyStructureTrait;
  * @property-read string|null $id
  * @property-read string      $url
  */
-class Route
+final class Route
 {
     use ReadOnlyStructureTrait;
 
-    public static function fromData(array $data) {
-        return new static($data + ['id' => null, 'primary' => false]);
+    /**
+     * @param array<string, mixed> $data
+     */
+    public static function fromData(array $data): self
+    {
+        return new self($data + ['id' => null, 'primary' => false]);
     }
 
     /**
@@ -26,52 +32,52 @@ class Route
      *
      * @return string|false
      */
-    public function getUpstreamName() {
+    public function getUpstreamName(): false|string
+    {
         if (!isset($this->data['upstream'])) {
             return false;
         }
 
-        return explode(':', $this->data['upstream'], 2)[0];
+        return explode(':', (string) $this->data['upstream'], 2)[0];
     }
 
     /**
      * Translates routes found in $environment->getRoutes() to Route objects.
      *
-     * @see \Platformsh\Client\Model\Environment::getRoutes()
-     *
      * @param \Platformsh\Client\Model\Deployment\Route[] $routes
      *
-     * @return \Platformsh\Cli\Model\Route[]
+     * @return Route[]
+     * @see \Platformsh\Client\Model\Environment::getRoutes()
      */
-    public static function fromDeploymentApi(array $routes)
+    public static function fromDeploymentApi(array $routes): array
     {
         $result = [];
         foreach ($routes as $url => $route) {
             $properties = $route->getProperties();
             $properties['url'] = $url;
-            $result[] = static::fromData($properties);
+            $result[] = self::fromData($properties);
         }
 
-        return static::sort($result);
+        return self::sort($result);
     }
 
     /**
      * Translates routes found in PLATFORM_ROUTES to Route objects.
      *
-     * @param array $routes
+     * @param array<string, mixed> $routes
      *
-     * @return \Platformsh\Cli\Model\Route[]
+     * @return Route[]
      */
-    public static function fromVariables(array $routes)
+    public static function fromVariables(array $routes): array
     {
         $result = [];
 
         foreach ($routes as $url => $route) {
             $route['url'] = $url;
-            $result[] = static::fromData($route);
+            $result[] = self::fromData($route);
         }
 
-        return static::sort($result);
+        return self::sort($result);
     }
 
     /**
@@ -81,8 +87,9 @@ class Route
      *
      * @return Route[]
      */
-    private static function sort(array $routes) {
-        usort($routes, function (Route $a, Route $b) {
+    private static function sort(array $routes): array
+    {
+        usort($routes, function (Route $a, Route $b): int {
             $result = 0;
             if ($a->primary) {
                 $result -= 4;

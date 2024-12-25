@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model;
 
 class ProjectRoles
@@ -8,17 +10,15 @@ class ProjectRoles
      * Formats project-related permissions.
      *
      * @param string[] $permissions
-     * @param bool $machineReadable
-     *
-     * @return string
+     * @throws \JsonException
      */
-    public function formatPermissions(array $permissions, $machineReadable)
+    public function formatPermissions(array $permissions, bool $machineReadable): string
     {
         if (empty($permissions)) {
             return '';
         }
         if ($machineReadable) {
-            return json_encode($permissions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return json_encode($permissions, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
         if (in_array('admin', $permissions, true)) {
             return 'Project: admin';
@@ -27,7 +27,7 @@ class ProjectRoles
         foreach ($permissions as $permission) {
             $parts = explode(':', $permission, 2);
             if (count($parts) === 2) {
-                list($environmentType, $role) = $parts;
+                [$environmentType, $role] = $parts;
                 $byType[$environmentType] = $role;
             }
         }

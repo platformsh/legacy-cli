@@ -1,14 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Exception;
 
 class HttpException extends \RuntimeException
 {
-    /**
-     * @param string|null     $message
-     * @param \Throwable|null $previous
-     */
-    public function __construct($message = null, $previous = null)
+    public function __construct(?string $message = null, ?\Throwable $previous = null)
     {
         $message = $message ?: 'An HTTP error occurred';
 

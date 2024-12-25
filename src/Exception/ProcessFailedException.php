@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Exception;
 
 use Symfony\Component\Process\Process;
@@ -12,7 +14,7 @@ use Symfony\Component\Process\Process;
 class ProcessFailedException extends \Symfony\Component\Process\Exception\ProcessFailedException
 {
     /**
-     * @param \Symfony\Component\Process\Process $process
+     * @param Process $process
      *     The failed process.
      * @param bool $includeOutput
      *     Whether to include the output in the exception message. Set to false

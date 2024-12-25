@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Util;
 
 use Platformsh\Cli\Exception\InvalidConfigException;
@@ -15,15 +17,13 @@ class YamlParser
     /**
      * Parses a YAML file.
      *
-     * @param string $filename
-     *
-     * @throws \Platformsh\Cli\Exception\InvalidConfigException if the config is invalid
      * @throws ParseException if the config could not be parsed
      * @throws \RuntimeException if the file cannot be read
+     * @throws InvalidConfigException if the config is invalid
      *
-     * @return mixed
+     * @return TaggedValue|string|array<mixed>
      */
-    public function parseFile($filename)
+    public function parseFile(string $filename): TaggedValue|string|array
     {
         return $this->parseContent($this->readFile($filename), $filename);
     }
@@ -35,18 +35,18 @@ class YamlParser
      * @param string $filename The filename where the content originated. This
      *                         is required for formatting useful error messages.
      *
-     * @throws \Platformsh\Cli\Exception\InvalidConfigException if the config is invalid
-     * @throws ParseException if the config could not be parsed
+     * @return TaggedValue|string|array<mixed>
      *
-     * @return array|string|TaggedValue
+     * @throws ParseException if the config could not be parsed
+     * @throws InvalidConfigException if the config is invalid
      */
-    public function parseContent($content, $filename)
+    public function parseContent(string $content, string $filename): TaggedValue|string|array
     {
         $content = $this->cleanUp($content);
         try {
             $parsed = (new Yaml())->parse($content, Yaml::PARSE_CUSTOM_TAGS);
         } catch (ParseException $e) {
-            throw new ParseException($e->getMessage(), $e->getParsedLine(), $e->getSnippet(), $filename, $e->getPrevious());
+            throw new InvalidConfigException($e->getMessage(), $filename, '', $e);
         }
 
         return $this->processTags($parsed, $filename);
@@ -54,23 +54,23 @@ class YamlParser
 
     /**
      * Cleans up YAML to conform to the Symfony parser's expectations.
-     *
-     * @param string $content
-     *
-     * @return string
      */
-    private function cleanUp($content)
+    private function cleanUp(string $content): string
     {
         // If an entire file or snippet is indented, remove the indent.
-        if (substr(ltrim($content, "\r\n"), 0, 1) === ' ') {
+        $trimmed = ltrim($content, "\r\n");
+        if (strlen($trimmed) > 0 && ($trimmed[0] === "\t" || $trimmed[0] === ' ')) {
             $lines = preg_split('/\n|\r|\r\n/', $content);
+            if (!$lines) {
+                throw new \RuntimeException('Failed to split content by lines');
+            }
             $indents = [];
             foreach ($lines as $line) {
                 // Ignore blank lines.
                 if (trim($line) === '') {
                     continue;
                 }
-                $indents[] = strlen($line) - strlen(ltrim($line, ' '));
+                $indents[] = strlen($line) - strlen(ltrim($line, "\t "));
             }
             if (!empty($indents[0]) && $indents[0] === min($indents)) {
                 foreach ($lines as &$line) {
@@ -86,13 +86,9 @@ class YamlParser
     /**
      * Reads a file and throws appropriate exceptions on failure.
      *
-     * @param string $filename
-     *
      * @throws \RuntimeException if the file cannot be found or read.
-     *
-     * @return string
      */
-    private function readFile($filename)
+    private function readFile(string $filename): string
     {
         if (!file_exists($filename)) {
             throw new \RuntimeException(sprintf('File not found: %s', $filename));
@@ -105,25 +101,18 @@ class YamlParser
     }
 
     /**
-     * Processes custom tags in the parsed config.
+     * Recursively processes custom tags in the parsed config.
      *
-     * @param array  $config
-     * @param string $filename
-     *
-     * @throws \Platformsh\Cli\Exception\InvalidConfigException
-     *
-     * @return array
+     * @param TaggedValue|array<mixed> $config
      */
-    private function processTags($config, $filename)
+    private function processTags(mixed $config, string $filename): mixed
     {
-        if (!is_array($config)) {
+        if ($config instanceof TaggedValue) {
             return $this->processSingleTag($config, $filename);
         }
-        foreach ($config as $key => $item) {
-            if (is_array($item)) {
+        if (is_array($config)) {
+            foreach ($config as $key => $item) {
                 $config[$key] = $this->processTags($item, $filename);
-            } else {
-                $config[$key] = $this->processSingleTag($item, $filename, $key);
             }
         }
 
@@ -133,49 +122,33 @@ class YamlParser
     /**
      * Processes a single config item, which may be a custom tag.
      *
-     * @param mixed  $item
+     * @param TaggedValue $item
      * @param string $filename
      * @param string $configKey
      *
-     * @return mixed
+     * @return TaggedValue|string|array<string,mixed>|array<mixed>
      */
-    private function processSingleTag($item, $filename, $configKey = '')
+    private function processSingleTag(TaggedValue $item, string $filename, string $configKey = ''): TaggedValue|string|array
     {
-        if ($item instanceof TaggedValue) {
-            $tag = $item->getTag();
-            $value = $item->getValue();
-        } elseif (is_string($item) && strlen($item) && $item[0] === '!' && preg_match('/\!([a-z]+)[ \t]+(.+)$/i', $item, $matches)) {
-            $tag = $matches[1];
-            $value = Yaml::parse($matches[2]);
-            if (!is_string($value)) {
-                return $item;
-            }
-        } else {
-            return $item;
-        }
+        $tag = $item->getTag();
+        $value = $item->getValue();
 
         // Process the '!include' tag. The '!archive' and '!file' tags are
         // ignored as they are not relevant to the CLI (yet).
-        switch ($tag) {
-            case 'include':
-                return $this->resolveInclude($value, $filename, $configKey);
-        }
-
-        return $item;
+        return match ($tag) {
+            'include' => $this->resolveInclude($value, $filename, $configKey),
+            default => $item,
+        };
     }
 
     /**
-     * Resolve an !include config tag value.
+     * Resolves an !include config tag value.
      *
-     * @param mixed  $value
-     * @param string $filename
-     * @param string $configKey
+     * @throws InvalidConfigException
      *
-     * @throws \Platformsh\Cli\Exception\InvalidConfigException
-     *
-     * @return string|array
+     * @return TaggedValue|string|array<mixed>
      */
-    private function resolveInclude($value, $filename, $configKey = '')
+    private function resolveInclude(mixed $value, string $filename, string $configKey = ''): TaggedValue|string|array
     {
         if (is_string($value)) {
             $includeType = 'yaml';
@@ -193,27 +166,18 @@ class YamlParser
         if (!$realDir = realpath($dir)) {
             throw new \RuntimeException('Failed to resolve directory: ' . $dir);
         }
-        $includeFile = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($includePath, DIRECTORY_SEPARATOR);
+        $includeFile = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim((string) $includePath, DIRECTORY_SEPARATOR);
 
         try {
-            switch ($includeType) {
-                // Ignore binary and archive values (for now at least).
-                case 'archive':
-                case 'binary':
-                    return $value;
-
-                case 'yaml':
-                    return $this->parseFile($includeFile);
-
-                case 'string':
-                    return $this->readFile($includeFile);
-
-                default:
-                    throw new InvalidConfigException(sprintf(
-                        'Unrecognized !include tag type "%s"',
-                        $includeType
-                    ), $filename, $configKey);
-            }
+            return match ($includeType) {
+                'archive', 'binary' => $value,
+                'yaml' => $this->parseFile($includeFile),
+                'string' => $this->readFile($includeFile),
+                default => throw new InvalidConfigException(sprintf(
+                    'Unrecognized !include tag type "%s"',
+                    $includeType,
+                ), $filename, $configKey),
+            };
         } catch (\Exception $e) {
             if ($e instanceof InvalidConfigException) {
                 throw $e;

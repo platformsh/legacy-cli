@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Console;
 
 use Symfony\Component\Console\Helper\Helper;
@@ -14,51 +16,44 @@ use Symfony\Component\Console\Terminal;
  */
 class AdaptiveTable extends Table
 {
-    /** @var int */
-    protected $maxTableWidth;
-
-    /** @var int */
-    protected $minColumnWidth;
+    protected int $maxTableWidth;
 
     // The following 3 properties are copies of the private properties in the
     // parent Table class.
-    protected $rowsCopy = [];
-    protected $headersCopy = [];
-    protected $outputCopy;
+    /** @var array<array<int|string, string|int|float|TableCell>|TableSeparator> */
+    protected array $rowsCopy = [];
+    /** @var array<array<int|string, string|TableCell>> */
+    protected array $headersCopy = [];
 
     /**
      * AdaptiveTable constructor.
      *
-     * @param OutputInterface $output
-     * @param int|null        $maxTableWidth
-     * @param int|null        $minColumnWidth
+     * @param OutputInterface $outputCopy
+     * @param int|null $maxTableWidth
+     * @param int $minColumnWidth
      */
-    public function __construct(OutputInterface $output, $maxTableWidth = null, $minColumnWidth = 10)
+    public function __construct(protected OutputInterface $outputCopy, ?int $maxTableWidth = null, protected int $minColumnWidth = 10)
     {
-        $this->outputCopy = $output;
         $this->maxTableWidth = $maxTableWidth !== null
             ? $maxTableWidth
             : (new Terminal())->getWidth();
-        $this->minColumnWidth = $minColumnWidth;
 
-        parent::__construct($output);
+        parent::__construct($this->outputCopy);
     }
 
     /**
      * {@inheritdoc}
      *
      * Overrides Table->addRow() so the row content can be accessed.
+     *
+     * @param TableSeparator|array<int|string, string|TableCell> $row
      */
-    public function addRow($row)
+    public function addRow(TableSeparator|array $row): static
     {
         if ($row instanceof TableSeparator) {
             $this->rowsCopy[] = $row;
 
             return parent::addRow($row);
-        }
-
-        if (!is_array($row)) {
-            throw new \InvalidArgumentException('A row must be an array or a TableSeparator instance.');
         }
 
         $this->rowsCopy[] = array_values($row);
@@ -70,12 +65,14 @@ class AdaptiveTable extends Table
      * {@inheritdoc}
      *
      * Overrides Table->setHeaders() so the header content can be accessed.
+     *
+     * @param array<mixed> $headers
      */
-    public function setHeaders(array $headers)
+    public function setHeaders(array $headers): static
     {
         $headers = array_values($headers);
-        if (!empty($headers) && !is_array($headers[0])) {
-            $headers = array($headers);
+        if ($headers && !is_array($headers[0])) {
+            $headers = [$headers];
         }
 
         $this->headersCopy = $headers;
@@ -88,7 +85,7 @@ class AdaptiveTable extends Table
      *
      * Overrides Table->render(), to adapt all the cells to the table width.
      */
-    public function render()
+    public function render(): void
     {
         $this->adaptRows();
         parent::render();
@@ -97,7 +94,7 @@ class AdaptiveTable extends Table
     /**
      * Adapt rows based on the terminal width.
      */
-    protected function adaptRows()
+    protected function adaptRows(): void
     {
         // Go through all headers and rows, wrapping their cells until each
         // column meets the max column width.
@@ -108,21 +105,21 @@ class AdaptiveTable extends Table
     /**
      * Modify table rows, wrapping their cells' content to the max column width.
      *
-     * @param array $rows
-     * @param array $maxColumnWidths
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, int> $maxColumnWidths
      *
-     * @return array
+     * @return array<array<int|string, string|int|float|TableCell>|TableSeparator>
      */
-    protected function adaptCells(array $rows, array $maxColumnWidths)
+    protected function adaptCells(array $rows, array $maxColumnWidths): array
     {
         foreach ($rows as &$row) {
             if ($row instanceof TableSeparator) {
                 continue;
             }
             foreach ($row as $column => &$cell) {
-                $contents = $cell instanceof TableCell ? $cell->__toString() : $cell;
+                $contents = (string) $cell;
                 // Replace Windows line endings, because Symfony's buildTableRows() does not respect them.
-                if (\strpos($contents, "\r\n") !== false) {
+                if (str_contains($contents, "\r\n")) {
                     $contents = \str_replace("\r\n", "\n", $contents);
                     if ($cell instanceof AdaptiveTableCell) {
                         $cell = $cell->withValue($contents);
@@ -150,19 +147,14 @@ class AdaptiveTable extends Table
     }
 
     /**
-     * Word-wrap the contents of a cell, so that they fit inside a max width.
-     *
-     * @param string $contents
-     * @param int    $width
-     *
-     * @return string
+     * Word-wraps the contents of a cell, so that they fit inside a max width.
      */
-    protected function wrapCell($contents, $width)
+    private function wrapCell(string $contents, int $width): string
     {
         // Account for left-indented cells.
-        if (strpos($contents, ' ') === 0) {
+        if (str_starts_with($contents, ' ')) {
             $trimmed = ltrim($contents, ' ');
-            $indentAmount = Helper::strlen($contents) - Helper::strlen($trimmed);
+            $indentAmount = Helper::width($contents) - Helper::width($trimmed);
             $indent = str_repeat(' ', $indentAmount);
 
             return preg_replace('/^/m', $indent, $this->wrapWithDecoration($trimmed, $width - $indentAmount));
@@ -173,13 +165,8 @@ class AdaptiveTable extends Table
 
     /**
      * Word-wraps the contents of a cell, accounting for decoration.
-     *
-     * @param string $formattedText
-     * @param int    $maxLength
-     *
-     * @return string
      */
-    public function wrapWithDecoration($formattedText, $maxLength)
+    public function wrapWithDecoration(string $formattedText, int $maxLength): string
     {
         $plainText = Helper::removeDecoration($this->outputCopy->getFormatter(), $formattedText);
         if ($plainText === $formattedText) {
@@ -194,7 +181,7 @@ class AdaptiveTable extends Table
         $tagChunks = [];
         $lastTagClose = 0;
         foreach ($matches[0] as $match) {
-            list($tagChunk, $tagOffset) = $match;
+            [$tagChunk, $tagOffset] = $match;
             if (substr($formattedText, $tagOffset - 1, 1) === '\\') {
                 continue;
             }
@@ -251,23 +238,21 @@ class AdaptiveTable extends Table
             $lineOffset += $lineLength;
         }
 
-        $wrapped = implode("\n", $lines) . implode($remainingTagChunks);
+        $wrapped = implode("\n", $lines) . implode('', $remainingTagChunks);
 
         // Ensure that tags are closed at the end of each line and re-opened at
         // the beginning of the next one.
-        $wrapped = preg_replace_callback('@(<' . $tagRegex . '>)(((?!(?<!\\\)</).)+)@s', function (array $matches) {
-            return $matches[1] . str_replace("\n", "</>\n" . $matches[1], $matches[2]);
-        }, $wrapped);
+        $wrapped = preg_replace_callback('@(<' . $tagRegex . '>)(((?!(?<!\\\)</).)+)@s', fn(array $matches) => $matches[1] . str_replace("\n", "</>\n" . $matches[1], $matches[2]), $wrapped);
 
         return $wrapped;
     }
 
     /**
-     * @return array
+     * @return array<int|string, int>
      *   An array of the maximum column widths that fit into the table width,
-     *   keyed by the column number.
+     *   indexed by the column's key in the table's rows (a name or number).
      */
-    protected function getMaxColumnWidths()
+    protected function getMaxColumnWidths(): array
     {
         // Loop through the table rows and headers, building multidimensional
         // arrays of the 'original' and 'minimum' column widths. In the same
@@ -281,7 +266,7 @@ class AdaptiveTable extends Table
             }
             $columnCount = 0;
             foreach ($row as $column => $cell) {
-                $columnCount += $column instanceof TableCell ? $column->getColspan() - 1 : 1;
+                $columnCount += $cell instanceof TableCell ? $cell->getColspan() - 1 : 1;
 
                 // The column width is the width of the widest cell.
                 $cellWidth = $this->getCellWidth($cell);
@@ -328,7 +313,7 @@ class AdaptiveTable extends Table
                 $maxColumnWidth = $minColumnWidths[$column];
             }
 
-            $maxColumnWidths[$column] = $maxColumnWidth;
+            $maxColumnWidths[$column] = (int) $maxColumnWidth;
             $totalWidth -= $columnWidth;
             $maxContentWidth -= $maxColumnWidth;
         }
@@ -342,17 +327,17 @@ class AdaptiveTable extends Table
      * @param int $columnCount
      *   The number of columns in the table.
      *
-     * @return int
+     * @return int|float
      *   The maximum table width, minus the width taken up by decoration.
      */
-    protected function getMaxContentWidth($columnCount)
+    protected function getMaxContentWidth(int $columnCount): int|float
     {
         $style = $this->getStyle();
         $verticalBorderQuantity = $columnCount + 1;
         $paddingQuantity = $columnCount * 2;
 
         return $this->maxTableWidth
-            - $verticalBorderQuantity * strlen($style->getVerticalBorderChar())
+            - $verticalBorderQuantity * strlen((string) $style->getBorderChars()[3])
             - $paddingQuantity * strlen($style->getPaddingChar());
     }
 
@@ -362,15 +347,16 @@ class AdaptiveTable extends Table
      * This is inspired by Table->getCellWidth(), but this also accounts for
      * multi-line cells.
      *
-     * @param string|TableCell $cell
+     * @param mixed $cell
      *
      * @return float|int
      */
-    private function getCellWidth($cell)
+    private function getCellWidth(mixed $cell): int|float
     {
         $lineWidths = [0];
+        $formatter = $this->outputCopy->getFormatter();
         foreach (explode(PHP_EOL, (string) $cell) as $line) {
-            $lineWidths[] = Helper::strlenWithoutDecoration($this->outputCopy->getFormatter(), $line);
+            $lineWidths[] = Helper::width(Helper::removeDecoration($formatter, $line));
         }
         $cellWidth = max($lineWidths);
         if ($cell instanceof TableCell && $cell->getColspan() > 1) {

@@ -1,39 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Organization\User;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\QuestionHelper;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Util\OsUtil;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'organization:user:add', description: 'Invite a user to an organization')]
 class OrganizationUserAddCommand extends OrganizationUserCommandBase
 {
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly QuestionHelper $questionHelper, protected readonly Selector $selector)
     {
-        $this->setName('organization:user:add')
-            ->setDescription('Invite a user to an organization')
-            ->addOrganizationOptions()
-            ->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
+        parent::__construct();
+    }
+    protected function configure(): void
+    {
+        $this->selector->addOrganizationOptions($this->getDefinition());
+        $this->addCompleter($this->selector);
+        $this->addArgument('email', InputArgument::OPTIONAL, 'The email address of the user')
             ->addPermissionOption();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $organization = $this->validateOrganizationInput($input, 'create-member');
-
-        /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
-        $questionHelper = $this->getService('question_helper');
+        $organization = $this->selector->selectOrganization($input, 'create-member');
 
         $update = get_called_class() === OrganizationUserUpdateCommand::class;
         if ($update) {
             $email = $input->getArgument('email');
             if (!empty($email)) {
-                $existingMember = $this->api()->loadMemberByEmail($organization, $email);
+                $existingMember = $this->api->loadMemberByEmail($organization, $email);
                 if (!$existingMember) {
-                    $this->stdErr->writeln(sprintf('The user <error>%s</error> was not found in the organization %s', $email, $this->api()->getOrganizationLabel($organization, 'comment')));
+                    $this->stdErr->writeln(sprintf('The user <error>%s</error> was not found in the organization %s', $email, $this->api->getOrganizationLabel($organization, 'comment')));
                     return 1;
                 }
             } elseif (!$input->isInteractive()) {
@@ -51,17 +59,15 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
                 $this->stdErr->writeln('A user email address is required.');
                 return 1;
             } else {
-                $email = $questionHelper->askInput('Enter the email address of a user to add', null, [], function ($answer) {
-                    return $this->validateEmail($answer);
-                });
+                $email = $this->questionHelper->askInput('Enter the email address of a user to add', null, [], fn($answer) => $this->validateEmail($answer));
                 $this->stdErr->writeln('');
             }
         }
 
-        if (!$update && $this->api()->loadMemberByEmail($organization, $email)) {
-            $this->stdErr->writeln(\sprintf('The user <comment>%s</comment> already exists on the organization %s', $email, $this->api()->getOrganizationLabel($organization, 'comment')));
+        if (!$update && $this->api->loadMemberByEmail($organization, $email)) {
+            $this->stdErr->writeln(\sprintf('The user <comment>%s</comment> already exists on the organization %s', $email, $this->api->getOrganizationLabel($organization, 'comment')));
             $this->stdErr->writeln('');
-            $this->stdErr->writeln(sprintf('To update the user, run: <comment>%s org:user:update %s</comment>', $this->config()->get('application.executable'), OsUtil::escapeShellArg($email)));
+            $this->stdErr->writeln(sprintf('To update the user, run: <comment>%s org:user:update %s</comment>', $this->config->getStr('application.executable'), OsUtil::escapeShellArg($email)));
             return 1;
         }
 
@@ -75,7 +81,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
             } else {
                 $questionText = 'Optionally, enter a list of permissions to add (separated by commas)';
             }
-            $response = $questionHelper->askInput($questionText, null, [], function ($value) {
+            $response = $this->questionHelper->askInput($questionText, null, [], function ($value) {
                 foreach (ArrayArgument::split([$value]) as $permission) {
                     if (!\in_array($permission, self::$allPermissions)) {
                         throw new InvalidArgumentException('Unrecognized permission: ' . $permission);
@@ -98,7 +104,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
                 return 1;
             }
 
-            $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($existingMember), $this->api()->getOrganizationLabel($organization)));
+            $this->stdErr->writeln(\sprintf('Updating the user <info>%s</info> on the organization %s', $this->memberLabel($existingMember), $this->api->getOrganizationLabel($organization)));
             $this->stdErr->writeln('');
 
             $this->stdErr->writeln('Summary of changes:');
@@ -119,7 +125,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
 
             $this->stdErr->writeln('');
 
-            if (!$questionHelper->confirm('Are you sure you want to make these changes?')) {
+            if (!$this->questionHelper->confirm('Are you sure you want to make these changes?')) {
                 return 1;
             }
 
@@ -127,7 +133,7 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
             $new = $result->getProperty('permissions', false) ?: [];
 
             $this->stdErr->writeln(\sprintf("The user's permissions are now: %s", $this->listPermissions($new)));
-        } elseif (!$questionHelper->confirm(\sprintf('Are you sure you want to invite <info>%s</info> to the organization %s?', $email, $this->api()->getOrganizationLabel($organization)))) {
+        } elseif (!$this->questionHelper->confirm(\sprintf('Are you sure you want to invite <info>%s</info> to the organization %s?', $email, $this->api->getOrganizationLabel($organization)))) {
             return 1;
         } else {
             $invitation = $organization->inviteMemberByEmail($email, $permissions);
@@ -147,18 +153,19 @@ class OrganizationUserAddCommand extends OrganizationUserCommandBase
                     return 0;
             }
         }
+        return 0;
     }
 
     /**
      * Validates an email address.
      *
-     * @param string $value
+     * @param string|null $value
      *
-     * @throws \Symfony\Component\Console\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      *
      * @return string
      */
-    private function validateEmail($value)
+    private function validateEmail(?string $value): string
     {
         if (empty($value)) {
             throw new InvalidArgumentException('An email address is required.');

@@ -1,42 +1,53 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Command\Service;
 
+use Platformsh\Cli\Selector\Selector;
+use Platformsh\Cli\Service\Api;
+use Platformsh\Cli\Service\Config;
+use Platformsh\Cli\Service\PropertyFormatter;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Service\Table;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+#[AsCommand(name: 'service:list', description: 'List services in the project', aliases: ['services'])]
 class ServiceListCommand extends CommandBase
 {
-    private $tableHeader = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
+    /** @var array<string|int, string> */
+    private array $tableHeader = ['Name', 'Type', 'disk' => 'Disk (MiB)', 'Size'];
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
+    public function __construct(private readonly Api $api, private readonly Config $config, private readonly PropertyFormatter $propertyFormatter, private readonly Selector $selector, private readonly Table $table)
     {
-        $this->setName('service:list')
-            ->setAliases(['services'])
-            ->setDescription('List services in the project')
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
             ->addOption('refresh', null, InputOption::VALUE_NONE, 'Whether to refresh the cache')
             ->addOption('pipe', null, InputOption::VALUE_NONE, 'Output a list of service names only');
-        $this->addProjectOption()
-            ->addEnvironmentOption();
+        $this->selector->addProjectOption($this->getDefinition());
+        $this->selector->addEnvironmentOption($this->getDefinition());
+        $this->addCompleter($this->selector);
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->validateInput($input);
+        $selection = $this->selector->getSelection($input);
 
         // Find a list of deployed services.
-        $deployment = $this->api()
-            ->getCurrentDeployment($this->getSelectedEnvironment(), $input->getOption('refresh'));
+        $deployment = $this->api
+            ->getCurrentDeployment($selection->getEnvironment(), $input->getOption('refresh'));
         $services = $deployment->services;
 
         if (!count($services)) {
@@ -54,60 +65,54 @@ class ServiceListCommand extends CommandBase
             return 0;
         }
 
-        /** @var \Platformsh\Cli\Service\PropertyFormatter $formatter */
-        $formatter = $this->getService('property_formatter');
-
         $rows = [];
         foreach ($services as $name => $service) {
             $row = [
                 $name,
-                $formatter->format($service->type, 'service_type'),
+                $this->propertyFormatter->format($service->type, 'service_type'),
                 'disk' => $service->disk !== null ? $service->disk : '',
                 $service->size,
             ];
             $rows[] = $row;
         }
-
-        /** @var \Platformsh\Cli\Service\Table $table */
-        $table = $this->getService('table');
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->stdErr->writeln(sprintf(
                 'Services on the project <info>%s</info>, environment <info>%s</info>:',
-                $this->api()->getProjectLabel($this->getSelectedProject()),
-                $this->api()->getEnvironmentLabel($this->getSelectedEnvironment())
+                $this->api->getProjectLabel($selection->getProject()),
+                $this->api->getEnvironmentLabel($selection->getEnvironment()),
             ));
         }
 
-        $table->render($rows, $this->tableHeader);
+        $this->table->render($rows, $this->tableHeader);
 
-        if (!$table->formatIsMachineReadable()) {
+        if (!$this->table->formatIsMachineReadable()) {
             $this->recommendOtherCommands($deployment);
         }
 
         return 0;
     }
 
-    private function recommendOtherCommands(EnvironmentDeployment $deployment)
+    private function recommendOtherCommands(EnvironmentDeployment $deployment): void
     {
         $lines = [];
-        $executable = $this->config()->get('application.executable');
+        $executable = $this->config->getStr('application.executable');
         if ($deployment->webapps) {
             $lines[] = sprintf(
                 'To list applications, run: <info>%s apps</info>',
-                $executable
+                $executable,
             );
         }
         if ($deployment->workers) {
             $lines[] = sprintf(
                 'To list workers, run: <info>%s workers</info>',
-                $executable
+                $executable,
             );
         }
         if ($info = $deployment->getProperty('project_info', false)) {
-            if (!empty($info['settings']['sizing_api_enabled']) && $this->config()->get('api.sizing') && $this->config()->isCommandEnabled('resources:set')) {
+            if (!empty($info['settings']['sizing_api_enabled']) && $this->config->getBool('api.sizing') && $this->config->isCommandEnabled('resources:set')) {
                 $lines[] = sprintf(
                     "To configure resources, run: <info>%s resources:set</info>",
-                    $executable
+                    $executable,
                 );
             }
         }

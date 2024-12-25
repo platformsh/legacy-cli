@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Model\RemoteContainer;
 
 use Platformsh\Cli\Model\AppConfig;
@@ -11,24 +13,14 @@ use Platformsh\Client\Model\Environment;
  * Used when an environment doesn't have a working deployments API, due to
  * application validation errors on the server side.
  */
-class BrokenEnv implements RemoteContainerInterface
+readonly class BrokenEnv implements RemoteContainerInterface
 {
-    private $environment;
-    private $appName;
-
-    /**
-     * @param \Platformsh\Client\Model\Environment $environment
-     * @param string                               $appName
-     */
-    public function __construct(Environment $environment, $appName) {
-        $this->environment = $environment;
-        $this->appName = $appName;
-    }
+    public function __construct(private Environment $environment, private string $appName) {}
 
     /**
      * {@inheritdoc}
      */
-    public function getSshUrl($instance = '')
+    public function getSshUrl($instance = ''): string
     {
         return $this->environment->getSshUrl($this->appName, $instance);
     }
@@ -36,7 +28,7 @@ class BrokenEnv implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->appName;
     }
@@ -44,14 +36,15 @@ class BrokenEnv implements RemoteContainerInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfig() {
+    public function getConfig(): AppConfig
+    {
         return new AppConfig(!empty($this->appName) ? ['name' => $this->appName] : []);
     }
 
     /**
      * {@inheritDoc}
      */
-    public function getRuntimeOperations()
+    public function getRuntimeOperations(): array
     {
         return [];
     }

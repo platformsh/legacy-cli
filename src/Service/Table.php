@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 use Platformsh\Cli\Console\AdaptiveTable;
@@ -8,6 +10,8 @@ use Platformsh\Cli\Util\Csv;
 use Platformsh\Cli\Util\PlainFormat;
 use Platformsh\Cli\Util\Wildcard;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,7 +24,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Usage:
  * <code>
  *     // Create a command property $tableHeader;
- *     private $tableHeader = ['Column 1', 'Column 2', 'Column 3'];
+ *     private array $tableHeader = ['Column 1', 'Column 2', 'Column 3'];
  *
  *     // In a command's configure() method, add the --format and --columns options:
  *     Table::configureInput($this->getDefinition(), $this->tableHeader);
@@ -36,29 +40,22 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Table implements InputConfiguringInterface
 {
-    protected $output;
-    protected $input;
-
     /**
      * @param InputInterface  $input
      * @param OutputInterface $output
      */
-    public function __construct(InputInterface $input, OutputInterface $output)
-    {
-        $this->output = $output;
-        $this->input = $input;
-    }
+    public function __construct(protected InputInterface $input, protected OutputInterface $output) {}
 
     /**
      * Add the --format and --columns options to a command's input definition.
      *
      * @param InputDefinition $definition
-     * @param array $columns
+     * @param array<string|int, string> $columns
      *   The table header or a list of available columns.
      * @param string[] $defaultColumns
      *   A list of default columns.
      */
-    public static function configureInput(InputDefinition $definition, array $columns = [], array $defaultColumns = [])
+    public static function configureInput(InputDefinition $definition, array $columns = [], array $defaultColumns = []): void
     {
         $description = 'The output format: table, csv, tsv, or plain';
         $option = new InputOption('format', null, InputOption::VALUE_REQUIRED, $description, 'table');
@@ -66,10 +63,10 @@ class Table implements InputConfiguringInterface
         $description = 'Columns to display.';
         if (!empty($columns)) {
             if (!empty($defaultColumns)) {
-                $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns, $defaultColumns) . ' (* = default columns).';
+                $description .= "\n" . 'Available columns: ' . self::formatAvailableColumns($columns, $defaultColumns) . ' (* = default columns).';
                 $description .= "\n" . 'The character "+" can be used as a placeholder for the default columns.';
             } else {
-                $description .= "\n" . 'Available columns: ' . static::formatAvailableColumns($columns) . '.';
+                $description .= "\n" . 'Available columns: ' . self::formatAvailableColumns($columns) . '.';
             }
         }
         $description .= "\n" . Wildcard::HELP . "\n" . ArrayArgument::SPLIT_HELP;
@@ -82,20 +79,20 @@ class Table implements InputConfiguringInterface
     }
 
     /**
-     * @param array $columns
+     * @param array<string|int, string> $columns
      * @param string[] $defaultColumns
      * @param bool $markDefault
      * @return string
      */
-    private static function formatAvailableColumns($columns, $defaultColumns = [], $markDefault = true)
+    private static function formatAvailableColumns(array $columns, array $defaultColumns = [], bool $markDefault = true): string
     {
-        $columnNames = array_keys(static::availableColumns($columns));
+        $columnNames = array_keys(self::availableColumns($columns));
         natcasesort($columnNames);
         if ($defaultColumns) {
             $defaultColumns = array_map('\strtolower', $defaultColumns);
             $columnNames = array_diff($columnNames, $defaultColumns);
             if ($markDefault) {
-                $defaultColumns = array_map(function ($c) { return $c . '*'; }, $defaultColumns);
+                $defaultColumns = array_map(fn($c): string => $c . '*', $defaultColumns);
             }
             $columnNames = array_merge($defaultColumns, $columnNames);
         }
@@ -106,13 +103,13 @@ class Table implements InputConfiguringInterface
     /**
      * Modifies the input to replace deprecated column names, and outputs a warning for each.
      *
-     * @param array $replacements
+     * @param array<string, string> $replacements
      * @param InputInterface $input
      * @param OutputInterface $output
      *
      * @return void
      */
-    public function replaceDeprecatedColumns(array $replacements, InputInterface $input, OutputInterface $output)
+    public function replaceDeprecatedColumns(array $replacements, InputInterface $input, OutputInterface $output): void
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $columns = $this->specifiedColumns();
@@ -128,14 +125,14 @@ class Table implements InputConfiguringInterface
     /**
      * Modifies the input to remove deprecated columns, and outputs a warning for each.
      *
-     * @param array $remove A list of column names to remove.
+     * @param string[] $remove A list of column names to remove.
      * @param string $placeholder The name of a placeholder column to display in place of the removed one.
      * @param InputInterface $input
      * @param OutputInterface $output
      *
      * @return void
      */
-    public function removeDeprecatedColumns(array $remove, $placeholder, InputInterface $input, OutputInterface $output)
+    public function removeDeprecatedColumns(array $remove, string $placeholder, InputInterface $input, OutputInterface $output): void
     {
         $stdErr = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $columns = $this->specifiedColumns();
@@ -151,10 +148,10 @@ class Table implements InputConfiguringInterface
     /**
      * Render an single-dimensional array of values, with their property names.
      *
-     * @param string[] $values
-     * @param string[] $propertyNames
+     * @param array<int|string, string|TableCell> $values
+     * @param array<int|string, string|TableCell> $propertyNames
      */
-    public function renderSimple(array $values, array $propertyNames)
+    public function renderSimple(array $values, array $propertyNames): void
     {
         $data = [];
         foreach ($propertyNames as $key => $label) {
@@ -166,11 +163,11 @@ class Table implements InputConfiguringInterface
     /**
      * Returns the columns to display, based on defaults and user input.
      *
-     * @param string[]|array<string, string> $header
+     * @param array<int|string, string|TableCell> $header
      * @param string[] $defaultColumns
      * @return string[] A list of (lower-case) column names.
      */
-    public function columnsToDisplay(array $header, array $defaultColumns = [])
+    public function columnsToDisplay(array $header, array $defaultColumns = []): array
     {
         $availableColumns = array_keys(self::availableColumns($header));
         if (empty($defaultColumns)) {
@@ -200,7 +197,7 @@ class Table implements InputConfiguringInterface
             $matched = Wildcard::select($availableColumns, [$requestedCol]);
             if (empty($matched)) {
                 throw new InvalidArgumentException(
-                    sprintf('Column not found: %s (available columns: %s)', $requestedCol, self::formatAvailableColumns($availableColumns))
+                    sprintf('Column not found: %s (available columns: %s)', $requestedCol, self::formatAvailableColumns($availableColumns)),
                 );
             }
             $toDisplay = array_merge($toDisplay, $matched);
@@ -212,24 +209,26 @@ class Table implements InputConfiguringInterface
     /**
      * Render a table of data to output.
      *
-     * @param array $rows
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
      *   The table rows.
-     * @param string[] $header
+     * @param array<int|string, string|TableCell> $header
      *   The table header (optional).
      * @param string[] $defaultColumns
      *   Default columns to display (optional). Columns are identified by
      *   their name in $header, or alternatively by their key in $rows.
      */
-    public function render(array $rows, array $header = [], array $defaultColumns = [])
+    public function render(array $rows, array $header = [], array $defaultColumns = []): void
     {
         $format = $this->getFormat();
 
         $columnsToDisplay = $this->columnsToDisplay($header, $defaultColumns);
         $rows = $this->filterColumns($rows, $header, $columnsToDisplay);
-        $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
 
         if ($this->input->hasOption('no-header') && $this->input->getOption('no-header')) {
             $header = [];
+        } else {
+            /** @var array<int|string, string|TableCell> $header */
+            $header = $this->filterColumns([0 => $header], $header, $columnsToDisplay)[0];
         }
 
         switch ($format) {
@@ -262,7 +261,7 @@ class Table implements InputConfiguringInterface
      *   True if the user has specified a machine-readable format via the
      *   --format option (e.g. 'csv' or 'tsv'), false otherwise.
      */
-    public function formatIsMachineReadable()
+    public function formatIsMachineReadable(): bool
     {
         return in_array($this->getFormat(), ['csv', 'tsv', 'plain']);
     }
@@ -270,9 +269,9 @@ class Table implements InputConfiguringInterface
     /**
      * Get the columns specified by the user.
      *
-     * @return array
+     * @return string[]
      */
-    protected function specifiedColumns()
+    protected function specifiedColumns(): array
     {
         if (!$this->input->hasOption('columns')) {
             return [];
@@ -280,9 +279,9 @@ class Table implements InputConfiguringInterface
         $val = $this->input->getOption('columns');
         if (\count($val) === 1) {
             $first = \reset($val);
-            if (\strpos($first, '+') !== false) {
-                $first = preg_replace('/([\w%])\+/', '$1,+', $first);
-                $first = preg_replace('/\+([\w%])/', '+,$1', $first);
+            if (str_contains((string) $first, '+')) {
+                $first = preg_replace('/([\w%])\+/', '$1,+', (string) $first);
+                $first = preg_replace('/\+([\w%])/', '+,$1', (string) $first);
                 $val = [$first];
             }
         }
@@ -292,15 +291,15 @@ class Table implements InputConfiguringInterface
     /**
      * Returns the available columns, which are all the (lower-cased) values and string keys in the header.
      *
-     * @param array $header
-     * @return array
+     * @param array<int|string, string|TableCell> $header
+     * @return array<string, string|int>
      */
-    private static function availableColumns(array $header)
+    private static function availableColumns(array $header): array
     {
         $availableColumns = [];
         foreach ($header as $key => $column) {
             $columnName = \is_string($key) ? $key : $column;
-            $availableColumns[\strtolower($columnName)] = $key;
+            $availableColumns[\strtolower((string) $columnName)] = $key;
         }
         return $availableColumns;
     }
@@ -308,13 +307,13 @@ class Table implements InputConfiguringInterface
     /**
      * Filter rows by column names.
      *
-     * @param array    $rows
-     * @param array    $header
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      * @param string[] $columnsToDisplay
      *
-     * @return array
+     * @return array<array<int|string, string|int|float|TableCell>|TableSeparator>
      */
-    private function filterColumns(array $rows, array $header, array $columnsToDisplay)
+    private function filterColumns(array $rows, array $header, array $columnsToDisplay): array
     {
         if (empty($columnsToDisplay)) {
             return $rows;
@@ -333,7 +332,7 @@ class Table implements InputConfiguringInterface
             }
             $newRow = [];
             foreach ($columnsToDisplay as $columnNameLowered) {
-                $keyFromHeader = isset($availableColumns[$columnNameLowered]) ? $availableColumns[$columnNameLowered] : false;
+                $keyFromHeader = $availableColumns[$columnNameLowered] ?? false;
                 if ($keyFromHeader !== false && array_key_exists($keyFromHeader, $row)) {
                     $newRow[] = $row[$keyFromHeader];
                     continue;
@@ -356,27 +355,27 @@ class Table implements InputConfiguringInterface
      *
      * @return string|null
      */
-    protected function getFormat()
+    protected function getFormat(): ?string
     {
         if ($this->input->hasOption('format') && $this->input->getOption('format')) {
-            return strtolower($this->input->getOption('format'));
+            return strtolower((string) $this->input->getOption('format'));
         }
 
         return null;
     }
 
     /**
-     * Render CSV output.
+     * Renders CSV output.
      *
-     * @param array  $rows
-     * @param array  $header
-     * @param string $delimiter
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      */
-    protected function renderCsv(array $rows, array $header, $delimiter = ',')
+    protected function renderCsv(array $rows, array $header, string $delimiter = ','): void
     {
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
+        // Remove TableSeparator objects.
         $rows = array_filter($rows, '\\is_array');
         // RFC 4180 (the closest thing to a CSV standard) asks for CRLF line
         // breaks, but these do not play nicely with POSIX shells whose
@@ -388,14 +387,15 @@ class Table implements InputConfiguringInterface
     /**
      * Render plain, line-based output.
      *
-     * @param array  $rows
-     * @param array  $header
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      */
-    protected function renderPlain(array $rows, array $header)
+    protected function renderPlain(array $rows, array $header): void
     {
         if (!empty($header)) {
             array_unshift($rows, $header);
         }
+        // Remove TableSeparator objects.
         $rows = array_filter($rows, '\\is_array');
         $this->output->write((new PlainFormat())->format($rows));
     }
@@ -403,10 +403,10 @@ class Table implements InputConfiguringInterface
     /**
      * Render a Symfony Console table.
      *
-     * @param array $rows
-     * @param array $header
+     * @param array<array<int|string, string|int|float|TableCell>|TableSeparator> $rows
+     * @param array<int|string, string|TableCell> $header
      */
-    protected function renderTable(array $rows, array $header)
+    protected function renderTable(array $rows, array $header): void
     {
         $table = new AdaptiveTable($this->output);
         $table->setHeaders($header);

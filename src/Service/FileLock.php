@@ -1,23 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Platformsh\Cli\Service;
 
 class FileLock
 {
-    private $config;
+    private readonly int $checkIntervalMs;
+    private readonly int $timeLimit;
+    private readonly bool $disabled;
 
-    private $checkIntervalMs;
-    private $timeLimit;
-    private $disabled;
+    /** @var array<string, string> */
+    private array $locks = [];
 
-    private $locks = [];
-
-    public function __construct(Config $config)
+    public function __construct(private readonly Config $config)
     {
-        $this->config = $config;
         $this->checkIntervalMs = 500;
         $this->timeLimit = 30;
-        $this->disabled = (bool) $this->config->getWithDefault('api.disable_locks', false);
+        $this->disabled = $this->config->getBool('api.disable_locks');
     }
 
     /**
@@ -34,7 +34,7 @@ class FileLock
      *
      * @return mixed|null
      */
-    public function acquireOrWait($lockName, callable $onWait = null, callable $check = null)
+    public function acquireOrWait(string $lockName, ?callable $onWait = null, ?callable $check = null): mixed
     {
         if ($this->disabled) {
             return null;
@@ -71,10 +71,8 @@ class FileLock
 
     /**
      * Releases a lock that was created by acquire().
-     *
-     * @param string $lockName
      */
-    public function release($lockName)
+    public function release(string $lockName): void
     {
         if (!$this->disabled && isset($this->locks[$lockName])) {
             $this->writeWithLock($this->filename($lockName), '');
@@ -94,11 +92,8 @@ class FileLock
 
     /**
      * Finds the filename for a lock.
-     *
-     * @param string $lockName
-     * @return string
      */
-    private function filename($lockName)
+    private function filename(string $lockName): string
     {
         return $this->config->getWritableUserDir()
             . DIRECTORY_SEPARATOR . 'locks'
@@ -113,7 +108,7 @@ class FileLock
      * @param string $filename
      * @return string
      */
-    private function readWithLock($filename)
+    private function readWithLock(string $filename): string
     {
         $handle = \fopen($filename, 'r');
         if (!$handle) {
@@ -135,7 +130,7 @@ class FileLock
                 \trigger_error('Failed to close file: ' . $filename, E_USER_WARNING);
             }
         }
-        return $content;
+        return (string) $content;
     }
 
     /**
@@ -145,11 +140,11 @@ class FileLock
      * @param string $content
      * @return void
      */
-    private function writeWithLock($filename, $content)
+    private function writeWithLock(string $filename, string $content): void
     {
         $dir = \dirname($filename);
         if (!\is_dir($dir)) {
-            if (!\mkdir($dir, 0777, true)) {
+            if (!\mkdir($dir, 0o777, true)) {
                 throw new \RuntimeException('Failed to create directory: ' . $dir);
             }
         }
@@ -164,12 +159,8 @@ class FileLock
             if (\fputs($handle, $content) === false) {
                 throw new \RuntimeException('Failed to write to file: ' . $filename);
             }
-            if (PHP_VERSION_ID >= 81000) {
-                if (!\fsync($handle)) {
-                    \trigger_error('Failed to sync file (fsync): ' . $filename, E_USER_WARNING);
-                }
-            } elseif (!\fflush($handle)) {
-                \trigger_error('Failed to flush file (fflush): ' . $filename, E_USER_WARNING);
+            if (!\fsync($handle)) {
+                \trigger_error('Failed to sync file (fsync): ' . $filename, E_USER_WARNING);
             }
         } finally {
             if (!\flock($handle, LOCK_UN)) {
