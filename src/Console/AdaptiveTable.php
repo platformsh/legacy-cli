@@ -354,8 +354,9 @@ class AdaptiveTable extends Table
     private function getCellWidth(mixed $cell): int|float
     {
         $lineWidths = [0];
+        $formatter = $this->outputCopy->getFormatter();
         foreach (explode(PHP_EOL, (string) $cell) as $line) {
-            $lineWidths[] = Helper::width($line);
+            $lineWidths[] = Helper::width(Helper::removeDecoration($formatter, $line));
         }
         $cellWidth = max($lineWidths);
         if ($cell instanceof TableCell && $cell->getColspan() > 1) {

@@ -55,7 +55,7 @@ readonly class ActivityLoader
             }
         }
         if ($limit === null) {
-            $limit = $input->hasOption('limit') ? $input->getOption('limit') : null;
+            $limit = $input->hasOption('limit') ? (int) $input->getOption('limit') : null;
         }
         $availableTypes = self::getAvailableTypes();
         $requestedIncludeTypes = $input->hasOption('type') ? ArrayArgument::getOption($input, 'type') : [];
