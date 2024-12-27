@@ -499,8 +499,8 @@ class Api
         //        }
 
         if (extension_loaded('zlib')) {
-            $options['defaults']['decode_content'] = true;
-            $options['defaults']['headers']['Accept-Encoding'] = 'gzip';
+            $options['decode_content'] = true;
+            $options['headers']['Accept-Encoding'] = 'gzip';
         }
 
         return $options;
