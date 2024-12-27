@@ -74,7 +74,7 @@ class ProjectSetRemoteCommand extends CommandBase
             $gitRemotes = [];
             foreach ([$this->config->getStr('detection.git_remote_name'), 'origin'] as $remote) {
                 $url = $this->git->getConfig(sprintf('remote.%s.url', $remote));
-                if (\is_string($url) && $this->localProject->parseGitUrl($url) !== false) {
+                if (\is_string($url) && $this->localProject->parseGitUrl($url) !== null) {
                     $gitRemotes[$remote] = $url;
                 }
             }

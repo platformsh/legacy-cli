@@ -52,15 +52,15 @@ class LocalProject
     }
 
     /**
-     * @return array{id: string, host: string}|false
-     *   The project ID and hostname, or false on failure.
+     * @return array{id: string, host: string}|null
+     *   The project ID and hostname, or null on failure.
      */
-    public function parseGitUrl(string $gitUrl): false|array
+    public function parseGitUrl(string $gitUrl): ?array
     {
         $gitDomain = $this->config->getStr('detection.git_domain');
         $pattern = '/^([a-z0-9]{12,})@git\.(([a-z0-9\-]+\.)?' . preg_quote($gitDomain) . '):\1\.git$/';
         if (!preg_match($pattern, $gitUrl, $matches)) {
-            return false;
+            return null;
         }
 
         return ['id' => $matches[1], 'host' => $matches[2]];
