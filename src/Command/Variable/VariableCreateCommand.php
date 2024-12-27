@@ -141,8 +141,7 @@ class VariableCreateCommand extends CommandBase
             unset($values['prefix']);
         }
 
-        $environment = $selection->getEnvironment();
-
+        $environment = null;
         if (isset($values['environment'])) {
             $environment = $this->api->getEnvironment($values['environment'], $selection->getProject());
             if (!$environment) {
