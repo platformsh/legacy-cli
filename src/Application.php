@@ -315,6 +315,11 @@ class Application extends ParentApplication
             }
         }
 
+        if (getenv($this->envPrefix . 'DEBUG')) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+            $shellVerbosity = 3;
+        }
+
         if (0 > $shellVerbosity) {
             $input->setInteractive(false);
         }
