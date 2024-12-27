@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Platformsh\Cli\Service;
 
+use GuzzleHttp\HandlerStack;
 use Symfony\Component\Filesystem\Filesystem;
 use GuzzleHttp\Exception\RequestException;
 use Platformsh\Client\Model\Integration;
@@ -474,36 +475,6 @@ class Api
         }
 
         return new AccessToken($tokenData);
-    }
-
-    /**
-     * Returns configuration options for instantiating a Guzzle HTTP client.
-     *
-     * @see Client::__construct()
-     *
-     * @return array<string, mixed>
-     */
-    public function getGuzzleOptions(): array
-    {
-        $options = [
-            'headers' => ['User-Agent' => $this->config->getUserAgent()],
-            'debug' => false,
-            'verify' => $this->config->getBool('api.skip_ssl') ? false : $this->caBundlePath(),
-            'proxy' => $this->guzzleProxyConfig(),
-            'timeout' => $this->config->getInt('api.default_timeout'),
-        ];
-
-        // TODO provide this as a middleware
-        //        if ($this->output->isVeryVerbose()) {
-        //            $options['defaults']['subscribers'][] = new GuzzleDebugMiddleware($this->output, $this->config->getBool('api.debug'));
-        //        }
-
-        if (extension_loaded('zlib')) {
-            $options['decode_content'] = true;
-            $options['headers']['Accept-Encoding'] = 'gzip';
-        }
-
-        return $options;
     }
 
     /**
@@ -1260,7 +1231,24 @@ class Api
      */
     public function getExternalHttpClient(): ClientInterface
     {
-        return new Client($this->getGuzzleOptions());
+        $options = [
+            'headers' => ['User-Agent' => $this->config->getUserAgent()],
+            'debug' => false,
+            'verify' => $this->config->getBool('api.skip_ssl') ? false : $this->caBundlePath(),
+            'proxy' => $this->guzzleProxyConfig(),
+            'timeout' => $this->config->getInt('api.default_timeout'),
+        ];
+
+        if (extension_loaded('zlib')) {
+            $options['decode_content'] = true;
+            $options['headers']['Accept-Encoding'] = 'gzip';
+        }
+
+        $stack = HandlerStack::create();
+        $stack->push(new GuzzleDebugMiddleware($this->output, $this->config->getBool('api.debug')));
+        $options['handler'] = $stack;
+
+        return new Client($options);
     }
 
     /**
