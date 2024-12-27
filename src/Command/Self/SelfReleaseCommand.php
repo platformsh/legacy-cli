@@ -166,7 +166,7 @@ class SelfReleaseCommand extends CommandBase
                 'Accept' => 'application/vnd.github.v3+json',
                 'Content-Type' => 'application/json',
             ],
-            'exceptions' => false,
+            'http_errors' => false,
             'debug' => $output->isDebug(),
         ]);
         if ($existsResponse->getStatusCode() !== 404) {

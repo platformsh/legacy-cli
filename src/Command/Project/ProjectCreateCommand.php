@@ -606,7 +606,7 @@ class ProjectCreateCommand extends CommandBase
                     if (!str_starts_with($url, 'https://') && parse_url($url, PHP_URL_SCHEME) !== 'https') {
                         return 'The initialize repository URL must start with "https://".';
                     }
-                    $response = $this->api->getExternalHttpClient()->get($url, ['exceptions' => false]);
+                    $response = $this->api->getExternalHttpClient()->get($url, ['http_errors' => false]);
                     $code = $response->getStatusCode();
                     if ($code >= 400) {
                         return sprintf('The initialize repository URL "%s" returned status code %d. The repository must be public.', $url, $code);
