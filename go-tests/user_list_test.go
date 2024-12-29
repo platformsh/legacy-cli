@@ -11,6 +11,7 @@ func TestUserList(t *testing.T) {
 	authServer := mockapi.NewAuthServer(t)
 	defer authServer.Close()
 
+	projectID := mockapi.ProjectID()
 	myUserID := "my-user-id"
 	vendor := "test-vendor"
 
@@ -23,7 +24,7 @@ func TestUserList(t *testing.T) {
 		makeOrg("org-id-1", "org-1", "Org 1", myUserID),
 	})
 	apiHandler.SetProjects([]*mockapi.Project{
-		makeProject(mockProjectID, "org-id-1", vendor, "Project 1", "region-1"),
+		makeProject(projectID, "org-id-1", vendor, "Project 1", "region-1"),
 	})
 	apiHandler.SetUserGrants([]*mockapi.UserGrant{
 		{
@@ -34,21 +35,21 @@ func TestUserList(t *testing.T) {
 			Permissions:    []string{"admin"},
 		},
 		{
-			ResourceID:     mockProjectID,
+			ResourceID:     projectID,
 			ResourceType:   "project",
 			OrganizationID: "org-id-1",
 			UserID:         myUserID,
 			Permissions:    []string{"admin"},
 		},
 		{
-			ResourceID:     mockProjectID,
+			ResourceID:     projectID,
 			ResourceType:   "project",
 			OrganizationID: "org-id-1",
 			UserID:         "user-id-2",
 			Permissions:    []string{"viewer", "development:viewer"},
 		},
 		{
-			ResourceID:     mockProjectID,
+			ResourceID:     projectID,
 			ResourceType:   "project",
 			OrganizationID: "org-id-1",
 			UserID:         "user-id-3",
@@ -66,12 +67,12 @@ func TestUserList(t *testing.T) {
 | user-id-2@example.com  | User user-id-2  | viewer       | user-id-2  |
 | user-id-3@example.com  | User user-id-3  | viewer       | user-id-3  |
 +------------------------+-----------------+--------------+------------+
-`, f.Run("users", "-p", mockProjectID))
+`, f.Run("users", "-p", projectID))
 
 	assertTrimmed(t, `
 Email address	Name	Project role	ID	Permissions
 my-user-id@example.com	User my-user-id	admin	my-user-id	admin
 user-id-2@example.com	User user-id-2	viewer	user-id-2	viewer, development:viewer
 user-id-3@example.com	User user-id-3	viewer	user-id-3	viewer, production:viewer, development:admin, staging:contributor
-`, f.Run("users", "-p", mockProjectID, "--format", "plain", "--columns", "+perm%"))
+`, f.Run("users", "-p", projectID, "--format", "plain", "--columns", "+perm%"))
 }

@@ -18,7 +18,7 @@ func TestAppConfig(t *testing.T) {
 
 	apiHandler := mockapi.NewHandler(t)
 
-	projectID := "aht1iegh3nei9"
+	projectID := mockapi.ProjectID()
 
 	apiHandler.SetProjects([]*mockapi.Project{{
 		ID: projectID,

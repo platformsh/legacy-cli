@@ -20,20 +20,22 @@ func TestEnvironmentList(t *testing.T) {
 	apiServer := httptest.NewServer(apiHandler)
 	defer apiServer.Close()
 
+	projectID := mockapi.ProjectID()
+
 	apiHandler.SetProjects([]*mockapi.Project{
 		{
-			ID: mockProjectID,
+			ID: projectID,
 			Links: mockapi.MakeHALLinks(
-				"self=/projects/"+mockProjectID,
-				"environments=/projects/"+mockProjectID+"/environments",
+				"self=/projects/"+projectID,
+				"environments=/projects/"+projectID+"/environments",
 			),
 		},
 	})
 	apiHandler.SetEnvironments([]*mockapi.Environment{
-		makeEnv(mockProjectID, "main", "production", "active", nil),
-		makeEnv(mockProjectID, "staging", "staging", "active", "main"),
-		makeEnv(mockProjectID, "dev", "development", "active", "staging"),
-		makeEnv(mockProjectID, "fix", "development", "inactive", "dev"),
+		makeEnv(projectID, "main", "production", "active", nil),
+		makeEnv(projectID, "staging", "staging", "active", "main"),
+		makeEnv(projectID, "dev", "development", "active", "staging"),
+		makeEnv(projectID, "fix", "development", "inactive", "dev"),
 	})
 
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
@@ -47,7 +49,7 @@ func TestEnvironmentList(t *testing.T) {
 |     dev   | Dev     | Active   | development |
 |       fix | Fix     | Inactive | development |
 +-----------+---------+----------+-------------+
-`, f.Run("environment:list", "-v", "-p", mockProjectID))
+`, f.Run("environment:list", "-v", "-p", projectID))
 
 	assertTrimmed(t, `
 ID	Title	Status	Type
@@ -55,16 +57,16 @@ main	Main	Active	production
 staging	Staging	Active	staging
 dev	Dev	Active	development
 fix	Fix	Inactive	development
-`, f.Run("environment:list", "-v", "-p", mockProjectID, "--format", "plain"))
+`, f.Run("environment:list", "-v", "-p", projectID, "--format", "plain"))
 
 	assertTrimmed(t, `
 ID	Title	Status	Type
 main	Main	Active	production
 staging	Staging	Active	staging
 dev	Dev	Active	development
-`, f.Run("environment:list", "-v", "-p", mockProjectID, "--format", "plain", "--no-inactive"))
+`, f.Run("environment:list", "-v", "-p", projectID, "--format", "plain", "--no-inactive"))
 
-	assert.Equal(t, "fix\n", f.Run("environment:list", "-v", "-p", mockProjectID, "--pipe", "--status=inactive"))
+	assert.Equal(t, "fix\n", f.Run("environment:list", "-v", "-p", projectID, "--pipe", "--status=inactive"))
 }
 
 func makeEnv(projectID, name, envType, status string, parent any) *mockapi.Environment {
