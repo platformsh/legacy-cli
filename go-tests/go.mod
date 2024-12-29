@@ -3,7 +3,7 @@ module github.com/platformsh/legacy-cli/tests
 go 1.22.9
 
 require (
-	github.com/platformsh/cli v0.0.0-20241229114059-6abd256f63d0
+	github.com/platformsh/cli v0.0.0-20241229194532-b86546247906
 	github.com/stretchr/testify v1.9.0
 )
 

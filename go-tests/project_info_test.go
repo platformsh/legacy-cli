@@ -29,7 +29,7 @@ func TestProjectInfo(t *testing.T) {
 		makeOrg("org-id-1", "org-1", "Org 1", myUserID),
 	})
 
-	projectID := "eer4jee4ri3mo"
+	projectID := mockapi.ProjectID()
 	created, err := time.Parse(time.RFC3339, "2014-04-01T10:00:00+01:00")
 	require.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestProjectInfo(t *testing.T) {
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 
 	expectedLines := `Property	Value
-id	eer4jee4ri3mo
+id	` + projectID + `
 title	Project 1
 region	region-1
 organization	org-id-1

@@ -31,7 +31,7 @@ func TestSSH(t *testing.T) {
 		}
 	})
 
-	projectID := "aiyaikii1uere"
+	projectID := mockapi.ProjectID()
 
 	apiHandler := mockapi.NewHandler(t)
 	apiHandler.SetMyUser(&mockapi.User{ID: myUserID})

@@ -14,7 +14,7 @@ func TestEnvironmentInfo(t *testing.T) {
 
 	apiHandler := mockapi.NewHandler(t)
 
-	projectID := "vishiv0aighae"
+	projectID := mockapi.ProjectID()
 
 	apiHandler.SetProjects([]*mockapi.Project{
 		{

@@ -18,7 +18,7 @@ func TestRouteList(t *testing.T) {
 
 	apiHandler := mockapi.NewHandler(t)
 
-	projectID := "iewohthoo1ein"
+	projectID := mockapi.ProjectID()
 
 	apiHandler.SetProjects([]*mockapi.Project{{
 		ID: projectID,

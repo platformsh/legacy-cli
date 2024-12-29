@@ -19,7 +19,7 @@ func TestAppList(t *testing.T) {
 	apiServer := httptest.NewServer(apiHandler)
 	defer apiServer.Close()
 
-	projectID := "nu8ohgeizah1a"
+	projectID := mockapi.ProjectID()
 
 	apiHandler.SetProjects([]*mockapi.Project{{
 		ID: projectID,
