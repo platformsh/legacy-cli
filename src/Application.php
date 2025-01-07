@@ -233,6 +233,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Service\MongoDB\MongoShellCommand();
         $commands[] = new Command\Service\RedisCliCommand();
         $commands[] = new Command\Service\ServiceListCommand();
+        $commands[] = new Command\Service\ValkeyCliCommand();
         $commands[] = new Command\Session\SessionSwitchCommand();
         $commands[] = new Command\Backup\BackupCreateCommand();
         $commands[] = new Command\Backup\BackupDeleteCommand();
