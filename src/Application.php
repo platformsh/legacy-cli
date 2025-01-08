@@ -532,4 +532,13 @@ class Application extends ParentApplication
     {
         $this->runningViaMulti = true;
     }
+
+    public function getLongVersion()
+    {
+        // Show "(legacy)" in the version output, if not wrapped.
+        if (!$this->cliConfig->isWrapped()) {
+            return sprintf('%s (legacy) <info>%s</info>', $this->cliConfig->get('application.name'), $this->cliConfig->getVersion());
+        }
+        return sprintf('%s <info>%s</info>', $this->cliConfig->get('application.name'), $this->cliConfig->getVersion());
+    }
 }
