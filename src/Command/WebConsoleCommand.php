@@ -6,15 +6,15 @@ use Platformsh\Cli\Service\Url;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class WebCommand extends CommandBase
+class WebConsoleCommand extends CommandBase
 {
 
     protected function configure()
     {
-        $hasConsole = $this->config()->has('service.console_url');
         $this
-            ->setName('web')
-            ->setDescription($hasConsole ? 'Open the project in the Web Console' : 'Open the project in the Web UI');
+            ->setName('console')
+            ->setHiddenAliases(['web'])
+            ->setDescription('Open the project in the Console');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()
              ->addEnvironmentOption();
