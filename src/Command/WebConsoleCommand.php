@@ -13,7 +13,7 @@ class WebConsoleCommand extends CommandBase
     {
         $this
             ->setName('console')
-            ->setHiddenAliases(['web'])
+            ->setAliases(['web'])
             ->setDescription('Open the project in the Console');
         Url::configureInput($this->getDefinition());
         $this->addProjectOption()
