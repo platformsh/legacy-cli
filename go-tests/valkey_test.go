@@ -1,18 +1,24 @@
 package tests
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http/httptest"
-	"os"
-	"os/exec"
+	"net/url"
 	"strconv"
+	"strings"
 	"testing"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/platformsh/cli/pkg/mockapi"
 	"github.com/platformsh/cli/pkg/mockssh"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestSSH(t *testing.T) {
+func TestValkey(t *testing.T) {
 	authServer := mockapi.NewAuthServer(t)
 	defer authServer.Close()
 
@@ -21,6 +27,36 @@ func TestSSH(t *testing.T) {
 	sshServer, err := mockssh.NewServer(t, authServer.URL+"/ssh/authority")
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	relationships := map[string]any{
+		"cache": []map[string]any{{
+			"username": nil,
+			"host":     "cache.internal",
+			"path":     nil,
+			"query":    url.Values{},
+			"password": nil,
+			"port":     6379,
+			"service":  "cache",
+			"scheme":   "valkey",
+			"type":     "valkey:8.0",
+			"public":   false,
+		}},
+	}
+	relationshipsJSON, err := json.Marshal(relationships)
+	require.NoError(t, err)
+
+	execHandler := mockssh.ExecHandler(t.TempDir(), []string{
+		"PLATFORM_RELATIONSHIPS=" + base64.StdEncoding.EncodeToString(relationshipsJSON),
+	})
+
+	sshServer.CommandHandler = func(conn ssh.ConnMetadata, command string, io mockssh.CommandIO) int {
+		if strings.HasPrefix(command, "valkey-cli") {
+			_, _ = fmt.Fprint(io.StdOut, "Received command: "+command)
+			return 0
+		}
+
+		return execHandler(conn, command, io)
 	}
 	t.Cleanup(func() {
 		if err := sshServer.Stop(); err != nil {
@@ -53,7 +89,6 @@ func TestSSH(t *testing.T) {
 		Links:    mockapi.MakeHALLinks("self=/projects/" + projectID + "/environments/main/deployment/current"),
 	})
 	mainEnv.Links["pf:ssh:app:0"] = mockapi.HALLink{HREF: "ssh://app--0@ssh.cli-tests.example.com"}
-	mainEnv.Links["pf:ssh:app:1"] = mockapi.HALLink{HREF: "ssh://app--1@ssh.cli-tests.example.com"}
 	apiHandler.SetEnvironments([]*mockapi.Environment{
 		mainEnv,
 	})
@@ -68,15 +103,13 @@ func TestSSH(t *testing.T) {
 	}
 
 	f.Run("cc")
-	wd, _ := os.Getwd()
-	assert.Equal(t, wd+"\n", f.Run("ssh", "-p", projectID, "-e", ".", "pwd"))
 
-	_, stdErr, err := f.RunCombinedOutput("ssh", "-p", projectID, "-e", "main", "--instance", "2", "pwd")
-	assert.Error(t, err)
-	assert.Contains(t, stdErr, "Available instances: 0, 1")
+	assert.Equal(t, "Received command: valkey-cli -h cache.internal -p 6379 ping",
+		f.Run("valkey", "-p", projectID, "-e", ".", "ping"))
 
-	_, _, err = f.RunCombinedOutput("ssh", "-p", projectID, "-e", "main", "--instance", "1", "exit 2")
-	var exitErr *exec.ExitError
-	assert.ErrorAs(t, err, &exitErr)
-	assert.Equal(t, 2, exitErr.ExitCode())
+	assert.Equal(t, "Received command: valkey-cli -h cache.internal -p 6379 --scan",
+		f.Run("valkey", "-p", projectID, "-e", ".", "--", "--scan"))
+
+	assert.Equal(t, "Received command: valkey-cli -h cache.internal -p 6379 --scan --pattern '*-11*'",
+		f.Run("valkey", "-p", projectID, "-e", ".", "--", "--scan --pattern '*-11*'"))
 }
