@@ -8,6 +8,12 @@ Issues and pull requests submitted via GitHub are very welcome.
 In the near future - to be confirmed - this may move to being a subtree split
 of the new CLI repository at: https://github.com/platformsh/cli
 
+## Developing via Gitpod
+
+This project ships with a no-install, ready-to-develop environment using Gitpod. Start working on the 3.x branch [here](https://gitpod.io/#https://github.com/platformsh/platformsh-cli/tree/3.x).
+
+Or, the branch of your choice using the format: https://gitpod.io/#https://github.com/platformsh/platformsh-cli/tree/{branch}
+
 ## Developing locally
 
 If you clone this repository locally, you can build it with:
