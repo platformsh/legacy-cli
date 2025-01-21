@@ -40,7 +40,7 @@ $territories = $data['main']['en']['localeDisplayNames']['territories'];
 $nonCountries = ['EU', 'EZ', 'UN', 'QO', 'XA', 'XB', 'ZZ'];
 $countries = [];
 foreach ($territories as $code => $territory) {
-    if (\strlen($code) === 2 && !\in_array($code, $nonCountries, true)) {
+    if (\strlen((string) $code) === 2 && !\in_array($code, $nonCountries, true)) {
         $countries[$code] = $territory;
     }
 }
