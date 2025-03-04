@@ -16,13 +16,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Relationships implements InputConfiguringInterface
 {
 
+    protected $config;
     protected $envVarService;
 
     /**
      * @param RemoteEnvVars $envVarService
      */
-    public function __construct(RemoteEnvVars $envVarService)
+    public function __construct(Config $config, RemoteEnvVars $envVarService)
     {
+        $this->config = $config;
         $this->envVarService = $envVarService;
     }
 
@@ -302,6 +304,9 @@ class Relationships implements InputConfiguringInterface
                     OsUtil::escapePosixShellArg($database['host']),
                     $database['port']
                 );
+                if ($this->config->get('sql.skip_ssl')) {
+                    $args .= ' --skip-ssl';
+                }
                 if ($schema !== '') {
                     $args .= ' ' . OsUtil::escapePosixShellArg($schema);
                 }
