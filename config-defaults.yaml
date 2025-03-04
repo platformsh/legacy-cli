@@ -269,6 +269,10 @@ api:
   # The timeout in seconds for a "git push" command. Set to null for no timeout.
   git_push_timeout: 3600
 
+sql:
+  # Pass the --skip-ssl option to mysql, mariadb, mysqldump and mariadb-dump.
+  skip_ssl: true
+
 ssh:
   ## Wildcard domains for SSH configuration.
   ## This is also used to detect whether to run diagnostics on an SSH connection error.
