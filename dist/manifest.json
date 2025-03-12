@@ -1,10 +1,10 @@
 [
     {
-        "version": "4.22.0",
-        "sha1": "ec4359c0c6f353190466bab61901ca30fad2f86b",
-        "sha256": "911a4b3420533b2eeecd5fa6e54c7c5bcb1baf41c170627f1c29ea3b6c7f7cf5",
+        "version": "4.23.0",
+        "sha1": "1f12059d5f0cac4bb7ad5b4b52724a3a2a331d5e",
+        "sha256": "2723c13c2c9abec9913b2501ab83845c248ff32ab8b3473c8b51596f715dd092",
         "name": "platform.phar",
-        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.22.0/platform.phar",
+        "url": "https://github.com/platformsh/legacy-cli/releases/download/v4.23.0/platform.phar",
         "php": {
             "min": "5.5.9"
         },
@@ -72,7 +72,8 @@
             "4.20.5": "* Fix environments listing by ID",
             "4.21.0": "New features:\n\n* Support listing teams for a single project.\n  - The `team:list` (`teams`) command will now filter the teams list to those \n    with access to the selected project, if any. The project is selected in the \n    normal way, e.g. by `--project` (`-p`), or the current Git repository.\n  - Use the `--all` option to list all the teams in the organization.\n  - Add the `granted_at` column (`--columns +granted_at`) to see when the team \n    was added to the project.\n\nOther changes:\n\n* Print necessary output in `--quiet` mode:  \n  Previously, the `--quiet` (`-q`) flag hid ALL output, on stderr and stdout.  \n  It now only hides message/error output (stderr), and continues to print \n  necessary output (stdout).\n* Cache organization data locally (for up to 10 minutes by default).\n* Display the project's organization in the welcome command.\n* Silence output from `ssh-cert:load --refresh-only` (in non-verbose mode).\n* Add debug info for session storage.\n* Explain various actions being unavailable with a code source integration:\n  synchronizing code, branching and merging.\n* Explain synchronizing being unavailable when the env or its parent is inactive.\n* Explain SSH unavailability when an env is paused.\n* Fix and improve project suspension warnings.\n* Improve formatting of Solr and PostgreSQL URLs.\n* Bump giggsey/libphonenumber-for-php from 8.13.45 to 8.13.46 (#1490)",
             "4.21.1": "* Re-allow output from \"ssh-cert:load --refresh-only\", now that quiet mode works (#1491)\n    This partially reverts 29a92850a2ce8a4f583e23bba75dcf1fdaad44c3\n* After branching, only set the upstream if the remote exists\n* Skip the cache when updating an org via the org:info command\n* Do not require SSH permission to list mounts\n* Handle old envs with outdated \"has_remote\" in the env:delete command",
-            "4.22.0": "New features:\n\n* Add `--init-repo` option for the `create` (`project:create`) command, as a \n  shortcut for creating a project from code in a public repository.\n* Before creating a project, check the organization's permissions. This uses the \n  `can-create` API endpoint, which supports more potential action prompts than \n  the previous version (which only supported phone verification), e.g. to create \n  a support ticket or to update the organization's billing details.\n\nOther changes:\n\n* Make `redis` and `ssh` args consistent; allow multiple args in the `redis` command.\n* Fix error after creating a new organization from a project directory.\n* Fix the project list cache not clearing automatically."
+            "4.22.0": "New features:\n\n* Add `--init-repo` option for the `create` (`project:create`) command, as a \n  shortcut for creating a project from code in a public repository.\n* Before creating a project, check the organization's permissions. This uses the \n  `can-create` API endpoint, which supports more potential action prompts than \n  the previous version (which only supported phone verification), e.g. to create \n  a support ticket or to update the organization's billing details.\n\nOther changes:\n\n* Make `redis` and `ssh` args consistent; allow multiple args in the `redis` command.\n* Fix error after creating a new organization from a project directory.\n* Fix the project list cache not clearing automatically.",
+            "4.23.0": "New features:\n\n* Add Valkey support\n* Refresh the token and retry requests on a 401 error in :curl commands\n\nOther functional changes:\n\n* Rename \"web\" command to \"console\" (\"web\" remains as an alias)\n* Show \"(legacy)\" in the version output, if not wrapped.\n* Fix the console URL in the project:create (create) command\n* Fix duplication of commands in Markdown-formatted list\n* installer: fix use of GitHub credentials on container where available\n* Update composer/ca-bundle and drush/drush dependencies\n\nDevelopment-related changes:\n\n* Add Golang integration tests in `/go-tests`\n* Run tests and security checks in GitHub Actions\n* Use Composer 2 in dev builds\n* Remove composer-bin-plugin\n* Update countries script for new CLDR format"
         }
     },
     {
