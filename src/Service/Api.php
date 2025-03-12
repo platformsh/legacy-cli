@@ -1181,9 +1181,11 @@ class Api
     /**
      * Returns the OAuth 2 access token.
      *
+     * @param bool $forceNew
+     *
      * @return string
      */
-    public function getAccessToken(): string
+    public function getAccessToken(bool $forceNew = false): string
     {
         // Check for an externally configured access token.
         if ($accessToken = $this->tokenConfig->getAccessToken()) {
@@ -1197,7 +1199,7 @@ class Api
 
         // If there is no token, or it has expired, make an API request, which
         // automatically obtains a token and saves it to the session.
-        if (!$token || $expires < time()) {
+        if (!$token || $expires < time() || $forceNew) {
             $this->getUser(null, true);
             $newSession = $this->getClient()->getConnector()->getSession();
             if (!$token = $newSession->get('accessToken')) {

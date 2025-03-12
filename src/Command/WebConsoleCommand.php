@@ -14,13 +14,14 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'web', description: 'Open the project in the Web Console')]
-class WebCommand extends CommandBase
+#[AsCommand(name: 'console', description: 'Open the project in the Console', aliases: ['web'])]
+class WebConsoleCommand extends CommandBase
 {
     public function __construct(private readonly Api $api, private readonly Config $config, private readonly Selector $selector, private readonly Url $url)
     {
         parent::__construct();
     }
+
     protected function configure(): void
     {
         Url::configureInput($this->getDefinition());
