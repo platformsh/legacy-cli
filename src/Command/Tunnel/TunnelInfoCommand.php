@@ -14,7 +14,7 @@ class TunnelInfoCommand extends TunnelCommandBase
           ->setDescription("View relationship info for SSH tunnels")
           ->addOption('property', 'P', InputOption::VALUE_REQUIRED, 'The relationship property to view')
           ->addOption('encode', 'c', InputOption::VALUE_NONE, 'Output as base64-encoded JSON')
-          ->addOption('env', null, InputOption::VALUE_NONE, 'Output as a list of environment variables');
+          ->addOption('env', null, InputOption::VALUE_NONE, 'Output as a list of environment variables ("export" statements)');
         $this->addProjectOption();
         $this->addEnvironmentOption();
         $this->addAppOption();
@@ -68,7 +68,7 @@ class TunnelInfoCommand extends TunnelCommandBase
             }
 
             $envPrefix = $this->config()->get('service.env_prefix');
-            $output->writeln($envPrefix . 'RELATIONSHIPS=' . base64_encode(json_encode($relationships)));
+            $output->writeln('export ' . $envPrefix . 'RELATIONSHIPS=' . base64_encode(json_encode($relationships)));
 
             foreach ($relationships as $name => $services) {
                 if (!isset($services[0])) {
@@ -76,7 +76,7 @@ class TunnelInfoCommand extends TunnelCommandBase
                 }
                 foreach ($services[0] as $key => $value) {
                     if (is_scalar($value)) {
-                        $output->writeln(strtoupper($name) . '_' . strtoupper($key) . '=' . $value);
+                        $output->writeln('export ' . strtoupper($name) . '_' . strtoupper($key) . '=' . $value);
                     }
                 }
             }
