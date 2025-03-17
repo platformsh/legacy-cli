@@ -416,6 +416,8 @@ class Config
             'AUTH_URL' => 'api.auth_url',
             'OAUTH2_AUTH_URL' => 'api.oauth2_auth_url',
             'OAUTH2_CLIENT_ID' => 'api.oauth2_client_id',
+            'OAUTH2_CLIENT_SECRET' => 'api.oauth2_client_secret',
+            'OAUTH2_SCOPE' => 'api.oauth2_scopes',
             'OAUTH2_TOKEN_URL' => 'api.oauth2_token_url',
             'OAUTH2_REVOKE_URL' => 'api.oauth2_revoke_url',
             'CERTIFIER_URL' => 'api.certifier_url',
@@ -671,6 +673,9 @@ class Config
         }
         if (!isset($this->config['api']['oauth2_client_id'])) {
             $this->config['api']['oauth2_client_id'] = $this->getStr('application.slug');
+        }
+        if (isset($this->config['api']['oauth2_scopes']) && is_string($this->config['api']['oauth2_scopes'])) {
+            $this->config['api']['oauth2_scopes'] = explode(' ', $this->config['api']['oauth2_scopes']);
         }
         if (!isset($this->config['detection']['console_domain']) && isset($this->config['service']['console_url'])) {
             $consoleDomain = parse_url((string) $this->config['service']['console_url'], PHP_URL_HOST);

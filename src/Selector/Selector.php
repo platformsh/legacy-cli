@@ -951,6 +951,10 @@ class Selector implements CompleterInterface
             }
         }
 
+        if ($this->api->isUsingClientCredentials()) {
+            throw new \InvalidArgumentException('An organization name or ID (--org) is required when client credentials are in use.');
+        }
+
         $userId = $this->api->getMyUserId();
         $organizations = $this->api->getClient()->listOrganizationsWithMember($userId);
 
