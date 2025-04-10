@@ -32,7 +32,7 @@ class ActivityListCommand extends CommandBase
         $this->addExample('List recent activities for the current environment')
              ->addExample('List all recent activities for the current project', '--all')
              ->addExample('List recent pushes', '--type environment.push')
-             ->addExample('List pushes made before 15 March', '--type environment.push --start 2015-03-15');
+             ->addExample('List pushes made before 15 March', '--type environment.push --start 2025-03-15');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
