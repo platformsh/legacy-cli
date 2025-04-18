@@ -47,7 +47,7 @@ class EnvironmentDeployCommand extends CommandBase
             return 1;
         }
 
-        $activities = $environment->getActivities(0, null, null, "staged"); //TODO: set to Activity::STATE_CANCELLED
+        $activities = $environment->getActivities(0, null, null, "staged"); //TODO: set to Activity::STATE_STAGED
         if (count($activities) < 1) {
             $output->writeln("Nothing to deploy");
             return 0;
