@@ -12,6 +12,7 @@ application:
   manifest_url: 'https://platform.sh/cli/manifest.json'
   github_repo: 'platformsh/legacy-cli'
 
+  mark_unwrapped_legacy: true
   wrapped_disabled_commands:
     - self:install
     - self:update

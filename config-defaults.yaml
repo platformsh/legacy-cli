@@ -71,6 +71,9 @@ application:
   # Disabled commands (a list of full command names).
   disabled_commands: []
 
+  # Whether to mark this CLI as a 'legacy' version if not under the Go wrapper.
+  mark_unwrapped_legacy: false
+
   # Disabled commands under the Go wrapper (a list of full command names).
   wrapped_disabled_commands: []
 
