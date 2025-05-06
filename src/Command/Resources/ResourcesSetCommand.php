@@ -138,6 +138,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $updates = [];
         $current = [];
+        $hasGuaranteedCPU = false;
         foreach ($services as $name => $service) {
             $type = $this->typeName($service);
             $group = $this->group($service);
@@ -207,6 +208,15 @@ class ResourcesSetCommand extends ResourcesCommandBase
             } elseif (!isset($properties['resources']['profile_size'])) {
                 $this->stdErr->writeln(sprintf('A profile size is required for the %s <comment>%s</comment>.', $type, $name));
                 $errored = true;
+            }
+
+            // Check if we have guaranteed CPU changes.
+            if (isset($updates[$group][$name]['resources']['profile_size'])) {
+                $serviceProfileSize = $updates[$group][$name]['resources']['profile_size'];
+                $serviceProfileType = $properties['container_profile'];
+                if (isset($containerProfiles[$serviceProfileType][$serviceProfileSize]) && $containerProfiles[$serviceProfileType][$serviceProfileSize]['type'] == 'guaranteed') {
+                    $hasGuaranteedCPU = true;
+                }
             }
 
             // Set the instance count.
@@ -319,7 +329,17 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+
+        $questionText = 'Are you sure you want to continue?';
+        if ($hasGuaranteedCPU) {
+            $questionText = 'You have chosen to allocate guaranteed resources across your chosen apps and services.
+This change will increase your resource costs.
+Please make sure you have reviewed our pricing page (https://upsun.com/pricing/).
+
+This process requires a redeployment of your containers on their own host, which may take up to 7 minutes to complete.
+Would you like to continue?';
+        }
+        if (!$questionHelper->confirm($questionText)) {
             return 1;
         }
 
