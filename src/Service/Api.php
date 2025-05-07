@@ -1438,39 +1438,19 @@ class Api
      *
      * @param string $id
      * @param Project|null $project
-     * @param bool $forWrite
      *
      * @throws \GuzzleHttp\Exception\RequestException
      *
      * @return false|Subscription
      *   The subscription or false if not found.
      */
-    public function loadSubscription($id, Project $project = null, $forWrite = true)
+    public function loadSubscription($id, Project $project = null)
     {
         $organizations_enabled = $this->config->getWithDefault('api.organizations', false);
         if (!$organizations_enabled) {
             // Always load the subscription directly if the Organizations API
             // is not enabled.
             return $this->getClient()->getSubscription($id);
-        }
-
-        // Attempt to load the subscription directly.
-        // This is possible if the user is on the project's access list, or
-        // if the user has access to all subscriptions.
-        // However, while this legacy API works for reading, it won't always work for writing.
-        if (!$forWrite) {
-            try {
-                $subscription = $this->getClient()->getSubscription($id);
-            } catch (BadResponseException $e) {
-                if (!$e->getResponse() || $e->getResponse()->getStatusCode() !== 403) {
-                    throw $e;
-                }
-                $subscription = false;
-            }
-            if ($subscription) {
-                $this->debug('Loaded the subscription directly');
-                return $subscription;
-            }
         }
 
         // Use the project's organization, if known.

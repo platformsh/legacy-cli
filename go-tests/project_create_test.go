@@ -44,6 +44,8 @@ func TestProjectCreate(t *testing.T) {
 	assert.Contains(t, stdErr, "Project ID: "+projectID)
 	assert.Contains(t, stdErr, "Project title: "+title)
 	assert.Contains(t, stdErr, "Console URL: "+consoleURL)
+
+	f.Run("subscription:info", "-p", projectID)
 }
 
 func TestProjectCreate_CanCreateError(t *testing.T) {
