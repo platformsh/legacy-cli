@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
-    protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
+    protected $tableHeader = ['size' => 'Size name', 'type' => 'CPU Type', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
 
     protected function configure()
     {
@@ -18,7 +18,8 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             ->setAliases(['resources:sizes'])
             ->setDescription('List container profile sizes')
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')
-            ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
+            ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name')
+            ->addOption('cpu-type', null, InputOption::VALUE_OPTIONAL, 'A CPU type');
         $this->addProjectOption()->addEnvironmentOption();
         Table::configureInput($this->getDefinition(), $this->tableHeader);
     }
@@ -78,8 +79,12 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $table = $this->getService('table');
 
         $rows = [];
+        $cpuTypeOption = $input->getOption('cpu-type');
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            $rows[] = ['size' => $sizeName, 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
+            if ($cpuTypeOption != "" && $sizeInfo['type'] != $cpuTypeOption) {
+                continue;
+            }
+            $rows[] = ['size' => $sizeName, 'type' => $sizeInfo['type'], 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
         }
 
         if (!$table->formatIsMachineReadable()) {
