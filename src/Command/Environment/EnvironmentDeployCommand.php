@@ -4,6 +4,7 @@ namespace Platformsh\Cli\Command\Environment;
 use Platformsh\Cli\Command\CommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Service\ActivityMonitor;
+use Platformsh\Client\Model\Activity;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -47,7 +48,7 @@ class EnvironmentDeployCommand extends CommandBase
             return 1;
         }
 
-        $activities = $environment->getActivities(0, null, null, "staged"); //TODO: set to Activity::STATE_STAGED
+        $activities = $environment->getActivities(0, null, null, Activity::STATE_STAGED);
         if (count($activities) < 1) {
             $output->writeln("Nothing to deploy");
             return 0;
