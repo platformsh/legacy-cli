@@ -177,6 +177,7 @@ class ActivityLoader
             'environment.cron',
             'environment.deactivate',
             'environment.delete',
+            'environment.deploy',
             'environment.domain.create',
             'environment.domain.delete',
             'environment.domain.update',
