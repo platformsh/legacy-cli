@@ -30,7 +30,7 @@ class CurlCli implements InputConfiguringInterface {
         $definition->addOption(new InputOption('disable-compression', null, InputOption::VALUE_NONE, 'Do not use the curl --compressed flag'));
         $definition->addOption(new InputOption('enable-glob', null, InputOption::VALUE_NONE, 'Enable curl globbing (remove the --globoff flag)'));
         $definition->addOption(new InputOption('no-retry-401', null, InputOption::VALUE_NONE, 'Disable automatic retry on 401 errors'));
-        $definition->addOption(new InputOption('fail', 'f', InputOption::VALUE_NONE, 'Fail with no output on an error response. Default, unless --no-retry-401 is added.'));
+        $definition->addOption(new InputOption('fail', 'f', InputOption::VALUE_NONE, 'Fail with no output on an error response'));
         $definition->addOption(new InputOption('header', 'H', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Extra header(s)'));
     }
 
@@ -56,14 +56,6 @@ class CurlCli implements InputConfiguringInterface {
             $url .= '/' . ltrim($path, '/');
         }
 
-        $retryOn401 = !$input->getOption('no-retry-401');
-        if ($retryOn401) {
-            // Force --fail if retrying on 401 errors.
-            // This ensures that the error's output will not be printed, which
-            // is difficult to prevent otherwise.
-            $input->setOption('fail', true);
-        }
-
         $token = $this->api->getAccessToken();
 
         // Censor the access token: this can be applied to verbose output.
@@ -72,6 +64,8 @@ class CurlCli implements InputConfiguringInterface {
         };
 
         $commandline = $this->buildCurlCommand($url, $token, $input);
+
+        $retryOn401 = !$input->getOption('no-retry-401');
 
         // Add --verbose if -vv is provided, or if retrying on 401 errors.
         // In the latter case the verbose output will be intercepted and hidden.
