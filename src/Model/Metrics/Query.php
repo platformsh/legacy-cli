@@ -9,79 +9,73 @@ namespace Platformsh\Cli\Model\Metrics;
  */
 final class Query
 {
-    /** @var int Interval in seconds */
-    private int $interval = 0;
-    /** @var int Start timestamp */
-    private int $startTime = 0;
-    /** @var int End timestamp */
-    private int $endTime = 0;
-    /** @var string */
-    private string $collection = '';
-    /** @var array<string, string> */
-    private array $fields = [];
-    /** @var array<string, string> */
-    private array $filters = [];
+    /** @var array<string>|null */
+    private ?array $services = null;
+    /** @var array<string> */
+    private array $types = [];
+    /** @var array<string> */
+    private array $aggs = [];
 
-    public function setInterval(int $interval): self
+    public function __construct(
+        private int $startTime,
+        private int $endTime,
+    ) {}
+
+    public static function fromTimeSpec(TimeSpec $timeSpec): self
     {
-        $this->interval = $interval;
+        return new self($timeSpec->getStartTime(), $timeSpec->getEndTime());
+    }
+
+    /** @param array<String>|null $services */
+    public function setServices(?array $services): self
+    {
+        $this->services = $services;
+
         return $this;
     }
 
-    public function setStartTime(int $startTime): self
+    /** @param array<String> $types */
+    public function setTypes(array $types): self
     {
-        $this->startTime = $startTime;
+        $this->types = $types;
+
         return $this;
     }
 
-    public function setEndTime(int $endTime): self
+    /** @param array<String> $aggs */
+    public function setAggs(array $aggs): self
     {
-        $this->endTime = $endTime;
+        $this->aggs = $aggs;
+
         return $this;
     }
 
-    public function setCollection(string $collection): self
-    {
-        $this->collection = $collection;
-        return $this;
-    }
-
-    public function addField(string $name, string $expression): self
-    {
-        $this->fields[$name] = $expression;
-        return $this;
-    }
-
-    public function addFilter(string $key, string $value): self
-    {
-        $this->filters[$key] = $value;
-        return $this;
-    }
-
-    /**
-     * Returns the query as an array.
-     * @return array<string, mixed>
-     */
+    /** @return array<string, array<string>|int|string> */
     public function asArray(): array
     {
         $query = [
-            'stream' => [
-                'stream' => 'metrics',
-                'collection' => $this->collection,
-            ],
-            'interval' => $this->interval . 's',
-            'fields' => [],
-            'range' => [
-                'from' => date('Y-m-d\TH:i:s.uP', $this->startTime),
-                'to' => date('Y-m-d\TH:i:s.uP', $this->endTime),
-            ],
+            'from' => $this->startTime,
+            'to' => $this->endTime,
         ];
-        foreach ($this->fields as $name => $expr) {
-            $query['fields'][] = ['name' => $name, 'expr' => $expr];
+
+        if (!empty($this->services)) {
+            $query['services_mode'] = '1';
+            $query['services'] = $this->services;
         }
-        foreach ($this->filters as $key => $value) {
-            $query['filters'][] = ['key' => $key, 'value' => $value];
+
+        if (!empty($this->types)) {
+            $query['types'] = $this->types;
         }
+
+        if (!empty($this->aggs)) {
+            $query['aggs'] = $this->aggs;
+        }
+
         return $query;
+    }
+
+    public function asString(): string
+    {
+        return '?' . http_build_query($this->asArray(), '', '&', PHP_QUERY_RFC3986);
     }
 }
