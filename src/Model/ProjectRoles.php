@@ -10,6 +10,7 @@ class ProjectRoles
      * Formats project-related permissions.
      *
      * @param string[] $permissions
+     *
      * @throws \JsonException
      */
     public function formatPermissions(array $permissions, bool $machineReadable): string
@@ -26,7 +27,7 @@ class ProjectRoles
         $byType = ['production' => '', 'staging' => '', 'development' => ''];
         foreach ($permissions as $permission) {
             $parts = explode(':', $permission, 2);
-            if (count($parts) === 2) {
+            if (2 === count($parts)) {
                 [$environmentType, $role] = $parts;
                 $byType[$environmentType] = $role;
             }
