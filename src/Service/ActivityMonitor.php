@@ -121,7 +121,8 @@ class ActivityMonitor
 
             // Exit the loop if the log finished and the activity is complete.
             if ($seal) {
-                if ($activity->isComplete() || $activity->state === Activity::STATE_CANCELLED) {
+                if ($activity->isComplete() || $activity->state === Activity::STATE_CANCELLED
+                    || $activity->state === Activity::STATE_STAGED) {
                     break;
                 }
                 continue;
