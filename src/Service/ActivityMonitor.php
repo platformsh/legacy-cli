@@ -525,24 +525,27 @@ class ActivityMonitor
         switch ($activity->result) {
             case Activity::RESULT_SUCCESS:
                 $stdErr->writeln('The activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
-                return true;
 
             case Activity::RESULT_FAILURE:
                 if ($activity->state === Activity::STATE_CANCELLED) {
                     $stdErr->writeln('The activity was cancelled: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
-                    return false;
                 }
                 $stdErr->writeln('The activity failed: ' . self::getFormattedDescription($activity, true, true, 'red'));
                 if ($logOnFailure) {
                     $stdErr->writeln('  <error>Log:</error>');
                     $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                 }
-                return false;
 
             default:
                 $stdErr->writeln('The activity finished with an unknown result: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
-                return false;
         }
+
+        if ($activity->state === Activity::STATE_STAGED) {
+            $stdErr->writeln(sprintf('To deploy staged changes, run: <info>%s deploy</info>',
+                $this->config->get('application.executable')));
+        }
+
+        return true;
     }
 
     /**

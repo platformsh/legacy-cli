@@ -35,10 +35,9 @@ func TestEnvironmentDeploy(t *testing.T) {
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 	f.Run("cc")
 
-	assertTrimmed(t, `Nothing to deploy`, f.Run("env:deploy", "-p", projectID, "-e", "main"))
-
-	created, _ := time.Parse(time.RFC3339, "2014-04-01T10:00:00Z")
-	updated, _ := time.Parse(time.RFC3339, "2014-04-01T11:00:00Z")
+	created1, _ := time.Parse(time.RFC3339, "2014-04-01T10:00:00Z")
+	created2, _ := time.Parse(time.RFC3339, "2014-04-02T10:00:00Z")
+	updated, _ := time.Parse(time.RFC3339, "2014-04-02T11:00:00Z")
 	apiHandler.SetProjectActivities(projectID, []*mockapi.Activity{
 		{
 			ID:                "act1",
@@ -50,7 +49,7 @@ func TestEnvironmentDeploy(t *testing.T) {
 			Environments:      []string{"main"},
 			Description:       "<user>Mock User</user> pushed to <environment>main</environment>",
 			Text:              "Mock User pushed to main",
-			CreatedAt:         created,
+			CreatedAt:         created1,
 			UpdatedAt:         updated,
 		}, {
 			ID:                "act2",
@@ -62,20 +61,19 @@ func TestEnvironmentDeploy(t *testing.T) {
 			Environments:      []string{"main"},
 			Description:       "<user>Mock User</user> created variable <variable>X</variable> on environment <environment>main</environment>",
 			Text:              "Mock User created variable X on environment main",
-			CreatedAt:         created,
+			CreatedAt:         created2,
 			UpdatedAt:         updated,
 		},
 	})
 
 	assertTrimmed(t, `
-You are about to deploy the following changes on the environment main:
 +------+-------------------------+---------------------------------------------+-----------------------------+---------+
 | ID   | Created                 | Description                                 | Type                        | Result  |
 +------+-------------------------+---------------------------------------------+-----------------------------+---------+
+| act2 | 2014-04-02T10:00:00+00: | Mock User created variable X on environment | environment.variable.create | success |
+|      | 00                      | main                                        |                             |         |
 | act1 | 2014-04-01T10:00:00+00: | Mock User pushed to main                    | environment.push            | success |
 |      | 00                      |                                             |                             |         |
-| act2 | 2014-04-01T10:00:00+00: | Mock User created variable X on environment | environment.variable.create | success |
-|      | 00                      | main                                        |                             |         |
 +------+-------------------------+---------------------------------------------+-----------------------------+---------+
 `, f.Run("env:deploy", "-p", projectID, "-e", "main"))
 }

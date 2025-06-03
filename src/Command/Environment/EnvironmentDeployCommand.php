@@ -23,7 +23,7 @@ class EnvironmentDeployCommand extends CommandBase
         $this
             ->setName('environment:deploy')
             ->setAliases(['deploy'])
-            ->setDescription('Deploy an environment');
+            ->setDescription('Deploy an environment\'s staged changes');
         $this->addProjectOption()
             ->addEnvironmentOption();
         $this->addWaitOptions();
@@ -50,7 +50,10 @@ class EnvironmentDeployCommand extends CommandBase
 
         $activities = $environment->getActivities(0, null, null, Activity::STATE_STAGED);
         if (count($activities) < 1) {
-            $output->writeln("Nothing to deploy");
+            $this->stdErr->writeln(sprintf(
+                'The environment %s has no staged changes to deploy.',
+                $this->api()->getEnvironmentLabel($environment, 'comment')
+            ));
             return 0;
         }
 
@@ -71,12 +74,14 @@ class EnvironmentDeployCommand extends CommandBase
             $rows[] = $row;
         }
 
-        $output->writeln('You are about to deploy the following changes on the environment <comment>' . $environment->id . '</comment>:');
+        $this->stdErr->writeln(sprintf('The following changes will be deployed to the environment %s:',
+            $this->api()->getEnvironmentLabel($environment, 'comment')
+        ));
         $table->render($rows, $this->tableHeader);
 
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
-        if (!$questionHelper->confirm('Continue?')) {
+        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
             return 1;
         }
 
