@@ -2,6 +2,7 @@ package tests
 
 import (
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -87,4 +88,51 @@ func TestActivityList(t *testing.T) {
 
 	assertTrimmed(t, "complete", f.Run("act:get", "-p", projectID, "-e", ".", "act1", "-P", "state"))
 	assertTrimmed(t, "2014-04-01T10:00:00+00:00", f.Run("act:get", "-p", projectID, "-e", ".", "act1", "-P", "created_at"))
+
+	// Generate a longer list of activities.
+	var activities = make([]*mockapi.Activity, 30)
+	for i := range activities {
+		num := i + 1
+		createdAt := aprilFoolsDay10am.Add(time.Duration(i) * time.Minute)
+		varName := "X" + strconv.Itoa(num)
+		activities[i] = &mockapi.Activity{
+			ID:                "act" + strconv.Itoa(num),
+			Type:              "environment.variable.create",
+			State:             "complete",
+			Result:            "success",
+			CompletionPercent: 100,
+			Project:           projectID,
+			Environments:      []string{"main"},
+			Description:       "<user>Mock User</user> created variable <variable>" + varName + "</variable> on environment <environment>main</environment>",
+			Text:              "Mock User created variable " + varName + " on environment main",
+			CreatedAt:         createdAt,
+			UpdatedAt:         createdAt,
+		}
+	}
+	apiHandler.SetProjectActivities(projectID, activities)
+
+	assertTrimmed(t, `
+ID	Created	Description	Progress	State	Result
+act30	2014-04-01T10:29:00+00:00	Mock User created variable X30 on environment main	100%	complete	success
+act29	2014-04-01T10:28:00+00:00	Mock User created variable X29 on environment main	100%	complete	success
+act28	2014-04-01T10:27:00+00:00	Mock User created variable X28 on environment main	100%	complete	success
+act27	2014-04-01T10:26:00+00:00	Mock User created variable X27 on environment main	100%	complete	success
+act26	2014-04-01T10:25:00+00:00	Mock User created variable X26 on environment main	100%	complete	success`,
+		f.Run("act", "-p", projectID, "-e", ".", "--format", "plain", "--limit", "5"))
+
+	assertTrimmed(t, `
+ID	Created	Description	Progress	State	Result
+act30	2014-04-01T10:29:00+00:00	Mock User created variable X30 on environment main	100%	complete	success
+act29	2014-04-01T10:28:00+00:00	Mock User created variable X29 on environment main	100%	complete	success
+act28	2014-04-01T10:27:00+00:00	Mock User created variable X28 on environment main	100%	complete	success
+act27	2014-04-01T10:26:00+00:00	Mock User created variable X27 on environment main	100%	complete	success
+act26	2014-04-01T10:25:00+00:00	Mock User created variable X26 on environment main	100%	complete	success
+act25	2014-04-01T10:24:00+00:00	Mock User created variable X25 on environment main	100%	complete	success
+act24	2014-04-01T10:23:00+00:00	Mock User created variable X24 on environment main	100%	complete	success
+act23	2014-04-01T10:22:00+00:00	Mock User created variable X23 on environment main	100%	complete	success
+act22	2014-04-01T10:21:00+00:00	Mock User created variable X22 on environment main	100%	complete	success
+act21	2014-04-01T10:20:00+00:00	Mock User created variable X21 on environment main	100%	complete	success
+act20	2014-04-01T10:19:00+00:00	Mock User created variable X20 on environment main	100%	complete	success
+act19	2014-04-01T10:18:00+00:00	Mock User created variable X19 on environment main	100%	complete	success`,
+		f.Run("act", "-p", projectID, "-e", ".", "--format", "plain", "--limit", "12"))
 }

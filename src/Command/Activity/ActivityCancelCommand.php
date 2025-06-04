@@ -59,7 +59,7 @@ class ActivityCancelCommand extends ActivityCommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
+                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, self::DEFAULT_FIND_LIMIT, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel') ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
@@ -67,7 +67,7 @@ class ActivityCancelCommand extends ActivityCommandBase
                 }
             }
         } else {
-            $activities = $loader->loadFromInput($apiResource, $input, 10, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
+            $activities = $loader->loadFromInput($apiResource, $input, self::DEFAULT_FIND_LIMIT, [Activity::STATE_PENDING, Activity::STATE_IN_PROGRESS], 'cancel');
             if (\count($activities) === 0) {
                 $this->stdErr->writeln('No cancellable activities found');
 
