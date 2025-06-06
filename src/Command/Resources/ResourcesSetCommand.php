@@ -130,6 +130,17 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $containerProfiles = $nextDeployment->container_profiles;
 
+        // Remove guaranteed profiles if project does not support it.
+        $supportsGuaranteedCPU = !empty($nextDeployment->project_info['settings']['enable_guaranteed_resources']) &&
+            !empty($nextDeployment->project_info['capabilities']['guaranteed_resources']['enabled']);
+        foreach ($containerProfiles as $profileName => $profile) {
+            foreach ($profile as $sizeName => $sizeInfo) {
+                if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') {
+                    unset($containerProfiles[$profileName][$sizeName]);
+                }
+            }
+        }
+
         // Ask all questions if nothing was specified on the command line.
         $showCompleteForm = $input->isInteractive()
             && $input->getOption('size') === []
