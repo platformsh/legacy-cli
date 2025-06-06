@@ -9,6 +9,9 @@ use Stecman\Component\Symfony\Console\BashCompletion\CompletionContext;
 
 class ActivityCommandBase extends CommandBase implements CompletionAwareInterface
 {
+    const DEFAULT_LIST_LIMIT = 10; // Display a digestible number of activities by default.
+    const DEFAULT_FIND_LIMIT = 25; // This is the current limit per page of results.
+
     public function completeOptionValues($optionName, CompletionContext $context)
     {
         switch ($optionName) {

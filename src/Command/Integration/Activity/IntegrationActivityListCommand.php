@@ -2,6 +2,7 @@
 
 namespace Platformsh\Cli\Command\Integration\Activity;
 
+use Platformsh\Cli\Command\Activity\ActivityCommandBase;
 use Platformsh\Cli\Command\Integration\IntegrationCommandBase;
 use Platformsh\Cli\Console\AdaptiveTableCell;
 use Platformsh\Cli\Console\ArrayArgument;
@@ -50,7 +51,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
                 . "\n" . ArrayArgument::SPLIT_HELP
                 . "\nThe % or * characters can be used as a wildcard to exclude types."
             )
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', 10)
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit the number of results displayed', ActivityCommandBase::DEFAULT_LIST_LIMIT)
             ->addOption('start', null, InputOption::VALUE_REQUIRED, 'Only activities created before this date will be listed')
             ->addOption('state', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Filter activities by state.' . "\n" . ArrayArgument::SPLIT_HELP)
             ->addOption('result', null, InputOption::VALUE_REQUIRED, 'Filter activities by result')
@@ -123,7 +124,7 @@ class IntegrationActivityListCommand extends IntegrationCommandBase
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');
 
-            $max = $input->getOption('limit') ? (int) $input->getOption('limit') : 10;
+            $max = $input->getOption('limit') ? (int) $input->getOption('limit') : ActivityCommandBase::DEFAULT_LIST_LIMIT;
             $maybeMoreAvailable = count($activities) === $max;
             if ($maybeMoreAvailable) {
                 $this->stdErr->writeln('');

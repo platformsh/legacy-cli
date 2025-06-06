@@ -71,7 +71,7 @@ class ActivityLogCommand extends ActivityCommandBase
             $activity = $this->getSelectedProject()
                 ->getActivity($id);
             if (!$activity) {
-                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, 10) ?: [], 'Activity');
+                $activity = $this->api()->matchPartialId($id, $loader->loadFromInput($apiResource, $input, self::DEFAULT_FIND_LIMIT) ?: [], 'Activity');
                 if (!$activity) {
                     $this->stdErr->writeln("Activity not found: <error>$id</error>");
 
