@@ -16,7 +16,7 @@ class ActivityCommandBase extends CommandBase implements CompletionAwareInterfac
             case 'exclude-type':
                 return ActivityLoader::getAvailableTypes();
             case 'state':
-                return ['in_progress', 'pending', 'complete', 'cancelled'];
+                return ['in_progress', 'pending', 'complete', 'cancelled', 'staged'];
             case 'result':
                 return ['success', 'failure'];
         }
