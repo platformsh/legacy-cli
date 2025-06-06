@@ -81,10 +81,10 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $rows = [];
         $cpuTypeOption = $input->getOption('cpu-type');
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            if ($cpuTypeOption != "" && $sizeInfo['type'] != $cpuTypeOption) {
+            if ($cpuTypeOption != "" && $sizeInfo['cpu_type'] != $cpuTypeOption) {
                 continue;
             }
-            $rows[] = ['size' => $sizeName, 'type' => $sizeInfo['type'], 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
+            $rows[] = ['size' => $sizeName, 'type' => $sizeInfo['cpu_type'], 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
         }
 
         if (!$table->formatIsMachineReadable()) {

@@ -214,7 +214,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             if (isset($updates[$group][$name]['resources']['profile_size'])) {
                 $serviceProfileSize = $updates[$group][$name]['resources']['profile_size'];
                 $serviceProfileType = $properties['container_profile'];
-                if (isset($containerProfiles[$serviceProfileType][$serviceProfileSize]) && $containerProfiles[$serviceProfileType][$serviceProfileSize]['type'] == 'guaranteed') {
+                if (isset($containerProfiles[$serviceProfileType][$serviceProfileSize]) && $containerProfiles[$serviceProfileType][$serviceProfileSize]['cpu_type'] == 'guaranteed') {
                     $hasGuaranteedCPU = true;
                 }
             }
@@ -336,7 +336,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 This change will increase your resource costs.
 Please make sure you have reviewed our pricing page (https://upsun.com/pricing/).
 
-This process requires a redeployment of your containers on their own host, which may take up to 7 minutes to complete.
+This process requires a redeployment of your containers on their own host, which may take a few minutes to complete.
 Would you like to continue?';
         }
         if (!$questionHelper->confirm($questionText)) {
