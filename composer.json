@@ -24,7 +24,8 @@
         "symfony/polyfill-iconv": "^1.19",
         "padraic/humbug_get_contents": "dev-allow-php-8 as 1.1.3",
         "platformsh/oauth2": "^1@beta",
-        "giggsey/libphonenumber-for-php-lite": "^8.13"
+        "giggsey/libphonenumber-for-php-lite": "^8.13",
+        "symfony/var-dumper": "^7.3"
     },
     "repositories": [
         {
