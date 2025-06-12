@@ -92,6 +92,10 @@ class EnvironmentInfoCommand extends CommandBase
             $headings[] = new AdaptiveTableCell($key, ['wrap' => false]);
             $values[] = $this->formatter->format($value, $key);
         }
+
+        $headings[] = 'automatic_deployments';
+        $values[] = $environment->getSettings()->explicit_deployments_enabled ? 'false' : 'true';
+
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
         $table->renderSimple($values, $headings);

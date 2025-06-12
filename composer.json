@@ -8,7 +8,7 @@
         "guzzlehttp/guzzle": "^5.3",
         "guzzlehttp/ringphp": "^1.1",
         "platformsh/console-form": ">=0.0.37 <2.0",
-        "platformsh/client": ">=0.87.0 <2.0",
+        "platformsh/client": "1.x-dev",
         "symfony/console": "^3.0 >=3.2",
         "symfony/yaml": "^3.0 || ^2.6",
         "symfony/finder": "^3.0",
@@ -27,6 +27,12 @@
         "symfony/polyfill-mbstring": "^1.19",
         "symfony/polyfill-iconv": "^1.19"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/vitolkachova/platformsh-client-php"
+        }
+    ],
     "suggest": {
         "drush/drush": "For Drupal projects"
     },
