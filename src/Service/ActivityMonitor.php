@@ -525,17 +525,18 @@ class ActivityMonitor
         switch ($activity->result) {
             case Activity::RESULT_SUCCESS:
                 $stdErr->writeln('The activity succeeded: ' . self::getFormattedDescription($activity, true, true, 'green'));
-
+                break;
             case Activity::RESULT_FAILURE:
                 if ($activity->state === Activity::STATE_CANCELLED) {
                     $stdErr->writeln('The activity was cancelled: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
+                    break;
                 }
                 $stdErr->writeln('The activity failed: ' . self::getFormattedDescription($activity, true, true, 'red'));
                 if ($logOnFailure) {
                     $stdErr->writeln('  <error>Log:</error>');
                     $stdErr->writeln($this->indent($this->formatLog($activity->readLog())));
                 }
-
+                break;
             default:
                 $stdErr->writeln('The activity finished with an unknown result: ' . self::getFormattedDescription($activity, true, true, 'yellow'));
         }
