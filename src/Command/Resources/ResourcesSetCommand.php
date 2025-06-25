@@ -342,13 +342,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $this->stdErr->writeln('');
 
         $questionText = 'Are you sure you want to continue?';
-        if ($hasGuaranteedCPU) {
-            $questionText = 'You have chosen to allocate guaranteed resources across your chosen apps and services.
-This change will increase your resource costs.
-Please make sure you have reviewed our pricing page (https://upsun.com/pricing/).
-
-This process requires a redeployment of your containers on their own host, which may take a few minutes to complete.
-Would you like to continue?';
+        if ($hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_msg')) {
+            $questionText = trim($this->config()->get('warnings.guaranteed_resources_msg'))
+                . "\n\n" . "Are you sure you want to continue?";
         }
         if (!$questionHelper->confirm($questionText)) {
             return 1;
