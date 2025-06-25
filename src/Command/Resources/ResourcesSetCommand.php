@@ -131,8 +131,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $containerProfiles = $nextDeployment->container_profiles;
 
         // Remove guaranteed profiles if project does not support it.
-        $supportsGuaranteedCPU = !empty($nextDeployment->project_info['settings']['enable_guaranteed_resources']) &&
-            !empty($nextDeployment->project_info['capabilities']['guaranteed_resources']['enabled']);
+        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
         foreach ($containerProfiles as $profileName => $profile) {
             foreach ($profile as $sizeName => $sizeInfo) {
                 if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') {

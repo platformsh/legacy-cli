@@ -79,8 +79,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $table = $this->getService('table');
 
         $rows = [];
-        $supportsGuaranteedCPU = !empty($nextDeployment->project_info['settings']['enable_guaranteed_resources']) &&
-            !empty($nextDeployment->project_info['capabilities']['guaranteed_resources']['enabled']);
+        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
         $cpuTypeOption = $input->getOption('cpu-type');
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
             if ((!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') || ($cpuTypeOption != "" && $sizeInfo['cpu_type'] != $cpuTypeOption)) {
