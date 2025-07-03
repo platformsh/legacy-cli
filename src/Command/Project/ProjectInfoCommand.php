@@ -116,11 +116,14 @@ class ProjectInfoCommand extends CommandBase
         $isMap = str_contains($property, '.');
         if ($isMap) {
             [$mapName, $mapKey] = explode('.', $property, 2);
-        }
-        if ($isMap) {
             $type = $this->getType($mapName . '.*');
+            $currentMap = $project->getProperty($mapName) ?? [];
+            $currentValue = $currentMap[$mapKey] ?? null;
+            $update = [$mapName => [$mapKey => $value]];
         } else {
             $type = $this->getType($property);
+            $currentValue = $project->getProperty($property);
+            $update = [$property => $value];
         }
 
         if (!$type) {
@@ -132,12 +135,6 @@ class ProjectInfoCommand extends CommandBase
         }
         settype($value, $type);
 
-        if ($isMap) {
-            $currentMap = $project->getProperty($mapName) ?? [];
-            $currentValue = $currentMap[$mapKey] ?? null;
-        } else {
-            $currentValue = $project->getProperty($property);
-        }
         if ($currentValue === $value) {
             $this->stdErr->writeln(
                 "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property),
@@ -147,10 +144,6 @@ class ProjectInfoCommand extends CommandBase
 
         }
 
-        $update = [$property => $value];
-        if ($isMap) {
-            $update = [$mapName => [$mapKey => $value]];
-        }
         $project->ensureFull();
         $result = $project->update($update);
         $this->stdErr->writeln(sprintf(
