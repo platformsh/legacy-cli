@@ -75,3 +75,9 @@ warnings:
     Otherwise contact sales first to upgrade your plan.
 
     See: https://docs.platform.sh/overview/get-support.html
+
+  guaranteed_resources_msg: |
+    You have chosen to allocate guaranteed resources for app(s) and/or service(s).
+    This change may affect resource costs. See: <info>https://upsun.com/pricing/</info>
+
+    This process requires a redeployment of containers on their own host, which may take a few minutes to complete.

@@ -10,7 +10,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ResourcesSizeListCommand extends ResourcesCommandBase
 {
-    protected $tableHeader = ['size' => 'Size name', 'cpu' => 'CPU', 'memory' => 'Memory (MB)'];
+    protected $tableHeader = [
+        'size' => 'Size name',
+        'cpu' => 'CPU',
+        'memory' => 'Memory (MB)',
+        'cpu_type' => 'CPU type',
+    ];
+    protected $defaultColumns = ['size', 'cpu', 'memory'];
 
     protected function configure()
     {
@@ -20,7 +26,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             ->addOption('service', 's', InputOption::VALUE_REQUIRED, 'A service name')
             ->addOption('profile', null, InputOption::VALUE_REQUIRED, 'A profile name');
         $this->addProjectOption()->addEnvironmentOption();
-        Table::configureInput($this->getDefinition(), $this->tableHeader);
+        Table::configureInput($this->getDefinition(), $this->tableHeader, $this->defaultColumns);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -78,8 +84,21 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $table = $this->getService('table');
 
         $rows = [];
+        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
+        $defaultColumns = $this->defaultColumns;
+        if ($supportsGuaranteedCPU) {
+            $defaultColumns[] = 'cpu_type';
+        }
         foreach ($containerProfiles[$profile] as $sizeName => $sizeInfo) {
-            $rows[] = ['size' => $sizeName, 'cpu' => $this->formatCPU($sizeInfo['cpu']), 'memory' => $sizeInfo['memory']];
+            if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') {
+                continue;
+            }
+            $rows[] = [
+                'size' => $sizeName,
+                'cpu' => $this->formatCPU($sizeInfo['cpu']),
+                'memory' => $sizeInfo['memory'],
+                'cpu_type' => isset($sizeInfo['cpu_type']) ? $sizeInfo['cpu_type'] : '',
+            ];
         }
 
         if (!$table->formatIsMachineReadable()) {
@@ -95,7 +114,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             }
         }
 
-        $table->render($rows, $this->tableHeader);
+        $table->render($rows, $this->tableHeader, $defaultColumns);
 
         return 0;
     }

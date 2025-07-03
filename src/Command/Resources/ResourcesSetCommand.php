@@ -130,6 +130,16 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $containerProfiles = $nextDeployment->container_profiles;
 
+        // Remove guaranteed profiles if project does not support it.
+        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
+        foreach ($containerProfiles as $profileName => $profile) {
+            foreach ($profile as $sizeName => $sizeInfo) {
+                if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') {
+                    unset($containerProfiles[$profileName][$sizeName]);
+                }
+            }
+        }
+
         // Ask all questions if nothing was specified on the command line.
         $showCompleteForm = $input->isInteractive()
             && $input->getOption('size') === []
@@ -138,6 +148,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
         $updates = [];
         $current = [];
+        $hasGuaranteedCPU = false;
         foreach ($services as $name => $service) {
             $type = $this->typeName($service);
             $group = $this->group($service);
@@ -207,6 +218,15 @@ class ResourcesSetCommand extends ResourcesCommandBase
             } elseif (!isset($properties['resources']['profile_size'])) {
                 $this->stdErr->writeln(sprintf('A profile size is required for the %s <comment>%s</comment>.', $type, $name));
                 $errored = true;
+            }
+
+            // Check if we have guaranteed CPU changes.
+            if (isset($updates[$group][$name]['resources']['profile_size'])) {
+                $serviceProfileSize = $updates[$group][$name]['resources']['profile_size'];
+                $serviceProfileType = $properties['container_profile'];
+                if (isset($containerProfiles[$serviceProfileType][$serviceProfileSize]) && $containerProfiles[$serviceProfileType][$serviceProfileSize]['cpu_type'] == 'guaranteed') {
+                    $hasGuaranteedCPU = true;
+                }
             }
 
             // Set the instance count.
@@ -319,7 +339,13 @@ class ResourcesSetCommand extends ResourcesCommandBase
         }
 
         $this->stdErr->writeln('');
-        if (!$questionHelper->confirm('Are you sure you want to continue?')) {
+
+        $questionText = 'Are you sure you want to continue?';
+        if ($hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_msg')) {
+            $questionText = trim($this->config()->get('warnings.guaranteed_resources_msg'))
+                . "\n\n" . "Are you sure you want to continue?";
+        }
+        if (!$questionHelper->confirm($questionText)) {
             return 1;
         }
 
