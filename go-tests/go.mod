@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/go-chi/chi/v5 v5.2.2
-	github.com/platformsh/cli v0.0.0-20250512110214-68e4962f0990
+	github.com/platformsh/cli v0.0.0-20250703103124-87b7ab372c7b
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.39.0
 )

@@ -113,7 +113,16 @@ class ProjectInfoCommand extends CommandBase
 
     protected function setProperty(string $property, string $value, Project $project, bool $noWait): int
     {
-        $type = $this->getType($property);
+        $isMap = str_contains($property, '.');
+        if ($isMap) {
+            [$mapName, $mapKey] = explode('.', $property, 2);
+        }
+        if ($isMap) {
+            $type = $this->getType($mapName . '.*');
+        } else {
+            $type = $this->getType($property);
+        }
+
         if (!$type) {
             $this->stdErr->writeln("Property not writable: <error>$property</error>");
             return 1;
@@ -122,17 +131,28 @@ class ProjectInfoCommand extends CommandBase
             $value = false;
         }
         settype($value, $type);
-        $currentValue = $project->getProperty($property);
+
+        if ($isMap) {
+            $currentMap = $project->getProperty($mapName) ?? [];
+            $currentValue = $currentMap[$mapKey] ?? null;
+        } else {
+            $currentValue = $project->getProperty($property);
+        }
         if ($currentValue === $value) {
             $this->stdErr->writeln(
                 "Property <info>$property</info> already set as: " . $this->propertyFormatter->format($value, $property),
             );
 
             return 0;
+
         }
 
+        $update = [$property => $value];
+        if ($isMap) {
+            $update = [$mapName => [$mapKey => $value]];
+        }
         $project->ensureFull();
-        $result = $project->update([$property => $value]);
+        $result = $project->update($update);
         $this->stdErr->writeln(sprintf(
             'Property <info>%s</info> set to: %s',
             $property,
@@ -160,6 +180,7 @@ class ProjectInfoCommand extends CommandBase
             'description' => 'string',
             'default_domain' => 'string',
             'default_branch' => 'string',
+            'attributes.*' => 'string',
         ];
 
         return $writableProperties[$property] ?? false;
