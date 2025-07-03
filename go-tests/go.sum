@@ -5,8 +5,8 @@ github.com/go-chi/chi/v5 v5.2.2/go.mod h1:L2yAIGWB3H+phAw1NxKwWM+7eUH/lU8pOMm5hH
 github.com/oklog/ulid/v2 v2.1.1 h1:suPZ4ARWLOJLegGFiZZ1dFAkqzhMjL3J1TzI+5wHz8s=
 github.com/oklog/ulid/v2 v2.1.1/go.mod h1:rcEKHmBBKfef9DhnvX7y1HZBYxjXb0cP5ExxNsTT1QQ=
 github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
-github.com/platformsh/cli v0.0.0-20250512110214-68e4962f0990 h1:0xJ3ftKO/9qB3KCMnGzEzKZizOEJgCGBfOQk1ts9szk=
-github.com/platformsh/cli v0.0.0-20250512110214-68e4962f0990/go.mod h1:1OFXJCFPlXT4zSc1U/U3xSNh1UmuqOm9rz+FldYe8z8=
+github.com/platformsh/cli v0.0.0-20250703103124-87b7ab372c7b h1:o0ykauvwRrRUKszPVLjaI2MaB9y276vlwYEaxzUfwXE=
+github.com/platformsh/cli v0.0.0-20250703103124-87b7ab372c7b/go.mod h1:1OFXJCFPlXT4zSc1U/U3xSNh1UmuqOm9rz+FldYe8z8=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=

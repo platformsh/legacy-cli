@@ -81,4 +81,9 @@ git	git@git.region-1.example.com:mock-project.git`
 
 	// TODO --refresh should not be needed here
 	assert.Equal(t, "New Title\n", f.Run("pro:info", "-p", projectID, "title", "--refresh"))
+
+	// Test setting an attribute using dot notation
+	f.Run("pro:info", "-v", "-p", projectID, "attributes.foo", "bar")
+	// TODO --refresh should not be needed here
+	assert.Equal(t, "bar\n", f.Run("pro:info", "-p", projectID, "attributes.foo", "--refresh"))
 }
