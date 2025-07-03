@@ -211,7 +211,7 @@ class ResourcesCommandBase extends CommandBase
      *
      * @param array $projectInfo
      *
-     * return bool
+     * @return bool
      *  True if guaranteed CPU is supported, false otherwise.
      */
     protected function supportsGuaranteedCPU(array $projectInfo)
