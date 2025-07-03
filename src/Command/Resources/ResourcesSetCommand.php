@@ -231,10 +231,10 @@ class ResourcesSetCommand extends ResourcesCommandBase
             // Set the disk size.
             if ($this->supportsDisk($service)) {
                 if (isset($givenDiskSizes[$name])) {
-                    if ($givenDiskSizes[$name] !== $service->disk) {
+                    if ($givenDiskSizes[$name] != $service->disk) {
                         $updates[$group][$name]['disk'] = $givenDiskSizes[$name];
                     }
-                } elseif ($showCompleteForm || (empty($service->disk) && $input->isInteractive())) {
+                } elseif ($showCompleteForm) {
                     $ensureHeader();
                     if ($service->disk) {
                         $default = $service->disk;
@@ -244,12 +244,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $diskSize = $questionHelper->askInput('Enter a disk size in MB', $default, ['512', '1024', '2048'],  function ($v) use ($name, $service) {
                         return $this->validateDiskSize($v, $name, $service);
                     });
-                    if ($diskSize !== $service->disk) {
+                    if ($diskSize != $service->disk) {
                         $updates[$group][$name]['disk'] = $diskSize;
                     }
-                } elseif (empty($service->disk)) {
-                    $this->stdErr->writeln(sprintf('A disk size is required for the %s <comment>%s</comment>.', $type, $name));
-                    $errored = true;
                 }
             }
 
