@@ -14,7 +14,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         'size' => 'Size name',
         'cpu' => 'CPU',
         'memory' => 'Memory (MB)',
-        'cpu_type' => 'CPU Type',
+        'cpu_type' => 'CPU type',
     ];
     protected $defaultColumns = ['size', 'cpu', 'memory'];
 
