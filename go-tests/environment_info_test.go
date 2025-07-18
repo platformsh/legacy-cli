@@ -27,8 +27,10 @@ func TestEnvironmentInfo(t *testing.T) {
 		},
 	})
 
+	prod := makeEnv(projectID, "main", "production", "active", nil)
+	prod.SetSetting("enable_manual_deployments", true)
 	apiHandler.SetEnvironments([]*mockapi.Environment{
-		makeEnv(projectID, "main", "production", "active", nil),
+		prod,
 		makeEnv(projectID, "staging", "staging", "active", "main"),
 	})
 
@@ -52,6 +54,7 @@ parent	null
 project	`+projectID+`
 created_at	2014-04-01T10:00:00+00:00
 updated_at	2014-04-01T11:00:00+00:00
+deployment_type	manual
 `, f.Run("env:info", "-p", projectID, "-e", ".", "--format", "plain", "--refresh", "-vvv"))
 
 	assert.Equal(t, "2014-04-01\n", f.Run("env:info", "-p", projectID, "-e", ".", "created_at", "--date-fmt", "Y-m-d"))
