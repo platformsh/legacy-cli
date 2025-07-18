@@ -200,6 +200,14 @@ class EnvironmentInfoCommand extends CommandBase
      */
     protected function validateValue($property, $value)
     {
+        if ($property == 'deployment_type') {
+            $this->stdErr->writeln(
+                'Set the deployment type with: <comment>' . $this->config()->get('application.executable')
+                . ' environment:deploy:type</comment>'
+            );
+            return false;
+        }
+
         $type = $this->getType($property);
         if (!$type) {
             $this->stdErr->writeln("Property not writable: <error>$property</error>");
