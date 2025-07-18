@@ -93,8 +93,8 @@ class EnvironmentInfoCommand extends CommandBase
             $values[] = $this->formatter->format($value, $key);
         }
 
-        $headings[] = 'automatic_deployments';
-        $values[] = $environment->getSettings()->explicit_deployments_enabled ? 'false' : 'true';
+        $headings[] = 'deployment_mode';
+        $values[] = $environment->getSettings()->enable_manual_deployments ? 'manual' : 'automatic';
 
         /** @var \Platformsh\Cli\Service\Table $table */
         $table = $this->getService('table');
