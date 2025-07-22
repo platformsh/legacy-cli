@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use Platformsh\Cli\Command\Self\SelfInstallCommand;
 use Platformsh\Cli\Console\ArrayArgument;
 use Platformsh\Cli\Console\HiddenInputOption;
+use Platformsh\Cli\Console\ProgressMessage;
 use Platformsh\Cli\Event\EnvironmentsChangedEvent;
 use Platformsh\Cli\Event\LoginRequiredEvent;
 use Platformsh\Cli\Exception\LoginRequiredException;
@@ -23,7 +24,10 @@ use Platformsh\Cli\Util\OsUtil;
 use Platformsh\Cli\Util\StringUtil;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\BasicProjectInfo;
+use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
+use Platformsh\Client\Model\Deployment\Service;
 use Platformsh\Client\Model\Deployment\WebApp;
+use Platformsh\Client\Model\Deployment\Worker;
 use Platformsh\Client\Model\Environment;
 use Platformsh\Client\Model\Organization\Organization;
 use Platformsh\Client\Model\Project;
@@ -161,6 +165,8 @@ abstract class CommandBase extends Command implements MultiAwareInterface
      * @var array
      */
     private $synopsis = [];
+
+    private static $cachedNextDeployment = [];
 
     /**
      * {@inheritdoc}
@@ -2482,5 +2488,93 @@ abstract class CommandBase extends Command implements MultiAwareInterface
         $ssh = $this->getService('ssh');
 
         return $ssh->hostIsInternal($project->getGitUrl()) === false;
+    }
+
+    /**
+     * Loads the next environment deployment and caches it statically.
+     *
+     * The static cache means it can be reused while running a sub-command.
+     *
+     * @param Environment $environment
+     * @param bool $reset
+     * @return EnvironmentDeployment
+     */
+    protected function loadNextDeployment(Environment $environment, $reset = false)
+    {
+        $cacheKey = $environment->project . ':' . $environment->id;
+        if (isset(self::$cachedNextDeployment[$cacheKey]) && !$reset) {
+            return self::$cachedNextDeployment[$cacheKey];
+        }
+        $progress = new ProgressMessage($this->stdErr);
+        try {
+            $progress->show('Loading deployment information...');
+            $next = $environment->getNextDeployment();
+            if (!$next) {
+                throw new EnvironmentStateException('No next deployment found', $environment);
+            }
+        } finally {
+            $progress->done();
+        }
+        return self::$cachedNextDeployment[$cacheKey] = $next;
+    }
+
+    /**
+     * Lists services in a deployment.
+     *
+     * @param EnvironmentDeployment $deployment
+     *
+     * @return array<string, WebApp||Worker|Service>
+     *     An array of services keyed by the service name.
+     */
+    protected function allServices(EnvironmentDeployment $deployment)
+    {
+        $webapps = $deployment->webapps;
+        $workers = $deployment->workers;
+        $services = $deployment->services;
+        ksort($webapps, SORT_STRING|SORT_FLAG_CASE);
+        ksort($workers, SORT_STRING|SORT_FLAG_CASE);
+        ksort($services, SORT_STRING|SORT_FLAG_CASE);
+        return array_merge($webapps, $workers, $services);
+    }
+
+    /**
+     * Check if project supports guaranteed resources.
+     *
+     * @param array $projectInfo
+     *
+     * @return bool
+     *  True if guaranteed CPU is supported, false otherwise.
+     */
+    protected function supportsGuaranteedCPU(array $projectInfo)
+    {
+        return !empty($projectInfo["settings"]["enable_guaranteed_resources"]) &&
+            !empty($projectInfo["capabilities"]["guaranteed_resources"]["enabled"]);
+    }
+
+    /**
+     * Check if environment has guaranteed CPU.
+     *
+     * @param \Platformsh\Client\Model\Environment $environment
+     *
+     * @return bool
+     */
+    protected function environmentHasGuaranteedCPU(Environment $environment)
+    {
+        $nextDeployment = $this->loadNextDeployment($environment);
+        if ($this->supportsGuaranteedCPU($nextDeployment->project_info)) {
+            $containerProfiles = $nextDeployment->container_profiles;
+            $services = $this->allServices($nextDeployment);
+            foreach ($services as $service) {
+                $properties = $service->getProperties();
+                if (isset($properties['container_profile']) && isset($containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']])) {
+                    $profileInfo = $containerProfiles[$properties['container_profile']][$properties['resources']['profile_size']];
+                    if (isset($profileInfo['cpu_type']) && $profileInfo['cpu_type'] == 'guaranteed') {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }
