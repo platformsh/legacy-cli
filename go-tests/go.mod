@@ -2,6 +2,8 @@ module github.com/platformsh/legacy-cli/tests
 
 go 1.24
 
+replace github.com/platformsh/cli => /Users/efa/projects/cli
+
 require (
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/platformsh/cli v0.0.0-20250512110214-68e4962f0990
