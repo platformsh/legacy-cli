@@ -11,7 +11,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EnvironmentDeployTypeCommand extends CommandBase
 {
-    const HINT = "Choose <info>automatic</info> (the default) if you want your changes to be deployed immediately as they are made.\nChoose <info>manual</info> to have changes staged until you trigger a deployment (including changes to code, variables, domains and settings).";
 
     protected function configure()
     {
@@ -24,7 +23,8 @@ class EnvironmentDeployTypeCommand extends CommandBase
             ->addEnvironmentOption();
         $this->addWaitOptions();
         $this->addExample('Set the deployment type to "manual" (disable automatic deployments)', 'manual');
-        $this->setHelp(self::HINT);
+        $this->setHelp("Choose <info>automatic</info> (the default) if you want your changes to be deployed immediately as they are made."
+            ."\nChoose <info>manual</info> to have changes staged until you trigger a deployment (including changes to code, variables, domains and settings).");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
