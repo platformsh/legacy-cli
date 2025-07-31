@@ -1688,6 +1688,29 @@ class Api
     }
 
     /**
+     * Checks if a project supports the Autoscaling API.
+     *
+     * @param Project $project
+     * @return bool
+     */
+    public function supportsAutoscaling(Project $project)
+    {
+        $cacheKey = 'project-capabilities:' . $project->id;
+        $cachedCapabilities = $this->cache->fetch($cacheKey);
+        if (!empty($cachedCapabilities) && !empty($cachedCapabilities['autoscaling'])) {
+            return (bool) $cachedCapabilities['autoscaling']['enabled'];
+        }
+
+        $capabilities = $this->getHttpClient()->get($project->getUri() . '/capabilities')->json();
+        $this->cache->save($cacheKey, $capabilities, $this->config->get('api.projects_ttl'));
+        if (!empty($capabilities) && !empty($capabilities['autoscaling'])) {
+            return (bool) $capabilities['autoscaling']['enabled'];
+        }
+
+        return false;
+    }
+
+    /**
      * Loads the code source integration for a project.
      *
      * @param Project $project
@@ -1702,5 +1725,60 @@ class Api
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the URL to view autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     * @param bool $manage
+     *
+     * @return string|false
+     *   The url to the autoscaling settings endpoint or false on failure.
+     */
+    public function getAutoscalingSettingsLink(Environment $environment, bool $manage = false)
+    {
+        $link = "#autoscaling";
+        if ($manage === true) {
+            $link = "#manage-autoscaling";
+        }
+
+        $environmentData = $environment->getData();
+        if (!isset($environmentData['_links'][$link])) {
+            $this->stdErr->writeln(\sprintf('Autoscaling support is not currently available on the environment: %s', $this->getEnvironmentLabel($environment, 'error')));
+
+            return false;
+        }
+        if (!isset($environmentData['_links'][$link]['href'])) {
+            $this->stdErr->writeln(\sprintf('Unable to find autoscaling URLs for the environment: %s', $this->getEnvironmentLabel($environment, 'error')));
+
+            return false;
+        }
+
+        return $environmentData['_links'][$link]['href'];
+    }
+
+    /**
+     * Returns the autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     *
+     * @return \Platformsh\Client\Model\AutoscalingSettings
+     */
+    public function getAutoscalingSettings(Environment $environment)
+    {
+        if (!$this->getAutoscalingSettingsLink($environment)) {
+            throw new EnvironmentStateException('Autoscaling support is not currently available on the environment', $environment);
+        }
+
+        try {
+            $settings = $environment->getAutoscalingSettings();
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            throw $e;
+        }
+        return $settings;
     }
 }
