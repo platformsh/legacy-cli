@@ -1703,4 +1703,16 @@ class Api
         }
         return null;
     }
+
+    public function getAutoscalingSettings(Environment $environment) {
+        try {
+            $settings = $environment->getAutoscalingSettings();
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            throw $e;
+        }
+        return $settings;
+    }
 }
