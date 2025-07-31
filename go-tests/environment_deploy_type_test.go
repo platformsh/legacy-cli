@@ -35,26 +35,20 @@ func TestEnvironmentDeployType(t *testing.T) {
 	f := newCommandFactory(t, apiServer.URL, authServer.URL)
 	f.Run("cc")
 
-	_, stdErr, _ := f.RunCombinedOutput("environment:deploy:type", "-p", projectID, "-e", "main")
-	assert.Equal(t, `Deployment type: automatic
+	expectedStderrPrefix := "Selected project: " + projectID + "\nSelected environment: main (type: production)\n\n"
 
-Hint: Choose automatic (default) if you want your changes to be deployed immediately as they are made.
-Choose manual to have code, variables, domains, and settings changes staged until you trigger a deployment.
-`, stdErr)
+	_, stdErr, _ := f.RunCombinedOutput("environment:deploy:type", "-p", projectID, "-e", "main")
+	assert.Equal(t, expectedStderrPrefix+"Deployment type: automatic\n", stdErr)
 
 	_, stdErr, _ = f.RunCombinedOutput("env:deploy:type", "automatic", "-p", projectID, "-e", "main")
-	assert.Equal(t, stdErr, "The deployment type is already automatic.\n")
+	assert.Equal(t, expectedStderrPrefix+"The deployment type is already automatic.\n", stdErr)
 
 	_, _, err := f.RunCombinedOutput("env:deploy:type", "invalid", "-p", projectID, "-e", "main")
 	assert.Error(t, err)
 
 	_, stdErr, _ = f.RunCombinedOutput("env:deploy:type", "manual", "-p", projectID, "-e", "main")
-	assert.Equal(t, `Success!
-Deployment type: manual
-
-Hint: Choose automatic (default) if you want your changes to be deployed immediately as they are made.
-Choose manual to have code, variables, domains, and settings changes staged until you trigger a deployment.
-`, stdErr)
+	assert.Equal(t, expectedStderrPrefix+"Changing the deployment type from automatic to manual...\n"+
+		"The deployment type was updated successfully to: manual\n", stdErr)
 
 	apiHandler.SetProjectActivities(projectID, []*mockapi.Activity{
 		{
@@ -71,15 +65,13 @@ Choose manual to have code, variables, domains, and settings changes staged unti
 	})
 
 	_, stdErr, _ = f.RunCombinedOutput("env:deploy:type", "automatic", "-p", projectID, "-e", "main")
-	assert.Equal(t, `Updating this setting will immediately start a deployment to apply all staged changes.
-Are you sure you want to proceed? [Y/n] y
-Success!
-Deployment type: automatic
-
-Hint: Choose automatic (default) if you want your changes to be deployed immediately as they are made.
-Choose manual to have code, variables, domains, and settings changes staged until you trigger a deployment.
-`, stdErr)
+	assert.Equal(t, expectedStderrPrefix+
+		"Changing the deployment type from manual to automatic...\n"+
+		"Updating this setting will immediately deploy staged changes.\n"+
+		"Are you sure you want to continue? [Y/n] y\n"+
+		"The deployment type was updated successfully to: automatic\n", stdErr)
 
 	_, stdErr, _ = f.RunCombinedOutput("env:deploy:type", "manual", "-p", projectID, "-e", "dev")
-	assert.Equal(t, "Manual deployment type is not available for this environment.\n", stdErr)
+	assert.Equal(t, "Selected project: "+projectID+"\nSelected environment: dev (type: development)\n\n"+
+		"The manual deployment type is not available as the environment is not active.\n", stdErr)
 }
