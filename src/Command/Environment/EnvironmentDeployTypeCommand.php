@@ -30,14 +30,14 @@ class EnvironmentDeployTypeCommand extends CommandBase
         $this->validateInput($input);
 
         $environment = $this->getSelectedEnvironment();
-        $currentSettings = $environment->getSettings();
+        $settings = $environment->getSettings();
 
         if ($type = $input->getArgument('type')) {
             if ($type !== 'manual' && $type !== 'automatic') {
                 throw new InvalidArgumentException(sprintf("Invalid value %s. Deployment type can be either automatic or manual.", $type));
             }
 
-            if ($currentSettings->enable_manual_deployments === ($type === 'manual')) {
+            if ($settings->enable_manual_deployments === ($type === 'manual')) {
                 $this->stdErr->writeln(sprintf("The deployment type is already %s.", $type));
                 return 0;
             }
@@ -52,13 +52,13 @@ class EnvironmentDeployTypeCommand extends CommandBase
                     }
                 }
             } else {
-                if (!$environment->operationAvailable('deploy', true) || !$environment->isActive()) {
+                if (!$environment->isActive()) {
                     $this->stdErr->writeln("Manual deployment type is not available for this environment.");
                     return 0;
                 }
             }
 
-            $result = $environment->setManualDeployments($type === 'manual');
+            $result = $settings->update(['enable_manual_deployments' => $type === 'manual']);
             $settings = $result->getEntity();
 
             $this->stdErr->writeln('Success!');
@@ -66,7 +66,7 @@ class EnvironmentDeployTypeCommand extends CommandBase
                 $settings->enable_manual_deployments ? 'manual' : 'automatic', self::HINT));
         } else {
             $this->stdErr->writeln(sprintf("<fg=yellow>Deployment type</>: %s\n\n%s",
-                $currentSettings->enable_manual_deployments ? 'manual' : 'automatic', self::HINT));
+                $settings->enable_manual_deployments ? 'manual' : 'automatic', self::HINT));
             return 0;
         }
 
