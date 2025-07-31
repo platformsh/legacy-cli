@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7c143bed9dae901c9441c63d3dca1f2c",
+    "content-hash": "550801f8c7ed5c5253406b5404429b0d",
     "packages": [
         {
             "name": "cocur/slugify",
@@ -921,16 +921,16 @@
         },
         {
             "name": "platformsh/client",
-            "version": "1.x-dev",
+            "version": "0.89.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/vitolkachova/platformsh-client-php.git",
-                "reference": "293dbc7e4153fdba38003a9580b1af90880eb27e"
+                "url": "https://github.com/platformsh/platformsh-client-php.git",
+                "reference": "9ca1adcf3f7a1e996d30a564f995577644cfb4df"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vitolkachova/platformsh-client-php/zipball/293dbc7e4153fdba38003a9580b1af90880eb27e",
-                "reference": "293dbc7e4153fdba38003a9580b1af90880eb27e",
+                "url": "https://api.github.com/repos/platformsh/platformsh-client-php/zipball/9ca1adcf3f7a1e996d30a564f995577644cfb4df",
+                "reference": "9ca1adcf3f7a1e996d30a564f995577644cfb4df",
                 "shasum": ""
             },
             "require": {
@@ -950,11 +950,7 @@
                     "Platformsh\\Client\\": "src"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Platformsh\\Client\\Tests\\": "tests"
-                }
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -965,9 +961,10 @@
             ],
             "description": "Platform.sh API client",
             "support": {
-                "source": "https://github.com/vitolkachova/platformsh-client-php/tree/1.x"
+                "issues": "https://github.com/platformsh/platformsh-client-php/issues",
+                "source": "https://github.com/platformsh/platformsh-client-php/tree/0.89.0"
             },
-            "time": "2025-06-12T14:34:55+00:00"
+            "time": "2025-07-31T18:59:15+00:00"
         },
         {
             "name": "platformsh/console-form",
@@ -4063,9 +4060,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "platformsh/client": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
