@@ -2,12 +2,9 @@ module github.com/platformsh/legacy-cli/tests
 
 go 1.24
 
-# todo upgrade cli
-replace github.com/platformsh/cli => /Users/efa/projects/cli
-
 require (
 	github.com/go-chi/chi/v5 v5.2.2
-	github.com/platformsh/cli v0.0.0-20250512110214-68e4962f0990
+	github.com/platformsh/cli v0.0.0-20250731203409-d16c54a147ad
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.38.0
 )
