@@ -1744,6 +1744,29 @@ class Api
     }
 
     /**
+     * Checks if a project supports the Autoscaling API.
+     *
+     * @param Project $project
+     * @return bool
+     */
+    public function supportsAutoscaling(Project $project)
+    {
+        $cacheKey = 'project-capabilities:' . $project->id;
+        $cachedCapabilities = $this->cache->fetch($cacheKey);
+        if (!empty($cachedCapabilities) && !empty($cachedCapabilities['autoscaling'])) {
+            return (bool) $cachedCapabilities['autoscaling']['enabled'];
+        }
+
+        $capabilities = $this->getHttpClient()->get($project->getUri() . '/capabilities')->json();
+        $this->cache->save($cacheKey, $capabilities, $this->config->get('api.projects_ttl'));
+        if (!empty($capabilities) && !empty($capabilities['autoscaling'])) {
+            return (bool) $capabilities['autoscaling']['enabled'];
+        }
+
+        return false;
+    }
+
+    /**
      * Loads the code source integration for a project.
      *
      * @param Project $project
