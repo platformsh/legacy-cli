@@ -22,6 +22,7 @@ class EnvironmentDeployCommand extends CommandBase
     {
         $this
             ->setName('environment:deploy')
+            ->setAliases(['env:deploy'])
             ->setDescription('Deploy an environment\'s staged changes');
         $this->addProjectOption()
             ->addEnvironmentOption();
