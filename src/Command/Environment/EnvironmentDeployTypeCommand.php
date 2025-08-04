@@ -58,9 +58,14 @@ class EnvironmentDeployTypeCommand extends CommandBase
             return 0;
         }
 
-        if ($newType === 'manual' && !$environment->isActive()) {
-            $this->stdErr->writeln('The <comment>manual</comment> deployment type is not available as the environment is not active.');
-            return 0;
+        if ($newType === 'manual') {
+            if (!$environment->isActive()) {
+                $this->stdErr->writeln('The <comment>manual</comment> deployment type is not available as the environment is not active.');
+                return 0;
+            } elseif ($environment->type == 'development') {
+                $this->stdErr->writeln('The <comment>manual</comment> deployment type is only available for production and staging environments.');
+                return 0;
+            }
         }
 
         $this->stdErr->writeln(sprintf('Changing the deployment type from <info>%s</info> to <info>%s</info>...',
