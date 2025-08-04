@@ -1406,7 +1406,10 @@ class Api
 
         // Fall back to the public-url property.
         if ($environment->hasLink('public-url')) {
-            return $environment->getLink('public-url');
+            $data = $environment->getData();
+            if (!empty($data['_links']['public-url']['href'])) {
+                return $data['_links']['public-url']['href'];
+            }
         }
 
         return null;
