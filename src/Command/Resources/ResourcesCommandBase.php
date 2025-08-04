@@ -16,30 +16,9 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class ResourcesCommandBase extends CommandBase
 {
-    private static $cachedNextDeployment = [];
-
     public function isHidden()
     {
         return !$this->config()->get('api.sizing') || parent::isHidden();
-    }
-
-    /**
-     * Lists services in a deployment.
-     *
-     * @param EnvironmentDeployment $deployment
-     *
-     * @return array<string, WebApp||Worker|Service>
-     *     An array of services keyed by the service name.
-     */
-    protected function allServices(EnvironmentDeployment $deployment)
-    {
-        $webapps = $deployment->webapps;
-        $workers = $deployment->workers;
-        $services = $deployment->services;
-        ksort($webapps, SORT_STRING|SORT_FLAG_CASE);
-        ksort($workers, SORT_STRING|SORT_FLAG_CASE);
-        ksort($services, SORT_STRING|SORT_FLAG_CASE);
-        return array_merge($webapps, $workers, $services);
     }
 
     /**
@@ -55,34 +34,6 @@ class ResourcesCommandBase extends CommandBase
             return false;
         }
         return isset($service->getProperties()['resources']['minimum']['disk']);
-    }
-
-    /**
-     * Loads the next environment deployment and caches it statically.
-     *
-     * The static cache means it can be reused while running a sub-command.
-     *
-     * @param Environment $environment
-     * @param bool $reset
-     * @return EnvironmentDeployment
-     */
-    protected function loadNextDeployment(Environment $environment, $reset = false)
-    {
-        $cacheKey = $environment->project . ':' . $environment->id;
-        if (isset(self::$cachedNextDeployment[$cacheKey]) && !$reset) {
-            return self::$cachedNextDeployment[$cacheKey];
-        }
-        $progress = new ProgressMessage($this->stdErr);
-        try {
-            $progress->show('Loading deployment information...');
-            $next = $environment->getNextDeployment();
-            if (!$next) {
-                throw new EnvironmentStateException('No next deployment found', $environment);
-            }
-        } finally {
-            $progress->done();
-        }
-        return self::$cachedNextDeployment[$cacheKey] = $next;
     }
 
     /**
@@ -204,19 +155,5 @@ class ResourcesCommandBase extends CommandBase
     protected function formatCPU($unformatted)
     {
         return sprintf('%.1f', $unformatted);
-    }
-
-    /**
-     * Check if project supports guaranteed resources.
-     *
-     * @param array $projectInfo
-     *
-     * @return bool
-     *  True if guaranteed CPU is supported, false otherwise.
-     */
-    protected function supportsGuaranteedCPU(array $projectInfo)
-    {
-        return !empty($projectInfo["settings"]["enable_guaranteed_resources"]) &&
-            !empty($projectInfo["capabilities"]["guaranteed_resources"]["enabled"]);
     }
 }
