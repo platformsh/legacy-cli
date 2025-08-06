@@ -37,7 +37,7 @@ class AutoscalingSettingsGetCommand extends CommandBase
     {
         $this->validateInput($input);
         if (!$this->api()->supportsAutoscaling($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The autoscaling API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+            $this->stdErr->writeln(sprintf('The autoscaling feature is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
             return 1;
         }
 
