@@ -23,6 +23,7 @@ use Platformsh\Cli\Util\Sort;
 use Platformsh\Client\Connection\Connector;
 use Platformsh\Client\Exception\ApiResponseException;
 use Platformsh\Client\Exception\EnvironmentStateException;
+use Platformsh\Client\Model\AutoscalingSettings;
 use Platformsh\Client\Model\BasicProjectInfo;
 use Platformsh\Client\Model\Deployment\EnvironmentDeployment;
 use Platformsh\Client\Model\Environment;
@@ -1805,6 +1806,31 @@ class Api
 
         try {
             $settings = $environment->getAutoscalingSettings();
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            throw $e;
+        }
+        return $settings;
+    }
+
+    /**
+     * Configures the autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     * @param AutoscalingSettings $data
+     *
+     * @return \Platformsh\Client\Model\AutoscalingSettings
+     */
+    public function setAutoscalingSettings(Environment $environment, AutoscalingSettings $settings)
+    {
+        if (!$this->getAutoscalingSettingsLink($environment, $manage=true)) {
+            throw new EnvironmentStateException('Not enough permissions to configure autoscaling on the environment', $environment);
+        }
+
+        try {
+            $settings = $environment->setAutoscalingSettings($settings);
         } catch (EnvironmentStateException $e) {
             if ($e->getEnvironment()->status === 'inactive') {
                 throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
