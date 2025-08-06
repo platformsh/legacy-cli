@@ -126,6 +126,7 @@ class Application extends ParentApplication
         $commands[] = new Command\Auth\BrowserLoginCommand();
         $commands[] = new Command\Auth\VerifyPhoneNumberCommand();
         $commands[] = new Command\Autoscaling\AutoscalingSettingsGetCommand();
+        $commands[] = new Command\Autoscaling\AutoscalingSettingsSetCommand();
         $commands[] = new Command\BlueGreen\BlueGreenConcludeCommand();
         $commands[] = new Command\BlueGreen\BlueGreenDeployCommand();
         $commands[] = new Command\BlueGreen\BlueGreenEnableCommand();
