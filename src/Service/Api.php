@@ -1680,13 +1680,7 @@ class Api
         if (isset($deployment->project_info['settings'])) {
             return !empty($deployment->project_info['settings']['sizing_api_enabled']);
         }
-        $cacheKey = 'project-settings:' . $project->id;
-        $cachedSettings = $this->cache->fetch($cacheKey);
-        if (!empty($cachedSettings['sizing_api_enabled'])) {
-            return true;
-        }
-        $settings = $this->getHttpClient()->get($project->getUri() . '/settings')->json();
-        $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
+        $settings = $this->getProjectSettings($project);
         return !empty($settings['sizing_api_enabled']);
     }
 
@@ -1698,19 +1692,54 @@ class Api
      */
     public function supportsAutoscaling(Project $project)
     {
+        $capabilities = $this->getProjectCapabilities($project);
+        return !empty($capabilities['autoscaling']) ? $capabilities['autoscaling']['enabled'] : false;
+    }
+
+    /**
+     * Returns project settings.
+     *
+     * Settings are cached between calls unless a refresh is forced.
+     *
+     * @param bool $refresh
+     *
+     * @returns array
+     *
+     */
+    public function getProjectSettings(Project $project, bool $refresh = false): array
+    {
+        $cacheKey = 'project-settings:' . $project->id;
+        $cachedSettings = $this->cache->fetch($cacheKey);
+        if (!empty($cachedSettings) && !$refresh) {
+            return $cachedSettings;
+        }
+
+        $settings = $this->getHttpClient()->get($project->getUri() . '/settings')->json();
+        $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
+        return $settings;
+    }
+
+    /**
+     * Returns project capabilities.
+     *
+     * Capabilities are cached between calls unless a refresh is forced.
+     *
+     * @param bool $refresh
+     *
+     * @returns array
+     *
+     */
+    public function getProjectCapabilities(Project $project, bool $refresh = false): array
+    {
         $cacheKey = 'project-capabilities:' . $project->id;
         $cachedCapabilities = $this->cache->fetch($cacheKey);
-        if (!empty($cachedCapabilities) && !empty($cachedCapabilities['autoscaling'])) {
-            return (bool) $cachedCapabilities['autoscaling']['enabled'];
+        if (!empty($cachedCapabilities) && !$refresh) {
+            return $cachedCapabilities;
         }
 
         $capabilities = $this->getHttpClient()->get($project->getUri() . '/capabilities')->json();
         $this->cache->save($cacheKey, $capabilities, $this->config->get('api.projects_ttl'));
-        if (!empty($capabilities) && !empty($capabilities['autoscaling'])) {
-            return (bool) $capabilities['autoscaling']['enabled'];
-        }
-
-        return false;
+        return $capabilities;
     }
 
     /**
