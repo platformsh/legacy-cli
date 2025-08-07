@@ -102,11 +102,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
         // Validate the --threshold-* options.
         $thresholdUp = $input->getOption('threshold-up');
         if ($thresholdUp !== null) {
-            $thresholdUp = $this->validateThreshold($thresholdUp);
+            $thresholdUp = $this->validateThreshold($thresholdUp, 'threshold-up');
         }
         $thresholdDown = $input->getOption('threshold-down');
         if ($thresholdDown !== null) {
-            $thresholdDown = $this->validateThreshold($thresholdDown);
+            $thresholdDown = $this->validateThreshold($thresholdDown, 'threshold-down');
         }
 
         // Validate the --duration-* options.
@@ -133,11 +133,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $instanceLimit = $defaults['instances']['max'];
         $instancesMin = $input->getOption('instances-min');
         if ($instancesMin !== null) {
-            $instancesMin = $this->validateInstanceCount($instancesMin, $instanceLimit);
+            $instancesMin = $this->validateInstanceCount($instancesMin, $instanceLimit, 'instances-min');
         }
         $instancesMax = $input->getOption('instances-max');
         if ($instancesMax !== null) {
-            $instancesMax = $this->validateInstanceCount($instancesMax, $instanceLimit);
+            $instancesMax = $this->validateInstanceCount($instancesMax, $instanceLimit, 'instances-max');
         }
 
         $this->stdErr->writeln('');
@@ -173,7 +173,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $app = $serviceNames[$selectedService];
             }
             // Configure the selected service
-            $service = $services[$app];
+            $serviceName = $app;
+            $service = $services[$serviceName];
 
             $this->stdErr->writeln('');
             $this->stdErr->writeln('<options=bold>' . ucfirst($this->typeName($service)) . ': </><options=bold,underscore>' . $serviceName . '</>');
@@ -185,13 +186,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $default = array_key_first($choices);
                 $text = 'Enter the metric name for autoscaling:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
-                $metric = $this->validateMetric($choices[$choice], $defaults['triggers']);
+                $metric = $choices[$choice];
             }
 
             if ($thresholdUp === null) {
                 // Ask for scaling up threshold
                 $default = $defaults['triggers'][$metric]['up']['threshold'];
-                $thresholdUp = $questionHelper->askInput('Enter the threshold for scaling up', $default, [], $this->validateThreshold);
+                $thresholdUp = $questionHelper->askInput('Enter the threshold for scaling up', $default, [], function ($value) {
+                    return $this->validateThreshold($value);
+                });
                 $this->stdErr->writeln('');
             }
             $updates[$serviceName]['threshold-up'] = $thresholdUp;
@@ -200,18 +203,19 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 // Ask for scaling up duration
                 $choices = array_keys(self::$validDurations);
                 $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
-                $default = array_search($this->formatDuration($defaults['triggers'][$metric]['up']['duration']), $choices);
+                $default = array_search($this->formatDuration($defaultDuration), $choices);
                 $text = 'Enter the duration for scaling up evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
-                $durationUp = $this->validateDuration($choices[$choice]);
+                $durationUp = $choices[$choice];
             }
             $updates[$serviceName]['duration-up'] = $durationUp;
 
-
             if ($thresholdDown === null) {
                 // Ask for scaling down threshold
-                $value = $questionHelper->askInput('Enter the threshold for scaling down', $defaults['triggers'][$metric]['down']['threshold']);
-                $thresholdDown = $this->validateThreshold($value);
+                $default = $defaults['triggers'][$metric]['down']['threshold'];
+                $thresholdDown = $questionHelper->askInput('Enter the threshold for scaling down', $default, [], function ($value) {
+                    return $this->validateThreshold($value);
+                });
                 $this->stdErr->writeln('');
             }
             $updates[$serviceName]['threshold-down'] = $thresholdDown;
@@ -222,7 +226,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $default = array_search($this->formatDuration($defaults['triggers'][$metric]['down']['duration']), $choices);
                 $text = 'Enter the duration for scaling down evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
-                $durationDown = $this->validateDuration($choices[$choice]);
+                $durationDown = $choices[$choice];
             }
             $updates[$serviceName]['duration-down'] = $durationDown;
 
@@ -236,15 +240,17 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
             if ($instancesMin === null) {
                 // Ask for instance count limits
-                $value = $questionHelper->askInput('Enter the minimum number of instances', 1);
-                $instancesMin = $this->validateInstanceCount($value, $instanceLimit);
+                $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', 1, [], function ($value) {
+                    return $this->validateInstanceCount($value, $instanceLimit);
+                });
                 $this->stdErr->writeln('');
             }
             $updates[$serviceName]['instances-min'] = $instancesMin;
 
             if ($instancesMax === null) {
-                $value = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit);
-                $instancesMax = $this->validateInstanceCount($value, $instanceLimit);
+                $instancesMax = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit, [], function ($value) {
+                    return $this->validateInstanceCount($value, $instanceLimit);
+                });
                 $this->stdErr->writeln('');
             }
             $updates[$serviceName]['instances-max'] = $instancesMax;
@@ -255,7 +261,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $default = array_search($this->formatDuration($defaults['scale_cooldown']['up']), $choices);
                 $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
-                $cooldownUp = $this->validateDuration($choices[$choice]);
+                $cooldownUp = $choices[$choice];
             }
             $updates[$serviceName]['cooldown-up'] = $cooldownUp;
 
@@ -264,7 +270,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $default = array_search($this->formatDuration($defaults['scale_cooldown']['down']), $choices);
                 $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
-                $cooldownDown = $this->validateDuration($choices[$choice]);
+                $cooldownDown = $choices[$choice];
             }
             $updates[$serviceName]['cooldown-down'] = $cooldownDown;
 
@@ -278,7 +284,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $serviceNames = array_keys($services);
 
             if ($app === null) {
-                // TODO: abort
+                $this->stdErr->writeln('<error>The --app options is required when not running interactively.</error>');
                 return 1;
             }
             // Configure the selected service
@@ -474,9 +480,9 @@ class AutoscalingSettingsSetCommand extends CommandBase
             ));
         }
         if (isset($updates['duration-up'])) {
-            $this->stdErr->writeln('    Duration (up): ' . $this->formatChange(
+            $this->stdErr->writeln('    Duration (up): ' . $this->formatDurationChange(
                 $current['triggers'][$metric]['up'] ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
-                $this->formatDuration($updates['duration-up'])
+                $updates['duration-up'],
             ));
         }
         if (isset($updates['threshold-down'])) {
@@ -486,22 +492,22 @@ class AutoscalingSettingsSetCommand extends CommandBase
             ));
         }
         if (isset($updates['duration-down'])) {
-            $this->stdErr->writeln('    Duration (down): ' . $this->formatChange(
+            $this->stdErr->writeln('    Duration (down): ' . $this->formatDurationChange(
                 $current['triggers'][$metric]['down'] ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
-                $this->formatDuration($updates['duration-down'])
+                $updates['duration-down']
             ));
         }
 
         if (isset($updates['cooldown-up'])) {
-            $this->stdErr->writeln('    Cooldown (up): ' . $this->formatChange(
+            $this->stdErr->writeln('    Cooldown (up): ' . $this->formatDurationChange(
                 $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['up']) : null,
-                $this->formatDuration($updates['cooldown-up'])
+                $updates['cooldown-up']
             ));
         }
         if (isset($updates['cooldown-down'])) {
-            $this->stdErr->writeln('    Cooldown (down): ' . $this->formatChange(
+            $this->stdErr->writeln('    Cooldown (down): ' . $this->formatDurationChange(
                 $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['down']) : null,
-                $this->formatDuration($updates['cooldown-down'])
+                $updates['cooldown-down']
             ));
         }
 
@@ -534,7 +540,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (array_key_exists($value, $services)) {
             return $value;
         }
-        throw new InvalidArgumentException(sprintf('Invalid service name <error>%s</error>: must be one of %s', $value, implode(', ', $services)));
+        $serviceNames = array_keys($services);
+        throw new InvalidArgumentException(sprintf('Invalid service name <error>%s</error>. Available services: %s', $value, implode(', ', $serviceNames)));
     }
 
     /**
@@ -551,7 +558,8 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (array_key_exists($value, $metrics)) {
             return $value;
         }
-        throw new InvalidArgumentException(sprintf('Invalid metric name <error>%s</error>: must be one of %s', $value, implode(', ', array_keys($metrics))));
+        $metricNames = array_keys($metrics);
+        throw new InvalidArgumentException(sprintf('Invalid metric name <error>%s</error>. Available metrics: %s', $value, implode(', ', $metricNames)));
     }
 
     /**
@@ -586,14 +594,22 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return float
      */
-    protected function validateThreshold($value)
+    protected function validateThreshold($value, string $context = '')
     {
         $threshold = (float) $value;
-        if ($threshold <= 0) {
-            throw new InvalidArgumentException(sprintf('Invalid threshold <error>%s</error>: must be greater than 0.', $value));
+        if ($threshold < 0) {
+            $message = sprintf('Invalid threshold <error>%s</error>: must be 0 or greater', $value);
+            if ($context) {
+                $message .= sprintf(' for %s', $context);
+            }
+            throw new InvalidArgumentException($message);
         }
         if ($threshold > 100) {
-            throw new InvalidArgumentException(sprintf('Invalid threshold <error>%s</error>: must be smaller than 100.', $value));
+            $message = sprintf('Invalid threshold <error>%s</error>: must be 100 or less', $value);
+            if ($context) {
+                $message .= sprintf(' for %s', $context);
+            }
+            throw new InvalidArgumentException($message);
         }
         return $threshold;
     }
@@ -616,10 +632,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return int
      */
-    protected function validateDuration($value)
+    protected function validateDuration($value, string $context = '')
     {
         if (!isset(self::$validDurations[$value])) {
-            throw new InvalidArgumentException(sprintf('Invalid duration <error>%s</error>: must be one of %s', $value, implode(', ', array_keys(self::$validDurations))));
+            $durations = array_keys(self::$validDurations);
+            $message = sprintf('Invalid duration <error>%s</error>: must be one of %s', $value, implode(', ',$durations));
+            if ($context) {
+                $message .= sprintf(' for %s', $context);
+            }
+            throw new InvalidArgumentException($message);
         }
         return self::$validDurations[$value];
     }
@@ -652,14 +673,22 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return int
      */
-    protected function validateInstanceCount($value, $limit)
+    protected function validateInstanceCount($value, $limit, string $context = '')
     {
         $count = (int) $value;
         if ($count != $value || $value <= 0) {
-            throw new InvalidArgumentException(sprintf('Invalid instance count <error>%s</error>: it must be an integer greater than 0.', $value));
+            $message = sprintf('Invalid instance count <error>%s</error>: it must be an integer greater than 0', $value);
+            if ($context) {
+                $message .= sprintf(' for %s', $context);
+            }
+            throw new InvalidArgumentException($message);
         }
         if ($limit !== null && $count > $limit) {
-            throw new InvalidArgumentException(sprintf('The instance count <error>%d</error> exceeds the limit %d.', $count, $limit));
+            $message = sprintf('The instance count <error>%d</error> exceeds the limit %d', $count, $limit);
+            if ($context) {
+                $message .= sprintf(' for %s', $context);
+            }
+            throw new InvalidArgumentException($message);
         }
         return $count;
     }
@@ -701,12 +730,14 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return string
      */
-    protected function formatChange($previousValue, $newValue, $suffix = '')
+    protected function formatChange($previousValue, $newValue, $suffix = '', callable $comparator = null)
     {
         if ($previousValue === null || $newValue === $previousValue) {
             return sprintf('<info>%s%s</info>', $newValue, $suffix);
         }
-        if ($newValue === "true" || $newValue === "false") {
+        if ($comparator !== null) {
+            $changeText = $comparator($newValue, $previousValue) ? '<fg=green>increasing</>' : '<fg=yellow>decreasing</>';
+        } else if ($newValue === "true" || $newValue === "false") {
             $color = $newValue === "true" ? 'green' : 'yellow';
             $changeText = '<fg=' . $color . '>changing</>';
         } else {
@@ -717,6 +748,26 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $changeText,
             $previousValue, $suffix,
             $newValue, $suffix
+        );
+    }
+
+    /**
+     * Formats a change in a duration.
+     *
+     * @param int|string $previousValue
+     * @param int|string $newValue
+     *
+     * @return string
+     */
+    protected function formatDurationChange($previousValue, $newValue)
+    {
+        return $this->formatChange(
+            $previousValue,
+            $newValue,
+            '',
+            function ($previousValue, $newValue) {
+                return self::$validDurations[$previousValue] < self::$validDurations[$newValue];
+            }
         );
     }
 }
