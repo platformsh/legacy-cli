@@ -3,8 +3,6 @@
 namespace Platformsh\Cli\Command\Autoscaling;
 
 use Platformsh\Cli\Command\CommandBase;
-use Platformsh\Cli\Console\ArrayArgument;
-use Platformsh\Cli\Util\Wildcard;
 use Platformsh\Client\Exception\EnvironmentStateException;
 use Platformsh\Client\Model\AutoscalingSettings;
 use Platformsh\Client\Model\Deployment\Service;
@@ -14,7 +12,6 @@ use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use TypeError;
 
 class AutoscalingSettingsSetCommand extends CommandBase
 {
@@ -22,42 +19,38 @@ class AutoscalingSettingsSetCommand extends CommandBase
     {
         $this->setName('autoscaling:set')
             ->setDescription('Set the autoscaling configuration of apps/workers on an environment')
-            ->addOption('name', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Name of the app/worker to configure autoscaling for')
-            ->addOption('metric', null, InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'Name of the metric to use for triggering autoscaling')
-            ->addOption('enabled', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Enable autoscaling based on the given metric')
-            ->addOption('threshold-up', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Threshold over which service will be scaled up')
-            ->addOption('threshold-down', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Threshold under which service will be scaled down')
-            ->addOption('duration-up', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Duration over which metric is evaluated against threshold for scaling up')
-            ->addOption('duration-down', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Duration over which metric is evaluated against threshold for scaling down')
-            ->addOption('cooldown-up', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Duration to wait before attempting to further scale up after a scaling event')
-            ->addOption('cooldown-down', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Duration to wait before attempting to further scale down after a scaling event')
-            ->addOption('instances-min', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Minimum number of instances that will be scaled down to')
-            ->addOption('instances-max', null, InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'Maximum number of instances that will be scaled up to')
+            ->addOption('metric', null, InputOption::VALUE_REQUIRED, 'Name of the metric to use for triggering autoscaling')
+            ->addOption('enabled', null, InputOption::VALUE_OPTIONAL, 'Enable autoscaling based on the given metric')
+            ->addOption('threshold-up', null, InputOption::VALUE_OPTIONAL, 'Threshold over which service will be scaled up')
+            ->addOption('threshold-down', null, InputOption::VALUE_OPTIONAL, 'Threshold under which service will be scaled down')
+            ->addOption('duration-up', null, InputOption::VALUE_OPTIONAL, 'Duration over which metric is evaluated against threshold for scaling up')
+            ->addOption('duration-down', null, InputOption::VALUE_OPTIONAL, 'Duration over which metric is evaluated against threshold for scaling down')
+            ->addOption('cooldown-up', null, InputOption::VALUE_OPTIONAL, 'Duration to wait before attempting to further scale up after a scaling event')
+            ->addOption('cooldown-down', null, InputOption::VALUE_OPTIONAL, 'Duration to wait before attempting to further scale down after a scaling event')
+            ->addOption('instances-min', null, InputOption::VALUE_OPTIONAL, 'Minimum number of instances that will be scaled down to')
+            ->addOption('instances-max', null, InputOption::VALUE_OPTIONAL, 'Maximum number of instances that will be scaled up to')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show the changes that would be made, without changing anything')
             ->addProjectOption()
-            ->addEnvironmentOption();
+            ->addEnvironmentOption()
+            ->addAppOption();
 
-        $helpLines = [
-            'Configure thresholds used for automatically scaling apps and workers on an environment.',
-            '',
-            'If the same app/worker is specified on the command line multiple times, only the final value will be used.'
-        ];
+        $helpLines = ['Configure apps/workers for automatically scaling on an environment.'];
         if ($this->config()->has('service.autoscaling_help_url')) {
             $helpLines[] = '';
             $helpLines[] = 'For more information on autoscaling, see: <info>' . $this->config()->get('service.autoscaling_help_url') . '</info>';
         }
         $this->setHelp(implode("\n", $helpLines));
 
-        $this->addExample('Enable autoscaling for the main application using the default configuration', '--service app --metric cpu');
-        $this->addExample('Enable autoscaling for the main application specifying a minimum of instances at all times', '--service app --metric cpu --instances-min 3');
-        $this->addExample('Enable autoscaling for the main application specifying a maximum of instances at most', '--service app --metric cpu --instances-max 5');
+        $this->addExample('Enable autoscaling for the main application using the default configuration', '--app app --metric cpu');
+        $this->addExample('Enable autoscaling for the main application specifying a minimum of instances at all times', '--app app --metric cpu --instances-min 3');
+        $this->addExample('Enable autoscaling for the main application specifying a maximum of instances at most', '--app app --metric cpu --instances-max 5');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
         if (!$this->api()->supportsAutoscaling($this->getSelectedProject())) {
-            $this->stdErr->writeln(sprintf('The autoscaling API is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
+            $this->stdErr->writeln(sprintf('The autoscaling feature is not enabled for the project %s.', $this->api()->getProjectLabel($this->getSelectedProject(), 'comment')));
             return 1;
         }
 
@@ -86,68 +79,65 @@ class AutoscalingSettingsSetCommand extends CommandBase
         }
 
         // Get autoscaling default values
-        $defaults = $autoscalingSettings["defaults"];
+        $defaults = $autoscalingSettings['defaults'];
 
-        // Validate the --name option.
-        list($name, $errored) = $this->parseSetting($input, 'name', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateService($v, $services);
-        });
+        // Validate the --app option.
+        $app = $input->getOption('app');
+        if ($app !== null) {
+            $app = $this->validateService($app, $services);
+        }
 
         // Validate the --metric option.
-        list($metric, $metricsErrored) = $this->parseSetting($input, 'metric', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateMetric($v, $defaults['triggers']);
-        });
-        $errored = $errored || $metricsErrored;
+        $metric = $input->getOption('metric');
+        if ($metric !== null) {
+            $metric = $this->validateMetric($metric, $defaults['triggers']);
+        }
 
         // Validate the --enabled option.
-        list($enabled, $enabledErrored) = $this->parseSetting($input, 'enabled', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateEnabled($v);
-        });
-        $errored = $errored || $enabledErrored;
+        $enabled = $input->getOption('enabled');
+        if ($enabled !== null) {
+            $enabled = $this->validateBoolean($enabled);
+        }
 
         // Validate the --threshold-* options.
-        list($thresholdUp, $thresholdErrored) = $this->parseSetting($input, 'threshold-up', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateThreshold($v, $serviceName, $service, $deployment);
-        });
-        $errored = $errored || $thresholdErrored;
-        list($thresholdDown, $thresholdErrored) = $this->parseSetting($input, 'threshold-down', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateThreshold($v, $serviceName, $service, $deployment);
-        });
-        $errored = $errored || $thresholdErrored;
+        $thresholdUp = $input->getOption('threshold-up');
+        if ($thresholdUp !== null) {
+            $thresholdUp = $this->validateThreshold($thresholdUp);
+        }
+        $thresholdDown = $input->getOption('threshold-down');
+        if ($thresholdDown !== null) {
+            $thresholdDown = $this->validateThreshold($thresholdDown);
+        }
 
         // Validate the --duration-* options.
-        list($durationUp, $durationErrored) = $this->parseSetting($input, 'duration-up', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateDuration($v);
-        });
-        $errored = $errored || $durationErrored;
-        list($durationDown, $durationErrored) = $this->parseSetting($input, 'duration-down', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateDuration($v);
-        });
-        $errored = $errored || $durationErrored;
+        $durationUp = $input->getOption('duration-up');
+        if ($durationUp !== null) {
+            $durationUp = $this->validateDuration($durationUp);
+        }
+        $durationDown = $input->getOption('duration-down');
+        if ($durationDown !== null) {
+            $durationDown = $this->validateDuration($durationDown);
+        }
 
         // Validate the --cooldown-* options.
-        list($cooldownUp, $cooldownErrored) = $this->parseSetting($input, 'cooldown-up', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateDuration($v);
-        });
-        $errored = $errored || $cooldownErrored;
-        list($cooldownDown, $cooldownErrored) = $this->parseSetting($input, 'cooldown-down', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateDuration($v);
-        });
-        $errored = $errored || $cooldownErrored;
+        $cooldownUp = $input->getOption('cooldown-up');
+        if ($cooldownUp !== null) {
+            $cooldownUp = $this->validateDuration($cooldownUp);
+        }
+        $cooldownDown = $input->getOption('cooldown-down');
+        if ($cooldownDown !== null) {
+            $cooldownDown = $this->validateDuration($cooldownDown);
+        }
 
         // Validate the --instances-* options.
         $instanceLimit = $defaults['instances']['max'];
-        list($instancesMin, $instancesErrored) = $this->parseSetting($input, 'instances-min', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateInstanceCount($v, $instanceLimit);
-        });
-        $errored = $errored || $instancesErrored;
-        list($instancesMax, $instancesErrored) = $this->parseSetting($input, 'instances-max', $services, function ($v, $serviceName, $service) use ($deployment) {
-            return $this->validateInstanceCount($v, $instanceLimit);
-        });
-        $errored = $errored || $instancesErrored;
-
-        if ($errored) {
-            return 1;
+        $instancesMin = $input->getOption('instances-min');
+        if ($instancesMin !== null) {
+            $instancesMin = $this->validateInstanceCount($instancesMin, $instanceLimit);
+        }
+        $instancesMax = $input->getOption('instances-max');
+        if ($instancesMax !== null) {
+            $instancesMax = $this->validateInstanceCount($instancesMax, $instanceLimit);
         }
 
         $this->stdErr->writeln('');
@@ -156,117 +146,190 @@ class AutoscalingSettingsSetCommand extends CommandBase
         $questionHelper = $this->getService('question_helper');
 
         // Check if we should show the interactive form
-        $hasAnyOptions = $input->getOption('name') !== null
-            || $input->getOption('metric') !== null
-            || $input->getOption('enabled') !== null
-            || $input->getOption('threshold-up') !== null
-            || $input->getOption('threshold-down') !== null
-            || $input->getOption('duration-up') !== null
-            || $input->getOption('duration-down') !== null
-            || $input->getOption('cooldown-up') !== null
-            || $input->getOption('cooldown-down') !== null
-            || $input->getOption('instances-min') !== null
-            || $input->getOption('instances-max') !== null;
+        $hasAnyOptions = $app !== null
+            || $metric !== null
+            || $enabled !== null
+            || $thresholdUp !== null
+            || $thresholdDown !== null
+            || $durationUp !== null
+            || $durationDown !== null
+            || $cooldownUp !== null
+            || $cooldownDown !== null
+            || $instancesMin !== null
+            || $instancesMax !== null;
 
-        // TODO: rethink this
-        $showInteractiveForm = $input->isInteractive() ; //&& !$hasAnyOptions;
-
-        $this->stdErr->writeln('DEBUG: showInteractiveForm = ' . ($showInteractiveForm ? 'true' : 'false'));
-        $this->stdErr->writeln('DEBUG: hasAnyOptions = ' . ($hasAnyOptions ? 'true' : 'false'));
+        $showInteractiveForm = $input->isInteractive() && !$hasAnyOptions;
 
         $updates = [];
-        $errored = false;
 
         if ($showInteractiveForm) {
             // Interactive mode: let user select services and configure them
             $serviceNames = array_keys($services);
 
-            // Ask user to select services to configure
-            $text = 'Enter a number to choose a service:' . "\n" . 'Default: <question>' . $serviceNames[0] . '</question>';
-            $selectedService = $questionHelper->choose($serviceNames, $text);
-            $serviceName = $serviceNames[$selectedService];
-
+            if ($app === null) {
+                // Ask user to select services to configure
+                $text = 'Enter a number to choose an app/worker:' . "\n" . 'Default: <question>' . $serviceNames[0] . '</question>';
+                $selectedService = $questionHelper->choose($serviceNames, $text);
+                $app = $serviceNames[$selectedService];
+            }
             // Configure the selected service
-            $service = $services[$serviceName];
+            $service = $services[$app];
 
             $this->stdErr->writeln('');
-            $this->stdErr->writeln('<options=bold>Service: </><options=bold,underscore>' . $serviceName . '</>');
+            $this->stdErr->writeln('<options=bold>' . ucfirst($this->typeName($service)) . ': </><options=bold,underscore>' . $serviceName . '</>');
             $this->stdErr->writeln('');
 
-            // Ask for metric name
-            $choices = array_keys($defaults['triggers']);
-            $default = array_key_first($choices);
-            $text = 'Enter the metric name for autoscaling:' . "\n" . 'Default: <question>' . $default . '</question>';
-            $choice = $questionHelper->choose($choices, $text, $default);
-            $metric = $this->validateMetric($choices[$choice], $defaults['triggers']);
+            if ($metric === null) {
+                // Ask for metric name
+                $choices = array_keys($defaults['triggers']);
+                $default = array_key_first($choices);
+                $text = 'Enter the metric name for autoscaling:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $default);
+                $metric = $this->validateMetric($choices[$choice], $defaults['triggers']);
+            }
 
-            // Ask for scaling up settings
-            //
-            // Threshold
-            $default = $defaults['triggers'][$metric]['up']['threshold'];
-            $updates[$serviceName]['threshold-up'] = $questionHelper->askInput('Enter the threshold for scaling up', $default, [], $this->validateThreshold);
-            $this->stdErr->writeln('');
+            if ($thresholdUp === null) {
+                // Ask for scaling up threshold
+                $default = $defaults['triggers'][$metric]['up']['threshold'];
+                $thresholdUp = $questionHelper->askInput('Enter the threshold for scaling up', $default, [], $this->validateThreshold);
+                $this->stdErr->writeln('');
+            }
+            $updates[$serviceName]['threshold-up'] = $thresholdUp;
 
-            // Duration
-            $choices = array_keys(self::$validDurations);
-            $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
-            $default = array_search($this->formatDuration($defaults['triggers'][$metric]['up']['duration']), $choices);
-            $text = 'Enter the duration for scaling up evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
-            $choice = $questionHelper->choose($choices, $text, $default);
-            $updates[$serviceName]['duration-up'] = $this->validateDuration($choices[$choice]);
+            if ($durationUp === null) {
+                // Ask for scaling up duration
+                $choices = array_keys(self::$validDurations);
+                $defaultDuration = $defaults['triggers'][$metric]['up']['duration'];
+                $default = array_search($this->formatDuration($defaults['triggers'][$metric]['up']['duration']), $choices);
+                $text = 'Enter the duration for scaling up evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $default);
+                $durationUp = $this->validateDuration($choices[$choice]);
+            }
+            $updates[$serviceName]['duration-up'] = $durationUp;
 
-            // Ask for scaling down settings
-            //
-            // Threshold
-            $value = $questionHelper->askInput('Enter the threshold for scaling down', $defaults['triggers'][$metric]['down']['threshold']);
-            $updates[$serviceName]['threshold-down'] = $this->validateThreshold($value);
-            $this->stdErr->writeln('');
 
-            // Duration
-            $choices = array_keys(self::$validDurations);
-            $default = array_search($this->formatDuration($defaults['triggers'][$metric]['down']['duration']), $choices);
-            $text = 'Enter the duration for scaling down evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
-            $choice = $questionHelper->choose($choices, $text, $default);
-            $updates[$serviceName]['duration-down'] = $this->validateDuration($choices[$choice]);
+            if ($thresholdDown === null) {
+                // Ask for scaling down threshold
+                $value = $questionHelper->askInput('Enter the threshold for scaling down', $defaults['triggers'][$metric]['down']['threshold']);
+                $thresholdDown = $this->validateThreshold($value);
+                $this->stdErr->writeln('');
+            }
+            $updates[$serviceName]['threshold-down'] = $thresholdDown;
 
-            // Ask for enabling autoscaling based on this metric
-            $value = $questionHelper->confirm(sprintf('Enable autoscaling based on <question>%s</question>?', $metric), true);
-            $updates[$serviceName]['enabled'] = $this->validateEnabled($value);
-            $this->stdErr->writeln('');
+            if ($durationDown === null) {
+                // Ask for scaling down duration
+                $choices = array_keys(self::$validDurations);
+                $default = array_search($this->formatDuration($defaults['triggers'][$metric]['down']['duration']), $choices);
+                $text = 'Enter the duration for scaling down evaluation:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $default);
+                $durationDown = $this->validateDuration($choices[$choice]);
+            }
+            $updates[$serviceName]['duration-down'] = $durationDown;
 
-            // Ask for instance count limits
-            $value = $questionHelper->askInput('Enter the minimum number of instances', 1);
-            $updates[$serviceName]['instances-min'] = $this->validateInstanceCount($value, $instanceLimit);
-            $this->stdErr->writeln('');
+            if ($enabled === null) {
+                // Ask for enabling autoscaling based on this metric
+                $value = $questionHelper->confirm(sprintf('Enable autoscaling based on <options=bold,underscore>%s</>?', $metric), true);
+                $enabled = $this->validateBoolean($value);
+                $this->stdErr->writeln('');
+            }
+            $updates[$serviceName]['enabled'] = $enabled;
 
-            $value = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit);
-            $updates[$serviceName]['instances-max'] = $this->validateInstanceCount($value, $instanceLimit);
-            $this->stdErr->writeln('');
+            if ($instancesMin === null) {
+                // Ask for instance count limits
+                $value = $questionHelper->askInput('Enter the minimum number of instances', 1);
+                $instancesMin = $this->validateInstanceCount($value, $instanceLimit);
+                $this->stdErr->writeln('');
+            }
+            $updates[$serviceName]['instances-min'] = $instancesMin;
 
-            // Ask for cool down period durations
-            $choices = array_keys(self::$validDurations);
-            $default = array_search($this->formatDuration($defaults['scale_cooldown']['up']), $choices);
-            $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $default . '</question>';
-            $choice = $questionHelper->choose($choices, $text, $default);
-            $updates[$serviceName]['cooldown-up'] = $this->validateDuration($choices[$choice]);
+            if ($instancesMax === null) {
+                $value = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit);
+                $instancesMax = $this->validateInstanceCount($value, $instanceLimit);
+                $this->stdErr->writeln('');
+            }
+            $updates[$serviceName]['instances-max'] = $instancesMax;
 
-            $choices = array_keys(self::$validDurations);
-            $default = array_search($this->formatDuration($defaults['scale_cooldown']['down']), $choices);
-            $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $default . '</question>';
-            $choice = $questionHelper->choose($choices, $text, $default);
-            $updates[$serviceName]['cooldown-down'] = $this->validateDuration($choices[$choice]);
+            if ($cooldownUp === null) {
+                // Ask for cool down period durations
+                $choices = array_keys(self::$validDurations);
+                $default = array_search($this->formatDuration($defaults['scale_cooldown']['up']), $choices);
+                $text = 'Enter the duration of the cool-down period for scaling up:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $default);
+                $cooldownUp = $this->validateDuration($choices[$choice]);
+            }
+            $updates[$serviceName]['cooldown-up'] = $cooldownUp;
+
+            if ($cooldownDown === null) {
+                $choices = array_keys(self::$validDurations);
+                $default = array_search($this->formatDuration($defaults['scale_cooldown']['down']), $choices);
+                $text = 'Enter the duration of the cool-down period for scaling down:' . "\n" . 'Default: <question>' . $default . '</question>';
+                $choice = $questionHelper->choose($choices, $text, $default);
+                $cooldownDown = $this->validateDuration($choices[$choice]);
+            }
+            $updates[$serviceName]['cooldown-down'] = $cooldownDown;
 
             if (!empty($updates[$serviceName])) {
                 // since we have some changes, inject the metric name for them
                 $updates[$serviceName]['metric'] = $metric;
             }
+
+        } else {
+            // Interactive mode: let user select services and configure them
+            $serviceNames = array_keys($services);
+
+            if ($app === null) {
+                // TODO: abort
+                return 1;
+            }
+            // Configure the selected service
+            $serviceName = $app;
+            $service = $services[$serviceName];
+
+            if ($thresholdUp !== null) {
+                $updates[$serviceName]['threshold-up'] = $thresholdUp;
+            }
+
+            if ($durationUp !== null) {
+                $updates[$serviceName]['duration-up'] = $durationUp;
+            }
+
+            if ($thresholdDown !== null) {
+                $updates[$serviceName]['threshold-down'] = $thresholdDown;
+            }
+
+            if ($durationDown !== null) {
+                $updates[$serviceName]['duration-down'] = $durationDown;
+            }
+
+            if ($enabled !== null) {
+                $updates[$serviceName]['enabled'] = $enabled;
+            }
+
+            if ($instancesMin !== null) {
+                $updates[$serviceName]['instances-min'] = $instancesMin;
+            }
+
+            if ($instancesMax !== null) {
+                $updates[$serviceName]['instances-max'] = $instancesMax;
+            }
+
+            if ($cooldownUp !== null) {
+                $updates[$serviceName]['cooldown-up'] = $cooldownUp;
+            }
+
+            if ($cooldownDown !== null) {
+                $updates[$serviceName]['cooldown-down'] = $cooldownDown;
+            }
+
+            if (!empty($updates[$serviceName])) {
+                $metric = $this->validateMetric($metric, $defaults['triggers']);
+                // since we have some changes, inject the metric name for them
+                $updates[$serviceName]['metric'] = $metric;
+            }
+
         }
 
         $this->stdErr->writeln('');
-
-        if ($errored) {
-            return 1;
-        }
 
         if (empty($updates)) {
             $this->stdErr->writeln('No autoscaling changes were provided: nothing to update');
@@ -298,6 +361,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
     }
 
 
+    /**
+     * Build an AutoscalingSettings instance.
+     *
+     * @param array $updates
+     *
+     * @return AutoscalingSettings
+     */
     protected function makeAutoscalingSettings($updates)
     {
         $data = array('services' => []);
@@ -409,39 +479,39 @@ class AutoscalingSettingsSetCommand extends CommandBase
                 $this->formatDuration($updates['duration-up'])
             ));
         }
-        if (isset($updates['duration-up'])) {
+        if (isset($updates['threshold-down'])) {
             $this->stdErr->writeln('    Threshold (down): ' . $this->formatChange(
                 $current['triggers'][$metric]['down'] ? $current['triggers'][$metric]['down']['threshold'] : null,
                 $updates['threshold-down']
             ));
         }
-        if (isset($updates['duration-up'])) {
+        if (isset($updates['duration-down'])) {
             $this->stdErr->writeln('    Duration (down): ' . $this->formatChange(
                 $current['triggers'][$metric]['down'] ? $this->formatDuration($current['triggers'][$metric]['down']['duration']) : null,
                 $this->formatDuration($updates['duration-down'])
             ));
         }
 
-        if (isset($updates['duration-up'])) {
+        if (isset($updates['cooldown-up'])) {
             $this->stdErr->writeln('    Cooldown (up): ' . $this->formatChange(
                 $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['up']) : null,
                 $this->formatDuration($updates['cooldown-up'])
             ));
         }
-        if (isset($updates['duration-up'])) {
+        if (isset($updates['cooldown-down'])) {
             $this->stdErr->writeln('    Cooldown (down): ' . $this->formatChange(
                 $current['scale_cooldown'] ? $this->formatDuration($current['scale_cooldown']['down']) : null,
                 $this->formatDuration($updates['cooldown-down'])
             ));
         }
 
-        if (isset($updates['duration-up'])) {
+        if (isset($updates['instances-min'])) {
             $this->stdErr->writeln('    Instances (min): ' . $this->formatChange(
                 $current['instances'] ? $current['instances']['min'] : null,
                 $updates['instances-min']
             ));
         }
-        if (isset($updates['duration-up'])) {
+        if (isset($updates['instances-max'])) {
             $this->stdErr->writeln('    Instances (max): ' . $this->formatChange(
                 $current['instances'] ? $current['instances']['max'] : null,
                 $updates['instances-max']
@@ -449,38 +519,81 @@ class AutoscalingSettingsSetCommand extends CommandBase
         }
     }
 
+    /**
+     * Validates a service name.
+     *
+     * @param string $value
+     * @param array $services
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return string
+     */
     protected function validateService($value, $services)
     {
         if (array_key_exists($value, $services)) {
             return $value;
         }
-        throw new InvalidArgumentException(sprintf('Invalid service name <error>%s</error>: must be one of: %s', $value, implode(', ', $services)));
+        throw new InvalidArgumentException(sprintf('Invalid service name <error>%s</error>: must be one of %s', $value, implode(', ', $services)));
     }
 
+    /**
+     * Validates a metric name.
+     *
+     * @param string $value
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return string
+     */
     protected function validateMetric($value, $metrics)
     {
         if (array_key_exists($value, $metrics)) {
             return $value;
         }
-        throw new InvalidArgumentException(sprintf('Invalid metric name: %s. Must be one of: %s', $value, implode(', ', $metrics)));
+        throw new InvalidArgumentException(sprintf('Invalid metric name <error>%s</error>: must be one of %s', $value, implode(', ', array_keys($metrics))));
     }
 
-    protected function validateEnabled($value)
+    /**
+     * Validates a boolean value.
+     *
+     * @param float|int|string|bool $value
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return bool
+     */
+    protected function validateBoolean($value)
     {
-        if (!is_bool($value)) {
-            throw new InvalidArgumentException('Invalid value <error>%s</error>: must be true or false', $value);
-        };
-        return (bool)$value;
+        switch ($value) {
+            case "true":
+            case "yes":
+                return true;
+            case "false":
+            case "no":
+                return false;
+            default:
+                throw new InvalidArgumentException(sprintf('Invalid value <error>%s</error>: must be one of true, yes, false, no', $value));
+        }
     }
 
+    /**
+     * Validates a given threshold.
+     *
+     * @param float|int $value
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return float
+     */
     protected function validateThreshold($value)
     {
         $threshold = (float) $value;
         if ($threshold <= 0) {
-            throw new InvalidArgumentException(sprintf('Invalid threshold <error>%s</error>: it must be greater than 0.', $value));
+            throw new InvalidArgumentException(sprintf('Invalid threshold <error>%s</error>: must be greater than 0.', $value));
         }
         if ($threshold > 100) {
-            throw new InvalidArgumentException(sprintf('Invalid threshold <error>%s</error>: it must be smaller than 100.', $value));
+            throw new InvalidArgumentException(sprintf('Invalid threshold <error>%s</error>: must be smaller than 100.', $value));
         }
         return $threshold;
     }
@@ -494,6 +607,15 @@ class AutoscalingSettingsSetCommand extends CommandBase
         "60m" => 3600,
     ];
 
+    /**
+     * Validates a given duration.
+     *
+     * @param string $value
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return int
+     */
     protected function validateDuration($value)
     {
         if (!isset(self::$validDurations[$value])) {
@@ -502,13 +624,22 @@ class AutoscalingSettingsSetCommand extends CommandBase
         return self::$validDurations[$value];
     }
 
-    protected function formatDuration($value)
+    /**
+     * Returns the service type name for a service.
+     *
+     * @param Service|WebApp|Worker $service
+     *
+     * @return string
+     */
+    protected function typeName($service)
     {
-        $lookup = array_flip(self::$validDurations);
-        if (!isset($lookup[$value])) {
-            throw new InvalidArgumentException(sprintf('Invalid duration <error>%s</error>: must be one of %s', $value, implode(', ', array_keys($lookup))));
+        if ($service instanceof WebApp) {
+            return 'app';
         }
-        return $lookup[$value];
+        if ($service instanceof Worker) {
+            return 'worker';
+        }
+        return 'service';
     }
 
     /**
@@ -534,85 +665,31 @@ class AutoscalingSettingsSetCommand extends CommandBase
     }
 
     /**
-     * Parses a user's list of settings for --size, --instances or --disk.
+     * Formats a boolean value.
      *
-     * @param InputInterface $input
-     * @param string $optionName The input option name.
-     * @param array<string, Service|WebApp|Worker> $services
-     * @param callable|null $validator
-     *   Validate the value. The callback takes the arguments ($value,
-     *   $serviceName, $service) and returns a normalized value or throws
-     *   an InvalidArgumentException.
+     * @param bool $value
      *
-     * @return array{array<string, mixed>, bool}
-     *     An array of settings per service, and whether an error occurred.
+     * @return string
      */
-    private function parseSetting(InputInterface $input, $optionName, $services, $validator)
+    protected function formatBoolean(bool $value)
     {
-        $items = ArrayArgument::getOption($input, $optionName);
-        $serviceNames = array_keys($services);
-        $errors = $values = [];
-        foreach ($items as $item) {
-            $parts = \explode(':', $item, 2);
-            if (!isset($parts[1]) || $parts[0] === '') {
-                $errors[] = sprintf('<error>%s</error> is not valid; it must be in the format "name:value".', $item);
-                continue;
-            }
-            list($pattern, $value) = $parts;
-            $givenServiceNames = Wildcard::select($serviceNames, [$pattern]);
-            if (empty($givenServiceNames)) {
-                $errors[] = sprintf('App/worker <error>%s</error> not found.', $pattern);
-                continue;
-            }
-            foreach ($givenServiceNames as $name) {
-                try {
-                    $normalized = $validator($value, $name, $services[$name]);
-                } catch (\InvalidArgumentException $e) {
-                    $errors[] = $e->getMessage();
-                    continue;
-                }
-                if (isset($values[$name]) && $values[$name] !== $normalized) {
-                    $this->debug(sprintf('Overriding value %s with %s for %s in --%s', $values[$name], $normalized, $name, $optionName));
-                }
-                $values[$name] = $normalized;
-            }
-        }
-        $errored = count($errors) > 0;
-        if ($errored) {
-            $this->stdErr->writeln($this->formatErrors($errors, $optionName));
-        }
-        return [$values, $errored];
+        return $value ? "true" : "false";
     }
 
     /**
-     * Print errors found after parsing a setting.
+     * Formats a duration.
      *
-     * @param array $errors
-     * @param string $optionName
+     * @param int $value
      *
-     * @return string[]
+     * @return string
      */
-    private function formatErrors(array $errors, $optionName)
+    protected function formatDuration(int $value)
     {
-        if (!$errors) {
-            return [];
+        $lookup = array_flip(self::$validDurations);
+        if (!isset($lookup[$value])) {
+            throw new InvalidArgumentException(sprintf('Invalid duration <error>%s</error>: must be one of %s', $value, implode(', ', array_keys($lookup))));
         }
-        $ret = [];
-        if (count($errors) === 1) {
-            $ret[] = sprintf('Error in --%s value:', $optionName);
-            $ret[] = '  ' . reset($errors);
-        } else {
-            $ret[] = sprintf('Errors in --%s values:', $optionName);
-            foreach ($errors as $error) {
-                $ret[] = '  * ' . $error;
-            }
-        }
-        return $ret;
-    }
-
-    protected function formatBoolean($value)
-    {
-        return $value ? "true" : "false";
+        return $lookup[$value];
     }
 
     /**
