@@ -50,7 +50,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
             '',
             sprintf('Profile sizes are predefined CPU & memory values that can be viewed by running: <info>%s resources:sizes</info>', $this->config()->get('application.executable')),
             '',
-            'If the same service and resource is specified on the command line multiple times, only the final value will be used.'
+            'If the same service and resource is specified on the command line multiple times, only the final value will be used.',
+            '',
+            sprintf('You can also configure autoscaling, by running: <info>%s autoscaling:set</info>command.', $this->config()->get('application.executable'))
         ];
         if ($this->config()->has('service.resources_help_url')) {
             $helpLines[] = '';
