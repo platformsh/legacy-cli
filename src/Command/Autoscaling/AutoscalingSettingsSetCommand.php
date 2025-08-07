@@ -34,7 +34,11 @@ class AutoscalingSettingsSetCommand extends CommandBase
             ->addProjectOption()
             ->addEnvironmentOption();
 
-        $helpLines = ['Configure apps/workers for automatically scaling on an environment.'];
+        $helpLines = [
+            'Configure automatic scaling for apps or workers in an environment.',
+            '',
+            sprintf('You can also configure resources statically, by running: <info>%s resources:set</info>.', $this->config()->get('application.executable'))
+        ];
         if ($this->config()->has('service.autoscaling_help_url')) {
             $helpLines[] = '';
             $helpLines[] = 'For more information on autoscaling, see: <info>' . $this->config()->get('service.autoscaling_help_url') . '</info>';
