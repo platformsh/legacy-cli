@@ -29,7 +29,7 @@ class BuildResourcesSetCommand extends ResourcesCommandBase
         }
 
         $project = $this->getSelectedProject();
-        $capabilities = $project->getCapabilities();
+        $capabilities = $this->api()->getProjectCapabilities($project);
 
         $capability = $capabilities->getProperty('build_resources', false);
         $maxCpu = $capability ? $capability['max_cpu'] : null;

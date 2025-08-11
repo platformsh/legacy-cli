@@ -159,12 +159,9 @@ abstract class IntegrationCommandBase extends CommandBase
      */
     private function selectedProjectIntegrations()
     {
-        static $cache = [];
         $project = $this->getSelectedProject();
-        if (!isset($cache[$project->id])) {
-            $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
-        }
-        return $cache[$project->id];
+        $capabilities = $this->api()->getProjectCapabilities($project);
+        return $project->hasLink('#capabilities') ? $capabilities->integrations : [];
     }
 
     /**

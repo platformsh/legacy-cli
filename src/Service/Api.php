@@ -1737,7 +1737,7 @@ class Api
             return $cachedCapabilities;
         }
 
-        $capabilities = $this->getHttpClient()->get($project->getUri() . '/capabilities')->json();
+        $capabilities = $project->getCapabilities();
         $this->cache->save($cacheKey, $capabilities, $this->config->get('api.projects_ttl'));
         return $capabilities;
     }
