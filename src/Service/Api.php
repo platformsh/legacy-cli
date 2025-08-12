@@ -1680,14 +1680,64 @@ class Api
         if (isset($deployment->project_info['settings'])) {
             return !empty($deployment->project_info['settings']['sizing_api_enabled']);
         }
+        $settings = $this->getProjectSettings($project);
+        return !empty($settings['sizing_api_enabled']);
+    }
+
+    /**
+     * Checks if a project supports the Autoscaling API.
+     *
+     * @param Project $project
+     * @return bool
+     */
+    public function supportsAutoscaling(Project $project)
+    {
+        $capabilities = $this->getProjectCapabilities($project);
+        return !empty($capabilities->autoscaling['enabled']);
+    }
+
+    /**
+     * Returns project settings.
+     *
+     * Settings are cached between calls unless a refresh is forced.
+     *
+     * @param bool $refresh
+     *
+     * @return array
+     */
+    public function getProjectSettings(Project $project, $refresh = false)
+    {
         $cacheKey = 'project-settings:' . $project->id;
         $cachedSettings = $this->cache->fetch($cacheKey);
-        if (!empty($cachedSettings['sizing_api_enabled'])) {
-            return true;
+        if (!empty($cachedSettings) && !$refresh) {
+            return $cachedSettings;
         }
+
         $settings = $this->getHttpClient()->get($project->getUri() . '/settings')->json();
         $this->cache->save($cacheKey, $settings, $this->config->get('api.projects_ttl'));
-        return !empty($settings['sizing_api_enabled']);
+        return $settings;
+    }
+
+    /**
+     * Returns project capabilities.
+     *
+     * Capabilities are cached between calls unless a refresh is forced.
+     *
+     * @param bool $refresh
+     *
+     * @return \Platformsh\Client\Model\Project\Capabilities
+     */
+    public function getProjectCapabilities(Project $project, $refresh = false)
+    {
+        $cacheKey = 'project-capabilities:' . $project->id;
+        $cachedCapabilities = $this->cache->fetch($cacheKey);
+        if (!empty($cachedCapabilities) && !$refresh) {
+            return $cachedCapabilities;
+        }
+
+        $capabilities = $project->getCapabilities();
+        $this->cache->save($cacheKey, $capabilities, $this->config->get('api.projects_ttl'));
+        return $capabilities;
     }
 
     /**
@@ -1705,5 +1755,60 @@ class Api
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the URL to view autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     * @param bool $manage
+     *
+     * @return string|false
+     *   The url to the autoscaling settings endpoint or false on failure.
+     */
+    public function getAutoscalingSettingsLink(Environment $environment, bool $manage = false)
+    {
+        $link = "#autoscaling";
+        if ($manage === true) {
+            $link = "#manage-autoscaling";
+        }
+
+        $environmentData = $environment->getData();
+        if (!isset($environmentData['_links'][$link])) {
+            $this->stdErr->writeln(\sprintf('Autoscaling support is not currently available on the environment: %s', $this->getEnvironmentLabel($environment, 'error')));
+
+            return false;
+        }
+        if (!isset($environmentData['_links'][$link]['href'])) {
+            $this->stdErr->writeln(\sprintf('Unable to find autoscaling URLs for the environment: %s', $this->getEnvironmentLabel($environment, 'error')));
+
+            return false;
+        }
+
+        return $environmentData['_links'][$link]['href'];
+    }
+
+    /**
+     * Returns the autoscaling settings for the selected environment.
+     *
+     * @param Environment $environment
+     *
+     * @return \Platformsh\Client\Model\AutoscalingSettings
+     */
+    public function getAutoscalingSettings(Environment $environment)
+    {
+        if (!$this->getAutoscalingSettingsLink($environment)) {
+            throw new EnvironmentStateException('Autoscaling support is not currently available on the environment', $environment);
+        }
+
+        try {
+            $settings = $environment->getAutoscalingSettings();
+        } catch (EnvironmentStateException $e) {
+            if ($e->getEnvironment()->status === 'inactive') {
+                throw new EnvironmentStateException('The environment is inactive', $e->getEnvironment());
+            }
+            throw $e;
+        }
+        return $settings;
     }
 }

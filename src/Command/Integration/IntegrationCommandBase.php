@@ -157,14 +157,11 @@ abstract class IntegrationCommandBase extends CommandBase
      *
      * @return array
      */
-    private function selectedProjectIntegrations()
+    private function selectedProjectIntegrationCapabilities()
     {
-        static $cache = [];
-        $project = $this->getSelectedProject();
-        if (!isset($cache[$project->id])) {
-            $cache[$project->id] = $project->hasLink('#capabilities') ? $project->getCapabilities()->integrations : [];
-        }
-        return $cache[$project->id];
+        return $this->api()
+            ->getProjectCapabilities($this->getSelectedProject())
+            ->integrations;
     }
 
     /**
@@ -203,7 +200,7 @@ abstract class IntegrationCommandBase extends CommandBase
                     }
                     // If the type is supported, check if it is available on the project.
                     if ($this->hasSelectedProject()) {
-                        $integrations = $this->selectedProjectIntegrations();
+                        $integrations = $this->selectedProjectIntegrationCapabilities();
                         if (!empty($integrations['enabled']) && empty($integrations['config'][$value]['enabled'])) {
                             return "The integration type '$value' is not available on this project.";
                         }
@@ -212,7 +209,7 @@ abstract class IntegrationCommandBase extends CommandBase
                 },
                 'optionsCallback' => function () use ($allSupportedTypes) {
                     if ($this->hasSelectedProject()) {
-                        $integrations = $this->selectedProjectIntegrations();
+                        $integrations = $this->selectedProjectIntegrationCapabilities();
                         if (!empty($integrations['enabled']) && !empty($integrations['config'])) {
                             return array_filter($allSupportedTypes, function ($type) use ($integrations) {
                                 return !empty($integrations['config'][$type]['enabled']);
