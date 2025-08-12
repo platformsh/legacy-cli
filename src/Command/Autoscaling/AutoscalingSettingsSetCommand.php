@@ -588,12 +588,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
      * Validates a given threshold.
      *
      * @param float|int $value
+     * @param string $context
      *
      * @throws InvalidArgumentException
      *
      * @return float
      */
-    protected function validateThreshold($value, string $context = '')
+    protected function validateThreshold($value, $context = '')
     {
         $threshold = (float) $value;
         if ($threshold < 0) {
@@ -626,12 +627,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
      * Validates a given duration.
      *
      * @param string $value
+     * @param string $context
      *
      * @throws InvalidArgumentException
      *
      * @return int
      */
-    protected function validateDuration($value, string $context = '')
+    protected function validateDuration($value, $context = '')
     {
         if (!isset(self::$validDurations[$value])) {
             $durations = array_keys(self::$validDurations);
@@ -667,12 +669,13 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @param string $value
      * @param int|null $limit
+     * @param string $context
      *
      * @throws InvalidArgumentException
      *
      * @return int
      */
-    protected function validateInstanceCount($value, $limit, string $context = '')
+    protected function validateInstanceCount($value, $limit, $context = '')
     {
         $count = (int) $value;
         if ($count != $value || $value <= 0) {
