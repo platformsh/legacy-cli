@@ -1693,7 +1693,7 @@ class Api
     public function supportsAutoscaling(Project $project)
     {
         $capabilities = $this->getProjectCapabilities($project);
-        return !empty($capabilities['autoscaling']) ? $capabilities['autoscaling']['enabled'] : false;
+        return !empty($capabilities->autoscaling['enabled']);
     }
 
     /**
@@ -1703,10 +1703,9 @@ class Api
      *
      * @param bool $refresh
      *
-     * @returns array
-     *
+     * @return array
      */
-    public function getProjectSettings(Project $project, bool $refresh = false): array
+    public function getProjectSettings(Project $project, $refresh = false)
     {
         $cacheKey = 'project-settings:' . $project->id;
         $cachedSettings = $this->cache->fetch($cacheKey);
@@ -1726,10 +1725,9 @@ class Api
      *
      * @param bool $refresh
      *
-     * @returns array
-     *
+     * @return \Platformsh\Client\Model\Project\Capabilities
      */
-    public function getProjectCapabilities(Project $project, bool $refresh = false): array
+    public function getProjectCapabilities(Project $project, $refresh = false)
     {
         $cacheKey = 'project-capabilities:' . $project->id;
         $cachedCapabilities = $this->cache->fetch($cacheKey);

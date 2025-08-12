@@ -72,7 +72,6 @@ class AutoscalingSettingsGetCommand extends CommandBase
         $formatter = $this->getService('property_formatter');
 
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
-        $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
 
         $rows = [];
         foreach ($autoscalingSettings['services'] as $service => $settings) {
@@ -109,7 +108,6 @@ class AutoscalingSettingsGetCommand extends CommandBase
 
 
                     $rows[] = $row;
-                    continue;
                 }
             }
         }
@@ -119,4 +117,3 @@ class AutoscalingSettingsGetCommand extends CommandBase
         return 0;
     }
 }
-
