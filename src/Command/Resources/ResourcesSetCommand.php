@@ -140,6 +140,12 @@ class ResourcesSetCommand extends ResourcesCommandBase
             }
         }
 
+        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment)->getData();
+        $autoscalingEnabled = [];
+        foreach ($autoscalingSettings['services'] as $service => $serviceSettings) {
+            $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+        }
+
         // Ask all questions if nothing was specified on the command line.
         $showCompleteForm = $input->isInteractive()
             && $input->getOption('size') === []
@@ -231,7 +237,9 @@ class ResourcesSetCommand extends ResourcesCommandBase
 
             // Set the instance count.
             if (!$service instanceof Service) { // a Service instance count cannot be changed
-                if (isset($givenCounts[$name])) {
+                if (!empty($autoscalingEnabled[$name])) {
+                    $this->stdErr->writeln(sprintf('The instance count of the service <error>%s</error> cannot be changed when autoscaling is enabled.', $name));
+                } elseif (isset($givenCounts[$name])) {
                     $instanceCount = $givenCounts[$name];
                     if ($instanceCount !== $properties['instance_count'] && !($instanceCount === 1 && !isset($properties['instance_count']))) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
