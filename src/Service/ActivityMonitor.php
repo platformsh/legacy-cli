@@ -542,7 +542,7 @@ class ActivityMonitor
         }
 
         if ($activity->state === Activity::STATE_STAGED) {
-            $stdErr->writeln(sprintf('To deploy staged changes, run: <info>%s deploy</info>',
+            $stdErr->writeln(sprintf('To deploy staged changes, run: <info>%s env:deploy</info>',
                 $this->config->get('application.executable')));
         }
 

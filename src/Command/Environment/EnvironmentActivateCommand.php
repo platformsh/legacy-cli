@@ -93,7 +93,7 @@ class EnvironmentActivateCommand extends CommandBase
                         ]);
                     }
                     $output->writeln(sprintf(
-                        'To resume the environment, run: <comment>%s environment:resume</comment>',
+                        'To resume the environment, run: <comment>%s env:resume</comment>',
                         $this->config()->get('application.executable')
                     ));
                     $count--;
