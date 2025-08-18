@@ -66,7 +66,7 @@ detection:
 
 migrate:
   prompt: true
-  docs_url: https://docs.platform.sh/administration/cli.html
+  docs_url: https://docs.upsun.com/anchors/fixed/cli/
 
 warnings:
   non_production_domains_msg: |
@@ -74,7 +74,7 @@ warnings:
     If you're an Enterprise or Elite customer, contact support to enable the feature.
     Otherwise contact sales first to upgrade your plan.
 
-    See: https://docs.platform.sh/overview/get-support.html
+    See: https://docs.upsun.com/anchors/fixed/get-support/
 
   guaranteed_resources_msg: |
     You have chosen to allocate guaranteed resources for app(s) and/or service(s).
