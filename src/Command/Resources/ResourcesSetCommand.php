@@ -97,14 +97,21 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $instanceLimit = $projectInfo['capabilities']['instance_limit'];
         }
 
+        // Check autoscaling settings for the environment, as autoscaling prevents changing some resources manually.
+        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment)->getData();
+        $autoscalingEnabled = [];
+        foreach ($autoscalingSettings['services'] as $service => $serviceSettings) {
+            $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+        }
+
         // Validate the --size option.
         list($givenSizes, $errored) = $this->parseSetting($input, 'size', $services, function ($v, $serviceName, $service) use ($nextDeployment) {
             return $this->validateProfileSize($v, $serviceName, $service, $nextDeployment);
         });
 
         // Validate the --count option.
-        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, function ($v, $serviceName, $service) use ($instanceLimit) {
-            return $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit);
+        list($givenCounts, $countErrored) = $this->parseSetting($input, 'count', $services, function ($v, $serviceName, $service) use ($instanceLimit, $autoscalingEnabled) {
+            return $this->validateInstanceCount($v, $serviceName, $service, $instanceLimit, !empty($autoscalingEnabled[$serviceName]));
         });
         $errored = $errored || $countErrored;
 
@@ -230,7 +237,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             }
 
             // Set the instance count.
-            if (!$service instanceof Service) { // a Service instance count cannot be changed
+            // This is not applicable to a Service, and unavailable when autoscaling is enabled.
+            if (!$service instanceof Service && empty($autoscalingEnabled[$name])) {
                 if (isset($givenCounts[$name])) {
                     $instanceCount = $givenCounts[$name];
                     if ($instanceCount !== $properties['instance_count'] && !($instanceCount === 1 && !isset($properties['instance_count']))) {
@@ -240,7 +248,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
                     $ensureHeader();
                     $default = $properties['instance_count'] ?: 1;
                     $instanceCount = $questionHelper->askInput('Enter the number of instances', $default, [], function ($v) use ($name, $service, $instanceLimit) {
-                        return $this->validateInstanceCount($v, $name, $service, $instanceLimit);
+                        return $this->validateInstanceCount($v, $name, $service, $instanceLimit, false);
                     });
                     if ($instanceCount !== $properties['instance_count']) {
                         $updates[$group][$name]['instance_count'] = $instanceCount;
@@ -468,15 +476,19 @@ class ResourcesSetCommand extends ResourcesCommandBase
      * @param string $serviceName
      * @param Service|WebApp|Worker $service
      * @param int|null $limit
+     * @param bool $autoscalingEnabled
      *
      * @throws InvalidArgumentException
      *
      * @return int
      */
-    protected function validateInstanceCount($value, $serviceName, $service, $limit)
+    protected function validateInstanceCount($value, $serviceName, $service, $limit, $autoscalingEnabled)
     {
         if ($service instanceof Service) {
             throw new InvalidArgumentException(sprintf('The instance count of the service <error>%s</error> cannot be changed.', $serviceName));
+        }
+        if ($autoscalingEnabled) {
+            throw new InvalidArgumentException(sprintf('The instance count of the %s <error>%s</error> cannot be changed when autoscaling is enabled.', $this->typeName($service), $serviceName));
         }
         $count = (int) $value;
         if ($count != $value || $value <= 0) {
