@@ -397,8 +397,8 @@ class Relationships implements InputConfiguringInterface
      * is configured, all four service types default to having one schema named
      * "main".
      *
-     * See https://docs.platform.sh/add-services/postgresql.html
-     * and https://docs.platform.sh/add-services/mysql.html
+     * See https://docs.upsun.com/anchors/fixed/services/postgresql/
+     * and https://docs.upsun.com/anchors/fixed/services/mysql/
      *
      * @return string[]
      */
