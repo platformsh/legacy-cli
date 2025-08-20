@@ -1771,7 +1771,7 @@ class Api
      * @return string|false
      *   The url to the autoscaling settings endpoint or false on failure.
      */
-    public function getAutoscalingSettingsLink(Environment $environment, bool $manage = false)
+    public function getAutoscalingSettingsLink(Environment $environment, $manage = false)
     {
         $link = "#autoscaling";
         if ($manage === true) {

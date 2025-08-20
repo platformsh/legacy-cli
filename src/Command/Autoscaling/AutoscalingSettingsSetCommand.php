@@ -181,7 +181,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             if ($metric === null) {
                 // Ask for metric name
                 $choices = array_keys($defaults['triggers']);
-                $default = array_key_first($choices);
+                $default = key($choices);
                 $text = 'Enter the metric name for autoscaling:' . "\n" . 'Default: <question>' . $default . '</question>';
                 $choice = $questionHelper->choose($choices, $text, $default);
                 $metric = $choices[$choice];
@@ -239,7 +239,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
 
             if ($instancesMin === null) {
                 // Ask for instance count limits
-                $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', 1, [], function ($value) {
+                $instancesMin = $questionHelper->askInput('Enter the minimum number of instances', 1, [], function ($value) use ($instanceLimit) {
                     return $this->validateInstanceCount($value, $instanceLimit);
                 });
                 $this->stdErr->writeln('');
@@ -247,7 +247,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
             $updates[$service]['instances-min'] = $instancesMin;
 
             if ($instancesMax === null) {
-                $instancesMax = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit, [], function ($value) {
+                $instancesMax = $questionHelper->askInput('Enter the maximum number of instances', $instanceLimit, [], function ($value) use ($instanceLimit) {
                     return $this->validateInstanceCount($value, $instanceLimit);
                 });
                 $this->stdErr->writeln('');
@@ -477,7 +477,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         if (isset($updates['duration-up'])) {
             $this->stdErr->writeln('    Duration (up): ' . $this->formatDurationChange(
                 $current['triggers'][$metric]['up'] ? $this->formatDuration($current['triggers'][$metric]['up']['duration']) : null,
-                $updates['duration-up'],
+                $updates['duration-up']
             ));
         }
         if (isset($updates['threshold-down'])) {
@@ -614,7 +614,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
         return $threshold;
     }
 
-    private static array $validDurations = [
+    private static $validDurations = [
         "1m" => 60,
         "2m" => 120,
         "5m" => 300,
@@ -702,7 +702,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return string
      */
-    protected function formatBoolean(bool $value)
+    protected function formatBoolean($value)
     {
         return $value ? "true" : "false";
     }
@@ -714,7 +714,7 @@ class AutoscalingSettingsSetCommand extends CommandBase
      *
      * @return string
      */
-    protected function formatDuration(int $value)
+    protected function formatDuration($value)
     {
         $lookup = array_flip(self::$validDurations);
         if (!isset($lookup[$value])) {
