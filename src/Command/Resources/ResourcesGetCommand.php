@@ -74,6 +74,13 @@ class ResourcesGetCommand extends ResourcesCommandBase
             return 1;
         }
 
+        // Check autoscaling settings for the environment, as autoscaling prevents changing some resources manually.
+        $autoscalingSettings = $this->api()->getAutoscalingSettings($environment)->getData();
+        $autoscalingEnabled = [];
+        foreach ($autoscalingSettings['services'] as $service => $serviceSettings) {
+            $autoscalingEnabled[$service] = !empty($serviceSettings['enabled']);
+        }
+
         /** @var Table $table */
         $table = $this->getService('table');
 
@@ -93,6 +100,9 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $cpuTypeOption = $input->getOption('cpu-type');
         foreach ($services as $name => $service) {
             $properties = $service->getProperties();
+            if (!empty($autoscalingEnabled[$name])) {
+                $name .= ' <fg=red>(A)</>';
+            }
             $row = [
                 'service' => $name,
                 'type' => $formatter->format($service->type, 'service_type'),
@@ -143,6 +153,8 @@ class ResourcesGetCommand extends ResourcesCommandBase
         }
 
         $table->render($rows, $this->tableHeader, $this->defaultColumns);
+
+        $this->stdErr->writeln("<info><fg=red>(A)</></info> - Indicates that the service has autoscaling enabled\n");
 
         if (!$table->formatIsMachineReadable()) {
             $executable = $this->config()->get('application.executable');
