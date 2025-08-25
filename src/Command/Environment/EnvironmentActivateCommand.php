@@ -67,7 +67,6 @@ class EnvironmentActivateCommand extends CommandBase
         if ($resourcesInit === false) {
             return 1;
         }
-        $resourcesInit = ($resourcesInit === null) ? 'parent' : $resourcesInit;
 
         $count = count($environments);
         $processed = 0;
@@ -116,7 +115,7 @@ class EnvironmentActivateCommand extends CommandBase
 
             $hasGuaranteedCPU = $this->environmentHasGuaranteedCPU($environment);
             $question = "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";
-            if ($hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_msg')) {
+            if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_msg')) {
                 $question = trim($this->config()->get('warnings.guaranteed_resources_msg'))
                     . "\n\n" . "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";
             }
@@ -128,7 +127,9 @@ class EnvironmentActivateCommand extends CommandBase
         }
 
         $params = [];
-        $params['resources']['init'] = $resourcesInit;
+        if ($resourcesInit !== null) {
+            $params['resources']['init'] = $resourcesInit;
+        }
 
         $activities = [];
         /** @var Environment $environment */
