@@ -119,7 +119,6 @@ class EnvironmentBranchCommand extends CommandBase
         if ($resourcesInit === false) {
             return 1;
         }
-        $resourcesInit = ($resourcesInit === null) ? 'parent' : $resourcesInit;
 
         $title = $input->getOption('title') !== null ? $input->getOption('title') : $branchName;
 
@@ -176,8 +175,10 @@ class EnvironmentBranchCommand extends CommandBase
             if ($type !== null) {
                 $params['type'] = $type;
             }
+            if ($resourcesInit !== null) {
+                $params['resources']['init'] = $resourcesInit;
+            }
 
-            $params['resources']['init'] = $resourcesInit;
             $result = $parentEnvironment->runOperation('branch', 'POST', $params);
             $activities = $result->getActivities();
 
