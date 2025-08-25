@@ -112,7 +112,14 @@ class EnvironmentActivateCommand extends CommandBase
                 }
                 continue;
             }
+
+            $hasGuaranteedCPU = $this->environmentHasGuaranteedCPU($environment);
             $question = "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";
+            if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_msg')) {
+                $question = trim($this->config()->get('warnings.guaranteed_resources_msg'))
+                    . "\n\n" . "Are you sure you want to activate the environment " . $this->api()->getEnvironmentLabel($environment) . "?";
+            }
+
             if (!$questionHelper->confirm($question)) {
                 continue;
             }
