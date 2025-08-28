@@ -81,7 +81,7 @@ class ResourcesCommandBase extends CommandBase
             $byType = [];
             foreach ($services as $name => $service) {
                 $type = $service->type;
-                list($prefix) = explode(':', $service->type, 2);
+                [$prefix] = explode(':', $service->type, 2);
                 $byType[$type][] = $name;
                 $byType[$prefix][] = $name;
             }
@@ -155,5 +155,40 @@ class ResourcesCommandBase extends CommandBase
     protected function formatCPU($unformatted)
     {
         return sprintf('%.1f', $unformatted);
+    }
+
+    /**
+     * Format CPU Type.
+     *
+     * @param array|null $sizeInfo
+     *
+     * @return string
+     */
+    protected function formatCPUType(array|null $sizeInfo): string
+    {
+        $size = $sizeInfo ? $sizeInfo['cpu']  : null;
+        if ($size === null) {
+            return "";
+        }
+
+        return sprintf('(%s)', $sizeInfo['cpu_type']);
+    }
+
+    /**
+     * Sort container profiles by size.
+     *
+     * @param array $profiles
+     *
+     * @return array
+     */
+    protected function sortContainerProfiles(array $profiles): array
+    {
+        foreach ($profiles as &$profile) {
+            uasort($profile, function($a, $b) {
+                return $a['cpu'] <=> (float)$b['cpu'];
+            });
+        }
+
+        return $profiles;
     }
 }

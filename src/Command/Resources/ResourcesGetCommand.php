@@ -94,7 +94,7 @@ class ResourcesGetCommand extends ResourcesCommandBase
         $empty = $table->formatIsMachineReadable() ? '' : '<comment>not set</comment>';
         $notApplicable = $table->formatIsMachineReadable() ? '' : 'N/A';
 
-        $containerProfiles = $nextDeployment->container_profiles;
+        $containerProfiles = $this->sortContainerProfiles($nextDeployment->container_profiles);
 
         $rows = [];
         $cpuTypeOption = $input->getOption('cpu-type');
