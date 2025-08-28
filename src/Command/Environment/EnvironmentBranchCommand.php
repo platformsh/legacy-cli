@@ -143,7 +143,7 @@ class EnvironmentBranchCommand extends CommandBase
             $this->stdErr->writeln('Resource sizes will be inherited from the parent environment.');
         }
 
-        $hasGuaranteedCPU = $this->environmentHasGuaranteedCPU($parentEnvironment);
+        $hasGuaranteedCPU = $this->api()->environmentHasGuaranteedCPU($parentEnvironment);
         if ($resourcesInit === 'parent' && $hasGuaranteedCPU && $this->config()->has('warnings.guaranteed_resources_msg')) {
             /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
             $questionHelper = $this->getService('question_helper');

@@ -38,9 +38,9 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         }
 
         $environment = $this->getSelectedEnvironment();
-        $nextDeployment = $this->loadNextDeployment($environment);
+        $nextDeployment = $this->api()->loadNextDeployment($environment);
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->api()->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -84,7 +84,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
         $table = $this->getService('table');
 
         $rows = [];
-        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
+        $supportsGuaranteedCPU = $this->api()->supportsGuaranteedCPU($nextDeployment->project_info);
         $defaultColumns = $this->defaultColumns;
         if ($supportsGuaranteedCPU) {
             $defaultColumns[] = 'cpu_type';

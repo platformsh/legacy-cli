@@ -76,7 +76,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $environment = $this->getSelectedEnvironment();
 
         try {
-            $nextDeployment = $this->loadNextDeployment($environment);
+            $nextDeployment = $this->api()->loadNextDeployment($environment);
         } catch (EnvironmentStateException $e) {
             if ($environment->status === 'inactive') {
                 $this->stdErr->writeln(sprintf('The environment %s is not active so resources cannot be configured.', $this->api()->getEnvironmentLabel($environment, 'comment')));
@@ -85,7 +85,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
             throw $e;
         }
 
-        $services = $this->allServices($nextDeployment);
+        $services = $this->api()->allServices($nextDeployment);
         if (empty($services)) {
             $this->stdErr->writeln('No apps or services found');
             return 1;
@@ -138,7 +138,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         $containerProfiles = $nextDeployment->container_profiles;
 
         // Remove guaranteed profiles if project does not support it.
-        $supportsGuaranteedCPU = $this->supportsGuaranteedCPU($nextDeployment->project_info);
+        $supportsGuaranteedCPU = $this->api()->supportsGuaranteedCPU($nextDeployment->project_info);
         foreach ($containerProfiles as $profileName => $profile) {
             foreach ($profile as $sizeName => $sizeInfo) {
                 if (!$supportsGuaranteedCPU && $sizeInfo['cpu_type'] == 'guaranteed') {
