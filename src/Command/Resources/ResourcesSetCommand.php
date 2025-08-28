@@ -135,7 +135,7 @@ class ResourcesSetCommand extends ResourcesCommandBase
         /** @var \Platformsh\Cli\Service\QuestionHelper $questionHelper */
         $questionHelper = $this->getService('question_helper');
 
-        $containerProfiles = $nextDeployment->container_profiles;
+        $containerProfiles = $this->sortContainerProfiles($nextDeployment->container_profiles);
 
         // Remove guaranteed profiles if project does not support it.
         $supportsGuaranteedCPU = $this->api()->supportsGuaranteedCPU($nextDeployment->project_info);
@@ -203,13 +203,14 @@ class ResourcesSetCommand extends ResourcesCommandBase
                       || (isset($properties['resources']['minimum']['memory']) && $sizeInfo['memory'] < $properties['resources']['minimum']['memory'])) {
                         continue;
                     }
-                    $description = sprintf('CPU %s, memory %s MB', $sizeInfo['cpu'], $sizeInfo['memory']);
+                    $description = sprintf('CPU %s, memory %s MB (%s)', $sizeInfo['cpu'], $sizeInfo['memory'], $sizeInfo['cpu_type']);
                     if (isset($properties['resources']['profile_size'])
                         && $profileSize == $properties['resources']['profile_size']) {
                         $description .= ' <question>(current)</question>';
                     } elseif ($defaultOption !== null && $defaultOption === $profileSize) {
                         $description .= ' <question>(default)</question>';
                     }
+
                     $options[$profileSize] = $description;
                 }
 
@@ -410,8 +411,8 @@ class ResourcesSetCommand extends ResourcesCommandBase
             $newProperties = array_replace_recursive($properties, $updates);
             $newSizeInfo = $this->sizeInfo($newProperties, $containerProfiles);
             $this->stdErr->writeln('    CPU: ' . $this->formatChange(
-                $this->formatCPU($sizeInfo ? $sizeInfo['cpu'] : null),
-                $this->formatCPU($newSizeInfo['cpu'])
+                $this->formatCPU($sizeInfo ? $sizeInfo['cpu']  : null) . ' ' . $this->formatCPUType($sizeInfo),
+                $this->formatCPU($newSizeInfo['cpu']) . ' '. $this->formatCPUType($newSizeInfo)
             ));
             $this->stdErr->writeln('    Memory: ' . $this->formatChange(
                 $sizeInfo ? $sizeInfo['memory'] : null,

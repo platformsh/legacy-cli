@@ -50,7 +50,7 @@ class ResourcesSizeListCommand extends ResourcesCommandBase
             $servicesByProfile[$service->container_profile][] = $name;
         }
 
-        $containerProfiles = $nextDeployment->container_profiles;
+        $containerProfiles = $this->sortContainerProfiles($nextDeployment->container_profiles);
 
         if ($serviceOption = $input->getOption('service')) {
             if (!isset($services[$serviceOption])) {
