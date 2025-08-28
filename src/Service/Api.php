@@ -1797,10 +1797,6 @@ class Api
      */
     public function getAutoscalingSettings(Environment $environment)
     {
-        if (!$this->getAutoscalingSettingsLink($environment)) {
-            throw new EnvironmentStateException('Autoscaling support is not currently available on the environment', $environment);
-        }
-
         try {
             $settings = $environment->getAutoscalingSettings();
         } catch (EnvironmentStateException $e) {
